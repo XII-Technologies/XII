@@ -31,3 +31,7 @@ DECLARE_CONSTANT_BUFFER_AUTO(xiiReflectionProbeConstants)
   UINT1(TotalClusterCount);
   UINT2(_ReflectionProbePadding);
 };
+
+#if XII_DISABLED(XII_SHADER_PLATFORM)
+static_assert(sizeof(xiiGPUReflectionProbe) == 128U, "Reflection probe records must match the shader structured-buffer stride.");
+#endif

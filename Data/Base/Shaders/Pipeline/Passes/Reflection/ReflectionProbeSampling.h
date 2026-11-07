@@ -4,7 +4,7 @@
 
 // Shared local-reflection-probe evaluation. Including shaders must declare
 // g_ReflectionProbeData and g_ReflectionProbeTextures. The exhaustive selector
-// is intended for off-screen ray hits, which cannot use the camera cluster map.
+// supports camera surfaces and off-screen hits without a camera cluster map.
 
 #ifndef XII_ENVIRONMENT_LINEAR_CLAMP_SAMPLER
 #  define XII_ENVIRONMENT_LINEAR_CLAMP_SAMPLER LinearClampSampler
@@ -60,9 +60,14 @@ float3 xiiSampleReflectionProbe(uint probeIndexPlusOne, float3 worldPosition, fl
     localDirection                    = normalize(localPosition + localDirection * intersectionDistance);
   }
 
+  // Influence scale changes the volume, not the cubemap's angular frame.
+  const float3 inverseScale = float3(length(probe.WorldToProbe[0].xyz), length(probe.WorldToProbe[1].xyz), length(probe.WorldToProbe[2].xyz));
+  localDirection /= max(inverseScale, 1e-6f);
   const uint  textureIndex = NonUniformResourceIndex(probe.Metadata.y);
+  uint        width, height, levels;
+  g_ReflectionProbeTextures[textureIndex].GetDimensions(0, width, height, levels);
   float3      radiance     = max(g_ReflectionProbeTextures[textureIndex].SampleLevel(XII_ENVIRONMENT_LINEAR_CLAMP_SAMPLER,
-                                                                                     xiiReflectionProbeCubeDirection(localDirection), saturate(roughness) * 8.0f)
+                                                                                     xiiReflectionProbeCubeDirection(localDirection), saturate(roughness) * float(max(levels, 1u) - 1u))
                                    .rgb,
                                  0.0f);
   const float luminance    = dot(radiance, float3(0.2126f, 0.7152f, 0.0722f));
@@ -99,7 +104,7 @@ uint2 xiiFindReflectionProbesAtPosition(float3 worldPosition)
     const float  distanceSquared = dot(toProbe, toProbe);
     const int    priority        = asint(probe.Metadata.z);
     const uint   stableId        = probe.Metadata.x;
-    if (xiiIsBetterReflectionProbe(priority, distanceSquared, stableId, firstPriority, firstDistance, firstStableId))
+    if (firstProbe == 0u || xiiIsBetterReflectionProbe(priority, distanceSquared, stableId, firstPriority, firstDistance, firstStableId))
     {
       secondProbe    = firstProbe;
       secondPriority = firstPriority;
@@ -110,7 +115,7 @@ uint2 xiiFindReflectionProbesAtPosition(float3 worldPosition)
       firstDistance  = distanceSquared;
       firstStableId  = stableId;
     }
-    else if (xiiIsBetterReflectionProbe(priority, distanceSquared, stableId, secondPriority, secondDistance, secondStableId))
+    else if (secondProbe == 0u || xiiIsBetterReflectionProbe(priority, distanceSquared, stableId, secondPriority, secondDistance, secondStableId))
     {
       secondProbe    = probeIndex + 1u;
       secondPriority = priority;
@@ -129,6 +134,9 @@ float3 xiiSampleLocalReflectionEnvironment(float3 worldPosition, float3 reflecti
   float        secondWeight;
   const float3 firstRadiance  = xiiSampleReflectionProbe(selectedProbes.x, worldPosition, reflectionDirection, roughness, firstWeight);
   const float3 secondRadiance = xiiSampleReflectionProbe(selectedProbes.y, worldPosition, reflectionDirection, roughness, secondWeight);
+  if (selectedProbes.x != 0u && selectedProbes.y != 0u &&
+      asint(g_ReflectionProbeData[selectedProbes.x - 1u].Metadata.z) != asint(g_ReflectionProbeData[selectedProbes.y - 1u].Metadata.z))
+    secondWeight *= 1.0f - saturate(firstWeight);
   const float  totalWeight    = firstWeight + secondWeight;
   coverage                    = saturate(totalWeight);
   return totalWeight > 1e-4f ? (firstRadiance * firstWeight + secondRadiance * secondWeight) / totalWeight : 0.0f;

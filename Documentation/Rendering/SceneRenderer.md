@@ -42,8 +42,8 @@ Scene renders world mesh components through shared GPU instance extraction,
 view-local visibility and LOD selection, indirect vertex-pull draws, reversed-Z
 depth, material G-buffer rasterization, directional and clustered analytical local
 lights, optional world directional and spotlight shadows, ambient diffuse and emission, spatial
-ambient visibility, optional world atmosphere, spatial screen reflections, transparent
-single-bounce screen-space diffuse transport, mesh and ballistic billboard layers and temporal
+ambient visibility, local probe specular and optional screen reflections, world atmosphere,
+single-bounce screen-space diffuse transport, transparent mesh and ballistic billboard layers and temporal
 antialiasing, exposure,
 tone mapping, color grading and presentation. It does not require mesh shaders or ray tracing. Material loading
 and shader failures remain errors; a clear output is not evidence of scene rendering.
@@ -374,7 +374,7 @@ Tone mapping adds bloom to HDR before exposure and maps that result to
 display-linear color. Existing grading and presentation apply afterward. Controls
 remain reflected or per-view display settings, and independent occurrences own
 their configuration/history. This change preserves Scene/Editor identities,
-existing root interfaces and the nine-source asset library; only Scene's native
+existing root interfaces and the ten-source asset library; only Scene's native
 pin metadata describes optional bloom and histogram resources.
 
 `SceneDisplay/BloomAndMeteredExposureAffectProductionOutput` exercises actual
@@ -405,7 +405,7 @@ Windows/MSVC Debug builds pass GraphicsCore, both graphics test executables, bot
 Editor test executables and GpuDrivenScene. Complete GraphicsCoreTest (81), Vulkan
 GraphicsFoundationTest (141) and Vulkan EditorEngineProcessFrameworkTest (76)
 subtests pass. The strengthened final bloom composition readbacks also pass the
-focused SceneDisplay run. RendererAssets exports all nine sources deterministically
+focused SceneDisplay run. RendererAssets exports all ten sources deterministically
 on repeated runs; EditorDocuments (20), NodeLayout (3) and the rebuilt 300-frame
 Vulkan Scene sample pass. Existing Qt font and unused Vulkan output warnings remain.
 Generated pipeline binaries, caches and unrelated scene edits are excluded.
@@ -762,38 +762,92 @@ views that intentionally make no render attempt, and isolated layout dependency
 registration. Other backends and interactive desktop acceptance remain unverified.
 
 
+## Local reflection probes
+
+Scene now consumes authored `xiiReflectionCaptureComponent` packets through
+`xiiWorldReflectionProbesPass`. It validates active world owners, transforms,
+influence shapes and complete readable RGB cubemap mip chains, sorts deterministic
+owner identities and publishes one immutable snapshot. Record/constant uploads
+exist only for nonempty snapshots. The snapshot owns native images so replacing
+an authored resource or destroying its world cannot invalidate a retained graph.
+The reflected `Enabled` control provides an explicit quality/capability bypass.
+
+The shared descriptor bound is 64 extracted captures. Capacity exhaustion fails
+the view before creating a truncated table; deactivating excess captures restores
+rendering. Each record is 128 bytes. Duplicate packet submissions are removed,
+and duplicate cubemaps share imported graph resources. Box/sphere influence,
+blend distance, intensity, saturation, rotation, nonuniform influence scale and
+optional box parallax correction use the existing shared probe sampler. Selection
+chooses two eligible probes by priority, distance and stable owner order. A fully
+weighted high-priority probe excludes lower priority; equal-priority probes blend
+by influence weight. Mip selection uses each cubemap's actual chain length.
+
+`xiiEnvironmentSpecularPass` reuses the device-shared integrated GGX lookup and
+applies its split-sum `F0*A+B` response once. The forward transparent shader uses
+the same probe sampler and BRDF response, evaluated at the fragment's position,
+normal, view and roughness. Unlit materials do not receive probe lighting. Empty
+snapshots add no lookup, sampling dispatch, radiance image or transparent shader
+bindings. Generated material shader caches advance to document version 11 so
+previous graph shaders regenerate with the forward probe permutation. Active lookup generation currently requires extended storage formats;
+the authored probe bypass remains usable when that device feature is disabled.
+
+The existing reflection workload blends candidate radiance as
+`SSR * confidence + probeSpecular * (1 - confidence)`, then adds this one specular
+contribution to opaque radiance. Disabling screen tracing retains probe lighting.
+Reflections now precede aerial perspective, so atmospheric extinction attenuates
+the completed opaque surface result. Transparent probes are evaluated before that
+fragment's own atmosphere integration.
+
+Scene/Editor GPU acceptance checks 22 phases covering absence, colored captures,
+overlap, priority, box/sphere fade, resource replacement, saturation, rotation,
+roughness mip response, nonuniform scale, odd resize, box parallax and native/authored transparent surfaces.
+The absorption-only atmosphere case matches `exp(-0.35)` attenuation and restores
+the original radiance when disabled. Full 64-slot execution, overflow/recovery and
+restricted-device bypass are checked. The ordinary reflection workload separately
+verifies exact per-pixel confidence composition, independent worlds/views, reload,
+resize and a retained graph executing after its world is destroyed. Conditional
+static-cache requests now refresh dynamic owners, with a shared-view extraction
+regression; probe packets use the inherited render-data transform.
+
+These probes consume prefiltered authored cubemaps. Generating GGX convolution,
+diffuse irradiance, dynamic captures, global environment fallback, clustered probe
+assignment and representative performance remain required follow-up work. The
+small GPU fixture collects existing-profiler samples and CPU update timing; it
+does not establish a representative frame-time or speedup. Stereo and runtime
+acceptance on other backends remain unverified.
+
 ## Screen-space reflections
 
 `SceneScreenSpaceReflections.xiiRenderPipelineAsset` is a nine-operation workload
-between atmosphere application and temporal reconstruction. Its source identity is
+before atmosphere application and temporal reconstruction. Its source identity is
 `{ 78cb6185-5e43-9953-e249-8fe1c45085f5 }`. Scene and Editor retain their existing
 identities and interfaces; Scene additionally exposes optional `ScreenReflections`
-(straight RGB with confidence alpha) and `ReflectionLighting` (confidence-weighted RGB).
+(straight RGB with confidence alpha) and `ReflectionLighting` (the confidence blend of screen reflection and probe specular).
 `RawScreenReflections` exposes the current trace; `ReflectionHistory` exposes the
 previous completed temporal resolve when one exists.
 
 The authored `Reflection Depth` texture-forward operation has `Enabled=false` and
-`RequireInput=true`. Enabling this occurrence is the single reflection policy switch.
+`RequireInput=true`. Enabling this occurrence is the screen-trace policy switch.
 It publishes Scene depth to two depth-pyramid operations and as the explicit presence
 input of the radiance-pyramid and BRDF producers. These presence inputs control setup;
-the producers do not sample their texels. Absent depth suppresses all reflection GPU
-work. Optional confidence composition forwards the original HDR resource exactly,
+the producers do not sample their texels. Absent depth suppresses screen-trace GPU
+work. Local probes remain independent. When both sources are absent, composition forwards the original HDR resource exactly,
 including its precision and read-only binding flags. Missing required resources in an
 active workload are errors. The ordinary Scene default therefore preserves the
-previous rendering behavior and cost.
+previous rendering behavior and cost when no reflection capture is authored.
 
 ```text
 SceneDepth -> Reflection Depth -> Closest Depth / Farthest Depth --+
                     |                                           |
-                    +-> Filtered Radiance <- atmosphere HDR      |
+                    +-> Filtered Radiance <- lit surface HDR      |
                     +-> Integrate BRDF                           |
 GBuffer normal/material/albedo + coherent camera ----------------+-> Trace Reflections
                                                                        |
                                                               Temporal Reflections
                                                                        |
-                                                             Reflection Confidence
+probe specular ---------------------------------------> Confidence Blend
                                                                        |
-atmosphere HDR -------------------------------------------------> Add Reflections -> TAA
+lit surface HDR -------------------------------------------> Add Reflections -> Atmosphere -> TAA
 ```
 
 | Resource | Format and dimensions | Producer / consumer |
@@ -807,7 +861,7 @@ atmosphere HDR -------------------------------------------------> Add Reflection
 | RawScreenReflections | RGBA32Float, viewport-sized, SRV/UAV | Spatial trace / optional temporal resolve |
 | ScreenReflections | RGBA32Float spatial or RGBA16Float temporal, viewport-sized, SRV/UAV | Trace or temporal resolve / confidence weighting |
 | ReflectionLighting | RGBA32Float, viewport-sized, SRV/UAV | Confidence weighting / HDR addition |
-| HDRSceneColor | RGBA32Float in Scene | Atmosphere plus weighted reflection / TAA and display |
+| HDRSceneColor | RGBA32Float in Scene | Lit surface plus blended reflection / atmosphere, TAA and display |
 
 Depth reduction conservatively includes odd-edge texels. Radiance reduction weights
 fractional source coverage so odd viewport dimensions do not discard bright edges.
@@ -832,9 +886,9 @@ uses RGBA32Float rather than the old RGBA16Float contract. Unrelated callers wit
 explicit half-float output constraint must resample/convert that output themselves.
 
 A miss contributes zero reflection and preserves the incoming scene radiance.
-Offscreen and hidden surfaces therefore cannot appear; no environment, hardware-ray
-or diffuse-irradiance algorithm is substituted. Environment convolution/probes and
-hardware-ray reflections remain separate work. Spatial roughness filtering is an
+Offscreen and hidden surfaces cannot appear in the screen trace. Its misses retain
+the local probe contribution through confidence blending. Environment convolution,
+global environment fallback and hardware-ray reflections remain separate work. Spatial roughness filtering is an
 approximation rather than a multi-sample glossy transport solution.
 
 ### Optional temporal reflection resolve
@@ -1284,7 +1338,7 @@ EditorEngineProcessFrameworkTest and GpuDrivenScene using the isolated runtime.
 Complete suite runs pass GraphicsCoreTest (81 subtests), Vulkan
 GraphicsFoundationTest (140) and Vulkan EditorEngineProcessFrameworkTest (76).
 The final missing-radiance acceptance additions also pass both SceneIrradiance
-subtests. RendererAssets regenerates all nine sources deterministically on repeated
+subtests. RendererAssets regenerates all ten sources deterministically on repeated
 runs; EditorDocuments (20) and NodeLayout (3) pass, including the updated Scene
 graph. The rebuilt Vulkan sample explicitly completes 300 Scene frames.
 Existing unused Vulkan shader-output and offscreen Qt font warnings remain.

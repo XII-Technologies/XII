@@ -10,6 +10,7 @@
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <Shaders/Materials/NativeMaterialViewConstants.h>
 #include <Shaders/Pipeline/Passes/Geometry/GpuSceneGBufferConstants.h>
+#include <Shaders/Pipeline/ReflectionProbeData.h>
 
 namespace
 {
@@ -51,15 +52,22 @@ namespace
     else if (transparent)
     {
       stages = xiiGALShaderType::Pixel;
-      for (auto key : {"PerFrameCamera", "xiiEnvironmentLightConstants", "xiiLightClusterConstants", "xiiTransparentRasterConstants", "xiiForwardRefractionConstants", "xiiShadowCascadeConstants", "xiiSpotShadowConstants", "xiiAtmosphereConstants"})
+      for (auto key : {"PerFrameCamera", "xiiEnvironmentLightConstants", "xiiLightClusterConstants", "xiiTransparentRasterConstants", "xiiForwardRefractionConstants", "xiiShadowCascadeConstants", "xiiSpotShadowConstants", "xiiAtmosphereConstants", "xiiReflectionProbeConstants"})
         if (name == key)
           type = xiiGALShaderResourceType::ConstantBuffer;
-      for (auto key : {"g_Lights", "g_Counts", "g_Candidates", "g_IESProfiles", "g_LightGrid", "g_LightIndices", "g_Overflow"})
+      for (auto key : {"g_Lights", "g_Counts", "g_Candidates", "g_IESProfiles", "g_LightGrid", "g_LightIndices", "g_Overflow", "g_ReflectionProbeData"})
         if (name == key)
           type = xiiGALShaderResourceType::BufferSRV;
-      for (auto key : {"g_RefractionDepth", "g_RefractionBackground", "g_ShadowAtlas", "g_SpotShadowAtlas", "g_Transmittance", "g_MultiScatter"})
+      for (auto key : {"g_RefractionDepth", "g_RefractionBackground", "g_ShadowAtlas", "g_SpotShadowAtlas", "g_Transmittance", "g_MultiScatter", "g_BRDFLut"})
         if (name == key)
           type = xiiGALShaderResourceType::TextureSRV;
+      if (name == "g_ReflectionProbeTextures")
+      {
+        type  = xiiGALShaderResourceType::TextureSRV;
+        array = true;
+        if (resource.m_uiArraySize != XII_MAX_REFLECTION_PROBES)
+          return xiiStatus("Native reflection-probe texture arrays must match the shared probe capacity.");
+      }
       if (name == "LinearClampSampler" || name == "g_sRefractionLinearClamp")
         type = xiiGALShaderResourceType::Sampler;
     }

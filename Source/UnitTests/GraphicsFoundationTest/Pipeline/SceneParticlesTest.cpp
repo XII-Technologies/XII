@@ -58,7 +58,9 @@ XII_CREATE_SIMPLE_TEST(SceneParticles, BallisticBillboardsAppendWorldTransparenc
         acceleration.m_Properties.Insert("Acceleration", xiiVec3::MakeZero());
       }
     }
-    definition.m_Interface.PushBack({"BaseRadiance", false, xiiUuid::MakeStableUuidFromString("XII.Scene/ScreenReflections"), "HDRSceneColor"});
+    for (const auto& connection : definition.m_Connections)
+      if (definition.m_Passes[connection.m_uiTarget].m_Id == xiiUuid::MakeStableUuidFromString("XII.Scene/Transparency") && connection.m_sInput == "Radiance")
+        definition.m_Interface.PushBack({"BaseRadiance", false, definition.m_Passes[connection.m_uiSource].m_Id, connection.m_sOutput});
     xiiStringBuilder id;
     id.SetFormat("Particles.World.{}", variant);
     const auto                          scene = xiiResourceManager::CreateResource<xiiRenderPipelineResource>(id, std::move(definition));

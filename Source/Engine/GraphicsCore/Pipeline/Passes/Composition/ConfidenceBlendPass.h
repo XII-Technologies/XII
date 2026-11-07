@@ -14,6 +14,8 @@ public:
   xiiRenderPipelineTextureInputPin            m_Background{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineTextureInputPin            m_Layer{xiiGALResourceFormat::Unknown, true, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineTextureOutputPin           m_Output{xiiGALResourceFormat::RGBA32Float, false, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess, xiiGALResourceDimension::Texture2D, 1};
+  bool                                        m_bAllowAbsentBackground = false;
+  void                                        GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins) const override;
   bool                                        m_bAsyncCompute = false;
   float                                       m_fOpacity      = 1.0f;
   xiiResult                                   Configure(const xiiVariantDictionary& properties) override;

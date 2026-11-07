@@ -19,6 +19,18 @@
 #  include <Shaders/Pipeline/Passes/Atmosphere/AtmosphereSampling.h>
 #endif
 
+#if FORWARD_PROBES
+#  if !XII_TRANSPARENT_ATMOSPHERE
+SamplerState LinearClampSampler;
+#  endif
+#  include <Shaders/Pipeline/EnvironmentBRDF.h>
+#  include <Shaders/Pipeline/ReflectionProbeData.h>
+StructuredBuffer<xiiGPUReflectionProbe> g_ReflectionProbeData;
+TextureCube<float4>                     g_ReflectionProbeTextures[XII_MAX_REFLECTION_PROBES];
+Texture2D<float2>                       g_BRDFLut;
+#  include <Shaders/Pipeline/Passes/Reflection/ReflectionProbeSampling.h>
+#endif
+
 StructuredBuffer<xiiGpuLightData> g_Lights;
 StructuredBuffer<uint4>           g_Counts;
 StructuredBuffer<uint>            g_Candidates;
@@ -129,6 +141,13 @@ TransparentOutput xiiShadeTransparentSurface(GBufferVertex input, xiiMaterialSur
   else
   {
     lighting += max(EnvironmentAmbientRadiance.rgb, 0) * surface.BaseColor.rgb * (1 - surface.Metallic) * (1 - surface.Transmission) * surface.Occlusion / 3.14159265f;
+#if FORWARD_PROBES
+    float        probeCoverage;
+    const float  roughness      = max(surface.Roughness, 0.02f);
+    const float3 probeRadiance  = xiiSampleLocalReflectionEnvironment(input.WorldPosition, reflect(-view, surface.Normal), roughness, probeCoverage);
+    const float2 integratedBRDF = g_BRDFLut.SampleLevel(LinearClampSampler, float2(saturate(dot(surface.Normal, view)), roughness), 0);
+    lighting += probeRadiance * xiiEnvironmentSpecularResponse(surface.BaseColor.rgb, surface.Metallic, surface.Reflectance, integratedBRDF) * (probeCoverage * surface.Occlusion);
+#endif
     if (EnvironmentDirectionAndIlluminance.w > 0)
     {
       float visibility = 1;

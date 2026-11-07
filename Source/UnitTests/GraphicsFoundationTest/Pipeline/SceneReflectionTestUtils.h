@@ -19,6 +19,7 @@
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
 #include <GraphicsFoundationTest/Pipeline/PipelineTestPasses.h>
+#include <GraphicsFoundationTest/Pipeline/SceneProbeTestUtils.h>
 #include <GraphicsFoundationTest/TestingEnvironment/RenderGraphTestContext.h>
 #include <GraphicsFoundationTest/TestingEnvironment/TestingEnvironment.h>
 #include <GraphicsFoundationTest/TestingEnvironment/TextureReadback.h>
@@ -43,7 +44,7 @@ namespace xiiSceneReflectionTest
     return true;
   }
 
-  inline void Run(bool extendedFormats, bool temporal = false, bool editor = false)
+  inline void Run(bool extendedFormats, bool temporal = false, bool editor = false, bool localProbes = false)
   {
     xiiGPUTestingEnvironment environment;
     if (!XII_TEST_RESULT(environment.Initialize(false, extendedFormats)))
@@ -70,7 +71,9 @@ namespace xiiSceneReflectionTest
         for (auto& pass : definition.m_Passes)
           if (pass.m_pType && pass.m_pType->GetTypeName() == xiiStringView("xiiAmbientOcclusionPass"))
             pass.m_Properties.Insert("Enabled", false);
-      definition.m_Interface.PushBack({"UnreflectedColor", false, xiiUuid::MakeStableUuidFromString("XII.Scene/Atmosphere"), "HDRSceneColor"});
+      for (const auto& connection : definition.m_Connections)
+        if (definition.m_Passes[connection.m_uiTarget].m_Id == xiiUuid::MakeStableUuidFromString("XII.Scene/ScreenReflections") && connection.m_sInput == "Radiance")
+          definition.m_Interface.PushBack({"UnreflectedColor", false, definition.m_Passes[connection.m_uiSource].m_Id, connection.m_sOutput});
       for (auto& pass : definition.m_Passes)
         if (pass.m_Id == xiiUuid::MakeStableUuidFromString("XII.Scene/ScreenReflections"))
         {
@@ -99,7 +102,7 @@ namespace xiiSceneReflectionTest
             sceneNode = pass.m_Id;
         if (!XII_TEST_BOOL(sceneNode.IsValid()))
           return;
-        for (const xiiStringView name : {"HDRSceneColor", "UnreflectedColor", "ScreenReflections", "ReflectionLighting", "SceneDepth", "ObjectId", "RawScreenReflections", "ReflectionHistory"})
+        for (const xiiStringView name : {"HDRSceneColor", "UnreflectedColor", "ScreenReflections", "ReflectionLighting", "SceneDepth", "ObjectId", "RawScreenReflections", "ReflectionHistory", "EnvironmentSpecular"})
         {
           bool present = false;
           for (const auto& pin : editorDefinition.m_Interface)
@@ -113,7 +116,7 @@ namespace xiiSceneReflectionTest
       xiiRenderPipelineResourceDescriptor root;
       root.m_References.PushBack({sourceId, source.GetResourceID()});
       const auto scene = root.AddSubgraph(editor ? "Canonical Editor" : "Canonical Scene", sourceId);
-      for (const xiiStringView name : {"HDRSceneColor", "UnreflectedColor", "ScreenReflections", "ReflectionLighting", "SceneDepth", "ObjectId", "RawScreenReflections", "ReflectionHistory"})
+      for (const xiiStringView name : {"HDRSceneColor", "UnreflectedColor", "ScreenReflections", "ReflectionLighting", "SceneDepth", "ObjectId", "RawScreenReflections", "ReflectionHistory", "EnvironmentSpecular"})
       {
         const auto output = root.AddPass(name, xiiGetStaticRTTI<xiiOpaqueTestExport>());
         XII_TEST_RESULT(root.Connect(scene, name, output, "Input"));
@@ -121,6 +124,19 @@ namespace xiiSceneReflectionTest
       }
       pipelines[variant] = xiiResourceManager::CreateResource<xiiRenderPipelineResource>(variant ? "Reflection.Root.On" : "Reflection.Root.Off", std::move(root));
     }
+    const auto reflectionMap = localProbes ? xiiSceneProbeTest::Cube("Reflection.GreenFallback", {0, 0.25f, 0}, {0, 0.25f, 0}) : xiiTextureCubeResourceHandle();
+    const auto addProbe      = [&](xiiWorld& targetWorld) {
+      if (!localProbes)
+        return;
+      xiiGameObjectDescription description;
+      xiiGameObject*           object = nullptr;
+      targetWorld.CreateObject(description, object);
+      xiiReflectionCaptureComponent* probe = nullptr;
+      xiiReflectionCaptureComponent::CreateComponent(object, probe);
+      probe->SetReflectionMap(reflectionMap);
+      probe->SetHalfExtents(xiiVec3(100));
+      probe->SetBlendDistance(0);
+    };
     xiiGeometry geometry;
     geometry.AddBox(xiiVec3(1), true);
     xiiMeshResourceDescriptor meshDescriptor;
@@ -141,6 +157,7 @@ namespace xiiSceneReflectionTest
     xiiWorld            world(worldDescription);
     XII_LOCK(world.GetWriteMarker());
     world.SetWorldSimulationEnabled(false);
+    addProbe(world);
     const auto addMesh = [&](xiiVec3 position, xiiVec3 scale, const xiiMaterialResourceHandle& surface) {
       xiiGameObjectDescription description;
       description.m_bDynamic      = true;
@@ -211,6 +228,7 @@ namespace xiiSceneReflectionTest
     {
       XII_LOCK(foreign->GetWriteMarker());
       foreign->SetWorldSimulationEnabled(false);
+      addProbe(*foreign);
       for (xiiUInt32 index = 0; index < 2; ++index)
       {
         xiiGameObjectDescription description;
@@ -356,6 +374,18 @@ namespace xiiSceneReflectionTest
           !xiiGpuTestReadback::ReadTexturePixels(*environment.GetDevice(), image(0, "HDRSceneColor"), off) ||
           !xiiGpuTestReadback::ReadTexturePixels(*environment.GetDevice(), image(1, "UnreflectedColor"), base))
         return;
+      xiiDynamicArray<xiiVec4> fallback;
+      if (localProbes)
+      {
+        if (!xiiGpuTestReadback::ReadTexturePixels(*environment.GetDevice(), image(1, "EnvironmentSpecular"), fallback))
+          return;
+      }
+      else
+      {
+        fallback.SetCount(raw.GetCount());
+        for (auto& value : fallback)
+          value = xiiVec4::MakeZero();
+      }
       for (xiiUInt32 variant = 0; variant < 2; ++variant)
         if (!xiiGpuTestReadback::ReadTexturePixels(*environment.GetDevice(), targets[variant], final[variant]) ||
             !xiiGpuTestReadback::ReadTexturePixels(*environment.GetDevice(), image(variant, "SceneDepth"), depth[variant]) ||
@@ -385,8 +415,10 @@ namespace xiiSceneReflectionTest
           XII_TEST_BOOL(history == baseline);
         }
       }
-      XII_TEST_BOOL(off == base);
-      XII_TEST_BOOL(image(0, "ScreenReflections") == nullptr && image(0, "ReflectionLighting") == nullptr);
+      if (!localProbes)
+        XII_TEST_BOOL(off == base);
+      XII_TEST_BOOL(image(0, "ScreenReflections") == nullptr);
+      XII_TEST_BOOL(bool(image(0, "ReflectionLighting")) == localProbes);
       xiiUInt32 hits = 0, redHits = 0, blueHits = 0, changed = 0, floorHits = 0;
       double    floorEnergy = 0, redPosition = 0;
       for (xiiUInt32 pixel = 0; pixel < raw.GetCount(); ++pixel)
@@ -395,8 +427,10 @@ namespace xiiSceneReflectionTest
         XII_TEST_BOOL(raw[pixel].w >= 0 && raw[pixel].w <= 1);
         for (xiiUInt32 channel = 0; channel < 3; ++channel)
         {
-          XII_TEST_FLOAT(weighted[pixel].GetData()[channel], raw[pixel].GetData()[channel] * raw[pixel].w, 0.0001f);
+          XII_TEST_FLOAT(weighted[pixel].GetData()[channel], raw[pixel].GetData()[channel] * raw[pixel].w + fallback[pixel].GetData()[channel] * (1 - raw[pixel].w), 0.0001f);
           XII_TEST_FLOAT(on[pixel].GetData()[channel], base[pixel].GetData()[channel] + weighted[pixel].GetData()[channel], 0.0001f);
+          if (localProbes)
+            XII_TEST_FLOAT(off[pixel].GetData()[channel], base[pixel].GetData()[channel] + fallback[pixel].GetData()[channel], 0.0001f);
         }
         hits += raw[pixel].w > 0.001f;
         redHits += raw[pixel].w > 0.001f && raw[pixel].x > raw[pixel].y * 2 + 0.01f;
@@ -412,7 +446,7 @@ namespace xiiSceneReflectionTest
           if (source.m_hOwnerObject == floor->GetOwner()->GetHandle())
           {
             floorHits += raw[pixel].w > 0.001f;
-            floorEnergy += weighted[pixel].x + weighted[pixel].y + weighted[pixel].z;
+            floorEnergy += (raw[pixel].x + raw[pixel].y + raw[pixel].z) * raw[pixel].w;
             if (phase == 2)
               XII_TEST_BOOL(raw[pixel] == xiiVec4::MakeZero());
           }
@@ -474,6 +508,7 @@ namespace xiiSceneReflectionTest
         return;
     }
     const auto output = recording.GetInterfaceBinding(recording.GetPipeline()->FindInterface("ScreenReflections", false))->m_hTexture;
+    const auto retiredLighting = recording.GetInterfaceBinding(recording.GetPipeline()->FindInterface("ReflectionLighting", false))->m_hTexture;
     graph.EndSetup();
     recording.Clear();
     foreign.Clear();
@@ -490,5 +525,15 @@ namespace xiiSceneReflectionTest
       blueHits += pixel.w > 0.001f && pixel.z > pixel.x * 2 + 0.01f;
     }
     XII_TEST_BOOL(blueHits > 8);
+    if (localProbes)
+    {
+      xiiDynamicArray<xiiVec4> reflected;
+      if (!ReadSceneReflectionPixels(*environment.GetDevice(), graph.GetExportedTexture(retiredLighting), reflected))
+        return;
+      xiiUInt32 greenFallback = 0;
+      for (const auto& pixel : reflected)
+        greenFallback += pixel.y > 0.01f;
+      XII_TEST_BOOL(greenFallback > 16);
+    }
   }
 } // namespace xiiSceneReflectionTest

@@ -282,6 +282,7 @@ XII_CREATE_SIMPLE_TEST(MaterialAuthoring, NativeAssetAndGraphHistory)
   XII_TEST_BOOL(!sections.GetSectionContent(xiiGALShaderSections::MaterialConstants, line).IsEmpty());
   XII_TEST_BOOL(source.FindSubString("DECLARE_CONSTANT_BUFFER_AUTO(xiiMaterialConstants)") == nullptr);
   XII_TEST_BOOL(source.FindSubString("VSE_CONSTANTS") == nullptr);
+  XII_TEST_BOOL(sections.GetSectionContent(xiiGALShaderSections::Permutations, line).FindSubString("FORWARD_PROBES") != nullptr);
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Core Graph rejects imported cycles with node and port diagnostics")
   {
     MaterialTopologyTestDocument malformed(xiiStringBuilder(output, "/MalformedMaterialGraph.xiiGraph"));
@@ -357,7 +358,7 @@ XII_CREATE_SIMPLE_TEST(MaterialAuthoring, NativeAssetAndGraphHistory)
       return file.WriteBytes(text.GetStartPointer(), text.GetElementCount());
     };
     XII_SCOPE_EXIT(write(original).IgnoreResult());
-    XII_TEST_RESULT(write("//1234|8\n[PLATFORMS]\nALL\n"));
+    XII_TEST_RESULT(write("//1234|10\n[PLATFORMS]\nALL\n"));
     XII_TEST_BOOL(!assets->IsOutputUpToDate(document->GetDocumentPath(), "VISUAL_SHADER", 1234, type));
     xiiStringBuilder current;
     current.SetFormat("//1234|{}\n[PLATFORMS]\nALL\n", document->GetAssetTypeVersion());
