@@ -18,6 +18,7 @@
 #include <Shaders/Pipeline/Passes/GlobalIllumination/RayTracedIrradianceConstants.h>
 #include <Shaders/Pipeline/Passes/RayTracing/RayTracingMaterialData.h>
 #include <Shaders/Pipeline/Passes/ReSTIR/EmissiveLightData.h>
+#include <Shaders/Pipeline/SkyLightData.h>
 
 xiiRayTracedIrradiancePass::xiiRayTracedIrradiancePass() { m_Irradiance.SetResolution({xiiRenderPipelineTextureResolutionMode::Input}); }
 // clang-format off
@@ -40,6 +41,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRayTracedIrradiancePass, 1, xiiRTTIDefaultAl
     XII_MEMBER_PROPERTY("TriangleAliases", m_TriangleAliases)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("BlockAliases", m_BlockAliases)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("AliasHeader", m_AliasHeader)->AddFlags(xiiPropertyFlags::ReadOnly),
+    XII_MEMBER_PROPERTY("ReflectionProbes", m_Environment)->AddFlags(xiiPropertyFlags::ReadOnly),
+    XII_MEMBER_PROPERTY("EnvironmentLightSamples", m_uiEnvironmentLightSamples)->AddAttributes(new xiiDefaultValueAttribute(0U), new xiiClampValueAttribute(0U, 8U)),
     XII_MEMBER_PROPERTY("EmissiveLightSamples", m_uiEmissiveLightSamples)->AddAttributes(new xiiDefaultValueAttribute(0U), new xiiClampValueAttribute(0U, 8U)),
     XII_MEMBER_PROPERTY("Irradiance", m_Irradiance)->AddFlags(xiiPropertyFlags::ReadOnly),
     XII_MEMBER_PROPERTY("SampleCount", m_uiSampleCount)->AddAttributes(new xiiDefaultValueAttribute(8U), new xiiClampValueAttribute(1U, 32U)),
@@ -59,7 +62,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRayTracedIrradiancePass, 1, xiiRTTIDefaultAl
 xiiResult xiiRayTracedIrradiancePass::Configure(const xiiVariantDictionary& properties)
 {
   XII_SUCCEED_OR_RETURN(xiiRenderPipelinePass::Configure(properties));
-  return m_uiSampleCount > 0 && m_uiSampleCount <= 32 && m_uiMaximumHits > 0 && m_uiMaximumHits <= 4 && m_uiAnalyticLightSamples <= 8 && m_uiEmissiveLightSamples <= 8 && xiiMath::IsFinite(m_fRayLength) && m_fRayLength > 0.001f && m_fRayLength <= 100000 && xiiMath::IsFinite(m_fSurfaceBias) && m_fSurfaceBias >= 0 && m_fSurfaceBias <= 10 ? XII_SUCCESS : XII_FAILURE;
+  return m_uiSampleCount > 0 && m_uiSampleCount <= 32 && m_uiMaximumHits > 0 && m_uiMaximumHits <= 4 && m_uiAnalyticLightSamples <= 8 && m_uiEmissiveLightSamples <= 8 && m_uiEnvironmentLightSamples <= 8 && xiiMath::IsFinite(m_fRayLength) && m_fRayLength > 0.001f && m_fRayLength <= 100000 && xiiMath::IsFinite(m_fSurfaceBias) && m_fSurfaceBias >= 0 && m_fSurfaceBias <= 10 ? XII_SUCCESS : XII_FAILURE;
 }
 xiiResult xiiRayTracedIrradiancePass::Build(xiiRenderPipelinePassContext& context)
 {
@@ -136,19 +139,26 @@ xiiResult xiiRayTracedIrradiancePass::Build(xiiRenderPipelinePassContext& contex
         !Buffer(context, emissiveTables[4], sizeof(xiiGpuEmissiveAliasHeader), 1, xiiGALBindFlags::ShaderResource))
       return context.ReportFailure("Ray irradiance requires matching native emissive header and alias tables.");
   }
-  const xiiUInt32 recursionDepth = m_uiMaximumHits + (m_uiAnalyticLightSamples != 0 ? 1U : 0U);
+  const auto environment         = m_uiEnvironmentLightSamples != 0 ? context.GetInputData(m_Environment).Downcast<const xiiReflectionProbeFrameData>() : xiiSharedPtr<const xiiReflectionProbeFrameData>();
+  const bool environmentSampling = environment && environment->m_Sky;
+  if (environmentSampling && !xiiScreenSpacePassUtils::Uniform(context, environment->m_SkyConstants, sizeof(xiiSkyLightConstants)))
+    return context.ReportFailure("Ray irradiance requires the canonical sky constants paired with its environment source.");
+  const xiiUInt32 recursionDepth = m_uiMaximumHits + (m_uiAnalyticLightSamples != 0 || environmentSampling ? 1U : 0U);
   if (!limits.m_uiShaderGroupHandleSize || !xiiMath::IsPowerOf2(limits.m_uiShaderGroupBaseAlignment) || !xiiMath::IsPowerOf2(limits.m_uiShaderGroupHandleAlignment) || limits.m_uiMaxRecursionDepth < recursionDepth)
     return context.ReportFailure("Ray irradiance exceeds shader record or recursion capabilities.");
   const auto stride = xiiMemoryUtils::AlignSize(xiiUInt64(limits.m_uiShaderGroupHandleSize), xiiUInt64(xiiMath::Max(limits.m_uiShaderGroupBaseAlignment, limits.m_uiShaderGroupHandleAlignment)));
   if (stride > limits.m_uiMaxShaderRecordStride || stride > xiiMath::MaxValue<xiiUInt32>() / 3U)
     return context.ReportFailure("Ray irradiance shader records exceed device limits.");
-  auto& shaderHandle = m_Shader[emissiveSampling ? 1 : 0];
+  auto& shaderHandle = m_Shader[(emissiveSampling ? 1U : 0U) | (environmentSampling ? 2U : 0U)];
   if (!shaderHandle.IsValid())
   {
     xiiHashTable<xiiHashedString, xiiHashedString> variables;
     xiiHashedString                                name, value;
     name.Assign("GI_EMISSIVE_SAMPLING");
     value.Assign(emissiveSampling ? "TRUE" : "FALSE");
+    variables.Insert(name, value);
+    name.Assign("GI_ENVIRONMENT_SAMPLING");
+    value.Assign(environmentSampling ? "TRUE" : "FALSE");
     variables.Insert(name, value);
     shaderHandle = xiiShaderPermutationUtilities::PreloadSinglePermutation(xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/RayTracedIrradiance.xiiShader"), variables, false);
   }
@@ -158,7 +168,7 @@ xiiResult xiiRayTracedIrradiancePass::Build(xiiRenderPipelinePassContext& contex
   xiiGALRayTracingPipelineStateCreationDescription description;
   description.m_pPipelineResourceSignature               = shader->GetPipelineResourceSignature();
   description.m_RayTracingPipeline.m_uiMaxRecursionDepth = recursionDepth;
-  description.m_uiMaximumPayloadSize                     = emissiveSampling ? 36 : 32;
+  description.m_uiMaximumPayloadSize                     = emissiveSampling || environmentSampling ? 36 : 32;
   description.m_uiMaximumAttributeSize                   = 8;
   auto& generation                                       = description.m_GeneralShaders.ExpandAndGetRef();
   generation.m_sName.Assign("IrradianceGeneration");
@@ -265,6 +275,77 @@ xiiResult xiiRayTracedIrradiancePass::Build(xiiRenderPipelinePassContext& contex
         blockCDF = pass.first->m_CDF;
     }
   }
+  xiiRenderGraphTextureHandle environmentSource;
+  xiiRenderGraphBufferHandle  environmentCDF, environmentRowCDF;
+  if (environmentSampling)
+  {
+    const auto& compute = device->GetGraphicsDeviceAdapterProperties().m_ComputeShaderProperties;
+    if (compute.m_uiMaxThreadGroupInvocations < 64 || compute.m_uiMaxThreadGroupSizeX < 64 || compute.m_uiMaxThreadGroupCountX < 32)
+      return context.ReportFailure("Environment power scan exceeds compute group limits.");
+    XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::LinearClampSampler(m_EnvironmentSampler));
+    XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::LoadComputePipeline(m_EnvironmentScanPipeline, "Shaders/Pipeline/Passes/GlobalIllumination/EnvironmentPowerScan.xiiShader"));
+    XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::LoadComputePipeline(m_BlockScanPipeline, "Shaders/Pipeline/Passes/GlobalIllumination/LightBlockScan.xiiShader"));
+    struct EnvironmentScanData
+    {
+      xiiRenderGraphTextureHandle              m_Source;
+      xiiRenderGraphBufferHandle               m_CDF, m_Power;
+      xiiSharedPtr<xiiGALComputePipelineState> m_Pipeline;
+      xiiSharedPtr<xiiGALSampler>              m_Sampler;
+      bool                                     m_bRows;
+    };
+    xiiRenderGraphBufferHandle rowPower;
+    for (xiiUInt32 stage = 0; stage < 2; ++stage)
+    {
+      const auto setupEnvironment = [&](EnvironmentScanData& data, xiiRenderGraphBuilder& builder) {
+        data.m_bRows    = stage != 0;
+        data.m_Pipeline = data.m_bRows ? m_BlockScanPipeline : m_EnvironmentScanPipeline;
+        data.m_Sampler  = m_EnvironmentSampler;
+        if (data.m_bRows)
+        {
+          data.m_Power = builder.ReadBuffer(rowPower, xiiGALResourceStateFlags::ShaderResource);
+          data.m_CDF   = builder.WriteBuffer("GI environment row CDF", xiiLightClusterPassUtils::Description(sizeof(float), 32), xiiGALResourceStateFlags::UnorderedAccess);
+        }
+        else
+        {
+          builder.WaitForFence(environment->m_Sky->m_Ready, 1).AssertSuccess();
+          data.m_Source = builder.ReadTexture(builder.ImportTexture("GI sky source", environment->m_Sky->m_Source, xiiGALResourceStateFlags::Unknown), xiiGALResourceStateFlags::ShaderResource);
+          data.m_CDF    = builder.WriteBuffer("GI environment cell CDF", xiiLightClusterPassUtils::Description(sizeof(float), 2048), xiiGALResourceStateFlags::UnorderedAccess);
+          data.m_Power  = builder.WriteBuffer("GI environment row power", xiiLightClusterPassUtils::Description(sizeof(float), 32), xiiGALResourceStateFlags::UnorderedAccess);
+        }
+      };
+      const auto recordEnvironment = [](const EnvironmentScanData& data, xiiRenderGraphPassContext& execute) {
+        auto& commands = execute.GetCommandList();
+        commands.SetPipelineState(data.m_Pipeline.Borrow());
+        if (data.m_bRows)
+        {
+          commands.ResolveAndSetShaderResourceBufferView("g_BlockPower", execute.GetBuffer(data.m_Power)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+          commands.ResolveAndSetUnorderedAccessBufferView("g_BlockCDF", execute.GetBuffer(data.m_CDF)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
+        }
+        else
+        {
+          commands.ResolveAndSetShaderResourceTextureView("g_GIEnvironment", execute.GetTexture(data.m_Source)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+          commands.ResolveAndSetSampler("g_sGIEnvironmentLinear", data.m_Sampler.Borrow());
+          commands.ResolveAndSetUnorderedAccessBufferView("g_EnvironmentCDF", execute.GetBuffer(data.m_CDF)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
+          commands.ResolveAndSetUnorderedAccessBufferView("g_BlockPower", execute.GetBuffer(data.m_Power)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
+        }
+        if (commands.CommitShaderResources(xiiGALStateTransitionMode::Transition).Failed())
+        {
+          execute.ReportFailure("Could not bind environment proposal scan resources.");
+          return;
+        }
+        commands.DispatchCompute({data.m_bRows ? 1U : 32U, 1, 1});
+      };
+      const auto scan = context.m_Graph.AddPass<EnvironmentScanData>(stage == 0 ? "GI sky cell power scan" : "GI sky row power scan", m_bAsyncCompute ? xiiGALCommandQueueFlags::Compute : xiiGALCommandQueueFlags::Graphics, setupEnvironment, recordEnvironment);
+      if (stage == 0)
+      {
+        environmentSource = scan.first->m_Source;
+        environmentCDF    = scan.first->m_CDF;
+        rowPower          = scan.first->m_Power;
+      }
+      else
+        environmentRowCDF = scan.first->m_CDF;
+    }
+  }
   struct Data
   {
     xiiRenderGraphTextureHandle                 m_Depth, m_Normal, m_Output;
@@ -272,6 +353,9 @@ xiiResult xiiRayTracedIrradiancePass::Build(xiiRenderPipelinePassContext& contex
     xiiRenderGraphBufferHandle                  m_Lights, m_LightCounts, m_LightCandidates, m_IESProfiles;
     xiiRenderGraphBufferHandle                  m_LightCDF, m_BlockCDF;
     xiiRenderGraphBufferHandle                  m_EmissiveTables[5];
+    xiiRenderGraphTextureHandle                 m_EnvironmentSource;
+    xiiRenderGraphBufferHandle                  m_EnvironmentCDF, m_EnvironmentRowCDF, m_SkyConstants;
+    xiiSharedPtr<xiiGALSampler>                 m_EnvironmentSampler;
     xiiRayTracedIrradianceConstants             m_Settings;
     xiiSharedPtr<xiiGALTopLevelAS>              m_Scene;
     xiiSharedPtr<xiiGALRayTracingPipelineState> m_Pipeline;
@@ -280,31 +364,39 @@ xiiResult xiiRayTracedIrradiancePass::Build(xiiRenderPipelinePassContext& contex
     xiiUInt64                                   m_Stride;
   };
   const auto setup = [&](Data& data, xiiRenderGraphBuilder& builder) {
-    data.m_Depth                 = builder.ReadTexture(depth, xiiGALResourceStateFlags::ShaderResource);
-    data.m_Normal                = builder.ReadTexture(normal, xiiGALResourceStateFlags::ShaderResource);
-    data.m_Camera                = builder.ReadBuffer(camera, xiiGALResourceStateFlags::ConstantBuffer);
-    data.m_Dependency            = builder.ReadBuffer(scene.m_Dependency, xiiGALResourceStateFlags::BuildASRead);
-    data.m_Materials             = builder.ReadBuffer(materials, xiiGALResourceStateFlags::ShaderResource);
-    data.m_Geometry              = builder.ReadBuffer(geometry, xiiGALResourceStateFlags::ShaderResource);
-    data.m_Lights                = builder.ReadBuffer(lights, xiiGALResourceStateFlags::ShaderResource);
-    data.m_LightCounts           = builder.ReadBuffer(counts, xiiGALResourceStateFlags::ShaderResource);
-    data.m_LightCandidates       = builder.ReadBuffer(candidates, xiiGALResourceStateFlags::ShaderResource);
-    data.m_IESProfiles           = builder.ReadBuffer(profiles, xiiGALResourceStateFlags::ShaderResource);
-    data.m_LightCDF              = builder.ReadBuffer(lightCDF, xiiGALResourceStateFlags::ShaderResource);
-    data.m_BlockCDF              = builder.ReadBuffer(blockCDF, xiiGALResourceStateFlags::ShaderResource);
+    data.m_Depth           = builder.ReadTexture(depth, xiiGALResourceStateFlags::ShaderResource);
+    data.m_Normal          = builder.ReadTexture(normal, xiiGALResourceStateFlags::ShaderResource);
+    data.m_Camera          = builder.ReadBuffer(camera, xiiGALResourceStateFlags::ConstantBuffer);
+    data.m_Dependency      = builder.ReadBuffer(scene.m_Dependency, xiiGALResourceStateFlags::BuildASRead);
+    data.m_Materials       = builder.ReadBuffer(materials, xiiGALResourceStateFlags::ShaderResource);
+    data.m_Geometry        = builder.ReadBuffer(geometry, xiiGALResourceStateFlags::ShaderResource);
+    data.m_Lights          = builder.ReadBuffer(lights, xiiGALResourceStateFlags::ShaderResource);
+    data.m_LightCounts     = builder.ReadBuffer(counts, xiiGALResourceStateFlags::ShaderResource);
+    data.m_LightCandidates = builder.ReadBuffer(candidates, xiiGALResourceStateFlags::ShaderResource);
+    data.m_IESProfiles     = builder.ReadBuffer(profiles, xiiGALResourceStateFlags::ShaderResource);
+    data.m_LightCDF        = builder.ReadBuffer(lightCDF, xiiGALResourceStateFlags::ShaderResource);
+    data.m_BlockCDF        = builder.ReadBuffer(blockCDF, xiiGALResourceStateFlags::ShaderResource);
     if (emissiveSampling)
       for (xiiUInt32 index = 0; index < 5; ++index)
         data.m_EmissiveTables[index] = builder.ReadBuffer(emissiveTables[index], xiiGALResourceStateFlags::ShaderResource);
-    data.m_Scene                 = scene.m_pStructure;
-    data.m_Output                = xiiCompositionPassUtils::Output(builder, size, xiiGALResourceFormat::RGBA32Float);
-    data.m_Constants             = xiiRenderPassUtils::Constants(builder, "Ray irradiance settings", sizeof(data.m_Settings));
-    data.m_Settings.RayDistances = xiiVec4(m_fRayLength, m_fSurfaceBias, powerWeighted ? 1.0f : 0.0f, 0);
-    data.m_Settings.EmissiveSamples = xiiVec4U32(m_uiEmissiveLightSamples, xiiUInt32(context.m_Graph.GetFrameIndex()), 0, 0);
+    data.m_Scene     = scene.m_pStructure;
+    data.m_Output    = xiiCompositionPassUtils::Output(builder, size, xiiGALResourceFormat::RGBA32Float);
+    data.m_Constants = xiiRenderPassUtils::Constants(builder, "Ray irradiance settings", sizeof(data.m_Settings));
+    if (environmentSampling)
+    {
+      data.m_EnvironmentSource  = builder.ReadTexture(environmentSource, xiiGALResourceStateFlags::ShaderResource);
+      data.m_EnvironmentCDF     = builder.ReadBuffer(environmentCDF, xiiGALResourceStateFlags::ShaderResource);
+      data.m_EnvironmentRowCDF  = builder.ReadBuffer(environmentRowCDF, xiiGALResourceStateFlags::ShaderResource);
+      data.m_SkyConstants       = builder.ReadBuffer(environment->m_SkyConstants, xiiGALResourceStateFlags::ConstantBuffer);
+      data.m_EnvironmentSampler = m_EnvironmentSampler;
+    }
+    data.m_Settings.RayDistances    = xiiVec4(m_fRayLength, m_fSurfaceBias, powerWeighted ? 1.0f : 0.0f, 0);
+    data.m_Settings.EmissiveSamples = xiiVec4U32(m_uiEmissiveLightSamples, xiiUInt32(context.m_Graph.GetFrameIndex()), environmentSampling ? m_uiEnvironmentLightSamples : 0U, 0);
     data.m_Settings.PathSamples     = xiiVec4U32(m_uiSampleCount, m_uiMaximumHits, m_uiSampleOffset + (m_bAnimateSamples ? xiiUInt32(context.m_Graph.GetFrameIndex()) * m_uiSampleCount : 0U), m_uiAnalyticLightSamples);
-    data.m_Size                  = size;
-    data.m_Stride                = stride;
-    data.m_Pipeline              = pipeline;
-    data.m_Sampler               = m_Sampler;
+    data.m_Size                     = size;
+    data.m_Stride                   = stride;
+    data.m_Pipeline                 = pipeline;
+    data.m_Sampler                  = m_Sampler;
     xiiGALBufferCreationDescription records;
     records.m_uiSize    = 3 * stride;
     records.m_Mode      = xiiGALBufferMode::Raw;
@@ -339,6 +431,16 @@ xiiResult xiiRayTracedIrradiancePass::Build(xiiRenderPipelinePassContext& contex
       const xiiTempHashedString names[] = {"g_EmissiveTriangles", "g_EmissiveHeader", "g_EmissiveTriangleAliases", "g_EmissiveBlockAliases", "g_EmissiveAliasHeader"};
       for (xiiUInt32 index = 0; index < 5; ++index)
         commands.ResolveAndSetShaderResourceBufferView(names[index], execute.GetBuffer(data.m_EmissiveTables[index])->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::RayGeneration | xiiGALShaderType::RayClosestHit);
+    }
+    if (data.m_SkyConstants.IsValid())
+    {
+      const auto environmentStages = xiiGALShaderType::RayClosestHit | xiiGALShaderType::RayMiss;
+      commands.ResolveAndSetConstantBuffer("xiiRayTracedIrradianceConstants", execute.GetBuffer(data.m_Constants), xiiGALShaderType::RayMiss);
+      commands.ResolveAndSetConstantBuffer("xiiSkyLightConstants", execute.GetBuffer(data.m_SkyConstants), environmentStages);
+      commands.ResolveAndSetShaderResourceTextureView("g_GIEnvironment", execute.GetTexture(data.m_EnvironmentSource)->GetDefaultView(xiiGALTextureViewType::ShaderResource), environmentStages);
+      commands.ResolveAndSetShaderResourceBufferView("g_EnvironmentCDF", execute.GetBuffer(data.m_EnvironmentCDF)->GetDefaultView(xiiGALBufferViewType::ShaderResource), environmentStages);
+      commands.ResolveAndSetShaderResourceBufferView("g_EnvironmentRowCDF", execute.GetBuffer(data.m_EnvironmentRowCDF)->GetDefaultView(xiiGALBufferViewType::ShaderResource), environmentStages);
+      commands.ResolveAndSetSampler("g_sGIEnvironmentLinear", data.m_EnvironmentSampler.Borrow());
     }
     commands.ResolveAndSetSampler("g_sAnisotropicWrap", data.m_Sampler.Borrow());
     xiiGALBindlessResourceTable::BindBufferSRVs(commands, "g_RayTracingBuffers", stages);

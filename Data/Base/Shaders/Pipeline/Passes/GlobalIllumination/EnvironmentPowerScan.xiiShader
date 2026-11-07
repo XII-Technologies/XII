@@ -1,0 +1,41 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
+[PLATFORMS]
+ALL
+[COMPUTE_SHADER]
+TextureCube<float4> g_GIEnvironment;
+SamplerState g_sGIEnvironmentLinear;
+RWStructuredBuffer<float> g_EnvironmentCDF;
+RWStructuredBuffer<float> g_BlockPower;
+groupshared float Prefix[64];
+
+// Equal-area cells: uniform azimuth and uniform height on the unit sphere.
+// Rotation and intensity leave the distribution unchanged. Saturation preserves
+// luminance, so the proposal uses the unmodified cubemap.
+[numthreads(64,1,1)]
+void main(uint3 group : SV_GroupID, uint lane : SV_GroupIndex)
+{
+  const float z = 1 - 2 * (float(group.x) + 0.5f) / 32.0f;
+  const float phi = 6.28318530718f * (float(lane) + 0.5f) / 64.0f;
+  const float radius = sqrt(max(1 - z*z, 0));
+  float3 radiance = g_GIEnvironment.SampleLevel(g_sGIEnvironmentLinear, float3(radius*cos(phi), z, radius*sin(phi)), 0).rgb;
+  radiance = all(isfinite(radiance)) ? clamp(radiance, 0, 1e20f) : 0;
+  Prefix[lane] = dot(radiance, float3(0.2126f,0.7152f,0.0722f));
+  GroupMemoryBarrierWithGroupSync();
+  [unroll] for(uint offset=1; offset<64; offset*=2)
+  {
+    const float previous = lane>=offset ? Prefix[lane-offset] : 0;
+    GroupMemoryBarrierWithGroupSync();
+    Prefix[lane] += previous;
+    GroupMemoryBarrierWithGroupSync();
+  }
+  [unroll] for(uint offset=1; offset<64; offset*=2)
+  {
+    const float previous = lane>=offset ? Prefix[lane-offset] : 0;
+    GroupMemoryBarrierWithGroupSync();
+    Prefix[lane] = max(Prefix[lane], previous);
+    GroupMemoryBarrierWithGroupSync();
+  }
+  g_EnvironmentCDF[group.x*64+lane] = Prefix[lane];
+  if(lane==63) g_BlockPower[group.x] = Prefix[63];
+}
