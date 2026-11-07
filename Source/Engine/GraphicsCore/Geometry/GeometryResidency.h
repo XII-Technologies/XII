@@ -47,8 +47,8 @@ struct XII_GRAPHICSCORE_DLL xiiGeometryLodSource
 
   xiiMeshBufferResourceHandle m_hMeshBuffer;
   float                       m_fMinimumScreenCoverage = 0.0f;
-  /// First meshlet in the source buffer that belongs to this LOD. This allows several LODs
-  /// authored in one xiiMeshBufferResource to share their immutable vertex/remap buffers.
+  /// First source meshlet in this LOD. LODs share canonical vertex and index buffers.
+  /// Residency uploads and binds topology for this meshlet range.
   xiiUInt32 m_uiFirstMeshlet = 0U;
   /// Number of source meshlets in this LOD. Zero consumes every meshlet after m_uiFirstMeshlet.
   xiiUInt32 m_uiMeshletCount = 0U;
@@ -114,7 +114,7 @@ struct XII_GRAPHICSCORE_DLL xiiGeometryResidencyStats
   xiiUInt64 m_uiBudgetBytes           = 0U; ///< Soft meshlet metadata occupancy limit.
   xiiUInt64 m_uiUploadedBytes         = 0U;
   xiiUInt64 m_uiAdmittedBytes         = 0U; ///< Metadata and topology transfer bytes charged this frame.
-  xiiUInt64 m_uiResidentTopologyBytes = 0U; ///< Unique live remap and primitive buffer payload bytes, including word padding.
+  xiiUInt64 m_uiResidentTopologyBytes = 0U; ///< Unique live LOD topology payload bytes, including word padding.
   xiiUInt64 m_uiTopologyUploadBytes   = 0U; ///< Topology bytes submitted by admissions this frame.
   xiiUInt64 m_uiRetiredTopologyBytes  = 0U; ///< Payload bytes passed to deferred retirement this frame.
   xiiUInt64 m_uiReclaimedArenaBytes   = 0U; ///< Arena bytes made reusable by evictions this frame.
@@ -245,6 +245,23 @@ private:
     bool                                                    m_bCanceled = false;
   };
 
+  struct TopologyRange
+  {
+    xiiUInt32 m_uiRemapStart     = 0U;
+    xiiUInt32 m_uiRemapCount     = 0U;
+    xiiUInt32 m_uiPrimitiveStart = 0U;
+    xiiUInt32 m_uiPrimitiveCount = 0U;
+
+    [[nodiscard]] xiiUInt64 GetUploadBytes() const;
+    [[nodiscard]] xiiResult SetFromMeshlets(const xiiMeshBufferResource& mesh, xiiArrayPtr<const xiiMeshlet> meshlets);
+  };
+
+  struct LodBinding
+  {
+    const xiiGALBuffer* m_pVertexBuffer = nullptr;
+    xiiUInt64           m_uiTopologyKey = 0U;
+  };
+
   struct Slot
   {
     xiiGeometryDescription             m_Description;
@@ -267,8 +284,8 @@ private:
     xiiUInt64 m_uiDirtyFrameMask                                        = 0U;
     xiiUInt32 m_uiMeshletArenaOffset[xiiGpuGeometryRecord::s_uiMaxLods] = {};
     xiiUInt32 m_uiMeshletArenaCount[xiiGpuGeometryRecord::s_uiMaxLods]  = {};
-    /// Each admitted LOD leases the source binding identified by its revision's vertex buffer.
-    const xiiGALBuffer* m_pBoundSources[xiiGpuGeometryRecord::s_uiMaxLods] = {};
+    /// Each admitted LOD leases its revision's canonical buffers and its topology range.
+    LodBinding m_BoundSources[xiiGpuGeometryRecord::s_uiMaxLods];
   };
 
   struct Upload
@@ -303,7 +320,7 @@ private:
     Failed
   };
   static AdmissionResult BuildResidentRecord(Slot& slot, xiiUInt64 uiFrameIndex, xiiUInt64 uiCompletedFrame);
-  static bool            RegisterBindlessResources(Slot& slot, xiiGpuGeometryRecord& record, xiiUInt32 uiLod, const xiiMeshBufferResource& mesh, const xiiSharedPtr<xiiGALBuffer>& pVertexBuffer);
+  static bool            RegisterBindlessResources(Slot& slot, xiiGpuGeometryRecord& record, xiiUInt32 uiLod, const xiiMeshBufferResource& mesh, const xiiSharedPtr<xiiGALBuffer>& pVertexBuffer, xiiUInt64 uiTopologyKey, const TopologyRange& range);
   static void            ReleaseSourceBinding(Slot& slot, xiiUInt32 uiLod, xiiUInt64 uiLastUseFrame);
   static void            ReleaseBindlessResources(Slot& slot, xiiUInt64 uiLastUseFrame);
   static void            EnforceBudget(xiiUInt64 uiCompletedFrame, xiiUInt64 uiRequiredBytes = 0U);
