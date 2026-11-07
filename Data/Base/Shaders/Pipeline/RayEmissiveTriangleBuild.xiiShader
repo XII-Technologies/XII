@@ -1,0 +1,67 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
+[PLATFORMS]
+ALL
+
+[COMPUTE_SHADER]
+#include <Shaders/Pipeline/Passes/ReSTIR/EmissiveLightBuildConstants.h>
+#include <Shaders/Pipeline/Passes/ReSTIR/EmissiveLightData.h>
+#include <Shaders/Pipeline/Passes/RayTracing/RayTracingMaterialData.h>
+
+StructuredBuffer<xiiRayTracingGeometryData> g_RayTracingGeometry;
+StructuredBuffer<xiiRayTracingMaterialData> g_RayTracingMaterials;
+ByteAddressBuffer g_Buffers[];
+RWStructuredBuffer<xiiGpuEmissiveTriangle> g_EmissiveTriangles;
+
+float3 WorldPosition(xiiRayTracingGeometryData geometry, float3 position)
+{
+  const float4 p = float4(position, 1);
+  return float3(dot(geometry.ObjectToWorld0, p), dot(geometry.ObjectToWorld1, p), dot(geometry.ObjectToWorld2, p));
+}
+
+[numthreads(128, 1, 1)]
+void main(uint3 group : SV_GroupID, uint lane : SV_GroupIndex)
+{
+  const uint instanceIndex = group.y + group.z * DispatchDimensions.x;
+  if (instanceIndex >= InstanceCount) return;
+  const xiiRayTracingGeometryData geometry = g_RayTracingGeometry[instanceIndex];
+  const uint base = geometry.PrimitiveRange.y;
+  if (base >= MaxTriangleCount) return;
+  const xiiRayTracingMaterialData material = g_RayTracingMaterials[instanceIndex];
+  const uint count = min(geometry.PrimitiveRange.x, MaxTriangleCount - base);
+  const uint vertexBuffer = NonUniformResourceIndex(geometry.BufferIndices.x);
+  [loop] for (uint primitive = lane; primitive < count; primitive += 128u)
+  {
+    xiiGpuEmissiveTriangle emissiveTriangle = (xiiGpuEmissiveTriangle)0;
+    emissiveTriangle.Metadata = uint4(material.Metadata.y, instanceIndex, primitive, material.Metadata.x);
+    uint3 indices = (geometry.VertexAttributes.w + primitive) * 3u + uint3(0, 1, 2);
+    if (geometry.BufferIndices.z != 0)
+    {
+      const uint indexBuffer = NonUniformResourceIndex(geometry.BufferIndices.y);
+      indices.x = xiiLoadRayTracingIndex(g_Buffers[indexBuffer], indices.x, geometry.BufferIndices.z);
+      indices.y = xiiLoadRayTracingIndex(g_Buffers[indexBuffer], indices.y, geometry.BufferIndices.z);
+      indices.z = xiiLoadRayTracingIndex(g_Buffers[indexBuffer], indices.z, geometry.BufferIndices.z);
+    }
+    const float3 p0 = WorldPosition(geometry, xiiLoadRayTracingPosition(g_Buffers[vertexBuffer], geometry, indices.x));
+    const float3 p1 = WorldPosition(geometry, xiiLoadRayTracingPosition(g_Buffers[vertexBuffer], geometry, indices.y));
+    const float3 p2 = WorldPosition(geometry, xiiLoadRayTracingPosition(g_Buffers[vertexBuffer], geometry, indices.z));
+    const float3 areaVector = cross(p1-p0, p2-p0);
+    const float doubleArea = length(areaVector), area = 0.5f * doubleArea;
+    // The material factor is a proposal only. Texture radiance is evaluated by
+    // the actual hit shader, so a dark centroid cannot remove bright texels.
+    const float3 emission = max(material.EmissiveColorAndRoughness.rgb, 0);
+    const float luminance = dot(emission, float3(0.2126f, 0.7152f, 0.0722f));
+    const float weight = area * luminance;
+    if (all(isfinite(p0)) && all(isfinite(p1)) && all(isfinite(p2)) &&
+        isfinite(area) && area > 1e-10f && isfinite(weight) && weight > 0)
+    {
+      emissiveTriangle.Position0AndArea = float4(p0, area);
+      emissiveTriangle.Position1AndPowerWeight = float4(p1, weight);
+      emissiveTriangle.Position2AndInvArea = float4(p2, rcp(area));
+      emissiveTriangle.NormalAndTwoSided = float4(areaVector / doubleArea, (material.Metadata.w & 1024u) != 0 ? 1 : 0);
+      emissiveTriangle.RadianceAndLuminance = float4(emission, luminance);
+    }
+    // Deterministic slots include zero-area records with zero proposal power.
+    g_EmissiveTriangles[base + primitive] = emissiveTriangle;
+  }
+}

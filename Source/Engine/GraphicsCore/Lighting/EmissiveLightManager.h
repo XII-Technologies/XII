@@ -65,9 +65,18 @@ public:
     xiiGpuVisibilityOutputs                    m_Visibility;
     xiiGeometryResidencyManager::UploadHandles m_Geometry;
     xiiMaterialGpuStorage::UploadHandles       m_Materials;
-    xiiUInt32                                  m_uiInstanceCount  = 0U;
-    xiiUInt32                                  m_uiVertexStride   = 0U;
-    xiiUInt32                                  m_uiTexCoordOffset = 0U;
+    /// Optional canonical ray-scene input. Supply all three versions from the same BuildHandles,
+    /// its active instance and emissive primitive counts, and no legacy meshlet inputs. Dispatch
+    /// depends on the TLAS build token to retain and synchronize bindless deformed vertex buffers.
+    /// Native slots are PrimitiveRange.y + BLAS-local primitive; degenerate slots have zero power.
+    /// Native RadianceAndLuminance is the untextured material factor, used only as a proposal.
+    /// Native Metadata is (stable object ID, TLAS instance index, BLAS-local primitive, material slot).
+    /// Capacity overflow is reported in the header; complete-domain consumers must fall back.
+    xiiRenderGraphBufferHandle m_hRayGeometry, m_hRayMaterials, m_hRaySceneDependency;
+    xiiUInt32                  m_uiRayEmissivePrimitiveCount = 0U;
+    xiiUInt32                  m_uiInstanceCount             = 0U;
+    xiiUInt32                  m_uiVertexStride              = 0U;
+    xiiUInt32                  m_uiTexCoordOffset            = 0U;
   };
 
   struct BuildOutputs

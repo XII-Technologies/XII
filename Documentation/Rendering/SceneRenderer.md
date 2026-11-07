@@ -1750,6 +1750,59 @@ Power is a view-independent heuristic within the view-eligible list. Distance,
 visibility and material-dependent proposals, emissive/environment importance
 sampling, reservoirs, denoising and DDGI remain outstanding.
 
+## Ray-scene emissive proposal tables
+
+`xiiRayTracingScenePass.BuildEmissiveLights` optionally publishes
+`EmissiveTriangles`, `EmissiveHeader`, `TriangleAliases`, `BlockAliases` and
+`AliasHeader`. It defaults to false. These are occurrence-local graph versions
+built through `xiiEmissiveLightManager`; they are not a second scene registry or
+a mutable global current-frame buffer. Existing authored diffuse transport does
+not yet consume these tables.
+
+The canonical ray geometry record now carries three object-to-world rows and a
+primitive range. Its stride increases from 48 to 112 bytes, adding 64 bytes per
+allocated instance in each rotating hit-data frame even when extraction is off.
+All shader and CPU consumers use the shared declaration. Material records remain
+160 bytes. Emissive ranges are assigned from the current canonical material
+factors, and map BLAS-local primitives directly to deterministic triangle slots.
+
+Extraction reads the same indexed section, transform and bindless vertex buffer
+used by the TLAS. This includes cached skinning/morph output rather than a
+separately selected meshlet LOD or undeformed source mesh. Its graph dependency
+keeps deformation and BLAS work live before bindless reads. A bounded 128-lane
+group traverses each instance's eligible primitives. The real device dispatch Y
+width is passed to both native and meshlet extractors when instances span Z.
+
+Triangle power is world-space area times Rec. 709 luminance of the untextured
+material emission factor. Textures and alpha are deliberately excluded from this
+proposal heuristic: evaluating one centroid cannot prove that the whole triangle
+is dark. A lighting consumer must evaluate actual emission and cutouts through
+hit shading. Native provenance records identify the stable object, current TLAS
+instance, BLAS-local primitive and material slot; these must not be interpreted
+as legacy meshlet revision tokens.
+
+The native allocation is bounded by the lesser of the emissive primitive count
+and configured capacity, with one storage slot for an empty domain. Degenerate
+or nonfinite triangles keep deterministic slots with zero power. The header
+reports the complete candidate count, stored count and capacity overflow. The
+existing hierarchical alias builder creates per-256-triangle and global tables.
+A consumer requiring a complete distribution must reject overflow or invalid
+power and retain its unsampled path estimator. Graph pass data owns its compute
+pipelines and sampler through recording; failed resource commits fail execution.
+
+Hardware GPU readback checks 288 indexed primitives with a nonzero section
+start, a partial second alias block, nonuniform scale, a five-triangle capacity,
+emission removal, independent occurrences, world replacement and owner retirement
+before recording. It reconstructs alias probabilities and compares them to
+triangle power. The deformation regression additionally compares proposal vertex
+heights and areas with traced skinned/morphed surfaces through negative morph
+weights, mirrored skinning, bind-pose restoration and resource reload.
+
+These tables provide the proposal domain for emissive next-event sampling. They
+do not yet change Scene/Editor GI output, combine light and BSDF estimators, or
+establish representative extraction performance. Windows Vulkan Debug is the
+local GPU acceptance platform; other backend GPU acceptance remains outstanding.
+
 ## Ballistic billboard particles
 
 SceneParticles is an independently authored three-operation workload:

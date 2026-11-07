@@ -108,7 +108,7 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID, uint3 groupId : SV_Group
   if (headerCount == 0u)
     return;
 
-  const uint instanceIndex = groupId.y + groupId.z * 65535u;
+  const uint instanceIndex = groupId.y + groupId.z * DispatchDimensions.x;
   if (instanceIndex >= min(InstanceCount, sceneCount))
     return;
 

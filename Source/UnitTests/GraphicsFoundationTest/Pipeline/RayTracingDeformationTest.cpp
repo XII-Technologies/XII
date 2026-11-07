@@ -7,6 +7,7 @@
 #include <Core/World/World.h>
 #include <Foundation/Memory/FrameAllocator.h>
 #include <Foundation/Types/ScopeExit.h>
+#include <GraphicsCore/Material/MaterialResource.h>
 #include <GraphicsCore/Meshes/MeshComponent.h>
 #include <GraphicsCore/Meshes/MeshResource.h>
 #include <GraphicsCore/Pipeline/MsgExtractRenderData.h>
@@ -23,8 +24,10 @@
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 #include <GraphicsFoundation/Resources/BindlessResourceTable.h>
+#include <GraphicsFoundationTest/TestingEnvironment/BufferReadback.h>
 #include <GraphicsFoundationTest/TestingEnvironment/RenderGraphTestContext.h>
 #include <Shaders/Pipeline/Passes/RayTracing/RayTracingMaterialData.h>
+#include <Shaders/Pipeline/Passes/ReSTIR/EmissiveLightData.h>
 #include <bit>
 
 class xiiRaySceneBindingRelay : public xiiRenderPipelinePass
@@ -160,6 +163,9 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, RayTracingDeformation)
   XII_LOCK(world.GetWriteMarker());
   world.SetWorldSimulationEnabled(false);
   auto               module = world.GetOrCreateModule<xiiRenderWorldModule>();
+  xiiMaterialResourceDescriptor emissiveMaterial;
+  emissiveMaterial.m_EmissiveColor   = xiiColor(2, 1, 0.5f);
+  const auto         emitterMaterial = xiiResourceManager::CreateResource<xiiMaterialResource>("Deformed ray emitter", std::move(emissiveMaterial));
   xiiComponentHandle components[2];
   for (xiiUInt32 i = 0; i < 2; ++i)
   {
@@ -170,6 +176,7 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, RayTracingDeformation)
     xiiSkinnedMeshComponent* component = nullptr;
     components[i]                      = xiiSkinnedMeshComponent::CreateComponent(object, component);
     component->SetMesh(mesh);
+    component->SetMaterialOverride(0, emitterMaterial);
     const auto pose = xiiMat4::MakeTranslation(xiiVec3(i == 0 ? -1.0f : 1.0f, 0, 0));
     XII_TEST_RESULT(component->SetSkinningMatrices(xiiMakeArrayPtr(&pose, 1)));
     const float weight = i == 0 ? 0.25f : 0.75f;
@@ -209,6 +216,7 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, RayTracingDeformation)
   xiiRenderPipelineResourceDescriptor rayLeaf;
   xiiVariantDictionary                rayProperties;
   rayProperties.Insert("UseViewSelection", false);
+  rayProperties.Insert("BuildEmissiveLights", true);
   rayProperties.Insert("RequireHardwareRayTracing", true);
   rayLeaf.AddPass("Ray scene", xiiGetStaticRTTI<xiiRayTracingScenePass>(), rayProperties);
   rayLeaf.AddPass("Typed scene consumer", xiiGetStaticRTTI<xiiRaySceneBindingRelay>());
@@ -337,6 +345,18 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, RayTracingDeformation)
       }
       return result;
     };
+    xiiRenderGraphBufferHandle emissiveTriangles[2];
+    for (xiiUInt32 occurrence = 0; occurrence < 2; ++occurrence)
+    {
+      const auto triangle = rayScenes.GetOutputBinding(occurrence * 2, "EmissiveTriangles")->m_hBuffer;
+      const auto alias    = rayScenes.GetOutputBinding(occurrence * 2, "AliasHeader")->m_hBuffer;
+      const auto setup    = [&](auto& tables, xiiRenderGraphBuilder& builder) {
+        tables = builder.ReadBuffer(triangle, xiiGALResourceStateFlags::ShaderResource);
+        builder.ExportBuffer(tables, xiiGALResourceStateFlags::ShaderResource);
+        builder.ExportBuffer(builder.ReadBuffer(alias, xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource);
+      };
+      emissiveTriangles[occurrence] = *graph.AddPass<xiiRenderGraphBufferHandle>("Export deformed emissive triangles", xiiGALCommandQueueFlags::Graphics, setup, [](const auto&, xiiRenderGraphPassContext&) {}, true).first;
+    }
     const auto first  = inspect(0, expectedDispatches);
     const auto second = inspect(2, 0);
     if (!XII_TEST_BOOL(first.m_pTopLevelAS && second.m_pTopLevelAS))
@@ -424,6 +444,23 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, RayTracingDeformation)
       return;
     }
     environment.GetDevice()->WaitIdle();
+    for (xiiUInt32 occurrence = 0; occurrence < 2; ++occurrence)
+    {
+      for (xiiUInt32 index = 0; index < 2; ++index)
+      {
+        xiiGpuEmissiveTriangle triangle;
+        if (!xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), graph.GetExportedBuffer(emissiveTriangles[occurrence]).Borrow(), index * sizeof(triangle), triangle))
+          return;
+        const xiiUInt32 owner = triangle.Metadata.x == ids[0] ? 0 : 1;
+        XII_TEST_INT(triangle.Metadata.x, ids[owner]);
+        XII_TEST_INT(triangle.Metadata.z, 0);
+        const float expectedZ = 10 - (owner == 0 ? distance0 : distance1);
+        XII_TEST_FLOAT(triangle.Position0AndArea.z, expectedZ, 0.001f);
+        XII_TEST_FLOAT(triangle.Position1AndPowerWeight.z, expectedZ, 0.001f);
+        XII_TEST_FLOAT(triangle.Position2AndInvArea.z, expectedZ, 0.001f);
+        XII_TEST_FLOAT(triangle.Position0AndArea.w, handedness[owner] < 0 ? 0.25f : 0.125f, 0.00001f);
+      }
+    }
     for (xiiUInt32 i = 0; i < 2; ++i)
       capture.m_Buffers[i] = graph.GetExportedBuffer(outputs[i]);
     check(capture);
@@ -488,6 +525,7 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, RayTracingDeformation)
     xiiSkinnedMeshComponent* replacement = nullptr;
     components[0]                        = xiiSkinnedMeshComponent::CreateComponent(object, replacement);
     replacement->SetMesh(mesh);
+    replacement->SetMaterialOverride(0, emitterMaterial);
     world.Update();
     render(0, 10, 8.5f, 1);
     XII_TEST_BOOL(ids[0] != retiredId);
