@@ -19,7 +19,7 @@ struct IrradiancePayload
 #if GI_EMISSIVE_SAMPLING || GI_ENVIRONMENT_SAMPLING
   float PreviousPDF;
 #endif
-#if GI_PATH_RESERVOIRS
+#if GI_PATH_RESERVOIRS != GI_PATH_RESERVOIRS_NONE
   float3 Endpoint, EndpointNormal;
 #endif
 };
@@ -48,116 +48,166 @@ float3 IrradianceDirection(float3 normal, float2 xi)
 [RAY_GENERATION_SHADER]
 #include <Shaders/Common/StorageImageFormat.h>
 RaytracingAccelerationStructure g_Scene;
-#if GI_EMISSIVE_SAMPLING
+#if GI_EMISSIVE_SAMPLING && GI_PATH_RESERVOIRS != GI_PATH_RESERVOIRS_SEED
 #include <Shaders/Pipeline/Passes/GlobalIllumination/EmissiveIrradianceSampling.h>
 #endif
-#if GI_PATH_RESERVOIRS
+#if GI_PATH_RESERVOIRS != GI_PATH_RESERVOIRS_NONE
 #include <Shaders/Pipeline/Passes/GlobalIllumination/GIPathReservoirSampling.h>
 #endif
 Texture2D<float> g_Depth;
 Texture2D<float2> g_Normal;
+#if GI_PATH_RESERVOIRS != GI_PATH_RESERVOIRS_SEED
 XII_STORAGE_IMAGE_FORMAT("rgba32f") RWTexture2D<float4> g_Irradiance;
+#endif
+
+struct IrradianceReceiver
+{
+  float3 Position;
+  float3 Normal;
+  float2 EncodedNormal;
+  float ConeWidth;
+  float ConeSpread;
+};
+
+bool LoadIrradianceReceiver(uint2 pixel, uint2 extent, out IrradianceReceiver receiver)
+{
+  receiver = (IrradianceReceiver)0;
+  const float depth = g_Depth.Load(int3(pixel, 0));
+  const float2 uv = (float2(pixel) + 0.5f) / float2(extent);
+  if (!isfinite(depth) || depth <= 0 || depth > 1 || !xiiScreenWorldPosition(uv, depth, receiver.Position))
+    return false;
+  receiver.EncodedNormal = g_Normal.Load(int3(pixel, 0));
+  receiver.Normal = xiiScreenNormal(receiver.EncodedNormal);
+  if (!all(isfinite(receiver.Normal)) || dot(receiver.Normal, receiver.Normal) < 0.5f)
+    return false;
+  const float2 adjacentUV = uv + float2(pixel.x + 1 < extent.x ? 1.0f : -1.0f, 0) / float2(extent);
+  float3 adjacent;
+  receiver.ConeWidth = xiiScreenWorldPosition(adjacentUV, depth, adjacent) ? length(adjacent - receiver.Position) : 0;
+  receiver.ConeSpread = receiver.ConeWidth / max(length(receiver.Position - SurfaceCameraPositionNear.xyz), 1e-3f);
+  return true;
+}
+
+IrradiancePayload MakeFreshPath(uint2 pixel, uint2 extent, IrradianceReceiver receiver, uint sampleIndex, out RayDesc ray)
+{
+  IrradiancePayload payload = (IrradiancePayload)0;
+  payload.Random = IrradianceHash(pixel.x + pixel.y * extent.x + (PathSamples.z + sampleIndex + 1) * 0x9e3779b9u);
+  payload.ConeWidth = receiver.ConeWidth;
+  payload.ConeSpread = receiver.ConeSpread;
+  const float first = IrradianceRandom(payload.Random);
+  const float2 xi = float2(first, IrradianceRandom(payload.Random));
+  ray.Origin = receiver.Position + receiver.Normal * RayDistances.y;
+  ray.Direction = IrradianceDirection(receiver.Normal, xi);
+  ray.TMin = 0.001f;
+  ray.TMax = RayDistances.x;
+#if GI_EMISSIVE_SAMPLING || GI_ENVIRONMENT_SAMPLING
+  payload.PreviousPDF = max(dot(receiver.Normal, ray.Direction), 0) / 3.14159265359f;
+#endif
+  return payload;
+}
+
 [shader("raygeneration")]
 void main()
 {
-  const uint2 pixel = DispatchRaysIndex().xy, extent = DispatchRaysDimensions().xy;
-#if GI_PATH_RESERVOIRS
-  const bool writeReservoir = IsReservoirWriter(pixel, extent);
-  if (writeReservoir)
-    StorePathReservoir(pixel, 0, 0, (PathSelection)0);
-#endif
-  const float depth = g_Depth.Load(int3(pixel,0));
-  float3 position;
-  const float2 uv = (float2(pixel)+0.5f)/float2(extent);
-  if (!isfinite(depth) || depth <= 0 || depth > 1 || !xiiScreenWorldPosition(uv,depth,position))
-  { g_Irradiance[pixel] = 0; return; }
-  const float2 encodedNormal = g_Normal.Load(int3(pixel, 0));
-  const float3 normal = xiiScreenNormal(encodedNormal);
-  if (!all(isfinite(normal)) || dot(normal,normal)<0.5f)
-  { g_Irradiance[pixel] = 0; return; }
-  const float2 neighbourUV = uv + float2(pixel.x+1<extent.x ? 1.0f : -1.0f,0)/float2(extent);
-  float3 neighbour;
-  const float footprint = xiiScreenWorldPosition(neighbourUV,depth,neighbour) ? length(neighbour-position) : 0;
-  float3 radiance = 0;
-  const float coneSpread = footprint / max(length(position - SurfaceCameraPositionNear.xyz), 1e-3f);
-#if GI_PATH_RESERVOIRS
-  const uint4 receiverKeys = ReceiverKeys(pixel, encodedNormal);
-  uint reservoirRandom = IrradianceHash((pixel.x + pixel.y * extent.x) ^ (EmissiveSamples.y * 0x85ebca6bu + 0xc2b2ae35u));
+#if GI_PATH_RESERVOIRS == GI_PATH_RESERVOIRS_SEED
+  const uint2 tile = DispatchRaysIndex().xy;
+  const uint2 extent = ReservoirViewport.xy;
+  const uint2 pixel = ReservoirWriter(tile, extent);
+  IrradianceReceiver receiver;
   PathSelection selection = (PathSelection)0;
-  PathEstimate estimate = (PathEstimate)0;
-#endif
-  [loop] for (uint sampleIndex=0; sampleIndex<PathSamples.x; ++sampleIndex)
+  float3 fresh = 0;
+  uint4 keys = 0;
+  if (LoadIrradianceReceiver(pixel, extent, receiver))
   {
-    IrradiancePayload payload = (IrradiancePayload)0;
-    payload.Radiance=0; payload.Depth=0; payload.Flags=0;
-    payload.Random=IrradianceHash(pixel.x+pixel.y*extent.x+(PathSamples.z+sampleIndex+1)*0x9e3779b9u);
-    payload.ConeWidth=footprint;
-    payload.ConeSpread = coneSpread;
-    const float first=IrradianceRandom(payload.Random);
-    const float2 xi=float2(first,IrradianceRandom(payload.Random));
-    RayDesc ray;
-    ray.Origin=position+normal*RayDistances.y;
-    ray.Direction=IrradianceDirection(normal,xi);
-    ray.TMin=0.001f; ray.TMax=RayDistances.x;
-#if GI_EMISSIVE_SAMPLING || GI_ENVIRONMENT_SAMPLING
-    payload.PreviousPDF = max(dot(normal, ray.Direction), 0) / 3.14159265359f;
+    keys = ReceiverKeys(pixel, receiver.EncodedNormal);
+    uint random = IrradianceHash((pixel.x + pixel.y * extent.x) ^ (EmissiveSamples.y * 0x85ebca6bu + 0xc2b2ae35u));
+    [loop] for (uint sampleIndex = 0; sampleIndex < PathSamples.x; ++sampleIndex)
+    {
+      RayDesc ray;
+      IrradiancePayload payload = MakeFreshPath(pixel, extent, receiver, sampleIndex, ray);
+      const uint seed = payload.Random;
+      TraceRay(g_Scene, 0, 0xff, 0, 1, 0, ray, payload);
+      payload.Radiance = all(isfinite(payload.Radiance)) ? max(payload.Radiance, 0) : 0;
+      const float3 delta = payload.Endpoint - ray.Origin;
+      const float target = PathAreaTarget(payload, ray.Direction, receiver.Normal, dot(delta, delta));
+      // The area Jacobians cancel for the fresh cosine proposal.
+      SelectPath(selection, payload, seed, target, IrradiancePi * PathLuminance(payload.Radiance), 1u, random);
+      fresh += payload.Radiance;
+    }
+  }
+  StorePathReservoir(tile, receiver.Position, keys, selection, fresh);
+#else
+  const uint2 pixel = DispatchRaysIndex().xy;
+  const uint2 extent = DispatchRaysDimensions().xy;
+  IrradianceReceiver receiver;
+  if (!LoadIrradianceReceiver(pixel, extent, receiver))
+  {
+    g_Irradiance[pixel] = 0;
+    return;
+  }
+  float3 direct = 0;
+  float3 fresh = 0;
+  bool traceFresh = true;
+#if GI_PATH_RESERVOIRS == GI_PATH_RESERVOIRS_RESOLVE
+  const uint2 tile = pixel / ReservoirGrid.z;
+  const uint4 keys = ReceiverKeys(pixel, receiver.EncodedNormal);
+  if (all(pixel == ReservoirWriter(tile, extent)))
+  {
+    // These are the same pixel's fresh rays, already traced by the seed dispatch.
+    fresh = g_SpatialReservoirs[tile.y * ReservoirGrid.x + tile.x].FreshRadiance.rgb;
+    traceFresh = false;
+  }
 #endif
+  const uint sampleCount = (traceFresh || GI_EMISSIVE_SAMPLING) ? PathSamples.x : 0u;
+  [loop] for (uint sampleIndex = 0; sampleIndex < sampleCount; ++sampleIndex)
+  {
+    RayDesc ray;
+    IrradiancePayload payload = MakeFreshPath(pixel, extent, receiver, sampleIndex, ray);
 #if GI_EMISSIVE_SAMPLING
     uint emissiveRandom = IrradianceHash(payload.Random ^ 0xa511e9b3u);
-    float3 direct = 0;
+    float3 emission = 0;
     [loop] for (uint emitterSample = 0; emitterSample < EmissiveSamples.x; ++emitterSample)
     {
       float3 direction, weightedEmission;
-      if (IrradianceSampleEmitter(position, normal, payload.ConeWidth, payload.ConeSpread, emissiveRandom, direction, weightedEmission))
-        direct += max(dot(normal, direction), 0) * weightedEmission;
+      if (IrradianceSampleEmitter(receiver.Position, receiver.Normal, receiver.ConeWidth, receiver.ConeSpread, emissiveRandom, direction, weightedEmission))
+        emission += max(dot(receiver.Normal, direction), 0) * weightedEmission;
     }
-    // The final conversion below multiplies every primary sample by pi.
-    radiance += direct / (3.14159265359f * float(EmissiveSamples.x));
+    direct += emission / float(EmissiveSamples.x);
 #endif
-#if GI_PATH_RESERVOIRS
-    const uint tailSeed = payload.Random;
+    if (traceFresh)
+    {
+      TraceRay(g_Scene, 0, 0xff, 0, 1, 0, ray, payload);
+#if GI_PATH_RESERVOIRS == GI_PATH_RESERVOIRS_RESOLVE
+      payload.Radiance = all(isfinite(payload.Radiance)) ? max(payload.Radiance, 0) : 0;
 #endif
-    TraceRay(g_Scene,0,0xff,0,1,0,ray,payload);
-#if GI_PATH_RESERVOIRS
-    payload.Radiance = all(isfinite(payload.Radiance)) ? max(payload.Radiance, 0) : 0;
-    const float3 delta = payload.Endpoint - ray.Origin;
-    const float target = PathAreaTarget(payload, ray.Direction, normal, dot(delta, delta));
-    // Both area Jacobians cancel for a fresh cosine proposal.
-    estimate.Sum += payload.Radiance * IrradiancePi;
-    ++estimate.Count;
-    if (writeReservoir)
-      SelectPath(selection, payload, tailSeed, target, IrradiancePi * PathLuminance(payload.Radiance), 1u, reservoirRandom);
-#else
-    radiance += payload.Radiance;
-#endif
+      fresh += payload.Radiance;
+    }
   }
-  // Cosine-weighted incident irradiance, before the primary receiver's BRDF.
-  float3 result = radiance * (3.14159265359f / float(PathSamples.x));
-#if GI_PATH_RESERVOIRS
-  // Retaining fresh candidates bounds the age of path seeds and avoids
-  // repeated resampling of the same few bright paths across many frames.
-  if (writeReservoir)
-    StorePathReservoir(pixel, position, receiverKeys, selection);
+  float3 result = direct / float(PathSamples.x);
+#if GI_PATH_RESERVOIRS == GI_PATH_RESERVOIRS_RESOLVE
+  PathEstimate estimate;
+  estimate.Sum = fresh * IrradiancePi;
+  estimate.Count = float(PathSamples.x);
   if (ReservoirGrid.w != 0)
   {
+    const float2 uv = (float2(pixel) + 0.5f) / float2(extent);
     const float2 velocity = g_ReceiverVelocity.Load(int3(pixel, 0));
     const float2 previousUV = uv + (ReservoirReprojection.xy - velocity) * float2(0.5f, -0.5f);
     if (all(isfinite(previousUV)) && all(previousUV >= 0) && all(previousUV < 1))
     {
       const int2 previousTile = int2(previousUV * float2(extent)) / int(ReservoirGrid.z);
-      ReconnectPath(previousTile, receiverKeys, position, normal, footprint, coneSpread, 1.0f, estimate);
-      // Rotate two spatial neighbours. Read only the retained grid so no lane
-      // can observe a partially written current-frame reservoir.
-      const int2 axis = (IrradianceHash(reservoirRandom) & 1u) != 0u ? int2(1, 0) : int2(0, 1);
-      ReconnectPath(previousTile + axis, receiverKeys, position, normal, footprint, coneSpread, 0.5f, estimate);
-      ReconnectPath(previousTile - axis, receiverKeys, position, normal, footprint, coneSpread, 0.5f, estimate);
+      ReconnectPath(previousTile, false, keys, receiver.Position, receiver.Normal, receiver.ConeWidth, receiver.ConeSpread, 1.0f, estimate);
     }
   }
-  // The conditional RGB mean of already evaluated candidates avoids a
-  // second random selection at the displayed pixel.
+  const uint hash = IrradianceHash(pixel.x + pixel.y * extent.x + EmissiveSamples.y * 0x9e3779b9u);
+  const int2 axis = (hash & 1u) != 0u ? int2(1, 0) : int2(0, 1);
+  ReconnectPath(int2(tile) + axis, true, keys, receiver.Position, receiver.Normal, receiver.ConeWidth, receiver.ConeSpread, 0.5f, estimate);
+  ReconnectPath(int2(tile) - axis, true, keys, receiver.Position, receiver.Normal, receiver.ConeWidth, receiver.ConeSpread, 0.5f, estimate);
   result += estimate.Sum / estimate.Count;
+#else
+  result += fresh * (3.14159265359f / float(PathSamples.x));
 #endif
-  g_Irradiance[pixel]=float4(all(isfinite(result)) ? max(result,0) : 0,1);
+  g_Irradiance[pixel] = float4(all(isfinite(result)) ? max(result, 0) : 0, 1);
+#endif
 }
 [RAY_MISS_SHADER]
 #if GI_ENVIRONMENT_SAMPLING
@@ -315,7 +365,7 @@ void main(inout IrradiancePayload payload, in BuiltInTriangleIntersectionAttribu
 #endif
   const xiiRayTracingMaterialData material=g_RayTracingMaterials[InstanceIndex()];
   const xiiRayTracingSurface surface=xiiLoadRayTracingSurface(InstanceIndex(),PrimitiveIndex(),attributes.barycentrics,payload.ConeWidth,payload.ConeSpread);
-#if GI_PATH_RESERVOIRS
+#if GI_PATH_RESERVOIRS != GI_PATH_RESERVOIRS_NONE
   if (payload.Depth == 0 && (payload.Flags == 0 || payload.Flags == XII_IRRADIANCE_RECONNECTION_RAY))
   {
     const float3 endpoint = WorldRayOrigin() + WorldRayDirection() * RayTCurrent();

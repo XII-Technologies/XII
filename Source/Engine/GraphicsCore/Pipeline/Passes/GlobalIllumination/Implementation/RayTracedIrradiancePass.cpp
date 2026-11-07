@@ -274,6 +274,7 @@ xiiResult xiiRayTracedIrradiancePass::Build(xiiRenderPipelinePassContext& contex
       ++nextReservoir->m_uiFenceValue;
       reservoirRevision                       = state.m_uiRevision;
       reservoirSettings.ReservoirGrid         = xiiVec4U32(columns, rows, tile, previousReservoir ? 1U : 0U);
+      reservoirSettings.ReservoirViewport     = xiiVec4U32(size.width, size.height, 0, 0);
       const auto jitter                       = temporal->m_Sample.m_PreviousJitter - temporal->m_Sample.m_Jitter;
       reservoirSettings.ReservoirReprojection = xiiVec4(jitter.x, jitter.y, 0, 0);
     }
@@ -289,43 +290,49 @@ xiiResult xiiRayTracedIrradiancePass::Build(xiiRenderPipelinePassContext& contex
   const auto stride = xiiMemoryUtils::AlignSize(xiiUInt64(limits.m_uiShaderGroupHandleSize), xiiUInt64(xiiMath::Max(limits.m_uiShaderGroupBaseAlignment, limits.m_uiShaderGroupHandleAlignment)));
   if (stride > limits.m_uiMaxShaderRecordStride || stride > xiiMath::MaxValue<xiiUInt32>() / 3U)
     return context.ReportFailure("Ray irradiance shader records exceed device limits.");
-  auto& shaderHandle = m_Shader[(emissiveSampling ? 1U : 0U) | (environmentSampling ? 2U : 0U) | (useReservoirs ? 4U : 0U)];
-  if (!shaderHandle.IsValid())
-  {
-    xiiHashTable<xiiHashedString, xiiHashedString> variables;
-    xiiHashedString                                name, value;
-    name.Assign("GI_EMISSIVE_SAMPLING");
-    value.Assign(emissiveSampling ? "TRUE" : "FALSE");
-    variables.Insert(name, value);
-    name.Assign("GI_ENVIRONMENT_SAMPLING");
-    value.Assign(environmentSampling ? "TRUE" : "FALSE");
-    variables.Insert(name, value);
-    name.Assign("GI_PATH_RESERVOIRS");
-    value.Assign(useReservoirs ? "TRUE" : "FALSE");
-    variables.Insert(name, value);
-    shaderHandle = xiiShaderPermutationUtilities::PreloadSinglePermutation(xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/RayTracedIrradiance.xiiShader"), variables, false);
-  }
-  xiiResourceLock<xiiShaderPermutationResource> shader(shaderHandle, xiiResourceAcquireMode::BlockTillLoaded);
-  if (!shader.IsValid() || !shader->IsShaderValid())
-    return context.ReportFailure("Ray irradiance shader is unavailable.");
-  xiiGALRayTracingPipelineStateCreationDescription description;
-  description.m_pPipelineResourceSignature               = shader->GetPipelineResourceSignature();
-  description.m_RayTracingPipeline.m_uiMaxRecursionDepth = recursionDepth;
-  description.m_uiMaximumPayloadSize                     = useReservoirs ? 64 : (emissiveSampling || environmentSampling ? 36 : 32);
-  description.m_uiMaximumAttributeSize                   = 8;
-  auto& generation                                       = description.m_GeneralShaders.ExpandAndGetRef();
-  generation.m_sName.Assign("IrradianceGeneration");
-  generation.m_pShader = shader->GetGALShader(xiiGALShaderType::RayGeneration);
-  auto& miss           = description.m_GeneralShaders.ExpandAndGetRef();
-  miss.m_sName.Assign("IrradianceMiss");
-  miss.m_pShader = shader->GetGALShader(xiiGALShaderType::RayMiss);
-  auto& hit      = description.m_TriangleHitShaders.ExpandAndGetRef();
-  hit.m_sName.Assign("IrradianceHit");
-  hit.m_pClosestHitShader = shader->GetGALShader(xiiGALShaderType::RayClosestHit);
-  hit.m_pAnyHitShader     = shader->GetGALShader(xiiGALShaderType::RayAnyHit);
-  const auto pipeline     = xiiGALPipelineCache::GetPipeline(description);
-  if (!pipeline)
-    return context.ReportFailure("Could not create ray irradiance pipeline.");
+  constexpr xiiUInt32 freshStage = 0, seedStage = 1, resolveStage = 2;
+  const auto          loadPipeline = [&](xiiUInt32 stage) -> xiiSharedPtr<xiiGALRayTracingPipelineState> {
+    auto& shaderHandle = m_Shader[stage * 4U + (emissiveSampling ? 1U : 0U) + (environmentSampling ? 2U : 0U)];
+    if (!shaderHandle.IsValid())
+    {
+      xiiHashTable<xiiHashedString, xiiHashedString> variables;
+      xiiHashedString                                name, value;
+      name.Assign("GI_EMISSIVE_SAMPLING");
+      value.Assign(emissiveSampling ? "TRUE" : "FALSE");
+      variables.Insert(name, value);
+      name.Assign("GI_ENVIRONMENT_SAMPLING");
+      value.Assign(environmentSampling ? "TRUE" : "FALSE");
+      variables.Insert(name, value);
+      name.Assign("GI_PATH_RESERVOIRS");
+      const char* stages[] = {"GI_PATH_RESERVOIRS_NONE", "GI_PATH_RESERVOIRS_SEED", "GI_PATH_RESERVOIRS_RESOLVE"};
+      value.Assign(stages[stage]);
+      variables.Insert(name, value);
+      shaderHandle = xiiShaderPermutationUtilities::PreloadSinglePermutation(xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/RayTracedIrradiance.xiiShader"), variables, false);
+    }
+    xiiResourceLock<xiiShaderPermutationResource> shader(shaderHandle, xiiResourceAcquireMode::BlockTillLoaded);
+    if (!shader.IsValid() || !shader->IsShaderValid())
+      return {};
+    xiiGALRayTracingPipelineStateCreationDescription description;
+    description.m_pPipelineResourceSignature               = shader->GetPipelineResourceSignature();
+    description.m_RayTracingPipeline.m_uiMaxRecursionDepth = recursionDepth;
+    description.m_uiMaximumPayloadSize                     = useReservoirs ? 64 : (emissiveSampling || environmentSampling ? 36 : 32);
+    description.m_uiMaximumAttributeSize                   = 8;
+    auto& generation                                       = description.m_GeneralShaders.ExpandAndGetRef();
+    generation.m_sName.Assign("IrradianceGeneration");
+    generation.m_pShader = shader->GetGALShader(xiiGALShaderType::RayGeneration);
+    auto& miss           = description.m_GeneralShaders.ExpandAndGetRef();
+    miss.m_sName.Assign("IrradianceMiss");
+    miss.m_pShader = shader->GetGALShader(xiiGALShaderType::RayMiss);
+    auto& hit      = description.m_TriangleHitShaders.ExpandAndGetRef();
+    hit.m_sName.Assign("IrradianceHit");
+    hit.m_pClosestHitShader = shader->GetGALShader(xiiGALShaderType::RayClosestHit);
+    hit.m_pAnyHitShader     = shader->GetGALShader(xiiGALShaderType::RayAnyHit);
+    return xiiGALPipelineCache::GetPipeline(description);
+  };
+  const auto pipeline     = loadPipeline(useReservoirs ? resolveStage : freshStage);
+  const auto seedPipeline = useReservoirs ? loadPipeline(seedStage) : xiiSharedPtr<xiiGALRayTracingPipelineState>();
+  if (!pipeline || (useReservoirs && !seedPipeline))
+    return context.ReportFailure("Could not create ray irradiance seed or resolve pipeline.");
   if (!m_Sampler)
   {
     xiiGALSamplerCreationDescription sampler;
@@ -500,7 +507,8 @@ xiiResult xiiRayTracedIrradiancePass::Build(xiiRenderPipelinePassContext& contex
     xiiRenderGraphBufferHandle                  m_EnvironmentCDF, m_EnvironmentRowCDF, m_SkyConstants;
     xiiSharedPtr<xiiGALSampler>                 m_EnvironmentSampler;
     xiiRenderGraphTextureHandle                 m_ReceiverVelocity, m_ReceiverObject, m_ReceiverMaterial;
-    xiiRenderGraphBufferHandle                  m_PreviousReservoirs, m_CurrentReservoirs, m_ReservoirConstants;
+    xiiRenderGraphBufferHandle                  m_PreviousReservoirs, m_SpatialReservoirs, m_CurrentReservoirs, m_ReservoirConstants;
+    bool                                        m_bSeed = false;
     xiiSharedPtr<ReservoirState>                m_ReservoirState;
     xiiSharedPtr<ReservoirState::Slot>          m_PreviousReservoirSlot, m_CurrentReservoirSlot;
     xiiGIPathReservoirConstants                 m_ReservoirSettings;
@@ -512,7 +520,9 @@ xiiResult xiiRayTracedIrradiancePass::Build(xiiRenderPipelinePassContext& contex
     xiiSizeU32                                  m_Size;
     xiiUInt64                                   m_Stride;
   };
-  const auto setup = [&](Data& data, xiiRenderGraphBuilder& builder) {
+  xiiRenderGraphBufferHandle currentReservoirs;
+  const auto                 setup = [&](Data& data, xiiRenderGraphBuilder& builder, bool seed) {
+    data.m_bSeed           = seed;
     data.m_Depth           = builder.ReadTexture(depth, xiiGALResourceStateFlags::ShaderResource);
     data.m_Normal          = builder.ReadTexture(normal, xiiGALResourceStateFlags::ShaderResource);
     data.m_Camera          = builder.ReadBuffer(camera, xiiGALResourceStateFlags::ConstantBuffer);
@@ -528,8 +538,9 @@ xiiResult xiiRayTracedIrradiancePass::Build(xiiRenderPipelinePassContext& contex
     if (emissiveSampling)
       for (xiiUInt32 index = 0; index < 5; ++index)
         data.m_EmissiveTables[index] = builder.ReadBuffer(emissiveTables[index], xiiGALResourceStateFlags::ShaderResource);
-    data.m_Scene     = scene.m_pStructure;
-    data.m_Output    = xiiCompositionPassUtils::Output(builder, size, xiiGALResourceFormat::RGBA32Float);
+    data.m_Scene = scene.m_pStructure;
+    if (!seed)
+      data.m_Output = xiiCompositionPassUtils::Output(builder, size, xiiGALResourceFormat::RGBA32Float);
     data.m_Constants = xiiRenderPassUtils::Constants(builder, "Ray irradiance settings", sizeof(data.m_Settings));
     if (environmentSampling)
     {
@@ -541,26 +552,33 @@ xiiResult xiiRayTracedIrradiancePass::Build(xiiRenderPipelinePassContext& contex
     }
     if (useReservoirs)
     {
-      if (previousReservoir)
-        builder.WaitForFence(previousReservoir->m_Ready, previousReservoir->m_uiFenceValue).AssertSuccess();
-      data.m_ReservoirState        = m_ReservoirState;
-      data.m_PreviousReservoirSlot = previousReservoir;
-      data.m_CurrentReservoirSlot  = nextReservoir;
-      data.m_uiReservoirRevision   = reservoirRevision;
-      data.m_ReservoirSettings     = reservoirSettings;
-      data.m_PreviousReservoirs    = builder.ReadBuffer(builder.ImportBuffer("Previous GI paths", previousBuffer, xiiGALResourceStateFlags::Unknown), xiiGALResourceStateFlags::ShaderResource);
-      data.m_CurrentReservoirs     = builder.WriteBuffer(builder.ImportBuffer("Current GI paths", nextReservoir->m_Buffer, xiiGALResourceStateFlags::Unknown), xiiGALResourceStateFlags::UnorderedAccess);
-      data.m_ReservoirConstants    = xiiRenderPassUtils::Constants(builder, "GI path reservoir settings", sizeof(xiiGIPathReservoirConstants));
-      data.m_ReceiverVelocity      = builder.ReadTexture(receiverVelocity, xiiGALResourceStateFlags::ShaderResource);
-      data.m_ReceiverObject        = builder.ReadTexture(receiverObject, xiiGALResourceStateFlags::ShaderResource);
-      data.m_ReceiverMaterial      = builder.ReadTexture(receiverMaterial, xiiGALResourceStateFlags::ShaderResource);
+      data.m_ReservoirState       = m_ReservoirState;
+      data.m_CurrentReservoirSlot = nextReservoir;
+      data.m_uiReservoirRevision  = reservoirRevision;
+      data.m_ReservoirSettings    = reservoirSettings;
+      data.m_ReservoirConstants   = xiiRenderPassUtils::Constants(builder, "GI path reservoir settings", sizeof(xiiGIPathReservoirConstants));
+      data.m_ReceiverObject       = builder.ReadTexture(receiverObject, xiiGALResourceStateFlags::ShaderResource);
+      data.m_ReceiverMaterial     = builder.ReadTexture(receiverMaterial, xiiGALResourceStateFlags::ShaderResource);
+      if (seed)
+      {
+        data.m_CurrentReservoirs = builder.WriteBuffer(builder.ImportBuffer("Current GI paths", nextReservoir->m_Buffer, xiiGALResourceStateFlags::Unknown), xiiGALResourceStateFlags::UnorderedAccess);
+      }
+      else
+      {
+        if (previousReservoir)
+          builder.WaitForFence(previousReservoir->m_Ready, previousReservoir->m_uiFenceValue).AssertSuccess();
+        data.m_PreviousReservoirSlot = previousReservoir;
+        data.m_PreviousReservoirs    = builder.ReadBuffer(builder.ImportBuffer("Previous GI paths", previousBuffer, xiiGALResourceStateFlags::Unknown), xiiGALResourceStateFlags::ShaderResource);
+        data.m_SpatialReservoirs     = builder.ReadBuffer(currentReservoirs, xiiGALResourceStateFlags::ShaderResource);
+        data.m_ReceiverVelocity      = builder.ReadTexture(receiverVelocity, xiiGALResourceStateFlags::ShaderResource);
+      }
     }
     data.m_Settings.RayDistances    = xiiVec4(m_fRayLength, m_fSurfaceBias, powerWeighted ? 1.0f : 0.0f, 0);
     data.m_Settings.EmissiveSamples = xiiVec4U32(m_uiEmissiveLightSamples, xiiUInt32(context.m_Graph.GetFrameIndex()), environmentSampling ? m_uiEnvironmentLightSamples : 0U, 0);
     data.m_Settings.PathSamples     = xiiVec4U32(m_uiSampleCount, m_uiMaximumHits, m_uiSampleOffset + (m_bAnimateSamples ? xiiUInt32(context.m_Graph.GetFrameIndex()) * m_uiSampleCount : 0U), m_uiAnalyticLightSamples);
-    data.m_Size                     = size;
+    data.m_Size                     = seed ? xiiSizeU32(reservoirSettings.ReservoirGrid.x, reservoirSettings.ReservoirGrid.y) : size;
     data.m_Stride                   = stride;
-    data.m_Pipeline                 = pipeline;
+    data.m_Pipeline                 = seed ? seedPipeline : pipeline;
     data.m_Sampler                  = m_Sampler;
     xiiGALBufferCreationDescription records;
     records.m_uiSize    = 3 * stride;
@@ -581,7 +599,8 @@ xiiResult xiiRayTracedIrradiancePass::Build(xiiRenderPipelinePassContext& contex
     commands.ResolveAndSetConstantBuffer("xiiRayTracedIrradianceConstants", execute.GetBuffer(data.m_Constants), xiiGALShaderType::RayGeneration | xiiGALShaderType::RayClosestHit);
     commands.ResolveAndSetShaderResourceTextureView("g_Depth", execute.GetTexture(data.m_Depth)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::RayGeneration);
     commands.ResolveAndSetShaderResourceTextureView("g_Normal", execute.GetTexture(data.m_Normal)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::RayGeneration);
-    commands.ResolveAndSetUnorderedAccessTextureView("g_Irradiance", execute.GetTexture(data.m_Output)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::RayGeneration);
+    if (!data.m_bSeed)
+      commands.ResolveAndSetUnorderedAccessTextureView("g_Irradiance", execute.GetTexture(data.m_Output)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::RayGeneration);
     const auto stages = xiiGALShaderType::RayClosestHit | xiiGALShaderType::RayAnyHit;
     commands.ResolveAndSetShaderResourceBufferView("g_RayTracingMaterials", execute.GetBuffer(data.m_Materials)->GetDefaultView(xiiGALBufferViewType::ShaderResource), stages);
     commands.ResolveAndSetShaderResourceBufferView("g_RayTracingGeometry", execute.GetBuffer(data.m_Geometry)->GetDefaultView(xiiGALBufferViewType::ShaderResource), stages);
@@ -593,9 +612,10 @@ xiiResult xiiRayTracedIrradiancePass::Build(xiiRenderPipelinePassContext& contex
     commands.ResolveAndSetShaderResourceBufferView("g_BlockCDF", execute.GetBuffer(data.m_BlockCDF)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::RayClosestHit);
     if (data.m_Settings.EmissiveSamples.x != 0)
     {
-      const xiiTempHashedString names[] = {"g_EmissiveTriangles", "g_EmissiveHeader", "g_EmissiveTriangleAliases", "g_EmissiveBlockAliases", "g_EmissiveAliasHeader"};
+      const xiiTempHashedString names[]       = {"g_EmissiveTriangles", "g_EmissiveHeader", "g_EmissiveTriangleAliases", "g_EmissiveBlockAliases", "g_EmissiveAliasHeader"};
+      const auto                emitterStages = data.m_bSeed ? xiiBitflags<xiiGALShaderType>(xiiGALShaderType::RayClosestHit) : xiiGALShaderType::RayGeneration | xiiGALShaderType::RayClosestHit;
       for (xiiUInt32 index = 0; index < 5; ++index)
-        commands.ResolveAndSetShaderResourceBufferView(names[index], execute.GetBuffer(data.m_EmissiveTables[index])->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::RayGeneration | xiiGALShaderType::RayClosestHit);
+        commands.ResolveAndSetShaderResourceBufferView(names[index], execute.GetBuffer(data.m_EmissiveTables[index])->GetDefaultView(xiiGALBufferViewType::ShaderResource), emitterStages);
     }
     if (data.m_SkyConstants.IsValid())
     {
@@ -615,9 +635,14 @@ xiiResult xiiRayTracedIrradiancePass::Build(xiiRenderPipelinePassContext& contex
       }
       constexpr auto generation = xiiGALShaderType::RayGeneration;
       commands.ResolveAndSetConstantBuffer("xiiGIPathReservoirConstants", execute.GetBuffer(data.m_ReservoirConstants), generation);
-      commands.ResolveAndSetShaderResourceBufferView("g_PreviousReservoirs", execute.GetBuffer(data.m_PreviousReservoirs)->GetDefaultView(xiiGALBufferViewType::ShaderResource), generation);
-      commands.ResolveAndSetUnorderedAccessBufferView("g_CurrentReservoirs", execute.GetBuffer(data.m_CurrentReservoirs)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), generation);
-      commands.ResolveAndSetShaderResourceTextureView("g_ReceiverVelocity", execute.GetTexture(data.m_ReceiverVelocity)->GetDefaultView(xiiGALTextureViewType::ShaderResource), generation);
+      if (data.m_bSeed)
+        commands.ResolveAndSetUnorderedAccessBufferView("g_CurrentReservoirs", execute.GetBuffer(data.m_CurrentReservoirs)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), generation);
+      else
+      {
+        commands.ResolveAndSetShaderResourceBufferView("g_PreviousReservoirs", execute.GetBuffer(data.m_PreviousReservoirs)->GetDefaultView(xiiGALBufferViewType::ShaderResource), generation);
+        commands.ResolveAndSetShaderResourceBufferView("g_SpatialReservoirs", execute.GetBuffer(data.m_SpatialReservoirs)->GetDefaultView(xiiGALBufferViewType::ShaderResource), generation);
+        commands.ResolveAndSetShaderResourceTextureView("g_ReceiverVelocity", execute.GetTexture(data.m_ReceiverVelocity)->GetDefaultView(xiiGALTextureViewType::ShaderResource), generation);
+      }
       commands.ResolveAndSetShaderResourceTextureView("g_ReceiverObject", execute.GetTexture(data.m_ReceiverObject)->GetDefaultView(xiiGALTextureViewType::ShaderResource), generation);
       commands.ResolveAndSetShaderResourceTextureView("g_ReceiverMaterial", execute.GetTexture(data.m_ReceiverMaterial)->GetDefaultView(xiiGALTextureViewType::ShaderResource), generation);
     }
@@ -642,8 +667,9 @@ xiiResult xiiRayTracedIrradiancePass::Build(xiiRenderPipelinePassContext& contex
     trace.m_MissTable          = records.m_MissTable;
     trace.m_HitTable           = records.m_HitTable;
     commands.TraceRays(trace);
-    if (const auto& slot = data.m_CurrentReservoirSlot)
+    if (data.m_bSeed)
     {
+      const auto& slot = data.m_CurrentReservoirSlot;
       commands.EnqueueSignal(slot->m_Ready.Borrow(), slot->m_uiFenceValue);
       auto& state = *data.m_ReservoirState;
       XII_LOCK(state.m_Mutex);
@@ -651,7 +677,20 @@ xiiResult xiiRayTracedIrradiancePass::Build(xiiRenderPipelinePassContext& contex
         state.m_Last = slot;
     }
   };
-  const auto pass = context.m_Graph.AddPass<Data>(useReservoirs ? (previousReservoir ? "Reuse Diffuse Path Reservoirs" : "Seed Diffuse Path Reservoirs") : context.m_sPassName, m_bAsyncCompute ? xiiGALCommandQueueFlags::Compute : xiiGALCommandQueueFlags::Graphics, setup, record);
+  const auto queue = m_bAsyncCompute ? xiiGALCommandQueueFlags::Compute : xiiGALCommandQueueFlags::Graphics;
+  if (useReservoirs)
+  {
+    const auto seedSetup = [&](Data& data, xiiRenderGraphBuilder& builder) {
+      setup(data, builder, true);
+    };
+    const auto seed   = context.m_Graph.AddPass<Data>("Trace Current Diffuse Path Reservoirs", queue, seedSetup, record);
+    currentReservoirs = seed.first->m_CurrentReservoirs;
+  }
+  const auto resolveSetup = [&](Data& data, xiiRenderGraphBuilder& builder) {
+    setup(data, builder, false);
+  };
+  const auto passName = useReservoirs ? (previousReservoir ? "Resolve Current Spatial and Temporal GI" : "Resolve Current Spatial GI") : context.m_sPassName;
+  const auto pass     = context.m_Graph.AddPass<Data>(passName, queue, resolveSetup, record);
   return context.SetOutput(m_Irradiance, pass.first->m_Output);
 }
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Passes_GlobalIllumination_Implementation_RayTracedIrradiancePass);
