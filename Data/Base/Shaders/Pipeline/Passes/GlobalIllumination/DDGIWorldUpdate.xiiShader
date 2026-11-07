@@ -1,0 +1,7 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
+[PLATFORMS]
+ALL
+[COMPUTE_SHADER]
+#define XII_DDGI_WORLD_TRACE
+#include <Shaders/Pipeline/Passes/GlobalIllumination/DDGISceneUpdate.h>

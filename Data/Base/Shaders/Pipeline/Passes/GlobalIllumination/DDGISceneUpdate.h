@@ -1,0 +1,270 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
+#pragma once
+#include <Shaders/Common/StorageImageFormat.h>
+#include <Shaders/Pipeline/Passes/DDGI/DDGIDirectionalAtlas.h>
+#include <Shaders/Pipeline/Passes/ScreenSpaceGeometry.h>
+#if defined(XII_DDGI_WORLD_TRACE)
+#  include <Shaders/Pipeline/Passes/DDGI/DDGIWorldTrace.h>
+groupshared uint ProbeWorldComplete;
+#endif
+
+
+struct ProbeUpdate
+{
+  float4 PositionAndHistoryWeight;
+  uint4  Metadata;
+};
+
+struct ProbeState
+{
+  float4 PositionAndLastUpdate;
+  int4   CellAndFlags;
+};
+
+StructuredBuffer<ProbeUpdate>  g_ProbeUpdates;
+RWStructuredBuffer<ProbeState> g_ProbeStates;
+Texture2D<float>               g_Depth;
+Texture2D<float2>              g_Normal;
+Texture2D<float4>              g_Radiance;
+XII_STORAGE_IMAGE_FORMAT("rgba16f")
+RWTexture2D<float4> g_Irradiance;
+XII_STORAGE_IMAGE_FORMAT("rg32f")
+RWTexture2D<float2> g_Distance;
+
+static const uint  RayCount = 64u;
+groupshared float  RayDistance[RayCount];
+groupshared float3 SurfaceIrradiance[XII_DDGI_DIRECTION_COUNT][RayCount];
+groupshared float3 RayDirection[RayCount];
+groupshared uint   ProbeVisible;
+
+uint HashProbe(uint value)
+{
+  value = (value ^ (value >> 16u)) * 0x7feb352du;
+  value = (value ^ (value >> 15u)) * 0x846ca68bu;
+  return value ^ (value >> 16u);
+}
+
+bool SampleDepth(float3 position, uint2 extent, out uint2 pixel, out float gap)
+{
+  pixel             = 0;
+  gap               = 0;
+  const float4 clip = mul(SurfaceViewProjection, float4(position, 1));
+  if (!all(isfinite(clip)) || clip.w <= 1e-6f)
+    return false;
+  const float3 ndc = clip.xyz / clip.w;
+  const float2 uv  = ndc.xy * float2(0.5f, -0.5f) + 0.5f;
+  if (any(uv < 0) || any(uv >= 1) || ndc.z <= 0 || ndc.z > 1)
+    return false;
+
+  pixel             = uint2(uv * float2(extent));
+  const float depth = g_Depth.Load(int3(pixel, 0));
+  if (depth == 0)
+  {
+    gap = -SpacingHysteresisDistance.z;
+    return true;
+  }
+  float3 surface;
+  if (depth < 0 || depth > 1 || !xiiScreenWorldPosition((float2(pixel) + 0.5f) / float2(extent), depth, surface))
+    return false;
+  gap = dot(position - surface, SurfaceCameraForwardFar.xyz);
+  return isfinite(gap);
+}
+
+float TraceProbeDistance(float3 origin, float3 direction, uint2 extent)
+{
+  const float maximum   = SpacingHysteresisDistance.z;
+  const float thickness = max(SpacingHysteresisDistance.x * 0.1f, 0.01f);
+  const uint  stepCount = 24u;
+  float       previous  = 0;
+  [loop] for (uint step = 1; step <= stepCount; ++step)
+  {
+    const float fraction = float(step) / float(stepCount);
+    const float distance = maximum * fraction * fraction;
+    uint2       pixel;
+    float       gap;
+    if (!SampleDepth(origin + direction * distance, extent, pixel, gap))
+      break;
+    if (gap >= 0)
+    {
+      float near = previous;
+      float far  = distance;
+      [unroll] for (uint iteration = 0; iteration < 6u; ++iteration)
+      {
+        const float middle = (near + far) * 0.5f;
+        if (SampleDepth(origin + direction * middle, extent, pixel, gap) && gap >= 0)
+          far = middle;
+        else
+          near = middle;
+      }
+      if (SampleDepth(origin + direction * far, extent, pixel, gap) && gap <= thickness && gap >= 0)
+        return far;
+      break;
+    }
+    previous = distance;
+  }
+  return maximum;
+}
+
+// Estimate visible surfel area from the camera footprint. The stratified
+// quadrature preserves narrow bright emitters that random direction rays miss.
+float3 SampleSurfaceRadiance(float3 probe, uint2 extent, uint index, uint seed, out float3 direction)
+{
+  static const uint Strata     = 32u;
+  const uint2       cell       = uint2(index % Strata, index / Strata);
+  const uint        sampleSeed = HashProbe(seed ^ (index * 0x9e3779b9u));
+  const float2      jitter     = (float2(sampleSeed & 0xffffu, sampleSeed >> 16u) + 0.5f) / 65536.0f;
+  const float2      sampleUV   = (float2(cell) + jitter) / float(Strata);
+  const uint2       pixel      = uint2(sampleUV * float2(extent));
+  const float       depth      = g_Depth.Load(int3(pixel, 0));
+  const float3      radiance   = g_Radiance.Load(int3(pixel, 0)).rgb;
+  direction                    = 0;
+  if (depth <= 0 || depth > 1 || !all(isfinite(radiance)) || !any(radiance > 0))
+    return 0;
+  const float2 uv = (float2(pixel) + 0.5f) / float2(extent);
+  float3       surface, nearSurface, offsetX, offsetY;
+  if (!xiiScreenWorldPosition(uv, depth, surface) || !xiiScreenWorldPosition(uv, 1, nearSurface) ||
+      !xiiScreenWorldPosition(uv + float2(1.0f / extent.x, 0), depth, offsetX) ||
+      !xiiScreenWorldPosition(uv + float2(0, 1.0f / extent.y), depth, offsetY))
+    return 0;
+  const float3 toSurface       = surface - probe;
+  const float  distanceSquared = dot(toSurface, toSurface);
+  const float  maximum         = SpacingHysteresisDistance.z;
+  if (distanceSquared <= 0.0025f || distanceSquared >= maximum * maximum)
+    return 0;
+  direction                  = toSurface * rsqrt(distanceSquared);
+  const float3 normal        = xiiScreenNormal(g_Normal.Load(int3(pixel, 0)));
+  const float  emitterCosine = -dot(normal, direction);
+  if (emitterCosine <= 0)
+    return 0;
+  // The source sample is the visible first hit. Reject segments hidden by a
+  // different camera-visible surface before reaching that source.
+  [unroll] for (uint step = 1; step <= 5u; ++step)
+  {
+    uint2 samplePixel;
+    float gap;
+    if (!SampleDepth(probe + toSurface * (float(step) / 6.0f), extent, samplePixel, gap) || gap > 0.03f)
+      return 0;
+  }
+  const float3 toCamera            = nearSurface - surface;
+  const float  cameraLengthSquared = dot(toCamera, toCamera);
+  const float3 cameraDirection     = cameraLengthSquared > 1e-8f ? toCamera * rsqrt(cameraLengthSquared) : -SurfaceCameraForwardFar.xyz;
+  const float3 projectedArea       = cross(offsetX - surface, offsetY - surface);
+  const float  footprint           = abs(dot(projectedArea, cameraDirection));
+  const float  area                = footprint * (float(extent.x) * float(extent.y)) / (float(Strata * Strata) * max(dot(normal, cameraDirection), 0.08f));
+  const float  solidAngle          = min(area * emitterCosine / distanceSquared, 0.25f);
+  return clamp(radiance, 0, 65504) * solidAngle;
+}
+
+[numthreads(64, 1, 1)] void main(uint3 group : SV_GroupID, uint lane : SV_GroupIndex) {
+  const ProbeUpdate update     = g_ProbeUpdates[group.x];
+  const uint        probe      = update.Metadata.x;
+  const uint        width      = uint(MinimumCellAndAtlasWidth.w);
+  const uint2       coordinate = uint2(probe % width, probe / width);
+  uint2             extent;
+  g_Depth.GetDimensions(extent.x, extent.y);
+  // A spherical Fibonacci set with frame- and cell-dependent azimuth.
+  const uint   seed      = HashProbe(probe ^ asuint(SpacingHysteresisDistance.w));
+  const float  phase     = float(seed & 0x00ffffffu) / 16777216.0f;
+  const float  z         = 1.0f - 2.0f * (float(lane) + 0.5f) / float(RayCount);
+  const float  azimuth   = 6.28318530718f * frac(float(lane) * 0.61803398875f + phase);
+  const float  radius    = sqrt(max(1.0f - z * z, 0));
+  const float3 direction = float3(radius * cos(azimuth), radius * sin(azimuth), z);
+  const float3 origin    = update.PositionAndHistoryWeight.xyz;
+#if defined(XII_DDGI_WORLD_TRACE)
+  if (lane == 0u)
+    ProbeWorldComplete = 1u;
+  GroupMemoryBarrierWithGroupSync();
+  ProbeHit worldHit;
+  if (!TraceProbeScene(origin, direction, SpacingHysteresisDistance.z, worldHit))
+    InterlockedAnd(ProbeWorldComplete, 0u);
+  GroupMemoryBarrierWithGroupSync();
+#endif
+  if (lane == 0u)
+  {
+    uint2 pixel;
+    float gap;
+    ProbeVisible = SampleDepth(update.PositionAndHistoryWeight.xyz, extent, pixel, gap) && gap < -0.01f ? 1u : 0u;
+#if defined(XII_DDGI_WORLD_TRACE)
+    ProbeVisible |= ProbeWorldComplete;
+#endif
+    if (ProbeVisible != 0u)
+    {
+      ProbeState state              = g_ProbeStates[probe];
+      state.CellAndFlags.w          = (state.CellAndFlags.w | 1) & ~14;
+      state.PositionAndLastUpdate.w = SpacingHysteresisDistance.w;
+      g_ProbeStates[probe]          = state;
+    }
+  }
+  GroupMemoryBarrierWithGroupSync();
+
+  if (ProbeVisible != 0u)
+  {
+    RayDirection[lane] = direction;
+#if defined(XII_DDGI_WORLD_TRACE)
+    if (ProbeWorldComplete != 0u)
+    {
+      RayDistance[lane] = worldHit.Distance;
+      float3 radiance   = worldHit.Emissive;
+      uint2  pixel;
+      float  gap;
+      if (worldHit.Found && SampleDepth(origin + direction * worldHit.Distance, extent, pixel, gap) && abs(gap) <= 0.035f)
+        radiance = g_Radiance.Load(int3(pixel, 0)).rgb;
+      radiance = all(isfinite(radiance)) ? clamp(radiance, 0, 65504) : 0;
+      [unroll] for (uint axis = 0; axis < XII_DDGI_DIRECTION_COUNT; ++axis)
+        SurfaceIrradiance[axis][lane] = radiance * (12.5663706144f / float(RayCount)) * max(dot(xiiDDGIAxis(axis), direction), 0);
+    }
+    else
+#endif
+    {
+      RayDistance[lane] = TraceProbeDistance(origin, direction, extent);
+      float3 integrated[XII_DDGI_DIRECTION_COUNT];
+      [unroll] for (uint axis = 0; axis < XII_DDGI_DIRECTION_COUNT; ++axis)
+        integrated[axis] = 0;
+      [loop] for (uint index = lane; index < 1024u; index += RayCount)
+      {
+        float3       toSurface;
+        const float3 contribution = SampleSurfaceRadiance(origin, extent, index, seed, toSurface);
+        [unroll] for (uint axis = 0; axis < XII_DDGI_DIRECTION_COUNT; ++axis)
+          integrated[axis] += contribution * max(dot(xiiDDGIAxis(axis), toSurface), 0);
+      }
+      [unroll] for (uint axis = 0; axis < XII_DDGI_DIRECTION_COUNT; ++axis)
+        SurfaceIrradiance[axis][lane] = integrated[axis];
+    }
+  }
+  GroupMemoryBarrierWithGroupSync();
+
+  if (lane >= XII_DDGI_DIRECTION_COUNT)
+    return;
+  const uint2  pixel         = xiiDDGIDirectionalTexel(coordinate, lane);
+  const float  history       = saturate(update.PositionAndHistoryWeight.w);
+  const float  maximum       = SpacingHysteresisDistance.z;
+  const float4 oldIrradiance = history > 0 ? g_Irradiance[pixel] : 0;
+  if (ProbeVisible == 0u && oldIrradiance.a > 0)
+    return;
+  float3 irradiance = 0;
+  float2 moments    = 0;
+  float  cosineSum  = 0;
+  float  observed   = 0;
+  if (ProbeVisible != 0u)
+  {
+    const float3 axis = xiiDDGIAxis(lane);
+    [loop] for (uint ray = 0; ray < RayCount; ++ray)
+    {
+      const float cosine   = max(dot(axis, RayDirection[ray]), 0);
+      const float distance = RayDistance[ray];
+      irradiance += SurfaceIrradiance[lane][ray];
+      moments += float2(distance, distance * distance) * cosine;
+      cosineSum += cosine;
+      if (distance < maximum)
+        observed += cosine;
+    }
+  }
+  const float  confidence     = observed / max(cosineSum, 1e-5f);
+  const float4 target         = float4(min(irradiance, 65504), confidence);
+  const float  temporalWeight = oldIrradiance.a > 0 ? history : 0;
+  g_Irradiance[pixel]         = lerp(target, oldIrradiance, temporalWeight);
+  const float2 targetMoments  = cosineSum > 0 ? moments / cosineSum : float2(maximum, maximum * maximum);
+  const float2 oldMoments     = temporalWeight > 0 ? g_Distance[pixel] : targetMoments;
+  g_Distance[pixel]           = lerp(targetMoments, oldMoments, temporalWeight);
+}
