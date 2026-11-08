@@ -71,6 +71,29 @@ public:
   };
   // Includes completed IO waiting for admission, bounding CPU payload memory as well as worker jobs.
   xiiAtomicInteger32 m_uiPendingIo = 0U;
+  struct PhysicalPage
+  {
+    xiiSharedPtr<xiiGALBuffer>   m_Buffer;
+    xiiSharedPtr<xiiGALTexture>  m_Texture;
+    xiiGALBindlessResourceHandle m_Handle;
+    xiiUInt64                    m_uiBytes = 0U, m_uiRetireFrame = 0U, m_uiPayloadBytes = 0U;
+    xiiUInt32                    m_uiClass = 0U;
+    bool                         m_bInUse  = true;
+  };
+  // Geometry uses 4-128 KiB size classes; texture slots separate color spaces. Descriptors remain
+  // stable while slots are reused; only completed retired slots enter free lists.
+  xiiDynamicArray<PhysicalPage>      m_PhysicalPages;
+  xiiDynamicArray<xiiUInt32>         m_FreePhysicalPages[8], m_RetiringPhysicalPages, m_UnusedPhysicalIndices;
+  xiiHashTable<xiiUInt32, xiiUInt32> m_PhysicalBuffers, m_PhysicalTextures;
+  xiiUInt32                          m_uiPhysicalRetireCursor = 0U, m_uiPhysicalTrimCursor[8] = {};
+  xiiUInt64                          m_uiPoolBytes[2] = {}, m_uiPoolReusableBytes = 0U, m_uiPoolRetiringBytes = 0U;
+  xiiUInt64                          m_uiPoolPayloadBytes = 0U;
+  xiiUInt64                          m_uiPoolReuses = 0U, m_uiPoolAllocations = 0U, m_uiPoolReleasedBytes = 0U;
+  xiiUInt64                          m_uiRemainingTextureUploadBytes = 0U;
+  xiiUInt32                          AddPhysicalPage(PhysicalPage&& page);
+  void                               RetirePhysicalPage(xiiGALBindlessResourceHandle handle, bool texture, xiiUInt64 frame);
+  void                               CollectPhysicalPages(xiiUInt64 frame, xiiUInt64 completed);
+  void                               ClearPhysicalPages();
   struct TexturePage
   {
     xiiUInt64                    m_uiAdmittedFrame = 0U;
@@ -192,6 +215,7 @@ public:
     for (Slot& slot : m_Slots)
       xiiGeometryResidencyManager::ReleaseBindlessResources(slot, xiiMath::Max(slot.m_uiLastUsedFrame, slot.m_uiRetireFrame));
     XII_ASSERT_DEV(m_SourceBindings.IsEmpty(), "All geometry source bindings must be released with their slots.");
+    ClearPhysicalPages();
     m_pTopologyUploadFence.Clear();
     m_uiTopologyUploadValue   = 0U;
     m_uiResidentTopologyBytes = 0U;
@@ -263,6 +287,7 @@ xiiSharedPtr<xiiGeometryResidencyManager::State> xiiGeometryResidencyManager::s_
 
 namespace
 {
+  xiiCVarInt          cvar_TextureStreamingUploadBudget("Streaming.TextureUploadMiB", 64, xiiCVarFlags::Save, "Per-device-frame virtual texture upload allowance in MiB (0 pauses optional tiles).");
   xiiCVarInt          cvar_TextureCacheMiB("Streaming.TextureCacheMiB", 512, xiiCVarFlags::Save, "Physical virtual texture tile cache in MiB. Required coarse pages retain priority.");
   xiiCVarInt          cvar_GeometryCacheMiB("Streaming.GeometryCacheMiB", 256, xiiCVarFlags::Save, "Maximum physical geometry page payload in MiB. Required fallback pages retain priority.");
   constexpr float     s_fLodReferenceViewportHeight = 1080.0f;
@@ -450,6 +475,13 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGeometryResidencyStats, xiiNoBase, 1, xiiRTTI
       XII_MEMBER_PROPERTY("Evictions", m_uiEvictions),
       XII_MEMBER_PROPERTY("PressureEvictions", m_uiPressureEvictions),
       XII_MEMBER_PROPERTY("RemainingUploadBytes", m_uiRemainingUploadBytes),
+      XII_MEMBER_PROPERTY("RemainingTextureUploadBytes", m_uiRemainingTextureUploadBytes),
+      XII_MEMBER_PROPERTY("PoolBackingBytes", m_uiPoolBackingBytes),
+      XII_MEMBER_PROPERTY("PoolReusableBytes", m_uiPoolReusableBytes),
+      XII_MEMBER_PROPERTY("PoolRetiringBytes", m_uiPoolRetiringBytes),
+      XII_MEMBER_PROPERTY("PoolReuses", m_uiPoolReuses),
+      XII_MEMBER_PROPERTY("PoolAllocations", m_uiPoolAllocations),
+      XII_MEMBER_PROPERTY("PoolReleasedBytes", m_uiPoolReleasedBytes),
       XII_MEMBER_PROPERTY("PreparedMeshlets", m_uiPreparedMeshlets),
       XII_MEMBER_PROPERTY("Examined", m_uiExamined),
       XII_MEMBER_PROPERTY("Admitted", m_uiAdmitted),
@@ -1020,26 +1052,152 @@ bool xiiGeometryResidencyManager::State::InitializeTextureFeedback()
   return true;
 }
 
+xiiUInt32 xiiGeometryResidencyManager::State::AddPhysicalPage(PhysicalPage&& page)
+{
+  const auto texture    = page.m_Texture != nullptr;
+  const auto descriptor = page.m_Handle.m_uiIndex;
+  m_uiPoolBytes[texture ? 1U : 0U] += page.m_uiBytes;
+  xiiUInt32 index;
+  if (m_UnusedPhysicalIndices.IsEmpty())
+  {
+    index = m_PhysicalPages.GetCount();
+    m_PhysicalPages.PushBack(std::move(page));
+  }
+  else
+  {
+    index = m_UnusedPhysicalIndices.PeekBack();
+    m_UnusedPhysicalIndices.PopBack();
+    m_PhysicalPages[index] = std::move(page);
+  }
+  (texture ? m_PhysicalTextures : m_PhysicalBuffers).Insert(descriptor, index);
+  ++m_uiPoolAllocations;
+  return index;
+}
+
+void xiiGeometryResidencyManager::State::RetirePhysicalPage(xiiGALBindlessResourceHandle handle, bool texture, xiiUInt64 frame)
+{
+  if (!handle.IsValid())
+    return;
+  const auto* index = (texture ? m_PhysicalTextures : m_PhysicalBuffers).GetValue(handle.m_uiIndex);
+  XII_ASSERT_DEV(index != nullptr, "Page must belong to its physical pool.");
+  if (index == nullptr)
+    return;
+  auto& page = m_PhysicalPages[*index];
+  XII_ASSERT_DEV(page.m_bInUse && page.m_Handle.m_uiGeneration == handle.m_uiGeneration, "Physical page must retire once with its current descriptor generation.");
+  if (!page.m_bInUse || page.m_Handle.m_uiGeneration != handle.m_uiGeneration)
+    return;
+  m_uiPoolPayloadBytes -= page.m_uiPayloadBytes;
+  page.m_uiPayloadBytes = 0U;
+  page.m_bInUse         = false;
+  page.m_uiRetireFrame  = frame;
+  m_uiPoolRetiringBytes += page.m_uiBytes;
+  m_RetiringPhysicalPages.PushBack(*index);
+}
+
+void xiiGeometryResidencyManager::State::CollectPhysicalPages(xiiUInt64 frame, xiiUInt64 completed)
+{
+  const auto count = xiiMath::Min(512U, m_RetiringPhysicalPages.GetCount());
+  for (xiiUInt32 n = 0U; n < count && !m_RetiringPhysicalPages.IsEmpty(); ++n)
+  {
+    m_uiPhysicalRetireCursor %= m_RetiringPhysicalPages.GetCount();
+    const auto  index = m_RetiringPhysicalPages[m_uiPhysicalRetireCursor];
+    const auto& page  = m_PhysicalPages[index];
+    if (page.m_uiRetireFrame <= completed)
+    {
+      m_FreePhysicalPages[page.m_uiClass].PushBack(index);
+      m_uiPoolRetiringBytes -= page.m_uiBytes;
+      m_uiPoolReusableBytes += page.m_uiBytes;
+      m_RetiringPhysicalPages.RemoveAtAndSwap(m_uiPhysicalRetireCursor);
+    }
+    else
+      ++m_uiPhysicalRetireCursor;
+  }
+  const bool      pressure = m_pMetadataBuffer->GetDevice()->IsStreamingMemoryPressured();
+  const xiiUInt64 limits[] = {xiiUInt64(xiiMath::Max(0, cvar_GeometryCacheMiB.GetValue())) * 1024U * 1024U,
+                              xiiUInt64(xiiMath::Max(0, cvar_TextureCacheMiB.GetValue())) * 1024U * 1024U};
+  for (xiiUInt32 bucket = 0U; bucket < 8U; ++bucket)
+  {
+    auto&      free     = m_FreePhysicalPages[bucket];
+    const auto examined = xiiMath::Min(32U, free.GetCount());
+    for (xiiUInt32 n = 0U; n < examined && !free.IsEmpty(); ++n)
+    {
+      auto& cursor = m_uiPhysicalTrimCursor[bucket];
+      cursor %= free.GetCount();
+      const auto index   = free[cursor];
+      auto&      page    = m_PhysicalPages[index];
+      const auto texture = page.m_Texture != nullptr;
+      if (pressure || m_uiPoolBytes[texture ? 1U : 0U] > limits[texture ? 1U : 0U] || frame - xiiMath::Min(frame, page.m_uiRetireFrame) > 120U)
+      {
+        if (texture)
+          xiiGALBindlessResourceTable::RetireTextureSRV(page.m_Handle, completed);
+        else
+          RetireBufferBinding(page.m_Handle, completed);
+        (texture ? m_PhysicalTextures : m_PhysicalBuffers).Remove(page.m_Handle.m_uiIndex);
+        m_uiPoolBytes[texture ? 1U : 0U] -= page.m_uiBytes;
+        m_uiPoolReusableBytes -= page.m_uiBytes;
+        m_uiPoolReleasedBytes += page.m_uiBytes;
+        page = {};
+        m_UnusedPhysicalIndices.PushBack(index);
+        free.RemoveAtAndSwap(cursor);
+      }
+      else
+        ++cursor;
+    }
+  }
+#if XII_ENABLED(XII_USE_PROFILING)
+  xiiStats::SetStat("Renderer/GPU residency/Pool geometry backing bytes", m_uiPoolBytes[0]);
+  xiiStats::SetStat("Renderer/GPU residency/Pool texture backing bytes", m_uiPoolBytes[1]);
+  xiiStats::SetStat("Renderer/GPU residency/Pool reusable bytes", m_uiPoolReusableBytes);
+  xiiStats::SetStat("Renderer/GPU residency/Pool active payload bytes", m_uiPoolPayloadBytes);
+  const auto activeCapacity = m_uiPoolBytes[0] + m_uiPoolBytes[1] - m_uiPoolReusableBytes - m_uiPoolRetiringBytes;
+  xiiStats::SetStat("Renderer/GPU residency/Pool active padding bytes", activeCapacity - xiiMath::Min(activeCapacity, m_uiPoolPayloadBytes));
+  xiiStats::SetStat("Renderer/GPU residency/Pool retiring bytes", m_uiPoolRetiringBytes);
+  xiiStats::SetStat("Renderer/GPU residency/Pool reuses", m_uiPoolReuses);
+  xiiStats::SetStat("Renderer/GPU residency/Pool allocations", m_uiPoolAllocations);
+  xiiStats::SetStat("Renderer/GPU residency/Pool released bytes", m_uiPoolReleasedBytes);
+#endif
+}
+
+void xiiGeometryResidencyManager::State::ClearPhysicalPages()
+{
+  for (auto& page : m_PhysicalPages)
+  {
+    if (page.m_Texture)
+      xiiGALBindlessResourceTable::RetireTextureSRV(page.m_Handle, m_uiStreamingFrame);
+    else if (page.m_Buffer)
+      RetireBufferBinding(page.m_Handle, m_uiStreamingFrame);
+  }
+  m_PhysicalPages.Clear();
+  m_PhysicalBuffers.Clear();
+  m_PhysicalTextures.Clear();
+  m_RetiringPhysicalPages.Clear();
+  m_UnusedPhysicalIndices.Clear();
+  for (auto& free : m_FreePhysicalPages)
+    free.Clear();
+  xiiMemoryUtils::ZeroFillArray(m_uiPoolBytes);
+  xiiMemoryUtils::ZeroFillArray(m_uiPhysicalTrimCursor);
+  m_uiPhysicalRetireCursor = 0U;
+  m_uiPoolPayloadBytes = m_uiPoolReusableBytes = m_uiPoolRetiringBytes = 0U;
+  m_uiPoolReuses = m_uiPoolAllocations = m_uiPoolReleasedBytes = 0U;
+}
+
 xiiGeometryResidencyManager::AdmissionResult xiiGeometryResidencyManager::State::UploadTextureTile(TextureSource& source, xiiUInt32 page, bool optional)
 {
-  constexpr auto                 bytes  = xiiVirtualTextureData::s_uiTileBytes;
-  const auto                     limit  = xiiUInt64(xiiMath::Max(0, cvar_TextureCacheMiB.GetValue())) * 1024U * 1024U;
-  auto*                          device = m_pMetadataBuffer->GetDevice().Borrow();
+  constexpr auto bytes = xiiVirtualTextureData::s_uiTileBytes;
+  if (optional && bytes > m_uiRemainingTextureUploadBytes)
+    return AdmissionResult::BudgetDeferred;
+  const auto&                    compiled = source.m_Data;
+  const xiiUInt32                bucket   = compiled->m_Description.m_Format == xiiGALResourceFormat::RGBA8UNormalizedSRGB ? 7U : 6U;
+  auto&                          free     = m_FreePhysicalPages[bucket];
+  const auto                     limit    = xiiUInt64(xiiMath::Max(0, cvar_TextureCacheMiB.GetValue())) * 1024U * 1024U;
+  auto*                          device   = m_pMetadataBuffer->GetDevice().Borrow();
   xiiGALMemoryCategoryStatistics ownership;
-  const auto                     allocated = device->GetMemoryCategoryStatistics(xiiGALMemoryCategory::TexturePages, ownership) ? ownership.m_uiAllocatedBytes : m_uiTextureBytes;
-  if (optional && (source.m_uiPageAllocationBytes > limit || allocated > limit - source.m_uiPageAllocationBytes))
+  const auto                     allocated = device->GetMemoryCategoryStatistics(xiiGALMemoryCategory::TexturePages, ownership) ? ownership.m_uiAllocatedBytes : m_uiPoolBytes[1];
+  if (optional && free.IsEmpty() && (source.m_uiPageAllocationBytes > limit || allocated > limit - source.m_uiPageAllocationBytes))
   {
-    // Completed payloads denied by this cache must not monopolize the shared IO slots.
     source.m_Pages[page].m_Io.Clear();
     return AdmissionResult::MemoryDeferred;
   }
-  const auto& compiled                = source.m_Data;
-  auto        description             = compiled->m_Description;
-  description.m_MemoryCategory        = xiiGALMemoryCategory::TexturePages;
-  description.m_Size                  = {xiiVirtualTextureData::s_uiPhysicalSize, xiiVirtualTextureData::s_uiPhysicalSize};
-  description.m_uiMipLevels           = 1U;
-  description.m_Usage                 = xiiGALResourceUsage::Immutable;
-  description.m_BindFlags             = xiiGALBindFlags::ShaderResource;
   auto&                     residency = source.m_Pages[page];
   xiiDynamicArray<xiiUInt8> requiredData;
   xiiUInt8*                 payload = nullptr;
@@ -1077,28 +1235,81 @@ xiiGeometryResidencyManager::AdmissionResult xiiGeometryResidencyManager::State:
       return AdmissionResult::Failed;
     payload = requiredData.GetData();
   }
-  xiiGALTextureSubResourceData subresource(xiiConstByteBlobPtr(payload, bytes), xiiVirtualTextureData::s_uiPhysicalSize * 4U, bytes);
-  xiiGALTextureData            data(xiiMakeArrayPtr(&subresource, 1U));
-  data.m_bStreamingRefinement          = optional;
-  data.m_uiMaxStreamingAllocationBytes = optional ? limit - xiiMath::Min(limit, allocated) : xiiMath::MaxValue<xiiUInt64>();
-  auto texture                         = device->CreateTexture(description, &data);
-  if (!texture)
-    return AdmissionResult::MemoryDeferred;
+  if (!m_pTopologyUploadFence)
+    m_pTopologyUploadFence = device->CreateFence({.m_Type = xiiGALFenceType::General});
+  if (!m_pTopologyUploadFence)
+    return AdmissionResult::Failed;
+  auto commands = device->CreateCommandList({.m_QueueFlags = xiiGALCommandQueueFlags::Graphics | xiiGALCommandQueueFlags::Transfer});
+  if (!commands)
+    return AdmissionResult::Failed;
+  commands->Begin();
+  xiiUInt32 physical;
+  if (!free.IsEmpty())
+  {
+    physical = free.PeekBack();
+    free.PopBack();
+    m_PhysicalPages[physical].m_bInUse = true;
+    m_uiPoolReusableBytes -= m_PhysicalPages[physical].m_uiBytes;
+    ++m_uiPoolReuses;
+  }
+  else
+  {
+    auto description             = compiled->m_Description;
+    description.m_MemoryCategory = xiiGALMemoryCategory::TexturePages;
+    description.m_Size           = {xiiVirtualTextureData::s_uiPhysicalSize, xiiVirtualTextureData::s_uiPhysicalSize};
+    description.m_uiMipLevels    = 1U;
+    description.m_Usage          = xiiGALResourceUsage::Mutable;
+    description.m_BindFlags      = xiiGALBindFlags::ShaderResource;
+    xiiGALTextureData admission;
+    admission.m_bStreamingAllocation          = optional;
+    admission.m_uiMaxStreamingAllocationBytes = optional ? limit - xiiMath::Min(limit, allocated) : xiiMath::MaxValue<xiiUInt64>();
+    auto texture                              = device->CreateTexture(description, &admission);
+    if (!texture)
+    {
+      commands->End();
+      return AdmissionResult::MemoryDeferred;
+    }
+    const auto handle = xiiGALBindlessResourceTable::RegisterTextureSRV(texture->GetDefaultView(xiiGALTextureViewType::ShaderResource));
+    if (!handle.IsValid())
+    {
+      commands->End();
+      return AdmissionResult::Failed;
+    }
+    PhysicalPage storage;
+    storage.m_Handle  = handle;
+    storage.m_uiBytes = texture->GetMemoryConsumption();
+    storage.m_uiClass = bucket;
+    storage.m_Texture = std::move(texture);
+    physical          = AddPhysicalPage(std::move(storage));
+  }
+  auto&            storage = m_PhysicalPages[physical];
   xiiStringBuilder name;
   name.SetFormat("{} Texture page {}", compiled->m_sFile, page);
-  texture->SetDebugName(name);
-  const auto handle = xiiGALBindlessResourceTable::RegisterTextureSRV(texture->GetDefaultView(xiiGALTextureViewType::ShaderResource));
-  if (!handle.IsValid())
+  storage.m_Texture->SetDebugName(name);
+  xiiGALTextureSubResourceData subresource(xiiConstByteBlobPtr(payload, bytes), xiiVirtualTextureData::s_uiPhysicalSize * 4U, bytes);
+  const auto                   box = xiiBoundingBoxU32::MakeFromMinMax(xiiVec3U32::MakeZero(), xiiVec3U32(xiiVirtualTextureData::s_uiPhysicalSize, xiiVirtualTextureData::s_uiPhysicalSize, 1U));
+  commands->UpdateTexture(storage.m_Texture.Borrow(), {}, box, subresource);
+  xiiGALStateTransitionDescription transition{.m_pResource = storage.m_Texture.Borrow(), .m_NewState = xiiGALResourceStateFlags::ShaderResource, .m_TransitionFlags = xiiGALStateTransitionFlags::UpdateState};
+  commands->TransitionResourceStates(xiiMakeArrayPtr(&transition, 1U));
+  commands->EnqueueSignal(m_pTopologyUploadFence.Borrow(), ++m_uiTopologyUploadValue);
+  commands->End();
+  if (device->GetCommandQueue(xiiGALCommandQueueFlags::Graphics)->Submit(commands.Borrow()) == 0U)
+  {
+    RetirePhysicalPage(storage.m_Handle, true, m_uiStreamingFrame);
     return AdmissionResult::Failed;
-  source.m_Pages[page].m_uiAdmittedFrame = m_uiStreamingFrame;
-  source.m_Pages[page].m_Texture         = handle;
-  source.m_Pages[page].m_Io.Clear();
-  source.m_Pages[page].m_uiBytes = texture->GetMemoryConsumption();
-  source.m_uiPageAllocationBytes = xiiMath::Max(source.m_uiPageAllocationBytes, source.m_Pages[page].m_uiBytes);
+  }
+  storage.m_uiPayloadBytes = bytes;
+  m_uiPoolPayloadBytes += bytes;
+  residency.m_uiAdmittedFrame = m_uiStreamingFrame;
+  residency.m_Texture         = storage.m_Handle;
+  residency.m_Io.Clear();
+  residency.m_uiBytes            = storage.m_uiBytes;
+  source.m_uiPageAllocationBytes = xiiMath::Max(source.m_uiPageAllocationBytes, residency.m_uiBytes);
   source.m_bDirty                = true;
-  m_uiTextureBytes += source.m_Pages[page].m_uiBytes;
+  m_uiTextureBytes += residency.m_uiBytes;
   ++m_uiTexturePageCount;
   m_ResidentPages.PushBack(residency.m_uiRequest);
+  m_uiRemainingTextureUploadBytes -= xiiMath::Min(m_uiRemainingTextureUploadBytes, xiiUInt64(bytes));
   return AdmissionResult::Admitted;
 }
 
@@ -1166,7 +1377,7 @@ bool xiiGeometryResidencyManager::State::PublishTexture(TextureSource& source)
   source.m_Table  = handle;
   source.m_bDirty = false;
   for (auto handle : source.m_Retiring)
-    xiiGALBindlessResourceTable::RetireTextureSRV(handle, m_uiStreamingFrame);
+    RetirePhysicalPage(handle, true, m_uiStreamingFrame);
   m_uiTextureBytes -= source.m_uiRetiringBytes;
   m_uiTexturePageCount -= source.m_Retiring.GetCount();
   source.m_uiRetiringBytes = 0U;
@@ -1180,10 +1391,10 @@ void xiiGeometryResidencyManager::State::ClearTextures()
   {
     RetireBufferBinding(it.Value().m_Table, m_uiStreamingFrame);
     for (auto handle : it.Value().m_Retiring)
-      xiiGALBindlessResourceTable::RetireTextureSRV(handle, m_uiStreamingFrame);
+      RetirePhysicalPage(handle, true, m_uiStreamingFrame);
     for (auto& tile : it.Value().m_Pages)
       if (tile.m_Texture.IsValid())
-        xiiGALBindlessResourceTable::RetireTextureSRV(tile.m_Texture, m_uiStreamingFrame);
+        RetirePhysicalPage(tile.m_Texture, true, m_uiStreamingFrame);
   }
   m_Textures.Clear();
   for (xiiUInt32 slot = 0U; slot < 64U; ++slot)
@@ -1222,7 +1433,7 @@ xiiUInt32 xiiGeometryResidencyManager::ResolveVirtualTexture(xiiSharedPtr<xiiVir
     {
       if (fresh.m_Pages[last].m_Texture.IsValid())
       {
-        xiiGALBindlessResourceTable::RetireTextureSRV(fresh.m_Pages[last].m_Texture, frame);
+        s_pState->RetirePhysicalPage(fresh.m_Pages[last].m_Texture, true, frame);
         s_pState->m_uiTextureBytes -= fresh.m_Pages[last].m_uiBytes;
         --s_pState->m_uiTexturePageCount;
       }
@@ -1469,7 +1680,7 @@ void xiiGeometryResidencyManager::State::ProcessTextures(xiiUInt64 frame, xiiUIn
       RetireBufferBinding(source.m_Table, frame - 1U);
       for (auto handle : source.m_Retiring)
       {
-        xiiGALBindlessResourceTable::RetireTextureSRV(handle, frame - 1U);
+        RetirePhysicalPage(handle, true, frame - 1U);
       }
       m_uiTextureBytes -= source.m_uiRetiringBytes;
       m_uiTexturePageCount -= source.m_Retiring.GetCount();
@@ -1479,7 +1690,7 @@ void xiiGeometryResidencyManager::State::ProcessTextures(xiiUInt64 frame, xiiUIn
         m_PageRequests.Remove(tile.m_uiRequest);
         if (tile.m_Texture.IsValid())
         {
-          xiiGALBindlessResourceTable::RetireTextureSRV(tile.m_Texture, frame - 1U);
+          RetirePhysicalPage(tile.m_Texture, true, frame - 1U);
           m_uiTextureBytes -= tile.m_uiBytes;
           --m_uiTexturePageCount;
         }
@@ -1576,13 +1787,28 @@ xiiGeometryResidencyManager::AdmissionResult xiiGeometryResidencyManager::State:
   xiiResourceLock<xiiMeshBufferResource> mesh(source.m_hMesh, xiiResourceAcquireMode::PointerOnly);
   if (mesh.GetAcquireResult() != xiiResourceAcquireResult::Final)
     return AdmissionResult::NotReady;
-  const auto&                    descriptor = mesh->GetDescriptor();
-  const auto&                    page       = descriptor.m_GeometryPages[index];
-  const auto                     limit      = xiiUInt64(xiiMath::Max(0, cvar_GeometryCacheMiB.GetValue())) * 1024U * 1024U;
-  auto*                          device     = m_pMetadataBuffer->GetDevice().Borrow();
+  const auto& descriptor = mesh->GetDescriptor();
+  const auto& page       = descriptor.m_GeometryPages[index];
+  if (page.m_uiSize == 0U || page.m_uiSize > 128U * 1024U)
+    return AdmissionResult::Failed;
+  xiiUInt32 bucket = 0U, capacity = 4096U;
+  while (capacity < page.m_uiSize)
+  {
+    ++bucket;
+    capacity *= 2U;
+  }
+  // Prefer an exact class, then one larger reusable slot before allocating.
+  if (m_FreePhysicalPages[bucket].IsEmpty() && bucket + 1U < 6U && !m_FreePhysicalPages[bucket + 1U].IsEmpty())
+  {
+    ++bucket;
+    capacity *= 2U;
+  }
+  auto&                          free   = m_FreePhysicalPages[bucket];
+  const auto                     limit  = xiiUInt64(xiiMath::Max(0, cvar_GeometryCacheMiB.GetValue())) * 1024U * 1024U;
+  auto*                          device = m_pMetadataBuffer->GetDevice().Borrow();
   xiiGALMemoryCategoryStatistics ownership;
-  const auto                     allocated = device->GetMemoryCategoryStatistics(xiiGALMemoryCategory::GeometryPages, ownership) ? ownership.m_uiAllocatedBytes : m_uiResidentTopologyBytes;
-  if (optional && (page.m_uiSize > limit || allocated > limit - page.m_uiSize))
+  const auto                     allocated = device->GetMemoryCategoryStatistics(xiiGALMemoryCategory::GeometryPages, ownership) ? ownership.m_uiAllocatedBytes : m_uiPoolBytes[0];
+  if (optional && free.IsEmpty() && (capacity > limit || allocated > limit - capacity))
   {
     source.m_Pages[index].m_Io.Clear();
     return AdmissionResult::MemoryDeferred;
@@ -1635,49 +1861,71 @@ xiiGeometryResidencyManager::AdmissionResult xiiGeometryResidencyManager::State:
     if (!m_pTopologyUploadFence)
       return AdmissionResult::Failed;
   }
-  auto commands = device->CreateCommandList({.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
+  auto commands = device->CreateCommandList({.m_QueueFlags = xiiGALCommandQueueFlags::Graphics | xiiGALCommandQueueFlags::Transfer});
   if (!commands)
     return AdmissionResult::Failed;
-  xiiGALBufferCreationDescription description;
-  description.m_MemoryCategory = xiiGALMemoryCategory::StreamingMetadata;
-  description.m_MemoryCategory = xiiGALMemoryCategory::GeometryPages;
-  description.m_uiSize         = page.m_uiSize;
-  description.m_BindFlags      = xiiGALBindFlags::ShaderResource;
-  description.m_Mode           = xiiGALBufferMode::Raw;
-  description.m_Usage          = xiiGALResourceUsage::Immutable;
-  bool             deferred    = false;
-  xiiGALBufferData data(payload, page.m_uiSize, commands.Borrow());
-  data.m_pStreamingDeferred            = optional ? &deferred : nullptr;
-  data.m_uiMaxStreamingAllocationBytes = optional ? limit - xiiMath::Min(limit, allocated) : xiiMath::MaxValue<xiiUInt64>();
   commands->Begin();
-  auto buffer = device->CreateBuffer(description, &data);
-  if (!buffer)
+  xiiUInt32 physical;
+  if (!free.IsEmpty())
   {
-    commands->End();
-    return deferred ? AdmissionResult::MemoryDeferred : AdmissionResult::Failed;
+    physical = free.PeekBack();
+    free.PopBack();
+    m_PhysicalPages[physical].m_bInUse = true;
+    m_uiPoolReusableBytes -= m_PhysicalPages[physical].m_uiBytes;
+    ++m_uiPoolReuses;
   }
+  else
+  {
+    xiiGALBufferCreationDescription description;
+    description.m_MemoryCategory = xiiGALMemoryCategory::GeometryPages;
+    description.m_uiSize         = capacity;
+    description.m_BindFlags      = xiiGALBindFlags::ShaderResource;
+    description.m_Mode           = xiiGALBufferMode::Raw;
+    description.m_Usage          = xiiGALResourceUsage::Mutable;
+    bool             deferred    = false;
+    xiiGALBufferData admission;
+    admission.m_pStreamingDeferred            = optional ? &deferred : nullptr;
+    admission.m_uiMaxStreamingAllocationBytes = optional ? limit - xiiMath::Min(limit, allocated) : xiiMath::MaxValue<xiiUInt64>();
+    auto buffer                               = device->CreateBuffer(description, &admission);
+    if (!buffer)
+    {
+      commands->End();
+      return deferred ? AdmissionResult::MemoryDeferred : AdmissionResult::Failed;
+    }
+    const auto handle = xiiGALBindlessResourceTable::RegisterBufferSRV(buffer->GetDefaultView(xiiGALBufferViewType::ShaderResource));
+    if (!handle.IsValid())
+    {
+      commands->End();
+      return AdmissionResult::Failed;
+    }
+    PhysicalPage storage;
+    storage.m_Handle  = handle;
+    storage.m_uiBytes = buffer->GetMemoryConsumption();
+    storage.m_uiClass = bucket;
+    storage.m_Buffer  = std::move(buffer);
+    physical          = AddPhysicalPage(std::move(storage));
+  }
+  auto&            storage = m_PhysicalPages[physical];
+  const auto       handle  = storage.m_Handle;
   xiiStringBuilder name;
   name.SetFormat("{} Geometry page {}", mesh->GetResourceIdOrDescription(), index);
-  buffer->SetDebugName(name);
-  auto handle = xiiGALBindlessResourceTable::RegisterBufferSRV(buffer->GetDefaultView(xiiGALBufferViewType::ShaderResource));
-  if (!handle.IsValid())
-  {
-    commands->End();
-    return AdmissionResult::Failed;
-  }
-  xiiGALStateTransitionDescription transition{.m_pResource = buffer.Borrow(), .m_NewState = xiiGALResourceStateFlags::ShaderResource, .m_TransitionFlags = xiiGALStateTransitionFlags::UpdateState};
+  storage.m_Buffer->SetDebugName(name);
+  commands->UpdateBuffer(storage.m_Buffer.Borrow(), 0U, xiiMakeArrayPtr(payload, page.m_uiSize));
+  xiiGALStateTransitionDescription transition{.m_pResource = storage.m_Buffer.Borrow(), .m_NewState = xiiGALResourceStateFlags::ShaderResource, .m_TransitionFlags = xiiGALStateTransitionFlags::UpdateState};
   commands->TransitionResourceStates(xiiMakeArrayPtr(&transition, 1U));
   commands->EnqueueSignal(m_pTopologyUploadFence.Borrow(), ++m_uiTopologyUploadValue);
   commands->End();
   if (device->GetCommandQueue(xiiGALCommandQueueFlags::Graphics)->Submit(commands.Borrow()) == 0U)
   {
-    RetireBufferBinding(handle, 0U);
+    RetirePhysicalPage(handle, false, m_uiStreamingFrame);
     return AdmissionResult::Failed;
   }
+  storage.m_uiPayloadBytes = page.m_uiSize;
+  m_uiPoolPayloadBytes += page.m_uiSize;
   source.m_Pages[index].m_Io.Clear();
   source.m_Pages[index].m_uiAdmittedFrame = m_uiStreamingFrame;
   source.m_Pages[index].m_Buffer          = handle;
-  source.m_Pages[index].m_uiBytes         = buffer->GetMemoryConsumption();
+  source.m_Pages[index].m_uiBytes         = storage.m_uiBytes;
   source.m_PageRecords[index].m_Mapping.x = handle.m_uiIndex;
   source.m_bPagesDirty                    = true;
   m_uiResidentTopologyBytes += source.m_Pages[index].m_uiBytes;
@@ -1739,7 +1987,7 @@ bool xiiGeometryResidencyManager::State::PublishPages(SourceBinding& source)
   source.m_PageTable   = handle;
   source.m_bPagesDirty = false;
   for (auto handle : source.m_Retiring)
-    RetireBufferBinding(handle, m_uiStreamingFrame);
+    RetirePhysicalPage(handle, false, m_uiStreamingFrame);
   m_uiResidentTopologyBytes -= source.m_uiRetiringBytes;
   m_uiGeometryPageCount -= source.m_Retiring.GetCount();
   m_StreamingStats.m_uiRetiredTopologyBytes += source.m_uiRetiringBytes;
@@ -1989,7 +2237,7 @@ void xiiGeometryResidencyManager::ReleaseSourceBinding(LodBinding binding, xiiUI
     s_pState->m_uiResidentTopologyBytes -= pSource->m_DirectTopology.m_uiBytes;
     RetireBufferBinding(pSource->m_PageTable, pSource->m_uiLastUseFrame);
     for (auto handle : pSource->m_Retiring)
-      RetireBufferBinding(handle, pSource->m_uiLastUseFrame);
+      s_pState->RetirePhysicalPage(handle, false, pSource->m_uiLastUseFrame);
     s_pState->m_uiResidentTopologyBytes -= pSource->m_uiRetiringBytes;
     s_pState->m_uiGeometryPageCount -= pSource->m_Retiring.GetCount();
     if (!pSource->m_Pages.IsEmpty())
@@ -2005,7 +2253,7 @@ void xiiGeometryResidencyManager::ReleaseSourceBinding(LodBinding binding, xiiUI
         }
         ++pageIndex;
         s_pState->m_PageRequests.Remove(page.m_uiRequest);
-        RetireBufferBinding(page.m_Buffer, pSource->m_uiLastUseFrame);
+        s_pState->RetirePhysicalPage(page.m_Buffer, false, pSource->m_uiLastUseFrame);
       }
     }
     RetireBufferBinding(pSource->m_Vertex, pSource->m_uiLastUseFrame);
@@ -2098,7 +2346,9 @@ void xiiGeometryResidencyManager::ProcessStreaming(xiiUInt64 uiFrameIndex, xiiUI
   {
     s_pState->m_uiStreamingFrame      = uiFrameIndex;
     s_pState->m_uiInitialUploadBudget = s_pState->m_uiRemainingUploadBudget = uiUploadBudgetBytes;
-    s_pState->m_StreamingStats                                              = {};
+    s_pState->m_uiRemainingTextureUploadBytes                               = xiiUInt64(xiiMath::Max(0, cvar_TextureStreamingUploadBudget.GetValue())) * 1024U * 1024U;
+    s_pState->CollectPhysicalPages(uiFrameIndex, uiCompletedFrame);
+    s_pState->m_StreamingStats = {};
   }
   for (xiiUInt32 n = 0; n < s_pState->m_RetireQueue.GetCount();)
   {
@@ -2340,27 +2590,34 @@ xiiGeometryResidencyStats xiiGeometryResidencyManager::GetStats()
   if (s_pState == nullptr)
     return stats;
 
-  stats                           = s_pState->m_StreamingStats;
-  stats.m_uiGeometryPageBytes     = s_pState->m_uiResidentTopologyBytes;
-  stats.m_uiTexturePageBytes      = s_pState->m_uiTextureBytes;
-  stats.m_uiGeometryPages         = s_pState->m_uiGeometryPageCount;
-  stats.m_uiTexturePages          = s_pState->m_uiTexturePageCount;
-  stats.m_uiGeometryPageRequests  = s_pState->m_uiGeometryPageRequests;
-  stats.m_uiGeometryPageUploads   = s_pState->m_uiGeometryPageUploads;
-  stats.m_uiPendingPageRequests   = s_pState->m_PageQueue.GetCount();
-  stats.m_uiPendingPageIO         = s_pState->m_uiPendingIo;
-  stats.m_uiPageRequests          = s_pState->m_uiPageRequests;
-  stats.m_uiPageMisses            = s_pState->m_uiPageMisses;
-  stats.m_uiRemainingUploadBytes  = s_pState->m_uiRemainingUploadBudget;
-  stats.m_uiArenaMeshlets         = s_pState->m_uiArenaMeshlets;
-  stats.m_uiCoverageCacheHits     = s_pState->m_uiCoverageCacheHits;
-  stats.m_uiCoverageQueries       = s_pState->m_uiCoverageQueries;
-  stats.m_uiCoverageIndexBuilds   = s_pState->m_uiCoverageIndexBuilds;
-  stats.m_uiCoverageMeshlets      = s_pState->m_uiCoverageMeshlets;
-  stats.m_uiBudgetBytes           = s_pState->m_uiBudgetBytes;
-  stats.m_uiResidentBytes         = s_pState->m_uiResidentBytes;
-  stats.m_uiResidentTopologyBytes = s_pState->m_uiResidentTopologyBytes;
-  stats.m_uiUploadedBytes         = s_pState->m_uiLastUploadedBytes;
+  stats                                 = s_pState->m_StreamingStats;
+  stats.m_uiGeometryPageBytes           = s_pState->m_uiResidentTopologyBytes;
+  stats.m_uiTexturePageBytes            = s_pState->m_uiTextureBytes;
+  stats.m_uiGeometryPages               = s_pState->m_uiGeometryPageCount;
+  stats.m_uiTexturePages                = s_pState->m_uiTexturePageCount;
+  stats.m_uiGeometryPageRequests        = s_pState->m_uiGeometryPageRequests;
+  stats.m_uiGeometryPageUploads         = s_pState->m_uiGeometryPageUploads;
+  stats.m_uiPendingPageRequests         = s_pState->m_PageQueue.GetCount();
+  stats.m_uiPendingPageIO               = s_pState->m_uiPendingIo;
+  stats.m_uiPageRequests                = s_pState->m_uiPageRequests;
+  stats.m_uiPageMisses                  = s_pState->m_uiPageMisses;
+  stats.m_uiRemainingUploadBytes        = s_pState->m_uiRemainingUploadBudget;
+  stats.m_uiRemainingTextureUploadBytes = s_pState->m_uiRemainingTextureUploadBytes;
+  stats.m_uiPoolBackingBytes            = s_pState->m_uiPoolBytes[0] + s_pState->m_uiPoolBytes[1];
+  stats.m_uiPoolReusableBytes           = s_pState->m_uiPoolReusableBytes;
+  stats.m_uiPoolRetiringBytes           = s_pState->m_uiPoolRetiringBytes;
+  stats.m_uiPoolReuses                  = s_pState->m_uiPoolReuses;
+  stats.m_uiPoolAllocations             = s_pState->m_uiPoolAllocations;
+  stats.m_uiPoolReleasedBytes           = s_pState->m_uiPoolReleasedBytes;
+  stats.m_uiArenaMeshlets               = s_pState->m_uiArenaMeshlets;
+  stats.m_uiCoverageCacheHits           = s_pState->m_uiCoverageCacheHits;
+  stats.m_uiCoverageQueries             = s_pState->m_uiCoverageQueries;
+  stats.m_uiCoverageIndexBuilds         = s_pState->m_uiCoverageIndexBuilds;
+  stats.m_uiCoverageMeshlets            = s_pState->m_uiCoverageMeshlets;
+  stats.m_uiBudgetBytes                 = s_pState->m_uiBudgetBytes;
+  stats.m_uiResidentBytes               = s_pState->m_uiResidentBytes;
+  stats.m_uiResidentTopologyBytes       = s_pState->m_uiResidentTopologyBytes;
+  stats.m_uiUploadedBytes               = s_pState->m_uiLastUploadedBytes;
   for (const auto index : s_pState->m_ActiveSlots)
   {
     const auto& slot = s_pState->m_Slots[index];

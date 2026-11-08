@@ -90,7 +90,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALBufferData
   xiiUInt64          m_uiDataSize;                                                     ///< The data size in bytes.
   xiiGALCommandList* m_pCommandList;                                                   ///< Optional command list used to upload data; if null, a new one is created; if reused elsewhere, synchronization (e.g., fence) is required.
   xiiUInt64          m_uiMaxStreamingAllocationBytes = xiiMath::MaxValue<xiiUInt64>(); ///< Remaining cache allowance, checked against native requirements before optional allocation.
-  bool*              m_pStreamingDeferred            = nullptr;                        ///< Opts an immutable buffer into optional admission. Set on budget deferral, cleared on entry.
+  bool*              m_pStreamingDeferred            = nullptr;                        ///< Opts a streaming buffer into optional native admission. Set on budget deferral, cleared on entry.
 };
 
 /// This describes the sparse buffer properties.

@@ -130,7 +130,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureData
   xiiArrayPtr<const xiiGALTextureSubResourceData> m_pSubResources;                                                  ///< Pointer to the array of the texture sub-resource elements containing the information about each sub-resource.
   xiiGALCommandList*                              m_pCommandList;                                                   ///< Optional command list used to upload data; if null, a new one is created; if reused elsewhere, synchronization (e.g., fence) is required.
   xiiUInt64                                       m_uiMaxStreamingAllocationBytes = xiiMath::MaxValue<xiiUInt64>(); ///< Remaining cache allowance for optional admission.
-  bool                                            m_bStreamingRefinement          = false;                          ///< Creation may be deferred because an older texture remains available.
+  bool                                            m_bStreamingAllocation          = false;                          ///< Checks native allocation admission before creating streaming backing.
 };
 
 /// This describes the mapped texture sub-resource data.

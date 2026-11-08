@@ -46,6 +46,7 @@ xiiCommandLineOptionString opt_GpuDrivenExportMesh("GpuDrivenScene", "-export-me
 xiiCommandLineOptionBool   opt_GpuDrivenAuthoredMaterials("GpuDrivenScene", "-authored-materials", "Render through the authored default material shader.", false);
 xiiCommandLineOptionBool   opt_GpuDrivenMeshShaders("GpuDrivenScene", "-mesh-shaders", "Use mesh shaders when supported.", true);
 xiiCommandLineOptionBool   opt_GpuDrivenCameraTour("GpuDrivenScene", "-camera-tour", "Move between near and distant geometry to exercise page demand.", false);
+xiiCommandLineOptionInt    opt_GpuDrivenCameraTourPeriod("GpuDrivenScene", "-camera-tour-period", "Frames per near/far camera cycle.", 720, 120, 14400);
 xiiCommandLineOptionInt    opt_GpuDrivenFrameCount("GpuDrivenScene", "-frames", "Quit normally after this many rendered frames (zero runs until closed).", 0U);
 xiiCommandLineOptionInt    opt_GpuDrivenGridWidth("GpuDrivenScene", "-grid-width", "Number of scene instances along the X axis.", 24, 1, 512);
 xiiCommandLineOptionInt    opt_GpuDrivenGridHeight("GpuDrivenScene", "-grid-height", "Number of scene instances along the Y axis.", 16, 1, 512);
@@ -98,7 +99,8 @@ public:
       view->SetViewport({0, 0, float(size.width), float(size.height)});
       if (opt_GpuDrivenCameraTour.GetOptionValue(xiiCommandLineOption::LogMode::Never))
       {
-        const float phase    = static_cast<float>(m_uiFrameIndex % 720U) / 720.0f;
+        const auto  period   = static_cast<xiiUInt32>(opt_GpuDrivenCameraTourPeriod.GetOptionValue(xiiCommandLineOption::LogMode::Never));
+        const float phase    = static_cast<float>(m_uiFrameIndex % period) / static_cast<float>(period);
         const float distance = 4.0f + 90.0f * (1.0f - xiiMath::Cos(xiiAngle::MakeFromRadian(phase * xiiMath::Pi<float>() * 2.0f)));
         m_Camera.LookAt(xiiVec3(25.0f - distance, -2.0f, 1.0f + distance * 0.1f), xiiVec3(25.0f, 0.0f, 0.0f), xiiVec3(0.0f, 0.0f, 1.0f));
       }
@@ -128,6 +130,7 @@ public:
         xiiLog::Info("Residency frame {}: {} geometry pages / {} bytes, {} texture pages / {} bytes, {} requests / {} misses.",
                      m_uiFrameIndex, residency.m_uiGeometryPages, residency.m_uiGeometryPageBytes, residency.m_uiTexturePages,
                      residency.m_uiTexturePageBytes, residency.m_uiPageRequests, residency.m_uiPageMisses);
+        xiiLog::Info("Physical pools: {} backing bytes, {} reusable, {} retiring, {} reuses / {} allocations / {} released bytes.", residency.m_uiPoolBackingBytes, residency.m_uiPoolReusableBytes, residency.m_uiPoolRetiringBytes, residency.m_uiPoolReuses, residency.m_uiPoolAllocations, residency.m_uiPoolReleasedBytes);
         xiiLog::Info("Page scheduler: {} geometry requests, {} geometry uploads, {} queued, {} IO pending, {} geometry upload bytes remaining.", residency.m_uiGeometryPageRequests, residency.m_uiGeometryPageUploads, residency.m_uiPendingPageRequests, residency.m_uiPendingPageIO, residency.m_uiRemainingUploadBytes);
       }
       m_pSwapChain->Present();

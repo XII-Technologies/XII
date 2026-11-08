@@ -217,7 +217,7 @@ private:
   void SetVulkanAllocationDebugName(xiiVulkanAllocation allocation, const char* szDebugName) const;
 
   void               UpdateStreamingMemoryBudget();
-  [[nodiscard]] bool TryReserveStreamingAllocation(xiiUInt64 uiAllocationBytes, xiiUInt64 uiTextureUploadBytes = 0U);
+  [[nodiscard]] bool TryReserveStreamingAllocation(xiiUInt64 uiAllocationBytes);
   void               ReleaseStreamingAllocationReservation(xiiUInt64 uiBytes);
 
   vk::PhysicalDevice SelectPhysicalDevice(xiiArrayPtr<vk::PhysicalDevice> pPhysicalDevices, xiiUInt32 uiAdapterID) const;
@@ -334,12 +334,10 @@ private:
 
   xiiMutex      m_StreamingBudgetMutex;
   xiiAtomicBool m_bStreamingMemoryPressured;
-  xiiUInt64     m_uiStreamingBudgetCap          = 0U;
-  xiiUInt64     m_uiStreamingHeadroom           = 0U;
-  xiiUInt64     m_uiRemainingTextureUploadBytes = 0U;
-  xiiUInt64     m_uiPendingStreamingBytes       = 0U;
-  xiiUInt64     m_uiTextureMemoryDeferrals      = 0U;
-  xiiUInt64     m_uiTextureUploadDeferrals      = 0U;
+  xiiUInt64     m_uiStreamingBudgetCap       = 0U;
+  xiiUInt64     m_uiStreamingHeadroom        = 0U;
+  xiiUInt64     m_uiPendingStreamingBytes    = 0U;
+  xiiUInt64     m_uiStreamingMemoryDeferrals = 0U;
 
   // Graphics Queue Information.
   mutable xiiMutex                            m_GraphicsQueueMutex;

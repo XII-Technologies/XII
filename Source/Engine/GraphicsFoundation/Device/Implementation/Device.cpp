@@ -368,7 +368,7 @@ xiiSharedPtr<xiiGALBuffer> xiiGALDevice::CreateBuffer(const xiiGALBufferCreation
   if (pInitialData && pInitialData->m_pStreamingDeferred)
   {
     *pInitialData->m_pStreamingDeferred = false;
-    XII_GAL_DEVICE_CHECK(description.m_Usage == xiiGALResourceUsage::Immutable && externalMemoryKind.IsNoFlagSet(), "Optional streaming requires an immutable internal buffer.");
+    XII_GAL_DEVICE_CHECK((description.m_Usage == xiiGALResourceUsage::Immutable || description.m_Usage == xiiGALResourceUsage::Mutable) && externalMemoryKind.IsNoFlagSet(), "Streaming admission requires an internal immutable or mutable buffer.");
   }
 
   // Validate buffer description.

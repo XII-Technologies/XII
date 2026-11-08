@@ -117,18 +117,21 @@ struct XII_GRAPHICSCORE_DLL xiiGeometryResidencyStats
   xiiUInt64 m_uiPageRequests = 0U, m_uiPageMisses = 0U;
   xiiUInt64 m_uiGeometryPageRequests = 0U, m_uiGeometryPageUploads = 0U;
   xiiUInt32 m_uiPendingPageRequests = 0U, m_uiPendingPageIO = 0U;
-  xiiUInt64 m_uiResidentBytes         = 0U; ///< Occupied meshlet metadata arena bytes.
-  xiiUInt64 m_uiBudgetBytes           = 0U; ///< Soft meshlet metadata occupancy limit.
-  xiiUInt64 m_uiUploadedBytes         = 0U;
-  xiiUInt64 m_uiAdmittedBytes         = 0U; ///< Metadata and topology transfer bytes charged this frame.
-  xiiUInt64 m_uiResidentTopologyBytes = 0U; ///< Unique live LOD topology payload bytes, including word padding.
-  xiiUInt64 m_uiTopologyUploadBytes   = 0U; ///< Topology bytes submitted by admissions this frame.
-  xiiUInt64 m_uiRetiredTopologyBytes  = 0U; ///< Payload bytes passed to deferred retirement this frame.
-  xiiUInt64 m_uiReclaimedArenaBytes   = 0U; ///< Arena bytes made reusable by evictions this frame.
-  xiiUInt32 m_uiEvictions             = 0U;
-  xiiUInt32 m_uiPressureEvictions     = 0U;
-  xiiUInt64 m_uiRemainingUploadBytes  = 0U;
-  xiiUInt64 m_uiPreparedMeshlets      = 0U;
+  xiiUInt64 m_uiResidentBytes               = 0U; ///< Occupied meshlet metadata arena bytes.
+  xiiUInt64 m_uiBudgetBytes                 = 0U; ///< Soft meshlet metadata occupancy limit.
+  xiiUInt64 m_uiUploadedBytes               = 0U;
+  xiiUInt64 m_uiAdmittedBytes               = 0U; ///< Metadata and topology transfer bytes charged this frame.
+  xiiUInt64 m_uiResidentTopologyBytes       = 0U; ///< Unique live LOD topology payload bytes, including word padding.
+  xiiUInt64 m_uiTopologyUploadBytes         = 0U; ///< Topology bytes submitted by admissions this frame.
+  xiiUInt64 m_uiRetiredTopologyBytes        = 0U; ///< Payload bytes passed to deferred retirement this frame.
+  xiiUInt64 m_uiReclaimedArenaBytes         = 0U; ///< Arena bytes made reusable by evictions this frame.
+  xiiUInt32 m_uiEvictions                   = 0U;
+  xiiUInt32 m_uiPressureEvictions           = 0U;
+  xiiUInt64 m_uiRemainingUploadBytes        = 0U;
+  xiiUInt64 m_uiRemainingTextureUploadBytes = 0U;
+  xiiUInt64 m_uiPoolBackingBytes = 0U, m_uiPoolReusableBytes = 0U, m_uiPoolRetiringBytes = 0U;
+  xiiUInt64 m_uiPoolReuses = 0U, m_uiPoolAllocations = 0U, m_uiPoolReleasedBytes = 0U;
+  xiiUInt64 m_uiPreparedMeshlets = 0U;
   xiiUInt32 m_uiExamined = 0U, m_uiAdmitted = 0U, m_uiBudgetDeferred = 0U;
   xiiUInt32 m_uiNotReady = 0U, m_uiArenaDeferred = 0U, m_uiMemoryDeferred = 0U, m_uiFailed = 0U;
   xiiUInt32 m_uiArenaMeshlets        = 0U;
