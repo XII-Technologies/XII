@@ -10,11 +10,15 @@
 #include <GraphicsCore/Material/MaterialResource.h>
 #include <GraphicsCore/Meshes/MeshComponent.h>
 #include <GraphicsCore/Pipeline/View.h>
+#include <GraphicsCore/Textures/Texture2DResource.h>
 
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGpuDrivenSceneConfiguration, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiGpuDrivenSceneConfiguration>)
   {
     XII_BEGIN_PROPERTIES
     {
+      XII_MEMBER_PROPERTY("MeshDetail", m_uiMeshDetail),
+      XII_MEMBER_PROPERTY("Texture", m_sTexture),
+      XII_MEMBER_PROPERTY("AuthoredMaterials", m_bAuthoredMaterials),
       XII_MEMBER_PROPERTY("GridWidth", m_uiGridWidth)->AddAttributes(new xiiDefaultValueAttribute(24U), new xiiClampValueAttribute(1U, 512U)),
       XII_MEMBER_PROPERTY("GridHeight", m_uiGridHeight)->AddAttributes(new xiiDefaultValueAttribute(16U), new xiiClampValueAttribute(1U, 512U)),
       XII_MEMBER_PROPERTY("ObjectSpacing", m_fObjectSpacing)->AddAttributes(new xiiDefaultValueAttribute(2.4f), new xiiClampValueAttribute(0.25f, 20.0f)),
@@ -42,9 +46,8 @@ xiiResult xiiGpuDrivenSceneWorld::ConfigureSubsystems(const xiiGpuDrivenSceneCon
   XII_SUCCEED_OR_RETURN(xiiGeometryResidencyManager::Configure(geometryDescription));
 
   xiiMaterialGpuStorageDescription materialDescription;
-  materialDescription.m_uiMaxMaterials      = 64U;
-  materialDescription.m_uiMaxParameterBytes = 64U;
-  materialDescription.m_uiFramesInFlight    = configuration.m_uiFramesInFlight;
+  materialDescription.m_uiMaxMaterials   = 64U;
+  materialDescription.m_uiFramesInFlight = configuration.m_uiFramesInFlight;
   XII_SUCCEED_OR_RETURN(xiiMaterialManager::Configure(materialDescription));
 
   return XII_SUCCESS;
@@ -114,7 +117,19 @@ xiiResult xiiGpuDrivenSceneWorld::CreateMaterials()
   for (xiiUInt32 i = 0U; i < XII_ARRAY_SIZE(colors); ++i)
   {
     xiiMaterialResourceDescriptor material;
-    material.m_BaseColor    = colors[i];
+    material.m_BaseColor = colors[i];
+    if (!m_Configuration.m_sTexture.IsEmpty())
+      material.m_hBaseColorTexture = xiiResourceManager::LoadResource<xiiTexture2DResource>(m_Configuration.m_sTexture);
+    if (m_Configuration.m_bAuthoredMaterials)
+    {
+      material.m_hShader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Materials/DefaultMaterial.xiiShader");
+      auto& binding      = material.m_Texture2DBindings.ExpandAndGetRef();
+      binding.m_Name.Assign("BaseTexture");
+      binding.m_Value = material.m_hBaseColorTexture;
+      auto& enabled   = material.m_Parameters.ExpandAndGetRef();
+      enabled.m_Name.Assign("UseBaseTexture");
+      enabled.m_Value = material.m_hBaseColorTexture.IsValid();
+    }
     material.m_FeatureFlags = xiiMaterialFeatureFlags::ReceivesLighting | xiiMaterialFeatureFlags::CastsShadows;
     xiiStringBuilder name;
     name.SetFormat("GpuDrivenScene.Material{}", i);
@@ -131,7 +146,7 @@ xiiResult xiiGpuDrivenSceneWorld::CreateGeometry()
     xiiGeometry high, low;
     if (i == 0)
     {
-      high.AddStackedSphere(0.8f, 32, 16);
+      high.AddStackedSphere(0.8f, m_Configuration.m_uiMeshDetail, m_Configuration.m_uiMeshDetail / 2U);
       low.AddStackedSphere(0.8f, 12, 6);
     }
     else
@@ -147,7 +162,8 @@ xiiResult xiiGpuDrivenSceneWorld::CreateGeometry()
     xiiMeshResourceDescriptor descriptor;
     descriptor.GetMeshBufferDescriptor().AllocateStreamsFromGeometry(high, xiiGALPrimitiveTopology::TriangleList, true);
     descriptor.GetMeshBufferDescriptor().m_bAllowGpuDrivenDraw = true;
-    descriptor.GetLODs()[0].m_fScreenSize                      = 80;
+    descriptor.AddMaterialSlot("");
+    descriptor.GetLODs()[0].m_fScreenSize = 80;
     descriptor.AddSection(fineCount, 0, 0, 0);
     descriptor.AddLOD(0);
     descriptor.AddSection(coarseCount, fineCount, 0, 1);
