@@ -130,7 +130,8 @@ xiiResult xiiGALBufferVulkan::InitPlatform(const xiiGALBufferData* pInitialData,
     vkBufferCreateInfo.flags = vk::BufferCreateFlagBits::eSparseBinding | vk::BufferCreateFlagBits::eSparseResidency | (m_Description.m_MiscFlags.IsSet(xiiGALMiscBufferFlags::SparseAlias) ? vk::BufferCreateFlagBits::eSparseAliased : static_cast<vk::BufferCreateFlagBits>(0U));
 
     xiiVulkanAllocationCreateInfo allocationCreateInfo;
-    allocationCreateInfo.m_Usage = xiiVulkanMemoryUsage::Auto;
+    allocationCreateInfo.m_MemoryCategory = m_Description.m_MemoryCategory;
+    allocationCreateInfo.m_Usage          = xiiVulkanMemoryUsage::Auto;
 
     VK_SUCCEED_OR_RETURN_XII_FAILURE(pVulkanMemoryAllocator->CreateBuffer(vkBufferCreateInfo, allocationCreateInfo, m_vkBuffer, m_BufferMemoryAllocation));
 
@@ -139,9 +140,11 @@ xiiResult xiiGALBufferVulkan::InitPlatform(const xiiGALBufferData* pInitialData,
   else if (m_Description.m_Usage == xiiGALResourceUsage::Staging)
   {
     xiiVulkanAllocationCreateInfo allocationCreateInfo;
-    allocationCreateInfo.m_Usage         = xiiVulkanMemoryUsage::Auto;
-    allocationCreateInfo.m_RequiredFlags = xiiVulkanMemoryPropertyFlags::HostVisible;
-    allocationCreateInfo.m_Flags         = m_Description.m_CPUAccessFlags.IsSet(xiiGALCPUAccessFlag::Read) ? xiiVulkanAllocationCreateFlags::StrategyHostRandom : xiiVulkanAllocationCreateFlags::StrategyHostSequential;
+    allocationCreateInfo.m_MemoryCategory = m_Description.m_MemoryCategory;
+    allocationCreateInfo.m_Usage          = xiiVulkanMemoryUsage::Auto;
+    allocationCreateInfo.m_MemoryCategory = m_Description.m_CPUAccessFlags.IsSet(xiiGALCPUAccessFlag::Read) ? xiiGALMemoryCategory::Readback : xiiGALMemoryCategory::Upload;
+    allocationCreateInfo.m_RequiredFlags  = xiiVulkanMemoryPropertyFlags::HostVisible;
+    allocationCreateInfo.m_Flags          = m_Description.m_CPUAccessFlags.IsSet(xiiGALCPUAccessFlag::Read) ? xiiVulkanAllocationCreateFlags::StrategyHostRandom : xiiVulkanAllocationCreateFlags::StrategyHostSequential;
 
     VK_SUCCEED_OR_RETURN_XII_FAILURE(pVulkanMemoryAllocator->CreateBuffer(vkBufferCreateInfo, allocationCreateInfo, m_vkBuffer, m_BufferMemoryAllocation));
 
@@ -163,9 +166,10 @@ xiiResult xiiGALBufferVulkan::InitPlatform(const xiiGALBufferData* pInitialData,
 #endif
 
     xiiVulkanAllocationCreateInfo allocationCreateInfo;
-    allocationCreateInfo.m_Usage         = xiiVulkanMemoryUsage::Auto;
-    allocationCreateInfo.m_RequiredFlags = xiiVulkanMemoryPropertyFlags::HostCoherent;
-    allocationCreateInfo.m_Flags         = xiiVulkanAllocationCreateFlags::StrategyHostSequential;
+    allocationCreateInfo.m_MemoryCategory = m_Description.m_MemoryCategory;
+    allocationCreateInfo.m_Usage          = xiiVulkanMemoryUsage::Auto;
+    allocationCreateInfo.m_RequiredFlags  = xiiVulkanMemoryPropertyFlags::HostCoherent;
+    allocationCreateInfo.m_Flags          = xiiVulkanAllocationCreateFlags::StrategyHostSequential;
 
     VK_SUCCEED_OR_RETURN_XII_FAILURE(pVulkanMemoryAllocator->CreateBuffer(vkBufferCreateInfo, allocationCreateInfo, m_vkBuffer, m_BufferMemoryAllocation));
 
@@ -177,7 +181,8 @@ xiiResult xiiGALBufferVulkan::InitPlatform(const xiiGALBufferData* pInitialData,
     bool* pStreamingDeferred = pInitialData != nullptr ? pInitialData->m_pStreamingDeferred : nullptr;
     {
       xiiVulkanAllocationCreateInfo allocationCreateInfo;
-      allocationCreateInfo.m_Usage = xiiVulkanMemoryUsage::Auto;
+      allocationCreateInfo.m_MemoryCategory = m_Description.m_MemoryCategory;
+      allocationCreateInfo.m_Usage          = xiiVulkanMemoryUsage::Auto;
 
       xiiUInt64 uiAllocationBytes = 0U;
       if (pStreamingDeferred != nullptr)
@@ -204,7 +209,7 @@ xiiResult xiiGALBufferVulkan::InitPlatform(const xiiGALBufferData* pInitialData,
           device.destroyBuffer(buffer, nullptr, dispatch);
           uiAllocationBytes = requirements.size;
         }
-        if (!pDeviceVulkan->TryReserveStreamingAllocation(uiAllocationBytes))
+        if (uiAllocationBytes > pInitialData->m_uiMaxStreamingAllocationBytes || !pDeviceVulkan->TryReserveStreamingAllocation(uiAllocationBytes))
         {
           *pStreamingDeferred = true;
           return XII_FAILURE;

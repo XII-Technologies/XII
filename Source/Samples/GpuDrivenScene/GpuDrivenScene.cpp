@@ -119,6 +119,12 @@ public:
       if (m_uiFrameIndex % 60U == 0U)
       {
         const auto residency = xiiGeometryResidencyManager::GetStats();
+        for (auto category : {xiiGALMemoryCategory::GeometryPages, xiiGALMemoryCategory::TexturePages})
+        {
+          xiiGALMemoryCategoryStatistics ownership;
+          if (m_pDevice->GetMemoryCategoryStatistics(category, ownership))
+            xiiLog::Info("Native {}: {} allocated bytes, {} retiring bytes, {} allocations.", xiiGALMemoryCategory::Names[category], ownership.m_uiAllocatedBytes, ownership.m_uiRetiringBytes, ownership.m_uiAllocationCount);
+        }
         xiiLog::Info("Residency frame {}: {} geometry pages / {} bytes, {} texture pages / {} bytes, {} requests / {} misses.",
                      m_uiFrameIndex, residency.m_uiGeometryPages, residency.m_uiGeometryPageBytes, residency.m_uiTexturePages,
                      residency.m_uiTexturePageBytes, residency.m_uiPageRequests, residency.m_uiPageMisses);

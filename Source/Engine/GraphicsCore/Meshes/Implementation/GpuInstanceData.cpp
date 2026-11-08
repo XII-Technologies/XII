@@ -281,7 +281,7 @@ xiiResult xiiGpuInstanceData::UpdateFromExtraction(xiiArrayPtr<xiiRenderData* co
     record.m_uiMaterialIndex         = entry.m_GpuMaterial.IsInvalidated() ? xiiInvalidIndex : entry.m_GpuMaterial.GetInternalID().m_InstanceIndex;
     const auto transform             = key.m_Instance == xiiInvalidIndex ? packet.m_GlobalTransform.GetAsMat4() : packet.m_GlobalTransform.GetAsMat4() * packet.m_InstanceTransforms[key.m_Instance];
     record.m_PreviousGlobalTransform = fresh ? transform : nextFrame ? record.m_GlobalTransform :
-                                                                          record.m_PreviousGlobalTransform;
+                                                                       record.m_PreviousGlobalTransform;
     const bool transformChanged      = resetPose || record.m_GlobalTransform != transform;
     record.m_GlobalTransform         = transform;
     if (transformChanged)
@@ -587,6 +587,7 @@ xiiGpuInstanceData::UploadHandles xiiGpuInstanceData::AddUploadPass(xiiRenderGra
     if (requested == 0)
       return false;
     xiiGALBufferCreationDescription description;
+    description.m_MemoryCategory      = xiiGALMemoryCategory::Geometry;
     description.m_uiSize              = xiiUInt64(requested) * stride;
     description.m_uiElementByteStride = stride;
     description.m_BindFlags           = xiiGALBindFlags::ShaderResource;

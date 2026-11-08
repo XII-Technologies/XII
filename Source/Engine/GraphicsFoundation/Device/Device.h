@@ -12,6 +12,7 @@
 #include <Foundation/Types/UniquePtr.h>
 #include <GraphicsFoundation/Declarations/Descriptors.h>
 #include <GraphicsFoundation/Declarations/Object.h>
+#include <GraphicsFoundation/Device/MemoryStatistics.h>
 
 /// A snapshot of one graphics memory heap. Keep heap budgets separate when testing whether an allocation fits.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALMemoryHeapStatistics
@@ -260,6 +261,14 @@ public:
 
   /// Returns current allocator and budget statistics. Backends without reporting return an empty array.
   virtual void GetMemoryHeapStatistics(xiiDynamicArray<xiiGALMemoryHeapStatistics>& out_heaps) const { out_heaps.Clear(); }
+
+  /// Returns false when allocation attribution is unavailable. Native retiring memory remains charged.
+  [[nodiscard]] virtual bool GetMemoryCategoryStatistics(xiiGALMemoryCategory::Enum category, xiiGALMemoryCategoryStatistics& out_statistics) const
+  {
+    XII_IGNORE_UNUSED(category);
+    out_statistics = {};
+    return false;
+  }
 
   /// Whether the backend is applying memory pressure controls to optional streaming work.
   [[nodiscard]] virtual bool IsStreamingMemoryPressured() const { return false; }

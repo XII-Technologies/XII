@@ -114,6 +114,8 @@ public:
   virtual void                GetMemoryHeapStatistics(xiiDynamicArray<xiiGALMemoryHeapStatistics>& out_heaps) const override final;
   [[nodiscard]] virtual bool  IsStreamingMemoryPressured() const override final { return m_bStreamingMemoryPressured; }
 
+  [[nodiscard]] bool GetMemoryCategoryStatistics(xiiGALMemoryCategory::Enum category, xiiGALMemoryCategoryStatistics& out_statistics) const override final;
+
   virtual void SetDebugNamePlatform(xiiStringView sName) const override final;
 
   template <typename ObjectHandle, typename = typename std::enable_if<std::is_object<ObjectHandle>::value>::type>

@@ -4,6 +4,8 @@
 
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
+#include <GraphicsFoundation/Device/MemoryStatistics.h>
+
 #include <Foundation/Containers/Blob.h>
 #include <GraphicsFoundation/Declarations/Descriptors.h>
 #include <GraphicsFoundation/Resources/TextureView.h>
@@ -51,6 +53,8 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALMiscTextureFlags)
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureCreationDescription : public xiiHashableStruct<xiiGALTextureCreationDescription>
 {
   XII_DECLARE_POD_TYPE();
+
+  xiiEnum<xiiGALMemoryCategory> m_MemoryCategory;
 
   /// Returns true if the texture is a 1D texture or a 1D texture array.
   XII_ALWAYS_INLINE bool Is1D() const { return m_Type == xiiGALResourceDimension::Texture1D || m_Type == xiiGALResourceDimension::Texture1DArray; }
@@ -123,9 +127,10 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureData
   {
   }
 
-  xiiArrayPtr<const xiiGALTextureSubResourceData> m_pSubResources;                ///< Pointer to the array of the texture sub-resource elements containing the information about each sub-resource.
-  xiiGALCommandList*                              m_pCommandList;                 ///< Optional command list used to upload data; if null, a new one is created; if reused elsewhere, synchronization (e.g., fence) is required.
-  bool                                            m_bStreamingRefinement = false; ///< Creation may be deferred because an older texture remains available.
+  xiiArrayPtr<const xiiGALTextureSubResourceData> m_pSubResources;                                                  ///< Pointer to the array of the texture sub-resource elements containing the information about each sub-resource.
+  xiiGALCommandList*                              m_pCommandList;                                                   ///< Optional command list used to upload data; if null, a new one is created; if reused elsewhere, synchronization (e.g., fence) is required.
+  xiiUInt64                                       m_uiMaxStreamingAllocationBytes = xiiMath::MaxValue<xiiUInt64>(); ///< Remaining cache allowance for optional admission.
+  bool                                            m_bStreamingRefinement          = false;                          ///< Creation may be deferred because an older texture remains available.
 };
 
 /// This describes the mapped texture sub-resource data.

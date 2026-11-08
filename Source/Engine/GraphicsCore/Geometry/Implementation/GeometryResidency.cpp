@@ -571,6 +571,7 @@ xiiResult xiiGeometryResidencyManager::Initialize(xiiGALDevice* pDevice, const x
     return XII_FAILURE;
 
   xiiGALBufferCreationDescription desc;
+  desc.m_MemoryCategory       = xiiGALMemoryCategory::StreamingMetadata;
   desc.m_uiSize               = static_cast<xiiUInt32>(uiSize);
   desc.m_uiElementByteStride  = sizeof(xiiGpuGeometryRecord);
   desc.m_BindFlags            = xiiGALBindFlags::ShaderResource;
@@ -1003,10 +1004,11 @@ bool xiiGeometryResidencyManager::State::InitializeTextureFeedback()
     if (m_TextureFeedbackUav[slot].IsValid())
       continue;
     xiiGALBufferCreationDescription description;
-    description.m_uiSize    = zeros.GetCount() * sizeof(xiiUInt32);
-    description.m_Usage     = xiiGALResourceUsage::Mutable;
-    description.m_Mode      = xiiGALBufferMode::Raw;
-    description.m_BindFlags = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess;
+    description.m_MemoryCategory = xiiGALMemoryCategory::StreamingMetadata;
+    description.m_uiSize         = zeros.GetCount() * sizeof(xiiUInt32);
+    description.m_Usage          = xiiGALResourceUsage::Mutable;
+    description.m_Mode           = xiiGALBufferMode::Raw;
+    description.m_BindFlags      = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess;
     xiiGALBufferData data(zeros.GetData(), description.m_uiSize);
     m_TextureFeedback[slot] = device->CreateBuffer(description, &data);
     if (!m_TextureFeedback[slot])
@@ -1020,17 +1022,20 @@ bool xiiGeometryResidencyManager::State::InitializeTextureFeedback()
 
 xiiGeometryResidencyManager::AdmissionResult xiiGeometryResidencyManager::State::UploadTextureTile(TextureSource& source, xiiUInt32 page, bool optional)
 {
-  constexpr auto bytes = xiiVirtualTextureData::s_uiTileBytes;
-  const auto     limit = xiiUInt64(xiiMath::Max(0, cvar_TextureCacheMiB.GetValue())) * 1024U * 1024U;
-  if (optional && (source.m_uiPageAllocationBytes > limit || m_uiTextureBytes > limit - source.m_uiPageAllocationBytes))
+  constexpr auto                 bytes  = xiiVirtualTextureData::s_uiTileBytes;
+  const auto                     limit  = xiiUInt64(xiiMath::Max(0, cvar_TextureCacheMiB.GetValue())) * 1024U * 1024U;
+  auto*                          device = m_pMetadataBuffer->GetDevice().Borrow();
+  xiiGALMemoryCategoryStatistics ownership;
+  const auto                     allocated = device->GetMemoryCategoryStatistics(xiiGALMemoryCategory::TexturePages, ownership) ? ownership.m_uiAllocatedBytes : m_uiTextureBytes;
+  if (optional && (source.m_uiPageAllocationBytes > limit || allocated > limit - source.m_uiPageAllocationBytes))
   {
     // Completed payloads denied by this cache must not monopolize the shared IO slots.
     source.m_Pages[page].m_Io.Clear();
     return AdmissionResult::MemoryDeferred;
   }
-  auto*       device                  = m_pMetadataBuffer->GetDevice().Borrow();
   const auto& compiled                = source.m_Data;
   auto        description             = compiled->m_Description;
+  description.m_MemoryCategory        = xiiGALMemoryCategory::TexturePages;
   description.m_Size                  = {xiiVirtualTextureData::s_uiPhysicalSize, xiiVirtualTextureData::s_uiPhysicalSize};
   description.m_uiMipLevels           = 1U;
   description.m_Usage                 = xiiGALResourceUsage::Immutable;
@@ -1074,10 +1079,14 @@ xiiGeometryResidencyManager::AdmissionResult xiiGeometryResidencyManager::State:
   }
   xiiGALTextureSubResourceData subresource(xiiConstByteBlobPtr(payload, bytes), xiiVirtualTextureData::s_uiPhysicalSize * 4U, bytes);
   xiiGALTextureData            data(xiiMakeArrayPtr(&subresource, 1U));
-  data.m_bStreamingRefinement = optional;
-  auto texture                = device->CreateTexture(description, &data);
+  data.m_bStreamingRefinement          = optional;
+  data.m_uiMaxStreamingAllocationBytes = optional ? limit - xiiMath::Min(limit, allocated) : xiiMath::MaxValue<xiiUInt64>();
+  auto texture                         = device->CreateTexture(description, &data);
   if (!texture)
     return AdmissionResult::MemoryDeferred;
+  xiiStringBuilder name;
+  name.SetFormat("{} Texture page {}", compiled->m_sFile, page);
+  texture->SetDebugName(name);
   const auto handle = xiiGALBindlessResourceTable::RegisterTextureSRV(texture->GetDefaultView(xiiGALTextureViewType::ShaderResource));
   if (!handle.IsValid())
     return AdmissionResult::Failed;
@@ -1114,11 +1123,12 @@ bool xiiGeometryResidencyManager::State::PublishTexture(TextureSource& source)
   }
   auto*                           device = m_pMetadataBuffer->GetDevice().Borrow();
   xiiGALBufferCreationDescription description;
-  description.m_uiSize    = table.GetCount() * sizeof(xiiUInt32);
-  description.m_Mode      = xiiGALBufferMode::Raw;
-  description.m_Usage     = xiiGALResourceUsage::Immutable;
-  description.m_BindFlags = xiiGALBindFlags::ShaderResource;
-  auto commands           = device->CreateCommandList({.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
+  description.m_MemoryCategory = xiiGALMemoryCategory::StreamingMetadata;
+  description.m_uiSize         = table.GetCount() * sizeof(xiiUInt32);
+  description.m_Mode           = xiiGALBufferMode::Raw;
+  description.m_Usage          = xiiGALResourceUsage::Immutable;
+  description.m_BindFlags      = xiiGALBindFlags::ShaderResource;
+  auto commands                = device->CreateCommandList({.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
   if (!commands)
     return false;
   commands->Begin();
@@ -1500,6 +1510,7 @@ void xiiGeometryResidencyManager::EndStreamingFrame(xiiUInt64 frame)
   if (!capture->m_Staging)
   {
     xiiGALBufferCreationDescription description;
+    description.m_MemoryCategory = xiiGALMemoryCategory::StreamingMetadata;
     description.m_uiSize         = State::s_uiFeedbackWords * sizeof(xiiUInt32);
     description.m_Usage          = xiiGALResourceUsage::Staging;
     description.m_CPUAccessFlags = xiiGALCPUAccessFlag::Read;
@@ -1565,10 +1576,13 @@ xiiGeometryResidencyManager::AdmissionResult xiiGeometryResidencyManager::State:
   xiiResourceLock<xiiMeshBufferResource> mesh(source.m_hMesh, xiiResourceAcquireMode::PointerOnly);
   if (mesh.GetAcquireResult() != xiiResourceAcquireResult::Final)
     return AdmissionResult::NotReady;
-  const auto& descriptor = mesh->GetDescriptor();
-  const auto& page       = descriptor.m_GeometryPages[index];
-  const auto  limit      = xiiUInt64(xiiMath::Max(0, cvar_GeometryCacheMiB.GetValue())) * 1024U * 1024U;
-  if (optional && (page.m_uiSize > limit || m_uiResidentTopologyBytes > limit - page.m_uiSize))
+  const auto&                    descriptor = mesh->GetDescriptor();
+  const auto&                    page       = descriptor.m_GeometryPages[index];
+  const auto                     limit      = xiiUInt64(xiiMath::Max(0, cvar_GeometryCacheMiB.GetValue())) * 1024U * 1024U;
+  auto*                          device     = m_pMetadataBuffer->GetDevice().Borrow();
+  xiiGALMemoryCategoryStatistics ownership;
+  const auto                     allocated = device->GetMemoryCategoryStatistics(xiiGALMemoryCategory::GeometryPages, ownership) ? ownership.m_uiAllocatedBytes : m_uiResidentTopologyBytes;
+  if (optional && (page.m_uiSize > limit || allocated > limit - page.m_uiSize))
   {
     source.m_Pages[index].m_Io.Clear();
     return AdmissionResult::MemoryDeferred;
@@ -1613,7 +1627,6 @@ xiiGeometryResidencyManager::AdmissionResult xiiGeometryResidencyManager::State:
       return AdmissionResult::Failed;
     payload = requiredData.GetData();
   }
-  auto* device = m_pMetadataBuffer->GetDevice().Borrow();
   if (!m_pTopologyUploadFence)
   {
     xiiGALFenceCreationDescription fence;
@@ -1626,13 +1639,16 @@ xiiGeometryResidencyManager::AdmissionResult xiiGeometryResidencyManager::State:
   if (!commands)
     return AdmissionResult::Failed;
   xiiGALBufferCreationDescription description;
-  description.m_uiSize      = page.m_uiSize;
-  description.m_BindFlags   = xiiGALBindFlags::ShaderResource;
-  description.m_Mode        = xiiGALBufferMode::Raw;
-  description.m_Usage       = xiiGALResourceUsage::Immutable;
-  bool             deferred = false;
+  description.m_MemoryCategory = xiiGALMemoryCategory::StreamingMetadata;
+  description.m_MemoryCategory = xiiGALMemoryCategory::GeometryPages;
+  description.m_uiSize         = page.m_uiSize;
+  description.m_BindFlags      = xiiGALBindFlags::ShaderResource;
+  description.m_Mode           = xiiGALBufferMode::Raw;
+  description.m_Usage          = xiiGALResourceUsage::Immutable;
+  bool             deferred    = false;
   xiiGALBufferData data(payload, page.m_uiSize, commands.Borrow());
-  data.m_pStreamingDeferred = optional ? &deferred : nullptr;
+  data.m_pStreamingDeferred            = optional ? &deferred : nullptr;
+  data.m_uiMaxStreamingAllocationBytes = optional ? limit - xiiMath::Min(limit, allocated) : xiiMath::MaxValue<xiiUInt64>();
   commands->Begin();
   auto buffer = device->CreateBuffer(description, &data);
   if (!buffer)
@@ -1640,6 +1656,9 @@ xiiGeometryResidencyManager::AdmissionResult xiiGeometryResidencyManager::State:
     commands->End();
     return deferred ? AdmissionResult::MemoryDeferred : AdmissionResult::Failed;
   }
+  xiiStringBuilder name;
+  name.SetFormat("{} Geometry page {}", mesh->GetResourceIdOrDescription(), index);
+  buffer->SetDebugName(name);
   auto handle = xiiGALBindlessResourceTable::RegisterBufferSRV(buffer->GetDefaultView(xiiGALBufferViewType::ShaderResource));
   if (!handle.IsValid())
   {
@@ -1685,11 +1704,12 @@ bool xiiGeometryResidencyManager::State::PublishPages(SourceBinding& source)
   xiiMemoryUtils::Copy(payload.GetData() + 272U, reinterpret_cast<const xiiUInt8*>(source.m_PageRecords.GetData()), count * sizeof(PageRecord));
   auto*                           device = m_pMetadataBuffer->GetDevice().Borrow();
   xiiGALBufferCreationDescription description;
-  description.m_uiSize    = payload.GetCount();
-  description.m_BindFlags = xiiGALBindFlags::ShaderResource;
-  description.m_Mode      = xiiGALBufferMode::Raw;
-  description.m_Usage     = xiiGALResourceUsage::Immutable;
-  auto commands           = device->CreateCommandList({.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
+  description.m_MemoryCategory = xiiGALMemoryCategory::StreamingMetadata;
+  description.m_uiSize         = payload.GetCount();
+  description.m_BindFlags      = xiiGALBindFlags::ShaderResource;
+  description.m_Mode           = xiiGALBufferMode::Raw;
+  description.m_Usage          = xiiGALResourceUsage::Immutable;
+  auto commands                = device->CreateCommandList({.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
   if (!commands)
     return false;
   commands->Begin();
@@ -1780,10 +1800,12 @@ xiiGeometryResidencyManager::AdmissionResult xiiGeometryResidencyManager::State:
   xiiMemoryUtils::ZeroFill(payload.GetData() + uiContentBytes, payload.GetCount() - uiContentBytes);
 
   xiiGALBufferCreationDescription description;
-  description.m_uiSize    = payload.GetCount();
-  description.m_BindFlags = xiiGALBindFlags::ShaderResource;
-  description.m_Mode      = xiiGALBufferMode::Raw;
-  description.m_Usage     = xiiGALResourceUsage::Immutable;
+  description.m_MemoryCategory = xiiGALMemoryCategory::StreamingMetadata;
+  description.m_uiSize         = payload.GetCount();
+  description.m_BindFlags      = xiiGALBindFlags::ShaderResource;
+  description.m_Mode           = xiiGALBufferMode::Raw;
+  description.m_Usage          = xiiGALResourceUsage::Immutable;
+  description.m_MemoryCategory = xiiGALMemoryCategory::Geometry;
   xiiGALBufferData initialData(payload.GetData(), payload.GetCount(), pCommands.Borrow());
   pCommands->Begin();
   auto pBuffer = device.CreateBuffer(description, &initialData);

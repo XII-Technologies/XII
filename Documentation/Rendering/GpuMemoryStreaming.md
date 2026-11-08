@@ -1,39 +1,63 @@
 # GPU memory and streaming
 
-The Vulkan backend reports each heap's capacity, process budget and usage, allocator block bytes, and occupied suballocations. The native budget can change when other applications use the device. If the extension is unavailable, VMA estimates the budget at 80 percent of heap capacity and reports its committed blocks as usage. Device-local and host-visible describe heap properties. A heap can have both properties, including on integrated hardware.
+The Vulkan device reports heap capacity, native process budget and usage, allocator block capacity, and occupied suballocations. The native budget can change as other applications use the GPU. Without `VK_EXT_memory_budget`, VMA estimates the budget at 80 percent of heap capacity and reports committed blocks as usage. Device-local and host-visible properties can overlap, including on unified-memory and BAR-visible heaps.
 
-## Reading the counters
+## Ownership and reclamation
 
-- **Usage bytes** includes driver-reported allocations outside VMA where native reporting is available.
-- **Committed bytes** counts Vulkan memory blocks VMA owns. Several buffers and images can share one block.
-- **Occupied bytes** counts VMA suballocations. This includes resources pending GPU retirement. Committed bytes can stay high after occupied bytes fall because VMA can reuse a block.
-- **Occupied arena bytes** counts geometry metadata ranges assigned to active records. Geometry eviction makes these ranges reusable.
-- **Resident topology bytes** counts the padded remap and primitive-index payload once per live meshlet range within each mesh revision. **Retired topology bytes** counts payloads passed to deferred retirement during the frame. The Vulkan occupied count includes them until the bindless views and their buffers are released.
+Every VMA buffer and image allocation has one owner category, native allocation size, memory type, and copied debug name. Views and bindless registrations do not add an allocation charge. The charge survives resource removal, descriptor retirement, GAL object destruction, and deferred native destruction. Only the allocator's actual destroy operation removes it. Streaming admission uses this outstanding ownership rather than subtracting bytes when a page mapping is withdrawn.
 
-Profiling builds publish the default Vulkan device's heap counters under **Renderer / GPU memory** in Inspector. Geometry arena occupancy and reclamation appear under **Renderer / Geometry**. When checking scene unload, sample after the relevant queue fences have completed. Compare both occupied and committed bytes. An unchanged occupied count points to a remaining allocation owner, in-flight work, or another workload. A drop in occupied bytes with unchanged committed bytes indicates space available within existing allocator blocks, subject to alignment and fragmentation.
+Inspector publishes the default device's counters under **Renderer / GPU memory**:
 
-## Streaming controls
+- **Usage bytes** is native process usage, including driver allocations outside VMA where available.
+- **Committed bytes** is Vulkan memory block capacity owned by VMA. Multiple resources can share a block.
+- **Occupied bytes** is occupied VMA suballocation memory, including deferred destruction.
+- **Unused allocator bytes** is unoccupied block capacity. Reuse still depends on alignment, memory type, and fragmentation.
+- **Owners / category / Allocated bytes** counts native suballocation ownership once, including retirement.
+- **Owners / category / Retiring bytes** identifies allocations queued for native destruction.
+- **Owners / category / Allocation count** identifies owners retaining numerous small allocations.
+
+Categories attribute geometry, geometry pages, textures, texture pages, streaming metadata, materials, acceleration structures, render graph resources, upload pools, readback resources, and other allocations. Host-visible ownership can overlap device-local ownership. Borrowed native objects and imported external memory are outside the VMA ownership ledger; native heap usage remains the device-wide pressure source.
+
+Set `Streaming.DumpGpuAllocations` to dump outstanding allocation names, categories, sizes, memory types, and retirement state once. Resource names are copied and remain valid after their GAL owners have disappeared. Allocator shutdown diagnoses any remaining owners.
+
+A scene unload must be evaluated after queue completion and retirement processing. Falling occupied bytes with unchanged committed bytes means allocator capacity became reusable. An unchanged occupied count points to live owners, outstanding work, or another workload. A residency-table counter alone does not demonstrate physical reclamation.
+
+## Shared admission and scheduling
 
 | CVar | Default | Effect |
 | --- | ---: | --- |
-| `Streaming.GpuBudgetMiB` | 0 | Caps optional admission against the primary device-local heap. Zero derives the limit from the native or estimated budget. |
-| `Streaming.GpuHeadroomMiB` | 256 | Reserves space below the native budget for required work. |
-| `Streaming.GpuPressureHighPercent` | 95 | Enters pressure at this fraction of the usable budget. |
+| `Streaming.GpuBudgetMiB` | 0 | Caps optional admission on the primary device-local heap; zero uses the native or estimated budget. |
+| `Streaming.GpuHeadroomMiB` | 256 | Reserves native budget headroom for required rendering work. |
+| `Streaming.GpuPressureHighPercent` | 95 | Enters memory pressure at this fraction of the usable budget. |
 | `Streaming.GpuPressureLowPercent` | 85 | Resumes optional streaming below this fraction. |
-| `Streaming.TextureUploadMiB` | 64 | Limits admitted texture refinement payloads per device frame. Zero pauses them. |
+| `Streaming.GeometryCacheMiB` | 256 | Limits optional native geometry page allocations, including retiring backing. |
+| `Streaming.TextureCacheMiB` | 512 | Limits optional native texture tile allocations, including retiring backing. |
+| `Streaming.TextureUploadMiB` | 64 | Limits admitted optional texture upload payload per device frame. Zero pauses optional uploads. |
 
-Geometry, render targets, materials, acceleration structures, and other Vulkan allocations contribute to the reported heap usage. Optional texture refinements and optional geometry topology upgrades reserve bytes against the same device-local admission limit. Each keeps its own transfer allowance. Texture reservations cover the complete replacement while the current image remains live. Vulkan 1.3 supplies image memory requirements before creation. Older Vulkan devices use the mip payload size for this preflight. VMA also checks the selected heap's budget if it needs a new memory block. Under pressure the renderer trims completed idle graph allocations sooner and periodically runs an incremental sweep of unused GPU-backed resources.
+Cache limits are elastic admission ceilings, not preallocated device partitions. All allocations contribute to native device pressure. Optional geometry and texture pages reserve against the same native budget and retain independent transfer allowances. Vulkan 1.2 and newer query exact buffer and image requirements before optional creation. VMA also checks the selected heap budget when committing new blocks. Required coarse representations retain admission priority.
 
-Texture resources continue sampling the coarse image when refinement is deferred. Successful promotion releases the resource's coarse reference, and previous bindless bindings and submitted work retain the old image until safe retirement. Texture creation still uploads a complete replacement image. Canonical mesh vertex and index buffers and other required GPU resources still allocate independently. Initial topology residency, pinned topology, and topology needed by an exact forced draw use required allocation. Hierarchical geometry pages, independent mip and tile transfers, and subsystem memory attribution remain separate work.
+The shared scheduler deduplicates requests across views, orders priority and age deterministically, and bounds request examination, IO, ready payload memory, and eviction work. GPU feedback uses frame-indexed atomic request bitsets and asynchronous, fence-checked readbacks. Queue completion markers protect feedback capture without a device-idle wait or blocking readback. Cold pages expire; memory pressure can accelerate eviction after a minimum residence interval. Delayed feedback predating eviction cannot immediately resurrect the same page.
 
-## Geometry topology residency
+Render graph allocations participate in native pressure and ownership attribution. Completed idle graph allocations and unused GPU-backed resources are reclaimed sooner under pressure.
 
-The geometry manager packs each admitted LOD’s meshlet remaps and primitive indices into one GPU allocation and one bindless descriptor. It validates the range against the compiled CPU streams and uploads the smallest covering span from each stream. The geometry record identifies the byte where primitive indices start. Meshlet offsets are relative to their respective spans. Primitive identities and the compiled asset data retain their original values.
+## Compiled geometry
 
-Identical ranges within a mesh revision share topology bindings and transfer charges. Distinct ranges share the canonical vertex and index bindings. Overlapping ranges can duplicate topology bytes, and a range with gaps retains the bytes between its first and last reference. The metadata graph waits on the graphics queue signal before exposing new bindings to its consumers. Vulkan checks the packed buffer’s native allocation requirements at admission, so required memory allocated after the frame’s pressure sample can defer an upgrade. Once a fallback is resident, optional LODs commit individually. A deferral keeps the current LOD mask and returns any tentative metadata arena range.
+Mesh document version 16 and mesh-buffer descriptor version 4 contain compiled meshlet hierarchies and independently compressed geometry pages. Eligible immutable static triangle meshes allocate page payloads after admission, without full canonical GPU vertex and index buffers. Deformable and mutable geometry retain their direct rendering representation. Unsupported older compiled page formats require asset transformation.
 
-Eviction and unregister release a record's leases after its last referenced frame completes. A range retires its descriptors and buffers when its final lease ends, even if another range of the same mesh stays resident. The mesh resource retains its canonical vertex and index buffers for debug rendering, ray tracing, and export. A later request can upload the topology again from the same loaded mesh.
+Pages contain compact vertices, remaps, and primitive indices, targeting 64 KiB with a 128 KiB maximum. Spatial groups simplify into parents with accumulated geometric error and locked borders. Material sections, primitive ranges, and authored LODs remain distinct. Small persistent hierarchy metadata is separate from payload residency. Native loading retains the directory and streams compressed pages directly from the compiled file.
 
-While the device reports pressure, the manager checks every eight frames for unpinned records idle for at least 120 frames. It shares a limit of four retirements per check between whole records and fine LODs. For active records it inspects up to 128 records in rotation. A fine LOD can leave an active record after 120 frames without demand when a coarser resident LOD has recent demand. Requests from different views contribute to the same history. Recent feedback overflow or dropped readbacks suspend active-record trimming.
+GPU traversal uses conservative visibility and projected screen error. Visible missing children generate requests, while an admitted parent remains drawable until all required visible children are ready. Mesh shaders and vertex pulling resolve the same page mapping. Ray tracing and emissive preparation consume coarse geometry. Canonical CPU mesh data remains available for specialized consumers.
 
-Visibility reports resident demand for streamable meshes with multiple LODs. Ordinary instances use the CPU preference when recent GPU demand is unavailable. A trimmed LOD disappears from new GPU metadata immediately, and its arena range and topology lease stay occupied until older frames complete. Delayed feedback from before the trim cannot re-admit it. Renewed optional fine demand waits under pressure while a coarse LOD is available. Forced draws can request their exact authored LOD under pressure.
+Authored LOD selection metadata is admitted together. LODs no longer own competing topology caches or streaming feedback systems. Deformable ranges share one direct topology allocation per source revision. Geometry handles and IO completions are generation checked. Page-table replacement, bindless retirement, and native destruction preserve references used by submitted work.
+
+## Virtual textures
+
+Eligible ordinary 2D material textures compile into independently compressed 128 by 128 tiles with a two-texel border and resident coarse fallback. HDR, signed formats, cube/3D textures, small textures, and incomplete mip chains currently use ordinary single-allocation resources. The old low/full replacement texture model has been removed.
+
+GPU material sampling derives wanted mip from derivatives or explicit level, records missing and resident demand, and walks coarse ancestors until a resident tile is found. Named material texture bindings and the standard surface, DDGI, and ray tracing paths use the shared mapping. IO and decompression run asynchronously, with source hash/version checks before publication.
+
+The current software cache allocates individual physical tile images. Native allocation padding is charged, rather than the smaller decompressed payload. Shared physical storage pooling, native sparse mapping, feedback capability fallback, broader texture formats, predictive requests, and filtering refinement remain migration work.
+
+## Focused validation
+
+A Vulkan 360-frame near/far camera tour using a compiled 69-page sphere and a 2048-square virtual texture completed with mesh shaders enabled. With 1 MiB geometry and 2 MiB texture cache ceilings, native geometry page ownership converged at 1,045,344 bytes near the scene and fell to 54,256 bytes for two coarse pages. Native texture tile ownership fell from 2,064,384 to 737,280 bytes as the camera moved away. Queued requests and pending IO converged to zero. These measurements establish native suballocation reclamation for this scene; they do not establish acceptance for datasets larger than VRAM or repeated multi-scene transitions.

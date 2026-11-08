@@ -1710,6 +1710,7 @@ void xiiGALDeviceVulkan::SafeReleaseDeviceObjectInternal(vk::ObjectType vkObject
   }
   if (allocation != VK_NULL_HANDLE)
   {
+    m_pVulkanMemoryAllocator->MarkAllocationRetiring(allocation);
     m_pDeferredDeletionQueue->EnqueueResource(vkObjectType, pObject, allocation);
   }
   else
@@ -1741,17 +1742,18 @@ void xiiGALDeviceVulkan::SetVulkanAllocationDebugName(xiiVulkanAllocation alloca
 {
   if (allocation != VK_NULL_HANDLE)
   {
-    m_pVulkanMemoryAllocator->SetAllocationUserData(allocation, szDebugName);
+    m_pVulkanMemoryAllocator->SetAllocationDebugName(allocation, szDebugName);
   }
 }
 
 namespace
 {
-  xiiCVarInt cvar_GpuStreamingBudget("Streaming.GpuBudgetMiB", 0, xiiCVarFlags::Save, "Device-local streaming admission cap in MiB (0 uses the native budget).");
-  xiiCVarInt cvar_GpuStreamingHeadroom("Streaming.GpuHeadroomMiB", 256, xiiCVarFlags::Save, "Space held below the native device-local budget for required GPU allocations.");
-  xiiCVarInt cvar_GpuStreamingPressureHigh("Streaming.GpuPressureHighPercent", 95, xiiCVarFlags::Save, "Enter streaming memory pressure at this percentage of the usable budget.");
-  xiiCVarInt cvar_GpuStreamingPressureLow("Streaming.GpuPressureLowPercent", 85, xiiCVarFlags::Save, "Resume optional streaming below this percentage of the usable budget.");
-  xiiCVarInt cvar_TextureStreamingUploadBudget("Streaming.TextureUploadMiB", 64, xiiCVarFlags::Save, "Per-device-frame upload allowance for texture refinements in MiB (0 pauses refinements).");
+  xiiCVarBool cvar_DumpGpuAllocations("Streaming.DumpGpuAllocations", false, xiiCVarFlags::None, "Dump outstanding native allocation owners once, including retiring allocations.");
+  xiiCVarInt  cvar_GpuStreamingBudget("Streaming.GpuBudgetMiB", 0, xiiCVarFlags::Save, "Device-local streaming admission cap in MiB (0 uses the native budget).");
+  xiiCVarInt  cvar_GpuStreamingHeadroom("Streaming.GpuHeadroomMiB", 256, xiiCVarFlags::Save, "Space held below the native device-local budget for required GPU allocations.");
+  xiiCVarInt  cvar_GpuStreamingPressureHigh("Streaming.GpuPressureHighPercent", 95, xiiCVarFlags::Save, "Enter streaming memory pressure at this percentage of the usable budget.");
+  xiiCVarInt  cvar_GpuStreamingPressureLow("Streaming.GpuPressureLowPercent", 85, xiiCVarFlags::Save, "Resume optional streaming below this percentage of the usable budget.");
+  xiiCVarInt  cvar_TextureStreamingUploadBudget("Streaming.TextureUploadMiB", 64, xiiCVarFlags::Save, "Per-device-frame upload allowance for texture refinements in MiB (0 pauses refinements).");
 
   constexpr xiiUInt64 s_uiBytesPerMiB = 1024ULL * 1024ULL;
 
@@ -1778,11 +1780,21 @@ void xiiGALDeviceVulkan::BeginFramePlatform()
 {
   m_pVulkanMemoryAllocator->BeginFrame(++m_uiAllocatorFrameIndex);
   UpdateStreamingMemoryBudget();
+  if (cvar_DumpGpuAllocations.GetValue())
+  {
+    cvar_DumpGpuAllocations = false;
+    m_pVulkanMemoryAllocator->DumpAllocations();
+  }
 }
 
 void xiiGALDeviceVulkan::GetMemoryHeapStatistics(xiiDynamicArray<xiiGALMemoryHeapStatistics>& out_heaps) const
 {
   m_pVulkanMemoryAllocator->GetMemoryHeapStatistics(out_heaps);
+}
+
+bool xiiGALDeviceVulkan::GetMemoryCategoryStatistics(xiiGALMemoryCategory::Enum category, xiiGALMemoryCategoryStatistics& out_statistics) const
+{
+  return m_pVulkanMemoryAllocator->GetMemoryCategoryStatistics(category, out_statistics);
 }
 
 void xiiGALDeviceVulkan::UpdateStreamingMemoryBudget()
@@ -1838,6 +1850,19 @@ void xiiGALDeviceVulkan::UpdateStreamingMemoryBudget()
       xiiStats::SetStat(sKey, heap.m_uiAllocatedBytes);
       sKey.SetFormat("Renderer/GPU memory/Heap {}/Unused allocator bytes", i);
       xiiStats::SetStat(sKey, heap.m_uiCommittedBytes - xiiMath::Min(heap.m_uiCommittedBytes, heap.m_uiAllocatedBytes));
+    }
+    for (xiiUInt32 category = 0U; category < xiiGALMemoryCategory::ENUM_COUNT; ++category)
+    {
+      xiiGALMemoryCategoryStatistics statistics;
+      static_cast<void>(GetMemoryCategoryStatistics(static_cast<xiiGALMemoryCategory::Enum>(category), statistics));
+      sKey.SetFormat("Renderer/GPU memory/Owners/{}/Allocated bytes", xiiGALMemoryCategory::Names[category]);
+      xiiStats::SetStat(sKey, statistics.m_uiAllocatedBytes);
+      sKey.SetFormat("Renderer/GPU memory/Owners/{}/Device local bytes", xiiGALMemoryCategory::Names[category]);
+      xiiStats::SetStat(sKey, statistics.m_uiDeviceLocalBytes);
+      sKey.SetFormat("Renderer/GPU memory/Owners/{}/Retiring bytes", xiiGALMemoryCategory::Names[category]);
+      xiiStats::SetStat(sKey, statistics.m_uiRetiringBytes);
+      sKey.SetFormat("Renderer/GPU memory/Owners/{}/Allocation count", xiiGALMemoryCategory::Names[category]);
+      xiiStats::SetStat(sKey, statistics.m_uiAllocationCount);
     }
     xiiStats::SetStat("Renderer/GPU memory/Streaming admission limit bytes", uiAdmissionLimit);
     xiiStats::SetStat("Renderer/GPU memory/Streaming pressure", static_cast<bool>(m_bStreamingMemoryPressured));

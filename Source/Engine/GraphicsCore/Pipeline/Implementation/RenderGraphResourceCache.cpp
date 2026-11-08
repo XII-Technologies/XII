@@ -102,13 +102,15 @@ void xiiRenderGraphResourceCache::EndFrame()
   m_ActiveBuffers.Clear();
 }
 
-xiiSharedPtr<xiiGALTexture> xiiRenderGraphResourceCache::AcquireTexture(const xiiGALTextureCreationDescription& description)
+xiiSharedPtr<xiiGALTexture> xiiRenderGraphResourceCache::AcquireTexture(const xiiGALTextureCreationDescription& requestedDescription)
 {
   XII_LOCK(m_Mutex);
   if (m_pDevice == nullptr)
     return nullptr;
 
-  const xiiUInt32 uiHash = description.CalculateHash();
+  auto description             = requestedDescription;
+  description.m_MemoryCategory = xiiGALMemoryCategory::RenderGraph;
+  const xiiUInt32 uiHash       = description.CalculateHash();
 
   xiiDynamicArray<PooledTexture>* pPool = m_TexturePool.GetValue(uiHash);
   if (pPool != nullptr && !pPool->IsEmpty())
@@ -142,13 +144,15 @@ void xiiRenderGraphResourceCache::ReturnTexture(xiiSharedPtr<xiiGALTexture> pTex
   entry.m_uiLastUsedFrame = m_uiCurrentFrame;
 }
 
-xiiSharedPtr<xiiGALBuffer> xiiRenderGraphResourceCache::AcquireBuffer(const xiiGALBufferCreationDescription& description)
+xiiSharedPtr<xiiGALBuffer> xiiRenderGraphResourceCache::AcquireBuffer(const xiiGALBufferCreationDescription& requestedDescription)
 {
   XII_LOCK(m_Mutex);
   if (m_pDevice == nullptr)
     return nullptr;
 
-  const xiiUInt32 uiHash = description.CalculateHash();
+  auto description             = requestedDescription;
+  description.m_MemoryCategory = xiiGALMemoryCategory::RenderGraph;
+  const xiiUInt32 uiHash       = description.CalculateHash();
 
   xiiDynamicArray<PooledBuffer>* pPool = m_BufferPool.GetValue(uiHash);
   if (pPool != nullptr && !pPool->IsEmpty())

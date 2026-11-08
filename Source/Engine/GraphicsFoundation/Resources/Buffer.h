@@ -4,6 +4,8 @@
 
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
+#include <GraphicsFoundation/Device/MemoryStatistics.h>
+
 #include <GraphicsFoundation/Resources/BufferView.h>
 
 /// This describes the buffer access mode.
@@ -54,6 +56,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALBufferCreationDescription : public xiiHa
 {
   XII_DECLARE_POD_TYPE();
 
+  xiiEnum<xiiGALMemoryCategory>      m_MemoryCategory;
   xiiUInt64                          m_uiSize              = 0U;                           ///< The size of the buffer in bytes. For a uniform (constant) buffer, this must be a multiple of 16. The default is 0.
   xiiBitflags<xiiGALBindFlags>       m_BindFlags           = xiiGALBindFlags::None;        ///< The bind flags. Allowed flags are Vertex, Index, Uniform (Constant), Shader Resource, Stream Output, Unordered Access, Indirect Draw Args, Ray Tracing. Allowed flags for sparse resources are stored in the allowed sparse resource properties. The default is None.
   xiiEnum<xiiGALResourceUsage>       m_Usage               = xiiGALResourceUsage::Mutable; ///< The resource usage. The default is Default.
@@ -83,10 +86,11 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALBufferData
   {
   }
 
-  const void*        m_pData;                        ///< The pointer to the data.
-  xiiUInt64          m_uiDataSize;                   ///< The data size in bytes.
-  xiiGALCommandList* m_pCommandList;                 ///< Optional command list used to upload data; if null, a new one is created; if reused elsewhere, synchronization (e.g., fence) is required.
-  bool*              m_pStreamingDeferred = nullptr; ///< Opts an immutable buffer into optional admission. Set on budget deferral, cleared on entry.
+  const void*        m_pData;                                                          ///< The pointer to the data.
+  xiiUInt64          m_uiDataSize;                                                     ///< The data size in bytes.
+  xiiGALCommandList* m_pCommandList;                                                   ///< Optional command list used to upload data; if null, a new one is created; if reused elsewhere, synchronization (e.g., fence) is required.
+  xiiUInt64          m_uiMaxStreamingAllocationBytes = xiiMath::MaxValue<xiiUInt64>(); ///< Remaining cache allowance, checked against native requirements before optional allocation.
+  bool*              m_pStreamingDeferred            = nullptr;                        ///< Opts an immutable buffer into optional admission. Set on budget deferral, cleared on entry.
 };
 
 /// This describes the sparse buffer properties.

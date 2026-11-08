@@ -83,7 +83,8 @@ xiiResult xiiGALTopLevelASVulkan::InitPlatform()
   vkBufferCreateInfo.sharingMode          = vk::SharingMode::eExclusive;
 
   xiiVulkanAllocationCreateInfo allocationCreateInfo;
-  allocationCreateInfo.m_Usage = xiiVulkanMemoryUsage::Auto;
+  allocationCreateInfo.m_MemoryCategory = xiiGALMemoryCategory::AccelerationStructures;
+  allocationCreateInfo.m_Usage          = xiiVulkanMemoryUsage::Auto;
 
   VK_SUCCEED_OR_RETURN_XII_FAILURE(pDeviceVulkan->GetVulkanMemoryAllocator()->CreateBuffer(vkBufferCreateInfo, allocationCreateInfo, m_vkBuffer, m_BufferMemoryAllocation));
 
