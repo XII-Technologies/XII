@@ -5,6 +5,7 @@
 #include <GraphicsVulkan/GraphicsVulkanDLL.h>
 
 #include <GraphicsFoundation/Resources/Texture.h>
+#include <GraphicsVulkan/MemoryAllocator/MemoryAllocatorVulkan.h>
 
 namespace vk
 {
@@ -17,6 +18,7 @@ class XII_GRAPHICSVULKAN_DLL xiiGALTextureVulkan final : public xiiGALTexture
   XII_ADD_DYNAMIC_REFLECTION(xiiGALTextureVulkan, xiiGALTexture);
 
 public:
+  [[nodiscard]] virtual xiiUInt64                                              GetMemoryConsumption() const override final;
   [[nodiscard]] XII_ALWAYS_INLINE virtual const xiiGALSparseTextureProperties& GetSparseProperties() const override final { return m_SparseTextureProperties; }
 
   [[nodiscard]] XII_ALWAYS_INLINE vk::Image           GetVulkanImage() const { return m_vkImage; }

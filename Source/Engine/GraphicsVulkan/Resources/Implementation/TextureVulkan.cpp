@@ -258,6 +258,11 @@ xiiResult xiiGALTextureVulkan::InitPlatform(const xiiGALTextureData* pInitialDat
   return XII_SUCCESS;
 }
 
+xiiUInt64 xiiGALTextureVulkan::GetMemoryConsumption() const
+{
+  return m_ImageMemoryAllocation != nullptr ? m_ImageMemoryAllocationInfo.m_uiSize : xiiGALTexture::GetMemoryConsumption();
+}
+
 xiiInternal::NewInstance<xiiGALTextureView> xiiGALTextureVulkan::CreateViewPlatform(const xiiGALTextureViewCreationDescription& description)
 {
   xiiSharedPtr<xiiGALDeviceVulkan>                  pDeviceVulkan      = m_pDevice.Downcast<xiiGALDeviceVulkan>();

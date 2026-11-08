@@ -31,6 +31,51 @@ XII_CREATE_SIMPLE_TEST(DeviceFactoryLifecycle, Startup)
 
 XII_CREATE_SIMPLE_TEST_GROUP(Device);
 
+XII_CREATE_SIMPLE_TEST(Device, MemoryHeapStatistics)
+{
+  xiiGPUTestingEnvironment environment;
+  if (!XII_TEST_BOOL(environment.Initialize().Succeeded()))
+    return;
+
+  auto* pDevice = environment.GetDevice();
+  if (pDevice->GetGraphicsDeviceType() != xiiGALGraphicsDeviceType::Vulkan)
+    return;
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Memory is accounted until allocator reclamation")
+  {
+    auto getAllocatedBytes = [pDevice]() {
+      xiiHybridArray<xiiGALMemoryHeapStatistics, 16> heaps;
+      pDevice->GetMemoryHeapStatistics(heaps);
+      XII_TEST_BOOL(!heaps.IsEmpty());
+      xiiUInt64 uiAllocatedBytes = 0U;
+      for (const auto& heap : heaps)
+      {
+        XII_TEST_BOOL(heap.m_uiBudgetBytes > 0U && heap.m_uiBudgetBytes <= heap.m_uiCapacityBytes);
+        XII_TEST_BOOL(heap.m_uiAllocatedBytes <= heap.m_uiCommittedBytes);
+        uiAllocatedBytes += heap.m_uiAllocatedBytes;
+      }
+      return uiAllocatedBytes;
+    };
+
+    pDevice->BeginFrame();
+    const xiiUInt64                 uiBaseline = getAllocatedBytes();
+    xiiGALBufferCreationDescription description;
+    description.m_uiSize    = 1024U * 1024U;
+    description.m_BindFlags = xiiGALBindFlags::VertexBuffer;
+    auto pBuffer            = pDevice->CreateBuffer(description);
+    if (XII_TEST_BOOL(pBuffer != nullptr))
+    {
+      const xiiUInt64 uiAllocated = getAllocatedBytes();
+      XII_TEST_BOOL(uiAllocated >= uiBaseline + description.m_uiSize);
+      pBuffer.Clear();
+      XII_TEST_BOOL(getAllocatedBytes() == uiAllocated);
+    }
+    pDevice->EndFrame();
+    pDevice->WaitIdle();
+    XII_TEST_BOOL(getAllocatedBytes() == uiBaseline);
+  }
+}
+
 XII_CREATE_SIMPLE_TEST(Device, Device)
 {
   xiiGPUTestingEnvironment environment;

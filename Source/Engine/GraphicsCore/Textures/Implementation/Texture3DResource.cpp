@@ -17,40 +17,22 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 XII_RESOURCE_IMPLEMENT_COMMON_CODE(xiiTexture3DResource);
 
 xiiTexture3DResource::xiiTexture3DResource() :
-  xiiResource(DoUpdate::OnAnyThread, 2U)
+  xiiResource(DoUpdate::OnAnyThread, 1U)
 {
 }
 
 xiiTexture3DResource::xiiTexture3DResource(xiiResource::DoUpdate ResourceUpdateThread) :
-  xiiResource(ResourceUpdateThread, 2U)
+  xiiResource(ResourceUpdateThread, 1U)
 {
 }
 
-xiiResourceLoadDescription xiiTexture3DResource::UnloadData(Unload WhatToUnload)
+xiiResourceLoadDescription xiiTexture3DResource::UnloadData(Unload whatToUnload)
 {
-  if (m_uiLoadedTextures > 0)
-  {
-    for (xiiInt32 r = 0; r < 2; ++r)
-    {
-      --m_uiLoadedTextures;
-
-      m_pGALTexture[m_uiLoadedTextures].Clear();
-
-      if (WhatToUnload == Unload::OneQualityLevel || m_uiLoadedTextures == 0)
-        break;
-    }
-  }
-
-  if (WhatToUnload == Unload::AllQualityLevels)
-  {
-    m_pSampler.Clear();
-  }
-
-  xiiResourceLoadDescription res;
-  res.m_uiQualityLevelsDiscardable = m_uiLoadedTextures;
-  res.m_uiQualityLevelsLoadable    = 2 - m_uiLoadedTextures;
-  res.m_State                      = m_uiLoadedTextures == 0 ? xiiResourceState::Unloaded : xiiResourceState::Loaded;
-  return res;
+  XII_IGNORE_UNUSED(whatToUnload);
+  XII_LOCK(m_TextureMutex);
+  m_pGALTexture.Clear();
+  m_pSampler.Clear();
+  return {xiiResourceState::Unloaded, 0, 1};
 }
 
 void xiiTexture3DResource::FillOutDescriptor(xiiTexture3DResourceDescriptor& ref_td, const xiiImage* pImage, xiiUInt32 uiNumMipLevels, xiiUInt32& out_uiMemoryUsed, xiiHybridArray<xiiGALTextureSubResourceData, 32>& ref_initData)
@@ -119,15 +101,10 @@ void xiiTexture3DResource::FillOutDescriptor(xiiTexture3DResourceDescriptor& ref
 
 xiiResourceLoadDescription xiiTexture3DResource::UpdateContent(xiiStreamReader* pStream)
 {
+  const bool                       bHasResidentImage = GetGALTexture() != nullptr;
+  const xiiResourceLoadDescription previous          = bHasResidentImage ? xiiResourceLoadDescription{xiiResourceState::Loaded, GetNumQualityLevelsDiscardable(), GetNumQualityLevelsLoadable()} : xiiResourceLoadDescription{xiiResourceState::LoadedResourceMissing, 0, 0};
   if (pStream == nullptr)
-  {
-    xiiResourceLoadDescription res;
-    res.m_uiQualityLevelsDiscardable = 0;
-    res.m_uiQualityLevelsLoadable    = 0;
-    res.m_State                      = xiiResourceState::LoadedResourceMissing;
-
-    return res;
-  }
+    return previous;
 
   xiiTexture3DResourceDescriptor td;
   xiiImage*                      pImage      = nullptr;
@@ -139,111 +116,59 @@ xiiResourceLoadDescription xiiTexture3DResource::UpdateContent(xiiStreamReader* 
     *pStream >> td.m_SamplerDescription;
     *pStream >> bIsFallback;
 
-    pStream->ReadBytes(&pImage, sizeof(xiiImage*));
+    if (pStream->ReadBytes(&pImage, sizeof(xiiImage*)) != sizeof(xiiImage*) || pImage == nullptr)
+      return previous;
   }
 
-  {
-    const xiiUInt32 uiNumMipmapsLowRes   = xiiMath::Min(pImage->GetMipLevelCount(), 6U);
-    xiiUInt32       uiUploadNumMipLevels = 0;
-    bool            bCouldLoadMore       = false;
+  if (!pImage->IsValid() || (bHasResidentImage && (bIsFallback || previous.m_uiQualityLevelsLoadable == 0U)))
+    return previous;
 
-    if (bIsFallback)
-    {
-      if (m_uiLoadedTextures == 0)
-      {
-        // only upload fallback textures, if we don't have any texture data at all, yet
-        bCouldLoadMore       = true;
-        uiUploadNumMipLevels = uiNumMipmapsLowRes;
-      }
-      else if (m_uiLoadedTextures == 1)
-      {
-        // ignore this texture entirely, if we already have low res data
-        // but assume we could load a higher resolution version
-        bCouldLoadMore = true;
-        xiiLog::Debug("Ignoring fallback texture data, low-res resource data is already loaded.");
-      }
-      else
-      {
-        xiiLog::Debug("Ignoring fallback texture data, resource is already fully loaded.");
-      }
-    }
-    else
-    {
-      if (m_uiLoadedTextures == 0)
-      {
-        bCouldLoadMore       = uiNumMipmapsLowRes < pImage->GetMipLevelCount();
-        uiUploadNumMipLevels = uiNumMipmapsLowRes;
-      }
-      else if (m_uiLoadedTextures == 1)
-      {
-        uiUploadNumMipLevels = pImage->GetMipLevelCount();
-      }
-      else
-      {
-        // ignore the texture, if we already have fully loaded data
-        xiiLog::Debug("Ignoring texture data, resource is already fully loaded.");
-      }
-    }
+  const xiiUInt32 uiTotalMipLevels = pImage->GetMipLevelCount();
+  const xiiUInt32 uiNumMipLevels   = bHasResidentImage ? uiTotalMipLevels : xiiMath::Min(uiTotalMipLevels, 6U);
+  td.m_uiQualityLevelsDiscardable  = 0U;
+  td.m_uiQualityLevelsLoadable     = bIsFallback || uiNumMipLevels < uiTotalMipLevels ? 1U : 0U;
 
-    if (uiUploadNumMipLevels > 0)
-    {
-      XII_ASSERT_DEBUG(m_uiLoadedTextures < 2, "Invalid texture upload");
+  xiiTemporaryHybridArray<xiiGALTextureSubResourceData, 32> initData;
+  xiiUInt32                                                 uiImageBytes = 0U;
+  FillOutDescriptor(td, pImage, uiNumMipLevels, uiImageBytes, initData);
 
-      xiiTemporaryHybridArray<xiiGALTextureSubResourceData, 32> initData;
-      FillOutDescriptor(td, pImage, uiUploadNumMipLevels, m_uiMemoryGPU[m_uiLoadedTextures], initData);
-
-      // ignore its return value here, we build our own
-      CreateResource(std::move(td));
-    }
-
-    {
-      xiiResourceLoadDescription res;
-      res.m_uiQualityLevelsDiscardable = m_uiLoadedTextures;
-      res.m_uiQualityLevelsLoadable    = bCouldLoadMore ? 1 : 0;
-      res.m_State                      = xiiResourceState::Loaded;
-
-      return res;
-    }
-  }
+  const auto result = CreateResource(std::move(td));
+  return result.m_State == xiiResourceState::Loaded ? result : previous;
 }
 
 void xiiTexture3DResource::UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage)
 {
+  XII_LOCK(m_TextureMutex);
   out_NewMemoryUsage.m_uiMemoryCPU = sizeof(xiiTexture3DResource);
-  out_NewMemoryUsage.m_uiMemoryGPU = m_uiMemoryGPU[0] + m_uiMemoryGPU[1];
+  out_NewMemoryUsage.m_uiMemoryGPU = m_pGALTexture ? m_pGALTexture->GetMemoryConsumption() : 0U;
 }
 
 XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiTexture3DResource, xiiTexture3DResourceDescriptor)
 {
-  xiiResourceLoadDescription ret;
-  ret.m_uiQualityLevelsDiscardable = descriptor.m_uiQualityLevelsDiscardable;
-  ret.m_uiQualityLevelsLoadable    = descriptor.m_uiQualityLevelsLoadable;
-  ret.m_State                      = xiiResourceState::Loaded;
+  auto pDevice = xiiGALDevice::GetDefaultDevice();
+  if (pDevice == nullptr)
+    return {xiiResourceState::LoadedResourceMissing, 0, 0};
 
-  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
-
-  m_Type     = descriptor.m_TextureDescription.m_Type;
-  m_Format   = descriptor.m_TextureDescription.m_Format;
-  m_uiWidth  = descriptor.m_TextureDescription.m_Size.width;
-  m_uiHeight = descriptor.m_TextureDescription.m_Size.height;
-  m_uiDepth  = descriptor.m_TextureDescription.m_uiArraySizeOrDepth;
-
+  auto& description = descriptor.m_TextureDescription;
+  description.m_BindFlags.Add(xiiGALBindFlags::ShaderResource);
   xiiGALTextureData textureData(descriptor.m_InitialContent);
-  descriptor.m_TextureDescription.m_BindFlags.Add(xiiGALBindFlags::ShaderResource);
-  m_pGALTexture[m_uiLoadedTextures] = pDevice->CreateTexture(descriptor.m_TextureDescription, &textureData);
+  auto              pTexture = pDevice->CreateTexture(description, descriptor.m_InitialContent.IsEmpty() ? nullptr : &textureData);
+  if (pTexture == nullptr)
+    return {xiiResourceState::LoadedResourceMissing, 0, 0};
+  auto pSampler = pDevice->CreateSampler(descriptor.m_SamplerDescription);
+  if (pSampler == nullptr)
+    return {xiiResourceState::LoadedResourceMissing, 0, 0};
+  pTexture->SetDebugName(GetResourceIdOrDescription());
 
-  XII_ASSERT_DEV(m_pGALTexture[m_uiLoadedTextures] != nullptr, "Texture Data could not be uploaded to the GPU");
-
-  m_pGALTexture[m_uiLoadedTextures]->SetDebugName(GetResourceDescription());
-
-  m_pSampler.Clear();
-  m_pSampler = pDevice->CreateSampler(descriptor.m_SamplerDescription);
-
-  XII_ASSERT_DEV(m_pSampler != nullptr, "Sampler state error");
-
-  ++m_uiLoadedTextures;
-
-  return ret;
+  XII_LOCK(m_TextureMutex);
+  m_Type        = description.m_Type;
+  m_Format      = description.m_Format;
+  m_uiWidth     = description.m_Size.width;
+  m_uiHeight    = description.m_Size.height;
+  m_uiDepth     = description.m_uiArraySizeOrDepth;
+  m_pGALTexture = std::move(pTexture);
+  m_pSampler    = std::move(pSampler);
+  return {xiiResourceState::Loaded, descriptor.m_uiQualityLevelsDiscardable, descriptor.m_uiQualityLevelsLoadable};
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Textures_Implementation_Texture3DResource);
