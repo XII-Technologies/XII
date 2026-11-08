@@ -4,8 +4,10 @@
 
 #include <Core/Graphics/Geometry.h>
 #include <Core/ResourceManager/ResourceManager.h>
+#include <Foundation/IO/FileSystem/FileWriter.h>
 #include <Foundation/Logging/Log.h>
 #include <Foundation/Reflection/Reflection.h>
+#include <Foundation/Utilities/AssetFileHeader.h>
 #include <GraphicsCore/Components/Lights/DirectionalLightComponent.h>
 #include <GraphicsCore/Material/MaterialResource.h>
 #include <GraphicsCore/Meshes/MeshComponent.h>
@@ -140,6 +142,22 @@ xiiResult xiiGpuDrivenSceneWorld::CreateMaterials()
 
 xiiResult xiiGpuDrivenSceneWorld::CreateGeometry()
 {
+  if (!m_Configuration.m_sMesh.IsEmpty())
+  {
+    m_GeometryAssets.SetCount(1U);
+    m_GeometryAssets[0].m_hMesh = xiiResourceManager::LoadResource<xiiMeshResource>(m_Configuration.m_sMesh);
+    xiiResourceLock<xiiMeshResource> mesh(m_GeometryAssets[0].m_hMesh, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+    if (mesh.IsValid() && mesh.GetAcquireResult() == xiiResourceAcquireResult::Final)
+    {
+      xiiResourceLock<xiiMeshBufferResource> buffer(mesh->GetMeshBuffer(), xiiResourceAcquireMode::PointerOnly);
+      const auto&                            descriptor = buffer->GetDescriptor();
+      xiiLog::Info("Compiled geometry: {} pages, {} clusters, {} retained page payload bytes.", descriptor.m_GeometryPages.GetCount(), descriptor.m_Meshlets.GetCount(), descriptor.m_GeometryPageData.GetCount());
+      for (const auto& page : descriptor.m_GeometryPages)
+        if (page.m_bRequired)
+          xiiLog::Info("Geometry root: {} clusters, {} children, {} object-space error.", page.m_uiClusterCount, page.m_uiChildCount, page.m_fGeometricError);
+    }
+    return mesh.IsValid() && mesh.GetAcquireResult() == xiiResourceAcquireResult::Final ? XII_SUCCESS : XII_FAILURE;
+  }
   m_GeometryAssets.SetCount(2);
   for (xiiUInt32 i = 0; i < 2; ++i)
   {
@@ -163,11 +181,24 @@ xiiResult xiiGpuDrivenSceneWorld::CreateGeometry()
     descriptor.GetMeshBufferDescriptor().AllocateStreamsFromGeometry(high, xiiGALPrimitiveTopology::TriangleList, true);
     descriptor.GetMeshBufferDescriptor().m_bAllowGpuDrivenDraw = true;
     descriptor.AddMaterialSlot("");
-    descriptor.GetLODs()[0].m_fScreenSize = 80;
+    descriptor.GetLODs()[0].m_fScreenSize = 80.0f / 1080.0f;
     descriptor.AddSection(fineCount, 0, 0, 0);
     descriptor.AddLOD(0);
     descriptor.AddSection(coarseCount, fineCount, 0, 1);
     descriptor.ComputeBounds();
+    if (i == 0U && !m_Configuration.m_sExportMesh.IsEmpty())
+    {
+      XII_SUCCEED_OR_RETURN(descriptor.BuildMeshlets());
+      const auto&   buffer = static_cast<const xiiMeshResourceDescriptor&>(descriptor).GetMeshBufferDescriptor();
+      xiiFileWriter file;
+      XII_SUCCEED_OR_RETURN(file.Open(m_Configuration.m_sExportMesh));
+      xiiAssetFileHeader header;
+      header.SetFileHashAndVersion(xiiHashingUtils::xxHash64(buffer.m_GeometryPageData.GetData(), buffer.m_GeometryPageData.GetCount()), 16U);
+      header.SetGenerator("GpuDrivenScene");
+      XII_SUCCEED_OR_RETURN(header.Write(file));
+      descriptor.Save(file);
+      XII_SUCCEED_OR_RETURN(file.Flush());
+    }
     xiiStringBuilder name;
     name.SetFormat("GpuDrivenScene.Mesh{}", i);
     auto& asset   = m_GeometryAssets[i];

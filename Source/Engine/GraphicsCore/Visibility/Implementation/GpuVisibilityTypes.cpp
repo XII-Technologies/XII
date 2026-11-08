@@ -3,7 +3,7 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 #include <GraphicsCore/Visibility/GpuVisibilityTypes.h>
 
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGpuVisibilityView, xiiNoBase, 3, xiiRTTIDefaultAllocator<xiiGpuVisibilityView>)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGpuVisibilityView, xiiNoBase, 4, xiiRTTIDefaultAllocator<xiiGpuVisibilityView>)
   {
     XII_BEGIN_PROPERTIES
     {
@@ -13,6 +13,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGpuVisibilityView, xiiNoBase, 3, xiiRTTIDefau
       XII_MEMBER_PROPERTY("CameraPosition", m_CameraPosition),
       XII_MEMBER_PROPERTY("ViewportAndHiZ", m_ViewportAndHiZ),
       XII_MEMBER_PROPERTY("LodParameters", m_LodParameters),
+      XII_MEMBER_PROPERTY("GeometryPixelScale", m_fGeometryPixelScale),
       XII_MEMBER_PROPERTY("InstanceCount", m_uiInstanceCount),
       XII_MEMBER_PROPERTY("VisibilityMask", m_uiVisibilityMask),
       XII_MEMBER_PROPERTY("RequiredFlags", m_uiRequiredFlags),

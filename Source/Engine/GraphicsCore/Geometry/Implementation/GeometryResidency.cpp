@@ -110,6 +110,7 @@ public:
   xiiUInt64                                                 m_uiEndValues[3]      = {};
   xiiUInt32                                                 m_uiGeometryPageCount = 0U, m_uiTexturePageCount = 0U;
   xiiUInt64                                                 m_uiPageRequests = 0U, m_uiPageMisses = 0U;
+  xiiUInt64                                                 m_uiGeometryPageRequests = 0U, m_uiGeometryPageUploads = 0U;
   bool                                                      InitializeTextureFeedback();
   AdmissionResult                                           UploadTextureTile(TextureSource& source, xiiUInt32 page, bool optional);
   bool                                                      PublishTexture(TextureSource& source);
@@ -138,6 +139,7 @@ public:
   {
     xiiMeshBufferResourceHandle                             m_hMesh;
     xiiDynamicArray<Page>                                   m_Pages;
+    xiiDynamicArray<xiiUInt32>                              m_RootPages;
     xiiDynamicArray<PageRecord, xiiAlignedAllocatorWrapper> m_PageRecords;
     xiiGALBindlessResourceHandle                            m_PageTable;
     bool                                                    m_bPagesDirty = false;
@@ -218,7 +220,7 @@ public:
     m_uiTopologyUploadValue   = 0U;
     m_uiResidentTopologyBytes = 0U;
     m_uiGeometryPageCount     = 0U;
-    m_uiPageRequests = m_uiPageMisses = 0U;
+    m_uiPageRequests = m_uiPageMisses = m_uiGeometryPageRequests = m_uiGeometryPageUploads = 0U;
 
     m_ActiveSlots.Clear();
     m_StreamingQueue.Clear();
@@ -795,7 +797,8 @@ void xiiGeometryResidencyManager::RequestResidency(xiiGeometryHandle handle, xii
   Slot& slot = s_pState->m_Slots[handle.GetInternalID().m_InstanceIndex];
   if (slot.m_State == xiiGeometryResidencyState::EvictPending)
     return;
-  const xiiUInt32 uiRequestedLod         = xiiMath::Min(uiMinimumLod, slot.m_Description.m_Lods.GetCount() - 1U);
+  XII_IGNORE_UNUSED(uiMinimumLod);
+  const xiiUInt32 uiRequestedLod         = 0U;
   slot.m_uiLastUsedFrame                 = xiiMath::Max(slot.m_uiLastUsedFrame, uiFrameIndex);
   slot.m_uiLastLodDemand[uiRequestedLod] = xiiMath::Max(slot.m_uiLastLodDemand[uiRequestedLod], uiFrameIndex);
 
@@ -834,22 +837,9 @@ void xiiGeometryResidencyManager::RequestResidency(xiiGeometryHandle handle, xii
 
 void xiiGeometryResidencyManager::RequestInstanceResidency(xiiGeometryHandle handle, xiiUInt32 uiLod, xiiUInt64 uiFrameIndex, bool bForced)
 {
-  if (!IsValid(handle))
-    return;
-
-  auto& slot = s_pState->m_Slots[handle.GetInternalID().m_InstanceIndex];
-  if (bForced && uiFrameIndex >= slot.m_uiForcedDemandFrame)
-  {
-    const xiiUInt32 uiClampedLod = xiiMath::Min(uiLod, slot.m_GpuRecord.m_uiLodCount - 1U);
-    slot.m_uiForcedDemandLod     = uiFrameIndex == slot.m_uiForcedDemandFrame ? xiiMath::Min(slot.m_uiForcedDemandLod, uiClampedLod) : uiClampedLod;
-    slot.m_uiForcedDemandFrame   = uiFrameIndex;
-  }
-  if (bForced || !IsRecentDemand(slot.m_uiLastFeedbackFrame, uiFrameIndex))
-    RequestResidency(handle, uiLod, uiFrameIndex);
-  else if (slot.m_GpuRecord.m_uiResidentLodMask == 0U)
-    RequestResidency(handle, slot.m_GpuRecord.m_uiLodCount - 1U, uiFrameIndex);
-  else
-    Touch(handle, uiFrameIndex);
+  XII_IGNORE_UNUSED(uiLod);
+  XII_IGNORE_UNUSED(bForced);
+  RequestResidency(handle, 0U, uiFrameIndex);
 }
 
 bool xiiGeometryResidencyManager::ReportLodDemand(xiiGeometryHandle handle, xiiUInt32 uiLod, xiiUInt64 uiSourceFrame, xiiUInt32 uiVisibilityPriority)
@@ -927,26 +917,11 @@ xiiGeometryResidencyManager::AdmissionResult xiiGeometryResidencyManager::BuildR
   State::MeshGeometryEntry*                                                                 meshEntry = nullptr;
   const auto                                                                                slotIndex = static_cast<xiiUInt32>(&slot - s_pState->m_Slots.GetData());
   s_pState->m_MeshGeometries.TryGetValue(xiiGeometryHandle(xiiGeometryId(slotIndex, record.m_uiGeneration)), meshEntry);
-  const bool bPressured       = !slot.m_Description.m_bPinned && s_pState->m_pMetadataBuffer->GetDevice()->IsStreamingMemoryPressured();
-  const bool bRequiredMissing = slot.m_uiForcedDemandLod != xiiInvalidIndex &&
-    uiFrameIndex - xiiMath::Min(uiFrameIndex, slot.m_uiForcedDemandFrame) <= s_pState->m_uiFramesInFlight &&
-    (record.m_uiResidentLodMask & XII_BIT(slot.m_uiForcedDemandLod)) == 0U;
-  // Under pressure, admit the exact LOD needed by a forced draw before optional finer work.
-  const xiiUInt32 uiFirstLod = bPressured && bRequiredMissing ? xiiMath::Max(slot.m_uiRequestedLod, slot.m_uiForcedDemandLod) : slot.m_uiRequestedLod;
-  const bool      bOptional  = record.m_uiResidentLodMask != 0U && !slot.m_Description.m_bPinned && !bRequiredMissing;
+  // Authored LODs are selection metadata. Payload residency is exclusively page-granular.
+  const bool      bPressured = s_pState->m_pMetadataBuffer->GetDevice()->IsStreamingMemoryPressured();
+  const bool      bOptional  = false;
   const xiiUInt32 uiLodCount = record.m_uiLodCount;
-  // Commit one optional LOD at a time so a later budget deferral cannot roll it back.
-  xiiUInt32 uiNextLod = uiFirstLod;
-  if (bOptional)
-  {
-    for (xiiUInt32 i = uiLodCount; i > uiFirstLod; --i)
-      if ((record.m_uiResidentLodMask & XII_BIT(i - 1U)) == 0U)
-      {
-        uiNextLod = i - 1U;
-        break;
-      }
-  }
-  const xiiUInt32 uiEndLod     = bOptional ? uiNextLod + 1U : uiLodCount;
+  const xiiUInt32 uiNextLod = 0U, uiEndLod = uiLodCount;
   xiiUInt64       uiArenaBytes = 0U;
   for (xiiUInt32 i = uiNextLod; i < uiEndLod; ++i)
   {
@@ -1138,7 +1113,7 @@ xiiGeometryResidencyManager::AdmissionResult xiiGeometryResidencyManager::BuildR
         previousEnd               = xiiMath::Max(previousEnd, end);
         meshlet.m_uiGpuPadding[0] = static_cast<xiiUInt32>(previousEnd);
       }
-      if (lod.m_uiMeshletRangesOrdered == 0U)
+      if (lod.m_uiMeshletRangesOrdered == 0U && !sources[n]->HasGeometryPages())
       {
         // Sort the admitted copy once. Topology offsets already address the LOD buffer.
         upload->m_Meshlets.Sort([](const xiiMeshlet& a, const xiiMeshlet& b) {
@@ -1161,6 +1136,8 @@ xiiGeometryResidencyManager::AdmissionResult xiiGeometryResidencyManager::BuildR
           meshlet.m_uiGpuPadding[0] = static_cast<xiiUInt32>(previousEnd);
         }
       }
+      if (sources[n]->HasGeometryPages())
+        lod.m_uiMeshletRangesOrdered = 0U;
       uploads.PushBack(std::move(upload));
       s_pState->m_StreamingStats.m_uiPreparedMeshlets += lod.m_uiMeshletCount;
     }
@@ -1229,7 +1206,11 @@ xiiGeometryResidencyManager::AdmissionResult xiiGeometryResidencyManager::State:
   constexpr auto bytes = xiiVirtualTextureData::s_uiTileBytes;
   const auto     limit = xiiUInt64(xiiMath::Max(0, cvar_TextureCacheMiB.GetValue())) * 1024U * 1024U;
   if (optional && (source.m_uiPageAllocationBytes > limit || m_uiTextureBytes > limit - source.m_uiPageAllocationBytes))
+  {
+    // Completed payloads denied by this cache must not monopolize the shared IO slots.
+    source.m_Pages[page].m_Io.Clear();
     return AdmissionResult::MemoryDeferred;
+  }
   auto*       device                  = m_pMetadataBuffer->GetDevice().Borrow();
   const auto& compiled                = source.m_Data;
   auto        description             = compiled->m_Description;
@@ -1262,6 +1243,7 @@ xiiGeometryResidencyManager::AdmissionResult xiiGeometryResidencyManager::State:
     if (residency.m_Io->m_Result.Failed())
     {
       residency.m_bIoFailed = true;
+      xiiLog::Warning("Texture page {} failed to load from '{}'; retaining coarse residency.", page, compiled->m_sFile);
       residency.m_Io.Clear();
       return AdmissionResult::Failed;
     }
@@ -1460,7 +1442,8 @@ bool xiiGeometryResidencyManager::State::DemandPage(xiiUInt32 request, xiiUInt64
     trimmed    = page.m_uiTrimFrame;
     if (frame <= trimmed)
       return false;
-    page.m_uiDemand   = xiiMath::Max(page.m_uiDemand, frame);
+    page.m_uiDemand = xiiMath::Max(page.m_uiDemand, frame);
+    ++m_uiGeometryPageRequests;
     page.m_uiPriority = xiiMath::Max(page.m_uiPriority, priority);
     resident          = page.m_Buffer.IsValid();
     required          = page.m_bRequired;
@@ -1769,7 +1752,10 @@ xiiGeometryResidencyManager::AdmissionResult xiiGeometryResidencyManager::State:
   const auto& page       = descriptor.m_GeometryPages[index];
   const auto  limit      = xiiUInt64(xiiMath::Max(0, cvar_GeometryCacheMiB.GetValue())) * 1024U * 1024U;
   if (optional && (page.m_uiSize > limit || m_uiResidentTopologyBytes > limit - page.m_uiSize))
+  {
+    source.m_Pages[index].m_Io.Clear();
     return AdmissionResult::MemoryDeferred;
+  }
   if (optional && page.m_uiSize > m_uiRemainingUploadBudget)
     return AdmissionResult::BudgetDeferred;
   auto&                     residency = source.m_Pages[index];
@@ -1798,6 +1784,7 @@ xiiGeometryResidencyManager::AdmissionResult xiiGeometryResidencyManager::State:
     if (residency.m_Io->m_Result.Failed())
     {
       residency.m_bIoFailed = true;
+      xiiLog::Warning("Geometry page {} failed to load from '{}'; retaining coarse residency.", index, descriptor.m_sGeometryPageFile);
       residency.m_Io.Clear();
       return AdmissionResult::Failed;
     }
@@ -1859,6 +1846,7 @@ xiiGeometryResidencyManager::AdmissionResult xiiGeometryResidencyManager::State:
   source.m_bPagesDirty                    = true;
   m_uiResidentTopologyBytes += source.m_Pages[index].m_uiBytes;
   ++m_uiGeometryPageCount;
+  ++m_uiGeometryPageUploads;
   m_ResidentPages.PushBack(residency.m_uiRequest);
   m_StreamingStats.m_uiTopologyUploadBytes += page.m_uiSize;
   m_StreamingStats.m_uiAdmittedBytes += page.m_uiSize;
@@ -1869,8 +1857,11 @@ xiiGeometryResidencyManager::AdmissionResult xiiGeometryResidencyManager::State:
 bool xiiGeometryResidencyManager::State::PublishPages(SourceBinding& source)
 {
   xiiDynamicArray<xiiUInt8> payload;
-  payload.SetCount(272U + source.m_PageRecords.GetCount() * sizeof(PageRecord), 0U);
+  payload.SetCount(272U + source.m_PageRecords.GetCount() * sizeof(PageRecord) + source.m_RootPages.GetCount() * sizeof(xiiUInt32), 0U);
   const xiiUInt32 count = source.m_PageRecords.GetCount();
+  const xiiUInt32 roots = source.m_RootPages.GetCount();
+  xiiMemoryUtils::Copy(payload.GetData() + 4U, reinterpret_cast<const xiiUInt8*>(&roots), sizeof(roots));
+  xiiMemoryUtils::Copy(payload.GetData() + 272U + count * sizeof(PageRecord), reinterpret_cast<const xiiUInt8*>(source.m_RootPages.GetData()), roots * sizeof(xiiUInt32));
   xiiMemoryUtils::Copy(payload.GetData(), reinterpret_cast<const xiiUInt8*>(&count), sizeof(count));
   for (xiiUInt32 slot = 0U; slot < m_uiFramesInFlight; ++slot)
     xiiMemoryUtils::Copy(payload.GetData() + 16U + slot * sizeof(xiiUInt32), reinterpret_cast<const xiiUInt8*>(&m_TextureFeedbackUav[slot].m_uiIndex), sizeof(xiiUInt32));
@@ -2051,7 +2042,15 @@ xiiGeometryResidencyManager::AdmissionResult xiiGeometryResidencyManager::Regist
           return AdmissionResult::Failed;
         page.m_uiRequest                   = s_pState->m_uiNextPageRequest++;
         fresh.m_PageRecords[p].m_Mapping.y = page.m_uiRequest;
-        fresh.m_PageRecords[p].m_Mapping.z = page.m_bRequired ? 1U : 0U;
+        const auto& compiled               = descriptor.m_GeometryPages[p];
+        fresh.m_PageRecords[p].m_Mapping.z = compiled.m_uiFirstCluster;
+        fresh.m_PageRecords[p].m_Mapping.w = compiled.m_uiClusterCount;
+        fresh.m_PageRecords[p].m_Detail    = xiiVec4(compiled.m_fGeometricError,
+                                                     compiled.m_uiParent == xiiInvalidIndex ? 0.0f : static_cast<float>(compiled.m_uiParent + 1U),
+                                                     compiled.m_uiChildCount == 0U ? 0.0f : static_cast<float>(compiled.m_uiFirstChild + 1U),
+                                                     static_cast<float>(compiled.m_uiChildCount));
+        if (page.m_bRequired)
+          fresh.m_RootPages.PushBack(p);
       }
       for (const auto& cluster : descriptor.m_Meshlets)
       {
@@ -2088,7 +2087,8 @@ xiiGeometryResidencyManager::AdmissionResult xiiGeometryResidencyManager::Regist
     if ((!source->m_PageTable.IsValid() || source->m_bPagesDirty) && !s_pState->PublishPages(*source))
       return AdmissionResult::Failed;
     auto& lod                          = record.m_Lods[uiLod];
-    lod.m_uiPadding                    = 1U;
+    lod.m_uiPadding                    = 1U | (static_cast<xiiUInt32>(s_pState->m_uiStreamingFrame % s_pState->m_uiFramesInFlight) << 1U);
+    lod.m_uiIndexBufferIndex           = slot.m_Description.m_Lods[uiLod].m_uiFirstMeshlet;
     lod.m_uiVertexBufferIndex          = source->m_PageTable.m_uiIndex;
     lod.m_uiMeshletTopologyBufferIndex = source->m_PageTable.m_uiIndex;
     lod.m_uiMeshletPrimitiveByteOffset = 0U;
@@ -2601,6 +2601,10 @@ xiiGeometryResidencyStats xiiGeometryResidencyManager::GetStats()
   stats.m_uiTexturePageBytes      = s_pState->m_uiTextureBytes;
   stats.m_uiGeometryPages         = s_pState->m_uiGeometryPageCount;
   stats.m_uiTexturePages          = s_pState->m_uiTexturePageCount;
+  stats.m_uiGeometryPageRequests  = s_pState->m_uiGeometryPageRequests;
+  stats.m_uiGeometryPageUploads   = s_pState->m_uiGeometryPageUploads;
+  stats.m_uiPendingPageRequests   = s_pState->m_PageQueue.GetCount();
+  stats.m_uiPendingPageIO         = s_pState->m_uiPendingIo;
   stats.m_uiPageRequests          = s_pState->m_uiPageRequests;
   stats.m_uiPageMisses            = s_pState->m_uiPageMisses;
   stats.m_uiRemainingUploadBytes  = s_pState->m_uiRemainingUploadBudget;

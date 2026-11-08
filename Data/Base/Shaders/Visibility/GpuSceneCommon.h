@@ -49,6 +49,8 @@ struct GpuVisibilityView
   uint     MaxVisibleMeshlets;
   uint     CandidateCount;
   uint     UseCandidates;
+  float GeometryPixelScale;
+  uint3 Reserved;
 };
 
 struct GpuGeometryLod

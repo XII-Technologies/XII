@@ -1,8 +1,9 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsCore/GraphicsCorePCH.h>
+
 #include <Core/ResourceManager/ResourceTypeLoader.h>
 #include <Foundation/IO/StreamWithStats.h>
-#include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <Core/Graphics/Geometry.h>
 #include <Foundation/Algorithm/HashingUtils.h>
@@ -48,7 +49,7 @@ XII_RESOURCE_IMPLEMENT_COMMON_CODE(xiiMeshBufferResource);
 
 namespace
 {
-  static constexpr xiiUInt32 s_uiMeshBufferResourceVersion = 3U;
+  static constexpr xiiUInt32 s_uiMeshBufferResourceVersion = 4U;
 
   static xiiUInt32 GetIndexSize(xiiEnum<xiiGALValueType> indexType)
   {
@@ -512,7 +513,7 @@ xiiResult xiiMeshBufferResourceDescriptor::Serialize(xiiStreamWriter& inout_stre
     XII_SUCCEED_OR_RETURN(inout_stream.WriteArray(payload));
   }
   for (const auto& meshlet : m_Meshlets)
-    inout_stream << meshlet.m_Page << meshlet.m_Hierarchy;
+    inout_stream << meshlet.m_Page << meshlet.m_Hierarchy << meshlet.m_uiGpuPadding[1];
 
   return XII_SUCCESS;
 }
@@ -545,18 +546,9 @@ xiiResult xiiMeshBufferResourceDescriptor::Deserialize(xiiStreamReader& source, 
   XII_SUCCEED_OR_RETURN(inout_stream.ReadArray(m_DrawCommands));
   if (version >= 2U)
   {
-    if (version >= 3U)
-      XII_SUCCEED_OR_RETURN(inout_stream.ReadArray(m_GeometryPages));
-    else
-    {
-      xiiUInt64 count = 0U;
-      inout_stream >> count;
-      if (count > xiiMath::MaxValue<xiiUInt32>())
-        return XII_FAILURE;
-      m_GeometryPages.SetCount(static_cast<xiiUInt32>(count));
-      for (auto& page : m_GeometryPages)
-        inout_stream >> page.m_uiOffset >> page.m_uiSize >> page.m_bRequired;
-    }
+    if (version != 4U)
+      return XII_FAILURE;
+    XII_SUCCEED_OR_RETURN(inout_stream.ReadArray(m_GeometryPages));
     inout_stream >> m_uiPageDataBytes;
     if (m_uiPageDataBytes > xiiMath::MaxValue<xiiUInt32>())
       return XII_FAILURE;
@@ -577,7 +569,7 @@ xiiResult xiiMeshBufferResourceDescriptor::Deserialize(xiiStreamReader& source, 
     }
     for (auto& meshlet : m_Meshlets)
     {
-      inout_stream >> meshlet.m_Page >> meshlet.m_Hierarchy;
+      inout_stream >> meshlet.m_Page >> meshlet.m_Hierarchy >> meshlet.m_uiGpuPadding[1];
       if ((!m_GeometryPages.IsEmpty() && meshlet.m_Page.x >= m_GeometryPages.GetCount()) ||
           !meshlet.m_Hierarchy.IsValid() || meshlet.m_Hierarchy.x < 0.0f)
         return XII_FAILURE;
@@ -593,9 +585,27 @@ xiiResult xiiMeshBufferResourceDescriptor::Deserialize(xiiStreamReader& source, 
           cluster.m_Hierarchy.y < 1.0f || cluster.m_Hierarchy.y > static_cast<float>(m_GeometryPages.GetCount()))
         return XII_FAILURE;
     }
-    for (const auto& page : m_GeometryPages)
+    for (xiiUInt32 index = 0U; index < m_GeometryPages.GetCount(); ++index)
+    {
+      const auto& page = m_GeometryPages[index];
+      if (page.m_uiSize == 0U || page.m_uiSize > 128U * 1024U || page.m_uiClusterCount == 0U ||
+          page.m_uiFirstCluster > m_Meshlets.GetCount() || page.m_uiClusterCount > m_Meshlets.GetCount() - page.m_uiFirstCluster ||
+          !xiiMath::IsFinite(page.m_fGeometricError) || page.m_fGeometricError < 0.0f ||
+          page.m_bRequired != (page.m_uiParent == xiiInvalidIndex) ||
+          (page.m_uiParent != xiiInvalidIndex && (page.m_uiParent <= index || page.m_uiParent >= m_GeometryPages.GetCount())) ||
+          page.m_uiChildCount > 8U || (page.m_uiChildCount != 0U && (page.m_uiFirstChild >= index || page.m_uiChildCount > index - page.m_uiFirstChild)))
+        return XII_FAILURE;
+      for (xiiUInt32 child = 0U; child < page.m_uiChildCount; ++child)
+        if (m_GeometryPages[page.m_uiFirstChild + child].m_uiParent != index ||
+            m_GeometryPages[page.m_uiFirstChild + child].m_fGeometricError > page.m_fGeometricError)
+          return XII_FAILURE;
+      xiiUInt32 depth = 0U;
+      for (auto parent = page.m_uiParent; parent != xiiInvalidIndex; parent = m_GeometryPages[parent].m_uiParent)
+        if (parent >= m_GeometryPages.GetCount() || ++depth > 7U)
+          return XII_FAILURE;
       if (page.m_uiOffset > m_uiPageDataBytes || (page.m_uiStoredSize == 0U ? page.m_uiSize : page.m_uiStoredSize) > m_uiPageDataBytes - page.m_uiOffset)
         return XII_FAILURE;
+    }
   }
 
   return XII_SUCCESS;
@@ -786,7 +796,7 @@ void xiiMeshBufferResource::CreateGpuBuffer(xiiSharedPtr<xiiGALBuffer>& out_pBuf
   if (out_pBuffer)
   {
     out_pBuffer->SetDebugName(sDebugName);
-    m_uiMemoryGPU += data.GetCount();
+    m_uiMemoryGPU += out_pBuffer->GetMemoryConsumption();
   }
 }
 

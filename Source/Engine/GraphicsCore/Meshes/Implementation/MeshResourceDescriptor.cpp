@@ -1,8 +1,9 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <GraphicsCore/GraphicsCorePCH.h>
+
 #include <Core/ResourceManager/ResourceTypeLoader.h>
 #include <Foundation/IO/StreamWithStats.h>
-#include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <Foundation/Algorithm/HashStream.h>
 #include <Foundation/IO/FileSystem/FileReader.h>

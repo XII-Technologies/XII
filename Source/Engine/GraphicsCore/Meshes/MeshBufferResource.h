@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <GraphicsCore/GraphicsCoreDLL.h>
+
 #include <Core/ResourceManager/Resource.h>
 #include <Foundation/Containers/DynamicArray.h>
 #include <Foundation/Math/BoundingBoxSphere.h>
@@ -138,14 +140,14 @@ struct XII_GRAPHICSCORE_DLL alignas(16) xiiMeshlet
   xiiUInt16         m_uiVertexCount          = 0U;                            ///< The number of unique vertices in this meshlet, used to identify how many unique vertices are referenced by the primitives in this meshlet for rendering and culling purposes.
   xiiUInt16         m_uiLodIndex             = 0U;                            ///< The index of the LOD this meshlet belongs to, used to identify which level of detail this meshlet is part of for LOD-based rendering and culling.
   xiiUInt16         m_uiSectionIndex         = 0U;                            ///< The index of the section this meshlet belongs to, used to identify which section of the mesh this meshlet is part of for rendering and culling purposes.
-  xiiUInt32         m_uiGpuPadding[2]        = {};                            ///< Aligns Bounds and Cone to the float4 members in the portable GPU record. Not serialized.
+  xiiUInt32         m_uiGpuPadding[2]        = {};                            ///< Prefix primitive end and hierarchy coverage count. The coverage count is serialized by the descriptor.
   xiiBoundingSphere m_Bounds                 = xiiBoundingSphere::MakeZero(); ///< The bounding sphere of this meshlet, used for frustum culling and other spatial queries during rendering.
   xiiVec3           m_vConeAxis              = xiiVec3(0.0f, 0.0f, 1.0f);     ///< The axis of the normal cone for this meshlet, used for backface culling and other orientation-based culling techniques during rendering.
   float             m_fConeCutoff            = -1.0f;                         ///< The cutoff angle for the normal cone of this meshlet, where values in the range [-1, 1] represent the cosine of the cutoff angle and are used for backface culling and other orientation-based culling techniques during rendering. A value of -1 means no normal cone culling, while a value of 0 means a 90-degree cutoff angle.
 
   // Virtual cluster metadata. Serialized by the owning descriptor after the legacy meshlet stream.
   xiiVec4U32 m_Page      = xiiVec4U32(xiiInvalidIndex, 0U, 0U, 0U); // page, remap bytes, primitive bytes, page vertex count
-  xiiVec4    m_Hierarchy = xiiVec4(0.0f);                           // object-space error, detail page plus one, fallback flag, coverage primitive count
+  xiiVec4    m_Hierarchy = xiiVec4(0.0f);                           // object-space error, detail page plus one, root flag, reserved
 
   xiiResult Serialize(xiiStreamWriter& inout_stream) const;
   xiiResult Deserialize(xiiStreamReader& inout_stream);
@@ -154,10 +156,13 @@ struct XII_GRAPHICSCORE_DLL alignas(16) xiiMeshlet
 struct XII_GRAPHICSCORE_DLL xiiGeometryPage
 {
   XII_DECLARE_POD_TYPE();
-  xiiUInt32 m_uiOffset     = 0U;
-  xiiUInt32 m_uiSize       = 0U;
-  bool      m_bRequired    = false;
-  xiiUInt32 m_uiStoredSize = 0U;
+  xiiUInt32 m_uiOffset       = 0U;
+  xiiUInt32 m_uiSize         = 0U;
+  bool      m_bRequired      = false;
+  xiiUInt32 m_uiStoredSize   = 0U;
+  xiiUInt32 m_uiFirstCluster = 0U, m_uiClusterCount = 0U;
+  xiiUInt32 m_uiParent = xiiInvalidIndex, m_uiFirstChild = xiiInvalidIndex, m_uiChildCount = 0U;
+  float     m_fGeometricError = 0.0f;
   xiiResult Serialize(xiiStreamWriter& stream) const;
   xiiResult Deserialize(xiiStreamReader& stream);
 };

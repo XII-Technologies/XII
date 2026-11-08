@@ -18,6 +18,7 @@ struct xiiGpuDrivenSceneConfiguration
 {
   xiiUInt32 m_uiMeshDetail = 32U;
   xiiString m_sTexture;
+  xiiString m_sMesh, m_sExportMesh;
   bool      m_bAuthoredMaterials   = false;
   xiiUInt32 m_uiGridWidth          = 24U;
   xiiUInt32 m_uiGridHeight         = 16U;

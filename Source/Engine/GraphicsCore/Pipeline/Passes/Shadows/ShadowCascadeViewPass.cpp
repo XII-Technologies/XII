@@ -73,6 +73,7 @@ xiiResult xiiShadowCascadeViewPass::Build(xiiRenderPipelinePassContext& context)
   view.m_uiGeometryBaseIndex = xiiGeometryResidencyManager::GetMetadataBaseIndex(context.m_Graph.GetFrameIndex());
   view.m_uiUseCandidates     = 1;
   view.m_uiCandidateCount    = context.m_pView->GetGpuInstanceSelection().GetCount();
+  view.m_fGeometryPixelScale = float(resolution) * 0.5f * matrix.GetRow(1U).GetAsVec3().GetLength();
   xiiRenderPassResourceScope scope(context);
   struct Data
   {

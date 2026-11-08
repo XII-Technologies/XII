@@ -10,33 +10,11 @@ StructuredBuffer<GpuVisibilityView> g_VisibilityView;
 StructuredBuffer<GpuGeometryRecord> g_Geometry;
 StructuredBuffer<uint> g_Candidates;
 RWStructuredBuffer<GeometryLodRequest> g_Requests;
-ByteAddressBuffer g_Buffers[];
-#include <Shaders/Geometry/VirtualGeometry.h>
 // xiiGpuGeometryRecord::s_uiTrackLodDemand
 static const uint TrackLodDemand = 1u;
 uint HashKey(uint key)
 {
   key ^= key >> 16u; key *= 0x7FEB352Du; key ^= key >> 15u; key *= 0x846CA68Bu; return key ^ (key >> 16u);
-}
-void RequestPage(uint key, uint priority)
-{
-  uint entries, stride;
-  g_Requests.GetDimensions(entries, stride);
-  uint halfCapacity = (entries - 1u) / 2u;
-  if (halfCapacity == 0u) return;
-  uint base = HashKey(key) & (halfCapacity - 1u), ignored;
-  InterlockedAdd(g_Requests[0].Key, 1u, ignored);
-  for (uint probe = 0u; probe < min(halfCapacity, 32u); ++probe)
-  {
-    uint slot = 1u + halfCapacity + ((base + probe) & (halfCapacity - 1u)), observed;
-    InterlockedCompareExchange(g_Requests[slot].Key, 0u, key, observed);
-    if (observed != 0u && observed != key) continue;
-    if (observed == 0u) InterlockedAdd(g_Requests[0].DesiredLod, 1u, ignored);
-    InterlockedMax(g_Requests[slot].Priority, priority);
-    InterlockedOr(g_Requests[slot].PurposeMask, PurposeMask | 0x80000000u);
-    return;
-  }
-  InterlockedAdd(g_Requests[0].Priority, 1u, ignored);
 }
 [numthreads(64, 1, 1)]
 void main(uint3 tid : SV_DispatchThreadID)
@@ -64,29 +42,6 @@ void main(uint3 tid : SV_DispatchThreadID)
   if (!isfinite(distanceToCamera) || !isfinite(radius) || radius < 0.0f || !isfinite(view.ViewportAndHiZ.y) || view.ViewportAndHiZ.y <= 0.0f || geometry.Generation > 255u) return;
   uint desired = SelectInstanceDesiredLod(geometry, selection, distanceToCamera, view.ViewportAndHiZ.y);
   if (desired >= min(geometry.LodCount, 8u)) return;
-  GpuGeometryLod resident = geometry.Lods[desired];
-  if ((geometry.ResidentLodMask & (1u << desired)) != 0u && resident.Padding != 0u)
-  {
-    uint table = NonUniformResourceIndex(resident.VertexBufferIndex);
-    uint bytes;
-    g_Buffers[table].GetDimensions(bytes);
-    uint pages = bytes >= 272u ? min(g_Buffers[table].Load(0u), (bytes - 272u) / 48u) : 0u;
-    for (uint p = 0u; p < pages; ++p)
-    {
-      uint offset = 272u + p * 48u;
-      uint4 mapping = g_Buffers[table].Load4(offset);
-      if (mapping.z != 0u) continue;
-      float4 bounds = asfloat(g_Buffers[table].Load4(offset + 16u));
-      float error = asfloat(g_Buffers[table].Load(offset + 32u));
-      GpuMeshlet cluster = (GpuMeshlet)0;
-      cluster.Bounds = bounds;
-      cluster.Hierarchy.x = error;
-      float3 center = mul(instance.GlobalTransform, float4(bounds.xyz, 1.0f)).xyz;
-      float scale = max(length(instance.GlobalTransform[0].xyz), max(length(instance.GlobalTransform[1].xyz), length(instance.GlobalTransform[2].xyz)));
-      if (SphereInsideFrustum(center, bounds.w * scale, view) && xiiClusterWantsDetail(cluster, instance, view))
-        RequestPage(mapping.y, (PriorityTier << 30u) | (uint)min(radius * view.ViewportAndHiZ.y / max(distanceToCamera, 0.001f) * 1024.0f, 1073741760.0f));
-    }
-  }
   if ((geometry.ResidentLodMask & (1u << desired)) != 0u &&
       ((geometry.Flags & TrackLodDemand) == 0u || (instance.DrawLod != 0xFFFFFFFFu && instance.DrawLod != desired))) return;
   // Complete 24-bit slot and 8-bit generation identity. The invalid slot was rejected above.

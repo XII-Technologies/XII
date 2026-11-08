@@ -149,6 +149,7 @@ xiiResult xiiVisibilityViewPass::Build(xiiRenderPipelinePassContext& context)
     snapshot.m_uiUseCandidates  = 1;
     snapshot.m_uiCandidateCount = static_cast<xiiUInt32>(description->m_uiSize / sizeof(xiiUInt32));
   }
+  snapshot.m_fGeometryPixelScale = float(view.GetRenderResolutionHeight()) * m_fLodScreenScale * 0.5f * snapshot.m_ViewProjectionMatrix.GetRow(1U).GetAsVec3().GetLength();
   xiiRenderPassResourceScope scope(context);
   struct Data
   {

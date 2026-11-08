@@ -116,6 +116,8 @@ struct XII_GRAPHICSCORE_DLL xiiGeometryResidencyStats
   xiiUInt64 m_uiGeometryPageBytes = 0U, m_uiTexturePageBytes = 0U;
   xiiUInt32 m_uiGeometryPages = 0U, m_uiTexturePages = 0U;
   xiiUInt64 m_uiPageRequests = 0U, m_uiPageMisses = 0U;
+  xiiUInt64 m_uiGeometryPageRequests = 0U, m_uiGeometryPageUploads = 0U;
+  xiiUInt32 m_uiPendingPageRequests = 0U, m_uiPendingPageIO = 0U;
   xiiUInt64 m_uiResidentBytes         = 0U; ///< Occupied meshlet metadata arena bytes.
   xiiUInt64 m_uiBudgetBytes           = 0U; ///< Soft meshlet metadata occupancy limit.
   xiiUInt64 m_uiUploadedBytes         = 0U;

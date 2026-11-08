@@ -275,7 +275,7 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiMeshResource, xiiMeshResourceDescriptor)
 
   xiiResourceLoadDescription res;
   res.m_uiQualityLevelsDiscardable = 0U;
-  res.m_uiQualityLevelsLoadable    = m_Descriptor.m_UsageFlags.IsSet(xiiMeshResourceUsageFlags::Streaming) ? 1U : 0U;
+  res.m_uiQualityLevelsLoadable    = 0U;
   res.m_State                      = xiiResourceState::Loaded;
 
   return res;

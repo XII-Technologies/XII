@@ -41,6 +41,8 @@
 xiiCommandLineOptionInt    opt_GpuDrivenMonitor("GpuDrivenScene", "-monitor", "Monitor used by the scene sample.", 0U);
 xiiCommandLineOptionInt    opt_GpuDrivenMeshDetail("GpuDrivenScene", "-mesh-detail", "Sphere segments used to demonstrate independent geometry pages.", 32, 8, 512);
 xiiCommandLineOptionString opt_GpuDrivenTexture("GpuDrivenScene", "-texture", "Compiled sampled texture asset used by scene materials.", "");
+xiiCommandLineOptionString opt_GpuDrivenMesh("GpuDrivenScene", "-mesh", "Compiled mesh asset to stream in place of generated primitives.", "");
+xiiCommandLineOptionString opt_GpuDrivenExportMesh("GpuDrivenScene", "-export-mesh", "Export the generated sphere as a compiled native mesh asset.", "");
 xiiCommandLineOptionBool   opt_GpuDrivenAuthoredMaterials("GpuDrivenScene", "-authored-materials", "Render through the authored default material shader.", false);
 xiiCommandLineOptionBool   opt_GpuDrivenMeshShaders("GpuDrivenScene", "-mesh-shaders", "Use mesh shaders when supported.", true);
 xiiCommandLineOptionBool   opt_GpuDrivenCameraTour("GpuDrivenScene", "-camera-tour", "Move between near and distant geometry to exercise page demand.", false);
@@ -97,8 +99,8 @@ public:
       if (opt_GpuDrivenCameraTour.GetOptionValue(xiiCommandLineOption::LogMode::Never))
       {
         const float phase    = static_cast<float>(m_uiFrameIndex % 720U) / 720.0f;
-        const float distance = 10.0f + 90.0f * (1.0f - xiiMath::Cos(xiiAngle::MakeFromRadian(phase * xiiMath::Pi<float>() * 2.0f)));
-        m_Camera.LookAt(xiiVec3(25.0f - distance, -2.0f, 3.0f + distance * 0.25f), xiiVec3(25.0f, 0.0f, 0.0f), xiiVec3(0.0f, 0.0f, 1.0f));
+        const float distance = 4.0f + 90.0f * (1.0f - xiiMath::Cos(xiiAngle::MakeFromRadian(phase * xiiMath::Pi<float>() * 2.0f)));
+        m_Camera.LookAt(xiiVec3(25.0f - distance, -2.0f, 1.0f + distance * 0.1f), xiiVec3(25.0f, 0.0f, 0.0f), xiiVec3(0.0f, 0.0f, 1.0f));
       }
       m_World.Update(xiiClock::GetGlobalClock()->GetTimeDiff());
       if (view->GetLastRenderResult().Failed() || view->GetRenderPipelineInstance().GetResourceAcquireResult() != xiiResourceAcquireResult::Final)
@@ -120,6 +122,7 @@ public:
         xiiLog::Info("Residency frame {}: {} geometry pages / {} bytes, {} texture pages / {} bytes, {} requests / {} misses.",
                      m_uiFrameIndex, residency.m_uiGeometryPages, residency.m_uiGeometryPageBytes, residency.m_uiTexturePages,
                      residency.m_uiTexturePageBytes, residency.m_uiPageRequests, residency.m_uiPageMisses);
+        xiiLog::Info("Page scheduler: {} geometry requests, {} geometry uploads, {} queued, {} IO pending, {} geometry upload bytes remaining.", residency.m_uiGeometryPageRequests, residency.m_uiGeometryPageUploads, residency.m_uiPendingPageRequests, residency.m_uiPendingPageIO, residency.m_uiRemainingUploadBytes);
       }
       m_pSwapChain->Present();
     }
@@ -243,6 +246,8 @@ public:
     m_Configuration                      = {};
     m_Configuration.m_uiMeshDetail       = static_cast<xiiUInt32>(opt_GpuDrivenMeshDetail.GetOptionValue(xiiCommandLineOption::LogMode::Always));
     m_Configuration.m_bAuthoredMaterials = opt_GpuDrivenAuthoredMaterials.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified);
+    m_Configuration.m_sMesh              = opt_GpuDrivenMesh.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified);
+    m_Configuration.m_sExportMesh        = opt_GpuDrivenExportMesh.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified);
     m_Configuration.m_sTexture           = opt_GpuDrivenTexture.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified);
     m_Configuration.m_uiGridWidth        = static_cast<xiiUInt32>(opt_GpuDrivenGridWidth.GetOptionValue(xiiCommandLineOption::LogMode::Always));
     m_Configuration.m_uiGridHeight       = static_cast<xiiUInt32>(opt_GpuDrivenGridHeight.GetOptionValue(xiiCommandLineOption::LogMode::Always));
