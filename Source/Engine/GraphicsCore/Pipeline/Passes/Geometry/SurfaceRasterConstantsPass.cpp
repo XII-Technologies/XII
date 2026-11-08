@@ -3,11 +3,11 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <Core/Graphics/Camera.h>
-#include <GraphicsCore/Geometry/GeometryResidency.h>
 #include <GraphicsCore/Material/MaterialManager.h>
 #include <GraphicsCore/Pipeline/Passes/Geometry/SurfaceRasterConstantsPass.h>
 #include <GraphicsCore/Pipeline/Passes/Implementation/RenderPassUtils.h>
 #include <GraphicsCore/Pipeline/View.h>
+#include <GraphicsCore/Streaming/GpuResidencyManager.h>
 #include <GraphicsFoundation/Tools/MapHelper.h>
 #include <Shaders/Pipeline/Passes/Geometry/GpuSceneGBufferConstants.h>
 
@@ -41,7 +41,7 @@ xiiResult xiiSurfaceRasterConstantsPass::Configure(const xiiVariantDictionary& p
 }
 xiiResult xiiSurfaceRasterConstantsPass::Build(xiiRenderPipelinePassContext& context)
 {
-  if (!context.m_pView || !context.m_pView->GetCamera() || context.m_pView->GetCamera()->GetCameraMode() == xiiCameraMode::None || !xiiGeometryResidencyManager::IsInitialized() || !xiiMaterialManager::IsInitialized())
+  if (!context.m_pView || !context.m_pView->GetCamera() || context.m_pView->GetCamera()->GetCameraMode() == xiiCameraMode::None || !xiiGpuResidencyManager::IsInitialized() || !xiiMaterialManager::IsInitialized())
     return context.ReportFailure("Raster constants require a camera and initialized device residency producers.");
   const auto width = context.m_pView->GetRenderResolutionWidth(), height = context.m_pView->GetRenderResolutionHeight();
   if (width == 0 || height == 0)
@@ -67,7 +67,7 @@ xiiResult xiiSurfaceRasterConstantsPass::Build(xiiRenderPipelinePassContext& con
         data.m_Snapshot.CurrentJitter                = temporal->m_Sample.m_Jitter;
         data.m_Snapshot.PreviousJitter               = temporal->m_Sample.m_PreviousJitter;
       }
-      data.m_Snapshot.GeometryBaseIndex = xiiGeometryResidencyManager::GetMetadataBaseIndex(context.m_Graph.GetFrameIndex());
+      data.m_Snapshot.GeometryBaseIndex = xiiGpuResidencyManager::GetMetadataBaseIndex(context.m_Graph.GetFrameIndex());
       data.m_Snapshot.MaterialBaseIndex = xiiMaterialManager::GetGpuStorage().GetSurfaceBaseIndex(context.m_Graph.GetFrameIndex());
       data.m_Snapshot.VertexStride = m_uiVertexStride;
       data.m_Snapshot.NormalOffset = m_uiNormalOffset;

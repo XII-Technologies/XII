@@ -12,7 +12,6 @@
 #include <Foundation/Configuration/Startup.h>
 #include <GraphicsCore/Components/Render/RenderComponent.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
-#include <GraphicsCore/Geometry/GeometryResidency.h>
 #include <GraphicsCore/Lighting/WorldLightData.h>
 #include <GraphicsCore/Material/MaterialManager.h>
 #include <GraphicsCore/Meshes/GpuInstanceData.h>
@@ -26,6 +25,7 @@
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
+#include <GraphicsCore/Streaming/GpuResidencyManager.h>
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Resources/BindlessResourceTable.h>
 
@@ -835,7 +835,7 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
 
   // Honor compiled demand before choosing the frame's retirement/ring limits.
   if (m_RuntimeFeatures.IsAnySet(xiiRenderPipelineFeature::GpuScene | xiiRenderPipelineFeature::RayTracing))
-    if (xiiGeometryResidencyManager::EnsureInitialized().Failed() || xiiMaterialManager::EnsureInitialized().Failed())
+    if (xiiGpuResidencyManager::EnsureInitialized().Failed() || xiiMaterialManager::EnsureInitialized().Failed())
     {
       xiiLog::Error("Could not initialize the GPU residency requested by this world's pipelines.");
       return;
@@ -891,10 +891,10 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
   if (m_RuntimeFeatures.IsAnySet(xiiRenderPipelineFeature::GpuScene | xiiRenderPipelineFeature::RayTracing) && xiiMaterialManager::IsInitialized())
     xiiMaterialManager::PrepareGpuResources();
 
-  if (m_RuntimeFeatures.IsSet(xiiRenderPipelineFeature::GpuScene) && xiiGeometryResidencyManager::IsInitialized())
+  if (m_RuntimeFeatures.IsSet(xiiRenderPipelineFeature::GpuScene) && xiiGpuResidencyManager::IsInitialized())
   {
-    const xiiGeometryResidencyDescription& geometryDescription = xiiGeometryResidencyManager::GetConfiguration();
-    xiiGeometryResidencyManager::ProcessStreaming(uiFrameIndex, uiCompletedFrame, geometryDescription.m_uiUploadBudgetPerFrameBytes);
+    const xiiGpuResidencyDescription& geometryDescription = xiiGpuResidencyManager::GetConfiguration();
+    xiiGpuResidencyManager::ProcessStreaming(uiFrameIndex, uiCompletedFrame, geometryDescription.m_uiUploadBudgetPerFrameBytes);
   }
 
   for (auto it = m_ViewIdTable.GetIterator(); it.IsValid(); ++it)

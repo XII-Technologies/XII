@@ -9,7 +9,6 @@
 #include <Foundation/Threading/Mutex.h>
 #include <Foundation/Types/SharedPtr.h>
 #include <Foundation/Utilities/Stats.h>
-#include <GraphicsCore/Geometry/GeometryResidency.h>
 #include <GraphicsCore/Material/MaterialManager.h>
 #include <GraphicsCore/Material/MaterialResource.h>
 #include <GraphicsCore/Meshes/GpuInstanceData.h>
@@ -17,6 +16,7 @@
 #include <GraphicsCore/Meshes/MeshComponent.h>
 #include <GraphicsCore/Meshes/MeshResource.h>
 #include <GraphicsCore/Pipeline/ExtractedRenderData.h>
+#include <GraphicsCore/Streaming/GpuResidencyManager.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Resources/Buffer.h>
@@ -158,7 +158,7 @@ public:
   }
   void Release(Entry& entry) const
   {
-    xiiGeometryResidencyManager::ReleaseMeshGeometry(entry.m_Geometry, m_Frame);
+    xiiGpuResidencyManager::ReleaseMeshGeometry(entry.m_Geometry, m_Frame);
     xiiMaterialManager::ReleaseMaterialResource(entry.m_Material);
   }
 };
@@ -181,7 +181,7 @@ xiiResult xiiGpuInstanceData::UpdateFromExtraction(xiiArrayPtr<xiiRenderData* co
 #if XII_ENABLED(XII_USE_PROFILING)
   const auto syncStart = xiiTime::Now();
 #endif
-  if (xiiGeometryResidencyManager::EnsureInitialized().Failed())
+  if (xiiGpuResidencyManager::EnsureInitialized().Failed())
     return XII_FAILURE;
   auto&      state           = *m_pState;
   const auto previousVersion = state.m_Version, previousPoseVersion = state.m_PoseVersion;
@@ -226,8 +226,8 @@ xiiResult xiiGpuInstanceData::UpdateFromExtraction(xiiArrayPtr<xiiRenderData* co
     const bool acquireGeometry = fresh || state.m_Entries[index].m_Mesh != packet.m_hMesh ||
       state.m_Entries[index].m_uiMeshRevision != mesh.GetCurrentResourceChangeCounter() ||
       state.m_Entries[index].m_uiBufferRevision != bufferRevision ||
-      !xiiGeometryResidencyManager::IsValid(state.m_Entries[index].m_Geometry);
-    const auto geometry = acquireGeometry ? xiiGeometryResidencyManager::AcquireMeshGeometry(packet.m_hMesh) : state.m_Entries[index].m_Geometry;
+      !xiiGpuResidencyManager::IsValid(state.m_Entries[index].m_Geometry);
+    const auto geometry = acquireGeometry ? xiiGpuResidencyManager::AcquireMeshGeometry(packet.m_hMesh) : state.m_Entries[index].m_Geometry;
     if (geometry.IsInvalidated())
       return XII_SUCCESS;
     const auto material = materialIndex < packet.m_hMaterials.GetCount() ? packet.m_hMaterials[materialIndex] : xiiMaterialResourceHandle{};
@@ -236,7 +236,7 @@ xiiResult xiiGpuInstanceData::UpdateFromExtraction(xiiArrayPtr<xiiRenderData* co
       const auto identity = s_NextGpuIdentity.Increment();
       if (identity <= 0 || identity > xiiMath::MaxValue<xiiUInt32>())
       {
-        xiiGeometryResidencyManager::ReleaseMeshGeometry(geometry, frame);
+        xiiGpuResidencyManager::ReleaseMeshGeometry(geometry, frame);
         return XII_FAILURE; // Exhaustion is fail-closed; an old GPU identity is never recycled.
       }
       index               = state.m_Entries.GetCount();
@@ -255,7 +255,7 @@ xiiResult xiiGpuInstanceData::UpdateFromExtraction(xiiArrayPtr<xiiRenderData* co
     const auto before    = record;
     const bool resetPose = fresh || entry.m_Geometry != geometry;
     if (!fresh && acquireGeometry)
-      xiiGeometryResidencyManager::ReleaseMeshGeometry(entry.m_Geometry, frame);
+      xiiGpuResidencyManager::ReleaseMeshGeometry(entry.m_Geometry, frame);
     entry.m_Geometry         = geometry;
     entry.m_uiMeshRevision   = mesh.GetCurrentResourceChangeCounter();
     entry.m_uiBufferRevision = bufferRevision;
@@ -336,13 +336,13 @@ xiiResult xiiGpuInstanceData::UpdateFromExtraction(xiiArrayPtr<xiiRenderData* co
     if (coverageChanged)
     {
       xiiUInt32 counts[xiiGpuGeometryRecord::s_uiMaxLods] = {};
-      XII_SUCCEED_OR_RETURN(xiiGeometryResidencyManager::GetPrimitiveRangeMeshletCounts(geometry, first, count, xiiMakeArrayPtr(counts)));
+      XII_SUCCEED_OR_RETURN(xiiGpuResidencyManager::GetPrimitiveRangeMeshletCounts(geometry, first, count, xiiMakeArrayPtr(counts)));
       entry.m_MaximumMeshlets = 0;
       for (xiiUInt32 lod = 0; lod < xiiGpuGeometryRecord::s_uiMaxLods; ++lod)
         if (key.m_Lod == xiiInvalidIndex || key.m_Lod == lod)
           entry.m_MaximumMeshlets = xiiMath::Max(entry.m_MaximumMeshlets, counts[lod]);
     }
-    xiiGeometryResidencyManager::RequestGeometry(geometry, frame);
+    xiiGpuResidencyManager::RequestGeometry(geometry, frame);
     entry.m_Changed |= xiiMemoryUtils::Compare(&before, &record, 1) != 0;
     return XII_SUCCESS;
   };
@@ -577,7 +577,7 @@ xiiGpuInstanceData::UploadHandles xiiGpuInstanceData::AddUploadPass(xiiRenderGra
     return {};
   const auto device = xiiGALDevice::GetDefaultDevice();
   if (upload->m_Frames.IsEmpty())
-    upload->m_Frames.SetCount(xiiGeometryResidencyManager::GetConfiguration().m_uiFramesInFlight);
+    upload->m_Frames.SetCount(xiiGpuResidencyManager::GetConfiguration().m_uiFramesInFlight);
   const auto slot     = static_cast<xiiUInt32>(frameIndex % upload->m_Frames.GetCount());
   auto&      frame    = upload->m_Frames[slot];
   auto       allocate = [&](xiiSharedPtr<xiiGALBuffer>& buffer, xiiUInt32& capacity, xiiUInt32 count, xiiUInt32 stride) {

@@ -124,7 +124,7 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsCore, EmissiveLightManager)
     "Foundation",
     "Core",
     "BindlessResourceTable",
-    "GeometryResidencyManager",
+    "GpuResidencyManager",
     "MaterialManager",
     "PipelineCache",
     "ShaderPermutationUtilities"

@@ -4,7 +4,6 @@
 
 #include <Foundation/Containers/HashSet.h>
 #include <Foundation/Math/BoundingBox.h>
-#include <GraphicsCore/Geometry/GeometryResidency.h>
 #include <GraphicsCore/Lighting/LightingData.h>
 #include <GraphicsCore/Material/MaterialManager.h>
 #include <GraphicsCore/Meshes/GpuInstanceData.h>
@@ -12,6 +11,7 @@
 #include <GraphicsCore/Pipeline/Passes/GlobalIllumination/DDGISceneUpdatePass.h>
 #include <GraphicsCore/Pipeline/Passes/Implementation/ScreenSpacePassUtils.h>
 #include <GraphicsCore/Pipeline/View.h>
+#include <GraphicsCore/Streaming/GpuResidencyManager.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Resources/BindlessResourceTable.h>
@@ -204,7 +204,7 @@ xiiResult xiiDDGISceneUpdatePass::Build(xiiRenderPipelinePassContext& context)
     };
     const auto upload = context.m_Graph.AddPass<Upload>("Upload World Probe Candidates", xiiGALCommandQueueFlags::Transfer, [&](Upload& data, xiiRenderGraphBuilder& builder) {
       data.m_Candidates = std::move(candidates);
-      data.m_Layout.ProbeSceneLayout = {xiiGeometryResidencyManager::GetMetadataBaseIndex(frame), xiiMaterialManager::GetGpuStorage().GetSurfaceBaseIndex(frame),
+      data.m_Layout.ProbeSceneLayout = {xiiGpuResidencyManager::GetMetadataBaseIndex(frame), xiiMaterialManager::GetGpuStorage().GetSurfaceBaseIndex(frame),
                                       sizeof(xiiMeshPackedVertex), offsetof(xiiMeshPackedVertex, m_vTexCoord0)};
       xiiGALBufferCreationDescription desc;
       desc.m_Mode = xiiGALBufferMode::Structured;

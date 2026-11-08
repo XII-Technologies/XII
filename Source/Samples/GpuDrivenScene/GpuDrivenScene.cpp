@@ -47,6 +47,7 @@ xiiCommandLineOptionBool   opt_GpuDrivenAuthoredMaterials("GpuDrivenScene", "-au
 xiiCommandLineOptionBool   opt_GpuDrivenMeshShaders("GpuDrivenScene", "-mesh-shaders", "Use mesh shaders when supported.", true);
 xiiCommandLineOptionBool   opt_GpuDrivenCameraTour("GpuDrivenScene", "-camera-tour", "Move between near and distant geometry to exercise page demand.", false);
 xiiCommandLineOptionInt    opt_GpuDrivenCameraTourPeriod("GpuDrivenScene", "-camera-tour-period", "Frames per near/far camera cycle.", 720, 120, 14400);
+xiiCommandLineOptionInt    opt_GpuDrivenSceneCycle("GpuDrivenScene", "-scene-cycle-period", "Alternate populated and empty worlds after this many frames (zero disables).", 0, 0, 14400);
 xiiCommandLineOptionInt    opt_GpuDrivenFrameCount("GpuDrivenScene", "-frames", "Quit normally after this many rendered frames (zero runs until closed).", 0U);
 xiiCommandLineOptionInt    opt_GpuDrivenGridWidth("GpuDrivenScene", "-grid-width", "Number of scene instances along the X axis.", 24, 1, 512);
 xiiCommandLineOptionInt    opt_GpuDrivenGridHeight("GpuDrivenScene", "-grid-height", "Number of scene instances along the Y axis.", 16, 1, 512);
@@ -91,6 +92,26 @@ public:
     if (m_bFileModified)
       xiiResourceManager::ReloadAllResources(false);
 #endif
+    const auto scenePeriod = static_cast<xiiUInt32>(opt_GpuDrivenSceneCycle.GetOptionValue(xiiCommandLineOption::LogMode::Never));
+    const bool populated   = scenePeriod == 0U || (m_uiFrameIndex / scenePeriod) % 2U == 0U;
+    if (populated != m_Configuration.m_bPopulateScene)
+    {
+      m_World.Shutdown();
+      m_Configuration.m_bPopulateScene = populated;
+      if (m_World.Initialize(m_pDevice.Borrow(), m_Configuration).Failed())
+      {
+        xiiLog::Error("Scene transition failed at frame {}.", m_uiFrameIndex);
+        SetReturnCode(1);
+        return Execution::Quit;
+      }
+      auto* view = m_World.GetRenderView();
+      view->SetCamera(&m_Camera);
+      view->SetSwapChain(m_pSwapChain.Borrow());
+      view->SetRenderPipelineResource(xiiResourceManager::LoadResource<xiiRenderPipelineResource>(opt_GpuDrivenPipeline.GetOptionValue(xiiCommandLineOption::LogMode::Never)));
+      xiiLog::Info("Scene transition at frame {}: populated={}", m_uiFrameIndex, populated);
+    }
+    if (scenePeriod != 0U && !populated && m_uiFrameIndex % 30U == 0U)
+      xiiResourceManager::FreeUnusedResources(xiiTime::MakeFromMilliseconds(2), xiiTime::MakeFromSeconds(0.25));
     m_pDevice->BeginFrame();
     if (m_pSwapChain && m_pSwapChain->GetCurrentSize().HasNonZeroArea() && m_pSwapChain->GetBackBufferTexture())
     {
@@ -120,7 +141,7 @@ public:
       }
       if (m_uiFrameIndex % 60U == 0U)
       {
-        const auto residency = xiiGeometryResidencyManager::GetStats();
+        const auto residency = xiiGpuResidencyManager::GetStats();
         for (auto category : {xiiGALMemoryCategory::GeometryPages, xiiGALMemoryCategory::TexturePages})
         {
           xiiGALMemoryCategoryStatistics ownership;
@@ -130,6 +151,7 @@ public:
         xiiLog::Info("Residency frame {}: {} geometry pages / {} bytes, {} texture pages / {} bytes, {} requests / {} misses.",
                      m_uiFrameIndex, residency.m_uiGeometryPages, residency.m_uiGeometryPageBytes, residency.m_uiTexturePages,
                      residency.m_uiTexturePageBytes, residency.m_uiPageRequests, residency.m_uiPageMisses);
+        xiiLog::Info("Request identities: {} logical, {} high water, {} retired, {} reuses.", residency.m_uiLogicalPageCount, residency.m_uiRequestIdHighWater, residency.m_uiRetiredRequestIds, residency.m_uiRequestIdReuses);
         xiiLog::Info("Physical pools: {} backing bytes, {} reusable, {} retiring, {} reuses / {} allocations / {} released bytes.", residency.m_uiPoolBackingBytes, residency.m_uiPoolReusableBytes, residency.m_uiPoolRetiringBytes, residency.m_uiPoolReuses, residency.m_uiPoolAllocations, residency.m_uiPoolReleasedBytes);
         xiiLog::Info("Page scheduler: {} geometry requests, {} geometry uploads, {} queued, {} IO pending, {} geometry upload bytes remaining.", residency.m_uiGeometryPageRequests, residency.m_uiGeometryPageUploads, residency.m_uiPendingPageRequests, residency.m_uiPendingPageIO, residency.m_uiRemainingUploadBytes);
       }

@@ -7,7 +7,6 @@
 #include <Foundation/Containers/DynamicArray.h>
 #include <Foundation/Containers/IdTable.h>
 #include <Foundation/Threading/Mutex.h>
-#include <GraphicsCore/Geometry/GeometryResidency.h>
 #include <GraphicsCore/Lighting/RayTracingResources.h>
 #include <GraphicsCore/Lighting/VirtualShadowMap.h>
 #include <GraphicsCore/Material/MaterialManager.h>
@@ -15,6 +14,7 @@
 #include <GraphicsCore/Pipeline/RenderGraphManager.h>
 #include <GraphicsCore/Pipeline/RenderGraphProfiler.h>
 #include <GraphicsCore/Pipeline/RenderGraphResourceCache.h>
+#include <GraphicsCore/Streaming/GpuResidencyManager.h>
 #include <GraphicsFoundation/Resources/BindlessResourceTable.h>
 
 #include <utility>
@@ -76,7 +76,7 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsCore, RenderGraphManager)
   BEGIN_SUBSYSTEM_DEPENDENCIES
     "Foundation",
     "Core",
-    "GeometryResidencyManager",
+    "GpuResidencyManager",
     "MaterialManager",
     "VirtualShadowMapManager",
     "RenderPassCache",
@@ -277,9 +277,9 @@ xiiResult xiiRenderGraphManager::BeginFrame(xiiRenderGraphFrame& frame, xiiUInt3
   {
     uiFramesInFlight = xiiMath::Min(uiFramesInFlight, xiiMaterialManager::GetGpuStorage().GetFramesInFlight());
   }
-  if (xiiGeometryResidencyManager::IsInitialized())
+  if (xiiGpuResidencyManager::IsInitialized())
   {
-    uiFramesInFlight = xiiMath::Min(uiFramesInFlight, xiiGeometryResidencyManager::GetConfiguration().m_uiFramesInFlight);
+    uiFramesInFlight = xiiMath::Min(uiFramesInFlight, xiiGpuResidencyManager::GetConfiguration().m_uiFramesInFlight);
   }
   if (xiiRayTracingResources::IsInitialized())
   {
@@ -317,11 +317,11 @@ xiiResult xiiRenderGraphManager::BeginFrame(xiiRenderGraphFrame& frame, xiiUInt3
   {
     xiiVirtualShadowMapManager::BeginFrame(uiFrameIndex, uiCompletedFrame);
   }
-  if (xiiGeometryResidencyManager::IsInitialized())
+  if (xiiGpuResidencyManager::IsInitialized())
   {
-    const xiiGeometryResidencyDescription& geometryDescription = xiiGeometryResidencyManager::GetConfiguration();
+    const xiiGpuResidencyDescription& geometryDescription = xiiGpuResidencyManager::GetConfiguration();
 
-    xiiGeometryResidencyManager::ProcessStreaming(uiFrameIndex, uiCompletedFrame, geometryDescription.m_uiUploadBudgetPerFrameBytes);
+    xiiGpuResidencyManager::ProcessStreaming(uiFrameIndex, uiCompletedFrame, geometryDescription.m_uiUploadBudgetPerFrameBytes);
   }
 
   // Resource-cache frame scope matches the shared GPU frame, not an individual view or graph.
@@ -338,7 +338,7 @@ void xiiRenderGraphManager::EndFrame(xiiRenderGraphFrame& frame)
   XII_ASSERT_DEV(s_pState != nullptr && s_pState->m_bFrameActive && frame.m_uiFrameIndex == s_pState->m_uiFrameIndex, "A GPU frame must end before renderer shutdown.");
 
   s_pState->m_pResourceCache->EndFrame();
-  xiiGeometryResidencyManager::EndStreamingFrame(frame.m_uiFrameIndex);
+  xiiGpuResidencyManager::EndStreamingFrame(frame.m_uiFrameIndex);
   s_pState->m_FrameCompletionTracker.CaptureSubmittedFrame(frame.m_uiFrameIndex);
 
   if (!s_pState->m_RetiredEntries.IsEmpty())

@@ -99,7 +99,7 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID)
     g_CurrentLodHistory[instanceIndex] = uint4(lod, geometry.Generation, selection.ObjectId, (uint)view.LodParameters.y);
   if ((instance.Flags & view.RequiredFlags) != view.RequiredFlags || (instance.Flags & view.ExcludedFlags) != 0u || (instance.VisibilityMask & view.VisibilityMask) == 0u)
     return;
-  if (geometry.ResidentLodMask == 0u || !SphereInsideFrustum(instance.BoundsCenterRadius.xyz, instance.BoundsCenterRadius.w, view))
+  if (geometry.AvailableLodMask == 0u || !SphereInsideFrustum(instance.BoundsCenterRadius.xyz, instance.BoundsCenterRadius.w, view))
     return;
 
   uint destination;

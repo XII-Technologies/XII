@@ -42,7 +42,7 @@ RWStructuredBuffer<uint>  g_DrawCommandCount;
   GpuGeometryRecord geometry = g_Geometry[base + instance.GeometryIndex];
   GpuMeshlet        meshlet  = g_Meshlets[visible.y];
   uint              lodIndex = meshlet.PackedLodSection & 0xFFFFu;
-  if (lodIndex >= min(geometry.LodCount, 8u) || (geometry.ResidentLodMask & (1u << lodIndex)) == 0u ||
+  if (lodIndex >= min(geometry.LodCount, 8u) || (geometry.AvailableLodMask & (1u << lodIndex)) == 0u ||
       (instance.DrawLod != 0xFFFFFFFFu && instance.DrawLod != lodIndex))
     return;
   GpuGeometryLod lod = geometry.Lods[lodIndex];
