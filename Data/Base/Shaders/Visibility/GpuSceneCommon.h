@@ -56,8 +56,8 @@ struct GpuGeometryLod
   uint  VertexBufferIndex;
   uint  IndexBufferIndex;
   uint  Padding;
-  uint  MeshletRemapBufferIndex;
-  uint  MeshletPrimitiveBufferIndex;
+  uint  MeshletTopologyBufferIndex;
+  uint  MeshletPrimitiveByteOffset;
   uint  VertexCount;
   uint  IndexCount;
   uint  MeshletCount;

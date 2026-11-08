@@ -136,7 +136,7 @@ bool TraceProbeMeshlets(float3 origin, float3 direction, GpuSceneInstance instan
                         inout uint remainingTriangles, bool shadowQuery, inout ProbeHit hit, out bool complete)
 {
   complete = false;
-  if (lod.MeshletRangesOrdered == 0u || lod.MeshletRemapBufferIndex == 0xffffffffu || lod.MeshletPrimitiveBufferIndex == 0xffffffffu)
+  if (lod.MeshletRangesOrdered == 0u || lod.MeshletTopologyBufferIndex == 0xffffffffu)
     return false;
   uint first, count;
   GetCandidateMeshletRange(instance, lod, first, count);
@@ -145,11 +145,13 @@ bool TraceProbeMeshlets(float3 origin, float3 direction, GpuSceneInstance instan
   remainingMeshlets -= count;
   first += lod.MeshletMetadataOffset;
 
-  const uint remapBuffer     = NonUniformResourceIndex(lod.MeshletRemapBufferIndex);
-  const uint primitiveBuffer = NonUniformResourceIndex(lod.MeshletPrimitiveBufferIndex);
-  uint       remapBytes, primitiveBytes;
-  g_Buffers[remapBuffer].GetDimensions(remapBytes);
-  g_Buffers[primitiveBuffer].GetDimensions(primitiveBytes);
+  const uint topologyBuffer = NonUniformResourceIndex(lod.MeshletTopologyBufferIndex);
+  const uint remapBytes = lod.MeshletPrimitiveByteOffset;
+  uint topologyBytes;
+  g_Buffers[topologyBuffer].GetDimensions(topologyBytes);
+  if (remapBytes > topologyBytes)
+    return false;
+  const uint primitiveBytes = topologyBytes - remapBytes;
   const uint section = g_Meshlets[first].PackedLodSection >> 16u;
   uint       cursor  = begin;
   [loop] for (uint i = first; i < first + count; ++i)
@@ -188,13 +190,13 @@ bool TraceProbeMeshlets(float3 origin, float3 direction, GpuSceneInstance instan
     [loop] for (uint primitive = 0u; primitive < triangles; ++primitive)
     {
       const uint  offset = meshlet.Header.z + primitive * 3u;
-      const uint3 local  = uint3(ProbeMeshletByte(g_Buffers[primitiveBuffer], offset),
-                                 ProbeMeshletByte(g_Buffers[primitiveBuffer], offset + 1u),
-                                 ProbeMeshletByte(g_Buffers[primitiveBuffer], offset + 2u));
+      const uint3 local  = uint3(ProbeMeshletByte(g_Buffers[topologyBuffer], remapBytes + offset),
+                                 ProbeMeshletByte(g_Buffers[topologyBuffer], remapBytes + offset + 1u),
+                                 ProbeMeshletByte(g_Buffers[topologyBuffer], remapBytes + offset + 2u));
       if (any(local >= vertices))
         return true;
       const uint3 remap  = (meshlet.Header.y + local) * 4u;
-      const uint3 source = uint3(g_Buffers[remapBuffer].Load(remap.x), g_Buffers[remapBuffer].Load(remap.y), g_Buffers[remapBuffer].Load(remap.z));
+      const uint3 source = uint3(g_Buffers[topologyBuffer].Load(remap.x), g_Buffers[topologyBuffer].Load(remap.y), g_Buffers[topologyBuffer].Load(remap.z));
       TraceProbePrimitive(origin, direction, instance.GlobalTransform, lod.VertexBufferIndex, lod.VertexCount, material, source, instance.Flags, shadowQuery, hit);
       if (shadowQuery && hit.Found)
       {

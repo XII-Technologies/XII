@@ -75,7 +75,7 @@ ByteAddressBuffer                   g_Buffers[];
       }
     }
     if (vertexCount > 64u || primitiveCount > 126u || (primitiveCount > 0u && vertexCount == 0u) ||
-        lod.VertexBufferIndex == 0xFFFFFFFFu || lod.MeshletRemapBufferIndex == 0xFFFFFFFFu || lod.MeshletPrimitiveBufferIndex == 0xFFFFFFFFu)
+        lod.VertexBufferIndex == 0xFFFFFFFFu || lod.MeshletTopologyBufferIndex == 0xFFFFFFFFu)
     {
       SetMeshOutputCounts(0u, 0u);
       return;
@@ -85,8 +85,14 @@ ByteAddressBuffer                   g_Buffers[];
     uint remapBufferBytes;
     uint primitiveBufferBytes;
     g_Buffers[lod.VertexBufferIndex].GetDimensions(vertexBufferBytes);
-    g_Buffers[lod.MeshletRemapBufferIndex].GetDimensions(remapBufferBytes);
-    g_Buffers[lod.MeshletPrimitiveBufferIndex].GetDimensions(primitiveBufferBytes);
+    g_Buffers[lod.MeshletTopologyBufferIndex].GetDimensions(primitiveBufferBytes);
+    remapBufferBytes = lod.MeshletPrimitiveByteOffset;
+    if (remapBufferBytes > primitiveBufferBytes)
+    {
+      SetMeshOutputCounts(0u, 0u);
+      return;
+    }
+    primitiveBufferBytes -= remapBufferBytes;
     const uint lastAttributeEnd = max(max(12u, NormalOffset + 12u), max(TangentOffset + 16u, TexCoordOffset + 8u));
     if (VertexStride < lastAttributeEnd || meshlet.Header.y > remapBufferBytes / 4u || vertexCount > remapBufferBytes / 4u - meshlet.Header.y ||
         meshlet.Header.z > primitiveBufferBytes || primitiveCount * 3u > primitiveBufferBytes - meshlet.Header.z)
@@ -99,7 +105,7 @@ ByteAddressBuffer                   g_Buffers[];
 
     if (threadIndex < vertexCount)
     {
-      const uint sourceVertex = g_Buffers[lod.MeshletRemapBufferIndex].Load((meshlet.Header.y + threadIndex) * 4u);
+      const uint sourceVertex = g_Buffers[lod.MeshletTopologyBufferIndex].Load((meshlet.Header.y + threadIndex) * 4u);
       vertices[threadIndex]   = xiiLoadSceneSurfaceVertex(instance, lod, sourceVertex);
     }
 
@@ -109,9 +115,9 @@ ByteAddressBuffer                   g_Buffers[];
       const uint  sourcePrimitive  = meshlet.Header.x + primitiveIndex;
       const uint  primitiveOffset  = meshlet.Header.z + primitiveIndex * 3u;
       const uint3 primitiveIndices = uint3(
-        LoadByte(g_Buffers[lod.MeshletPrimitiveBufferIndex], primitiveOffset + 0u),
-        LoadByte(g_Buffers[lod.MeshletPrimitiveBufferIndex], primitiveOffset + 1u),
-        LoadByte(g_Buffers[lod.MeshletPrimitiveBufferIndex], primitiveOffset + 2u));
+        LoadByte(g_Buffers[lod.MeshletTopologyBufferIndex], remapBufferBytes + primitiveOffset + 0u),
+        LoadByte(g_Buffers[lod.MeshletTopologyBufferIndex], remapBufferBytes + primitiveOffset + 1u),
+        LoadByte(g_Buffers[lod.MeshletTopologyBufferIndex], remapBufferBytes + primitiveOffset + 2u));
       const bool primitiveSelected = instance.PrimitiveCount == 0u ||
         (sourcePrimitive >= instance.FirstPrimitive && sourcePrimitive - instance.FirstPrimitive < instance.PrimitiveCount);
       triangles[primitiveIndex] = primitiveSelected && all(primitiveIndices < vertexCount) ? primitiveIndices : uint3(0u, 0u, 0u);

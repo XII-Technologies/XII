@@ -155,7 +155,7 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID, uint3 groupId : SV_Group
   const uint vertexCount = meshlet.PackedPrimitiveVertexCount >> 16u;
   const uint localPrimitive = dispatchThreadId.x - groupId.x * 128u;
   if (localPrimitive >= primitiveCount || localPrimitive >= 128u || vertexCount == 0u ||
-      lod.VertexBufferIndex == 0xFFFFFFFFu || lod.MeshletRemapBufferIndex == 0xFFFFFFFFu || lod.MeshletPrimitiveBufferIndex == 0xFFFFFFFFu)
+      lod.VertexBufferIndex == 0xFFFFFFFFu || lod.MeshletTopologyBufferIndex == 0xFFFFFFFFu)
     return;
 
   const uint sourcePrimitive = meshlet.Header.x + localPrimitive;
@@ -164,24 +164,28 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID, uint3 groupId : SV_Group
 
   uint vertexBufferBytes, remapBufferBytes, primitiveBufferBytes;
   g_Buffers[lod.VertexBufferIndex].GetDimensions(vertexBufferBytes);
-  g_Buffers[lod.MeshletRemapBufferIndex].GetDimensions(remapBufferBytes);
-  g_Buffers[lod.MeshletPrimitiveBufferIndex].GetDimensions(primitiveBufferBytes);
+
+  g_Buffers[lod.MeshletTopologyBufferIndex].GetDimensions(primitiveBufferBytes);
+  remapBufferBytes = lod.MeshletPrimitiveByteOffset;
+  if (remapBufferBytes > primitiveBufferBytes)
+    return;
+  primitiveBufferBytes -= remapBufferBytes;
   const uint primitiveOffset = meshlet.Header.z + localPrimitive * 3u;
   if (primitiveOffset > primitiveBufferBytes || 3u > primitiveBufferBytes - primitiveOffset ||
       meshlet.Header.y > remapBufferBytes / 4u || vertexCount > remapBufferBytes / 4u - meshlet.Header.y)
     return;
 
   const uint3 localIndices = uint3(
-    LoadByte(g_Buffers[lod.MeshletPrimitiveBufferIndex], primitiveOffset),
-    LoadByte(g_Buffers[lod.MeshletPrimitiveBufferIndex], primitiveOffset + 1u),
-    LoadByte(g_Buffers[lod.MeshletPrimitiveBufferIndex], primitiveOffset + 2u));
+    LoadByte(g_Buffers[lod.MeshletTopologyBufferIndex], remapBufferBytes + primitiveOffset),
+    LoadByte(g_Buffers[lod.MeshletTopologyBufferIndex], remapBufferBytes + primitiveOffset + 1u),
+    LoadByte(g_Buffers[lod.MeshletTopologyBufferIndex], remapBufferBytes + primitiveOffset + 2u));
   if (any(localIndices >= vertexCount))
     return;
 
   const uint3 sourceVertices = uint3(
-    g_Buffers[lod.MeshletRemapBufferIndex].Load((meshlet.Header.y + localIndices.x) * 4u),
-    g_Buffers[lod.MeshletRemapBufferIndex].Load((meshlet.Header.y + localIndices.y) * 4u),
-    g_Buffers[lod.MeshletRemapBufferIndex].Load((meshlet.Header.y + localIndices.z) * 4u));
+    g_Buffers[lod.MeshletTopologyBufferIndex].Load((meshlet.Header.y + localIndices.x) * 4u),
+    g_Buffers[lod.MeshletTopologyBufferIndex].Load((meshlet.Header.y + localIndices.y) * 4u),
+    g_Buffers[lod.MeshletTopologyBufferIndex].Load((meshlet.Header.y + localIndices.z) * 4u));
   const uint3 vertexOffsets = sourceVertices * VertexStride;
   const uint lastAttributeEnd = max(12u, TexCoordOffset + 8u);
   if (VertexStride < lastAttributeEnd || any(vertexOffsets > vertexBufferBytes) ||

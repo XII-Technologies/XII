@@ -215,9 +215,9 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, SharedTopologyRetirement)
     return;
   XII_TEST_INT(pFirst->m_uiResidentLodMask, 1U);
   XII_TEST_INT(pSecond->m_uiResidentLodMask, 1U);
-  XII_TEST_BOOL(pFirst->m_Lods[0].m_uiMeshletRemapBufferIndex != xiiInvalidIndex);
-  XII_TEST_INT(pFirst->m_Lods[0].m_uiMeshletRemapBufferIndex, pSecond->m_Lods[0].m_uiMeshletRemapBufferIndex);
-  XII_TEST_INT(pFirst->m_Lods[0].m_uiMeshletPrimitiveBufferIndex, pSecond->m_Lods[0].m_uiMeshletPrimitiveBufferIndex);
+  XII_TEST_BOOL(pFirst->m_Lods[0].m_uiMeshletTopologyBufferIndex != xiiInvalidIndex);
+  XII_TEST_INT(pFirst->m_Lods[0].m_uiMeshletTopologyBufferIndex, pSecond->m_Lods[0].m_uiMeshletTopologyBufferIndex);
+  XII_TEST_INT(pFirst->m_Lods[0].m_uiMeshletPrimitiveByteOffset, pSecond->m_Lods[0].m_uiMeshletPrimitiveByteOffset);
   XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiTopologyUploadBytes, uiTopologyBytes);
   XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiResidentTopologyBytes, uiTopologyBytes);
 
@@ -342,7 +342,8 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, IndependentLodTopology)
     return;
   XII_TEST_INT(pRecord->m_uiResidentLodMask, 2U);
   XII_TEST_INT(pPeer->m_uiResidentLodMask, 1U);
-  XII_TEST_INT(pRecord->m_Lods[1].m_uiMeshletRemapBufferIndex, pPeer->m_Lods[0].m_uiMeshletRemapBufferIndex);
+  XII_TEST_INT(pRecord->m_Lods[1].m_uiMeshletTopologyBufferIndex, pPeer->m_Lods[0].m_uiMeshletTopologyBufferIndex);
+  XII_TEST_INT(pRecord->m_Lods[1].m_uiMeshletPrimitiveByteOffset, coarse.m_uiVertexCount * sizeof(xiiUInt32));
   XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiTopologyUploadBytes, uiCoarseBytes);
 
   xiiRenderGraphTestContext context;
@@ -375,11 +376,40 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, IndependentLodTopology)
     return;
   const xiiInt32 iPreviousBudget = pBudget->GetValue();
   XII_SCOPE_EXIT(*pBudget = iPreviousBudget);
+
+  // A required allocation after BeginFrame can consume headroom before the next pressure sample.
+  xiiHybridArray<xiiGALMemoryHeapStatistics, 8> heaps;
+  pDevice->GetMemoryHeapStatistics(heaps);
+  xiiGALMemoryHeapStatistics primary;
+  for (const auto& heap : heaps)
+    if (heap.m_bDeviceLocal && heap.m_uiCapacityBytes > primary.m_uiCapacityBytes)
+      primary = heap;
+  constexpr xiiUInt64 uiMiB   = 1024U * 1024U;
+  const xiiUInt64     uiUsage = xiiMath::Max(primary.m_uiUsageBytes, primary.m_uiCommittedBytes) - primary.m_uiCommittedBytes + primary.m_uiAllocatedBytes;
+  *pBudget                    = static_cast<xiiInt32>(uiUsage / uiMiB) + 16;
+  pDevice->BeginFrame();
+  XII_TEST_BOOL(!pDevice->IsStreamingMemoryPressured());
+  auto lateRequiredDescription     = pressure;
+  lateRequiredDescription.m_uiSize = 17U * uiMiB;
+  auto pLateRequired               = pDevice->CreateBuffer(lateRequiredDescription);
+  XII_TEST_BOOL(pLateRequired != nullptr);
+  XII_TEST_BOOL(!pDevice->IsStreamingMemoryPressured());
+  const auto statsBefore = xiiGeometryResidencyManager::GetStats();
+  xiiGeometryResidencyManager::RequestResidency(hGeometry, 0U, 2U);
+  xiiGeometryResidencyManager::ProcessStreaming(2U, 1U, configuration.m_uiUploadBudgetPerFrameBytes);
+  XII_TEST_INT(pRecord->m_uiResidentLodMask, 2U);
+  XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiMemoryDeferred, 1U);
+  XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiResidentBytes, statsBefore.m_uiResidentBytes);
+  XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiTopologyUploadBytes, 0U);
+  XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiPreparedMeshlets, 0U);
+  pLateRequired.Clear();
+  pDevice->EndFrame();
+  pDevice->WaitIdle();
+
   *pBudget = 1;
   pDevice->BeginFrame();
   XII_TEST_BOOL(pDevice->IsStreamingMemoryPressured());
-  xiiGeometryResidencyManager::RequestResidency(hGeometry, 0U, 2U);
-  xiiGeometryResidencyManager::ProcessStreaming(2U, 1U, configuration.m_uiUploadBudgetPerFrameBytes);
+  xiiGeometryResidencyManager::ProcessStreaming(3U, 2U, configuration.m_uiUploadBudgetPerFrameBytes);
   XII_TEST_INT(pRecord->m_uiResidentLodMask, 2U);
   XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiMemoryDeferred, 1U);
   XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiTopologyUploadBytes, 0U);
@@ -387,12 +417,12 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, IndependentLodTopology)
 
   *pBudget = 0;
   pDevice->BeginFrame();
-  xiiGeometryResidencyManager::ProcessStreaming(3U, 2U, configuration.m_uiUploadBudgetPerFrameBytes);
+  xiiGeometryResidencyManager::ProcessStreaming(4U, 3U, configuration.m_uiUploadBudgetPerFrameBytes);
   pDevice->EndFrame();
   XII_TEST_INT(pRecord->m_uiResidentLodMask, 3U);
   XII_TEST_INT(pRecord->m_Lods[0].m_uiVertexBufferIndex, pRecord->m_Lods[1].m_uiVertexBufferIndex);
   XII_TEST_INT(pRecord->m_Lods[0].m_uiIndexBufferIndex, pRecord->m_Lods[1].m_uiIndexBufferIndex);
-  XII_TEST_BOOL(pRecord->m_Lods[0].m_uiMeshletRemapBufferIndex != pRecord->m_Lods[1].m_uiMeshletRemapBufferIndex);
+  XII_TEST_BOOL(pRecord->m_Lods[0].m_uiMeshletTopologyBufferIndex != pRecord->m_Lods[1].m_uiMeshletTopologyBufferIndex);
   XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiTopologyUploadBytes, uiFineBytes);
 
   pDevice->WaitIdle();
@@ -420,7 +450,7 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, IndependentLodTopology)
   xiiGeometryResidencyManager::ProcessStreaming(368U, 366U, configuration.m_uiUploadBudgetPerFrameBytes);
   XII_TEST_INT(pRecord->m_uiResidentLodMask, 2U);
   XII_TEST_INT(pRecord->m_uiGeneration, uiGeneration);
-  XII_TEST_INT(pRecord->m_Lods[0].m_uiMeshletRemapBufferIndex, xiiInvalidIndex);
+  XII_TEST_INT(pRecord->m_Lods[0].m_uiMeshletTopologyBufferIndex, xiiInvalidIndex);
   XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiFineLodEvictions, 1U);
   XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiResidentBytes, uiArenaBefore);
   XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiResidentTopologyBytes, uiCoarseBytes + uiFineBytes);
