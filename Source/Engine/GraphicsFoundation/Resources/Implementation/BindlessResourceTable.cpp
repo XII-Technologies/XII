@@ -418,6 +418,11 @@ void xiiGALBindlessResourceTable::BindTextureSRVs(xiiGALCommandList& commandList
   XII_LOCK(s_pState->m_Mutex);
   auto raw = MakeRawTable(s_pState->m_TextureSRVs.m_Objects);
   commandList.ResolveAndSetShaderResourceTextureViews(name, 0U, raw, stages);
+  commandList.ResolveAndSetShaderResourceTextureViews("g_VirtualTextureTiles", 0U, raw, stages);
+  auto buffers = MakeRawTable(s_pState->m_BufferSRVs.m_Objects);
+  commandList.ResolveAndSetShaderResourceBufferViews("g_VirtualTextureTables", 0U, buffers, stages);
+  auto feedback = MakeRawTable(s_pState->m_BufferUAVs.m_Objects);
+  commandList.ResolveAndSetUnorderedAccessBufferViews("g_VirtualTextureFeedback", 0U, feedback, stages);
 }
 void xiiGALBindlessResourceTable::BindTextureUAVs(xiiGALCommandList& commandList, const xiiTempHashedString& name, xiiBitflags<xiiGALShaderType> stages)
 {

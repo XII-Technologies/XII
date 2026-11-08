@@ -7,6 +7,7 @@
 #include <GraphicsFoundation/Utilities/GraphicsUtilities.h>
 #include <Texture/Image/Formats/DdsFileFormat.h>
 #include <Texture/Image/Image.h>
+#include <Texture/Utilities/VirtualTextureData.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTexture2DResource, 1, xiiRTTIDefaultAllocator<xiiTexture2DResource>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
@@ -27,10 +28,17 @@ xiiResourceLoadDescription xiiTexture2DResource::UnloadData(Unload whatToUnload)
 {
   XII_IGNORE_UNUSED(whatToUnload);
   XII_LOCK(m_TextureMutex);
+  m_pVirtualData.Clear();
   m_pGALTexture.Clear();
   m_pSampler.Clear();
   m_NextRefinementAttempt = xiiTime::MakeZero();
   return {xiiResourceState::Unloaded, 0, 1};
+}
+
+xiiSharedPtr<xiiVirtualTextureData> xiiTexture2DResource::GetVirtualData() const
+{
+  XII_LOCK(m_TextureMutex);
+  return m_pVirtualData;
 }
 
 bool xiiTexture2DResource::CanLoadAdditionalQualityLevel() const
@@ -138,6 +146,31 @@ xiiResourceLoadDescription xiiTexture2DResource::UpdateContent(xiiStreamReader* 
       return previous;
   }
 
+  xiiVirtualTextureData* virtualData = nullptr;
+  if (pStream->ReadBytes(&virtualData, sizeof(virtualData)) == sizeof(virtualData) && virtualData != nullptr)
+  {
+    // The conventional view is the resident last mip used by preview and native-view consumers.
+    auto        description   = virtualData->m_Description;
+    const auto& tile          = virtualData->m_Tiles.PeekBack();
+    const auto* pixel         = virtualData->m_Data.GetData() + tile.m_uiOffset + (xiiVirtualTextureData::s_uiBorder * xiiVirtualTextureData::s_uiPhysicalSize + xiiVirtualTextureData::s_uiBorder) * 4U;
+    description.m_Size        = {1U, 1U};
+    description.m_uiMipLevels = 1U;
+    description.m_Usage       = xiiGALResourceUsage::Immutable;
+    description.m_BindFlags   = xiiGALBindFlags::ShaderResource;
+    xiiGALTextureSubResourceData subresource(xiiConstByteBlobPtr(pixel, 4U), 4U, 4U);
+    td.m_TextureDescription      = description;
+    td.m_InitialContent          = xiiMakeArrayPtr(&subresource, 1U);
+    td.m_uiQualityLevelsLoadable = 0U;
+    const auto result            = CreateResource(std::move(td));
+    if (result.m_State == xiiResourceState::Loaded)
+    {
+      XII_LOCK(m_TextureMutex);
+      m_pVirtualData = xiiSharedPtr<xiiVirtualTextureData>(virtualData, xiiFoundation::GetDefaultAllocator());
+      m_uiWidth      = virtualData->m_Description.m_Size.width;
+      m_uiHeight     = virtualData->m_Description.m_Size.height;
+    }
+    return result;
+  }
   if (td.m_TextureDescription.m_Size.width > 0)
   {
     // Definition-backed render targets have no image or streaming quality levels.

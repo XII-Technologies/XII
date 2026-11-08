@@ -12,6 +12,7 @@ StructuredBuffer<GpuGeometryRecord>     g_ProbeGeometry;
 StructuredBuffer<xiiGpuSurfaceMaterial> g_ProbeMaterials;
 ByteAddressBuffer                       g_Buffers[];
 Texture2D<float4>                       g_Textures[];
+#include <Shaders/Geometry/VirtualGeometry.h>
 SamplerState                            g_ProbeSampler;
 
 #if defined(XII_DDGI_MESHLET_BOUNDS)
@@ -75,7 +76,7 @@ bool IntersectProbeTriangle(float3 origin, float3 direction, float3 a, float3 b,
 
 float4 ProbeTexture(uint textureIndex, uint samplerIndex, float2 uv)
 {
-  return textureIndex == 0xffffffffu ? 1.0f : xiiSampleSurfaceTextureLevel(g_Textures[NonUniformResourceIndex(textureIndex)], samplerIndex, g_ProbeSampler, uv, 0);
+  return textureIndex == 0xffffffffu ? 1.0f : xiiSampleSurfaceTextureLevel(textureIndex, samplerIndex, g_ProbeSampler, uv, 0);
 }
 
 void TraceProbePrimitive(float3 origin, float3 direction, float4x4 transform, uint vertexBufferIndex, uint vertexCount,
@@ -136,6 +137,37 @@ bool TraceProbeMeshlets(float3 origin, float3 direction, GpuSceneInstance instan
                         inout uint remainingTriangles, bool shadowQuery, inout ProbeHit hit, out bool complete)
 {
   complete = false;
+  if (lod.Padding != 0u)
+  {
+    uint first, count;
+    GetCandidateMeshletRange(instance, lod, first, count);
+    if (count > remainingMeshlets) return false;
+    remainingMeshlets -= count;
+    [loop] for (uint n = 0u; n < count; ++n)
+    {
+      GpuMeshlet cluster = g_Meshlets[lod.MeshletMetadataOffset + first + n];
+      if (cluster.Hierarchy.z == 0.0f) continue;
+      GpuGeometryLod resident = lod;
+      if (!xiiResolveClusterLod(resident, cluster)) return false;
+      uint triangles = cluster.PackedPrimitiveVertexCount & 0xffffu;
+      if (triangles > remainingTriangles) return false;
+      remainingTriangles -= triangles;
+      [loop] for (uint p = 0u; p < triangles; ++p)
+      {
+        uint offset = cluster.Header.z + p * 3u;
+        uint3 local = uint3(ProbeMeshletByte(g_Buffers[resident.MeshletTopologyBufferIndex], offset),
+          ProbeMeshletByte(g_Buffers[resident.MeshletTopologyBufferIndex], offset + 1u),
+          ProbeMeshletByte(g_Buffers[resident.MeshletTopologyBufferIndex], offset + 2u));
+        uint3 indices = uint3(g_Buffers[resident.MeshletTopologyBufferIndex].Load((cluster.Header.y + local.x) * 4u),
+          g_Buffers[resident.MeshletTopologyBufferIndex].Load((cluster.Header.y + local.y) * 4u),
+          g_Buffers[resident.MeshletTopologyBufferIndex].Load((cluster.Header.y + local.z) * 4u));
+        TraceProbePrimitive(origin, direction, instance.GlobalTransform, resident.VertexBufferIndex, resident.VertexCount, material, indices, instance.Flags, shadowQuery, hit);
+        if (shadowQuery && hit.Found) { complete = true; return true; }
+      }
+    }
+    complete = true;
+    return true;
+  }
   if (lod.MeshletRangesOrdered == 0u || lod.MeshletTopologyBufferIndex == 0xffffffffu)
     return false;
   uint first, count;

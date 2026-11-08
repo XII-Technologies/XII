@@ -19,6 +19,7 @@
 #include <GraphicsFoundation/Utilities/TextureUtilities.h>
 
 class xiiImage;
+#include <Texture/Utilities/VirtualTextureData.h>
 
 using xiiTexture2DResourceHandle = xiiTypedResourceHandle<class xiiTexture2DResource>;
 
@@ -64,6 +65,8 @@ public:
     return m_Type;
   }
 
+  xiiSharedPtr<xiiVirtualTextureData> GetVirtualData() const;
+
   static void FillOutDescriptor(xiiTexture2DResourceDescriptor& ref_td, const xiiImage* pImage, xiiUInt32 uiNumMipLevels, xiiUInt32& out_uiMemoryUsed, xiiHybridArray<xiiGALTextureSubResourceData, 32>& ref_initData);
 
   xiiSharedPtr<xiiGALTexture> GetGALTexture() const
@@ -85,9 +88,10 @@ protected:
 
   xiiTexture2DResource(DoUpdate ResourceUpdateThread);
 
-  mutable xiiMutex            m_TextureMutex;
-  xiiTime                     m_NextRefinementAttempt;
-  xiiSharedPtr<xiiGALTexture> m_pGALTexture;
+  mutable xiiMutex                    m_TextureMutex;
+  xiiTime                             m_NextRefinementAttempt;
+  xiiSharedPtr<xiiVirtualTextureData> m_pVirtualData;
+  xiiSharedPtr<xiiGALTexture>         m_pGALTexture;
 
   xiiEnum<xiiGALResourceDimension> m_Type     = xiiGALResourceDimension::Undefined;
   xiiEnum<xiiGALResourceFormat>    m_Format   = xiiGALResourceFormat::Unknown;

@@ -185,6 +185,11 @@ xiiResult xiiTextureResourceLoader::LoadTexFile(xiiStreamReader& inout_stream, L
 
   if (ref_data.m_TextureDescription.m_Size.width == 0)
   {
+    if (ref_data.m_TextureDescription.m_Size.height == xiiVirtualTextureData::s_uiMarker)
+    {
+      ref_data.m_pVirtual = XII_DEFAULT_NEW(xiiVirtualTextureData);
+      return ref_data.m_pVirtual->Deserialize(inout_stream);
+    }
     xiiDdsFileFormat fmt;
     return fmt.ReadImage(inout_stream, ref_data.m_Image, "dds");
   }
@@ -207,6 +212,8 @@ void xiiTextureResourceLoader::WriteTextureLoadStream(xiiStreamWriter& w, const 
 
   const xiiImage* pImage = &data.m_Image;
   w.WriteBytes(&pImage, sizeof(xiiImage*)).IgnoreResult();
+  auto* virtualData = data.m_pVirtual.Borrow();
+  w.WriteBytes(&virtualData, sizeof(virtualData)).IgnoreResult();
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Textures_Implementation_TextureLoader);

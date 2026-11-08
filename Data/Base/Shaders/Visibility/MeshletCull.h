@@ -13,6 +13,8 @@ StructuredBuffer<uint>              g_MeshletWorkArguments;
 RWStructuredBuffer<uint2>           g_VisibleMeshlets;
 RWStructuredBuffer<uint>            g_VisibleMeshletCount;
 RWStructuredBuffer<uint>            g_VisibleMeshletOverflow;
+ByteAddressBuffer g_Buffers[];
+#include <Shaders/Geometry/VirtualGeometry.h>
 #include "MeshletRange.h"
 groupshared uint s_FirstMeshlet;
 groupshared uint s_RangeMeshletCount;
@@ -79,6 +81,9 @@ bool CullMeshlet(uint index, uint meshletIndex, GpuSceneInstance instance, GpuVi
 {
   GpuMeshlet meshlet = g_Meshlets[meshletIndex];
   if ((meshlet.PackedLodSection & 0xFFFFu) != lodIndex)
+    return false;
+  GpuGeometryLod virtualLod = g_Geometry[view.GeometryBaseIndex + instance.GeometryIndex].Lods[lodIndex];
+  if (!xiiSelectCluster(virtualLod, meshlet, instance, view))
     return false;
   uint primitives = meshlet.PackedPrimitiveVertexCount & 0xFFFFu;
   if (primitives == 0u || (meshlet.PackedPrimitiveVertexCount >> 16u) == 0u)

@@ -86,6 +86,8 @@ struct GpuMeshlet
   uint2  Padding;
   float4 Bounds;
   float4 Cone;
+  uint4 Page;
+  float4 Hierarchy;
 };
 
 

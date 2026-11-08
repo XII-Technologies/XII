@@ -22,6 +22,8 @@ xiiResult xiiMeshBufferResourceDescriptor::BuildMeshlets(xiiArrayPtr<const xiiMe
     m_MeshletPrimitiveIndices.Clear();
     m_MeshletMaterialIndices.Clear();
     m_DrawCommands.Clear();
+    m_GeometryPages.Clear();
+    m_GeometryPageData.Clear();
   };
   clear();
   if (ranges.IsEmpty())
@@ -136,5 +138,5 @@ xiiResult xiiMeshBufferResourceDescriptor::BuildMeshlets(xiiArrayPtr<const xiiMe
     auto& command                 = m_DrawCommands.ExpandAndGetRef();
     command.m_uiThreadGroupCountX = m_Meshlets.GetCount();
   }
-  return XII_SUCCESS;
+  return BuildGeometryPages();
 }

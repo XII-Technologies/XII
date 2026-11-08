@@ -338,6 +338,7 @@ void xiiRenderGraphManager::EndFrame(xiiRenderGraphFrame& frame)
   XII_ASSERT_DEV(s_pState != nullptr && s_pState->m_bFrameActive && frame.m_uiFrameIndex == s_pState->m_uiFrameIndex, "A GPU frame must end before renderer shutdown.");
 
   s_pState->m_pResourceCache->EndFrame();
+  xiiGeometryResidencyManager::EndStreamingFrame(frame.m_uiFrameIndex);
   s_pState->m_FrameCompletionTracker.CaptureSubmittedFrame(frame.m_uiFrameIndex);
 
   if (!s_pState->m_RetiredEntries.IsEmpty())

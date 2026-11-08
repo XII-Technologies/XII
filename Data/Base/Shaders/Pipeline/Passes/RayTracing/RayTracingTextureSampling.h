@@ -14,7 +14,8 @@ float xiiComputeRayTracingTextureMip(uint textureIndex, float worldTriangleArea,
   uint       textureWidth;
   uint       textureHeight;
   uint       mipCount;
-  g_RayTracingTextures[resourceIndex].GetDimensions(0u, textureWidth, textureHeight, mipCount);
+  uint4 dimensions = xiiSurfaceTextureDimensions(textureIndex);
+  textureWidth = dimensions.x; textureHeight = dimensions.y; mipCount = dimensions.z;
 
   // Ratios of doubled triangle areas preserve UV-to-world texel density while
   // avoiding two unnecessary 0.5 factors.
@@ -32,5 +33,5 @@ float4 xiiSampleRayTracingMaterialTexture(uint textureIndex, uint samplerIndex, 
   const uint  resourceIndex = NonUniformResourceIndex(textureIndex);
   const float mipLevel      = xiiComputeRayTracingTextureMip(textureIndex, worldTriangleArea,
                                                              uvTriangleArea, rayConeWidth);
-  return xiiSampleSurfaceTextureLevel(g_RayTracingTextures[resourceIndex], samplerIndex, g_sAnisotropicWrap, texCoord, mipLevel);
+  return xiiSampleSurfaceTextureLevel(textureIndex, samplerIndex, g_sAnisotropicWrap, texCoord, mipLevel);
 }

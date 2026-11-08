@@ -387,6 +387,7 @@ xiiResult xiiMeshResourceDescriptor::BuildMeshlets(xiiUInt32 uiMaxVertices, xiiU
     return XII_SUCCESS;
   }
 
+  m_MeshBufferDescriptor.m_bStreamableGeometry = !m_UsageFlags.IsSet(xiiMeshResourceUsageFlags::Skinned) && m_MorphTargets.IsEmpty();
   m_UsageFlags.Remove(xiiMeshResourceUsageFlags::MeshShaderReady);
   for (auto& section : m_Sections)
   {

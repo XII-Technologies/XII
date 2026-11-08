@@ -38,7 +38,7 @@ float4 xiiSampleSceneBaseColor(xiiGpuSurfaceMaterial material, float2 texCoord)
 {
   float4 color = max(material.BaseColorOpacity, 0.0f);
   if (material.TextureIndices0.x != 0xFFFFFFFFu)
-    color *= max(xiiSampleSurfaceTexture(g_Textures[NonUniformResourceIndex(material.TextureIndices0.x)], material.SamplerIndices0.x, g_sAnisotropicWrap, texCoord), 0.0f);
+    color *= max(xiiSampleSurfaceTexture(material.TextureIndices0.x, material.SamplerIndices0.x, g_sAnisotropicWrap, texCoord), 0.0f);
   return color;
 }
 
@@ -46,7 +46,7 @@ float3 xiiSampleSceneEmissive(xiiGpuSurfaceMaterial material, float2 texCoord)
 {
   float3 emissive = max(material.EmissiveColorAndRoughness.rgb, 0);
   if (material.TextureIndices1.x != 0xFFFFFFFFu)
-    emissive *= max(xiiSampleSurfaceTexture(g_Textures[NonUniformResourceIndex(material.TextureIndices1.x)], material.SamplerIndices1.x, g_sLinearWrap, texCoord).rgb, 0);
+    emissive *= max(xiiSampleSurfaceTexture(material.TextureIndices1.x, material.SamplerIndices1.x, g_sLinearWrap, texCoord).rgb, 0);
   return emissive;
 }
 

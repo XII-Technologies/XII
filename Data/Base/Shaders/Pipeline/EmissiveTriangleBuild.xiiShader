@@ -25,6 +25,7 @@ groupshared uint s_FirstMeshlet;
 groupshared uint s_RangeMeshletCount;
 StructuredBuffer<xiiGpuSurfaceMaterial> g_SurfaceMaterials;
 ByteAddressBuffer                       g_Buffers[];
+#include <Shaders/Geometry/VirtualGeometry.h>
 #include <Shaders/Pipeline/GpuSceneSkinning.h>
 Texture2D<float4>                       g_Textures[];
 RWStructuredBuffer<xiiGpuEmissiveTriangle> g_EmissiveTriangles;
@@ -142,7 +143,7 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID, uint3 groupId : SV_Group
   if (lodIndex == 0xFFFFFFFFu || (instance.DrawLod != 0xFFFFFFFFu && instance.DrawLod != lodIndex))
     return;
 
-  const GpuGeometryLod lod = geometry.Lods[lodIndex];
+  GpuGeometryLod lod = geometry.Lods[lodIndex];
   if (lane == 0u)
     GetCandidateMeshletRange(instance, lod, s_FirstMeshlet, s_RangeMeshletCount);
   GroupMemoryBarrierWithGroupSync();
@@ -150,7 +151,9 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID, uint3 groupId : SV_Group
     return;
   const uint localMeshlet = s_FirstMeshlet + groupId.x;
 
-  const GpuMeshlet meshlet = g_Meshlets[lod.MeshletMetadataOffset + localMeshlet];
+  GpuMeshlet meshlet = g_Meshlets[lod.MeshletMetadataOffset + localMeshlet];
+  if (lod.Padding != 0u && meshlet.Hierarchy.z == 0.0f) return;
+  if (!xiiResolveClusterLod(lod, meshlet)) return;
   const uint primitiveCount = meshlet.PackedPrimitiveVertexCount & 0xFFFFu;
   const uint vertexCount = meshlet.PackedPrimitiveVertexCount >> 16u;
   const uint localPrimitive = dispatchThreadId.x - groupId.x * 128u;
@@ -166,19 +169,19 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID, uint3 groupId : SV_Group
   g_Buffers[lod.VertexBufferIndex].GetDimensions(vertexBufferBytes);
 
   g_Buffers[lod.MeshletTopologyBufferIndex].GetDimensions(primitiveBufferBytes);
-  remapBufferBytes = lod.MeshletPrimitiveByteOffset;
+  remapBufferBytes = lod.Padding != 0u ? primitiveBufferBytes : lod.MeshletPrimitiveByteOffset;
   if (remapBufferBytes > primitiveBufferBytes)
     return;
-  primitiveBufferBytes -= remapBufferBytes;
+  if (lod.Padding == 0u) primitiveBufferBytes -= remapBufferBytes;
   const uint primitiveOffset = meshlet.Header.z + localPrimitive * 3u;
   if (primitiveOffset > primitiveBufferBytes || 3u > primitiveBufferBytes - primitiveOffset ||
       meshlet.Header.y > remapBufferBytes / 4u || vertexCount > remapBufferBytes / 4u - meshlet.Header.y)
     return;
 
   const uint3 localIndices = uint3(
-    LoadByte(g_Buffers[lod.MeshletTopologyBufferIndex], remapBufferBytes + primitiveOffset),
-    LoadByte(g_Buffers[lod.MeshletTopologyBufferIndex], remapBufferBytes + primitiveOffset + 1u),
-    LoadByte(g_Buffers[lod.MeshletTopologyBufferIndex], remapBufferBytes + primitiveOffset + 2u));
+    LoadByte(g_Buffers[lod.MeshletTopologyBufferIndex], lod.MeshletPrimitiveByteOffset + primitiveOffset),
+    LoadByte(g_Buffers[lod.MeshletTopologyBufferIndex], lod.MeshletPrimitiveByteOffset + primitiveOffset + 1u),
+    LoadByte(g_Buffers[lod.MeshletTopologyBufferIndex], lod.MeshletPrimitiveByteOffset + primitiveOffset + 2u));
   if (any(localIndices >= vertexCount))
     return;
 
@@ -214,7 +217,7 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID, uint3 groupId : SV_Group
     const float2 uv0 = asfloat(g_Buffers[lod.VertexBufferIndex].Load2(vertexOffsets.x + TexCoordOffset));
     const float2 uv1 = asfloat(g_Buffers[lod.VertexBufferIndex].Load2(vertexOffsets.y + TexCoordOffset));
     const float2 uv2 = asfloat(g_Buffers[lod.VertexBufferIndex].Load2(vertexOffsets.z + TexCoordOffset));
-    radiance *= max(xiiSampleSurfaceTextureLevel(g_Textures[NonUniformResourceIndex(material.TextureIndices1.x)], material.SamplerIndices1.x, g_sLinearWrap, (uv0 + uv1 + uv2) / 3.0f, 0.0f).rgb, 0.0f);
+    radiance *= max(xiiSampleSurfaceTextureLevel(material.TextureIndices1.x, material.SamplerIndices1.x, g_sLinearWrap, (uv0 + uv1 + uv2) / 3.0f, 0.0f).rgb, 0.0f);
   }
   const float luminance = dot(radiance, float3(0.2126f, 0.7152f, 0.0722f));
   if (!isfinite(luminance) || luminance <= 0.0f)

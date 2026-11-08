@@ -51,7 +51,7 @@ bool xiiShouldIgnoreRayTracingHitInternal(uint instanceIndex, uint primitiveInde
     }
     else
     {
-      alpha *= xiiSampleSurfaceTextureLevel(g_RayTracingTextures[NonUniformResourceIndex(material.TextureIndices0.x)], material.SamplerIndices0.x, g_sAnisotropicWrap, texCoord, 0.0f).a;
+      alpha *= xiiSampleSurfaceTextureLevel(material.TextureIndices0.x, material.SamplerIndices0.x, g_sAnisotropicWrap, texCoord, 0.0f).a;
     }
   }
 

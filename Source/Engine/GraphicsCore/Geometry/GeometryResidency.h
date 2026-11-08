@@ -13,6 +13,8 @@
 #include <GraphicsCore/Pipeline/RenderGraph.h>
 #include <GraphicsFoundation/Resources/BindlessResource.h>
 
+class xiiVirtualTextureData;
+
 struct XII_GRAPHICSCORE_DLL xiiGeometryResidencyState
 {
   using StorageType = xiiUInt8;
@@ -189,9 +191,12 @@ public:
   /// Forced instances always request their exact LOD.
   static void RequestInstanceResidency(xiiGeometryHandle handle, xiiUInt32 uiLod, xiiUInt64 uiFrameIndex, bool bForced);
   /// Records demand from a GPU feedback snapshot. Returns false when the snapshot predates eviction.
-  [[nodiscard]] static bool ReportLodDemand(xiiGeometryHandle handle, xiiUInt32 uiLod, xiiUInt64 uiSourceFrame, xiiUInt32 uiVisibilityPriority);
-  static void               NoteIncompleteLodFeedback(xiiUInt64 uiSourceFrame);
-  static void               Touch(xiiGeometryHandle handle, xiiUInt64 uiFrameIndex);
+  [[nodiscard]] static bool      ReportLodDemand(xiiGeometryHandle handle, xiiUInt32 uiLod, xiiUInt64 uiSourceFrame, xiiUInt32 uiVisibilityPriority);
+  [[nodiscard]] static bool      ReportPageDemand(xiiUInt32 uiRequest, xiiUInt64 uiFrame, xiiUInt32 uiPriority);
+  [[nodiscard]] static xiiUInt32 ResolveVirtualTexture(xiiSharedPtr<xiiVirtualTextureData> data, xiiUInt64 uiFrame);
+  static void                    EndStreamingFrame(xiiUInt64 uiFrame);
+  static void                    NoteIncompleteLodFeedback(xiiUInt64 uiSourceFrame);
+  static void                    Touch(xiiGeometryHandle handle, xiiUInt64 uiFrameIndex);
   /// The first invocation in a device frame establishes its shared allowance. Further calls
   /// consume the remainder, including newly discovered geometry. One indivisible record may
   /// exceed an unused positive allowance. Zero pauses admission for the entire frame.
@@ -266,8 +271,8 @@ private:
 
   struct LodBinding
   {
-    const xiiGALBuffer* m_pVertexBuffer = nullptr;
-    xiiUInt64           m_uiTopologyKey = 0U;
+    const void* m_pSource       = nullptr;
+    xiiUInt64   m_uiTopologyKey = 0U;
   };
 
   struct Slot

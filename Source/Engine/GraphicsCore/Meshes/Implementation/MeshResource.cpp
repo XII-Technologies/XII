@@ -210,6 +210,7 @@ void xiiMeshResource::CreateMeshBufferFromDescriptor(xiiMeshResourceDescriptor& 
   sBufferResourceId.SetFormat("{}#MeshBuffer-{}", GetResourceID(), s_uiBufferGeneration.Increment());
 
   xiiMeshBufferResourceDescriptor bufferDescriptor = std::move(inout_descriptor.GetMeshBufferDescriptor());
+  bufferDescriptor.m_bStreamableGeometry           = !inout_descriptor.m_UsageFlags.IsSet(xiiMeshResourceUsageFlags::Skinned) && inout_descriptor.m_MorphTargets.IsEmpty();
   bufferDescriptor.m_bKeepCpuMeshData              = inout_descriptor.m_UsageFlags.IsSet(xiiMeshResourceUsageFlags::CpuReadable);
 
   m_hMeshBuffer = xiiResourceManager::GetOrCreateResource<xiiMeshBufferResource>(sBufferResourceId, std::move(bufferDescriptor), GetResourceIdOrDescription());
