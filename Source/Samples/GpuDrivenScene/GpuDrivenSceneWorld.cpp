@@ -197,7 +197,7 @@ xiiResult xiiGpuDrivenSceneWorld::CreateGeometry()
       xiiFileWriter file;
       XII_SUCCEED_OR_RETURN(file.Open(m_Configuration.m_sExportMesh));
       xiiAssetFileHeader header;
-      header.SetFileHashAndVersion(xiiHashingUtils::xxHash64(buffer.m_GeometryPageData.GetData(), buffer.m_GeometryPageData.GetCount()), 16U);
+      header.SetFileHashAndVersion(xiiHashingUtils::xxHash64(buffer.m_GeometryPageData.GetData(), buffer.m_GeometryPageData.GetCount()), 17U);
       header.SetGenerator("GpuDrivenScene");
       XII_SUCCEED_OR_RETURN(header.Write(file));
       XII_SUCCEED_OR_RETURN(descriptor.Save(file));

@@ -12,6 +12,8 @@ StructuredBuffer<uint> g_CandidateCount;
 Texture2D<float> g_DepthPyramid;
 RWStructuredBuffer<uint2> g_Visible;
 RWStructuredBuffer<uint> g_Count;
+ByteAddressBuffer g_Buffers[];
+#include <Shaders/Geometry/VirtualGeometry.h>
 
 #include <Shaders/Visibility/DepthOcclusion.h>
 bool Visible(GpuSceneInstance instance, GpuMeshlet meshlet, GpuVisibilityView view)
@@ -38,9 +40,11 @@ void main(uint3 dispatch : SV_DispatchThreadID)
   g_SceneInstances.GetDimensions(scenes, stride); g_OcclusionView.GetDimensions(views, stride); g_Visible.GetDimensions(capacity, stride);
   if (!counts || !views || dispatch.x >= min(g_CandidateCount[0], candidates)) return;
   const uint2 pair = g_Candidates[dispatch.x];
-  if (pair.x >= scenes || pair.y >= meshlets) return;
+  if (pair.x >= scenes) return;
+  GpuMeshlet meshlet;
+  if (!xiiLoadCluster(pair.y, meshlet)) return;
   const GpuSceneInstance instance = g_SceneInstances[pair.x];
-  if ((instance.Flags & 1u) == 0u || !Visible(instance, g_Meshlets[pair.y], g_OcclusionView[0])) return;
+  if ((instance.Flags & 1u) == 0u || !Visible(instance, meshlet, g_OcclusionView[0])) return;
   for (;;)
   {
     const uint count = g_Count[0]; if (count >= capacity) return;

@@ -79,7 +79,8 @@ void             ReserveMeshletBatch(uint requested)
 }
 bool CullMeshlet(uint index, uint meshletIndex, GpuSceneInstance instance, GpuVisibilityView view, uint lodIndex)
 {
-  GpuMeshlet meshlet = g_Meshlets[meshletIndex];
+  GpuMeshlet meshlet;
+  if (!xiiLoadCluster(meshletIndex, meshlet)) return false;
   if ((meshlet.PackedLodSection & 0xFFFFu) != lodIndex)
     return false;
   uint primitives = meshlet.PackedPrimitiveVertexCount & 0xFFFFu;
@@ -147,13 +148,13 @@ void CullVirtualHierarchy(uint workGroup, uint workGroups, uint lane, uint index
   if (pageCount > (bytes - 272u) / 48u)
     return;
   uint rootsOffset = 272u + pageCount * 48u;
-  uint rootCount   = min(g_Buffers[table].Load(4u), (bytes - rootsOffset) / 4u);
+  uint rootCount   = min(g_Buffers[table].Load(4u), (bytes - rootsOffset) / 8u);
   for (uint root = workGroup; root < rootCount; root += workGroups)
   {
     if (lane == 0u)
     {
       s_PageStackSize = 1u;
-      s_PageStack[0]  = g_Buffers[table].Load(rootsOffset + root * 4u);
+      s_PageStack[0]  = g_Buffers[table].Load(rootsOffset + root * 8u);
     }
     GroupMemoryBarrierWithGroupSync();
     while (s_PageStackSize != 0u)
@@ -163,8 +164,9 @@ void CullVirtualHierarchy(uint workGroup, uint workGroups, uint lane, uint index
         s_SelectedPage                = 0xffffffffu;
         uint                pageIndex = s_PageStack[--s_PageStackSize];
         xiiGeometryPageInfo page      = xiiLoadGeometryPage(lod, pageIndex);
-        if (page.Mapping.x != 0xffffffffu && page.Mapping.z >= lod.IndexBufferIndex &&
-            page.Mapping.z - lod.IndexBufferIndex < lod.MeshletCount && xiiGeometryPageVisible(page, instance, view))
+        uint sourceFirst = asuint(page.Detail.y);
+        if (page.Mapping.x != 0xffffffffu && sourceFirst >= lod.IndexBufferIndex &&
+            sourceFirst - lod.IndexBufferIndex < lod.MeshletCount && xiiGeometryPageVisible(page, instance, view))
         {
           uint children = min((uint)page.Detail.w, 8u);
           if (xiiGeometryPageRefines(lod, page, instance, view) && s_PageStackSize + children <= 64u)
@@ -175,8 +177,8 @@ void CullVirtualHierarchy(uint workGroup, uint workGroups, uint lane, uint index
           else
           {
             s_SelectedPage  = pageIndex;
-            s_SelectedFirst = lod.MeshletMetadataOffset + page.Mapping.z - lod.IndexBufferIndex;
-            s_SelectedCount = min(page.Mapping.w, lod.MeshletCount - (page.Mapping.z - lod.IndexBufferIndex));
+            s_SelectedFirst = xiiGeometryClusterKey(page.Mapping, 0u, lodIndex);
+            s_SelectedCount = min(page.Mapping.w, lod.MeshletCount - (sourceFirst - lod.IndexBufferIndex));
             uint feedback   = g_Buffers[table].Load(16u + (lod.Padding >> 1u) * 4u);
             xiiRecordPageDemand(feedback, page.Mapping.y);
           }
@@ -190,7 +192,7 @@ void CullVirtualHierarchy(uint workGroup, uint workGroups, uint lane, uint index
           if (lane == 0u)
             s_VisibleCount = 0u;
           GroupMemoryBarrierWithGroupSync();
-          uint meshlet = s_SelectedFirst + base + lane;
+          uint meshlet = s_SelectedFirst + (base + lane) * 24u;
           uint rank    = 0xffffffffu;
           if (base + lane < s_SelectedCount && CullMeshlet(index, meshlet, instance, view, lodIndex))
             InterlockedAdd(s_VisibleCount, 1u, rank);

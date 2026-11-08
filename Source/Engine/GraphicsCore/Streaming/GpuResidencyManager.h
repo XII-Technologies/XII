@@ -258,9 +258,17 @@ private:
     bool                                                    m_bCanceled = false;
   };
 
+  struct SourceIdentity
+  {
+    const void* m_pSource    = nullptr;
+    xiiUInt32   m_uiRevision = 0U;
+
+    bool operator==(const SourceIdentity&) const = default;
+  };
+
   struct LodBinding
   {
-    const void* m_pSource = nullptr;
+    SourceIdentity m_Identity;
   };
 
   struct Slot

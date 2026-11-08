@@ -12,11 +12,11 @@ StructuredBuffer<GpuGeometryRecord>     g_ProbeGeometry;
 StructuredBuffer<xiiGpuSurfaceMaterial> g_ProbeMaterials;
 ByteAddressBuffer                       g_Buffers[];
 Texture2D<float4>                       g_Textures[];
+StructuredBuffer<GpuMeshlet> g_Meshlets;
 #include <Shaders/Geometry/VirtualGeometry.h>
 SamplerState                            g_ProbeSampler;
 
 #if defined(XII_DDGI_MESHLET_BOUNDS)
-StructuredBuffer<GpuMeshlet> g_Meshlets;
 #  include <Shaders/Visibility/MeshletRange.h>
 #endif
 
@@ -139,14 +139,13 @@ bool TraceProbeMeshlets(float3 origin, float3 direction, GpuSceneInstance instan
   complete = false;
   if (lod.Padding != 0u)
   {
-    uint first, count;
-    GetCandidateMeshletRange(instance, lod, first, count);
+    uint count = xiiGeometryRootClusterCount(lod);
     if (count > remainingMeshlets) return false;
     remainingMeshlets -= count;
     [loop] for (uint n = 0u; n < count; ++n)
     {
-      GpuMeshlet cluster = g_Meshlets[lod.MeshletMetadataOffset + first + n];
-      if (cluster.Hierarchy.z == 0.0f) continue;
+      GpuMeshlet cluster;
+      if (!xiiLoadGeometryRootCluster(lod, lodIndex, n, cluster)) continue;
       GpuGeometryLod resident = lod;
       if (!xiiResolveClusterLod(resident, cluster)) return false;
       uint triangles = cluster.PackedPrimitiveVertexCount & 0xffffu;

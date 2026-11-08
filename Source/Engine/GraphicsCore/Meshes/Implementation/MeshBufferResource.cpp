@@ -49,7 +49,7 @@ XII_RESOURCE_IMPLEMENT_COMMON_CODE(xiiMeshBufferResource);
 
 namespace
 {
-  static constexpr xiiUInt32 s_uiMeshBufferResourceVersion = 4U;
+  static constexpr xiiUInt32 s_uiMeshBufferResourceVersion = 5U;
 
   static xiiUInt32 GetIndexSize(xiiEnum<xiiGALValueType> indexType)
   {
@@ -546,8 +546,11 @@ xiiResult xiiMeshBufferResourceDescriptor::Deserialize(xiiStreamReader& source, 
   XII_SUCCEED_OR_RETURN(inout_stream.ReadArray(m_DrawCommands));
   if (version >= 2U)
   {
-    if (version != 4U)
+    if (version != 5U)
+    {
+      xiiLog::Error("Geometry pages use an obsolete cluster layout. Retransform the mesh asset.");
       return XII_FAILURE;
+    }
     XII_SUCCEED_OR_RETURN(inout_stream.ReadArray(m_GeometryPages));
     inout_stream >> m_uiPageDataBytes;
     if (m_uiPageDataBytes > xiiMath::MaxValue<xiiUInt32>())
@@ -589,6 +592,7 @@ xiiResult xiiMeshBufferResourceDescriptor::Deserialize(xiiStreamReader& source, 
     {
       const auto& page = m_GeometryPages[index];
       if (page.m_uiSize == 0U || page.m_uiSize > 128U * 1024U || page.m_uiClusterCount == 0U ||
+          xiiUInt64(page.m_uiClusterCount) * sizeof(xiiMeshlet) >= page.m_uiSize || page.m_uiSize % 4U != 0U ||
           page.m_uiFirstCluster > m_Meshlets.GetCount() || page.m_uiClusterCount > m_Meshlets.GetCount() - page.m_uiFirstCluster ||
           !xiiMath::IsFinite(page.m_fGeometricError) || page.m_fGeometricError < 0.0f ||
           page.m_bRequired != (page.m_uiParent == xiiInvalidIndex) ||

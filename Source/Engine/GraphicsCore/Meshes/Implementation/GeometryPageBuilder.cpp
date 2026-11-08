@@ -91,9 +91,9 @@ xiiResult xiiMeshBufferResourceDescriptor::BuildGeometryPages()
     const auto      vertexBytes = vertices.GetCount();
     const xiiUInt32 remapBytes  = remaps.GetCount() * sizeof(xiiUInt32);
     const auto      size        = xiiMath::RoundUp(vertexBytes + remapBytes + primitives.GetCount(), 4U);
-    if (size == 0U || size > 128U * 1024U)
+    if (size == 0U || size + xiiUInt64(input.GetCount()) * sizeof(xiiMeshlet) > 128U * 1024U)
       return XII_FAILURE;
-    xiiDynamicArray<xiiUInt8> payload, encoded;
+    xiiDynamicArray<xiiUInt8> payload;
     payload.SetCount(size, 0U);
     xiiMemoryUtils::Copy(payload.GetData(), vertices.GetData(), vertexBytes);
     xiiMemoryUtils::Copy(payload.GetData() + vertexBytes, reinterpret_cast<const xiiUInt8*>(remaps.GetData()), remapBytes);
@@ -105,18 +105,16 @@ xiiResult xiiMeshBufferResourceDescriptor::BuildGeometryPages()
       cluster.m_Page.z += vertexBytes + remapBytes;
       cluster.m_Page.w = vertexMap.GetCount();
     }
-    XII_SUCCEED_OR_RETURN(xiiCompressionUtils::Compress(payload, xiiCompressionMethod::ZStd, encoded));
-    if (encoded.GetCount() > xiiMath::MaxValue<xiiUInt32>() - m_GeometryPageData.GetCount())
+    if (payload.GetCount() > xiiMath::MaxValue<xiiUInt32>() - m_GeometryPageData.GetCount())
       return XII_FAILURE;
     xiiGeometryPage page;
     page.m_uiOffset        = m_GeometryPageData.GetCount();
     page.m_uiSize          = size;
-    page.m_uiStoredSize    = encoded.GetCount();
     page.m_uiFirstCluster  = firstCluster;
     page.m_uiClusterCount  = input.GetCount();
     page.m_fGeometricError = error;
     m_GeometryPages.PushBack(page);
-    m_GeometryPageData.PushBackRange(encoded);
+    m_GeometryPageData.PushBackRange(payload);
     return XII_SUCCESS;
   };
 
@@ -134,7 +132,7 @@ xiiResult xiiMeshBufferResourceDescriptor::BuildGeometryPages()
       while (end < sectionEnd)
       {
         const auto&     cluster = original[end];
-        const xiiUInt32 bytes   = cluster.m_uiVertexCount * (stride + static_cast<xiiUInt32>(sizeof(xiiUInt32))) + cluster.m_uiPrimitiveCount * 3U;
+        const xiiUInt32 bytes   = cluster.m_uiVertexCount * (stride + static_cast<xiiUInt32>(sizeof(xiiUInt32))) + cluster.m_uiPrimitiveCount * 3U + sizeof(xiiMeshlet);
         if (end != first && estimate + bytes > 64U * 1024U)
           break;
         estimate += bytes;
@@ -255,6 +253,23 @@ xiiResult xiiMeshBufferResourceDescriptor::BuildGeometryPages()
     }
     sectionBegin = sectionEnd;
   }
+  // Cluster metadata is part of the independently resident payload. Finalize it
+  // after root flags and hierarchy links have been assigned, then compress once.
+  xiiDynamicArray<xiiUInt8> compressed, payload, encoded;
+  for (auto& page : m_GeometryPages)
+  {
+    payload             = m_GeometryPageData.GetArrayPtr().GetSubArray(page.m_uiOffset, page.m_uiSize);
+    const auto metadata = clusters.GetArrayPtr().GetSubArray(page.m_uiFirstCluster, page.m_uiClusterCount).ToByteArray();
+    payload.PushBackRange(metadata);
+    XII_SUCCEED_OR_RETURN(xiiCompressionUtils::Compress(payload, xiiCompressionMethod::ZStd, encoded));
+    if (encoded.GetCount() > xiiMath::MaxValue<xiiUInt32>() - compressed.GetCount())
+      return XII_FAILURE;
+    page.m_uiSize       = payload.GetCount();
+    page.m_uiOffset     = compressed.GetCount();
+    page.m_uiStoredSize = encoded.GetCount();
+    compressed.PushBackRange(encoded);
+  }
+  m_GeometryPageData = std::move(compressed);
   m_MeshletMaterialIndices.Clear();
   for (const auto& cluster : clusters)
     m_MeshletMaterialIndices.PushBack(cluster.m_uiMaterialIndex);

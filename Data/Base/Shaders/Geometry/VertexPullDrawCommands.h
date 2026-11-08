@@ -14,6 +14,8 @@ StructuredBuffer<uint2> g_VisibleMeshlets;
 StructuredBuffer<uint>    g_VisibleMeshletCount;
 RWStructuredBuffer<uint4> g_DrawCommands;
 RWStructuredBuffer<uint>  g_DrawCommandCount;
+ByteAddressBuffer g_Buffers[];
+#include <Shaders/Geometry/VirtualGeometry.h>
 
 [numthreads(64, 1, 1)] void main(uint3 tid : SV_DispatchThreadID) {
   uint capacity, stride, visibleCapacity;
@@ -33,21 +35,22 @@ RWStructuredBuffer<uint>  g_DrawCommandCount;
   g_Geometry.GetDimensions(geometryCount, stride);
   g_Meshlets.GetDimensions(meshletCount, stride);
   uint2 visible = g_VisibleMeshlets[tid.x].xy;
-  if (visible.x >= sceneCount || visible.y >= meshletCount)
+  if (visible.x >= sceneCount)
     return;
   GpuSceneInstance instance = g_SceneInstances[visible.x];
   uint             base     = g_VisibilityView[0].GeometryBaseIndex;
   if (base >= geometryCount || instance.GeometryIndex >= geometryCount - base)
     return;
   GpuGeometryRecord geometry = g_Geometry[base + instance.GeometryIndex];
-  GpuMeshlet        meshlet  = g_Meshlets[visible.y];
+  GpuMeshlet meshlet;
+  if (!xiiLoadCluster(visible.y, meshlet)) return;
   uint              lodIndex = meshlet.PackedLodSection & 0xFFFFu;
   if (lodIndex >= min(geometry.LodCount, 8u) || (geometry.AvailableLodMask & (1u << lodIndex)) == 0u ||
       (instance.DrawLod != 0xFFFFFFFFu && instance.DrawLod != lodIndex))
     return;
   GpuGeometryLod lod = geometry.Lods[lodIndex];
   if (lod.VertexBufferIndex == 0xFFFFFFFFu || lod.MeshletTopologyBufferIndex == 0xFFFFFFFFu ||
-      visible.y < lod.MeshletMetadataOffset || visible.y - lod.MeshletMetadataOffset >= lod.MeshletCount)
+      (lod.Padding == 0u && (visible.y < lod.MeshletMetadataOffset || visible.y - lod.MeshletMetadataOffset >= lod.MeshletCount)))
     return;
   uint primitives = meshlet.PackedPrimitiveVertexCount & 0xFFFFu;
   uint total      = lod.IndexCount / 3u;

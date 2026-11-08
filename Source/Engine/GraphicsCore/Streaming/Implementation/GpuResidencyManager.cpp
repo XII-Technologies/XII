@@ -165,6 +165,7 @@ public:
   struct SourceBinding
   {
     xiiMeshBufferResourceHandle                             m_hMesh;
+    xiiUInt32                                               m_uiRevision = 0U;
     xiiDynamicArray<Page>                                   m_Pages;
     xiiDynamicArray<xiiUInt32>                              m_RootPages;
     xiiDynamicArray<PageRecord, xiiAlignedAllocatorWrapper> m_PageRecords;
@@ -187,9 +188,10 @@ public:
     xiiUInt32   m_uiPage   = 0U;
     bool        m_bTexture = false, m_bQueued = false;
     xiiUInt64   m_uiFirstFrame = 0U, m_uiDemand = 0U;
-    xiiUInt32   m_uiPriority      = 0U;
-    xiiUInt32   m_uiResidentIndex = xiiInvalidIndex;
-    xiiUInt64   m_uiCreatedFrame  = 0U;
+    xiiUInt32   m_uiPriority       = 0U;
+    xiiUInt32   m_uiResidentIndex  = xiiInvalidIndex;
+    xiiUInt64   m_uiCreatedFrame   = 0U;
+    xiiUInt32   m_uiSourceRevision = 0U;
   };
   struct RetiredPageRequest
   {
@@ -198,7 +200,7 @@ public:
     xiiUInt64 m_uiFrame;
   };
   xiiDeque<RetiredPageRequest>         m_RetiredPageRequests;
-  xiiUInt32                            AllocatePageRequest(const void* source, xiiUInt32 page, bool texture, xiiUInt64 frame);
+  xiiUInt32                            AllocatePageRequest(const void* source, xiiUInt32 page, bool texture, xiiUInt64 frame, xiiUInt32 revision = 0U);
   void                                 ReleasePageRequest(xiiUInt32 request);
   void                                 AddResidentPage(xiiUInt32 request);
   void                                 RemoveResidentPage(xiiUInt32 index);
@@ -270,6 +272,7 @@ public:
     m_uiUploadFrame = xiiMath::MaxValue<xiiUInt64>();
     m_pMetadataBuffer.Clear();
     m_pMeshletMetadataBuffer.Clear();
+    m_bDirectArenaAllocated = false;
     m_GeometryIds.Clear();
     m_Slots.Clear();
     m_FreeMeshletRanges.Clear();
@@ -294,21 +297,30 @@ public:
   xiiDynamicArray<Slot, xiiAlignedAllocatorWrapper>                m_Slots;
   xiiSharedPtr<xiiGALBuffer>                                       m_pMetadataBuffer;
   xiiSharedPtr<xiiGALBuffer>                                       m_pMeshletMetadataBuffer;
+  bool                                                             m_bDirectArenaAllocated = false;
   xiiDynamicArray<FreeRange>                                       m_FreeMeshletRanges;
   xiiDynamicArray<xiiSharedPtr<MeshletUpload>>                     m_PendingMeshletUploads;
   xiiHashTable<xiiGeometryHandle, MeshGeometryEntry, GeometryHash> m_MeshGeometries;
   xiiHashTable<xiiMeshResourceHandle, xiiGeometryHandle>           m_CurrentMeshGeometries;
-  xiiHashTable<const void*, SourceBinding>                         m_SourceBindings;
-  xiiSharedPtr<xiiGALFence>                                        m_pTopologyUploadFence;
-  xiiUInt64                                                        m_uiTopologyUploadValue   = 0U;
-  xiiUInt64                                                        m_uiResidentTopologyBytes = 0U;
-  xiiUInt32                                                        m_uiFramesInFlight        = 0U;
-  xiiUInt64                                                        m_uiAllFrameMask          = 0U;
-  xiiUInt64                                                        m_uiBudgetBytes           = 0U;
-  xiiUInt64                                                        m_uiResidentBytes         = 0U;
-  xiiHashTable<xiiUInt64, UploadHandles>                           m_SetupUploads;
-  xiiUInt64                                                        m_uiUploadFrame       = xiiMath::MaxValue<xiiUInt64>();
-  xiiUInt64                                                        m_uiLastUploadedBytes = 0U;
+  struct SourceHash
+  {
+    static xiiUInt32 Hash(const SourceIdentity& source)
+    {
+      return xiiHashHelper<const void*>::Hash(source.m_pSource) ^ xiiHashHelper<xiiUInt32>::Hash(source.m_uiRevision);
+    }
+    static bool Equal(const SourceIdentity& a, const SourceIdentity& b) { return a == b; }
+  };
+  xiiHashTable<SourceIdentity, SourceBinding, SourceHash> m_SourceBindings;
+  xiiSharedPtr<xiiGALFence>                               m_pTopologyUploadFence;
+  xiiUInt64                                               m_uiTopologyUploadValue   = 0U;
+  xiiUInt64                                               m_uiResidentTopologyBytes = 0U;
+  xiiUInt32                                               m_uiFramesInFlight        = 0U;
+  xiiUInt64                                               m_uiAllFrameMask          = 0U;
+  xiiUInt64                                               m_uiBudgetBytes           = 0U;
+  xiiUInt64                                               m_uiResidentBytes         = 0U;
+  xiiHashTable<xiiUInt64, UploadHandles>                  m_SetupUploads;
+  xiiUInt64                                               m_uiUploadFrame       = xiiMath::MaxValue<xiiUInt64>();
+  xiiUInt64                                               m_uiLastUploadedBytes = 0U;
 
   xiiGpuResidencyDescription m_Configuration;
   xiiMutex                   m_InitializationMutex;
@@ -625,6 +637,7 @@ xiiResult xiiGpuResidencyManager::EnsureInitialized()
 
 xiiResult xiiGpuResidencyManager::Initialize(xiiGALDevice* pDevice, const xiiGpuResidencyDescription& description)
 {
+  static_assert(XII_GAL_DEFAULT_BINDLESS_RESOURCE_CAPACITY <= 4096U, "Physical cluster keys reserve twelve bits for the buffer descriptor.");
   XII_ASSERT_DEV(s_pState != nullptr, "GPU residency manager is not started.");
   if (s_pState == nullptr)
     return XII_FAILURE;
@@ -653,7 +666,9 @@ xiiResult xiiGpuResidencyManager::Initialize(xiiGALDevice* pDevice, const xiiGpu
     return XII_FAILURE;
   s_pState->m_pMetadataBuffer->SetDebugName("GPU Geometry Metadata");
 
-  desc.m_uiSize                      = uiMaxMeshlets * sizeof(xiiMeshlet);
+  // Static geometry carries metadata in its resident pages. Allocate the direct
+  // arena only when mutable/deformable geometry first needs it.
+  desc.m_uiSize                      = sizeof(xiiMeshlet);
   desc.m_uiElementByteStride         = sizeof(xiiMeshlet);
   s_pState->m_pMeshletMetadataBuffer = pDevice->CreateBuffer(desc);
   if (s_pState->m_pMeshletMetadataBuffer == nullptr)
@@ -662,7 +677,6 @@ xiiResult xiiGpuResidencyManager::Initialize(xiiGALDevice* pDevice, const xiiGpu
     return XII_FAILURE;
   }
   s_pState->m_pMeshletMetadataBuffer->SetDebugName("GPU Meshlet Metadata Arena");
-  s_pState->m_FreeMeshletRanges.PushBack({0U, uiMaxMeshlets});
 
   s_pState->m_GeometryIds.Reserve(uiMaxGeometries);
   s_pState->m_Slots.SetCount(uiMaxGeometries);
@@ -867,7 +881,8 @@ xiiGpuResidencyManager::AdmissionResult xiiGpuResidencyManager::BuildResidentRec
   // Authored LODs are selection metadata. Payload residency is exclusively page-granular.
   const xiiUInt32 uiLodCount = record.m_uiLodCount;
   const xiiUInt32 uiNextLod = 0U, uiEndLod = uiLodCount;
-  xiiUInt64       uiArenaBytes = 0U;
+  xiiUInt64       uiArenaBytes                                    = 0U;
+  xiiUInt32       directCounts[xiiGpuGeometryRecord::s_uiMaxLods] = {};
   for (xiiUInt32 i = uiNextLod; i < uiEndLod; ++i)
   {
     if ((record.m_uiAvailableLodMask & XII_BIT(i)) != 0U)
@@ -897,7 +912,8 @@ xiiGpuResidencyManager::AdmissionResult xiiGpuResidencyManager::BuildResidentRec
     lod.m_uiMeshletCount         = source.m_uiMeshletCount == 0U ? meshlets.GetCount() - source.m_uiFirstMeshlet : source.m_uiMeshletCount;
     lod.m_fMinimumScreenCoverage = source.m_fMinimumScreenCoverage;
     lod.m_uiIndexType            = mesh->GetIndexType().GetValue();
-    uiArenaBytes += xiiUInt64(lod.m_uiMeshletCount) * sizeof(xiiMeshlet);
+    directCounts[i]              = mesh->HasGeometryPages() ? 0U : lod.m_uiMeshletCount;
+    uiArenaBytes += xiiUInt64(directCounts[i]) * sizeof(xiiMeshlet);
     newLods.PushBack(i);
   }
   // The mesh resource owns source buffers. Admission occupies an arena range
@@ -907,9 +923,25 @@ xiiGpuResidencyManager::AdmissionResult xiiGpuResidencyManager::BuildResidentRec
     return AdmissionResult::BudgetDeferred;
   xiiUInt64 requiredMeshlets = 0U;
   for (const auto lod : newLods)
-    requiredMeshlets += record.m_Lods[lod].m_uiMeshletCount;
+    requiredMeshlets += directCounts[lod];
   if (requiredMeshlets > s_pState->m_Configuration.m_uiMaxMeshlets)
     return AdmissionResult::ArenaDeferred;
+
+  if (requiredMeshlets != 0U && !s_pState->m_bDirectArenaAllocated)
+  {
+    auto description          = s_pState->m_pMeshletMetadataBuffer->GetDescription();
+    description.m_uiSize      = s_pState->m_Configuration.m_uiMaxMeshlets * sizeof(xiiMeshlet);
+    bool             deferred = false;
+    xiiGALBufferData admission;
+    admission.m_pStreamingDeferred = &deferred;
+    auto buffer                    = s_pState->m_pMetadataBuffer->GetDevice()->CreateBuffer(description, &admission);
+    if (!buffer)
+      return deferred ? AdmissionResult::MemoryDeferred : AdmissionResult::Failed;
+    buffer->SetDebugName("GPU Direct Meshlet Metadata Arena");
+    s_pState->m_pMeshletMetadataBuffer = std::move(buffer);
+    s_pState->m_bDirectArenaAllocated  = true;
+    s_pState->m_FreeMeshletRanges.PushBack({0U, s_pState->m_Configuration.m_uiMaxMeshlets});
+  }
 
   // Pinned assets may exceed the soft residency budget; ordinary streaming must
   // not evict and immediately readmit newly requested/current-frame geometry.
@@ -928,7 +960,7 @@ xiiGpuResidencyManager::AdmissionResult xiiGpuResidencyManager::BuildResidentRec
     xiiUInt32 ranges[xiiGpuGeometryRecord::s_uiMaxLods] = {};
     for (xiiUInt32 n = 0; n < newLods.GetCount(); ++n)
     {
-      const auto count = record.m_Lods[newLods[n]].m_uiMeshletCount;
+      const auto count = directCounts[newLods[n]];
       ranges[n]        = xiiInvalidIndex;
       if (count == 0U)
         continue;
@@ -937,7 +969,7 @@ xiiGpuResidencyManager::AdmissionResult xiiGpuResidencyManager::BuildResidentRec
         xiiUInt64 reserved = 0U;
         for (xiiUInt32 previous = 0; previous < n; ++previous)
           if (ranges[previous] == r)
-            reserved += record.m_Lods[newLods[previous]].m_uiMeshletCount;
+            reserved += directCounts[newLods[previous]];
         if (reserved + count <= s_pState->m_FreeMeshletRanges[r].m_uiCount)
         {
           ranges[n] = r;
@@ -960,7 +992,7 @@ xiiGpuResidencyManager::AdmissionResult xiiGpuResidencyManager::BuildResidentRec
     for (xiiUInt32 n = 0; n < allocated; ++n)
     {
       const auto& lod = record.m_Lods[newLods[n]];
-      FreeMeshlets(lod.m_uiMeshletMetadataOffset, lod.m_uiMeshletCount);
+      FreeMeshlets(lod.m_uiMeshletMetadataOffset, directCounts[newLods[n]]);
     }
     for (xiiUInt32 n = 0; n < registered; ++n)
       ReleaseSourceBinding(std::exchange(slot.m_BoundSources[newLods[n]], LodBinding{}), 0U);
@@ -969,7 +1001,7 @@ xiiGpuResidencyManager::AdmissionResult xiiGpuResidencyManager::BuildResidentRec
   {
     const auto i   = newLods[n];
     auto&      lod = record.m_Lods[i];
-    if (lod.m_uiMeshletCount != 0U)
+    if (directCounts[i] != 0U)
     {
       if (!AllocateMeshlets(lod.m_uiMeshletCount, lod.m_uiMeshletMetadataOffset))
       {
@@ -985,7 +1017,7 @@ xiiGpuResidencyManager::AdmissionResult xiiGpuResidencyManager::BuildResidentRec
       return result;
     }
     ++registered;
-    if (lod.m_uiMeshletCount != 0U)
+    if (directCounts[i] != 0U)
     {
       auto upload                  = XII_DEFAULT_NEW(MeshletUpload);
       upload->m_uiSlotIndex        = slotIndex;
@@ -1044,12 +1076,12 @@ xiiGpuResidencyManager::AdmissionResult xiiGpuResidencyManager::BuildResidentRec
   for (const auto i : newLods)
   {
     slot.m_uiMeshletArenaOffset[i]            = record.m_Lods[i].m_uiMeshletMetadataOffset;
-    slot.m_uiMeshletArenaCount[i]             = record.m_Lods[i].m_uiMeshletCount;
+    slot.m_uiMeshletArenaCount[i]             = directCounts[i];
     s_pState->m_uiMaximumResidentMeshletCount = xiiMath::Max(s_pState->m_uiMaximumResidentMeshletCount, record.m_Lods[i].m_uiMeshletCount);
   }
   xiiUInt32 uploadIndex = 0;
   for (const auto i : newLods)
-    if (record.m_Lods[i].m_uiMeshletCount != 0U)
+    if (directCounts[i] != 0U)
       slot.m_PendingUploads[i] = uploads[uploadIndex++];
   for (auto& upload : uploads)
     s_pState->m_PendingMeshletUploads.PushBack(std::move(upload));
@@ -1093,7 +1125,7 @@ bool xiiGpuResidencyManager::State::InitializeTextureFeedback()
   return true;
 }
 
-xiiUInt32 xiiGpuResidencyManager::State::AllocatePageRequest(const void* source, xiiUInt32 page, bool texture, xiiUInt64 frame)
+xiiUInt32 xiiGpuResidencyManager::State::AllocatePageRequest(const void* source, xiiUInt32 page, bool texture, xiiUInt64 frame, xiiUInt32 revision)
 {
   xiiUInt32 id = 0U;
   if (!m_RetiredPageRequests.IsEmpty() && m_RetiredPageRequests.PeekFront().m_uiFrame < m_uiReusableRequestFrame)
@@ -1107,7 +1139,8 @@ xiiUInt32 xiiGpuResidencyManager::State::AllocatePageRequest(const void* source,
   if (id != 0U)
   {
     PageRequest request{source, page, texture};
-    request.m_uiCreatedFrame = frame;
+    request.m_uiCreatedFrame   = frame;
+    request.m_uiSourceRevision = revision;
     m_PageRequests.Insert(id, request);
   }
   return id;
@@ -1589,7 +1622,7 @@ bool xiiGpuResidencyManager::State::DemandPage(xiiUInt32 request, xiiUInt64 fram
   }
   else
   {
-    auto* source = m_SourceBindings.GetValue(target->m_pSource);
+    auto* source = m_SourceBindings.GetValue(SourceIdentity{target->m_pSource, target->m_uiSourceRevision});
     if (!source || target->m_uiPage >= source->m_Pages.GetCount())
       return false;
     auto& page = source->m_Pages[target->m_uiPage];
@@ -1661,7 +1694,7 @@ void xiiGpuResidencyManager::State::SchedulePages(xiiUInt64 frame)
       }
       else
       {
-        auto* source = m_SourceBindings.GetValue(target->m_pSource);
+        auto* source = m_SourceBindings.GetValue(SourceIdentity{target->m_pSource, target->m_uiSourceRevision});
         if (!source)
           remove = true;
         else
@@ -1735,7 +1768,7 @@ void xiiGpuResidencyManager::State::TrimPages(xiiUInt64 frame, xiiUInt64 complet
     }
     else if (target)
     {
-      auto* source = m_SourceBindings.GetValue(target->m_pSource);
+      auto* source = m_SourceBindings.GetValue(SourceIdentity{target->m_pSource, target->m_uiSourceRevision});
       remove       = source == nullptr;
       if (source)
       {
@@ -1914,6 +1947,8 @@ xiiGpuResidencyManager::AdmissionResult xiiGpuResidencyManager::State::UploadPag
   xiiResourceLock<xiiMeshBufferResource> mesh(source.m_hMesh, xiiResourceAcquireMode::PointerOnly);
   if (mesh.GetAcquireResult() != xiiResourceAcquireResult::Final)
     return AdmissionResult::NotReady;
+  if (mesh->GetCurrentResourceChangeCounter() != source.m_uiRevision || index >= mesh->GetDescriptor().m_GeometryPages.GetCount())
+    return AdmissionResult::Failed;
   const auto& descriptor = mesh->GetDescriptor();
   const auto& page       = descriptor.m_GeometryPages[index];
   if (page.m_uiSize == 0U || page.m_uiSize > 128U * 1024U)
@@ -1956,7 +1991,7 @@ xiiGpuResidencyManager::AdmissionResult xiiGpuResidencyManager::State::UploadPag
       residency.m_Io               = XII_DEFAULT_NEW(PageIo);
       residency.m_Io->m_Owner      = s_pState;
       residency.m_Io->m_hMesh      = source.m_hMesh;
-      residency.m_Io->m_uiRevision = mesh->GetCurrentResourceChangeCounter();
+      residency.m_Io->m_uiRevision = source.m_uiRevision;
       residency.m_Io->m_uiTile     = index;
       residency.m_Io->ConfigureTask("Virtual geometry page IO", xiiTaskNesting::Never);
       m_uiPendingIo.Increment();
@@ -2068,11 +2103,19 @@ xiiGpuResidencyManager::AdmissionResult xiiGpuResidencyManager::State::UploadPag
 bool xiiGpuResidencyManager::State::PublishPages(SourceBinding& source)
 {
   xiiDynamicArray<xiiUInt8> payload;
-  payload.SetCount(272U + source.m_PageRecords.GetCount() * sizeof(PageRecord) + source.m_RootPages.GetCount() * sizeof(xiiUInt32), 0U);
+  payload.SetCount(272U + source.m_PageRecords.GetCount() * sizeof(PageRecord) + source.m_RootPages.GetCount() * sizeof(xiiVec2U32), 0U);
   const xiiUInt32 count = source.m_PageRecords.GetCount();
   const xiiUInt32 roots = source.m_RootPages.GetCount();
   xiiMemoryUtils::Copy(payload.GetData() + 4U, reinterpret_cast<const xiiUInt8*>(&roots), sizeof(roots));
-  xiiMemoryUtils::Copy(payload.GetData() + 272U + count * sizeof(PageRecord), reinterpret_cast<const xiiUInt8*>(source.m_RootPages.GetData()), roots * sizeof(xiiUInt32));
+  xiiUInt32 rootClusters = 0U;
+  for (xiiUInt32 root = 0U; root < roots; ++root)
+  {
+    const auto page = source.m_RootPages[root];
+    rootClusters += source.m_PageRecords[page].m_Mapping.w;
+    const xiiVec2U32 entry(page, rootClusters);
+    xiiMemoryUtils::Copy(payload.GetData() + 272U + count * sizeof(PageRecord) + root * sizeof(entry), reinterpret_cast<const xiiUInt8*>(&entry), sizeof(entry));
+  }
+  xiiMemoryUtils::Copy(payload.GetData() + 8U, reinterpret_cast<const xiiUInt8*>(&rootClusters), sizeof(rootClusters));
   xiiMemoryUtils::Copy(payload.GetData(), reinterpret_cast<const xiiUInt8*>(&count), sizeof(count));
   for (xiiUInt32 slot = 0U; slot < m_uiFramesInFlight; ++slot)
     xiiMemoryUtils::Copy(payload.GetData() + 16U + slot * sizeof(xiiUInt32), reinterpret_cast<const xiiUInt8*>(&m_TextureFeedbackUav[slot].m_uiIndex), sizeof(xiiUInt32));
@@ -2136,7 +2179,7 @@ void xiiGpuResidencyManager::State::ProcessPages(xiiUInt64 frame, xiiUInt64 comp
       {
         auto& slot = m_Slots[index];
         for (xiiUInt32 lod = 0U; lod < slot.m_GpuRecord.m_uiLodCount; ++lod)
-          if (slot.m_BoundSources[lod].m_pSource == it.Key())
+          if (slot.m_BoundSources[lod].m_Identity == it.Key())
           {
             slot.m_GpuRecord.m_Lods[lod].m_uiVertexBufferIndex          = source.m_PageTable.m_uiIndex;
             slot.m_GpuRecord.m_Lods[lod].m_uiMeshletTopologyBufferIndex = source.m_PageTable.m_uiIndex;
@@ -2232,14 +2275,15 @@ xiiGpuResidencyManager::AdmissionResult xiiGpuResidencyManager::RegisterBindless
 
   if (mesh.HasGeometryPages())
   {
-    const void* identity = &mesh;
-    auto*       source   = s_pState->m_SourceBindings.GetValue(identity);
+    const SourceIdentity identity{&mesh, mesh.GetCurrentResourceChangeCounter()};
+    auto*                source = s_pState->m_SourceBindings.GetValue(identity);
     if (source == nullptr)
     {
       if (!s_pState->InitializeTextureFeedback())
         return AdmissionResult::Failed;
       State::SourceBinding fresh;
       fresh.m_hMesh          = slot.m_Description.m_Lods[uiLod].m_hMeshBuffer;
+      fresh.m_uiRevision     = identity.m_uiRevision;
       const auto& descriptor = mesh.GetDescriptor();
       fresh.m_Pages.SetCount(descriptor.m_GeometryPages.GetCount());
       fresh.m_PageRecords.SetCount(fresh.m_Pages.GetCount());
@@ -2247,7 +2291,7 @@ xiiGpuResidencyManager::AdmissionResult xiiGpuResidencyManager::RegisterBindless
       {
         auto& page       = fresh.m_Pages[p];
         page.m_bRequired = descriptor.m_GeometryPages[p].m_bRequired;
-        page.m_uiRequest = s_pState->AllocatePageRequest(identity, p, false, s_pState->m_uiStreamingFrame);
+        page.m_uiRequest = s_pState->AllocatePageRequest(identity.m_pSource, p, false, s_pState->m_uiStreamingFrame, identity.m_uiRevision);
         if (page.m_uiRequest == 0U)
         {
           for (const auto& allocated : fresh.m_Pages)
@@ -2256,10 +2300,10 @@ xiiGpuResidencyManager::AdmissionResult xiiGpuResidencyManager::RegisterBindless
         }
         fresh.m_PageRecords[p].m_Mapping.y = page.m_uiRequest;
         const auto& compiled               = descriptor.m_GeometryPages[p];
-        fresh.m_PageRecords[p].m_Mapping.z = compiled.m_uiFirstCluster;
+        fresh.m_PageRecords[p].m_Mapping.z = compiled.m_uiSize - compiled.m_uiClusterCount * sizeof(xiiMeshlet);
         fresh.m_PageRecords[p].m_Mapping.w = compiled.m_uiClusterCount;
         fresh.m_PageRecords[p].m_Detail    = xiiVec4(compiled.m_fGeometricError,
-                                                     compiled.m_uiParent == xiiInvalidIndex ? 0.0f : static_cast<float>(compiled.m_uiParent + 1U),
+                                                     std::bit_cast<float>(compiled.m_uiFirstCluster),
                                                      compiled.m_uiChildCount == 0U ? 0.0f : static_cast<float>(compiled.m_uiFirstChild + 1U),
                                                      static_cast<float>(compiled.m_uiChildCount));
         if (page.m_bRequired)
@@ -2313,7 +2357,8 @@ xiiGpuResidencyManager::AdmissionResult xiiGpuResidencyManager::RegisterBindless
   // Deformable and mutable geometry retain one direct source topology. It is
   // shared by every authored selection range and has no independent LOD cache.
   const auto*          vertex = pVertexBuffer.Borrow();
-  auto*                source = s_pState->m_SourceBindings.GetValue(vertex);
+  const SourceIdentity identity{vertex, 0U};
+  auto*                source = s_pState->m_SourceBindings.GetValue(identity);
   State::SourceBinding pending;
   XII_SCOPE_EXIT(
     RetireBufferBinding(pending.m_Vertex, 0U);
@@ -2335,28 +2380,28 @@ xiiGpuResidencyManager::AdmissionResult xiiGpuResidencyManager::RegisterBindless
         return result;
     }
     s_pState->m_uiResidentTopologyBytes += pending.m_DirectTopology.m_uiBytes;
-    s_pState->m_SourceBindings.Insert(vertex, std::move(pending));
+    s_pState->m_SourceBindings.Insert(identity, std::move(pending));
     pending.m_Vertex         = {};
     pending.m_Index          = {};
     pending.m_DirectTopology = {};
-    source                   = s_pState->m_SourceBindings.GetValue(vertex);
+    source                   = s_pState->m_SourceBindings.GetValue(identity);
   }
   auto& lod                          = record.m_Lods[uiLod];
   lod.m_uiVertexBufferIndex          = source->m_Vertex.m_uiIndex;
   lod.m_uiIndexBufferIndex           = source->m_Index.m_uiIndex;
   lod.m_uiMeshletTopologyBufferIndex = source->m_DirectTopology.m_Buffer.m_uiIndex;
   lod.m_uiMeshletPrimitiveByteOffset = source->m_DirectTopology.m_uiPrimitiveOffset;
-  slot.m_BoundSources[uiLod]         = {vertex};
+  slot.m_BoundSources[uiLod]         = {identity};
   ++source->m_uiReferenceCount;
   return AdmissionResult::Admitted;
 }
 
 void xiiGpuResidencyManager::ReleaseSourceBinding(LodBinding binding, xiiUInt64 uiLastUseFrame)
 {
-  if (binding.m_pSource == nullptr)
+  if (binding.m_Identity.m_pSource == nullptr)
     return;
 
-  auto* pSource = s_pState->m_SourceBindings.GetValue(binding.m_pSource);
+  auto* pSource = s_pState->m_SourceBindings.GetValue(binding.m_Identity);
   XII_ASSERT_DEV(pSource != nullptr && pSource->m_uiReferenceCount != 0U, "An admitted LOD must own a source lease.");
   pSource->m_uiLastUseFrame = xiiMath::Max(pSource->m_uiLastUseFrame, uiLastUseFrame);
   if (--pSource->m_uiReferenceCount == 0U)
@@ -2386,7 +2431,7 @@ void xiiGpuResidencyManager::ReleaseSourceBinding(LodBinding binding, xiiUInt64 
     }
     RetireBufferBinding(pSource->m_Vertex, pSource->m_uiLastUseFrame);
     RetireBufferBinding(pSource->m_Index, pSource->m_uiLastUseFrame);
-    s_pState->m_SourceBindings.Remove(binding.m_pSource);
+    s_pState->m_SourceBindings.Remove(binding.m_Identity);
   }
 }
 

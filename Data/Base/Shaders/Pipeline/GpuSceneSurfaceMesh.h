@@ -40,7 +40,7 @@ ByteAddressBuffer                   g_Buffers[];
     }
 
     const uint2 visible = g_VisibleMeshlets[visibleMeshletIndex];
-    if (visible.x >= sceneCapacity || visible.y >= meshletCapacity)
+    if (visible.x >= sceneCapacity)
     {
       SetMeshOutputCounts(0u, 0u);
       return;
@@ -54,7 +54,9 @@ ByteAddressBuffer                   g_Buffers[];
     }
 
     const GpuGeometryRecord geometry = g_Geometry[GeometryBaseIndex + instance.GeometryIndex];
-    GpuMeshlet        meshlet  = g_Meshlets[visible.y];
+    GpuMeshlet meshlet;
+    if (!xiiLoadCluster(visible.y, meshlet))
+    { SetMeshOutputCounts(0u, 0u); return; }
     const uint              lodIndex = meshlet.PackedLodSection & 0xFFFFu;
     if (lodIndex >= min(geometry.LodCount, 8u) || (instance.DrawLod != 0xFFFFFFFFu && instance.DrawLod != lodIndex))
     {
