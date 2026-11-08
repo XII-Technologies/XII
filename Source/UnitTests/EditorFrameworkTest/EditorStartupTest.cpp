@@ -20,7 +20,7 @@
 #include <EditorFramework/Assets/AssetDocumentManager.h>
 #include <EditorFramework/Assets/AssetProcessor.h>
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
-#include <EditorFramework/Panels/AssetBrowserPanel/CuratorControl.moc.h>
+#include <EditorFramework/Panels/AssetCuratorPanel/CuratorControl.moc.h>
 #include <Foundation/Application/Application.h>
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/IO/FileSystem/FileReader.h>
