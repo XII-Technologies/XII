@@ -108,6 +108,7 @@ public:
   };
   struct TextureSource
   {
+    xiiUInt32                                     m_uiFallbackColor       = 0U;
     xiiUInt64                                     m_uiPageAllocationBytes = xiiVirtualTextureData::s_uiTileBytes;
     xiiSharedPtr<xiiVirtualTextureData>           m_Data;
     xiiDynamicArray<TexturePage>                  m_Pages;
@@ -139,7 +140,7 @@ public:
   xiiUInt64                                                 m_uiPageRequests = 0U, m_uiPageMisses = 0U;
   xiiUInt64                                                 m_uiGeometryPageRequests = 0U, m_uiGeometryPageUploads = 0U;
   bool                                                      InitializeTextureFeedback();
-  AdmissionResult                                           UploadTextureTile(TextureSource& source, xiiUInt32 page, bool optional);
+  AdmissionResult                                           UploadTextureTile(TextureSource& source, xiiUInt32 page);
   bool                                                      PublishTexture(TextureSource& source);
   void                                                      ProcessTextures(xiiUInt64 frame, xiiUInt64 completed);
   void                                                      ClearTextures();
@@ -1309,10 +1310,10 @@ void xiiGpuResidencyManager::State::ClearPhysicalPages()
   m_uiPoolReuses = m_uiPoolAllocations = m_uiPoolReleasedBytes = 0U;
 }
 
-xiiGpuResidencyManager::AdmissionResult xiiGpuResidencyManager::State::UploadTextureTile(TextureSource& source, xiiUInt32 page, bool optional)
+xiiGpuResidencyManager::AdmissionResult xiiGpuResidencyManager::State::UploadTextureTile(TextureSource& source, xiiUInt32 page)
 {
   constexpr auto bytes = xiiVirtualTextureData::s_uiTileBytes;
-  if (optional && bytes > m_uiRemainingTextureUploadBytes)
+  if (bytes > m_uiRemainingTextureUploadBytes)
     return AdmissionResult::BudgetDeferred;
   const auto&                    compiled = source.m_Data;
   const xiiUInt32                bucket   = compiled->m_Description.m_Format == xiiGALResourceFormat::RGBA8UNormalizedSRGB ? 7U : 6U;
@@ -1321,48 +1322,37 @@ xiiGpuResidencyManager::AdmissionResult xiiGpuResidencyManager::State::UploadTex
   auto*                          device   = m_pMetadataBuffer->GetDevice().Borrow();
   xiiGALMemoryCategoryStatistics ownership;
   const auto                     allocated = device->GetMemoryCategoryStatistics(xiiGALMemoryCategory::TexturePages, ownership) ? ownership.m_uiAllocatedBytes : m_uiPoolBytes[1];
-  if (optional && free.IsEmpty() && (source.m_uiPageAllocationBytes > limit || allocated > limit - source.m_uiPageAllocationBytes))
+  if (free.IsEmpty() && (source.m_uiPageAllocationBytes > limit || allocated > limit - source.m_uiPageAllocationBytes))
   {
     source.m_Pages[page].m_Io.Clear();
     return AdmissionResult::MemoryDeferred;
   }
-  auto&                     residency = source.m_Pages[page];
-  xiiDynamicArray<xiiUInt8> requiredData;
-  xiiUInt8*                 payload = nullptr;
-  if (optional)
+  auto& residency = source.m_Pages[page];
+  if (residency.m_bIoFailed)
+    return AdmissionResult::Failed;
+  if (!residency.m_Io)
   {
-    if (residency.m_bIoFailed)
-      return AdmissionResult::Failed;
-    if (!residency.m_Io)
-    {
-      if (m_uiPendingIo >= 32U)
-        return AdmissionResult::NotReady;
-      residency.m_Io           = XII_DEFAULT_NEW(PageIo);
-      residency.m_Io->m_Owner  = s_pState;
-      residency.m_Io->m_Source = compiled;
-      residency.m_Io->m_uiTile = page;
-      residency.m_Io->ConfigureTask("Virtual texture page IO", xiiTaskNesting::Never);
-      m_uiPendingIo.Increment();
-      xiiTaskSystem::StartSingleTask(residency.m_Io, xiiTaskPriority::FileAccess);
+    if (m_uiPendingIo >= 32U)
       return AdmissionResult::NotReady;
-    }
-    if (!residency.m_Io->m_bComplete)
-      return AdmissionResult::NotReady;
-    if (residency.m_Io->m_Result.Failed())
-    {
-      residency.m_bIoFailed = true;
-      xiiLog::Warning("Texture page {} failed to load from '{}'; retaining coarse residency.", page, compiled->m_sFile);
-      residency.m_Io.Clear();
-      return AdmissionResult::Failed;
-    }
-    payload = residency.m_Io->m_Data.GetData();
+    residency.m_Io           = XII_DEFAULT_NEW(PageIo);
+    residency.m_Io->m_Owner  = s_pState;
+    residency.m_Io->m_Source = compiled;
+    residency.m_Io->m_uiTile = page;
+    residency.m_Io->ConfigureTask("Virtual texture page IO", xiiTaskNesting::Never);
+    m_uiPendingIo.Increment();
+    xiiTaskSystem::StartSingleTask(residency.m_Io, xiiTaskPriority::FileAccess);
+    return AdmissionResult::NotReady;
   }
-  else
+  if (!residency.m_Io->m_bComplete)
+    return AdmissionResult::NotReady;
+  if (residency.m_Io->m_Result.Failed())
   {
-    if (compiled->ReadTile(page, requiredData).Failed())
-      return AdmissionResult::Failed;
-    payload = requiredData.GetData();
+    residency.m_bIoFailed = true;
+    xiiLog::Warning("Texture page {} failed to load from '{}'; retaining coarse residency.", page, compiled->m_sFile);
+    residency.m_Io.Clear();
+    return AdmissionResult::Failed;
   }
+  const auto* payload = residency.m_Io->m_Data.GetData();
   if (!m_pTopologyUploadFence)
     m_pTopologyUploadFence = device->CreateFence({.m_Type = xiiGALFenceType::General});
   if (!m_pTopologyUploadFence)
@@ -1389,8 +1379,8 @@ xiiGpuResidencyManager::AdmissionResult xiiGpuResidencyManager::State::UploadTex
     description.m_Usage          = xiiGALResourceUsage::Mutable;
     description.m_BindFlags      = xiiGALBindFlags::ShaderResource;
     xiiGALTextureData admission;
-    admission.m_bStreamingAllocation          = optional;
-    admission.m_uiMaxStreamingAllocationBytes = optional ? limit - xiiMath::Min(limit, allocated) : xiiMath::MaxValue<xiiUInt64>();
+    admission.m_bStreamingAllocation          = true;
+    admission.m_uiMaxStreamingAllocationBytes = limit - xiiMath::Min(limit, allocated);
     auto texture                              = device->CreateTexture(description, &admission);
     if (!texture)
     {
@@ -1452,11 +1442,13 @@ bool xiiGpuResidencyManager::State::PublishTexture(TextureSource& source)
   table[0] = source.m_Data->m_Description.m_Size.width;
   table[1] = source.m_Data->m_Description.m_Size.height;
   table[2] = source.m_Data->m_Description.m_uiMipLevels;
+  table[3] = source.m_uiFallbackColor;
   for (xiiUInt32 slot = 0U; slot < m_uiFramesInFlight; ++slot)
     table[40U + slot] = m_TextureFeedbackUav[slot].m_uiIndex;
   table[36U] = source.m_Data->m_uiAddressFlags;
   table[37U] = biasBits;
   table[38U] = minimumMip;
+  table[39U] = xiiGALResourceFormat::IsSrgb(source.m_Data->m_Description.m_Format) ? 1U : 0U;
   for (xiiUInt32 p = 0U; p < source.m_Pages.GetCount(); ++p)
   {
     const auto& tile = source.m_Data->m_Tiles[p];
@@ -1567,28 +1559,26 @@ xiiUInt32 xiiGpuResidencyManager::ResolveVirtualTexture(xiiSharedPtr<xiiVirtualT
       return xiiInvalidIndex;
     fresh.m_Data = data;
     fresh.m_Pages.SetCount(data->m_Tiles.GetCount());
-    bool committed = false;
+    xiiDynamicArray<xiiUInt8> coarse;
+    if (data->ReadTile(data->m_Tiles.GetCount() - 1U, coarse).Failed())
+      return xiiInvalidIndex;
+    const auto* pixel       = coarse.GetData() + (xiiVirtualTextureData::s_uiBorder * xiiVirtualTextureData::s_uiPhysicalSize + xiiVirtualTextureData::s_uiBorder) * 4U;
+    fresh.m_uiFallbackColor = xiiUInt32(pixel[0]) | (xiiUInt32(pixel[1]) << 8U) | (xiiUInt32(pixel[2]) << 16U) | (xiiUInt32(pixel[3]) << 24U);
+    bool committed          = false;
     XII_SCOPE_EXIT(if (!committed) {
       for (const auto& page : fresh.m_Pages)
         s_pState->ReleasePageRequest(page.m_uiRequest);
     });
-    for (xiiUInt32 page = 0U; page < fresh.m_Pages.GetCount(); ++page)
+    // The final 1x1 mip is represented exactly by the table color. It has no
+    // physical cache slot, upload, or feedback identity to pin per asset.
+    for (xiiUInt32 page = 0U; page + 1U < fresh.m_Pages.GetCount(); ++page)
     {
       fresh.m_Pages[page].m_uiRequest = s_pState->AllocatePageRequest(data.Borrow(), page, true, frame);
       if (fresh.m_Pages[page].m_uiRequest == 0U)
         return xiiInvalidIndex;
     }
-    const auto last = fresh.m_Pages.GetCount() - 1U;
-    if (s_pState->UploadTextureTile(fresh, last, false) != AdmissionResult::Admitted || !s_pState->PublishTexture(fresh))
-    {
-      if (fresh.m_Pages[last].m_Texture.IsValid())
-      {
-        s_pState->RetirePhysicalPage(fresh.m_Pages[last].m_Texture, true, frame);
-        s_pState->m_uiTextureBytes -= fresh.m_Pages[last].m_uiBytes;
-        --s_pState->m_uiTexturePageCount;
-      }
+    if (!s_pState->PublishTexture(fresh))
       return xiiInvalidIndex;
-    }
     committed = true;
     s_pState->m_Textures.Insert(data.Borrow(), std::move(fresh));
     source = s_pState->m_Textures.GetValue(data.Borrow());
@@ -1689,7 +1679,7 @@ void xiiGpuResidencyManager::State::SchedulePages(xiiUInt64 frame)
           if (remove)
             page.m_Io.Clear();
           else if (page.m_uiTrimFrame == 0U || frame - xiiMath::Min(frame, page.m_uiTrimFrame) >= 60U)
-            result = UploadTextureTile(*source, target->m_uiPage, true);
+            result = UploadTextureTile(*source, target->m_uiPage);
         }
       }
       else

@@ -61,7 +61,7 @@ float4 xiiSampleVirtualTexture(uint index, uint samplerIndex, SamplerState fallb
         xiiRecordPageDemand(feedback, xiiVirtualTextureMapping(table, mip, grid, adjacent).y);
     }
 
-    if (mapping.x == 0xffffffffu)
+    if (mapping.x == 0xffffffffu && mip + 1u != header.z)
     {
       // Keep the fine sample when the next mip is missing. Its request is already recorded.
       if (hasFineSample)
@@ -69,11 +69,21 @@ float4 xiiSampleVirtualTexture(uint index, uint samplerIndex, SamplerState fallb
       continue;
     }
 
-    float2 physicalUV = (texel - tile * 128u + 2.0f) / 132.0f;
-    uint physical = NonUniformResourceIndex(mapping.x);
-    float4 value = samplerIndex != 0xffffffffu ?
-      g_VirtualTextureTiles[physical].SampleLevel(g_MaterialSamplers[NonUniformResourceIndex(samplerIndex)], physicalUV, 0.0f) :
-      g_VirtualTextureTiles[physical].SampleLevel(fallbackSampler, physicalUV, 0.0f);
+    float4 value;
+    if (mip + 1u == header.z)
+    {
+      value = float4(uint4(header.w, header.w >> 8u, header.w >> 16u, header.w >> 24u) & 255u) / 255.0f;
+      if (g_VirtualTextureTables[NonUniformResourceIndex(table)].Load(156u) != 0u)
+        value.rgb = lerp(value.rgb / 12.92f, pow((value.rgb + 0.055f) / 1.055f, 2.4f), step(0.04045f, value.rgb));
+    }
+    else
+    {
+      float2 physicalUV = (texel - tile * 128u + 2.0f) / 132.0f;
+      uint physical = NonUniformResourceIndex(mapping.x);
+      value = samplerIndex != 0xffffffffu ?
+        g_VirtualTextureTiles[physical].SampleLevel(g_MaterialSamplers[NonUniformResourceIndex(samplerIndex)], physicalUV, 0.0f) :
+        g_VirtualTextureTiles[physical].SampleLevel(fallbackSampler, physicalUV, 0.0f);
+    }
     if (hasFineSample)
       return lerp(fineSample, value, frac(mipLevel));
     if (mip != wanted || mip + 1u == header.z || frac(mipLevel) == 0.0f)

@@ -11,9 +11,11 @@
 #include <GraphicsCore/Pipeline/Passes/Particles/ParticleBirthUploadPass.h>
 #include <GraphicsCore/Pipeline/RenderGraphManager.h>
 #include <GraphicsCore/Pipeline/View.h>
+#include <GraphicsCore/Streaming/GpuResidencyManager.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
 #include <GraphicsFoundation/Resources/BindlessResourceTable.h>
 #include <Shaders/Pipeline/Passes/Particles/BallisticParticleConstants.h>
+#include <Texture/Utilities/VirtualTextureData.h>
 
 namespace
 {
@@ -32,10 +34,11 @@ namespace
   };
   struct ParticleTextureLease : xiiRefCounted
   {
-    xiiSharedPtr<xiiGALTextureView>    m_View;
-    xiiSharedPtr<ParticleSamplerLease> m_Sampler;
-    xiiGALBindlessResourceHandle       m_TextureIndex;
-    xiiUInt64                          m_uiLastUse = 0;
+    xiiSharedPtr<xiiVirtualTextureData> m_VirtualData;
+    xiiSharedPtr<xiiGALTextureView>     m_View;
+    xiiSharedPtr<ParticleSamplerLease>  m_Sampler;
+    xiiGALBindlessResourceHandle        m_TextureIndex;
+    xiiUInt64                           m_uiLastUse = 0;
     ~ParticleTextureLease()
     {
       if (m_TextureIndex.IsValid())
@@ -145,22 +148,24 @@ xiiResult xiiParticleBirthUploadPass::Build(xiiRenderPipelinePassContext& contex
           if (!binding.m_hTexture2D.IsValid())
             continue;
           xiiResourceLock<xiiTexture2DResource> texture(binding.m_hTexture2D, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
-          const auto                            gpuTexture = texture.IsValid() && texture.GetAcquireResult() == xiiResourceAcquireResult::Final ? texture->GetGALTexture() : nullptr;
-          const auto                            view       = gpuTexture ? gpuTexture->GetDefaultView(xiiGALTextureViewType::ShaderResource) : nullptr;
-          const auto                            sampler    = texture.IsValid() ? texture->GetGALSampler() : nullptr;
+          const auto                            gpuTexture  = texture.IsValid() && texture.GetAcquireResult() == xiiResourceAcquireResult::Final ? texture->GetGALTexture() : nullptr;
+          const auto                            view        = gpuTexture ? gpuTexture->GetDefaultView(xiiGALTextureViewType::ShaderResource) : nullptr;
+          const auto                            sampler     = texture.IsValid() ? texture->GetGALSampler() : nullptr;
+          const auto                            virtualData = texture.IsValid() ? texture->GetVirtualData() : nullptr;
           if (!view || !sampler)
             return context.ReportFailure("Particle texture or authored sampler is unavailable.");
           xiiSharedPtr<ParticleTextureLease> lease;
           for (const auto& cached : m_pState->m_Textures)
-            if (cached->m_View == view && cached->m_Sampler->m_Sampler == sampler)
+            if (cached->m_View == view && cached->m_Sampler->m_Sampler == sampler && cached->m_VirtualData == virtualData)
             {
               lease = cached;
               break;
             }
           if (!lease)
           {
-            lease         = XII_DEFAULT_NEW(ParticleTextureLease);
-            lease->m_View = view;
+            lease                = XII_DEFAULT_NEW(ParticleTextureLease);
+            lease->m_View        = view;
+            lease->m_VirtualData = virtualData;
             for (const auto& cached : m_pState->m_Samplers)
               if (cached->m_Sampler == sampler)
               {
@@ -176,14 +181,19 @@ xiiResult xiiParticleBirthUploadPass::Build(xiiRenderPipelinePassContext& contex
                 return context.ReportFailure("Particle sampler descriptor capacity is exhausted.");
               m_pState->m_Samplers.PushBack(lease->m_Sampler);
             }
-            lease->m_TextureIndex = xiiGALBindlessResourceTable::RegisterTextureSRV(view);
-            if (!lease->m_TextureIndex.IsValid())
-              return context.ReportFailure("Particle bindless descriptor capacity is exhausted.");
+            if (!virtualData)
+            {
+              lease->m_TextureIndex = xiiGALBindlessResourceTable::RegisterTextureSRV(view);
+              if (!lease->m_TextureIndex.IsValid())
+                return context.ReportFailure("Particle bindless descriptor capacity is exhausted.");
+            }
             m_pState->m_Textures.PushBack(lease);
           }
           lease->m_uiLastUse        = xiiMath::Max(lease->m_uiLastUse, context.m_Graph.GetFrameIndex());
-          binding.m_uiBindlessIndex = lease->m_TextureIndex.m_uiIndex;
-          binding.m_uiSamplerIndex  = lease->m_Sampler->m_Index.m_uiIndex;
+          binding.m_uiBindlessIndex = virtualData ? xiiGpuResidencyManager::ResolveVirtualTexture(virtualData, context.m_Graph.GetFrameIndex()) : lease->m_TextureIndex.m_uiIndex;
+          if (binding.m_uiBindlessIndex == xiiInvalidIndex)
+            return context.ReportFailure("Particle texture residency could not be established.");
+          binding.m_uiSamplerIndex = lease->m_Sampler->m_Index.m_uiIndex;
           if (!snapshot.m_Textures.Contains(lease))
             snapshot.m_Textures.PushBack(lease);
         }

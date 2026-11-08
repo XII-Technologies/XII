@@ -60,6 +60,8 @@ GPU material sampling derives wanted mip from derivatives or explicit level, rec
 
 Texture document version 12 removes the obsolete LOWRES output and converter options. Texture imports produce one compiled asset containing its virtual pages. Mesh transforms propagate serialization failures, and texture resource replacement clears obsolete virtual data when switching to conventional content.
 
+The final 1x1 mip is stored as its exact RGBA8 color in the GPU page table, with sRGB decoding where required. It consumes no physical tile, upload allowance, or feedback identity. Native-view consumers retain their 1x1 resource. Particle materials resolve virtual textures through the same residency service and bind the tile, table, and feedback resources.
+
 The software cache pools individual physical tile images. Native allocation padding is charged, rather than the smaller decompressed payload. Reused slots consume the same scheduler upload allowance as newly allocated slots. Native sparse mapping, feedback capability fallback, broader texture formats, view-based prediction, and anisotropic filtering refinement remain migration work.
 
 ## Focused validation
