@@ -113,9 +113,13 @@ struct XII_GRAPHICSCORE_DLL xiiGeometryResidencyStats
   xiiUInt64 m_uiResidentBytes         = 0U; ///< Occupied meshlet metadata arena bytes.
   xiiUInt64 m_uiBudgetBytes           = 0U; ///< Soft meshlet metadata occupancy limit.
   xiiUInt64 m_uiUploadedBytes         = 0U;
-  xiiUInt64 m_uiAdmittedBytes         = 0U; ///< Metadata transfer bytes charged for admissions this frame.
+  xiiUInt64 m_uiAdmittedBytes         = 0U; ///< Metadata and topology transfer bytes charged this frame.
+  xiiUInt64 m_uiResidentTopologyBytes = 0U; ///< Unique live remap and primitive buffer payload bytes, including word padding.
+  xiiUInt64 m_uiTopologyUploadBytes   = 0U; ///< Topology bytes submitted by admissions this frame.
+  xiiUInt64 m_uiRetiredTopologyBytes  = 0U; ///< Payload bytes passed to deferred retirement this frame.
   xiiUInt64 m_uiReclaimedArenaBytes   = 0U; ///< Arena bytes made reusable by evictions this frame.
   xiiUInt32 m_uiEvictions             = 0U;
+  xiiUInt32 m_uiPressureEvictions     = 0U;
   xiiUInt64 m_uiRemainingUploadBytes  = 0U;
   xiiUInt64 m_uiPreparedMeshlets      = 0U;
   xiiUInt32 m_uiExamined = 0U, m_uiAdmitted = 0U, m_uiBudgetDeferred = 0U;
@@ -243,8 +247,6 @@ private:
 
   struct Slot
   {
-    static constexpr xiiUInt32 s_uiBindlessResourcesPerLod = 4U;
-
     xiiGeometryDescription             m_Description;
     xiiGpuGeometryRecord               m_GpuRecord;
     xiiEnum<xiiGeometryResidencyState> m_State                = xiiGeometryResidencyState::Unloaded;
@@ -265,10 +267,8 @@ private:
     xiiUInt64 m_uiDirtyFrameMask                                        = 0U;
     xiiUInt32 m_uiMeshletArenaOffset[xiiGpuGeometryRecord::s_uiMaxLods] = {};
     xiiUInt32 m_uiMeshletArenaCount[xiiGpuGeometryRecord::s_uiMaxLods]  = {};
-    /// Vertex, index, meshlet, remap and primitive SRVs owned by the residency service.
-    /// Keeping the generation-bearing handles beside the LOD prevents callers from leaking
-    /// descriptors or retiring them while an older frame still references the geometry record.
-    xiiGALBindlessResourceHandle m_BindlessResources[xiiGpuGeometryRecord::s_uiMaxLods][s_uiBindlessResourcesPerLod] = {};
+    /// Each admitted LOD leases the source binding identified by its revision's vertex buffer.
+    const xiiGALBuffer* m_pBoundSources[xiiGpuGeometryRecord::s_uiMaxLods] = {};
   };
 
   struct Upload
@@ -303,10 +303,11 @@ private:
     Failed
   };
   static AdmissionResult BuildResidentRecord(Slot& slot, xiiUInt64 uiFrameIndex, xiiUInt64 uiCompletedFrame);
-  static bool            RegisterBindlessResources(Slot& slot, xiiGpuGeometryRecord& record, xiiUInt32 uiLod, xiiMeshBufferResource& mesh);
+  static bool            RegisterBindlessResources(Slot& slot, xiiGpuGeometryRecord& record, xiiUInt32 uiLod, const xiiMeshBufferResource& mesh, const xiiSharedPtr<xiiGALBuffer>& pVertexBuffer);
+  static void            ReleaseSourceBinding(Slot& slot, xiiUInt32 uiLod, xiiUInt64 uiLastUseFrame);
   static void            ReleaseBindlessResources(Slot& slot, xiiUInt64 uiLastUseFrame);
   static void            EnforceBudget(xiiUInt64 uiCompletedFrame, xiiUInt64 uiRequiredBytes = 0U);
-  static bool            EvictOne(xiiUInt64 uiCompletedFrame);
+  static bool            EvictOne(xiiUInt64 uiCompletedFrame, xiiUInt64 uiMinimumIdleFrames = 1U);
   static bool            AllocateMeshlets(xiiUInt32 uiCount, xiiUInt32& out_uiOffset);
   static void            FreeMeshlets(xiiUInt32 uiOffset, xiiUInt32 uiCount);
   static void            ReleaseMeshletAllocations(Slot& slot);
