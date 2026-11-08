@@ -28,6 +28,7 @@ xiiCommandLineOptionBool   opt_SaveProfilingData("_EditorProcessor", "-profiling
 xiiCommandLineOptionPath   opt_Project("_EditorProcessor", "-project", "Path to the project folder.", "");
 xiiCommandLineOptionBool   opt_Resave("_EditorProcessor", "-resave", "If specified, assets will be resaved.", false);
 xiiCommandLineOptionString opt_Transform("_EditorProcessor", "-transform", "If specified, assets will be transformed for the given platform profile.\n\nExample:\n  -transform Default\n", "");
+xiiCommandLineOptionString opt_Assets("_EditorProcessor", "-assets", "Semicolon-separated asset paths or GUIDs to transform. Requires -transform; omitting this option transforms the whole project.", "");
 xiiCommandLineOptionBool   opt_Compile("_EditorProcessor", "-compile", "If specified, the C++ project will be generated and compiled.", false);
 
 class xiiEditorProcessorApplication : public xiiApplication
@@ -246,12 +247,19 @@ public:
     DWORD dwMode = SetErrorMode(SEM_NOGPFAULTERRORBOX);
     SetErrorMode(dwMode | SEM_NOGPFAULTERRORBOX);
 #endif
-    const xiiString                                 sTransformProfile = opt_Transform.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified);
-    const bool                                      bCompile          = opt_Compile.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified);
-    const bool                                      bResave           = opt_Resave.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified);
-    const bool                                      bBackgroundMode   = sTransformProfile.IsEmpty() && !bResave && !bCompile;
-    const xiiString                                 sOutputDir        = opt_OutputDir.GetOptionValue(xiiCommandLineOption::LogMode::Always);
-    const xiiBitflags<xiiQtEditorApp::StartupFlags> startupFlags      = bBackgroundMode ? xiiQtEditorApp::StartupFlags::Headless | xiiQtEditorApp::StartupFlags::Background : xiiQtEditorApp::StartupFlags::Headless;
+    const xiiString sTransformProfile = opt_Transform.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified);
+    const xiiString sAssets           = opt_Assets.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified);
+    if (!sAssets.IsEmpty() && sTransformProfile.IsEmpty())
+    {
+      xiiLog::Error("-assets requires a platform profile specified with -transform.");
+      SetReturnCode(2);
+      return xiiApplication::Execution::Quit;
+    }
+    const bool                                      bCompile        = opt_Compile.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified);
+    const bool                                      bResave         = opt_Resave.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified);
+    const bool                                      bBackgroundMode = sTransformProfile.IsEmpty() && !bResave && !bCompile;
+    const xiiString                                 sOutputDir      = opt_OutputDir.GetOptionValue(xiiCommandLineOption::LogMode::Always);
+    const xiiBitflags<xiiQtEditorApp::StartupFlags> startupFlags    = bBackgroundMode ? xiiQtEditorApp::StartupFlags::Headless | xiiQtEditorApp::StartupFlags::Background : xiiQtEditorApp::StartupFlags::Headless;
     xiiQtEditorApp::GetSingleton()->StartupEditor(startupFlags, sOutputDir);
     xiiQtUiServices::SetHeadless(true);
 
@@ -290,9 +298,7 @@ public:
 
       if (!sTransformProfile.IsEmpty())
       {
-        bool bTransform = true;
-
-        xiiQtEditorApp::GetSingleton()->connect(xiiQtEditorApp::GetSingleton(), &xiiQtEditorApp::IdleEvent, xiiQtEditorApp::GetSingleton(), [this, &bTransform, &sTransformProfile]() -> void {
+        xiiQtEditorApp::GetSingleton()->connect(xiiQtEditorApp::GetSingleton(), &xiiQtEditorApp::IdleEvent, xiiQtEditorApp::GetSingleton(), [this, &sTransformProfile, &sAssets, bTransform = true]() mutable -> void {
           if (!bTransform)
             return;
 
@@ -314,11 +320,35 @@ public:
           }
           else
           {
-            xiiStatus status = xiiAssetCurator::GetSingleton()->TransformAllAssets(xiiTransformFlags::TriggeredManually, xiiAssetCurator::GetSingleton()->GetAssetProfile(uiPlatform));
-            if (status.Failed())
+            const auto* profile = curator->GetAssetProfile(uiPlatform);
+            if (sAssets.IsEmpty())
             {
-              status.LogFailure();
-              SetReturnCode(1);
+              if (curator->TransformAllAssets(xiiTransformFlags::TriggeredManually, profile).LogFailure())
+                SetReturnCode(1);
+            }
+            else
+            {
+              xiiHybridArray<xiiStringView, 8> assets;
+              sAssets.Split(false, assets, ";");
+              if (assets.IsEmpty())
+              {
+                xiiLog::Error("-assets did not contain an asset path or GUID.");
+                SetReturnCode(1);
+              }
+              for (const auto asset : assets)
+              {
+                const auto status = curator->TransformAsset(asset, xiiTransformFlags::TriggeredManually, profile);
+                if (status.Failed())
+                {
+                  xiiLog::Error("Could not transform '{}': {}", asset, status.m_sMessage);
+                  SetReturnCode(1);
+                }
+              }
+              if (curator->WriteAssetTables(profile).Failed())
+              {
+                xiiLog::Error("Could not write asset lookup tables after the selected transforms.");
+                SetReturnCode(1);
+              }
             }
 
             if (opt_SaveProfilingData.GetOptionValue(xiiCommandLineOption::LogMode::Always))
