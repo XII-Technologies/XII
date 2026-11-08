@@ -79,7 +79,6 @@ public:
 private:
   xiiString m_sOutputFile;
   xiiString m_sOutputThumbnailFile;
-  xiiString m_sOutputLowResFile;
 
   bool m_bOutputSupports2D          = false;
   bool m_bOutputSupports3D          = false;

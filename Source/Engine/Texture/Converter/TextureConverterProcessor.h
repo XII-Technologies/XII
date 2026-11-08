@@ -20,7 +20,6 @@ public:
   xiiResult Process();
 
   xiiImage                      m_OutputImage;
-  xiiImage                      m_LowResOutputImage;
   xiiImage                      m_ThumbnailOutputImage;
   xiiDefaultMemoryStreamStorage m_TextureAtlas;
 
@@ -68,7 +67,6 @@ private:
 
   static xiiResult GenerateOutput(xiiImage&& src, xiiImage& dst, xiiEnum<xiiGALResourceFormat> format);
   static xiiResult GenerateThumbnailOutput(const xiiImage& srcImg, xiiImage& dstImg, xiiUInt32 uiTargetRes);
-  static xiiResult GenerateLowResOutput(const xiiImage& srcImg, xiiImage& dstImg, xiiUInt32 uiLowResMip);
 
   //////////////////////////////////////////////////////////////////////////
   // Texture Atlas

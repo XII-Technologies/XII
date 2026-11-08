@@ -95,18 +95,3 @@ void xiiTextureAssetDocumentManager::InternalGetSupportedDocumentTypes(xiiDynami
   inout_DocumentTypes.PushBack(&m_DocTypeDesc);
   inout_DocumentTypes.PushBack(&m_DocTypeDesc2);
 }
-
-xiiString xiiTextureAssetDocumentManager::GetRelativeOutputFileName(const xiiAssetDocumentTypeDescriptor* pTypeDescriptor, xiiStringView sDataDirectory, xiiStringView sDocumentPath, xiiStringView sOutputTag, const xiiPlatformProfile* pAssetProfile) const
-{
-  if (sOutputTag.IsEqual("LOWRES"))
-  {
-    xiiStringBuilder sRelativePath(sDocumentPath);
-    sRelativePath.MakeRelativeTo(sDataDirectory).IgnoreResult();
-    sRelativePath.RemoveFileExtension();
-    sRelativePath.Append("-lowres");
-    xiiAssetDocumentManager::GenerateOutputFilename(sRelativePath, pAssetProfile, "xiiBinTexture2D", true);
-    return sRelativePath;
-  }
-
-  return SUPER::GetRelativeOutputFileName(pTypeDescriptor, sDataDirectory, sDocumentPath, sOutputTag, pAssetProfile);
-}

@@ -45,9 +45,6 @@ public:
   xiiEnum<xiiTextureConverterOutputType>     m_OutputType;
   xiiEnum<xiiTextureConverterTargetPlatform> m_TargetPlatform;
 
-  // low resolution output
-  xiiUInt32 m_uiLowResMipmaps = 0;
-
   // thumbnail output
   xiiUInt32 m_uiThumbnailOutputResolution = 0;
 

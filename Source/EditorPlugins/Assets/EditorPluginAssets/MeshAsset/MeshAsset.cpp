@@ -66,7 +66,7 @@ xiiTransformStatus xiiMeshAssetDocument::InternalTransformAsset(xiiStreamWriter&
   range.BeginNextStep("Writing Result");
   xiiDefaultMemoryStreamStorage storage;
   xiiMemoryStreamWriter         writer(&storage);
-  desc.Save(writer);
+  XII_SUCCEED_OR_RETURN(desc.Save(writer));
   return storage.CopyToStream(stream);
 }
 

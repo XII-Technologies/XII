@@ -99,8 +99,6 @@ xiiResult xiiTextureConverterProcessor::Process()
     XII_SUCCEED_OR_RETURN(GenerateOutput(std::move(assembledImg), m_OutputImage, OutputImageFormat));
 
     XII_SUCCEED_OR_RETURN(GenerateThumbnailOutput(m_OutputImage, m_ThumbnailOutputImage, m_Descriptor.m_uiThumbnailOutputResolution));
-
-    XII_SUCCEED_OR_RETURN(GenerateLowResOutput(m_OutputImage, m_LowResOutputImage, m_Descriptor.m_uiLowResMipmaps));
   }
 
   return XII_SUCCESS;
@@ -303,30 +301,6 @@ xiiResult xiiTextureConverterProcessor::GenerateThumbnailOutput(const xiiImage& 
 
       pPixels = xiiMemoryUtils::AddByteOffset(pPixels, static_cast<ptrdiff_t>(rowPitch));
     }
-  }
-
-  return XII_SUCCESS;
-}
-
-xiiResult xiiTextureConverterProcessor::GenerateLowResOutput(const xiiImage& srcImg, xiiImage& dstImg, xiiUInt32 uiLowResMip)
-{
-  if (uiLowResMip == 0)
-    return XII_SUCCESS;
-
-  XII_PROFILE_SCOPE("GenerateLowResOutput");
-
-  // don't early out here in this case, otherwise external processes may consider the output to be incomplete
-  // if (srcImg.GetMipLevelCount() <= uiLowResMip)
-  // {
-  //   // probably just a low-resolution input image, do not generate output, but also do not fail
-  //   xiiLog::Warning("LowRes image not generated, original resolution is already below threshold.");
-  //   return XII_SUCCESS;
-  // }
-
-  if (xiiImageUtils::ExtractLowerMipChain(srcImg, dstImg, uiLowResMip).Failed())
-  {
-    xiiLog::Error("Failed to extract low-res mipmap chain from output image.");
-    return XII_FAILURE;
   }
 
   return XII_SUCCESS;

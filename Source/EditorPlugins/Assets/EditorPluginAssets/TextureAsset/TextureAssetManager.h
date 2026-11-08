@@ -26,8 +26,6 @@ private:
 
   virtual bool GeneratesProfileSpecificAssets() const override { return true; }
 
-  virtual xiiString GetRelativeOutputFileName(const xiiAssetDocumentTypeDescriptor* pTypeDescriptor, xiiStringView sDataDirectory, xiiStringView sDocumentPath, xiiStringView sOutputTag, const xiiPlatformProfile* pAssetProfile) const override;
-
 private:
   xiiAssetDocumentTypeDescriptor m_DocTypeDesc;
   xiiAssetDocumentTypeDescriptor m_DocTypeDesc2;

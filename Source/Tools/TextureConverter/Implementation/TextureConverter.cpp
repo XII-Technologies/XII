@@ -292,24 +292,6 @@ xiiApplication::Execution xiiTextureConverter::Run()
       xiiLog::Success("Wrote thumbnail to '{}'", m_sOutputThumbnailFile);
     }
 
-    if (!m_sOutputLowResFile.IsEmpty())
-    {
-      // the image may not exist, if we do not have enough mips, so make sure any old low-res file is cleaned up
-      xiiOSFile::DeleteFile(m_sOutputLowResFile).IgnoreResult();
-
-      if (m_Processor.m_LowResOutputImage.IsValid())
-      {
-        if (WriteOutputFile(m_sOutputLowResFile, m_Processor.m_LowResOutputImage).Failed())
-        {
-          xiiLog::Error("Failed to write low-res result to '{}'", m_sOutputLowResFile);
-
-          return xiiApplication::Execution::Quit;
-        }
-
-        xiiLog::Success("Wrote low-res result to '{}'", m_sOutputLowResFile);
-      }
-    }
-
     SetReturnCode(0);
   }
 
