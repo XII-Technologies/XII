@@ -342,7 +342,7 @@ xiiResult xiiGpuInstanceData::UpdateFromExtraction(xiiArrayPtr<xiiRenderData* co
         if (key.m_Lod == xiiInvalidIndex || key.m_Lod == lod)
           entry.m_MaximumMeshlets = xiiMath::Max(entry.m_MaximumMeshlets, counts[lod]);
     }
-    xiiGeometryResidencyManager::RequestInstanceResidency(geometry, packet.m_uiLODIndex, frame, packet.m_Flags.IsSet(xiiMeshRenderDataFlags::ForceLOD));
+    xiiGeometryResidencyManager::RequestGeometry(geometry, frame);
     entry.m_Changed |= xiiMemoryUtils::Compare(&before, &record, 1) != 0;
     return XII_SUCCESS;
   };
