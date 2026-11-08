@@ -239,7 +239,6 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGpuGeometryLod, xiiNoBase, 1, xiiRTTIDefaultA
     {
       XII_MEMBER_PROPERTY("VertexBufferIndex", m_uiVertexBufferIndex),
       XII_MEMBER_PROPERTY("IndexBufferIndex", m_uiIndexBufferIndex),
-      XII_MEMBER_PROPERTY("MeshletBufferIndex", m_uiMeshletBufferIndex),
       XII_MEMBER_PROPERTY("MeshletRemapBufferIndex", m_uiMeshletRemapBufferIndex),
       XII_MEMBER_PROPERTY("MeshletPrimitiveBufferIndex", m_uiMeshletPrimitiveBufferIndex),
       XII_MEMBER_PROPERTY("VertexCount", m_uiVertexCount),
@@ -278,6 +277,8 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGeometryResidencyStats, xiiNoBase, 1, xiiRTTI
       XII_MEMBER_PROPERTY("BudgetBytes", m_uiBudgetBytes),
       XII_MEMBER_PROPERTY("UploadedBytes", m_uiUploadedBytes),
       XII_MEMBER_PROPERTY("AdmittedBytes", m_uiAdmittedBytes),
+      XII_MEMBER_PROPERTY("ReclaimedArenaBytes", m_uiReclaimedArenaBytes),
+      XII_MEMBER_PROPERTY("Evictions", m_uiEvictions),
       XII_MEMBER_PROPERTY("RemainingUploadBytes", m_uiRemainingUploadBytes),
       XII_MEMBER_PROPERTY("PreparedMeshlets", m_uiPreparedMeshlets),
       XII_MEMBER_PROPERTY("Examined", m_uiExamined),
@@ -636,7 +637,7 @@ xiiGeometryResidencyManager::AdmissionResult xiiGeometryResidencyManager::BuildR
   State::MeshGeometryEntry*                                                                 meshEntry = nullptr;
   const auto                                                                                slotIndex = static_cast<xiiUInt32>(&slot - s_pState->m_Slots.GetData());
   s_pState->m_MeshGeometries.TryGetValue(xiiGeometryHandle(xiiGeometryId(slotIndex, record.m_uiGeneration)), meshEntry);
-  xiiUInt64 bytes = 0U;
+  xiiUInt64 uiArenaBytes = 0U;
   for (xiiUInt32 i = slot.m_uiRequestedLod; i < slot.m_Description.m_Lods.GetCount(); ++i)
   {
     if ((record.m_uiResidentLodMask & XII_BIT(i)) != 0U)
@@ -663,12 +664,13 @@ xiiGeometryResidencyManager::AdmissionResult xiiGeometryResidencyManager::BuildR
     lod.m_uiMeshletCount         = source.m_uiMeshletCount == 0U ? meshlets.GetCount() - source.m_uiFirstMeshlet : source.m_uiMeshletCount;
     lod.m_fMinimumScreenCoverage = source.m_fMinimumScreenCoverage;
     lod.m_uiIndexType            = mesh->GetIndexType().GetValue();
-    bytes += xiiUInt64(mesh->GetVertexCount()) * mesh->GetVertexStride();
-    bytes += xiiUInt64(mesh->GetIndexCount()) * (mesh->GetIndexType() == xiiGALValueType::UInt16 ? 2U : 4U);
-    bytes += xiiUInt64(lod.m_uiMeshletCount) * sizeof(xiiMeshlet);
+    uiArenaBytes += xiiUInt64(lod.m_uiMeshletCount) * sizeof(xiiMeshlet);
     newLods.PushBack(i);
   }
-  if (bytes > s_pState->m_uiRemainingUploadBudget && (s_pState->m_StreamingStats.m_uiAdmittedBytes != 0U || s_pState->m_uiInitialUploadBudget == 0U))
+  // The mesh resource owns source buffers. Admission occupies an arena range
+  // and schedules that metadata plus one record update.
+  const xiiUInt64 uiUploadBytes = uiArenaBytes + sizeof(xiiGpuGeometryRecord);
+  if (uiUploadBytes > s_pState->m_uiRemainingUploadBudget && (s_pState->m_StreamingStats.m_uiAdmittedBytes != 0U || s_pState->m_uiInitialUploadBudget == 0U))
     return AdmissionResult::BudgetDeferred;
   xiiUInt64 requiredMeshlets = 0U;
   for (const auto lod : newLods)
@@ -679,10 +681,10 @@ xiiGeometryResidencyManager::AdmissionResult xiiGeometryResidencyManager::BuildR
   // not evict and immediately readmit newly requested/current-frame geometry.
   if (!slot.m_Description.m_bPinned)
   {
-    if (bytes > s_pState->m_uiBudgetBytes)
+    if (uiArenaBytes > s_pState->m_uiBudgetBytes)
       return AdmissionResult::MemoryDeferred;
-    EnforceBudget(uiCompletedFrame, bytes);
-    if (s_pState->m_uiResidentBytes > s_pState->m_uiBudgetBytes - bytes)
+    EnforceBudget(uiCompletedFrame, uiArenaBytes);
+    if (s_pState->m_uiResidentBytes > s_pState->m_uiBudgetBytes - uiArenaBytes)
       return AdmissionResult::MemoryDeferred;
   }
 
@@ -816,10 +818,10 @@ xiiGeometryResidencyManager::AdmissionResult xiiGeometryResidencyManager::BuildR
       slot.m_PendingUploads[i] = uploads[uploadIndex++];
   for (auto& upload : uploads)
     s_pState->m_PendingMeshletUploads.PushBack(std::move(upload));
-  s_pState->m_uiRemainingUploadBudget -= xiiMath::Min(s_pState->m_uiRemainingUploadBudget, bytes);
-  s_pState->m_StreamingStats.m_uiAdmittedBytes += bytes;
-  slot.m_uiResidentBytes += bytes;
-  s_pState->m_uiResidentBytes += bytes;
+  s_pState->m_uiRemainingUploadBudget -= xiiMath::Min(s_pState->m_uiRemainingUploadBudget, uiUploadBytes);
+  s_pState->m_StreamingStats.m_uiAdmittedBytes += uiUploadBytes;
+  slot.m_uiResidentBytes += uiArenaBytes;
+  s_pState->m_uiResidentBytes += uiArenaBytes;
   slot.m_uiAdmissionFrame     = uiFrameIndex;
   slot.m_GpuRecord            = record;
   slot.m_State                = xiiGeometryResidencyState::Resident;
@@ -837,7 +839,6 @@ bool xiiGeometryResidencyManager::RegisterBindlessResources(Slot& slot, xiiGpuGe
   xiiSharedPtr<xiiGALBuffer> buffers[Slot::s_uiBindlessResourcesPerLod] = {
     mesh.GetVertexBuffer(),
     mesh.GetIndexBuffer(),
-    mesh.GetMeshletBuffer(),
     mesh.GetMeshletVertexRemapBuffer(),
     mesh.GetMeshletPrimitiveIndexBuffer(),
   };
@@ -869,9 +870,8 @@ bool xiiGeometryResidencyManager::RegisterBindlessResources(Slot& slot, xiiGpuGe
   xiiGpuGeometryLod& lod              = record.m_Lods[uiLod];
   lod.m_uiVertexBufferIndex           = handles[0].m_uiIndex;
   lod.m_uiIndexBufferIndex            = handles[1].m_uiIndex;
-  lod.m_uiMeshletBufferIndex          = handles[2].m_uiIndex;
-  lod.m_uiMeshletRemapBufferIndex     = handles[3].m_uiIndex;
-  lod.m_uiMeshletPrimitiveBufferIndex = handles[4].m_uiIndex;
+  lod.m_uiMeshletRemapBufferIndex     = handles[2].m_uiIndex;
+  lod.m_uiMeshletPrimitiveBufferIndex = handles[3].m_uiIndex;
   return true;
 }
 
@@ -890,7 +890,6 @@ void xiiGeometryResidencyManager::ReleaseBindlessResources(Slot& slot, xiiUInt64
     xiiGpuGeometryLod& lod              = slot.m_GpuRecord.m_Lods[uiLod];
     lod.m_uiVertexBufferIndex           = xiiInvalidIndex;
     lod.m_uiIndexBufferIndex            = xiiInvalidIndex;
-    lod.m_uiMeshletBufferIndex          = xiiInvalidIndex;
     lod.m_uiMeshletRemapBufferIndex     = xiiInvalidIndex;
     lod.m_uiMeshletPrimitiveBufferIndex = xiiInvalidIndex;
   }
@@ -933,6 +932,8 @@ bool xiiGeometryResidencyManager::EvictOne(xiiUInt64 uiCompletedFrame)
     if (!candidate.m_bAllocated || candidate.m_State != xiiGeometryResidencyState::Resident || candidate.m_uiLastUsedFrame > uiCompletedFrame || candidate.m_uiLastUsedFrame >= s_pState->m_uiStreamingFrame || candidate.m_uiAdmissionFrame == s_pState->m_uiStreamingFrame)
       continue;
     auto& victim = s_pState->m_Slots[index];
+    ++s_pState->m_StreamingStats.m_uiEvictions;
+    s_pState->m_StreamingStats.m_uiReclaimedArenaBytes += victim.m_uiResidentBytes;
     s_pState->m_uiResidentBytes -= victim.m_uiResidentBytes;
     victim.m_uiResidentBytes               = 0U;
     victim.m_GpuRecord.m_uiResidentLodMask = 0U;
@@ -1045,10 +1046,12 @@ void xiiGeometryResidencyManager::ProcessStreaming(xiiUInt64 uiFrameIndex, xiiUI
   s_pState->m_StreamingStats.m_fStreamingMilliseconds += (xiiTime::Now() - start).GetMilliseconds();
 #if XII_ENABLED(XII_USE_PROFILING)
   xiiStats::SetStat("Renderer/Geometry/Streaming ms", s_pState->m_StreamingStats.m_fStreamingMilliseconds);
-  xiiStats::SetStat("Renderer/Geometry/Admitted bytes", s_pState->m_StreamingStats.m_uiAdmittedBytes);
+  xiiStats::SetStat("Renderer/Geometry/Admitted metadata bytes", s_pState->m_StreamingStats.m_uiAdmittedBytes);
   xiiStats::SetStat("Renderer/Geometry/Prepared meshlets", s_pState->m_StreamingStats.m_uiPreparedMeshlets);
   xiiStats::SetStat("Renderer/Geometry/Arena meshlets", s_pState->m_uiArenaMeshlets);
-  xiiStats::SetStat("Renderer/Geometry/Resident bytes", s_pState->m_uiResidentBytes);
+  xiiStats::SetStat("Renderer/Geometry/Occupied arena bytes", s_pState->m_uiResidentBytes);
+  xiiStats::SetStat("Renderer/Geometry/Reclaimed arena bytes", s_pState->m_StreamingStats.m_uiReclaimedArenaBytes);
+  xiiStats::SetStat("Renderer/Geometry/Arena evictions", s_pState->m_StreamingStats.m_uiEvictions);
   const auto stats = GetStats();
   xiiStats::SetStat("Renderer/Geometry/Examined", stats.m_uiExamined);
   xiiStats::SetStat("Renderer/Geometry/Admitted", stats.m_uiAdmitted);

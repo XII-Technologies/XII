@@ -99,8 +99,9 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, OversizedGeometryResidency)
   box.AddBox(xiiVec3(1), true);
   xiiMeshBufferResourceDescriptor descriptor;
   descriptor.AllocateStreamsFromGeometry(box, xiiGALPrimitiveTopology::TriangleList, true);
-  const xiiUInt64        bytes  = descriptor.GetVertexDataSize() + descriptor.GetIndexDataSize() + descriptor.m_Meshlets.GetCount() * sizeof(xiiMeshlet);
-  const auto             buffer = xiiResourceManager::CreateResource<xiiMeshBufferResource>("Oversized residency cube", std::move(descriptor));
+  const xiiUInt64        uiArenaBytes = descriptor.m_Meshlets.GetCount() * sizeof(xiiMeshlet);
+  const xiiUInt64        bytes        = uiArenaBytes + sizeof(xiiGpuGeometryRecord);
+  const auto             buffer       = xiiResourceManager::CreateResource<xiiMeshBufferResource>("Oversized residency cube", std::move(descriptor));
   xiiGeometryDescription geometry;
   geometry.m_Lods.ExpandAndGetRef().m_hMeshBuffer = buffer;
   xiiGeometryHandle handles[3];
@@ -120,7 +121,7 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, OversizedGeometryResidency)
   {
     xiiGeometryResidencyManager::ProcessStreaming(frame, 0, 1);
     XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiResidentGeometryCount, frame);
-    XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiResidentBytes, bytes * frame);
+    XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiResidentBytes, uiArenaBytes * frame);
     const auto stats = xiiGeometryResidencyManager::GetStats();
     XII_TEST_INT(stats.m_uiAdmittedBytes, bytes);
     XII_TEST_INT(stats.m_uiRemainingUploadBytes, 0);
@@ -148,12 +149,12 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, OversizedGeometryResidency)
   XII_SCOPE_EXIT(for (const auto handle : ordinary) xiiGeometryResidencyManager::UnregisterGeometry(handle, 0));
   xiiGeometryResidencyManager::ProcessStreaming(4, 0, bytes + 1);
   XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiResidentGeometryCount, 4);
-  XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiResidentBytes, bytes * 4);
+  XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiResidentBytes, uiArenaBytes * 4);
   const auto prepared = xiiGeometryResidencyManager::GetStats().m_uiPreparedMeshlets;
   xiiGeometryResidencyManager::ProcessStreaming(4, 0, bytes * 10);
   XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiResidentGeometryCount, 4);
   XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiPreparedMeshlets, prepared);
   xiiGeometryResidencyManager::ProcessStreaming(5, 0, bytes);
   XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiResidentGeometryCount, 5);
-  XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiResidentBytes, bytes * 5);
+  XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiResidentBytes, uiArenaBytes * 5);
 }
