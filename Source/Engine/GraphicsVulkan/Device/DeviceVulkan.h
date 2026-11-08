@@ -19,6 +19,7 @@ class XII_GRAPHICSVULKAN_DLL xiiGALDeviceVulkan final : public xiiGALDevice
 
 private:
   friend class xiiMemoryUtils;
+  friend class xiiGALBufferVulkan;
   friend class xiiGALTextureVulkan;
 
   friend xiiInternal::NewInstance<xiiGALDevice> CreateVulkanDevice(xiiAllocator* pAllocator, const xiiGALDeviceCreationDescription& description);
@@ -214,8 +215,8 @@ private:
   void SetVulkanAllocationDebugName(xiiVulkanAllocation allocation, const char* szDebugName) const;
 
   void               UpdateStreamingMemoryBudget();
-  [[nodiscard]] bool TryReserveTextureRefinement(xiiUInt64 uiUploadBytes, xiiUInt64 uiAllocationBytes);
-  void               ReleaseTextureRefinementReservation(xiiUInt64 uiBytes);
+  [[nodiscard]] bool TryReserveStreamingAllocation(xiiUInt64 uiAllocationBytes, xiiUInt64 uiTextureUploadBytes = 0U);
+  void               ReleaseStreamingAllocationReservation(xiiUInt64 uiBytes);
 
   vk::PhysicalDevice SelectPhysicalDevice(xiiArrayPtr<vk::PhysicalDevice> pPhysicalDevices, xiiUInt32 uiAdapterID) const;
   xiiResult          InitializePhysicalDeviceProperties();
@@ -334,7 +335,7 @@ private:
   xiiUInt64     m_uiStreamingBudgetCap          = 0U;
   xiiUInt64     m_uiStreamingHeadroom           = 0U;
   xiiUInt64     m_uiRemainingTextureUploadBytes = 0U;
-  xiiUInt64     m_uiPendingTextureBytes         = 0U;
+  xiiUInt64     m_uiPendingStreamingBytes       = 0U;
   xiiUInt64     m_uiTextureMemoryDeferrals      = 0U;
   xiiUInt64     m_uiTextureUploadDeferrals      = 0U;
 
