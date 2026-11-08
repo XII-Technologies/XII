@@ -21,7 +21,8 @@ void xiiResourceManager::InternalPreloadResource(xiiResource* pResource, bool bH
   XII_LOCK(s_ResourceMutex);
 
   // if there is nothing else that could be loaded, just return right away
-  if (pResource->GetLoadingState() == xiiResourceState::Loaded && pResource->GetNumQualityLevelsLoadable() == 0)
+  if (pResource->GetLoadingState() == xiiResourceState::Loaded &&
+      (pResource->GetNumQualityLevelsLoadable() == 0 || !pResource->CanLoadAdditionalQualityLevel()))
   {
     // due to the threading this can happen for all resource types and is valid
     // XII_ASSERT_DEV(!IsQueuedForLoading(pResource), "Invalid flag on resource type '{0}'",

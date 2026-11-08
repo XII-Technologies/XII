@@ -4,6 +4,8 @@
 
 #include <GraphicsVulkan/GraphicsVulkanDLL.h>
 
+#include <Foundation/Threading/AtomicInteger.h>
+#include <Foundation/Threading/Mutex.h>
 #include <GraphicsFoundation/Device/Device.h>
 
 namespace vk
@@ -17,6 +19,7 @@ class XII_GRAPHICSVULKAN_DLL xiiGALDeviceVulkan final : public xiiGALDevice
 
 private:
   friend class xiiMemoryUtils;
+  friend class xiiGALTextureVulkan;
 
   friend xiiInternal::NewInstance<xiiGALDevice> CreateVulkanDevice(xiiAllocator* pAllocator, const xiiGALDeviceCreationDescription& description);
 
@@ -108,6 +111,7 @@ public:
 public:
   virtual xiiGALCommandQueue* GetCommandQueue(xiiBitflags<xiiGALCommandQueueFlags> queueFlags) const override final;
   virtual void                GetMemoryHeapStatistics(xiiDynamicArray<xiiGALMemoryHeapStatistics>& out_heaps) const override final;
+  [[nodiscard]] virtual bool  IsStreamingMemoryPressured() const override final { return m_bStreamingMemoryPressured; }
 
   virtual void SetDebugNamePlatform(xiiStringView sName) const override final;
 
@@ -208,6 +212,10 @@ private:
   void SafeReleaseDeviceObjectInternal(vk::ObjectType vkObjectType, void* pObject, xiiVulkanAllocation allocation, vk::DeviceMemory vkExternalMemory);
   void ReclaimLaterInternal(vk::ObjectType vkObjectType, void* pObject);
   void SetVulkanAllocationDebugName(xiiVulkanAllocation allocation, const char* szDebugName) const;
+
+  void               UpdateStreamingMemoryBudget();
+  [[nodiscard]] bool TryReserveTextureRefinement(xiiUInt64 uiUploadBytes, xiiUInt64 uiAllocationBytes);
+  void               ReleaseTextureRefinementReservation(xiiUInt64 uiBytes);
 
   vk::PhysicalDevice SelectPhysicalDevice(xiiArrayPtr<vk::PhysicalDevice> pPhysicalDevices, xiiUInt32 uiAdapterID) const;
   xiiResult          InitializePhysicalDeviceProperties();
@@ -320,6 +328,15 @@ private:
   // Vulkan Memory Allocator.
   xiiUniquePtr<xiiVulkanMemoryAllocator> m_pVulkanMemoryAllocator;
   xiiUInt32                              m_uiAllocatorFrameIndex = 0U;
+
+  xiiMutex      m_StreamingBudgetMutex;
+  xiiAtomicBool m_bStreamingMemoryPressured;
+  xiiUInt64     m_uiStreamingBudgetCap          = 0U;
+  xiiUInt64     m_uiStreamingHeadroom           = 0U;
+  xiiUInt64     m_uiRemainingTextureUploadBytes = 0U;
+  xiiUInt64     m_uiPendingTextureBytes         = 0U;
+  xiiUInt64     m_uiTextureMemoryDeferrals      = 0U;
+  xiiUInt64     m_uiTextureUploadDeferrals      = 0U;
 
   // Graphics Queue Information.
   mutable xiiMutex                            m_GraphicsQueueMutex;

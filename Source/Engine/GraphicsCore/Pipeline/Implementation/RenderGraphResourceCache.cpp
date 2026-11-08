@@ -44,7 +44,7 @@ void xiiRenderGraphResourceCache::BeginFrame(xiiUInt64 uiFrameIndex, xiiUInt64 u
 
   // Trim idle sizes before promoting newly completed allocations. The latter must get a chance
   // to be reused even when GPU completion itself took longer than the retention window.
-  ReleaseStaleResourcesLocked(4U);
+  ReleaseStaleResourcesLocked(m_pDevice != nullptr && m_pDevice->IsStreamingMemoryPressured() ? 2U : 4U);
 
   for (xiiUInt32 i = m_RetiredTextures.GetCount(); i > 0U; --i)
   {

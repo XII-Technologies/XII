@@ -7,6 +7,7 @@
 #include <Foundation/IO/MemoryStream.h>
 #include <Foundation/Threading/Lock.h>
 #include <Foundation/Threading/Mutex.h>
+#include <Foundation/Time/Time.h>
 
 #include <Core/ResourceManager/Resource.h>
 #include <Core/ResourceManager/ResourceTypeLoader.h>
@@ -28,6 +29,7 @@ struct XII_GRAPHICSCORE_DLL xiiTexture2DResourceDescriptor
   xiiGALSamplerCreationDescription          m_SamplerDescription         = xiiGALGraphicsUtilities::GetDefaultSamplerDescription();  ///< Sampler creation description.
   xiiUInt8                                  m_uiQualityLevelsDiscardable = 0;                                                        ///< How many quality levels can be discarded and reloaded. For created textures this can currently only be 0 or 1.
   xiiUInt8                                  m_uiQualityLevelsLoadable    = 0;                                                        ///< How many additional quality levels can be loaded (typically from file).
+  bool                                      m_bStreamingRefinement       = false;                                                    ///< A resident image remains available if creation is deferred.
   xiiArrayPtr<xiiGALTextureSubResourceData> m_InitialContent;                                                                        ///< One texture subresource data per (array * faces * mipmap) (in that order) (array is outer loop, mipmap is inner loop). Can be empty to not initialize data.
 };
 
@@ -78,11 +80,13 @@ public:
 protected:
   virtual xiiResourceLoadDescription UnloadData(Unload WhatToUnload) override;
   virtual xiiResourceLoadDescription UpdateContent(xiiStreamReader* pStream) override;
+  [[nodiscard]] virtual bool         CanLoadAdditionalQualityLevel() const override;
   virtual void                       UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage) override;
 
   xiiTexture2DResource(DoUpdate ResourceUpdateThread);
 
   mutable xiiMutex            m_TextureMutex;
+  xiiTime                     m_NextRefinementAttempt;
   xiiSharedPtr<xiiGALTexture> m_pGALTexture;
 
   xiiEnum<xiiGALResourceDimension> m_Type     = xiiGALResourceDimension::Undefined;

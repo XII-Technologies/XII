@@ -215,7 +215,8 @@ public:
   static xiiUInt32 FreeAllUnusedResources();
 
   /// Deallocates resources whose refcount has reached 0. Returns the number of deleted resources.
-  static xiiUInt32 FreeUnusedResources(xiiTime timeout, xiiTime lastAcquireThreshold);
+  /// If uiMinimumGpuBytes is positive, only resources with at least that much reported GPU memory are considered.
+  static xiiUInt32 FreeUnusedResources(xiiTime timeout, xiiTime lastAcquireThreshold, xiiUInt64 uiMinimumGpuBytes = 0U);
 
   /// If timeout is not zero, FreeUnusedResources() is called once every frame with the given parameters.
   static void SetAutoFreeUnused(xiiTime timeout, xiiTime lastAcquireThreshold);
