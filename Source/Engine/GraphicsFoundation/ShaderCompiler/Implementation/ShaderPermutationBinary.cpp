@@ -11,6 +11,7 @@ struct xiiGALShaderPermutationBinaryVersion
   enum Enum : StorageType
   {
     Version1 = 1,
+    NamedMaterialTextures,
 
     // Increase this version number to trigger shader recompilation
 

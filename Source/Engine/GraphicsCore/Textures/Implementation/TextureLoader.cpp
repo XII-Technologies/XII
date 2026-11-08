@@ -1,7 +1,8 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
-#include <Foundation/IO/StreamWithStats.h>
 #include <GraphicsCore/GraphicsCorePCH.h>
+
+#include <Foundation/IO/StreamWithStats.h>
 
 #include <Foundation/Configuration/CVar.h>
 #include <Foundation/Configuration/Startup.h>

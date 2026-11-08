@@ -57,6 +57,7 @@ private:
 
   struct ShaderData
   {
+    xiiDynamicArray<xiiString>                    m_MaterialTextures;
     xiiString                                     m_sPlatform;
     xiiHybridArray<xiiGALPermutationVariable, 16> m_Permutations;
     xiiHybridArray<xiiGALPermutationVariable, 16> m_FixedPermutationVariables;

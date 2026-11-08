@@ -142,6 +142,7 @@ xiiResult xiiGBufferRasterPass::Build(xiiRenderPipelinePassContext& context)
         for (xiiUInt32 texture = 0; texture < batch.m_Binding.m_Textures.GetCount(); ++texture)
         {
           xiiStringBuilder name; name.SetFormat("Material {} Texture {}", i, texture);
+          if (batch.m_Binding.m_Textures[texture].m_bNamedVirtual) continue;
           const auto handle = builder.ImportTexture(name, batch.m_Binding.m_Textures[texture].m_Texture, batch.m_Binding.m_Textures[texture].m_Texture->GetResourceState());
           [[maybe_unused]] const auto read = builder.ReadTexture(handle, xiiGALResourceStateFlags::ShaderResource);
         }
