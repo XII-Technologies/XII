@@ -72,7 +72,11 @@ public:
     ~PageIo() override { m_Owner->m_uiPendingIo.Decrement(); }
   };
   // Includes completed IO waiting for admission, bounding CPU payload memory as well as worker jobs.
-  xiiAtomicInteger32 m_uiPendingIo = 0U;
+  static constexpr xiiInt32 s_iMaxPageIo     = 32;
+  xiiAtomicInteger32        m_uiPendingIo    = 0U;
+  bool                      m_bRootIoWaiting = false;
+
+  xiiInt32 GetOptionalIoLimit() const { return m_bRootIoWaiting ? s_iMaxPageIo - 8 : s_iMaxPageIo; }
   struct PhysicalPage
   {
     xiiSharedPtr<xiiGALBuffer>   m_Buffer;
@@ -171,7 +175,9 @@ public:
     xiiDynamicArray<xiiUInt32>                              m_RootPages;
     xiiDynamicArray<PageRecord, xiiAlignedAllocatorWrapper> m_PageRecords;
     xiiGALBindlessResourceHandle                            m_PageTable;
-    bool                                                    m_bPagesDirty = false;
+    bool                                                    m_bPagesDirty        = false;
+    bool                                                    m_bRootsReady        = false;
+    xiiUInt32                                               m_uiFirstPendingRoot = 0U;
     xiiDynamicArray<xiiGALBindlessResourceHandle>           m_Retiring;
     xiiUInt64                                               m_uiRetiringBytes = 0U;
     xiiGALBindlessResourceHandle                            m_Vertex;
@@ -762,6 +768,28 @@ void xiiGpuResidencyManager::UnregisterGeometry(xiiGeometryHandle handle, xiiUIn
   slot.m_uiRetireFrame = xiiMath::Max(slot.m_uiRetireFrame, xiiMath::Max(uiFrameIndex, slot.m_uiLastUsedFrame));
 }
 
+bool xiiGpuResidencyManager::IsMeshGeometryReady(const xiiMeshResourceHandle& hMesh)
+{
+  if (!hMesh.IsValid())
+    return false;
+  xiiResourceLock<xiiMeshResource> mesh(hMesh, xiiResourceAcquireMode::PointerOnly);
+  if (!mesh || mesh->GetLoadingState() != xiiResourceState::Loaded || !mesh->GetMeshBuffer().IsValid())
+    return false;
+  xiiResourceLock<xiiMeshBufferResource> buffer(mesh->GetMeshBuffer(), xiiResourceAcquireMode::PointerOnly);
+  if (!buffer || buffer->GetLoadingState() != xiiResourceState::Loaded)
+    return false;
+  if (!buffer->GetDescriptor().m_bAllowGpuDrivenDraw || buffer->GetDescriptor().m_Topology != xiiGALPrimitiveTopology::TriangleList)
+    return true;
+  if (!IsInitialized())
+    return false;
+
+  xiiGeometryHandle         handle;
+  State::MeshGeometryEntry* entry = nullptr;
+  return s_pState->m_CurrentMeshGeometries.TryGetValue(hMesh, handle) && GetState(handle) == xiiGeometryResidencyState::Resident &&
+    s_pState->m_MeshGeometries.TryGetValue(handle, entry) && entry->m_uiMeshRevision == mesh->GetCurrentResourceChangeCounter() &&
+    entry->m_uiBufferRevision == buffer->GetCurrentResourceChangeCounter();
+}
+
 xiiGeometryHandle xiiGpuResidencyManager::AcquireMeshGeometry(const xiiMeshResourceHandle& hMesh)
 {
   if (!hMesh.IsValid() || EnsureInitialized().Failed())
@@ -988,15 +1016,13 @@ xiiGpuResidencyManager::AdmissionResult xiiGpuResidencyManager::BuildResidentRec
 
 
   xiiHybridArray<xiiSharedPtr<MeshletUpload>, xiiGpuGeometryRecord::s_uiMaxLods> uploads;
-  xiiUInt32                                                                      allocated = 0U, registered = 0U;
-  auto                                                                           rollback = [&]() {
+  xiiUInt32                                                                      allocated = 0U;
+  auto                                                                           rollback  = [&]() {
     for (xiiUInt32 n = 0; n < allocated; ++n)
     {
       const auto& lod = record.m_Lods[newLods[n]];
       FreeMeshlets(lod.m_uiMeshletMetadataOffset, directCounts[newLods[n]]);
     }
-    for (xiiUInt32 n = 0; n < registered; ++n)
-      ReleaseSourceBinding(std::exchange(slot.m_BoundSources[newLods[n]], LodBinding{}), 0U);
   };
   for (xiiUInt32 n = 0; n < newLods.GetCount(); ++n)
   {
@@ -1015,9 +1041,13 @@ xiiGpuResidencyManager::AdmissionResult xiiGpuResidencyManager::BuildResidentRec
     if (result != AdmissionResult::Admitted)
     {
       rollback();
+      if (result == AdmissionResult::Failed)
+      {
+        ReleaseBindlessResources(slot, uiFrameIndex);
+        slot.m_State = xiiGeometryResidencyState::Failed;
+      }
       return result;
     }
-    ++registered;
     if (directCounts[i] != 0U)
     {
       auto upload                  = XII_DEFAULT_NEW(MeshletUpload);
@@ -1332,7 +1362,7 @@ xiiGpuResidencyManager::AdmissionResult xiiGpuResidencyManager::State::UploadTex
     return AdmissionResult::Failed;
   if (!residency.m_Io)
   {
-    if (m_uiPendingIo >= 32U)
+    if (m_uiPendingIo >= GetOptionalIoLimit())
       return AdmissionResult::NotReady;
     residency.m_Io           = XII_DEFAULT_NEW(PageIo);
     residency.m_Io->m_Owner  = s_pState;
@@ -1965,18 +1995,19 @@ xiiGpuResidencyManager::AdmissionResult xiiGpuResidencyManager::State::UploadPag
     source.m_Pages[index].m_Io.Clear();
     return AdmissionResult::MemoryDeferred;
   }
-  if (optional && page.m_uiSize > m_uiRemainingUploadBudget)
+  if (page.m_uiSize > m_uiRemainingUploadBudget &&
+      (optional || m_uiRemainingUploadBudget == 0U || m_StreamingStats.m_uiAdmittedBytes != 0U))
     return AdmissionResult::BudgetDeferred;
   auto&                     residency = source.m_Pages[index];
   xiiDynamicArray<xiiUInt8> requiredData;
   xiiUInt8*                 payload = nullptr;
-  if (optional)
+  if (optional || !descriptor.m_sGeometryPageFile.IsEmpty())
   {
     if (residency.m_bIoFailed)
       return AdmissionResult::Failed;
     if (!residency.m_Io)
     {
-      if (m_uiPendingIo >= 32U)
+      if (m_uiPendingIo >= (optional ? GetOptionalIoLimit() : s_iMaxPageIo))
         return AdmissionResult::NotReady;
       residency.m_Io               = XII_DEFAULT_NEW(PageIo);
       residency.m_Io->m_Owner      = s_pState;
@@ -2036,7 +2067,7 @@ xiiGpuResidencyManager::AdmissionResult xiiGpuResidencyManager::State::UploadPag
     description.m_Usage          = xiiGALResourceUsage::Mutable;
     bool             deferred    = false;
     xiiGALBufferData admission;
-    admission.m_pStreamingDeferred            = optional ? &deferred : nullptr;
+    admission.m_pStreamingDeferred            = &deferred;
     admission.m_uiMaxStreamingAllocationBytes = optional ? limit - xiiMath::Min(limit, allocated) : xiiMath::MaxValue<xiiUInt64>();
     auto buffer                               = device->CreateBuffer(description, &admission);
     if (!buffer)
@@ -2073,6 +2104,7 @@ xiiGpuResidencyManager::AdmissionResult xiiGpuResidencyManager::State::UploadPag
     return AdmissionResult::Failed;
   }
   storage.m_uiPayloadBytes = page.m_uiSize;
+  source.m_uiLastUseFrame  = xiiMath::Max(source.m_uiLastUseFrame, m_uiStreamingFrame);
   m_uiPoolPayloadBytes += page.m_uiSize;
   source.m_Pages[index].m_Io.Clear();
   source.m_Pages[index].m_uiAdmittedFrame = m_uiStreamingFrame;
@@ -2162,7 +2194,7 @@ void xiiGpuResidencyManager::State::ProcessPages(xiiUInt64 frame, xiiUInt64 comp
   for (auto it = m_SourceBindings.GetIterator(); it.IsValid(); ++it)
   {
     auto& source = it.Value();
-    if (source.m_Pages.IsEmpty())
+    if (source.m_Pages.IsEmpty() || !source.m_bRootsReady)
       continue;
     if (source.m_bPagesDirty && PublishPages(source))
       for (auto index : m_ActiveSlots)
@@ -2316,19 +2348,45 @@ xiiGpuResidencyManager::AdmissionResult xiiGpuResidencyManager::RegisterBindless
       s_pState->m_SourceBindings.Insert(identity, std::move(fresh));
       source = s_pState->m_SourceBindings.GetValue(identity);
     }
-    bool committed = false;
-    XII_SCOPE_EXIT(if (!committed && source->m_uiReferenceCount == 0U) {
+    // The requested slot owns its pending source across asynchronous IO and
+    // budget deferrals. Cancellation and retirement release the same lease.
+    source->m_uiLastUseFrame = xiiMath::Max(source->m_uiLastUseFrame, s_pState->m_uiStreamingFrame);
+    if (slot.m_BoundSources[uiLod].m_Identity != identity)
+    {
+      ReleaseSourceBinding(std::exchange(slot.m_BoundSources[uiLod], LodBinding{identity}), s_pState->m_uiStreamingFrame);
       ++source->m_uiReferenceCount;
-      ReleaseSourceBinding({identity}, 0U);
-    });
+    }
     // Required fallback pages complete before any record exposes the hierarchy.
-    for (xiiUInt32 p = 0U; p < source->m_Pages.GetCount(); ++p)
-      if (source->m_Pages[p].m_bRequired && !source->m_Pages[p].m_Buffer.IsValid())
+    if (!source->m_bRootsReady)
+    {
+      bool pending = false;
+      for (xiiUInt32 root = source->m_uiFirstPendingRoot; root < source->m_RootPages.GetCount(); ++root)
       {
-        const auto result = s_pState->UploadPage(*source, p, false);
-        if (result != AdmissionResult::Admitted)
-          return result;
+        const auto p = source->m_RootPages[root];
+        if (!source->m_Pages[p].m_Buffer.IsValid())
+        {
+          if (!source->m_Pages[p].m_Io && s_pState->m_uiPendingIo >= State::s_iMaxPageIo)
+          {
+            s_pState->m_bRootIoWaiting = true;
+            pending                    = true;
+            break;
+          }
+          const auto result = s_pState->UploadPage(*source, p, false);
+          if (result == AdmissionResult::NotReady)
+          {
+            pending = true;
+            continue;
+          }
+          if (result != AdmissionResult::Admitted)
+            return result;
+        }
+        if (root == source->m_uiFirstPendingRoot)
+          ++source->m_uiFirstPendingRoot;
       }
+      if (pending)
+        return AdmissionResult::NotReady;
+      source->m_bRootsReady = true;
+    }
     if ((!source->m_PageTable.IsValid() || source->m_bPagesDirty) && !s_pState->PublishPages(*source))
       return AdmissionResult::Failed;
     auto& lod                          = record.m_Lods[uiLod];
@@ -2337,9 +2395,6 @@ xiiGpuResidencyManager::AdmissionResult xiiGpuResidencyManager::RegisterBindless
     lod.m_uiVertexBufferIndex          = source->m_PageTable.m_uiIndex;
     lod.m_uiMeshletTopologyBufferIndex = source->m_PageTable.m_uiIndex;
     lod.m_uiMeshletPrimitiveByteOffset = 0U;
-    slot.m_BoundSources[uiLod]         = {identity};
-    ++source->m_uiReferenceCount;
-    committed = true;
     return AdmissionResult::Admitted;
   }
 
@@ -2378,11 +2433,15 @@ xiiGpuResidencyManager::AdmissionResult xiiGpuResidencyManager::RegisterBindless
   }
   auto& lod                          = record.m_Lods[uiLod];
   lod.m_uiVertexBufferIndex          = source->m_Vertex.m_uiIndex;
+  source->m_uiLastUseFrame           = xiiMath::Max(source->m_uiLastUseFrame, s_pState->m_uiStreamingFrame);
   lod.m_uiIndexBufferIndex           = source->m_Index.m_uiIndex;
   lod.m_uiMeshletTopologyBufferIndex = source->m_DirectTopology.m_Buffer.m_uiIndex;
   lod.m_uiMeshletPrimitiveByteOffset = source->m_DirectTopology.m_uiPrimitiveOffset;
-  slot.m_BoundSources[uiLod]         = {identity};
-  ++source->m_uiReferenceCount;
+  if (slot.m_BoundSources[uiLod].m_Identity != identity)
+  {
+    ReleaseSourceBinding(std::exchange(slot.m_BoundSources[uiLod], LodBinding{identity}), s_pState->m_uiStreamingFrame);
+    ++source->m_uiReferenceCount;
+  }
   return AdmissionResult::Admitted;
 }
 
@@ -2558,11 +2617,22 @@ void xiiGpuResidencyManager::ProcessStreaming(xiiUInt64 uiFrameIndex, xiiUInt64 
   s_pState->ProcessTextures(uiFrameIndex, uiCompletedFrame);
   s_pState->ProcessPages(uiFrameIndex, uiCompletedFrame);
   if (bNewFrame)
-    s_pState->SchedulePages(uiFrameIndex);
+    s_pState->m_bRootIoWaiting = false;
   auto& streamingQueue = s_pState->m_StreamingQueue;
   for (xiiUInt32 n = 0; n < streamingQueue.GetCount();)
   {
     auto& slot = s_pState->m_Slots[streamingQueue[n]];
+    if (slot.m_bAllocated && !slot.m_Description.m_bPinned &&
+        (slot.m_State == xiiGeometryResidencyState::Requested || slot.m_State == xiiGeometryResidencyState::Loading) &&
+        slot.m_uiLastUsedFrame <= uiCompletedFrame && uiFrameIndex - xiiMath::Min(uiFrameIndex, slot.m_uiLastUsedFrame) > 120U)
+    {
+      // A camera can leave before coarse IO completes. Pending requests own
+      // real pages and jobs too; release them without publishing stale demand.
+      ReleaseBindlessResources(slot, slot.m_uiLastUsedFrame);
+      slot.m_State                = xiiGeometryResidencyState::Unloaded;
+      slot.m_uiFirstRequestFrame  = xiiMath::MaxValue<xiiUInt64>();
+      slot.m_uiVisibilityPriority = 0U;
+    }
     if (!slot.m_bAllocated || (slot.m_State != xiiGeometryResidencyState::Requested && slot.m_State != xiiGeometryResidencyState::Loading))
     {
       slot.m_bQueued = false;
@@ -2621,6 +2691,10 @@ void xiiGpuResidencyManager::ProcessStreaming(xiiUInt64 uiFrameIndex, xiiUInt64 
         break;
     }
   }
+  // Coarse requests get the first opportunity to start IO and use the geometry
+  // transfer allowance. Leave worker capacity for blocked roots to retry next frame.
+  if (bNewFrame)
+    s_pState->SchedulePages(uiFrameIndex);
   s_pState->m_StreamingStats.m_fStreamingMilliseconds += (xiiTime::Now() - start).GetMilliseconds();
 #if XII_ENABLED(XII_USE_PROFILING)
   xiiStats::SetStat("Renderer/Geometry/Streaming ms", s_pState->m_StreamingStats.m_fStreamingMilliseconds);

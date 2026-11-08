@@ -191,6 +191,9 @@ public:
   /// Releases the exact revision acquired through AcquireMeshGeometry(). After its last reference,
   /// the record and its GPU allocations remain valid until its last-use frame has completed.
   static void ReleaseMeshGeometry(xiiGeometryHandle hGeometry, xiiUInt64 uiFrameIndex);
+  /// True when a loaded mesh has admitted its required root coverage or uses direct drawing.
+  /// Read-only: does not acquire a residency lease, request detail, or initialize GPU storage.
+  [[nodiscard]] static bool IsMeshGeometryReady(const xiiMeshResourceHandle& hMesh);
 
   /// Admits immutable selection metadata and guaranteed root pages for all authored LODs.
   static void                    RequestGeometry(xiiGeometryHandle handle, xiiUInt64 uiFrame, xiiUInt32 uiPriority = 0U);
