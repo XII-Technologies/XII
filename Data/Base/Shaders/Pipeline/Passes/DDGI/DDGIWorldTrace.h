@@ -146,14 +146,14 @@ bool TraceProbeMeshlets(float3 origin, float3 direction, GpuSceneInstance instan
   first += lod.MeshletMetadataOffset;
 
   const uint topologyBuffer = NonUniformResourceIndex(lod.MeshletTopologyBufferIndex);
-  const uint remapBytes = lod.MeshletPrimitiveByteOffset;
-  uint topologyBytes;
+  const uint remapBytes     = lod.MeshletPrimitiveByteOffset;
+  uint       topologyBytes;
   g_Buffers[topologyBuffer].GetDimensions(topologyBytes);
   if (remapBytes > topologyBytes)
     return false;
   const uint primitiveBytes = topologyBytes - remapBytes;
-  const uint section = g_Meshlets[first].PackedLodSection >> 16u;
-  uint       cursor  = begin;
+  const uint section        = g_Meshlets[first].PackedLodSection >> 16u;
+  uint       cursor         = begin;
   [loop] for (uint i = first; i < first + count; ++i)
   {
     const GpuMeshlet meshlet   = g_Meshlets[i];
