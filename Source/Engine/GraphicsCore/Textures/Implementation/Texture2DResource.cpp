@@ -150,9 +150,11 @@ xiiResourceLoadDescription xiiTexture2DResource::UpdateContent(xiiStreamReader* 
   if (pStream->ReadBytes(&virtualData, sizeof(virtualData)) == sizeof(virtualData) && virtualData != nullptr)
   {
     // The conventional view is the resident last mip used by preview and native-view consumers.
-    auto        description   = virtualData->m_Description;
-    const auto& tile          = virtualData->m_Tiles.PeekBack();
-    const auto* pixel         = virtualData->m_Data.GetData() + tile.m_uiOffset + (xiiVirtualTextureData::s_uiBorder * xiiVirtualTextureData::s_uiPhysicalSize + xiiVirtualTextureData::s_uiBorder) * 4U;
+    auto                      description = virtualData->m_Description;
+    xiiDynamicArray<xiiUInt8> tile;
+    if (virtualData->ReadTile(virtualData->m_Tiles.GetCount() - 1U, tile).Failed())
+      return previous;
+    const auto* pixel         = tile.GetData() + (xiiVirtualTextureData::s_uiBorder * xiiVirtualTextureData::s_uiPhysicalSize + xiiVirtualTextureData::s_uiBorder) * 4U;
     description.m_Size        = {1U, 1U};
     description.m_uiMipLevels = 1U;
     description.m_Usage       = xiiGALResourceUsage::Immutable;
@@ -206,6 +208,8 @@ void xiiTexture2DResource::UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage)
 {
   XII_LOCK(m_TextureMutex);
   out_NewMemoryUsage.m_uiMemoryCPU = sizeof(xiiTexture2DResource);
+  if (m_pVirtualData)
+    out_NewMemoryUsage.m_uiMemoryCPU += static_cast<xiiUInt32>(sizeof(xiiVirtualTextureData) + m_pVirtualData->m_Tiles.GetHeapMemoryUsage() + m_pVirtualData->m_Data.GetHeapMemoryUsage());
   out_NewMemoryUsage.m_uiMemoryGPU = m_pGALTexture ? m_pGALTexture->GetMemoryConsumption() : 0U;
 }
 

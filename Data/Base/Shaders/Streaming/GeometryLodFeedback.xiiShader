@@ -70,10 +70,10 @@ void main(uint3 tid : SV_DispatchThreadID)
     uint table = NonUniformResourceIndex(resident.VertexBufferIndex);
     uint bytes;
     g_Buffers[table].GetDimensions(bytes);
-    uint pages = bytes >= 16u ? min(g_Buffers[table].Load(0u), (bytes - 16u) / 48u) : 0u;
+    uint pages = bytes >= 272u ? min(g_Buffers[table].Load(0u), (bytes - 272u) / 48u) : 0u;
     for (uint p = 0u; p < pages; ++p)
     {
-      uint offset = 16u + p * 48u;
+      uint offset = 272u + p * 48u;
       uint4 mapping = g_Buffers[table].Load4(offset);
       if (mapping.z != 0u) continue;
       float4 bounds = asfloat(g_Buffers[table].Load4(offset + 16u));

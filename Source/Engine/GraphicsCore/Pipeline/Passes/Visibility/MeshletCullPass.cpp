@@ -129,6 +129,7 @@ xiiResult xiiMeshletCullPass::Build(xiiRenderPipelinePassContext& context)
         commands.ResolveAndSetUnorderedAccessBufferView("g_DiagnosticMeshletCount", execute.GetBuffer(data.m_DiagnosticCount)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
       }
       xiiGALBindlessResourceTable::BindBufferSRVs(commands, "g_Buffers", xiiGALShaderType::Compute);
+      xiiGALBindlessResourceTable::BindBufferUAVs(commands, "g_VirtualTextureFeedback", xiiGALShaderType::Compute);
       commands.CommitShaderResources(xiiGALStateTransitionMode::Transition).AssertSuccess();
       commands.DispatchComputeIndirect({execute.GetBuffer(data.m_Arguments), xiiGALStateTransitionMode::None}); });
   XII_SUCCEED_OR_RETURN(context.SetOutput(m_Output, emitted.first->m_Output));

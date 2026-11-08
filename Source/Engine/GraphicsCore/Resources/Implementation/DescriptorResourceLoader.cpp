@@ -70,7 +70,8 @@ namespace
       {
         versionRead = data->m_Reader.ReadDWordValue(&descriptorVersion);
       }
-      if (versionRead.Failed() || descriptorVersion != (packedDecalAtlas ? 2U : 1U))
+      const bool meshBuffer = pResource->GetDynamicRTTI()->IsDerivedFrom<xiiMeshBufferResource>();
+      if (versionRead.Failed() || (meshBuffer ? descriptorVersion < 1U || descriptorVersion > 3U : descriptorVersion != (packedDecalAtlas ? 2U : 1U)))
       {
         xiiLog::Error("Native descriptor asset '{}' uses an unsupported descriptor format. Re-transform its source asset.", pResource->GetResourceID());
         XII_DEFAULT_DELETE(data);
@@ -79,6 +80,10 @@ namespace
       data->m_Reader.SetReadPosition(descriptorOffset);
       xiiResourceLoadData result;
       result.m_sResourceDescription = file.GetFilePathRelative().GetView();
+      result.m_sSourceFile          = file.GetFilePathAbsolute().GetView();
+      result.m_uiSourceOffset       = descriptorOffset;
+      result.m_uiSourceHash         = header.GetFileHash();
+      result.m_uiSourceVersion      = header.GetFileVersion();
       result.m_pDataStream          = &data->m_Reader;
       result.m_pCustomLoaderData    = data;
 #if XII_ENABLED(XII_SUPPORTS_FILE_STATS)

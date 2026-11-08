@@ -5,6 +5,7 @@
 #include <Core/ResourceManager/Resource.h>
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Foundation/Profiling/Profiling.h>
+#include <Foundation/Types/ScopeExit.h>
 
 #if XII_ENABLED(XII_RESOURCEHANDLE_STACK_TRACES)
 #  include <Foundation/System/StackTracer.h>
@@ -158,8 +159,17 @@ const xiiResource* xiiResource::GetCurrentlyUpdatingContent()
 }
 #endif
 
-void xiiResource::CallUpdateContent(xiiStreamReader* pStream)
+thread_local const xiiResourceLoadData* g_pUpdatingLoadData = nullptr;
+const xiiResourceLoadData*              xiiResource::GetCurrentlyUpdatingLoadData()
 {
+  return g_pUpdatingLoadData;
+}
+
+void xiiResource::CallUpdateContent(xiiStreamReader* pStream, const xiiResourceLoadData* pLoadData)
+{
+  const auto* previous = g_pUpdatingLoadData;
+  g_pUpdatingLoadData  = pLoadData;
+  XII_SCOPE_EXIT(g_pUpdatingLoadData = previous);
   XII_PROFILE_SCOPE("CallUpdateContent");
 
   XII_LOG_BLOCK("xiiResource::UpdateContent", GetResourceDescription());

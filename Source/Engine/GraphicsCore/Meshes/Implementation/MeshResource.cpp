@@ -180,7 +180,7 @@ xiiResourceLoadDescription xiiMeshResource::UpdateContent(xiiStreamReader* pStre
   }
 
   xiiMeshResourceDescriptor descriptor;
-  if (descriptor.Load(*pStream).Failed())
+  if (descriptor.Load(*pStream, GetCurrentlyUpdatingLoadData()).Failed())
   {
     res.m_State = xiiResourceState::LoadedResourceMissing;
     return res;

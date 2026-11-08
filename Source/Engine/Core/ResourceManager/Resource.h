@@ -9,6 +9,8 @@
 #include <Foundation/Time/Timestamp.h>
 
 /// The base class for all resources.
+struct xiiResourceLoadData;
+
 class XII_CORE_DLL xiiResource : public xiiReflectedClass
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiResource, xiiReflectedClass);
@@ -91,6 +93,9 @@ public:
   XII_ALWAYS_INLINE xiiUInt8 GetNumQualityLevelsDiscardable() const { return m_uiQualityLevelsDiscardable; }
 
   /// Returns how many quality levels the resource may additionally load.
+  /// Borrowed loader context for the current thread, valid only during UpdateContent().
+  static const xiiResourceLoadData* GetCurrentlyUpdatingLoadData();
+
   XII_ALWAYS_INLINE xiiUInt8 GetNumQualityLevelsLoadable() const { return m_uiQualityLevelsLoadable; }
 
   /// Returns the priority that is used by the resource manager to determine which resource to load next.
@@ -157,7 +162,7 @@ private:
   /// is going to be deleted afterwards.
   virtual xiiResourceLoadDescription UnloadData(Unload WhatToUnload) = 0;
 
-  void CallUpdateContent(xiiStreamReader* pStream);
+  void CallUpdateContent(xiiStreamReader* pStream, const xiiResourceLoadData* pLoadData = nullptr);
 
   /// Called whenever more data for the resource is available. The resource must read the stream to update it's data.
   ///

@@ -1,5 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <Core/ResourceManager/ResourceTypeLoader.h>
+#include <Foundation/IO/StreamWithStats.h>
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <Foundation/Algorithm/HashStream.h>
@@ -518,8 +520,9 @@ xiiResult xiiMeshResourceDescriptor::Save(xiiStringView sFile) const
   return XII_SUCCESS;
 }
 
-xiiResult xiiMeshResourceDescriptor::Load(xiiStreamReader& inout_stream)
+xiiResult xiiMeshResourceDescriptor::Load(xiiStreamReader& source, const xiiResourceLoadData* pSource)
 {
+  xiiStreamReaderWithStats inout_stream(&source);
   Clear();
 
   inout_stream.ReadVersion(s_uiMeshResourceDescriptorVersion);
@@ -541,7 +544,15 @@ xiiResult xiiMeshResourceDescriptor::Load(xiiStreamReader& inout_stream)
   XII_SUCCEED_OR_RETURN(inout_stream.ReadArray(m_LODs));
   XII_SUCCEED_OR_RETURN(inout_stream.ReadArray(m_MorphTargets));
   XII_SUCCEED_OR_RETURN(inout_stream.ReadHashTable(m_Bones));
-  XII_SUCCEED_OR_RETURN(m_MeshBufferDescriptor.Deserialize(inout_stream));
+  xiiResourceLoadData pageSource;
+  if (pSource)
+  {
+    pageSource.m_sSourceFile     = pSource->m_sSourceFile;
+    pageSource.m_uiSourceOffset  = pSource->m_uiSourceOffset + inout_stream.m_uiBytesRead + inout_stream.m_uiBytesSkipped;
+    pageSource.m_uiSourceHash    = pSource->m_uiSourceHash;
+    pageSource.m_uiSourceVersion = pSource->m_uiSourceVersion;
+  }
+  XII_SUCCEED_OR_RETURN(m_MeshBufferDescriptor.Deserialize(inout_stream, pSource ? &pageSource : nullptr));
 
   return XII_SUCCESS;
 }

@@ -3,23 +3,31 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <Foundation/Containers/HashTable.h>
+#include <Foundation/IO/FileSystem/FileReader.h>
+#include <Foundation/IO/StreamWithStats.h>
+#include <Foundation/Utilities/AssetFileHeader.h>
+#include <Foundation/Utilities/Compression.h>
 #include <GraphicsCore/Meshes/MeshBufferResource.h>
 #include <meshoptimizer/meshoptimizer.h>
 
 xiiResult xiiGeometryPage::Serialize(xiiStreamWriter& stream) const
 {
-  stream << m_uiOffset << m_uiSize << m_bRequired;
+  stream << m_uiOffset << m_uiSize << m_bRequired << m_uiStoredSize;
   return XII_SUCCESS;
 }
 
 xiiResult xiiGeometryPage::Deserialize(xiiStreamReader& stream)
 {
-  stream >> m_uiOffset >> m_uiSize >> m_bRequired;
+  stream >> m_uiOffset >> m_uiSize >> m_bRequired >> m_uiStoredSize;
   return XII_SUCCESS;
 }
 
 xiiResult xiiMeshBufferResourceDescriptor::BuildGeometryPages()
 {
+  m_sGeometryPageFile.Clear();
+  m_uiGeometryFileOffset = m_uiGeometryFileHash = m_uiPageDataBytes = 0U;
+  m_uiGeometryFileVersion                                           = 0U;
+  bool encodingFailed                                               = false;
   m_GeometryPages.Clear();
   m_GeometryPageData.Clear();
   // Tiny meshes occupy less than a page and benefit from direct residency.
@@ -45,14 +53,15 @@ xiiResult xiiMeshBufferResourceDescriptor::BuildGeometryPages()
   auto                                                    flush = [&](bool required) {
     if (pageClusters.IsEmpty())
       return;
-    const xiiUInt32 vertexBytes = vertices.GetCount();
-    const xiiUInt32 remapBytes  = remaps.GetCount() * sizeof(xiiUInt32);
-    const xiiUInt32 size        = xiiMath::RoundUp(vertexBytes + remapBytes + primitives.GetCount(), 4U);
-    const xiiUInt32 offset      = m_GeometryPageData.GetCount();
-    m_GeometryPageData.SetCount(offset + size, 0U);
-    xiiMemoryUtils::Copy(m_GeometryPageData.GetData() + offset, vertices.GetData(), vertexBytes);
-    xiiMemoryUtils::Copy(m_GeometryPageData.GetData() + offset + vertexBytes, reinterpret_cast<const xiiUInt8*>(remaps.GetData()), remapBytes);
-    xiiMemoryUtils::Copy(m_GeometryPageData.GetData() + offset + vertexBytes + remapBytes, primitives.GetData(), primitives.GetCount());
+    const xiiUInt32           vertexBytes = vertices.GetCount();
+    const xiiUInt32           remapBytes  = remaps.GetCount() * sizeof(xiiUInt32);
+    const xiiUInt32           size        = xiiMath::RoundUp(vertexBytes + remapBytes + primitives.GetCount(), 4U);
+    const xiiUInt32           offset      = m_GeometryPageData.GetCount();
+    xiiDynamicArray<xiiUInt8> payload;
+    payload.SetCount(size, 0U);
+    xiiMemoryUtils::Copy(payload.GetData(), vertices.GetData(), vertexBytes);
+    xiiMemoryUtils::Copy(payload.GetData() + vertexBytes, reinterpret_cast<const xiiUInt8*>(remaps.GetData()), remapBytes);
+    xiiMemoryUtils::Copy(payload.GetData() + vertexBytes + remapBytes, primitives.GetData(), primitives.GetCount());
     for (const auto index : pageClusters)
     {
       auto& cluster    = clusters[index];
@@ -61,7 +70,14 @@ xiiResult xiiMeshBufferResourceDescriptor::BuildGeometryPages()
       cluster.m_Page.z += vertexBytes + remapBytes;
       cluster.m_Page.w = vertexMap.GetCount();
     }
-    m_GeometryPages.PushBack({offset, size, required});
+    xiiDynamicArray<xiiUInt8> encoded;
+    if (xiiCompressionUtils::Compress(payload, xiiCompressionMethod::ZStd, encoded).Failed())
+    {
+      encodingFailed = true;
+      return;
+    }
+    m_GeometryPageData.PushBackRange(encoded);
+    m_GeometryPages.PushBack({offset, size, required, encoded.GetCount()});
     vertices.Clear();
     remaps.Clear();
     primitives.Clear();
@@ -158,6 +174,43 @@ xiiResult xiiMeshBufferResourceDescriptor::BuildGeometryPages()
   m_MeshletMaterialIndices.Clear();
   for (const auto& cluster : clusters)
     m_MeshletMaterialIndices.PushBack(cluster.m_uiMaterialIndex);
-  m_Meshlets = std::move(clusters);
-  return XII_SUCCESS;
+  m_Meshlets        = std::move(clusters);
+  m_uiPageDataBytes = m_GeometryPageData.GetCount();
+  return encodingFailed ? XII_FAILURE : XII_SUCCESS;
+}
+
+xiiResult xiiMeshBufferResourceDescriptor::ReadGeometryPage(xiiUInt32 index, xiiDynamicArray<xiiUInt8>& out_data) const
+{
+  if (index >= m_GeometryPages.GetCount())
+    return XII_FAILURE;
+  const auto&               page       = m_GeometryPages[index];
+  const auto                storedSize = page.m_uiStoredSize == 0U ? page.m_uiSize : page.m_uiStoredSize;
+  xiiDynamicArray<xiiUInt8> encoded;
+  if (m_sGeometryPageFile.IsEmpty())
+  {
+    if (page.m_uiOffset > m_GeometryPageData.GetCount() || storedSize > m_GeometryPageData.GetCount() - page.m_uiOffset)
+      return XII_FAILURE;
+    encoded = m_GeometryPageData.GetArrayPtr().GetSubArray(page.m_uiOffset, storedSize);
+  }
+  else
+  {
+    xiiFileReader file;
+    XII_SUCCEED_OR_RETURN(file.Open(m_sGeometryPageFile));
+    xiiStreamReaderWithStats stream(&file);
+    xiiAssetFileHeader       header;
+    XII_SUCCEED_OR_RETURN(header.Read(stream));
+    if (!header.IsFileUpToDate(m_uiGeometryFileHash, m_uiGeometryFileVersion) || m_uiGeometryFileOffset + page.m_uiOffset < stream.m_uiBytesRead)
+      return XII_FAILURE;
+    const auto skip = m_uiGeometryFileOffset + page.m_uiOffset - stream.m_uiBytesRead;
+    if (stream.SkipBytes(skip) != skip)
+      return XII_FAILURE;
+    encoded.SetCountUninitialized(storedSize);
+    if (stream.ReadBytes(encoded.GetData(), storedSize) != storedSize)
+      return XII_FAILURE;
+  }
+  if (page.m_uiStoredSize == 0U)
+    out_data = std::move(encoded);
+  else
+    XII_SUCCEED_OR_RETURN(xiiCompressionUtils::Decompress(encoded, xiiCompressionMethod::ZStd, out_data));
+  return out_data.GetCount() == page.m_uiSize ? XII_SUCCESS : XII_FAILURE;
 }

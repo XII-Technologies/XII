@@ -13,6 +13,12 @@ struct XII_CORE_DLL xiiResourceLoadData
   /// Additional (optional) description that can help during debugging (e.g. the final file path).
   xiiString m_sResourceDescription;
 
+  /// Optional immutable file identity and byte offset of the provided descriptor stream.
+  /// Resources can retain this information for asynchronous payload reads after the loader closes.
+  xiiString m_sSourceFile;
+  xiiUInt64 m_uiSourceOffset = 0U, m_uiSourceHash = 0U;
+  xiiUInt16 m_uiSourceVersion = 0U;
+
   /// Used to keep track when the loaded file was modified last and thus when reloading of the resource might be necessary.
   xiiTimestamp m_LoadedFileModificationDate;
 

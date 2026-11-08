@@ -30,9 +30,9 @@ xiiResult xiiTextureAssetFile::WriteImage(xiiStreamWriter& inout_stream, const x
   if (!image.IsValid())
     return XII_FAILURE;
   const auto& properties = xiiGALTextureUtilities::GetResourceFormatProperties(image.GetImageFormat());
-  if (image.GetDescription().m_Type == xiiGALResourceDimension::Texture2D &&
+  if (image.GetNumFaces() == 1U && image.GetNumArrayIndices() == 1U && image.GetDepth() == 1U &&
       image.GetWidth() >= 256U && image.GetHeight() >= 256U &&
-      image.GetWidth(image.GetMipLevelCount() - 1U) == 1U && image.GetHeight(image.GetMipLevelCount() - 1U) == 1U && ((properties.m_ComponentType == xiiGALResourceFormatComponentType::UnsignedNormalized && properties.m_uiComponentSize == 1U) || (properties.IsCompressed() && image.GetImageFormat() != xiiGALResourceFormat::BC6HUF16 && image.GetImageFormat() != xiiGALResourceFormat::BC6HSF16 && image.GetImageFormat() != xiiGALResourceFormat::BC4SNormalized && image.GetImageFormat() != xiiGALResourceFormat::BC5SNormalized)))
+      image.GetWidth(image.GetMipLevelCount() - 1U) == 1U && image.GetHeight(image.GetMipLevelCount() - 1U) == 1U && (((properties.m_ComponentType == xiiGALResourceFormatComponentType::UnsignedNormalized || properties.m_ComponentType == xiiGALResourceFormatComponentType::UnsignedNormalizedSRGB) && properties.m_uiComponentSize == 1U) || (properties.IsCompressed() && image.GetImageFormat() != xiiGALResourceFormat::BC6HUF16 && image.GetImageFormat() != xiiGALResourceFormat::BC6HSF16 && image.GetImageFormat() != xiiGALResourceFormat::BC4SNormalized && image.GetImageFormat() != xiiGALResourceFormat::BC5SNormalized)))
   {
     xiiVirtualTextureData pages;
     XII_SUCCEED_OR_RETURN(pages.Build(image, sampler));

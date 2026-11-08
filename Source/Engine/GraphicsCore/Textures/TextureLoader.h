@@ -22,6 +22,7 @@ public:
     xiiContiguousMemoryStreamStorage    m_Storage;
     xiiMemoryStreamReader               m_Reader;
     xiiImage                            m_Image;
+    xiiString                           m_sFile;
     xiiSharedPtr<xiiVirtualTextureData> m_pVirtual;
 
     xiiGALTextureCreationDescription m_TextureDescription;

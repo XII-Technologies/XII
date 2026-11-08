@@ -8,6 +8,7 @@
 #include <Foundation/Containers/IdTable.h>
 #include <Foundation/Profiling/Profiling.h>
 #include <Foundation/Threading/Mutex.h>
+#include <Foundation/Threading/TaskSystem.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <Foundation/Utilities/Stats.h>
 
@@ -46,9 +47,36 @@ public:
     xiiUInt32                    m_uiReferenceCount = 0U;
   };
 
+  struct PageIo : public xiiTask
+  {
+    xiiSharedPtr<State>                 m_Owner;
+    xiiSharedPtr<xiiVirtualTextureData> m_Source;
+    xiiMeshBufferResourceHandle         m_hMesh;
+    xiiUInt32                           m_uiRevision = 0U;
+    xiiDynamicArray<xiiUInt8>           m_Data;
+    xiiUInt32                           m_uiTile    = 0U;
+    xiiResult                           m_Result    = XII_FAILURE;
+    xiiAtomicBool                       m_bComplete = false;
+    void                                Execute() override
+    {
+      if (m_hMesh.IsValid())
+      {
+        xiiResourceLock<xiiMeshBufferResource> mesh(m_hMesh, xiiResourceAcquireMode::PointerOnly);
+        m_Result = mesh->ReadGeometryPage(m_uiTile, m_uiRevision, m_Data);
+      }
+      else
+        m_Result = m_Source->ReadTile(m_uiTile, m_Data);
+      m_bComplete = true;
+    }
+    ~PageIo() override { m_Owner->m_uiPendingIo.Decrement(); }
+  };
+  // Includes completed IO waiting for admission, bounding CPU payload memory as well as worker jobs.
+  xiiAtomicInteger32 m_uiPendingIo = 0U;
   struct TexturePage
   {
     xiiGALBindlessResourceHandle m_Texture;
+    xiiSharedPtr<PageIo>         m_Io;
+    bool                         m_bIoFailed = false;
     xiiUInt64                    m_uiDemand = 0U, m_uiTrimFrame = 0U;
     xiiUInt32                    m_uiRequest = 0U;
     xiiUInt64                    m_uiBytes   = 0U;
@@ -72,13 +100,14 @@ public:
   };
   static constexpr xiiUInt32                                s_uiFeedbackWords = 32768U;
   xiiHashTable<const xiiVirtualTextureData*, TextureSource> m_Textures;
-  xiiUInt32                                                 m_uiNextTextureRequest = 1U;
-  xiiUInt64                                                 m_uiTextureBytes       = 0U;
-  xiiSharedPtr<xiiGALBuffer>                                m_TextureFeedback;
-  xiiGALBindlessResourceHandle                              m_TextureFeedbackUav;
-  TextureCapture                                            m_TextureCaptures[3];
+  xiiUInt64                                                 m_uiTextureBytes = 0U;
+  xiiSharedPtr<xiiGALBuffer>                                m_TextureFeedback[64];
+  xiiGALBindlessResourceHandle                              m_TextureFeedbackUav[64];
+  TextureCapture                                            m_TextureCaptures[64];
   xiiSharedPtr<xiiGALFence>                                 m_EndFences[3];
-  xiiUInt64                                                 m_uiEndValues[3] = {};
+  xiiUInt64                                                 m_uiEndValues[3]      = {};
+  xiiUInt32                                                 m_uiGeometryPageCount = 0U, m_uiTexturePageCount = 0U;
+  xiiUInt64                                                 m_uiPageRequests = 0U, m_uiPageMisses = 0U;
   bool                                                      InitializeTextureFeedback();
   AdmissionResult                                           UploadTextureTile(TextureSource& source, xiiUInt32 page, bool optional);
   bool                                                      PublishTexture(TextureSource& source);
@@ -86,6 +115,8 @@ public:
   void                                                      ClearTextures();
   struct Page
   {
+    xiiSharedPtr<PageIo>         m_Io;
+    bool                         m_bIoFailed = false;
     xiiGALBindlessResourceHandle m_Buffer;
     xiiUInt32                    m_uiRequest   = 0U;
     xiiUInt64                    m_uiBytes     = 0U;
@@ -170,6 +201,8 @@ public:
     m_pTopologyUploadFence.Clear();
     m_uiTopologyUploadValue   = 0U;
     m_uiResidentTopologyBytes = 0U;
+    m_uiGeometryPageCount     = 0U;
+    m_uiPageRequests = m_uiPageMisses = 0U;
 
     m_ActiveSlots.Clear();
     m_StreamingQueue.Clear();
@@ -1149,22 +1182,27 @@ xiiGeometryResidencyManager::AdmissionResult xiiGeometryResidencyManager::BuildR
 
 bool xiiGeometryResidencyManager::State::InitializeTextureFeedback()
 {
-  if (m_TextureFeedback)
-    return true;
   auto*                      device = m_pMetadataBuffer->GetDevice().Borrow();
   xiiDynamicArray<xiiUInt32> zeros;
   zeros.SetCount(s_uiFeedbackWords, 0U);
-  xiiGALBufferCreationDescription description;
-  description.m_uiSize    = zeros.GetCount() * sizeof(xiiUInt32);
-  description.m_Usage     = xiiGALResourceUsage::Mutable;
-  description.m_Mode      = xiiGALBufferMode::Raw;
-  description.m_BindFlags = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess;
-  xiiGALBufferData data(zeros.GetData(), description.m_uiSize);
-  m_TextureFeedback = device->CreateBuffer(description, &data);
-  if (!m_TextureFeedback)
-    return false;
-  m_TextureFeedbackUav = xiiGALBindlessResourceTable::RegisterBufferUAV(m_TextureFeedback->GetDefaultView(xiiGALBufferViewType::UnorderedAccess));
-  return m_TextureFeedbackUav.IsValid();
+  for (xiiUInt32 slot = 0U; slot < m_uiFramesInFlight; ++slot)
+  {
+    if (m_TextureFeedbackUav[slot].IsValid())
+      continue;
+    xiiGALBufferCreationDescription description;
+    description.m_uiSize    = zeros.GetCount() * sizeof(xiiUInt32);
+    description.m_Usage     = xiiGALResourceUsage::Mutable;
+    description.m_Mode      = xiiGALBufferMode::Raw;
+    description.m_BindFlags = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess;
+    xiiGALBufferData data(zeros.GetData(), description.m_uiSize);
+    m_TextureFeedback[slot] = device->CreateBuffer(description, &data);
+    if (!m_TextureFeedback[slot])
+      return false;
+    m_TextureFeedbackUav[slot] = xiiGALBindlessResourceTable::RegisterBufferUAV(m_TextureFeedback[slot]->GetDefaultView(xiiGALBufferViewType::UnorderedAccess));
+    if (!m_TextureFeedbackUav[slot].IsValid())
+      return false;
+  }
+  return true;
 }
 
 xiiGeometryResidencyManager::AdmissionResult xiiGeometryResidencyManager::State::UploadTextureTile(TextureSource& source, xiiUInt32 page, bool optional)
@@ -1173,14 +1211,49 @@ xiiGeometryResidencyManager::AdmissionResult xiiGeometryResidencyManager::State:
   const auto     limit = xiiUInt64(xiiMath::Max(0, cvar_TextureCacheMiB.GetValue())) * 1024U * 1024U;
   if (optional && (bytes > limit || m_uiTextureBytes > limit - bytes))
     return AdmissionResult::MemoryDeferred;
-  auto*       device                   = m_pMetadataBuffer->GetDevice().Borrow();
-  const auto& compiled                 = source.m_Data;
-  auto        description              = compiled->m_Description;
-  description.m_Size                   = {xiiVirtualTextureData::s_uiPhysicalSize, xiiVirtualTextureData::s_uiPhysicalSize};
-  description.m_uiMipLevels            = 1U;
-  description.m_Usage                  = xiiGALResourceUsage::Immutable;
-  description.m_BindFlags              = xiiGALBindFlags::ShaderResource;
-  const auto*                  payload = compiled->m_Data.GetData() + compiled->m_Tiles[page].m_uiOffset;
+  auto*       device                  = m_pMetadataBuffer->GetDevice().Borrow();
+  const auto& compiled                = source.m_Data;
+  auto        description             = compiled->m_Description;
+  description.m_Size                  = {xiiVirtualTextureData::s_uiPhysicalSize, xiiVirtualTextureData::s_uiPhysicalSize};
+  description.m_uiMipLevels           = 1U;
+  description.m_Usage                 = xiiGALResourceUsage::Immutable;
+  description.m_BindFlags             = xiiGALBindFlags::ShaderResource;
+  auto&                     residency = source.m_Pages[page];
+  xiiDynamicArray<xiiUInt8> requiredData;
+  xiiUInt8*                 payload = nullptr;
+  if (optional)
+  {
+    if (residency.m_bIoFailed)
+      return AdmissionResult::Failed;
+    if (!residency.m_Io)
+    {
+      if (m_uiPendingIo >= 32U)
+        return AdmissionResult::NotReady;
+      residency.m_Io           = XII_DEFAULT_NEW(PageIo);
+      residency.m_Io->m_Owner  = s_pState;
+      residency.m_Io->m_Source = compiled;
+      residency.m_Io->m_uiTile = page;
+      residency.m_Io->ConfigureTask("Virtual texture page IO", xiiTaskNesting::Never);
+      m_uiPendingIo.Increment();
+      xiiTaskSystem::StartSingleTask(residency.m_Io, xiiTaskPriority::FileAccess);
+      return AdmissionResult::NotReady;
+    }
+    if (!residency.m_Io->m_bComplete)
+      return AdmissionResult::NotReady;
+    if (residency.m_Io->m_Result.Failed())
+    {
+      residency.m_bIoFailed = true;
+      residency.m_Io.Clear();
+      return AdmissionResult::Failed;
+    }
+    payload = residency.m_Io->m_Data.GetData();
+  }
+  else
+  {
+    if (compiled->ReadTile(page, requiredData).Failed())
+      return AdmissionResult::Failed;
+    payload = requiredData.GetData();
+  }
   xiiGALTextureSubResourceData subresource(xiiConstByteBlobPtr(payload, bytes), xiiVirtualTextureData::s_uiPhysicalSize * 4U, bytes);
   xiiGALTextureData            data(xiiMakeArrayPtr(&subresource, 1U));
   data.m_bStreamingRefinement = optional;
@@ -1191,9 +1264,11 @@ xiiGeometryResidencyManager::AdmissionResult xiiGeometryResidencyManager::State:
   if (!handle.IsValid())
     return AdmissionResult::Failed;
   source.m_Pages[page].m_Texture = handle;
+  source.m_Pages[page].m_Io.Clear();
   source.m_Pages[page].m_uiBytes = texture->GetMemoryConsumption();
   source.m_bDirty                = true;
   m_uiTextureBytes += source.m_Pages[page].m_uiBytes;
+  ++m_uiTexturePageCount;
   return AdmissionResult::Admitted;
 }
 
@@ -1201,19 +1276,20 @@ bool xiiGeometryResidencyManager::State::PublishTexture(TextureSource& source)
 {
   // Header, one offset per mip, then physical descriptor/request pairs.
   xiiDynamicArray<xiiUInt32> table;
-  table.SetCount(40U + source.m_Pages.GetCount() * 2U, 0U);
-  table[0]   = source.m_Data->m_Description.m_Size.width;
-  table[1]   = source.m_Data->m_Description.m_Size.height;
-  table[2]   = source.m_Data->m_Description.m_uiMipLevels;
-  table[3]   = m_TextureFeedbackUav.m_uiIndex;
+  table.SetCount(104U + source.m_Pages.GetCount() * 2U, 0U);
+  table[0] = source.m_Data->m_Description.m_Size.width;
+  table[1] = source.m_Data->m_Description.m_Size.height;
+  table[2] = source.m_Data->m_Description.m_uiMipLevels;
+  for (xiiUInt32 slot = 0U; slot < m_uiFramesInFlight; ++slot)
+    table[40U + slot] = m_TextureFeedbackUav[slot].m_uiIndex;
   table[36U] = source.m_Data->m_uiAddressFlags;
   for (xiiUInt32 p = 0U; p < source.m_Pages.GetCount(); ++p)
   {
     const auto& tile = source.m_Data->m_Tiles[p];
     if (tile.m_uiX == 0U && tile.m_uiY == 0U)
       table[4U + tile.m_uiMip] = p;
-    table[40U + p * 2U] = source.m_Pages[p].m_Texture.IsValid() ? source.m_Pages[p].m_Texture.m_uiIndex : xiiInvalidIndex;
-    table[41U + p * 2U] = source.m_Pages[p].m_uiRequest;
+    table[104U + p * 2U] = source.m_Pages[p].m_Texture.IsValid() ? source.m_Pages[p].m_Texture.m_uiIndex : xiiInvalidIndex;
+    table[105U + p * 2U] = source.m_Pages[p].m_uiRequest;
   }
   auto*                           device = m_pMetadataBuffer->GetDevice().Borrow();
   xiiGALBufferCreationDescription description;
@@ -1261,6 +1337,7 @@ bool xiiGeometryResidencyManager::State::PublishTexture(TextureSource& source)
   for (auto handle : source.m_Retiring)
     xiiGALBindlessResourceTable::RetireTextureSRV(handle, m_uiStreamingFrame);
   m_uiTextureBytes -= source.m_uiRetiringBytes;
+  m_uiTexturePageCount -= source.m_Retiring.GetCount();
   source.m_uiRetiringBytes = 0U;
   source.m_Retiring.Clear();
   return true;
@@ -1278,17 +1355,21 @@ void xiiGeometryResidencyManager::State::ClearTextures()
         xiiGALBindlessResourceTable::RetireTextureSRV(tile.m_Texture, m_uiStreamingFrame);
   }
   m_Textures.Clear();
-  if (m_TextureFeedbackUav.IsValid())
-    xiiGALBindlessResourceTable::RetireBufferUAV(m_TextureFeedbackUav, m_uiStreamingFrame);
-  m_TextureFeedbackUav = {};
-  m_TextureFeedback.Clear();
+  for (xiiUInt32 slot = 0U; slot < 64U; ++slot)
+  {
+    if (m_TextureFeedbackUav[slot].IsValid())
+      xiiGALBindlessResourceTable::RetireBufferUAV(m_TextureFeedbackUav[slot], m_uiStreamingFrame);
+    m_TextureFeedbackUav[slot] = {};
+    m_TextureFeedback[slot].Clear();
+  }
   for (auto& capture : m_TextureCaptures)
     capture = {};
   for (auto& fence : m_EndFences)
     fence.Clear();
   xiiMemoryUtils::ZeroFillArray(m_uiEndValues);
-  m_uiTextureBytes       = 0U;
-  m_uiNextTextureRequest = 1U;
+  m_uiTextureBytes     = 0U;
+  m_uiNextPageRequest  = 1U;
+  m_uiTexturePageCount = 0U;
 }
 
 xiiUInt32 xiiGeometryResidencyManager::ResolveVirtualTexture(xiiSharedPtr<xiiVirtualTextureData> data, xiiUInt64 frame)
@@ -1299,12 +1380,12 @@ xiiUInt32 xiiGeometryResidencyManager::ResolveVirtualTexture(xiiSharedPtr<xiiVir
   if (!source)
   {
     State::TextureSource fresh;
-    if (data->m_Tiles.IsEmpty() || data->m_Tiles.GetCount() >= State::s_uiFeedbackWords * 32U - s_pState->m_uiNextTextureRequest)
+    if (data->m_Tiles.IsEmpty() || data->m_Tiles.GetCount() >= State::s_uiFeedbackWords * 32U - s_pState->m_uiNextPageRequest)
       return xiiInvalidIndex;
     fresh.m_Data = data;
     fresh.m_Pages.SetCount(data->m_Tiles.GetCount());
     for (auto& page : fresh.m_Pages)
-      page.m_uiRequest = s_pState->m_uiNextTextureRequest++;
+      page.m_uiRequest = s_pState->m_uiNextPageRequest++;
     const auto last = fresh.m_Pages.GetCount() - 1U;
     if (s_pState->UploadTextureTile(fresh, last, false) != AdmissionResult::Admitted || !s_pState->PublishTexture(fresh))
     {
@@ -1312,6 +1393,7 @@ xiiUInt32 xiiGeometryResidencyManager::ResolveVirtualTexture(xiiSharedPtr<xiiVir
       {
         xiiGALBindlessResourceTable::RetireTextureSRV(fresh.m_Pages[last].m_Texture, frame);
         s_pState->m_uiTextureBytes -= fresh.m_Pages[last].m_uiBytes;
+        --s_pState->m_uiTexturePageCount;
       }
       return xiiInvalidIndex;
     }
@@ -1319,7 +1401,7 @@ xiiUInt32 xiiGeometryResidencyManager::ResolveVirtualTexture(xiiSharedPtr<xiiVir
     source = s_pState->m_Textures.GetValue(data.Borrow());
   }
   source->m_uiUsed = frame;
-  return source->m_Table.m_uiIndex | 0x80000000U;
+  return source->m_Table.m_uiIndex | 0x80000000U | (static_cast<xiiUInt32>(frame % s_pState->m_uiFramesInFlight) << 24U);
 }
 
 void xiiGeometryResidencyManager::State::ProcessTextures(xiiUInt64 frame, xiiUInt64 completed)
@@ -1339,6 +1421,15 @@ void xiiGeometryResidencyManager::State::ProcessTextures(xiiUInt64 frame, xiiUIn
       if (mapped)
       {
         const auto* words = static_cast<const xiiUInt32*>(mapped);
+        for (auto it = m_SourceBindings.GetIterator(); it.IsValid(); ++it)
+          for (auto& page : it.Value().m_Pages)
+            if ((words[page.m_uiRequest / 32U] & XII_BIT(page.m_uiRequest % 32U)) != 0U && capture.m_uiFrame > page.m_uiTrimFrame)
+            {
+              ++m_uiPageRequests;
+              if (!page.m_Buffer.IsValid())
+                ++m_uiPageMisses;
+              page.m_uiDemand = xiiMath::Max(page.m_uiDemand, capture.m_uiFrame);
+            }
         for (auto it = m_Textures.GetIterator(); it.IsValid(); ++it)
           for (auto& page : it.Value().m_Pages)
             if ((words[page.m_uiRequest / 32U] & XII_BIT(page.m_uiRequest % 32U)) != 0U && capture.m_uiFrame > page.m_uiTrimFrame)
@@ -1366,6 +1457,7 @@ void xiiGeometryResidencyManager::State::ProcessTextures(xiiUInt64 frame, xiiUIn
         {
           xiiGALBindlessResourceTable::RetireTextureSRV(tile.m_Texture, frame - 1U);
           m_uiTextureBytes -= tile.m_uiBytes;
+          --m_uiTexturePageCount;
         }
       it = m_Textures.Remove(it);
       continue;
@@ -1382,6 +1474,8 @@ void xiiGeometryResidencyManager::State::ProcessTextures(xiiUInt64 frame, xiiUIn
         tile.m_uiTrimFrame = frame;
         source.m_bDirty    = true;
       }
+      else if (tile.m_Io && frame - xiiMath::Min(frame, tile.m_uiDemand) >= 30U)
+        tile.m_Io.Clear();
       else if (!tile.m_Texture.IsValid() && tile.m_uiDemand != 0U && frame - xiiMath::Min(frame, tile.m_uiDemand) < 30U && uploaded < 8U)
       {
         if (UploadTextureTile(source, p, true) == AdmissionResult::Admitted)
@@ -1400,17 +1494,12 @@ void xiiGeometryResidencyManager::State::ProcessTextures(xiiUInt64 frame, xiiUIn
 
 void xiiGeometryResidencyManager::EndStreamingFrame(xiiUInt64 frame)
 {
-  if (!IsInitialized() || !s_pState->m_TextureFeedback)
+  if (!IsInitialized() || !s_pState->m_TextureFeedback[0])
     return;
-  auto&                  state   = *s_pState;
-  State::TextureCapture* capture = nullptr;
-  for (auto& candidate : state.m_TextureCaptures)
-    if (!candidate.m_bPending)
-    {
-      capture = &candidate;
-      break;
-    }
-  if (!capture)
+  auto&           state   = *s_pState;
+  const xiiUInt32 slot    = static_cast<xiiUInt32>(frame % state.m_uiFramesInFlight);
+  auto*           capture = &state.m_TextureCaptures[slot];
+  if (capture->m_bPending)
     return;
   auto* device = state.m_pMetadataBuffer->GetDevice().Borrow();
   if (!capture->m_Staging)
@@ -1426,7 +1515,7 @@ void xiiGeometryResidencyManager::EndStreamingFrame(xiiUInt64 frame)
   }
   constexpr xiiGALCommandQueueFlags::Enum queues[] = {
     xiiGALCommandQueueFlags::Graphics, xiiGALCommandQueueFlags::Compute, xiiGALCommandQueueFlags::Transfer};
-  auto commands = device->CreateCommandList({.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
+  auto commands = device->CreateCommandList({.m_QueueFlags = xiiGALCommandQueueFlags::Transfer});
   if (!commands)
     return;
   commands->Begin();
@@ -1456,28 +1545,20 @@ void xiiGeometryResidencyManager::EndStreamingFrame(xiiUInt64 frame)
     commands->DeviceWaitForFence(state.m_EndFences[q].Borrow(), state.m_uiEndValues[q]);
   }
   xiiGALStateTransitionDescription transitions[] = {
-    {.m_pResource = state.m_TextureFeedback.Borrow(), .m_NewState = xiiGALResourceStateFlags::CopySource, .m_TransitionFlags = xiiGALStateTransitionFlags::UpdateState},
+    {.m_pResource = state.m_TextureFeedback[slot].Borrow(), .m_NewState = xiiGALResourceStateFlags::CopySource, .m_TransitionFlags = xiiGALStateTransitionFlags::UpdateState},
     {.m_pResource = capture->m_Staging.Borrow(), .m_NewState = xiiGALResourceStateFlags::CopyDestination, .m_TransitionFlags = xiiGALStateTransitionFlags::UpdateState}};
   commands->TransitionResourceStates(xiiMakeArrayPtr(transitions));
-  commands->CopyBuffer(state.m_TextureFeedback.Borrow(), capture->m_Staging.Borrow());
+  commands->CopyBuffer(state.m_TextureFeedback[slot].Borrow(), capture->m_Staging.Borrow());
   transitions[0].m_NewState = xiiGALResourceStateFlags::CopyDestination;
   commands->TransitionResourceStates(xiiMakeArrayPtr(transitions, 1U));
   xiiDynamicArray<xiiUInt8> zeros;
   zeros.SetCount(State::s_uiFeedbackWords * sizeof(xiiUInt32), 0U);
-  commands->UpdateBuffer(state.m_TextureFeedback.Borrow(), 0U, zeros);
+  commands->UpdateBuffer(state.m_TextureFeedback[slot].Borrow(), 0U, zeros);
   transitions[0].m_NewState = xiiGALResourceStateFlags::UnorderedAccess;
   commands->TransitionResourceStates(xiiMakeArrayPtr(transitions, 1U));
   commands->EnqueueSignal(capture->m_Fence.Borrow(), ++capture->m_uiValue);
-  if (!state.m_pTopologyUploadFence)
-    state.m_pTopologyUploadFence = device->CreateFence({.m_Type = xiiGALFenceType::General});
-  if (!state.m_pTopologyUploadFence)
-  {
-    commands->End();
-    return;
-  }
-  commands->EnqueueSignal(state.m_pTopologyUploadFence.Borrow(), ++state.m_uiTopologyUploadValue);
   commands->End();
-  if (device->GetCommandQueue(xiiGALCommandQueueFlags::Graphics)->Submit(commands.Borrow()) != 0U)
+  if (device->GetCommandQueue(xiiGALCommandQueueFlags::Transfer)->Submit(commands.Borrow()) != 0U)
   {
     capture->m_uiFrame  = frame;
     capture->m_bPending = true;
@@ -1496,6 +1577,43 @@ xiiGeometryResidencyManager::AdmissionResult xiiGeometryResidencyManager::State:
     return AdmissionResult::MemoryDeferred;
   if (optional && page.m_uiSize > m_uiRemainingUploadBudget)
     return AdmissionResult::BudgetDeferred;
+  auto&                     residency = source.m_Pages[index];
+  xiiDynamicArray<xiiUInt8> requiredData;
+  xiiUInt8*                 payload = nullptr;
+  if (optional)
+  {
+    if (residency.m_bIoFailed)
+      return AdmissionResult::Failed;
+    if (!residency.m_Io)
+    {
+      if (m_uiPendingIo >= 32U)
+        return AdmissionResult::NotReady;
+      residency.m_Io               = XII_DEFAULT_NEW(PageIo);
+      residency.m_Io->m_Owner      = s_pState;
+      residency.m_Io->m_hMesh      = source.m_hMesh;
+      residency.m_Io->m_uiRevision = mesh->GetCurrentResourceChangeCounter();
+      residency.m_Io->m_uiTile     = index;
+      residency.m_Io->ConfigureTask("Virtual geometry page IO", xiiTaskNesting::Never);
+      m_uiPendingIo.Increment();
+      xiiTaskSystem::StartSingleTask(residency.m_Io, xiiTaskPriority::FileAccess);
+      return AdmissionResult::NotReady;
+    }
+    if (!residency.m_Io->m_bComplete)
+      return AdmissionResult::NotReady;
+    if (residency.m_Io->m_Result.Failed())
+    {
+      residency.m_bIoFailed = true;
+      residency.m_Io.Clear();
+      return AdmissionResult::Failed;
+    }
+    payload = residency.m_Io->m_Data.GetData();
+  }
+  else
+  {
+    if (descriptor.ReadGeometryPage(index, requiredData).Failed())
+      return AdmissionResult::Failed;
+    payload = requiredData.GetData();
+  }
   auto* device = m_pMetadataBuffer->GetDevice().Borrow();
   if (!m_pTopologyUploadFence)
   {
@@ -1514,7 +1632,7 @@ xiiGeometryResidencyManager::AdmissionResult xiiGeometryResidencyManager::State:
   description.m_Mode        = xiiGALBufferMode::Raw;
   description.m_Usage       = xiiGALResourceUsage::Immutable;
   bool             deferred = false;
-  xiiGALBufferData data(const_cast<xiiUInt8*>(descriptor.m_GeometryPageData.GetData()) + page.m_uiOffset, page.m_uiSize, commands.Borrow());
+  xiiGALBufferData data(payload, page.m_uiSize, commands.Borrow());
   data.m_pStreamingDeferred = optional ? &deferred : nullptr;
   commands->Begin();
   auto buffer = device->CreateBuffer(description, &data);
@@ -1538,11 +1656,13 @@ xiiGeometryResidencyManager::AdmissionResult xiiGeometryResidencyManager::State:
     RetireBufferBinding(handle, 0U);
     return AdmissionResult::Failed;
   }
+  source.m_Pages[index].m_Io.Clear();
   source.m_Pages[index].m_Buffer          = handle;
   source.m_Pages[index].m_uiBytes         = buffer->GetMemoryConsumption();
   source.m_PageRecords[index].m_Mapping.x = handle.m_uiIndex;
   source.m_bPagesDirty                    = true;
   m_uiResidentTopologyBytes += source.m_Pages[index].m_uiBytes;
+  ++m_uiGeometryPageCount;
   m_StreamingStats.m_uiTopologyUploadBytes += page.m_uiSize;
   m_StreamingStats.m_uiAdmittedBytes += page.m_uiSize;
   m_uiRemainingUploadBudget -= xiiMath::Min(m_uiRemainingUploadBudget, xiiUInt64(page.m_uiSize));
@@ -1552,10 +1672,12 @@ xiiGeometryResidencyManager::AdmissionResult xiiGeometryResidencyManager::State:
 bool xiiGeometryResidencyManager::State::PublishPages(SourceBinding& source)
 {
   xiiDynamicArray<xiiUInt8> payload;
-  payload.SetCount(16U + source.m_PageRecords.GetCount() * sizeof(PageRecord), 0U);
+  payload.SetCount(272U + source.m_PageRecords.GetCount() * sizeof(PageRecord), 0U);
   const xiiUInt32 count = source.m_PageRecords.GetCount();
   xiiMemoryUtils::Copy(payload.GetData(), reinterpret_cast<const xiiUInt8*>(&count), sizeof(count));
-  xiiMemoryUtils::Copy(payload.GetData() + 16U, reinterpret_cast<const xiiUInt8*>(source.m_PageRecords.GetData()), count * sizeof(PageRecord));
+  for (xiiUInt32 slot = 0U; slot < m_uiFramesInFlight; ++slot)
+    xiiMemoryUtils::Copy(payload.GetData() + 16U + slot * sizeof(xiiUInt32), reinterpret_cast<const xiiUInt8*>(&m_TextureFeedbackUav[slot].m_uiIndex), sizeof(xiiUInt32));
+  xiiMemoryUtils::Copy(payload.GetData() + 272U, reinterpret_cast<const xiiUInt8*>(source.m_PageRecords.GetData()), count * sizeof(PageRecord));
   auto*                           device = m_pMetadataBuffer->GetDevice().Borrow();
   xiiGALBufferCreationDescription description;
   description.m_uiSize    = payload.GetCount();
@@ -1594,6 +1716,7 @@ bool xiiGeometryResidencyManager::State::PublishPages(SourceBinding& source)
   for (auto handle : source.m_Retiring)
     RetireBufferBinding(handle, m_uiStreamingFrame);
   m_uiResidentTopologyBytes -= source.m_uiRetiringBytes;
+  m_uiGeometryPageCount -= source.m_Retiring.GetCount();
   m_StreamingStats.m_uiRetiredTopologyBytes += source.m_uiRetiringBytes;
   source.m_Retiring.Clear();
   source.m_uiRetiringBytes = 0U;
@@ -1619,12 +1742,15 @@ void xiiGeometryResidencyManager::State::ProcessPages(xiiUInt64 frame, xiiUInt64
         continue;
       if (page.m_Buffer.IsValid() && frame > page.m_uiDemand && frame - page.m_uiDemand > 120U && page.m_uiDemand <= completed)
       {
-        RetireBufferBinding(page.m_Buffer, frame - 1U);
+        source.m_Retiring.PushBack(page.m_Buffer);
+        source.m_uiRetiringBytes += page.m_uiBytes;
         page.m_Buffer                       = {};
         page.m_uiTrimFrame                  = frame;
         source.m_PageRecords[p].m_Mapping.x = xiiInvalidIndex;
         source.m_bPagesDirty                = true;
       }
+      else if (page.m_Io && frame - xiiMath::Min(frame, page.m_uiDemand) >= 30U)
+        page.m_Io.Clear();
       else if (!page.m_Buffer.IsValid() && page.m_uiDemand != 0U && frame - xiiMath::Min(frame, page.m_uiDemand) < 30U)
         static_cast<void>(UploadPage(source, p, true));
     }
@@ -1658,6 +1784,9 @@ bool xiiGeometryResidencyManager::ReportPageDemand(xiiUInt32 request, xiiUInt64 
     {
       if (frame <= page.m_uiTrimFrame)
         return false;
+      ++s_pState->m_uiPageRequests;
+      if (!page.m_Buffer.IsValid())
+        ++s_pState->m_uiPageMisses;
       page.m_uiDemand   = xiiMath::Max(page.m_uiDemand, frame);
       page.m_uiPriority = xiiMath::Max(page.m_uiPriority, priority);
       return true;
@@ -1752,6 +1881,8 @@ xiiGeometryResidencyManager::AdmissionResult xiiGeometryResidencyManager::Regist
     auto*       source   = s_pState->m_SourceBindings.GetValue(identity);
     if (source == nullptr)
     {
+      if (!s_pState->InitializeTextureFeedback())
+        return AdmissionResult::Failed;
       State::SourceBinding fresh;
       fresh.m_hMesh          = slot.m_Description.m_Lods[uiLod].m_hMeshBuffer;
       const auto& descriptor = mesh.GetDescriptor();
@@ -1762,7 +1893,7 @@ xiiGeometryResidencyManager::AdmissionResult xiiGeometryResidencyManager::Regist
         auto& page       = fresh.m_Pages[p];
         page.m_bRequired = descriptor.m_GeometryPages[p].m_bRequired;
         // Request identities are never recycled during the subsystem lifetime.
-        if (s_pState->m_uiNextPageRequest == 0x7FFFFFFFU)
+        if (s_pState->m_uiNextPageRequest >= State::s_uiFeedbackWords * 32U)
           return AdmissionResult::Failed;
         page.m_uiRequest                   = s_pState->m_uiNextPageRequest++;
         fresh.m_PageRecords[p].m_Mapping.y = page.m_uiRequest;
@@ -1890,6 +2021,7 @@ void xiiGeometryResidencyManager::ReleaseSourceBinding(LodBinding binding, xiiUI
     for (auto handle : pSource->m_Retiring)
       RetireBufferBinding(handle, pSource->m_uiLastUseFrame);
     s_pState->m_uiResidentTopologyBytes -= pSource->m_uiRetiringBytes;
+    s_pState->m_uiGeometryPageCount -= pSource->m_Retiring.GetCount();
     if (!pSource->m_Pages.IsEmpty())
     {
       xiiResourceLock<xiiMeshBufferResource> mesh(pSource->m_hMesh, xiiResourceAcquireMode::PointerOnly);
@@ -1897,7 +2029,10 @@ void xiiGeometryResidencyManager::ReleaseSourceBinding(LodBinding binding, xiiUI
       for (const auto& page : pSource->m_Pages)
       {
         if (page.m_Buffer.IsValid() && mesh.IsValid())
+        {
           s_pState->m_uiResidentTopologyBytes -= page.m_uiBytes;
+          --s_pState->m_uiGeometryPageCount;
+        }
         ++pageIndex;
         s_pState->m_PageRequests.Remove(page.m_uiRequest);
         RetireBufferBinding(page.m_Buffer, pSource->m_uiLastUseFrame);
@@ -2095,8 +2230,19 @@ void xiiGeometryResidencyManager::ProcessStreaming(xiiUInt64 uiFrameIndex, xiiUI
       ++s_pState->m_StreamingStats.m_uiPressureEvictions;
     TrimFineLods(uiFrameIndex, uiRemaining);
   }
-  s_pState->ProcessPages(uiFrameIndex, uiCompletedFrame);
+  if (bNewFrame)
+    for (auto index : s_pState->m_ActiveSlots)
+    {
+      auto& slot = s_pState->m_Slots[index];
+      for (xiiUInt32 lod = 0U; lod < slot.m_GpuRecord.m_uiLodCount; ++lod)
+        if (slot.m_GpuRecord.m_Lods[lod].m_uiPadding != 0U)
+        {
+          slot.m_GpuRecord.m_Lods[lod].m_uiPadding = 1U | (static_cast<xiiUInt32>(uiFrameIndex % s_pState->m_uiFramesInFlight) << 1U);
+          slot.m_uiDirtyFrameMask |= xiiUInt64(1U) << (uiFrameIndex % s_pState->m_uiFramesInFlight);
+        }
+    }
   s_pState->ProcessTextures(uiFrameIndex, uiCompletedFrame);
+  s_pState->ProcessPages(uiFrameIndex, uiCompletedFrame);
   auto& streamingQueue = s_pState->m_StreamingQueue;
   for (xiiUInt32 n = 0; n < streamingQueue.GetCount();)
   {
@@ -2293,6 +2439,12 @@ xiiGeometryResidencyStats xiiGeometryResidencyManager::GetStats()
     return stats;
 
   stats                           = s_pState->m_StreamingStats;
+  stats.m_uiGeometryPageBytes     = s_pState->m_uiResidentTopologyBytes;
+  stats.m_uiTexturePageBytes      = s_pState->m_uiTextureBytes;
+  stats.m_uiGeometryPages         = s_pState->m_uiGeometryPageCount;
+  stats.m_uiTexturePages          = s_pState->m_uiTexturePageCount;
+  stats.m_uiPageRequests          = s_pState->m_uiPageRequests;
+  stats.m_uiPageMisses            = s_pState->m_uiPageMisses;
   stats.m_uiRemainingUploadBytes  = s_pState->m_uiRemainingUploadBudget;
   stats.m_uiArenaMeshlets         = s_pState->m_uiArenaMeshlets;
   stats.m_uiCoverageCacheHits     = s_pState->m_uiCoverageCacheHits;

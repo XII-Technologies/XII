@@ -154,9 +154,10 @@ struct XII_GRAPHICSCORE_DLL alignas(16) xiiMeshlet
 struct XII_GRAPHICSCORE_DLL xiiGeometryPage
 {
   XII_DECLARE_POD_TYPE();
-  xiiUInt32 m_uiOffset  = 0U;
-  xiiUInt32 m_uiSize    = 0U;
-  bool      m_bRequired = false;
+  xiiUInt32 m_uiOffset     = 0U;
+  xiiUInt32 m_uiSize       = 0U;
+  bool      m_bRequired    = false;
+  xiiUInt32 m_uiStoredSize = 0U;
   xiiResult Serialize(xiiStreamWriter& stream) const;
   xiiResult Deserialize(xiiStreamReader& stream);
 };
@@ -297,12 +298,16 @@ public:
   void SetBounds(const xiiBoundingBoxSphere& bounds);
 
   xiiResult Serialize(xiiStreamWriter& inout_stream) const;
-  xiiResult Deserialize(xiiStreamReader& inout_stream);
+  xiiResult Deserialize(xiiStreamReader& inout_stream, const xiiResourceLoadData* pSource = nullptr);
 
 public:
   xiiEnum<xiiGALPrimitiveTopology> m_Topology  = xiiGALPrimitiveTopology::TriangleList; ///< The primitive topology for this mesh, used to identify how the primitives in this mesh are defined and rendered (e.g., triangle list, triangle strip, line list, etc.) and may influence how the vertex and index data is organized in memory for optimal rendering performance.
   xiiEnum<xiiGALValueType>         m_IndexType = xiiGALValueType::UInt32;               ///< The data format of the index data for this mesh, used to identify how the index data is organized and interpreted by the renderer (e.g., 16-bit unsigned integer or 32-bit unsigned integer) and to calculate the expected index data size based on the index count and index stride for this descriptor.
   [[nodiscard]] xiiResult          BuildGeometryPages();
+  [[nodiscard]] xiiResult          ReadGeometryPage(xiiUInt32 page, xiiDynamicArray<xiiUInt8>& out_data) const;
+  xiiString                        m_sGeometryPageFile;
+  xiiUInt64                        m_uiGeometryFileOffset = 0U, m_uiGeometryFileHash = 0U, m_uiPageDataBytes = 0U;
+  xiiUInt16                        m_uiGeometryFileVersion = 0U;
   xiiDynamicArray<xiiGeometryPage> m_GeometryPages;
   xiiDynamicArray<xiiUInt8>        m_GeometryPageData;
   bool                             m_bStreamableGeometry = true;
@@ -344,6 +349,7 @@ public:
 
   /// Returns the mesh buffer resource descriptor for this mesh buffer resource, used to identify the properties and data of this mesh buffer resource for rendering and other operations. The mesh buffer resource descriptor contains information about the vertex stream layout, vertex and index data, meshlet data, and other properties of this mesh buffer resource that are essential for correctly interpreting the mesh data and for configuring the rendering pipeline for this mesh.
   const xiiMeshBufferResourceDescriptor& GetDescriptor() const;
+  [[nodiscard]] xiiResult                ReadGeometryPage(xiiUInt32 page, xiiUInt32 revision, xiiDynamicArray<xiiUInt8>& out_data) const;
 
   /// Returns the bounding box sphere for this mesh buffer resource, used to identify the spatial bounds of this mesh for frustum culling, collision detection, and other spatial queries during rendering. The bounding box sphere is typically calculated based on the vertex positions in the geometry data used to create this mesh buffer resource, and can be used for efficient culling and intersection tests during rendering.
   const xiiBoundingBoxSphere& GetBounds() const;
