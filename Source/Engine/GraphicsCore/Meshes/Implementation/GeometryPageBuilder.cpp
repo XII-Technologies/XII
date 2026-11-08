@@ -165,10 +165,13 @@ xiiResult xiiMeshBufferResourceDescriptor::BuildGeometryPages()
           next.PushBack(level[first++]);
           continue;
         }
-        xiiDynamicArray<xiiUInt32> indices, simplified;
-        auto                       bounds        = xiiBoundingSphere::MakeInvalid();
-        float                      childError    = 0.0f;
-        xiiUInt32                  coverageFirst = xiiInvalidIndex, coverageEnd = 0U;
+        xiiDynamicArray<xiiUInt32>         indices, simplified;
+        xiiHashTable<xiiUInt32, xiiUInt32> localVertexMap;
+        xiiDynamicArray<xiiUInt32>         sourceVertices;
+        xiiDynamicArray<xiiVec3>           localPositions;
+        auto                               bounds        = xiiBoundingSphere::MakeInvalid();
+        float                              childError    = 0.0f;
+        xiiUInt32                          coverageFirst = xiiInvalidIndex, coverageEnd = 0U;
         for (xiiUInt32 child = 0U; child < childCount; ++child)
         {
           const auto& page = m_GeometryPages[level[first + child]];
@@ -184,13 +187,24 @@ xiiResult xiiMeshBufferResourceDescriptor::BuildGeometryPages()
             const auto covered = cluster.m_uiGpuPadding[1];
             coverageEnd        = xiiMath::Max(coverageEnd, cluster.m_uiFirstPrimitive + covered);
             for (xiiUInt32 p = 0U; p < cluster.m_uiPrimitiveCount * 3U; ++p)
-              indices.PushBack(m_MeshletVertexRemap[cluster.m_uiVertexRemapOffset + m_MeshletPrimitiveIndices[cluster.m_uiPrimitiveIndexOffset + p]]);
+            {
+              const auto source = m_MeshletVertexRemap[cluster.m_uiVertexRemapOffset + m_MeshletPrimitiveIndices[cluster.m_uiPrimitiveIndexOffset + p]];
+              xiiUInt32  local;
+              if (!localVertexMap.TryGetValue(source, local))
+              {
+                local = sourceVertices.GetCount();
+                localVertexMap.Insert(source, local);
+                sourceVertices.PushBack(source);
+                localPositions.PushBack(positions[source]);
+              }
+              indices.PushBack(local);
+            }
           }
         }
         simplified.SetCountUninitialized(indices.GetCount());
         float      error  = 0.0f;
         const auto target = xiiMath::Max(3U, (48U * 1024U / (stride * 3U + 7U)) * 3U);
-        const auto count  = meshopt_simplify(simplified.GetData(), indices.GetData(), indices.GetCount(), &positions[0].x, positions.GetCount(),
+        const auto count  = meshopt_simplify(simplified.GetData(), indices.GetData(), indices.GetCount(), &localPositions[0].x, localPositions.GetCount(),
                                              sizeof(xiiVec3), xiiMath::Min(target, indices.GetCount() / 2U / 3U * 3U), xiiMath::MaxValue<float>(),
                                              meshopt_SimplifyErrorAbsolute | meshopt_SimplifyLockBorder, &error);
         if (count == 0U || count % 3U != 0U || !xiiMath::IsFinite(error))
@@ -211,7 +225,7 @@ xiiResult xiiMeshBufferResourceDescriptor::BuildGeometryPages()
         remaps.SetCountUninitialized(static_cast<xiiUInt32>(capacity * xiiMeshlet::s_uiMaxVertices));
         triangles.SetCountUninitialized(static_cast<xiiUInt32>(capacity * xiiMeshlet::s_uiMaxPrimitives * 3U));
         const auto                                              meshletCount = meshopt_buildMeshlets(meshlets.GetData(), remaps.GetData(), triangles.GetData(), simplified.GetData(), count,
-                                                                                                     &positions[0].x, positions.GetCount(), sizeof(xiiVec3), xiiMeshlet::s_uiMaxVertices, xiiMeshlet::s_uiMaxPrimitives, 0.5f);
+                                                                                                     &localPositions[0].x, localPositions.GetCount(), sizeof(xiiVec3), xiiMeshlet::s_uiMaxVertices, xiiMeshlet::s_uiMaxPrimitives, 0.5f);
         xiiDynamicArray<xiiMeshlet, xiiAlignedAllocatorWrapper> parents;
         for (size_t index = 0U; index < meshletCount; ++index)
         {
@@ -226,7 +240,8 @@ xiiResult xiiMeshBufferResourceDescriptor::BuildGeometryPages()
           parent.m_fConeCutoff            = -1.0f;
           parent.m_uiGpuPadding[1]        = coverageEnd - coverageFirst;
           parent.m_Hierarchy              = xiiVec4(0.0f);
-          m_MeshletVertexRemap.PushBackRange(xiiMakeArrayPtr(remaps.GetData() + built.vertex_offset, built.vertex_count));
+          for (xiiUInt32 vertex = 0U; vertex < built.vertex_count; ++vertex)
+            m_MeshletVertexRemap.PushBack(sourceVertices[remaps[built.vertex_offset + vertex]]);
           m_MeshletPrimitiveIndices.PushBackRange(xiiMakeArrayPtr(triangles.GetData() + built.triangle_offset, built.triangle_count * 3U));
           parents.PushBack(parent);
         }

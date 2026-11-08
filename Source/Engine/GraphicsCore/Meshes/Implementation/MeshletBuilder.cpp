@@ -78,10 +78,18 @@ xiiResult xiiMeshBufferResourceDescriptor::BuildMeshlets(xiiArrayPtr<const xiiMe
   optimizedVertices.SetCountUninitialized(static_cast<xiiUInt32>(capacity * uiMaxVertices));
   optimizedTriangles.SetCountUninitialized(static_cast<xiiUInt32>(capacity * uiMaxPrimitives * 3));
 
+  // meshoptimizer sizes adjacency and simplification scratch from vertex_count.
+  // A section must not allocate that scratch for every vertex in a whole environment.
+  xiiDynamicArray<xiiUInt32> localIndices, sourceVertices;
+  xiiDynamicArray<xiiVec3>   localPositions;
+  localIndices.SetCount(m_uiVertexCount, xiiInvalidIndex);
+
   for (const auto& range : ranges)
   {
     if (range.m_uiPrimitiveCount == 0)
       continue;
+    sourceVertices.Clear();
+    localPositions.Clear();
     indices.SetCountUninitialized(range.m_uiPrimitiveCount * 3);
     for (xiiUInt32 i = 0; i < indices.GetCount(); ++i)
     {
@@ -99,9 +107,18 @@ xiiResult xiiMeshBufferResourceDescriptor::BuildMeshlets(xiiArrayPtr<const xiiMe
         clear();
         return XII_FAILURE;
       }
+      const auto sourceIndex = indices[i];
+      auto&      local       = localIndices[sourceIndex];
+      if (local == xiiInvalidIndex)
+      {
+        local = sourceVertices.GetCount();
+        sourceVertices.PushBack(sourceIndex);
+        localPositions.PushBack(positions[sourceIndex]);
+      }
+      indices[i] = local;
     }
 
-    const size_t count          = meshopt_buildMeshlets(optimizedMeshlets.GetData(), optimizedVertices.GetData(), optimizedTriangles.GetData(), indices.GetData(), indices.GetCount(), &positions[0].x, positions.GetCount(), sizeof(xiiVec3), uiMaxVertices, uiMaxPrimitives, 0.5f);
+    const size_t count          = meshopt_buildMeshlets(optimizedMeshlets.GetData(), optimizedVertices.GetData(), optimizedTriangles.GetData(), indices.GetData(), indices.GetCount(), &localPositions[0].x, localPositions.GetCount(), sizeof(xiiVec3), uiMaxVertices, uiMaxPrimitives, 0.5f);
     xiiUInt32    firstPrimitive = range.m_uiFirstPrimitive;
     for (size_t i = 0; i < count; ++i)
     {
@@ -112,7 +129,7 @@ xiiResult xiiMeshBufferResourceDescriptor::BuildMeshlets(xiiArrayPtr<const xiiMe
         clear();
         return XII_FAILURE;
       }
-      const auto bounds          = meshopt_computeMeshletBounds(optimizedVertices.GetData() + source.vertex_offset, optimizedTriangles.GetData() + source.triangle_offset, source.triangle_count, &positions[0].x, positions.GetCount(), sizeof(xiiVec3));
+      const auto bounds          = meshopt_computeMeshletBounds(optimizedVertices.GetData() + source.vertex_offset, optimizedTriangles.GetData() + source.triangle_offset, source.triangle_count, &localPositions[0].x, localPositions.GetCount(), sizeof(xiiVec3));
       auto&      meshlet         = m_Meshlets.ExpandAndGetRef();
       meshlet.m_uiFirstPrimitive = firstPrimitive;
       firstPrimitive += source.triangle_count;
@@ -128,10 +145,13 @@ xiiResult xiiMeshBufferResourceDescriptor::BuildMeshlets(xiiArrayPtr<const xiiMe
       // meshoptimizer's cutoff of one denotes a degenerate/wide cone that must always
       // pass. Preserve XII's disabled sentinel rather than normalizing its zero axis.
       meshlet.m_fConeCutoff = bounds.cone_cutoff >= 1.0f || meshlet.m_vConeAxis.IsZero() ? -1.0f : xiiMath::Sqrt(xiiMath::Max(0.0f, 1.0f - bounds.cone_cutoff * bounds.cone_cutoff));
-      m_MeshletVertexRemap.PushBackRange(xiiArrayPtr<const xiiUInt32>(optimizedVertices.GetData() + source.vertex_offset, source.vertex_count));
+      for (xiiUInt32 vertex = 0U; vertex < source.vertex_count; ++vertex)
+        m_MeshletVertexRemap.PushBack(sourceVertices[optimizedVertices[source.vertex_offset + vertex]]);
       m_MeshletPrimitiveIndices.PushBackRange(xiiArrayPtr<const xiiUInt8>(optimizedTriangles.GetData() + source.triangle_offset, source.triangle_count * 3));
       m_MeshletMaterialIndices.PushBack(range.m_uiMaterialIndex);
     }
+    for (const auto source : sourceVertices)
+      localIndices[source] = xiiInvalidIndex;
   }
   if (!m_Meshlets.IsEmpty())
   {
