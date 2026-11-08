@@ -19,4 +19,7 @@ namespace xiiCompressionUtils
 
   ///Decompresses the given data using the compression method eMethod into the dynamic array given in out_Data.
   XII_FOUNDATION_DLL xiiResult Decompress(xiiArrayPtr<const xiiUInt8> compressedData, xiiCompressionMethod method, xiiDynamicArray<xiiUInt8>& out_data);
+
+  /// Rejects payloads whose declared decompressed size exceeds the caller's limit before allocating output memory.
+  XII_FOUNDATION_DLL xiiResult Decompress(xiiArrayPtr<const xiiUInt8> compressedData, xiiCompressionMethod method, xiiUInt32 uiMaxOutputBytes, xiiDynamicArray<xiiUInt8>& out_data);
 } // namespace xiiCompressionUtils

@@ -20,10 +20,9 @@ struct xiiMaterialTexture2D
   {
     if (Index == 0xffffffffu)
       return 1.0f;
-    uint4  size = xiiSurfaceTextureDimensions(Index);
-    float2 dx = ddx(uv) * size.xy, dy = ddy(uv) * size.xy;
-    float  level = 0.5f * log2(max(max(dot(dx, dx), dot(dy, dy)), 1.0f)) + bias;
-    return xiiSampleSurfaceTextureLevel(Index, 0xffffffffu, samplerState, uv, level);
+    if ((Index & 0x80000000u) == 0u)
+      return g_VirtualTextureTiles[NonUniformResourceIndex(Index)].SampleBias(samplerState, uv, bias);
+    return xiiSampleVirtualTextureGrad(Index, 0xffffffffu, samplerState, uv, ddx(uv), ddy(uv), bias);
   }
   float4 SampleGrad(SamplerState samplerState, float2 uv, float2 dx, float2 dy)
   {
@@ -31,11 +30,7 @@ struct xiiMaterialTexture2D
       return 1.0f;
     if ((Index & 0x80000000u) == 0u)
       return g_VirtualTextureTiles[NonUniformResourceIndex(Index)].SampleGrad(samplerState, uv, dx, dy);
-    uint4 size = xiiSurfaceTextureDimensions(Index);
-    dx *= size.xy;
-    dy *= size.xy;
-    float level = 0.5f * log2(max(max(dot(dx, dx), dot(dy, dy)), 1.0f));
-    return xiiSampleSurfaceTextureLevel(Index, 0xffffffffu, samplerState, uv, level);
+    return xiiSampleVirtualTextureGrad(Index, 0xffffffffu, samplerState, uv, dx, dy, 0.0f);
   }
   void GetDimensions(out uint width, out uint height)
   {

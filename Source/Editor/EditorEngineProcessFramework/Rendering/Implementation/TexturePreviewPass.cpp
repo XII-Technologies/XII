@@ -10,10 +10,12 @@
 #include <GraphicsCore/Pipeline/PipelineStateCache.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/Shader/ShaderPermutationUtilities.h>
+#include <GraphicsCore/Streaming/GpuResidencyManager.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
 #include <GraphicsCore/Textures/TextureCubeResource.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/Device/SwapChain.h>
+#include <GraphicsFoundation/Resources/BindlessResourceTable.h>
 #include <GraphicsFoundation/Shader/InputLayout.h>
 #include <GraphicsFoundation/Tools/MapHelper.h>
 #include <Shaders/Editor/TexturePreviewConstants.h>
@@ -115,8 +117,9 @@ xiiResult xiiTexturePreviewPass::Build(xiiRenderPipelinePassContext& context)
   XII_SUCCEED_OR_RETURN(Parameter(context.m_Parameters, "AlphaThreshold", threshold));
   if (textureID.IsEmpty() || channel < 0 || channel > 7 || mip < -1 || mip > 31 || !xiiMath::IsFinite(threshold) || threshold < 0 || threshold > 1)
     return XII_FAILURE;
-  xiiSharedPtr<xiiGALTexture> source;
-  xiiSharedPtr<xiiGALSampler> sampler;
+  xiiSharedPtr<xiiGALTexture>         source;
+  xiiSharedPtr<xiiGALSampler>         sampler;
+  xiiSharedPtr<xiiVirtualTextureData> virtualData;
   if (m_bCube)
   {
     xiiResourceLock<xiiTextureCubeResource> resource(xiiResourceManager::LoadResource<xiiTextureCubeResource>(textureID), xiiResourceAcquireMode::AllowLoadingFallback_NeverFail);
@@ -130,9 +133,12 @@ xiiResult xiiTexturePreviewPass::Build(xiiRenderPipelinePassContext& context)
     xiiResourceLock<xiiTexture2DResource> resource(xiiResourceManager::LoadResource<xiiTexture2DResource>(textureID), xiiResourceAcquireMode::AllowLoadingFallback_NeverFail);
     if (!resource || resource->GetLoadingState() != xiiResourceState::Loaded)
       return XII_FAILURE;
-    source  = resource->GetGALTexture();
-    sampler = resource->GetGALSampler();
+    source      = resource->GetGALTexture();
+    sampler     = resource->GetGALSampler();
+    virtualData = resource->GetVirtualData();
   }
+  const xiiUInt32             virtualIndex   = virtualData ? xiiGpuResidencyManager::ResolveVirtualTexture(virtualData, context.m_Graph.GetFrameIndex()) : xiiInvalidIndex;
+  const bool                  virtualPreview = virtualIndex != xiiInvalidIndex;
   xiiSharedPtr<xiiGALTexture> output;
   if (view->GetSwapChain())
     output = view->GetSwapChain()->GetBackBufferTexture();
@@ -150,8 +156,16 @@ xiiResult xiiTexturePreviewPass::Build(xiiRenderPipelinePassContext& context)
   xiiResourceLock<xiiMeshBufferResource> geometry(m_hGeometry, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
   if (!geometry || !geometry->GetVertexBuffer() || !geometry->GetIndexBuffer())
     return XII_FAILURE;
-  auto shader      = xiiResourceManager::LoadResource<xiiShaderResource>(m_bCube ? "Shaders/Editor/TextureCubePreview.xiiShader" : "Shaders/Editor/TexturePreview.xiiShader");
-  auto permutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(shader, {}, false);
+  auto                                           shader = xiiResourceManager::LoadResource<xiiShaderResource>(m_bCube ? "Shaders/Editor/TextureCubePreview.xiiShader" : "Shaders/Editor/TexturePreview.xiiShader");
+  xiiHashTable<xiiHashedString, xiiHashedString> variables;
+  if (!m_bCube)
+  {
+    xiiHashedString name, value;
+    name.Assign("PREVIEW_VIRTUAL_TEXTURE");
+    value.Assign(virtualPreview ? "TRUE" : "FALSE");
+    variables.Insert(name, value);
+  }
+  auto permutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(shader, variables, false);
   if (!permutation.IsValid())
     return XII_FAILURE;
   xiiResourceLock<xiiShaderPermutationResource> program(permutation, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
@@ -196,27 +210,30 @@ xiiResult xiiTexturePreviewPass::Build(xiiRenderPipelinePassContext& context)
   };
   graph.AddPass<PreviewData>("Clear texture preview", xiiGALCommandQueueFlags::Graphics, setupClear, executeClear);
   const auto setupInspection = [&](PreviewData& data, xiiRenderGraphBuilder& builder) {
-    data.m_Color    = builder.ReadWriteTexture(color, xiiGALResourceStateFlags::RenderTarget);
-    data.m_Depth    = builder.ReadWriteTexture(depth, xiiGALResourceStateFlags::DepthWrite);
-    data.m_Source   = builder.ReadTexture(builder.ImportTexture("Inspected texture", source, source->GetResourceState()), xiiGALResourceStateFlags::ShaderResource);
+    data.m_Color = builder.ReadWriteTexture(color, xiiGALResourceStateFlags::RenderTarget);
+    data.m_Depth = builder.ReadWriteTexture(depth, xiiGALResourceStateFlags::DepthWrite);
+    if (!virtualPreview)
+      data.m_Source = builder.ReadTexture(builder.ImportTexture("Inspected texture", source, source->GetResourceState()), xiiGALResourceStateFlags::ShaderResource);
     data.m_Vertices = builder.ReadBuffer(builder.ImportBuffer("Preview vertices", geometry->GetVertexBuffer(), geometry->GetVertexBuffer()->GetResourceState()), xiiGALResourceStateFlags::VertexBuffer);
     data.m_Indices  = builder.ReadBuffer(builder.ImportBuffer("Preview indices", geometry->GetIndexBuffer(), geometry->GetIndexBuffer()->GetResourceState()), xiiGALResourceStateFlags::IndexBuffer);
     xiiGALBufferCreationDescription description;
-    description.m_uiSize           = sizeof(xiiTexturePreviewConstants);
-    description.m_BindFlags        = xiiGALBindFlags::UniformBuffer;
-    description.m_Usage            = xiiGALResourceUsage::Dynamic;
-    description.m_CPUAccessFlags   = xiiGALCPUAccessFlag::Write;
-    data.m_Constants               = builder.WriteBuffer("Texture inspection settings", description, xiiGALResourceStateFlags::ConstantBuffer);
-    data.m_Settings.ViewProjection = view->GetViewProjectionMatrix(xiiCameraEye::Left);
-    data.m_Settings.Channel        = channel;
-    data.m_Settings.Mip            = mip < 0 ? -1.0f : static_cast<float>(xiiMath::Min(static_cast<xiiUInt32>(mip), source->GetDescription().m_uiMipLevels - 1));
-    data.m_Settings.IsLinear       = !xiiGALResourceFormat::IsSrgb(source->GetDescription().m_Format);
-    data.m_Settings.AlphaThreshold = threshold;
-    data.m_Settings.OutputIsSrgb   = xiiGALResourceFormat::IsSrgb(output->GetDescription().m_Format);
-    data.m_Settings.Padding        = xiiVec3::MakeZero();
-    data.m_pSampler                = sampler;
-    data.m_uiIndexCount            = geometry->GetIndexCount();
-    data.m_IndexType               = geometry->GetIndexType();
+    description.m_uiSize                = sizeof(xiiTexturePreviewConstants);
+    description.m_BindFlags             = xiiGALBindFlags::UniformBuffer;
+    description.m_Usage                 = xiiGALResourceUsage::Dynamic;
+    description.m_CPUAccessFlags        = xiiGALCPUAccessFlag::Write;
+    data.m_Constants                    = builder.WriteBuffer("Texture inspection settings", description, xiiGALResourceStateFlags::ConstantBuffer);
+    data.m_Settings.ViewProjection      = view->GetViewProjectionMatrix(xiiCameraEye::Left);
+    data.m_Settings.Channel             = channel;
+    const auto& sourceDescription       = virtualPreview ? virtualData->m_Description : source->GetDescription();
+    data.m_Settings.Mip                 = mip < 0 ? -1.0f : static_cast<float>(xiiMath::Min(static_cast<xiiUInt32>(mip), sourceDescription.m_uiMipLevels - 1));
+    data.m_Settings.IsLinear            = !xiiGALResourceFormat::IsSrgb(sourceDescription.m_Format);
+    data.m_Settings.AlphaThreshold      = threshold;
+    data.m_Settings.OutputIsSrgb        = xiiGALResourceFormat::IsSrgb(output->GetDescription().m_Format);
+    data.m_Settings.VirtualTextureIndex = virtualIndex;
+    data.m_Settings.Padding             = xiiVec2U32::MakeZero();
+    data.m_pSampler                     = sampler;
+    data.m_uiIndexCount                 = geometry->GetIndexCount();
+    data.m_IndexType                    = geometry->GetIndexType();
     builder.SetPassAllowMerge(false);
     builder.SetPassRenderPassManaged();
     builder.SetPassPreparation([&data](xiiRenderGraphPassContext& execution) {
@@ -259,7 +276,15 @@ xiiResult xiiTexturePreviewPass::Build(xiiRenderPipelinePassContext& context)
     commands.SetVertexBuffers(0, xiiMakeArrayPtr(vertices), {}, xiiGALSetVertexBufferFlags::Reset, xiiGALStateTransitionMode::None);
     commands.SetIndexBuffer(execution.GetBuffer(data.m_Indices), 0, xiiGALStateTransitionMode::None);
     commands.ResolveAndSetConstantBuffer("xiiTexturePreviewConstants", execution.GetBuffer(data.m_Constants), xiiGALShaderType::Vertex | xiiGALShaderType::Pixel);
-    commands.ResolveAndSetShaderResourceTextureView("PreviewTexture", execution.GetTexture(data.m_Source)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Pixel);
+    if (data.m_Settings.VirtualTextureIndex != xiiInvalidIndex)
+    {
+      // Preview and residency uploads submit to the same graphics queue.
+      xiiGALBindlessResourceTable::BindBufferSRVs(commands, "g_VirtualTextureTables", xiiGALShaderType::Pixel);
+      xiiGALBindlessResourceTable::BindTextureSRVs(commands, "g_VirtualTextureTiles", xiiGALShaderType::Pixel);
+      xiiGALBindlessResourceTable::BindBufferUAVs(commands, "g_VirtualTextureFeedback", xiiGALShaderType::Pixel);
+    }
+    else
+      commands.ResolveAndSetShaderResourceTextureView("PreviewTexture", execution.GetTexture(data.m_Source)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Pixel);
     commands.ResolveAndSetSampler("PreviewSampler", data.m_pSampler.Borrow(), xiiGALShaderType::Pixel);
     if (commands.CommitShaderResources(xiiGALStateTransitionMode::Verify).Succeeded())
       commands.DrawIndexed({data.m_uiIndexCount, data.m_IndexType});

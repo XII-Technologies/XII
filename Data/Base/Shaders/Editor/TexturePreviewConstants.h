@@ -11,7 +11,8 @@ DECLARE_CONSTANT_BUFFER_AUTO(xiiTexturePreviewConstants)
   UINT1(IsLinear);
   FLOAT1(AlphaThreshold);
   UINT1(OutputIsSrgb);
-  FLOAT3(Padding);
+  UINT1(VirtualTextureIndex);
+  UINT2(Padding);
 };
 
 #if XII_DISABLED(XII_SHADER_PLATFORM)

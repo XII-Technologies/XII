@@ -21,6 +21,7 @@
 #include <GraphicsFoundation/Resources/Fence.h>
 #include <Texture/Utilities/VirtualTextureData.h>
 #include <algorithm>
+#include <bit>
 #include <utility>
 
 class xiiGpuResidencyManager::State : public xiiRefCounted
@@ -111,6 +112,8 @@ public:
     xiiSharedPtr<xiiVirtualTextureData>           m_Data;
     xiiDynamicArray<TexturePage>                  m_Pages;
     xiiGALBindlessResourceHandle                  m_Table;
+    xiiUInt32                                     m_uiMipBiasBits   = 0U;
+    xiiUInt32                                     m_uiMinimumMip    = 0U;
     xiiUInt64                                     m_uiUsed          = 0U;
     bool                                          m_bDirty          = false;
     xiiUInt64                                     m_uiRetiringBytes = 0U;
@@ -318,6 +321,8 @@ xiiSharedPtr<xiiGpuResidencyManager::State> xiiGpuResidencyManager::s_pState;
 namespace
 {
   xiiCVarInt          cvar_TextureStreamingUploadBudget("Streaming.TextureUploadMiB", 64, xiiCVarFlags::Save, "Per-device-frame virtual texture upload allowance in MiB (0 pauses optional tiles).");
+  xiiCVarFloat        cvar_TextureMipBias("Streaming.TextureMipBias", 0.0f, xiiCVarFlags::Save, "Bias applied to virtual texture sampling and demand. Positive values select coarser mips.");
+  xiiCVarInt          cvar_TextureMinimumMip("Streaming.TextureMinimumMip", 0, xiiCVarFlags::Save, "Finest mip allowed for virtual texture sampling and demand (0 permits full detail).");
   xiiCVarInt          cvar_TextureCacheMiB("Streaming.TextureCacheMiB", 512, xiiCVarFlags::Save, "Physical virtual texture tile cache in MiB. Required coarse pages retain priority.");
   xiiCVarInt          cvar_GeometryCacheMiB("Streaming.GeometryCacheMiB", 256, xiiCVarFlags::Save, "Maximum physical geometry page payload in MiB. Required fallback pages retain priority.");
   constexpr float     s_fLodReferenceViewportHeight = 1080.0f;
@@ -1405,6 +1410,9 @@ xiiGpuResidencyManager::AdmissionResult xiiGpuResidencyManager::State::UploadTex
 
 bool xiiGpuResidencyManager::State::PublishTexture(TextureSource& source)
 {
+  const float     bias       = cvar_TextureMipBias.GetValue();
+  const xiiUInt32 biasBits   = std::bit_cast<xiiUInt32>(xiiMath::IsFinite(bias) ? xiiMath::Clamp(bias, -8.0f, 8.0f) : 0.0f);
+  const xiiUInt32 minimumMip = xiiMath::Clamp(cvar_TextureMinimumMip.GetValue(), 0, 31);
   // Header, one offset per mip, then physical descriptor/request pairs.
   xiiDynamicArray<xiiUInt32> table;
   table.SetCount(104U + source.m_Pages.GetCount() * 2U, 0U);
@@ -1414,6 +1422,8 @@ bool xiiGpuResidencyManager::State::PublishTexture(TextureSource& source)
   for (xiiUInt32 slot = 0U; slot < m_uiFramesInFlight; ++slot)
     table[40U + slot] = m_TextureFeedbackUav[slot].m_uiIndex;
   table[36U] = source.m_Data->m_uiAddressFlags;
+  table[37U] = biasBits;
+  table[38U] = minimumMip;
   for (xiiUInt32 p = 0U; p < source.m_Pages.GetCount(); ++p)
   {
     const auto& tile = source.m_Data->m_Tiles[p];
@@ -1464,8 +1474,10 @@ bool xiiGpuResidencyManager::State::PublishTexture(TextureSource& source)
     return false;
   }
   RetireBufferBinding(source.m_Table, m_uiStreamingFrame);
-  source.m_Table  = handle;
-  source.m_bDirty = false;
+  source.m_Table         = handle;
+  source.m_uiMipBiasBits = biasBits;
+  source.m_uiMinimumMip  = minimumMip;
+  source.m_bDirty        = false;
   for (auto handle : source.m_Retiring)
     RetirePhysicalPage(handle, true, m_uiStreamingFrame);
   m_uiTextureBytes -= source.m_uiRetiringBytes;
@@ -1784,6 +1796,9 @@ void xiiGpuResidencyManager::State::ProcessTextures(xiiUInt64 frame, xiiUInt64 c
   m_uiReusableRequestFrame = frame;
   for (xiiUInt32 slot = 0U; slot < m_uiFramesInFlight; ++slot)
     m_uiReusableRequestFrame = xiiMath::Min(m_uiReusableRequestFrame, m_TextureCaptures[slot].m_uiConsumedFrame);
+  const float     bias       = cvar_TextureMipBias.GetValue();
+  const xiiUInt32 biasBits   = std::bit_cast<xiiUInt32>(xiiMath::IsFinite(bias) ? xiiMath::Clamp(bias, -8.0f, 8.0f) : 0.0f);
+  const xiiUInt32 minimumMip = xiiMath::Clamp(cvar_TextureMinimumMip.GetValue(), 0, 31);
   for (auto it = m_Textures.GetIterator(); it.IsValid();)
   {
     auto& source = it.Value();
@@ -1810,7 +1825,7 @@ void xiiGpuResidencyManager::State::ProcessTextures(xiiUInt64 frame, xiiUInt64 c
       it = m_Textures.Remove(it);
       continue;
     }
-    if (source.m_bDirty)
+    if (source.m_bDirty || source.m_uiMipBiasBits != biasBits || source.m_uiMinimumMip != minimumMip)
       static_cast<void>(PublishTexture(source));
     ++it;
   }

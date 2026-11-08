@@ -36,7 +36,7 @@ namespace xiiCompressionUtils
     return XII_SUCCESS;
   }
 
-  static xiiResult DecompressZStd(xiiArrayPtr<const xiiUInt8> compressedData, xiiDynamicArray<xiiUInt8>& out_data)
+  static xiiResult DecompressZStd(xiiArrayPtr<const xiiUInt8> compressedData, xiiUInt32 uiMaxOutputBytes, xiiDynamicArray<xiiUInt8>& out_data)
   {
     xiiUInt64 uiSize = ZSTD_findDecompressedSize(compressedData.GetPtr(), compressedData.GetCount());
 
@@ -51,9 +51,9 @@ namespace xiiCompressionUtils
       return XII_FAILURE;
     }
 
-    if (uiSize > xiiMath::MaxValue<xiiUInt32>())
+    if (uiSize > uiMaxOutputBytes)
     {
-      xiiLog::Error("Can't compress since the output container can't hold enough elements ({0})", uiSize);
+      xiiLog::Error("ZStd payload declares {} decompressed bytes, exceeding the {} byte limit.", uiSize, uiMaxOutputBytes);
       return XII_FAILURE;
     }
 
@@ -97,6 +97,11 @@ namespace xiiCompressionUtils
 
   xiiResult Decompress(xiiArrayPtr<const xiiUInt8> compressedData, xiiCompressionMethod method, xiiDynamicArray<xiiUInt8>& out_data)
   {
+    return Decompress(compressedData, method, xiiMath::MaxValue<xiiUInt32>(), out_data);
+  }
+
+  xiiResult Decompress(xiiArrayPtr<const xiiUInt8> compressedData, xiiCompressionMethod method, xiiUInt32 uiMaxOutputBytes, xiiDynamicArray<xiiUInt8>& out_data)
+  {
     out_data.Clear();
 
     if (compressedData.IsEmpty())
@@ -108,8 +113,9 @@ namespace xiiCompressionUtils
     {
       case xiiCompressionMethod::ZStd:
 #ifdef BUILDSYSTEM_ENABLE_ZSTD_SUPPORT
-        return DecompressZStd(compressedData, out_data);
+        return DecompressZStd(compressedData, uiMaxOutputBytes, out_data);
 #else
+        XII_IGNORE_UNUSED(uiMaxOutputBytes);
         xiiLog::Error("ZStd compression disabled in build settings!");
         return XII_FAILURE;
 #endif

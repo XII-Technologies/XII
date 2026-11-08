@@ -267,8 +267,11 @@ xiiResult xiiMeshBufferResourceDescriptor::ReadGeometryPage(xiiUInt32 index, xii
 {
   if (index >= m_GeometryPages.GetCount())
     return XII_FAILURE;
-  const auto&               page       = m_GeometryPages[index];
-  const auto                storedSize = page.m_uiStoredSize == 0U ? page.m_uiSize : page.m_uiStoredSize;
+  const auto& page       = m_GeometryPages[index];
+  const auto  storedSize = page.m_uiStoredSize == 0U ? page.m_uiSize : page.m_uiStoredSize;
+  // The compiled codec can add a small framing overhead to an incompressible page.
+  if (page.m_uiSize == 0U || page.m_uiSize > 128U * 1024U || storedSize > 132U * 1024U)
+    return XII_FAILURE;
   xiiDynamicArray<xiiUInt8> encoded;
   if (m_sGeometryPageFile.IsEmpty())
   {
@@ -295,6 +298,6 @@ xiiResult xiiMeshBufferResourceDescriptor::ReadGeometryPage(xiiUInt32 index, xii
   if (page.m_uiStoredSize == 0U)
     out_data = std::move(encoded);
   else
-    XII_SUCCEED_OR_RETURN(xiiCompressionUtils::Decompress(encoded, xiiCompressionMethod::ZStd, out_data));
+    XII_SUCCEED_OR_RETURN(xiiCompressionUtils::Decompress(encoded, xiiCompressionMethod::ZStd, page.m_uiSize, out_data));
   return out_data.GetCount() == page.m_uiSize ? XII_SUCCESS : XII_FAILURE;
 }
