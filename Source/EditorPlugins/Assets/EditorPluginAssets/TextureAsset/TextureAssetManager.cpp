@@ -55,6 +55,15 @@ xiiTextureAssetDocumentManager::~xiiTextureAssetDocumentManager()
   xiiDocumentManager::s_Events.RemoveEventHandler(xiiMakeDelegate(&xiiTextureAssetDocumentManager::OnDocumentManagerEvent, this));
 }
 
+xiiStatus xiiTextureAssetDocumentManager::ReadAssetDocumentInfo(xiiUniquePtr<xiiAssetDocumentInfo>& out_pInfo, xiiStreamReader& inout_stream) const
+{
+  XII_SUCCEED_OR_RETURN(SUPER::ReadAssetDocumentInfo(out_pInfo, inout_stream));
+  // Textures now produce one compiled asset. Old document headers can still
+  // declare auxiliary outputs until the document is saved by the editor.
+  out_pInfo->m_Outputs.Clear();
+  return XII_SUCCESS;
+}
+
 xiiUInt64 xiiTextureAssetDocumentManager::ComputeAssetProfileHashImpl(const xiiPlatformProfile* pAssetProfile) const
 {
   return pAssetProfile->GetTypeConfig<xiiTextureAssetProfileConfig>()->GetTransformHash();

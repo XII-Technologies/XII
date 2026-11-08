@@ -376,6 +376,13 @@ void xiiTextureAssetDocument::InitializeAfterLoading(bool bFirstTimeCreation)
 {
   SUPER::InitializeAfterLoading(bFirstTimeCreation);
 
+  auto* info = static_cast<xiiAssetDocumentInfo*>(m_pDocumentInfo);
+  if (!info->m_Outputs.IsEmpty())
+  {
+    info->m_Outputs.Clear();
+    SetModified(true);
+  }
+
   if (m_bIsRenderTarget)
   {
     if (GetProperties()->m_bIsRenderTarget == false)

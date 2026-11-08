@@ -15,6 +15,7 @@ public:
   ~xiiTextureAssetDocumentManager();
 
   virtual OutputReliability GetAssetTypeOutputReliability() const override { return xiiAssetDocumentManager::OutputReliability::Perfect; }
+  xiiStatus                 ReadAssetDocumentInfo(xiiUniquePtr<xiiAssetDocumentInfo>& out_pInfo, xiiStreamReader& inout_stream) const override;
 
 private:
   void OnDocumentManagerEvent(const xiiDocumentManager::Event& e);
