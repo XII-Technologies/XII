@@ -735,7 +735,7 @@ o
 			s{"{ 4b87fb53-cdf8-86b0-1474-dc3e3ae5d51b }"}
 		}
 		Uuid %DocumentID{u4{1059873544075392695,15903412151512627438}}
-		u4 %Hash{5733866849489730238}
+		u4 %Hash{5970761605024409784}
 		VarArray %MetaInfo
 		{
 			Uuid{u4{6434451863347949848,6375803990798556648}}
@@ -1128,7 +1128,7 @@ o
 		b %Input{1}
 		s %Name{"DirectionalLight"}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x00002FC4,0x1D9CA543}}
+		Vec2 %Node::Pos{f{0x00002FC4,0xA71FDE43}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -1773,7 +1773,7 @@ o
 		b %Input{1}
 		s %Name{"SceneInstances"}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x0000B040,0x0000FC42}}
+		Vec2 %Node::Pos{f{0x0000B040,0x00801D43}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -2186,7 +2186,7 @@ o
 	p
 	{
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x0080A143,0x68FF0544}}
+		Vec2 %Node::Pos{f{0x0080A143,0x58B02044}}
 		VarArray %Overrides
 		{
 			Uuid{u4{12534685128787097786,9399353450899688002}}
@@ -2553,7 +2553,7 @@ o
 	p
 	{
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x0000BE44,0x3CFBCF42}}
+		Vec2 %Node::Pos{f{0x0000BE44,0x61C15243}}
 		VarArray %Overrides
 		{
 			Uuid{u4{13338461367843493139,10480453663498357083}}
@@ -3673,7 +3673,7 @@ o
 		b %Input{0}
 		s %Name{"Visibility"}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x00900D45,0x8E49E143}}
+		Vec2 %Node::Pos{f{0x00900D45,0x686D1C44}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -4072,13 +4072,17 @@ o
 {
 	Uuid %id{u4{2400093455357612839,8749358871054521669}}
 	s %t{"xiiShadowCascadeSettings"}
-	u3 %v{1}
+	u3 %v{2}
 	p
 	{
+		f %CascadeBlendFraction{0xCDCCCC3D}
 		u3 %CascadeCount{4}
 		f %DepthPadding{0x00004842}
+		f %FilterRadius{0x0000803F}
+		f %MaximumPenumbraTexels{0x00008041}
 		f %MaximumShadowDistance{0x0000F042}
 		u3 %ShadowMapResolution{1024}
+		b %SoftShadows{0}
 		f %SplitLambda{0x6666263F}
 	}
 }
@@ -4177,7 +4181,7 @@ o
 		b %Input{1}
 		s %Name{"SurfaceMaterials"}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x0000B040,0x00801D44}}
+		Vec2 %Node::Pos{f{0x0000B040,0x00E04444}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -4627,7 +4631,7 @@ o
 		b %Input{1}
 		s %Name{"MeshletMetadata"}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x0000B040,0x0000BD43}}
+		Vec2 %Node::Pos{f{0x0000B040,0x0040EC43}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -5062,7 +5066,7 @@ o
 		b %Input{1}
 		s %Name{"SkinningMatrices"}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x0000B040,0x0000FC43}}
+		Vec2 %Node::Pos{f{0x0000B040,0x00801D44}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -5137,7 +5141,7 @@ o
 	p
 	{
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x00208C44,0x9EFD7743}}
+		Vec2 %Node::Pos{f{0x00208C44,0xB060B143}}
 		VarArray %Overrides
 		{
 			Uuid{u4{15072236809672562530,17780890560308965692}}
@@ -5265,7 +5269,7 @@ o
 		Uuid %Depth{u4{8278390948906589643,16510641978099899854}}
 		f %DepthBias{0x6F12033A}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x00E0EF44,0x8E49E143}}
+		Vec2 %Node::Pos{f{0x00E0EF44,0x686D1C44}}
 		Uuid %Normal{u4{2797208574048086880,1977443532611519450}}
 		f %NormalBias{0x0AD7A33C}
 		f %NormalBiasTexels{0x0000C03F}
@@ -5341,7 +5345,7 @@ o
 		b %Input{1}
 		s %Name{"GeometryMetadata"}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x00002040,0x00007C43}}
+		Vec2 %Node::Pos{f{0x00002040,0x00809D43}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -5760,7 +5764,7 @@ o
 	p
 	{
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x00803444,0xCFFEC343}}
+		Vec2 %Node::Pos{f{0x00803444,0xB060F943}}
 		VarArray %Overrides
 		{
 			Uuid{u4{6371141880893467910,4897433752054892696}}
@@ -5814,7 +5818,7 @@ o
 		b %Input{0}
 		s %Name{"ShadowAtlas"}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x0090F744,0x3BBC1843}}
+		Vec2 %Node::Pos{f{0x0090F744,0x93158943}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -5849,7 +5853,7 @@ o
 		b %Input{1}
 		s %Name{"ObjectId"}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x0040C644,0x687F2244}}
+		Vec2 %Node::Pos{f{0x0040C644,0x58D05444}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -5941,7 +5945,7 @@ o
 		b %Input{1}
 		s %Name{"Normal"}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x0040C644,0x68FF0244}}
+		Vec2 %Node::Pos{f{0x0040C644,0x58702D44}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -6220,7 +6224,7 @@ o
 	{
 		Uuid %CascadeSnapshot{u4{2031386743915828290,8999947435178661617}}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x000034C2,0x00003D44}}
+		Vec2 %Node::Pos{f{0x000034C2,0x00406C44}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -6417,7 +6421,7 @@ o
 		b %Input{1}
 		s %Name{"Depth"}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x0040C644,0xCFFEC643}}
+		Vec2 %Node::Pos{f{0x0040C644,0x58100644}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -6518,7 +6522,7 @@ o
 		b %Enabled{1}
 		Vec3 %LightDirection{f{0,0,0x000080BF}}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x0080D8C3,0x1D9CA543}}
+		Vec2 %Node::Pos{f{0x0080D8C3,0xA71FDE43}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -6857,7 +6861,7 @@ o
 		b %Input{1}
 		s %Name{"Camera"}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x0040C644,0x68FF4144}}
+		Vec2 %Node::Pos{f{0x0040C644,0x58307C44}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -7269,7 +7273,7 @@ o
 		s %PluginName{"Static"}
 		VarArray %Properties{}
 		s %TypeName{"xiiShadowCascadeSettings"}
-		u3 %TypeVersion{1}
+		u3 %TypeVersion{2}
 	}
 }
 o

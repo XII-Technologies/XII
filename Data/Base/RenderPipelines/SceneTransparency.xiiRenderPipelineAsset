@@ -2548,7 +2548,7 @@ o
 		b %Input{1}
 		s %Name{"MultiScatter"}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x00E0C844,0x00A03C45}}
+		Vec2 %Node::Pos{f{0x00E0C844,0x00987D45}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -2624,7 +2624,7 @@ o
 		b %Input{1}
 		s %Name{"LightCandidates"}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x00E0C844,0x0080AC44}}
+		Vec2 %Node::Pos{f{0x00E0C844,0x0090E744}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -2873,7 +2873,7 @@ o
 	{
 		Uuid %Counter{u4{3772483273872217126,11536405059582709501}}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x00003EC3,0x7F368144}}
+		Vec2 %Node::Pos{f{0x00003EC3,0x26258144}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -3438,7 +3438,7 @@ o
 		b %Input{1}
 		s %Name{"Cascades"}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x00E0C844,0x00600D45}}
+		Vec2 %Node::Pos{f{0x00E0C844,0x00884245}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -3615,7 +3615,7 @@ o
 		b %Input{1}
 		s %Name{"LightLayout"}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x00E0C844,0x00800545}}
+		Vec2 %Node::Pos{f{0x00E0C844,0x00B03845}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -3786,7 +3786,7 @@ o
 		b %Input{1}
 		s %Name{"LightOverflow"}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x00E0C844,0x0080EB44}}
+		Vec2 %Node::Pos{f{0x00E0C844,0x00002545}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -3838,7 +3838,7 @@ o
 		b %Input{1}
 		s %Name{"ShadowAtlas"}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x00E0C844,0x00401545}}
+		Vec2 %Node::Pos{f{0x00E0C844,0x00604C45}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -3931,7 +3931,7 @@ o
 	{
 		Uuid %LodHistory{u4{17822989357412098260,11012623307821128993}}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x00801BC4,0x82443144}}
+		Vec2 %Node::Pos{f{0x00801BC4,0x1A494D44}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -4054,7 +4054,7 @@ o
 		b %Input{0}
 		s %Name{"Additive"}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x00A01845,0xBF09B444}}
+		Vec2 %Node::Pos{f{0x00A01845,0x322FC044}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -4075,7 +4075,7 @@ o
 		b %Input{1}
 		s %Name{"Depth"}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x00E0C844,0x0040FB44}}
+		Vec2 %Node::Pos{f{0x00E0C844,0x00D82E45}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -4374,7 +4374,7 @@ o
 		Uuid %HDRSceneColorOutput{u4{10703613866371097474,3692211216409084016}}
 		Uuid %Modulation{u4{2935072596428564444,387960269596314389}}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x00701345,0x7D937144}}
+		Vec2 %Node::Pos{f{0x00701345,0x323FFB44}}
 		Uuid %OITAccumulate{u4{10117307270586731507,10653858725155648433}}
 		Uuid %OITReveal{u4{11963388345561713944,13941100038315307521}}
 		VarDict %ParameterOverrides{}
@@ -5088,7 +5088,7 @@ o
 		b %Input{1}
 		s %Name{"LightIndices"}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x00E0C844,0x00C0DB44}}
+		Vec2 %Node::Pos{f{0x00E0C844,0x00281B45}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -5278,7 +5278,7 @@ o
 		b %Input{1}
 		s %Name{"ReflectionProbes"}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x00002FC4,0x00009644}}
+		Vec2 %Node::Pos{f{0x00E0C844,0x00208544}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -5768,7 +5768,7 @@ o
 		b %Input{1}
 		s %Name{"SceneInstances"}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x000061C4,0xD3232E44}}
+		Vec2 %Node::Pos{f{0x000061C4,0xE6674B44}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -5792,7 +5792,7 @@ o
 		Uuid %InitializedLodHistory{u4{12515476901095455988,6845100518489812631}}
 		Uuid %LodHistory{u4{17114035817644890066,11969162492018517419}}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x000085C3,0xFD6C1F44}}
+		Vec2 %Node::Pos{f{0x000085C3,0x4DEA3644}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -5987,7 +5987,7 @@ o
 		b %Input{1}
 		s %Name{"InputCandidates"}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x000061C4,0xD3236D44}}
+		Vec2 %Node::Pos{f{0x000061C4,0xF3138D44}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -6227,7 +6227,7 @@ o
 	{
 		Uuid %Counter{u4{4116888262176960036,12822512461999762178}}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x00203144,0xDFC45D44}}
+		Vec2 %Node::Pos{f{0x00203144,0x44227E44}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -6969,7 +6969,7 @@ o
 	{
 		Uuid %Counter{u4{7243275333635524661,7842896765219598146}}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x006013C4,0x82C41144}}
+		Vec2 %Node::Pos{f{0x006013C4,0x1AE92544}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -7510,7 +7510,7 @@ o
 		b %Input{1}
 		s %Name{"SpotShadowAtlas"}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x00E0C844,0x00002545}}
+		Vec2 %Node::Pos{f{0x00E0C844,0x00106045}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -8142,7 +8142,7 @@ o
 		b %Input{1}
 		s %Name{"RasterConstants"}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x00E0C844,0x0000FC43}}
+		Vec2 %Node::Pos{f{0x00E0C844,0x0040EC43}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -8212,7 +8212,7 @@ o
 		b %Input{1}
 		s %Name{"SurfaceMaterials"}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x00E0C844,0x0000BD43}}
+		Vec2 %Node::Pos{f{0x00E0C844,0x00809D43}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -8315,7 +8315,7 @@ o
 		b %Input{1}
 		s %Name{"Camera"}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x00E0C844,0x00005B44}}
+		Vec2 %Node::Pos{f{0x00E0C844,0x00E06244}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -8609,7 +8609,7 @@ o
 		b %Input{1}
 		s %Name{"BRDFLut"}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x00002FC4,0x00009644}}
+		Vec2 %Node::Pos{f{0x00E0C844,0x00D09844}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -8684,7 +8684,7 @@ o
 		b %Input{1}
 		s %Name{"Radiance"}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x00E0C844,0x00007C43}}
+		Vec2 %Node::Pos{f{0x00E0C844,0x00780745}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -8957,7 +8957,7 @@ o
 		b %Input{0}
 		s %Name{"Revealage"}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x00A01845,0xBF49A444}}
+		Vec2 %Node::Pos{f{0x00A01845,0x327FAC44}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -9048,7 +9048,7 @@ o
 		b %Input{1}
 		s %Name{"LightGrid"}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x00E0C844,0x0000CC44}}
+		Vec2 %Node::Pos{f{0x00E0C844,0x00501145}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -9878,7 +9878,7 @@ o
 		b %Input{0}
 		s %Name{"HistoryTrust"}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x00781845,0xBF89D344}}
+		Vec2 %Node::Pos{f{0x00781845,0x328FE744}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -10593,7 +10593,7 @@ o
 		b %Input{1}
 		s %Name{"Atmosphere"}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x00E0C844,0x00E02C45}}
+		Vec2 %Node::Pos{f{0x00E0C844,0x00E86945}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -10949,7 +10949,7 @@ o
 		b %Input{0}
 		s %Name{"Accumulation"}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x00381845,0xBF899444}}
+		Vec2 %Node::Pos{f{0x00381845,0x32CF9844}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -10991,7 +10991,7 @@ o
 		b %Input{1}
 		s %Name{"IESProfiles"}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x00E0C844,0x0040BC44}}
+		Vec2 %Node::Pos{f{0x00E0C844,0x0040FB44}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -11094,7 +11094,7 @@ o
 		b %Input{1}
 		s %Name{"LightCounts"}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x00E0C844,0x00C09C44}}
+		Vec2 %Node::Pos{f{0x00E0C844,0x00E0D344}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -11236,7 +11236,7 @@ o
 		b %Input{1}
 		s %Name{"SkinningMatrices"}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x00E0C844,0x0000FC42}}
+		Vec2 %Node::Pos{f{0x00E0C844,0x00801D43}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -11444,7 +11444,7 @@ o
 		f %LodHysteresis{0}
 		f %LodScreenScale{0x0000803F}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x00401EC4,0x82C45044}}
+		Vec2 %Node::Pos{f{0x00401EC4,0x1AA97444}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -11677,7 +11677,7 @@ o
 		b %Input{0}
 		s %Name{"HDRSceneColor"}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x00402B45,0x7D937144}}
+		Vec2 %Node::Pos{f{0x00402B45,0x323FFB44}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -12123,7 +12123,7 @@ o
 		Uuid %MaximumMeshletGroups{u4{7316224561333201007,4966449806858910278}}
 		Uuid %MeshletMetadata{u4{4096594811691657411,1055156446252566868}}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x00002643,0xDF443E44}}
+		Vec2 %Node::Pos{f{0x00002643,0x44C25644}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -12247,7 +12247,7 @@ o
 		b %Input{1}
 		s %Name{"Environment"}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x00E0C844,0x00807A44}}
+		Vec2 %Node::Pos{f{0x00E0C844,0x0080AC44}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -12437,7 +12437,7 @@ o
 		b %Input{0}
 		s %Name{"Modulation"}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x00A01845,0xBFC9C344}}
+		Vec2 %Node::Pos{f{0x00A01845,0x32DFD344}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -12719,7 +12719,7 @@ o
 		b %Input{1}
 		s %Name{"Lights"}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x00E0C844,0x00008D44}}
+		Vec2 %Node::Pos{f{0x00E0C844,0x0030C044}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -13224,7 +13224,7 @@ o
 		Uuid %MaximumMeshletGroups{u4{12036312511367841128,8373687362266130686}}
 		Uuid %MeshletMetadata{u4{16826738498530593853,16741691762791457068}}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x00001C44,0xDF442C44}}
+		Vec2 %Node::Pos{f{0x00001C44,0x44C24444}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -13268,7 +13268,7 @@ o
 		b %Input{1}
 		s %Name{"MeshletMetadata"}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x008037C3,0xFDEC6244}}
+		Vec2 %Node::Pos{f{0x008037C3,0x26D59444}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -13359,7 +13359,7 @@ o
 		b %Input{1}
 		s %Name{"SpotShadows"}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x00E0C844,0x00201D45}}
+		Vec2 %Node::Pos{f{0x00E0C844,0x00385645}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -13425,7 +13425,7 @@ o
 		b %Input{1}
 		s %Name{"TemporalCamera"}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x000061C4,0xD3A34D44}}
+		Vec2 %Node::Pos{f{0x000061C4,0xE6C77244}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -13634,7 +13634,7 @@ o
 		u3 %MaxVisibleMeshlets{1048576}
 		Uuid %MeshletMetadata{u4{9036223037190467024,16775623387695395059}}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x00208644,0xDFC42744}}
+		Vec2 %Node::Pos{f{0x00208644,0x44224844}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -13816,7 +13816,7 @@ o
 	{
 		Uuid %Counter{u4{12414145332335869890,18236512074515513051}}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x00203144,0xDF447D44}}
+		Vec2 %Node::Pos{f{0x00203144,0x22C19244}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -14126,7 +14126,7 @@ o
 		Uuid %Modulation{u4{12067605844753561505,13123667395599065265}}
 		Uuid %MultiScatter{u4{14369074492383101995,6648397147415233529}}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x0000F544,0xBF099744}}
+		Vec2 %Node::Pos{f{0x0000F544,0x87C4D744}}
 		f %NormalBias{0x0AD7A33C}
 		f %NormalBiasTexels{0x0000C03F}
 		VarDict %ParameterOverrides{}
@@ -14340,7 +14340,7 @@ o
 		b %Input{1}
 		s %Name{"Transmittance"}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x00E0C844,0x00C03445}}
+		Vec2 %Node::Pos{f{0x00E0C844,0x00C07345}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -15338,7 +15338,7 @@ o
 		b %Input{1}
 		s %Name{"GeometryMetadata"}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x008012C4,0x82447644}}
+		Vec2 %Node::Pos{f{0x008012C4,0x8D049144}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{

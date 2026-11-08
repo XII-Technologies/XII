@@ -641,7 +641,7 @@ o
 		b %Input{0}
 		s %Name{"LookupData"}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x00002FC4,0x00009644}}
+		Vec2 %Node::Pos{f{0x0000A5C3,0x04E5F443}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -733,7 +733,7 @@ o
 		b %Input{0}
 		s %Name{"Atmosphere"}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x0000A6C3,0xA1E45543}}
+		Vec2 %Node::Pos{f{0x0080A5C3,0x30EFEE42}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -771,7 +771,7 @@ o
 		Uuid %EnvironmentLight{u4{16151943317953226751,5901222569799454402}}
 		Uuid %MultiScatter{u4{126476648686752672,17351300162127446577}}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x00009243,0xA73D6C43}}
+		Vec2 %Node::Pos{f{0x00009343,0xBBB7D943}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -864,7 +864,7 @@ o
 		b %Input{0}
 		s %Name{"Transmittance"}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x0000A040,0x47F52B44}}
+		Vec2 %Node::Pos{f{0x0000E040,0x00804D43}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -1014,7 +1014,7 @@ o
 		u3 %Height{64}
 		Uuid %LookupData{u4{1067376530307111727,2372456134132115277}}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x0000C4C3,0x51F2A943}}
+		Vec2 %Node::Pos{f{0x0000C4C3,0xCC7B8A43}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -1847,7 +1847,7 @@ o
 		b %Input{1}
 		s %Name{"Camera"}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x000050C1,0x0000C943}}
+		Vec2 %Node::Pos{f{0x000030C1,0x00802944}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -2164,7 +2164,7 @@ o
 		Uuid %LookupData{u4{16665641795662778958,7034476836610375534}}
 		Uuid %MultiScatter{u4{10243222128942052354,15689606030862238422}}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x00004CC2,0}}
+		Vec2 %Node::Pos{f{0x000044C2,0}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -2279,7 +2279,7 @@ o
 		b %Input{0}
 		s %Name{"MultiScatter"}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x0040C243,0x75540742}}
+		Vec2 %Node::Pos{f{0x0040C343,0x4163D742}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -2702,7 +2702,7 @@ o
 		b %Enabled{1}
 		Uuid %LookupData{u4{16153012181913928572,18316897954230578604}}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x00C031C4,0xBB816943}}
+		Vec2 %Node::Pos{f{0x00C031C4,0x9C847543}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -2795,7 +2795,7 @@ o
 		b %Input{1}
 		s %Name{"EnvironmentLight"}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x000050C1,0x00000444}}
+		Vec2 %Node::Pos{f{0x000030C1,0x00E05044}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -3032,7 +3032,7 @@ o
 		b %Input{0}
 		s %Name{"HDRSceneColor"}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x00C03044,0xA73D6C43}}
+		Vec2 %Node::Pos{f{0x00403144,0xBBB7D943}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -3069,7 +3069,7 @@ o
 		b %Input{1}
 		s %Name{"Depth"}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x000050C1,0x00001643}}
+		Vec2 %Node::Pos{f{0x000030C1,0x0080B543}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -3159,7 +3159,7 @@ o
 		b %Input{1}
 		s %Name{"Radiance"}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x000050C1,0x00008A43}}
+		Vec2 %Node::Pos{f{0x000030C1,0x00200244}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{

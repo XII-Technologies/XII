@@ -869,7 +869,7 @@ o
 		Uuid %InitializedLodHistory{u4{3952779605937957677,10078316492828411511}}
 		Uuid %LodHistory{u4{4475021835591355705,16177084283469019854}}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x000040C2,0xAF08C743}}
+		Vec2 %Node::Pos{f{0x000040C2,0x8061DE43}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -1474,7 +1474,7 @@ o
 		b %Input{1}
 		s %Name{"SceneInstances"}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x00002FC4,0x65046543}}
+		Vec2 %Node::Pos{f{0x00002FC4,0xD95BC943}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -1721,7 +1721,7 @@ o
 		b %Input{1}
 		s %Name{"CascadeSnapshot"}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x00002FC4,0x3382B143}}
+		Vec2 %Node::Pos{f{0x00002FC4,0xB2377543}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -2338,7 +2338,7 @@ o
 		b %Input{1}
 		s %Name{"GeometryMetadata"}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x0080BCC3,0x16A15643}}
+		Vec2 %Node::Pos{f{0x0080BCC3,0x09185943}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -2741,7 +2741,7 @@ o
 	{
 		Uuid %Counter{u4{16907933712045423074,15804981790745836571}}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x0000E041,0x57042744}}
+		Vec2 %Node::Pos{f{0x0000E041,0xC0903A44}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -3293,7 +3293,7 @@ o
 	{
 		Uuid %Counter{u4{10046606585843258274,12527552028858166291}}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x00A06744,0x1BC12244}}
+		Vec2 %Node::Pos{f{0x00A06744,0x25163C44}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -4018,7 +4018,7 @@ o
 	{
 		Uuid %Counter{u4{1601257260006383037,13338674408187622600}}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x0040BEC3,0x46A80044}}
+		Vec2 %Node::Pos{f{0x0040BEC3,0x02061144}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -4206,7 +4206,7 @@ o
 		u3 %MaxVisibleMeshlets{262144}
 		Uuid %MeshletMetadata{u4{16458714287109156099,16437143308937693698}}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x0060A144,0x35829A43}}
+		Vec2 %Node::Pos{f{0x0060A144,0x4A6CBD43}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -4266,7 +4266,7 @@ o
 		u3 %CascadeIndex{0}
 		Uuid %CascadeSnapshot{u4{3356588784626295534,17654554246139111820}}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x0080D8C3,0x8B50AA43}}
+		Vec2 %Node::Pos{f{0x0080D8C3,0x054CBB43}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -4365,7 +4365,7 @@ o
 		Uuid %MaximumMeshletGroups{u4{7792327072104762184,5672726092968001463}}
 		Uuid %MeshletMetadata{u4{8779991529454771971,3116506307593833581}}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x0000C043,0x3582C743}}
+		Vec2 %Node::Pos{f{0x0000C043,0x4AACDA43}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -4749,7 +4749,7 @@ o
 		Uuid %GeometryMetadata{u4{16413114333658589511,6027154162244114177}}
 		Uuid %MeshletMetadata{u4{10657443477632572235,103143019708490105}}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x00200845,0x1616B142}}
+		Vec2 %Node::Pos{f{0x00200845,0x721D0943}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -5809,7 +5809,7 @@ o
 		b %Input{1}
 		s %Name{"ShadowAtlas"}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x0020E444,0x0000F943}}
+		Vec2 %Node::Pos{f{0x0020E444,0x00201444}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -6092,7 +6092,7 @@ o
 	{
 		Uuid %Counter{u4{9472703334485876766,6884642606513245762}}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x00A06744,0x1B410344}}
+		Vec2 %Node::Pos{f{0x00A06744,0x25B61444}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -6367,7 +6367,7 @@ o
 		b %Input{1}
 		s %Name{"SpotShadows"}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x00002FC4,0x3382F043}}
+		Vec2 %Node::Pos{f{0x00002FC4,0xED0D0C44}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -6919,7 +6919,7 @@ o
 		b %Input{1}
 		s %Name{"MeshletMetadata"}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x00000A42,0xAF088843}}
+		Vec2 %Node::Pos{f{0x00000A42,0x80A18F43}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -7028,7 +7028,7 @@ o
 		b %Input{0}
 		s %Name{"MeshletOverflow"}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x0030E544,0x00001C44}}
+		Vec2 %Node::Pos{f{0x0030E544,0x00803B44}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -7164,7 +7164,7 @@ o
 		Uuid %GeometryMetadata{u4{6456789602294458261,10273917070387717360}}
 		Uuid %MeshletMetadata{u4{17120663396918553419,17236077670530470395}}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x0060D944,0x00007C43}}
+		Vec2 %Node::Pos{f{0x0060D944,0x00809D43}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -7435,7 +7435,7 @@ o
 		b %Input{0}
 		s %Name{"ShadowAtlas"}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x00802045,0x1616B142}}
+		Vec2 %Node::Pos{f{0x00802045,0x721D0943}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -7463,7 +7463,7 @@ o
 		b %Input{1}
 		s %Name{"SurfaceMaterials"}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x0020E444,0x0000FC42}}
+		Vec2 %Node::Pos{f{0x0020E444,0x00801D43}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -7934,7 +7934,7 @@ o
 		Uuid %MaximumMeshletGroups{u4{7395446523855011900,13175348610502693224}}
 		Uuid %MeshletMetadata{u4{11286644583079325752,2679000282265796653}}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x00805244,0x3582A343}}
+		Vec2 %Node::Pos{f{0x00805244,0x4AACB643}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
@@ -8098,7 +8098,7 @@ o
 	{
 		Uuid %LodHistory{u4{5770701227880632528,3205297285336407293}}
 		s %Node::Comment{""}
-		Vec2 %Node::Pos{f{0x0080CEC3,0x46282044}}
+		Vec2 %Node::Pos{f{0x0080CEC3,0x02663844}}
 		VarDict %ParameterOverrides{}
 		VarArray %PinConfigurations
 		{
