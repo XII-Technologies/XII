@@ -88,7 +88,8 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGpuGeometryLod);
 struct XII_GRAPHICSCORE_DLL alignas(16) xiiGpuGeometryRecord
 {
   XII_DECLARE_POD_TYPE();
-  static constexpr xiiUInt32 s_uiMaxLods = 8U;
+  static constexpr xiiUInt32 s_uiMaxLods        = 8U;
+  static constexpr xiiUInt32 s_uiTrackLodDemand = XII_BIT(0); ///< Streamable record that also reports resident demand.
 
   xiiVec4           m_BoundsCenterRadius = xiiVec4::MakeZero();
   xiiVec4           m_BoundsExtents      = xiiVec4::MakeZero();
@@ -120,6 +121,7 @@ struct XII_GRAPHICSCORE_DLL xiiGeometryResidencyStats
   xiiUInt64 m_uiReclaimedArenaBytes   = 0U; ///< Arena bytes made reusable by evictions this frame.
   xiiUInt32 m_uiEvictions             = 0U;
   xiiUInt32 m_uiPressureEvictions     = 0U;
+  xiiUInt32 m_uiFineLodEvictions      = 0U;
   xiiUInt64 m_uiRemainingUploadBytes  = 0U;
   xiiUInt64 m_uiPreparedMeshlets      = 0U;
   xiiUInt32 m_uiExamined = 0U, m_uiAdmitted = 0U, m_uiBudgetDeferred = 0U;
@@ -183,7 +185,13 @@ public:
   /// Requests the finest required LOD. Concurrent view requests are merged toward the lowest
   /// LOD index and retain the strongest visibility priority until the missing range is resident.
   static void RequestResidency(xiiGeometryHandle handle, xiiUInt32 uiMinimumLod, xiiUInt64 uiFrameIndex, xiiUInt32 uiVisibilityPriority = 0U);
-  static void Touch(xiiGeometryHandle handle, xiiUInt64 uiFrameIndex);
+  /// Bootstrap ordinary instances from the CPU preference until recent GPU demand is available.
+  /// Forced instances always request their exact LOD.
+  static void RequestInstanceResidency(xiiGeometryHandle handle, xiiUInt32 uiLod, xiiUInt64 uiFrameIndex, bool bForced);
+  /// Records demand from a GPU feedback snapshot. Returns false when the snapshot predates eviction.
+  [[nodiscard]] static bool ReportLodDemand(xiiGeometryHandle handle, xiiUInt32 uiLod, xiiUInt64 uiSourceFrame, xiiUInt32 uiVisibilityPriority);
+  static void               NoteIncompleteLodFeedback(xiiUInt64 uiSourceFrame);
+  static void               Touch(xiiGeometryHandle handle, xiiUInt64 uiFrameIndex);
   /// The first invocation in a device frame establishes its shared allowance. Further calls
   /// consume the remainder, including newly discovered geometry. One indivisible record may
   /// exceed an unused positive allowance. Zero pauses admission for the entire frame.
@@ -266,17 +274,22 @@ private:
   {
     xiiGeometryDescription             m_Description;
     xiiGpuGeometryRecord               m_GpuRecord;
-    xiiEnum<xiiGeometryResidencyState> m_State                = xiiGeometryResidencyState::Unloaded;
-    xiiUInt64                          m_uiLastUsedFrame      = 0U;
-    xiiUInt64                          m_uiRetireFrame        = 0U;
-    xiiUInt64                          m_uiResidentBytes      = 0U;
-    xiiUInt32                          m_uiRequestedLod       = 0U;
-    xiiUInt32                          m_uiVisibilityPriority = 0U;
-    xiiUInt64                          m_uiFirstRequestFrame  = xiiMath::MaxValue<xiiUInt64>();
-    xiiUInt64                          m_uiAdmissionFrame     = xiiMath::MaxValue<xiiUInt64>();
-    bool                               m_bAllocated           = false;
-    bool                               m_bQueued              = false;
-    xiiUInt32                          m_uiActiveIndex        = 0U;
+    xiiEnum<xiiGeometryResidencyState> m_State                                              = xiiGeometryResidencyState::Unloaded;
+    xiiUInt64                          m_uiLastUsedFrame                                    = 0U;
+    xiiUInt64                          m_uiRetireFrame                                      = 0U;
+    xiiUInt64                          m_uiResidentBytes                                    = 0U;
+    xiiUInt32                          m_uiRequestedLod                                     = 0U;
+    xiiUInt32                          m_uiVisibilityPriority                               = 0U;
+    xiiUInt64                          m_uiFirstRequestFrame                                = xiiMath::MaxValue<xiiUInt64>();
+    xiiUInt64                          m_uiAdmissionFrame                                   = xiiMath::MaxValue<xiiUInt64>();
+    xiiUInt64                          m_uiLastFeedbackFrame                                = 0U;
+    xiiUInt64                          m_uiLastFineTrimFrame                                = 0U;
+    xiiUInt64                          m_uiForcedDemandFrame                                = 0U;
+    xiiUInt32                          m_uiForcedDemandLod                                  = xiiInvalidIndex;
+    xiiUInt64                          m_uiLastLodDemand[xiiGpuGeometryRecord::s_uiMaxLods] = {};
+    bool                               m_bAllocated                                         = false;
+    bool                               m_bQueued                                            = false;
+    xiiUInt32                          m_uiActiveIndex                                      = 0U;
     xiiSharedPtr<MeshletUpload>        m_PendingUploads[xiiGpuGeometryRecord::s_uiMaxLods];
     xiiUniquePtr<CoverageIndex>        m_pCoverage;
     /// One bit per frame-in-flight metadata slice. A record change must reach every slice
@@ -321,10 +334,11 @@ private:
   };
   static AdmissionResult BuildResidentRecord(Slot& slot, xiiUInt64 uiFrameIndex, xiiUInt64 uiCompletedFrame);
   static bool            RegisterBindlessResources(Slot& slot, xiiGpuGeometryRecord& record, xiiUInt32 uiLod, const xiiMeshBufferResource& mesh, const xiiSharedPtr<xiiGALBuffer>& pVertexBuffer, xiiUInt64 uiTopologyKey, const TopologyRange& range);
-  static void            ReleaseSourceBinding(Slot& slot, xiiUInt32 uiLod, xiiUInt64 uiLastUseFrame);
+  static void            ReleaseSourceBinding(LodBinding binding, xiiUInt64 uiLastUseFrame);
   static void            ReleaseBindlessResources(Slot& slot, xiiUInt64 uiLastUseFrame);
   static void            EnforceBudget(xiiUInt64 uiCompletedFrame, xiiUInt64 uiRequiredBytes = 0U);
   static bool            EvictOne(xiiUInt64 uiCompletedFrame, xiiUInt64 uiMinimumIdleFrames = 1U);
+  static void            TrimFineLods(xiiUInt64 uiFrameIndex, xiiUInt32 uiMaxLods);
   static bool            AllocateMeshlets(xiiUInt32 uiCount, xiiUInt32& out_uiOffset);
   static void            FreeMeshlets(xiiUInt32 uiOffset, xiiUInt32 uiCount);
   static void            ReleaseMeshletAllocations(Slot& slot);

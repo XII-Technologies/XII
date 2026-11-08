@@ -165,7 +165,9 @@ XII_CREATE_SIMPLE_TEST(NativeGeometryFeedback, AuthoredAsynchronousResidency)
       auto& data                              = geometry[(phase == 4 && handle == handles[0] ? retired : handle).GetInternalID().m_InstanceIndex];
       data.m_uiGeneration                     = phase == 4 && handle == handles[0] ? retired.GetInternalID().m_Generation : handle.GetInternalID().m_Generation + (phase == 2 ? 1 : 0);
       data.m_uiLodCount                       = 3;
-      data.m_uiResidentLodMask                = phase == 3 ? 0 : 4;
+      data.m_uiResidentLodMask                = phase == 3 ? 0U : phase == 5 ? 7U :
+                                                                               4U;
+      data.m_uiFlags                          = phase == 5 ? xiiGpuGeometryRecord::s_uiTrackLodDemand : 0U;
       data.m_Lods[0].m_fMinimumScreenCoverage = 16;
       data.m_Lods[1].m_fMinimumScreenCoverage = 8;
       data.m_Lods[2].m_fMinimumScreenCoverage = 0;
@@ -239,10 +241,10 @@ XII_CREATE_SIMPLE_TEST(NativeGeometryFeedback, AuthoredAsynchronousResidency)
       xiiGpuGeometryLodRequest header;
       if (!xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), graph.GetExportedBuffer(requests[i]).Borrow(), 0, header))
         return;
-      XII_TEST_INT(header.m_uiKey, phase == 1 ? 0 : phase == 3 ? 61 :
+      XII_TEST_INT(header.m_uiKey, phase == 1 ? 0 : (phase == 3 || phase == 5) ? 61 :
                                                                                  60);
       XII_TEST_INT(header.m_uiDesiredLod, phase == 1 ? 0 : i ? 4 :
-                                                                               2);
+                                                               2);
       XII_TEST_BOOL((header.m_uiPriority != 0) == (phase != 1 && i == 0));
       xiiUInt32 unique = 0;
       for (xiiUInt32 entry = 1; entry <= (i ? 8U : 2U); ++entry)
@@ -270,6 +272,7 @@ XII_CREATE_SIMPLE_TEST(NativeGeometryFeedback, AuthoredAsynchronousResidency)
   };
   for (xiiUInt32 view = 0; view < 2; ++view)
     render(view, 0);
+  render(1, 5); // A fully resident streamable geometry still reports its desired LOD.
   render(0, 1, false);
   for (xiiUInt32 view = 0; view < 2; ++view)
     render(view, 2);

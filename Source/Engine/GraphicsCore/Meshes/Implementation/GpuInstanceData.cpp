@@ -281,7 +281,7 @@ xiiResult xiiGpuInstanceData::UpdateFromExtraction(xiiArrayPtr<xiiRenderData* co
     record.m_uiMaterialIndex         = entry.m_GpuMaterial.IsInvalidated() ? xiiInvalidIndex : entry.m_GpuMaterial.GetInternalID().m_InstanceIndex;
     const auto transform             = key.m_Instance == xiiInvalidIndex ? packet.m_GlobalTransform.GetAsMat4() : packet.m_GlobalTransform.GetAsMat4() * packet.m_InstanceTransforms[key.m_Instance];
     record.m_PreviousGlobalTransform = fresh ? transform : nextFrame ? record.m_GlobalTransform :
-                                                                          record.m_PreviousGlobalTransform;
+                                                                       record.m_PreviousGlobalTransform;
     const bool transformChanged      = resetPose || record.m_GlobalTransform != transform;
     record.m_GlobalTransform         = transform;
     if (transformChanged)
@@ -342,8 +342,7 @@ xiiResult xiiGpuInstanceData::UpdateFromExtraction(xiiArrayPtr<xiiRenderData* co
         if (key.m_Lod == xiiInvalidIndex || key.m_Lod == lod)
           entry.m_MaximumMeshlets = xiiMath::Max(entry.m_MaximumMeshlets, counts[lod]);
     }
-    xiiGeometryResidencyManager::RequestResidency(geometry, packet.m_uiLODIndex, frame);
-    xiiGeometryResidencyManager::Touch(geometry, frame);
+    xiiGeometryResidencyManager::RequestInstanceResidency(geometry, packet.m_uiLODIndex, frame, packet.m_Flags.IsSet(xiiMeshRenderDataFlags::ForceLOD));
     entry.m_Changed |= xiiMemoryUtils::Compare(&before, &record, 1) != 0;
     return XII_SUCCESS;
   };

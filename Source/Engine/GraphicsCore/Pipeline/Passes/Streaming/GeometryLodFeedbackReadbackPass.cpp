@@ -32,6 +32,7 @@ struct xiiGeometryLodFeedbackReadbackPass::State : xiiRefCounted
         {
           slot->m_bPending = false;
           ++m_Stats.m_uiDroppedReadbacks;
+          xiiGeometryResidencyManager::NoteIncompleteLodFeedback(slot->m_uiFrame);
         }
         continue;
       }
@@ -52,6 +53,8 @@ struct xiiGeometryLodFeedbackReadbackPass::State : xiiRefCounted
           stats.m_uiRawRequests      = requests[0].m_uiKey;
           stats.m_uiUniqueRequests   = xiiMath::Min(requests[0].m_uiDesiredLod, capacity);
           stats.m_uiOverflowRequests = requests[0].m_uiPriority;
+          if (stats.m_uiOverflowRequests != 0U)
+            xiiGeometryResidencyManager::NoteIncompleteLodFeedback(slot->m_uiFrame);
           stats.m_uiSourceFrame      = slot->m_uiFrame;
           stats.m_uiDroppedReadbacks = m_Stats.m_uiDroppedReadbacks;
           for (xiiUInt32 i = 1; i <= capacity; ++i)
@@ -59,14 +62,12 @@ struct xiiGeometryLodFeedbackReadbackPass::State : xiiRefCounted
             const auto& request = requests[i];
             if (!request.m_uiKey)
               continue;
-            const auto  geometry = request.GetGeometry();
-            const auto* record   = xiiGeometryResidencyManager::GetGpuRecord(geometry);
-            if (!record || xiiGeometryResidencyManager::GetState(geometry) == xiiGeometryResidencyState::EvictPending || request.m_uiDesiredLod >= xiiMath::Min(record->m_uiLodCount, 8U) || !request.m_uiPurposeMask)
+            if (!request.m_uiPurposeMask ||
+                !xiiGeometryResidencyManager::ReportLodDemand(request.GetGeometry(), request.m_uiDesiredLod, slot->m_uiFrame, request.m_uiPriority))
             {
               ++stats.m_uiStaleRequests;
               continue;
             }
-            xiiGeometryResidencyManager::RequestResidency(geometry, request.m_uiDesiredLod, slot->m_uiFrame, request.m_uiPriority);
             ++stats.m_uiAcceptedRequests;
           }
           if (stats.m_uiSourceFrame >= m_Stats.m_uiSourceFrame)
@@ -128,6 +129,7 @@ xiiResult xiiGeometryLodFeedbackReadbackPass::Build(xiiRenderPipelinePassContext
     if (m_State->m_Slots.GetCount() >= m_uiMaxPendingReadbacks)
     {
       ++m_State->m_Stats.m_uiDroppedReadbacks;
+      xiiGeometryResidencyManager::NoteIncompleteLodFeedback(context.m_Graph.GetFrameIndex());
       return XII_SUCCESS;
     }
     slot = XII_DEFAULT_NEW(State::Slot);
