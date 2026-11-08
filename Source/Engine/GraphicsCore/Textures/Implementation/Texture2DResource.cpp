@@ -31,7 +31,6 @@ xiiResourceLoadDescription xiiTexture2DResource::UnloadData(Unload whatToUnload)
   m_pVirtualData.Clear();
   m_pGALTexture.Clear();
   m_pSampler.Clear();
-  m_NextRefinementAttempt = xiiTime::MakeZero();
   return {xiiResourceState::Unloaded, 0, 1};
 }
 
@@ -41,15 +40,6 @@ xiiSharedPtr<xiiVirtualTextureData> xiiTexture2DResource::GetVirtualData() const
   return m_pVirtualData;
 }
 
-bool xiiTexture2DResource::CanLoadAdditionalQualityLevel() const
-{
-  const auto pDevice = xiiGALDevice::HasDefaultDevice() ? xiiGALDevice::GetDefaultDevice() : nullptr;
-  if (pDevice == nullptr || pDevice->IsStreamingMemoryPressured())
-    return false;
-
-  XII_LOCK(m_TextureMutex);
-  return xiiTime::Now() >= m_NextRefinementAttempt;
-}
 
 void xiiTexture2DResource::FillOutDescriptor(xiiTexture2DResourceDescriptor& ref_td, const xiiImage* pImage, xiiUInt32 uiNumMipLevels, xiiUInt32& out_uiMemoryUsed, xiiHybridArray<xiiGALTextureSubResourceData, 32>& ref_initData)
 {
@@ -186,21 +176,15 @@ xiiResourceLoadDescription xiiTexture2DResource::UpdateContent(xiiStreamReader* 
     return previous;
 
   const xiiUInt32 uiTotalMipLevels = pImage->GetMipLevelCount();
-  const xiiUInt32 uiNumMipLevels   = bHasResidentImage ? uiTotalMipLevels : xiiMath::Min(uiTotalMipLevels, 6U);
+  const xiiUInt32 uiNumMipLevels   = uiTotalMipLevels;
   td.m_uiQualityLevelsDiscardable  = 0U;
-  td.m_uiQualityLevelsLoadable     = bIsFallback || uiNumMipLevels < uiTotalMipLevels ? 1U : 0U;
-  td.m_bStreamingRefinement        = bHasResidentImage;
+  td.m_uiQualityLevelsLoadable     = bIsFallback ? 1U : 0U;
 
   xiiTemporaryHybridArray<xiiGALTextureSubResourceData, 32> initData;
   xiiUInt32                                                 uiImageBytes = 0U;
   FillOutDescriptor(td, pImage, uiNumMipLevels, uiImageBytes, initData);
 
   const auto result = CreateResource(std::move(td));
-  if (result.m_State != xiiResourceState::Loaded && bHasResidentImage)
-  {
-    XII_LOCK(m_TextureMutex);
-    m_NextRefinementAttempt = xiiTime::Now() + xiiTime::MakeFromSeconds(1);
-  }
   return result.m_State == xiiResourceState::Loaded ? result : previous;
 }
 
@@ -222,8 +206,7 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiTexture2DResource, xiiTexture2DResourceDesc
   auto& description = descriptor.m_TextureDescription;
   description.m_BindFlags.Add(xiiGALBindFlags::ShaderResource);
   xiiGALTextureData textureData(descriptor.m_InitialContent);
-  textureData.m_bStreamingRefinement = descriptor.m_bStreamingRefinement;
-  auto pTexture                      = pDevice->CreateTexture(description, descriptor.m_InitialContent.IsEmpty() ? nullptr : &textureData);
+  auto              pTexture = pDevice->CreateTexture(description, descriptor.m_InitialContent.IsEmpty() ? nullptr : &textureData);
   if (pTexture == nullptr)
     return {xiiResourceState::LoadedResourceMissing, 0, 0};
   auto pSampler = pDevice->CreateSampler(descriptor.m_SamplerDescription);

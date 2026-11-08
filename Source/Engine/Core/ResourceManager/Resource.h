@@ -169,10 +169,6 @@ private:
   /// pStream may be nullptr in case the resource data could not be found.
   virtual xiiResourceLoadDescription UpdateContent(xiiStreamReader* pStream) = 0;
 
-  /// Allows a loaded resource to defer additional quality-level IO. Called with the resource manager lock held.
-  /// Implementations must return promptly and must not acquire other resources.
-  [[nodiscard]] virtual bool CanLoadAdditionalQualityLevel() const { return true; }
-
   /// Returns the resource type loader that should be used for this type of resource, unless it has been overridden on the
   /// xiiResourceManager.
   ///
