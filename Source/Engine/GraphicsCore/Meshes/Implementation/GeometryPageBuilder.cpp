@@ -5,6 +5,7 @@
 #include <Foundation/Containers/HashTable.h>
 #include <Foundation/IO/FileSystem/FileReader.h>
 #include <Foundation/IO/StreamWithStats.h>
+#include <Foundation/Logging/Log.h>
 #include <Foundation/Utilities/AssetFileHeader.h>
 #include <Foundation/Utilities/Compression.h>
 #include <GraphicsCore/Meshes/MeshBufferResource.h>
@@ -92,7 +93,10 @@ xiiResult xiiMeshBufferResourceDescriptor::BuildGeometryPages()
     const xiiUInt32 remapBytes  = remaps.GetCount() * sizeof(xiiUInt32);
     const auto      size        = xiiMath::RoundUp(vertexBytes + remapBytes + primitives.GetCount(), 4U);
     if (size == 0U || size + xiiUInt64(input.GetCount()) * sizeof(xiiMeshlet) > 128U * 1024U)
+    {
+      xiiLog::Error("Geometry page {} exceeds its 128 KiB payload limit ({} geometry bytes, {} clusters).", pageIndex, size, input.GetCount());
       return XII_FAILURE;
+    }
     xiiDynamicArray<xiiUInt8> payload;
     payload.SetCount(size, 0U);
     xiiMemoryUtils::Copy(payload.GetData(), vertices.GetData(), vertexBytes);
@@ -147,9 +151,11 @@ xiiResult xiiMeshBufferResourceDescriptor::BuildGeometryPages()
     for (xiiUInt32 depth = 0U; level.GetCount() > 1U && depth < 7U; ++depth)
     {
       xiiDynamicArray<xiiUInt32> next;
+      xiiUInt32                  groupLimit = 8U;
       for (xiiUInt32 first = 0U; first < level.GetCount();)
       {
-        const auto childCount = xiiMath::Min(8U, level.GetCount() - first);
+        const auto childCount = xiiMath::Min(groupLimit, level.GetCount() - first);
+        groupLimit            = 8U;
         if (childCount == 1U)
         {
           next.PushBack(level[first++]);
@@ -202,18 +208,19 @@ xiiResult xiiMeshBufferResourceDescriptor::BuildGeometryPages()
           }
         }
         simplified.SetCountUninitialized(indices.GetCount());
-        float      error  = 0.0f;
-        const auto target = xiiMath::Max(3U, (48U * 1024U / (stride * 3U + 7U)) * 3U);
-        const auto count  = meshopt_simplify(simplified.GetData(), indices.GetData(), indices.GetCount(), &localPositions[0].x, localPositions.GetCount(),
-                                             sizeof(xiiVec3), xiiMath::Min(target, indices.GetCount() / 2U / 3U * 3U), xiiMath::MaxValue<float>(),
-                                             meshopt_SimplifyErrorAbsolute | meshopt_SimplifyLockBorder, &error);
-        if (count == 0U || count % 3U != 0U || !xiiMath::IsFinite(error))
-          return XII_FAILURE;
-        if (count >= indices.GetCount() * 3U / 4U)
-        {
+        float      error        = 0.0f;
+        const auto target       = xiiMath::Max(3U, (48U * 1024U / (stride * 3U + 7U)) * 3U);
+        const auto count        = meshopt_simplify(simplified.GetData(), indices.GetData(), indices.GetCount(), &localPositions[0].x, localPositions.GetCount(),
+                                                   sizeof(xiiVec3), xiiMath::Min(target, indices.GetCount() / 2U / 3U * 3U), xiiMath::MaxValue<float>(),
+                                                   meshopt_SimplifyErrorAbsolute | meshopt_SimplifyLockBorder, &error);
+        const auto keepChildren = [&]() {
           for (xiiUInt32 child = 0U; child < childCount; ++child)
             next.PushBack(level[first + child]);
           first += childCount;
+        };
+        if (count == 0U || count % 3U != 0U || !xiiMath::IsFinite(childError + error) || count >= indices.GetCount() * 3U / 4U)
+        {
+          keepChildren();
           continue;
         }
         simplified.SetCount(static_cast<xiiUInt32>(count));
@@ -224,8 +231,37 @@ xiiResult xiiMeshBufferResourceDescriptor::BuildGeometryPages()
         meshlets.SetCount(static_cast<xiiUInt32>(capacity));
         remaps.SetCountUninitialized(static_cast<xiiUInt32>(capacity * xiiMeshlet::s_uiMaxVertices));
         triangles.SetCountUninitialized(static_cast<xiiUInt32>(capacity * xiiMeshlet::s_uiMaxPrimitives * 3U));
-        const auto                                              meshletCount = meshopt_buildMeshlets(meshlets.GetData(), remaps.GetData(), triangles.GetData(), simplified.GetData(), count,
-                                                                                                     &localPositions[0].x, localPositions.GetCount(), sizeof(xiiVec3), xiiMeshlet::s_uiMaxVertices, xiiMeshlet::s_uiMaxPrimitives, 0.5f);
+        const auto meshletCount = meshopt_buildMeshlets(meshlets.GetData(), remaps.GetData(), triangles.GetData(), simplified.GetData(), count,
+                                                        &localPositions[0].x, localPositions.GetCount(), sizeof(xiiVec3), xiiMeshlet::s_uiMaxVertices, xiiMeshlet::s_uiMaxPrimitives, 0.5f);
+        // Locked boundaries can keep the simplifier above its requested target.
+        // Check the exact packed size before appending any parent topology.
+        xiiDynamicArray<xiiUInt8> usedVertices;
+        usedVertices.SetCount(localPositions.GetCount(), 0U);
+        xiiUInt64 geometryBytes = count;
+        for (xiiUInt32 index = 0U; index < meshletCount; ++index)
+        {
+          const auto& built = meshlets[index];
+          geometryBytes += built.vertex_count * sizeof(xiiUInt32);
+          for (xiiUInt32 vertex = 0U; vertex < built.vertex_count; ++vertex)
+          {
+            auto& used = usedVertices[remaps[built.vertex_offset + vertex]];
+            if (used == 0U)
+            {
+              used = 1U;
+              geometryBytes += stride;
+            }
+          }
+        }
+        if (meshletCount == 0U || ((geometryBytes + 3U) & ~xiiUInt64(3U)) + meshletCount * sizeof(xiiMeshlet) > 128U * 1024U)
+        {
+          if (childCount > 2U)
+          {
+            groupLimit = childCount / 2U;
+            continue;
+          }
+          keepChildren();
+          continue;
+        }
         xiiDynamicArray<xiiMeshlet, xiiAlignedAllocatorWrapper> parents;
         for (size_t index = 0U; index < meshletCount; ++index)
         {
