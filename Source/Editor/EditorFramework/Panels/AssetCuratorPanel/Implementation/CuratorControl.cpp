@@ -5,7 +5,7 @@
 #include <EditorFramework/Assets/AssetCurator.h>
 #include <EditorFramework/Assets/AssetProcessor.h>
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
-#include <EditorFramework/Panels/AssetBrowserPanel/CuratorControl.moc.h>
+#include <EditorFramework/Panels/AssetCuratorPanel/CuratorControl.moc.h>
 #include <QProgressBar>
 
 xiiQtCuratorControl::xiiQtCuratorControl(QWidget* pParent) :

@@ -4,7 +4,6 @@
 
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
 #include <EditorFramework/Panels/AssetBrowserPanel/AssetBrowserPanel.moc.h>
-#include <EditorFramework/Panels/AssetBrowserPanel/CuratorControl.moc.h>
 
 XII_IMPLEMENT_SINGLETON(xiiQtAssetBrowserPanel);
 
@@ -18,15 +17,6 @@ xiiQtAssetBrowserPanel::xiiQtAssetBrowserPanel(ads::CDockManager* pDockManager) 
   pDummy->setContentsMargins(0, 0, 0, 0);
   pDummy->layout()->setContentsMargins(0, 0, 0, 0);
 
-  m_pStatusBar = new QStatusBar(nullptr);
-  m_pStatusBar->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Maximum);
-  m_pStatusBar->setSizeGripEnabled(false);
-
-  m_pCuratorControl = new xiiQtCuratorControl(nullptr);
-
-  m_pStatusBar->addPermanentWidget(m_pCuratorControl);
-
-  dockWidgetContents->layout()->addWidget(m_pStatusBar);
   setWidget(pDummy);
 
   setIcon(xiiQtUiServices::GetCachedIconResource(":/EditorFramework/Icons/Asset.svg"));

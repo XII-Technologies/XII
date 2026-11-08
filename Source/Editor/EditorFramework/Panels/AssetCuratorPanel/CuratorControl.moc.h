@@ -12,7 +12,7 @@ struct xiiAssetProcessorEvent;
 class QToolButton;
 class QProgressBar;
 
-/// \brief
+/// Shows asset processing controls and transform status in the Asset Curator panel.
 class XII_EDITORFRAMEWORK_DLL xiiQtCuratorControl : public QWidget
 {
   Q_OBJECT
