@@ -41,8 +41,14 @@ GBufferVertex xiiLoadIndexedSceneSurfaceVertex(uint vertexIndex, uint visibleInd
   const uint           vertexCount    = meshlet.PackedPrimitiveVertexCount >> 16u;
   const uint           firstIndex     = vertexIndex - vertexIndex % 3u;
   uint                 primitiveBufferBytes, remapBufferBytes;
-  g_Buffers[lod.MeshletPrimitiveBufferIndex].GetDimensions(primitiveBufferBytes);
-  g_Buffers[lod.MeshletRemapBufferIndex].GetDimensions(remapBufferBytes);
+  if (lod.MeshletTopologyBufferIndex == 0xFFFFFFFFu)
+    return xiiInvalidSceneSurfaceVertex();
+  g_Buffers[lod.MeshletTopologyBufferIndex].GetDimensions(primitiveBufferBytes);
+  remapBufferBytes = lod.MeshletPrimitiveByteOffset;
+  if (remapBufferBytes > primitiveBufferBytes)
+    return xiiInvalidSceneSurfaceVertex();
+  primitiveBufferBytes -= remapBufferBytes;
+
   if (primitiveCount > 126u || vertexCount == 0u || vertexCount > 64u || firstIndex / 3u >= primitiveCount ||
       meshlet.Header.y > remapBufferBytes / 4u || vertexCount > remapBufferBytes / 4u - meshlet.Header.y ||
       meshlet.Header.z > primitiveBufferBytes || primitiveCount * 3u > primitiveBufferBytes - meshlet.Header.z)
@@ -52,10 +58,10 @@ GBufferVertex xiiLoadIndexedSceneSurfaceVertex(uint vertexIndex, uint visibleInd
   uint3 indices;
   [unroll] for (uint i = 0u; i < 3u; ++i)
   {
-    const uint localIndex = LoadByte(g_Buffers[lod.MeshletPrimitiveBufferIndex], meshlet.Header.z + firstIndex + i);
+    const uint localIndex = LoadByte(g_Buffers[lod.MeshletTopologyBufferIndex], remapBufferBytes + meshlet.Header.z + firstIndex + i);
     if (localIndex >= vertexCount)
       return xiiInvalidSceneSurfaceVertex();
-    indices[i] = g_Buffers[lod.MeshletRemapBufferIndex].Load((meshlet.Header.y + localIndex) * 4u);
+    indices[i] = g_Buffers[lod.MeshletTopologyBufferIndex].Load((meshlet.Header.y + localIndex) * 4u);
   }
   // Reject the whole triangle consistently, including malformed source indices.
   uint vertexBufferBytes;

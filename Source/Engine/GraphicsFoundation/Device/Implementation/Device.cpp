@@ -365,6 +365,12 @@ xiiSharedPtr<xiiGALBuffer> xiiGALDevice::CreateBuffer(const xiiGALBufferCreation
 {
   VerifyMultithreadedAccess();
 
+  if (pInitialData && pInitialData->m_pStreamingDeferred)
+  {
+    *pInitialData->m_pStreamingDeferred = false;
+    XII_GAL_DEVICE_CHECK(description.m_Usage == xiiGALResourceUsage::Immutable && externalMemoryKind.IsNoFlagSet(), "Optional streaming requires an immutable internal buffer.");
+  }
+
   // Validate buffer description.
 
   auto allowedBindFlags = xiiGALBindFlags::VertexBuffer | xiiGALBindFlags::IndexBuffer | xiiGALBindFlags::UniformBuffer | xiiGALBindFlags::ShaderResource | xiiGALBindFlags::StreamOutput | xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::IndirectDrawArguments | xiiGALBindFlags::RayTracing;

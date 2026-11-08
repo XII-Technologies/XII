@@ -1812,7 +1812,7 @@ void xiiGALDeviceVulkan::UpdateStreamingMemoryBudget()
        xiiMath::Max(primary.m_uiUsageBytes, primary.m_uiCommittedBytes) >= uiNativeLimit * uiThreshold / 100U);
     uiMemoryDeferrals = m_uiTextureMemoryDeferrals;
     uiUploadDeferrals = m_uiTextureUploadDeferrals;
-    uiPendingBytes    = m_uiPendingTextureBytes;
+    uiPendingBytes    = m_uiPendingStreamingBytes;
   }
 
 #if XII_ENABLED(XII_USE_PROFILING)
@@ -1843,7 +1843,7 @@ void xiiGALDeviceVulkan::UpdateStreamingMemoryBudget()
     xiiStats::SetStat("Renderer/GPU memory/Streaming pressure", static_cast<bool>(m_bStreamingMemoryPressured));
     xiiStats::SetStat("Renderer/GPU memory/Texture memory deferrals", uiMemoryDeferrals);
     xiiStats::SetStat("Renderer/GPU memory/Texture upload deferrals", uiUploadDeferrals);
-    xiiStats::SetStat("Renderer/GPU memory/Pending texture allocation bytes", uiPendingBytes);
+    xiiStats::SetStat("Renderer/GPU memory/Pending streaming allocation bytes", uiPendingBytes);
   }
 #else
   XII_IGNORE_UNUSED(uiMemoryDeferrals);
@@ -1852,15 +1852,16 @@ void xiiGALDeviceVulkan::UpdateStreamingMemoryBudget()
 #endif
 }
 
-bool xiiGALDeviceVulkan::TryReserveTextureRefinement(xiiUInt64 uiUploadBytes, xiiUInt64 uiAllocationBytes)
+bool xiiGALDeviceVulkan::TryReserveStreamingAllocation(xiiUInt64 uiAllocationBytes, xiiUInt64 uiTextureUploadBytes)
 {
   XII_LOCK(m_StreamingBudgetMutex);
   if (m_bStreamingMemoryPressured)
   {
-    ++m_uiTextureMemoryDeferrals;
+    if (uiTextureUploadBytes != 0U)
+      ++m_uiTextureMemoryDeferrals;
     return false;
   }
-  if (uiUploadBytes > m_uiRemainingTextureUploadBytes)
+  if (uiTextureUploadBytes > m_uiRemainingTextureUploadBytes)
   {
     ++m_uiTextureUploadDeferrals;
     return false;
@@ -1872,22 +1873,23 @@ bool xiiGALDeviceVulkan::TryReserveTextureRefinement(xiiUInt64 uiUploadBytes, xi
   const xiiUInt64 uiNativeLimit    = primary.m_uiBudgetBytes - xiiMath::Min(primary.m_uiBudgetBytes, m_uiStreamingHeadroom);
   const xiiUInt64 uiAdmissionLimit = xiiMath::Min(m_uiStreamingBudgetCap, uiNativeLimit);
   const xiiUInt64 uiAvailable      = uiAdmissionLimit - xiiMath::Min(uiAdmissionLimit, GetAdmissionUsage(primary));
-  if (uiAllocationBytes > uiAvailable - xiiMath::Min(uiAvailable, m_uiPendingTextureBytes))
+  if (uiAllocationBytes > uiAvailable - xiiMath::Min(uiAvailable, m_uiPendingStreamingBytes))
   {
-    ++m_uiTextureMemoryDeferrals;
+    if (uiTextureUploadBytes != 0U)
+      ++m_uiTextureMemoryDeferrals;
     return false;
   }
 
-  m_uiRemainingTextureUploadBytes -= uiUploadBytes;
-  m_uiPendingTextureBytes += uiAllocationBytes;
+  m_uiRemainingTextureUploadBytes -= uiTextureUploadBytes;
+  m_uiPendingStreamingBytes += uiAllocationBytes;
   return true;
 }
 
-void xiiGALDeviceVulkan::ReleaseTextureRefinementReservation(xiiUInt64 uiBytes)
+void xiiGALDeviceVulkan::ReleaseStreamingAllocationReservation(xiiUInt64 uiBytes)
 {
   XII_LOCK(m_StreamingBudgetMutex);
-  XII_ASSERT_DEV(uiBytes <= m_uiPendingTextureBytes, "Texture refinement reservations must be released once.");
-  m_uiPendingTextureBytes -= uiBytes;
+  XII_ASSERT_DEV(uiBytes <= m_uiPendingStreamingBytes, "Streaming allocation reservations must be released once.");
+  m_uiPendingStreamingBytes -= uiBytes;
 }
 
 void xiiGALDeviceVulkan::EndFramePlatform()

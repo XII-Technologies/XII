@@ -234,10 +234,10 @@ xiiResult xiiGALTextureVulkan::InitPlatform(const xiiGALTextureData* pInitialDat
           pDeviceVulkan->GetVulkanLogicalDevice().getImageMemoryRequirements(&query, &requirements, dispatch);
           uiAllocationBytes = requirements.memoryRequirements.size;
         }
-        if (!pDeviceVulkan->TryReserveTextureRefinement(uiUploadBytes, uiAllocationBytes))
+        if (!pDeviceVulkan->TryReserveStreamingAllocation(uiAllocationBytes, uiUploadBytes))
           return XII_FAILURE;
       }
-      XII_SCOPE_EXIT(if (bRefinement) pDeviceVulkan->ReleaseTextureRefinementReservation(uiAllocationBytes));
+      XII_SCOPE_EXIT(if (bRefinement) pDeviceVulkan->ReleaseStreamingAllocationReservation(uiAllocationBytes));
 
       xiiVulkanAllocationCreateInfo allocationCreateInfo;
       allocationCreateInfo.m_Usage         = xiiVulkanMemoryUsage::Auto;

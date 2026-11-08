@@ -83,9 +83,10 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALBufferData
   {
   }
 
-  const void*        m_pData;        ///< The pointer to the data.
-  xiiUInt64          m_uiDataSize;   ///< The data size in bytes.
-  xiiGALCommandList* m_pCommandList; ///< Optional command list used to upload data; if null, a new one is created; if reused elsewhere, synchronization (e.g., fence) is required.
+  const void*        m_pData;                        ///< The pointer to the data.
+  xiiUInt64          m_uiDataSize;                   ///< The data size in bytes.
+  xiiGALCommandList* m_pCommandList;                 ///< Optional command list used to upload data; if null, a new one is created; if reused elsewhere, synchronization (e.g., fence) is required.
+  bool*              m_pStreamingDeferred = nullptr; ///< Opts an immutable buffer into optional admission. Set on budget deferral, cleared on entry.
 };
 
 /// This describes the sparse buffer properties.

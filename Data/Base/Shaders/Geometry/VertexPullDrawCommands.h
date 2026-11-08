@@ -46,7 +46,7 @@ RWStructuredBuffer<uint>  g_DrawCommandCount;
       (instance.DrawLod != 0xFFFFFFFFu && instance.DrawLod != lodIndex))
     return;
   GpuGeometryLod lod = geometry.Lods[lodIndex];
-  if (lod.VertexBufferIndex == 0xFFFFFFFFu || lod.MeshletRemapBufferIndex == 0xFFFFFFFFu || lod.MeshletPrimitiveBufferIndex == 0xFFFFFFFFu ||
+  if (lod.VertexBufferIndex == 0xFFFFFFFFu || lod.MeshletTopologyBufferIndex == 0xFFFFFFFFu ||
       visible.y < lod.MeshletMetadataOffset || visible.y - lod.MeshletMetadataOffset >= lod.MeshletCount)
     return;
   uint primitives = meshlet.PackedPrimitiveVertexCount & 0xFFFFu;

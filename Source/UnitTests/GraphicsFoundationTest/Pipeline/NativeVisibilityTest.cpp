@@ -108,10 +108,9 @@ public:
     geometry.m_Lods[1].m_uiMeshletMetadataOffset = fineMeshlets;
     for (xiiUInt32 i = 0; i < 2; ++i)
     {
-      geometry.m_Lods[i].m_uiVertexBufferIndex           = 1;
-      geometry.m_Lods[i].m_uiMeshletRemapBufferIndex     = 1;
-      geometry.m_Lods[i].m_uiMeshletPrimitiveBufferIndex = 1;
-      geometry.m_Lods[i].m_uiIndexCount                  = geometry.m_Lods[i].m_uiMeshletCount * 3;
+      geometry.m_Lods[i].m_uiVertexBufferIndex          = 1;
+      geometry.m_Lods[i].m_uiMeshletTopologyBufferIndex = 1;
+      geometry.m_Lods[i].m_uiIndexCount                 = geometry.m_Lods[i].m_uiMeshletCount * 3;
     }
     xiiDynamicArray<xiiMeshlet, xiiAlignedAllocatorWrapper> metadata;
     metadata.SetCount(fineMeshlets + 65U);

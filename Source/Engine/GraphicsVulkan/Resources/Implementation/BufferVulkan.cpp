@@ -168,10 +168,54 @@ xiiResult xiiGALBufferVulkan::InitPlatform(const xiiGALBufferData* pInitialData,
   }
   else
   {
-    xiiVulkanAllocationCreateInfo allocationCreateInfo;
-    allocationCreateInfo.m_Usage = xiiVulkanMemoryUsage::Auto;
+    bool* pStreamingDeferred = pInitialData != nullptr ? pInitialData->m_pStreamingDeferred : nullptr;
+    {
+      xiiVulkanAllocationCreateInfo allocationCreateInfo;
+      allocationCreateInfo.m_Usage = xiiVulkanMemoryUsage::Auto;
 
-    VK_SUCCEED_OR_RETURN_XII_FAILURE(pVulkanMemoryAllocator->CreateBuffer(vkBufferCreateInfo, allocationCreateInfo, m_vkBuffer, m_BufferMemoryAllocation));
+      xiiUInt64 uiAllocationBytes = 0U;
+      if (pStreamingDeferred != nullptr)
+      {
+        const auto& dispatch = pDeviceVulkan->GetVulkanDynamicDispatchLoader();
+        const auto& device   = pDeviceVulkan->GetVulkanLogicalDevice();
+        if (pDeviceVulkan->GetVulkanVersion() >= VK_API_VERSION_1_3 &&
+            pDeviceVulkan->GetVulkanPhysicalDeviceProperties().apiVersion >= VK_API_VERSION_1_3 &&
+            dispatch.vkGetDeviceBufferMemoryRequirements != nullptr)
+        {
+          vk::DeviceBufferMemoryRequirements query;
+          query.pCreateInfo = &vkBufferCreateInfo;
+          vk::MemoryRequirements2 requirements;
+          device.getBufferMemoryRequirements(&query, &requirements, dispatch);
+          uiAllocationBytes = requirements.memoryRequirements.size;
+        }
+        else
+        {
+          // Vulkan 1.2 exposes the exact requirements once the unbound buffer exists.
+          vk::Buffer buffer;
+          VK_SUCCEED_OR_RETURN_XII_FAILURE(device.createBuffer(&vkBufferCreateInfo, nullptr, &buffer, dispatch));
+          vk::MemoryRequirements requirements;
+          device.getBufferMemoryRequirements(buffer, &requirements, dispatch);
+          device.destroyBuffer(buffer, nullptr, dispatch);
+          uiAllocationBytes = requirements.size;
+        }
+        if (!pDeviceVulkan->TryReserveStreamingAllocation(uiAllocationBytes))
+        {
+          *pStreamingDeferred = true;
+          return XII_FAILURE;
+        }
+        allocationCreateInfo.m_RequiredFlags = xiiVulkanMemoryPropertyFlags::DeviceLocal;
+        allocationCreateInfo.m_Flags.Add(xiiVulkanAllocationCreateFlags::StrategyWithinBudget);
+      }
+      XII_SCOPE_EXIT(if (pStreamingDeferred != nullptr) pDeviceVulkan->ReleaseStreamingAllocationReservation(uiAllocationBytes));
+
+      const vk::Result result = pVulkanMemoryAllocator->CreateBuffer(vkBufferCreateInfo, allocationCreateInfo, m_vkBuffer, m_BufferMemoryAllocation);
+      if (pStreamingDeferred != nullptr && result == vk::Result::eErrorOutOfDeviceMemory)
+      {
+        *pStreamingDeferred = true;
+        return XII_FAILURE;
+      }
+      VK_SUCCEED_OR_RETURN_XII_FAILURE(result);
+    }
 
     SetResourceState(xiiVulkanTypeConversions::GetResourceStateFromBindFlags(m_Description.m_BindFlags));
 

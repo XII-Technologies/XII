@@ -69,18 +69,18 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGeometryDescription);
 struct XII_GRAPHICSCORE_DLL alignas(16) xiiGpuGeometryLod
 {
   XII_DECLARE_POD_TYPE();
-  xiiUInt32 m_uiVertexBufferIndex           = xiiInvalidIndex;
-  xiiUInt32 m_uiIndexBufferIndex            = xiiInvalidIndex;
-  xiiUInt32 m_uiPadding                     = 0U;
-  xiiUInt32 m_uiMeshletRemapBufferIndex     = xiiInvalidIndex;
-  xiiUInt32 m_uiMeshletPrimitiveBufferIndex = xiiInvalidIndex;
-  xiiUInt32 m_uiVertexCount                 = 0U;
-  xiiUInt32 m_uiIndexCount                  = 0U;
-  xiiUInt32 m_uiMeshletCount                = 0U;
-  float     m_fMinimumScreenCoverage        = 0.0f;
-  xiiUInt32 m_uiIndexType                   = 0U;
-  xiiUInt32 m_uiMeshletMetadataOffset       = 0U;
-  xiiUInt32 m_uiMeshletRangesOrdered        = 0U; ///< Primitive-sorted arena metadata with UInt32 prefix ends in GPU padding[0].
+  xiiUInt32 m_uiVertexBufferIndex          = xiiInvalidIndex;
+  xiiUInt32 m_uiIndexBufferIndex           = xiiInvalidIndex;
+  xiiUInt32 m_uiPadding                    = 0U;
+  xiiUInt32 m_uiMeshletTopologyBufferIndex = xiiInvalidIndex;
+  xiiUInt32 m_uiMeshletPrimitiveByteOffset = 0U;
+  xiiUInt32 m_uiVertexCount                = 0U;
+  xiiUInt32 m_uiIndexCount                 = 0U;
+  xiiUInt32 m_uiMeshletCount               = 0U;
+  float     m_fMinimumScreenCoverage       = 0.0f;
+  xiiUInt32 m_uiIndexType                  = 0U;
+  xiiUInt32 m_uiMeshletMetadataOffset      = 0U;
+  xiiUInt32 m_uiMeshletRangesOrdered       = 0U; ///< Primitive-sorted arena metadata with UInt32 prefix ends in GPU padding[0].
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGpuGeometryLod);
@@ -333,7 +333,7 @@ private:
     Failed
   };
   static AdmissionResult BuildResidentRecord(Slot& slot, xiiUInt64 uiFrameIndex, xiiUInt64 uiCompletedFrame);
-  static bool            RegisterBindlessResources(Slot& slot, xiiGpuGeometryRecord& record, xiiUInt32 uiLod, const xiiMeshBufferResource& mesh, const xiiSharedPtr<xiiGALBuffer>& pVertexBuffer, xiiUInt64 uiTopologyKey, const TopologyRange& range);
+  static AdmissionResult RegisterBindlessResources(Slot& slot, xiiGpuGeometryRecord& record, xiiUInt32 uiLod, const xiiMeshBufferResource& mesh, const xiiSharedPtr<xiiGALBuffer>& pVertexBuffer, xiiUInt64 uiTopologyKey, const TopologyRange& range, bool bOptional);
   static void            ReleaseSourceBinding(LodBinding binding, xiiUInt64 uiLastUseFrame);
   static void            ReleaseBindlessResources(Slot& slot, xiiUInt64 uiLastUseFrame);
   static void            EnforceBudget(xiiUInt64 uiCompletedFrame, xiiUInt64 uiRequiredBytes = 0U);
