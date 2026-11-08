@@ -74,6 +74,7 @@ public:
   xiiAtomicInteger32 m_uiPendingIo = 0U;
   struct TexturePage
   {
+    xiiUInt64                    m_uiAdmittedFrame = 0U;
     xiiGALBindlessResourceHandle m_Texture;
     xiiSharedPtr<PageIo>         m_Io;
     bool                         m_bIoFailed = false;
@@ -83,6 +84,7 @@ public:
   };
   struct TextureSource
   {
+    xiiUInt64                                     m_uiPageAllocationBytes = xiiVirtualTextureData::s_uiTileBytes;
     xiiSharedPtr<xiiVirtualTextureData>           m_Data;
     xiiDynamicArray<TexturePage>                  m_Pages;
     xiiGALBindlessResourceHandle                  m_Table;
@@ -115,6 +117,7 @@ public:
   void                                                      ClearTextures();
   struct Page
   {
+    xiiUInt64                    m_uiAdmittedFrame = 0U;
     xiiSharedPtr<PageIo>         m_Io;
     bool                         m_bIoFailed = false;
     xiiGALBindlessResourceHandle m_Buffer;
@@ -167,7 +170,20 @@ public:
     return pSource != nullptr ? pSource->m_Topology.GetValue(uiKey) : nullptr;
   }
 
-  xiiHashTable<xiiUInt32, const void*> m_PageRequests;
+  struct PageRequest
+  {
+    const void* m_pSource  = nullptr;
+    xiiUInt32   m_uiPage   = 0U;
+    bool        m_bTexture = false, m_bQueued = false;
+    xiiUInt64   m_uiFirstFrame = 0U, m_uiDemand = 0U;
+    xiiUInt32   m_uiPriority = 0U;
+  };
+  xiiHashTable<xiiUInt32, PageRequest> m_PageRequests;
+  xiiDynamicArray<xiiUInt32>           m_PageQueue, m_ResidentPages;
+  xiiUInt32                            m_uiEvictionCursor = 0U;
+  bool                                 DemandPage(xiiUInt32 request, xiiUInt64 frame, xiiUInt32 priority);
+  void                                 SchedulePages(xiiUInt64 frame);
+  void                                 TrimPages(xiiUInt64 frame, xiiUInt64 completed);
   xiiUInt32                            m_uiNextPageRequest = 1U;
   AdmissionResult                      UploadPage(SourceBinding& source, xiiUInt32 page, bool optional);
   bool                                 PublishPages(SourceBinding& source);
@@ -228,6 +244,9 @@ public:
     m_MeshGeometries.Clear();
     m_CurrentMeshGeometries.Clear();
     m_PageRequests.Clear();
+    m_PageQueue.Clear();
+    m_ResidentPages.Clear();
+    m_uiEvictionCursor    = 0U;
     m_uiFramesInFlight    = 0U;
     m_uiAllFrameMask      = 0U;
     m_uiBudgetBytes       = 0U;
@@ -1209,7 +1228,7 @@ xiiGeometryResidencyManager::AdmissionResult xiiGeometryResidencyManager::State:
 {
   constexpr auto bytes = xiiVirtualTextureData::s_uiTileBytes;
   const auto     limit = xiiUInt64(xiiMath::Max(0, cvar_TextureCacheMiB.GetValue())) * 1024U * 1024U;
-  if (optional && (bytes > limit || m_uiTextureBytes > limit - bytes))
+  if (optional && (source.m_uiPageAllocationBytes > limit || m_uiTextureBytes > limit - source.m_uiPageAllocationBytes))
     return AdmissionResult::MemoryDeferred;
   auto*       device                  = m_pMetadataBuffer->GetDevice().Borrow();
   const auto& compiled                = source.m_Data;
@@ -1263,12 +1282,15 @@ xiiGeometryResidencyManager::AdmissionResult xiiGeometryResidencyManager::State:
   const auto handle = xiiGALBindlessResourceTable::RegisterTextureSRV(texture->GetDefaultView(xiiGALTextureViewType::ShaderResource));
   if (!handle.IsValid())
     return AdmissionResult::Failed;
-  source.m_Pages[page].m_Texture = handle;
+  source.m_Pages[page].m_uiAdmittedFrame = m_uiStreamingFrame;
+  source.m_Pages[page].m_Texture         = handle;
   source.m_Pages[page].m_Io.Clear();
   source.m_Pages[page].m_uiBytes = texture->GetMemoryConsumption();
+  source.m_uiPageAllocationBytes = xiiMath::Max(source.m_uiPageAllocationBytes, source.m_Pages[page].m_uiBytes);
   source.m_bDirty                = true;
   m_uiTextureBytes += source.m_Pages[page].m_uiBytes;
   ++m_uiTexturePageCount;
+  m_ResidentPages.PushBack(residency.m_uiRequest);
   return AdmissionResult::Admitted;
 }
 
@@ -1399,9 +1421,207 @@ xiiUInt32 xiiGeometryResidencyManager::ResolveVirtualTexture(xiiSharedPtr<xiiVir
     }
     s_pState->m_Textures.Insert(data.Borrow(), std::move(fresh));
     source = s_pState->m_Textures.GetValue(data.Borrow());
+    for (xiiUInt32 page = 0U; page < source->m_Pages.GetCount(); ++page)
+      s_pState->m_PageRequests.Insert(source->m_Pages[page].m_uiRequest, State::PageRequest{data.Borrow(), page, true});
   }
   source->m_uiUsed = frame;
   return source->m_Table.m_uiIndex | 0x80000000U | (static_cast<xiiUInt32>(frame % s_pState->m_uiFramesInFlight) << 24U);
+}
+
+
+bool xiiGeometryResidencyManager::State::DemandPage(xiiUInt32 request, xiiUInt64 frame, xiiUInt32 priority)
+{
+  auto* target = m_PageRequests.GetValue(request);
+  if (!target)
+    return false;
+  bool      resident = false, required = false;
+  xiiUInt64 trimmed = 0U;
+  if (target->m_bTexture)
+  {
+    auto* source = m_Textures.GetValue(static_cast<const xiiVirtualTextureData*>(target->m_pSource));
+    if (!source || target->m_uiPage >= source->m_Pages.GetCount())
+      return false;
+    auto& page = source->m_Pages[target->m_uiPage];
+    trimmed    = page.m_uiTrimFrame;
+    if (frame <= trimmed)
+      return false;
+    page.m_uiDemand = xiiMath::Max(page.m_uiDemand, frame);
+    resident        = page.m_Texture.IsValid();
+    required        = target->m_uiPage + 1U == source->m_Pages.GetCount();
+    // Coarse and predictive ancestors become available before costly fine pages.
+    priority += source->m_Data->m_Tiles[target->m_uiPage].m_uiMip;
+  }
+  else
+  {
+    auto* source = m_SourceBindings.GetValue(target->m_pSource);
+    if (!source || target->m_uiPage >= source->m_Pages.GetCount())
+      return false;
+    auto& page = source->m_Pages[target->m_uiPage];
+    trimmed    = page.m_uiTrimFrame;
+    if (frame <= trimmed)
+      return false;
+    page.m_uiDemand   = xiiMath::Max(page.m_uiDemand, frame);
+    page.m_uiPriority = xiiMath::Max(page.m_uiPriority, priority);
+    resident          = page.m_Buffer.IsValid();
+    required          = page.m_bRequired;
+  }
+  ++m_uiPageRequests;
+  if (!resident)
+    ++m_uiPageMisses;
+  target->m_uiDemand   = xiiMath::Max(target->m_uiDemand, frame);
+  target->m_uiPriority = xiiMath::Max(target->m_uiPriority, priority);
+  if (!resident && !required && !target->m_bQueued && m_PageQueue.GetCount() < 4096U)
+  {
+    target->m_bQueued      = true;
+    target->m_uiFirstFrame = frame;
+    m_PageQueue.PushBack(request);
+  }
+  return true;
+}
+
+void xiiGeometryResidencyManager::State::SchedulePages(xiiUInt64 frame)
+{
+  // Only missing demanded pages enter this bounded queue. Ties are deterministic across views.
+  m_PageQueue.Sort([this, frame](xiiUInt32 a, xiiUInt32 b) {
+    const auto* lhs = m_PageRequests.GetValue(a);
+    const auto* rhs = m_PageRequests.GetValue(b);
+    if (!lhs || !rhs)
+      return lhs != nullptr ? true : rhs != nullptr ? false :
+                                                      a < b;
+    const auto score = [frame](const PageRequest& request) {
+      return xiiUInt64(request.m_uiPriority) + xiiMath::Min<xiiUInt64>(255U, (frame - xiiMath::Min(frame, request.m_uiFirstFrame)) / 8U);
+    };
+    if (score(*lhs) != score(*rhs))
+      return score(*lhs) > score(*rhs);
+    if (lhs->m_uiDemand != rhs->m_uiDemand)
+      return lhs->m_uiDemand > rhs->m_uiDemand;
+    return a < b;
+  });
+  xiiUInt32 examined = 0U;
+  for (xiiUInt32 i = 0U; i < m_PageQueue.GetCount() && examined < 4096U; ++examined)
+  {
+    const auto      request = m_PageQueue[i];
+    auto*           target  = m_PageRequests.GetValue(request);
+    bool            remove  = target == nullptr;
+    AdmissionResult result  = AdmissionResult::NotReady;
+    if (target)
+    {
+      const bool cold = frame - xiiMath::Min(frame, target->m_uiDemand) >= 30U;
+      if (target->m_bTexture)
+      {
+        auto* source = m_Textures.GetValue(static_cast<const xiiVirtualTextureData*>(target->m_pSource));
+        if (!source)
+          remove = true;
+        else
+        {
+          auto& page = source->m_Pages[target->m_uiPage];
+          remove     = cold || page.m_Texture.IsValid() || page.m_bIoFailed;
+          if (remove)
+            page.m_Io.Clear();
+          else if (page.m_uiTrimFrame == 0U || frame - xiiMath::Min(frame, page.m_uiTrimFrame) >= 60U)
+            result = UploadTextureTile(*source, target->m_uiPage, true);
+        }
+      }
+      else
+      {
+        auto* source = m_SourceBindings.GetValue(target->m_pSource);
+        if (!source)
+          remove = true;
+        else
+        {
+          auto& page = source->m_Pages[target->m_uiPage];
+          remove     = cold || page.m_Buffer.IsValid() || page.m_bIoFailed;
+          if (remove)
+            page.m_Io.Clear();
+          else if (page.m_uiTrimFrame == 0U || frame - xiiMath::Min(frame, page.m_uiTrimFrame) >= 60U)
+            result = UploadPage(*source, target->m_uiPage, true);
+        }
+      }
+      remove |= result == AdmissionResult::Admitted || result == AdmissionResult::Failed;
+      if (result == AdmissionResult::MemoryDeferred)
+        ++m_StreamingStats.m_uiMemoryDeferred;
+      if (result == AdmissionResult::BudgetDeferred)
+        ++m_StreamingStats.m_uiBudgetDeferred;
+      if (remove)
+        target->m_bQueued = false;
+    }
+    if (remove)
+      m_PageQueue.RemoveAtAndCopy(i);
+    else
+      ++i;
+  }
+#if XII_ENABLED(XII_USE_PROFILING)
+  xiiStats::SetStat("Renderer/GPU residency/Pending page requests", m_PageQueue.GetCount());
+  xiiStats::SetStat("Renderer/GPU residency/Pending page IO", static_cast<xiiUInt32>(m_uiPendingIo));
+  xiiStats::SetStat("Renderer/GPU residency/Page requests", m_uiPageRequests);
+  xiiStats::SetStat("Renderer/GPU residency/Page misses", m_uiPageMisses);
+#endif
+}
+
+void xiiGeometryResidencyManager::State::TrimPages(xiiUInt64 frame, xiiUInt64 completed)
+{
+  const bool pressure      = m_pMetadataBuffer->GetDevice()->IsStreamingMemoryPressured();
+  const auto geometryLimit = xiiUInt64(xiiMath::Max(0, cvar_GeometryCacheMiB.GetValue())) * 1024U * 1024U;
+  const auto textureLimit  = xiiUInt64(xiiMath::Max(0, cvar_TextureCacheMiB.GetValue())) * 1024U * 1024U;
+  const auto examined      = xiiMath::Min(512U, m_ResidentPages.GetCount());
+  for (xiiUInt32 n = 0U; n < examined && !m_ResidentPages.IsEmpty(); ++n)
+  {
+    m_uiEvictionCursor %= m_ResidentPages.GetCount();
+    auto* target = m_PageRequests.GetValue(m_ResidentPages[m_uiEvictionCursor]);
+    bool  remove = target == nullptr;
+    if (target && target->m_bTexture)
+    {
+      auto* source = m_Textures.GetValue(static_cast<const xiiVirtualTextureData*>(target->m_pSource));
+      remove       = source == nullptr;
+      if (source)
+      {
+        auto& page        = source->m_Pages[target->m_uiPage];
+        remove            = !page.m_Texture.IsValid();
+        const bool excess = pressure || m_uiTextureBytes > textureLimit;
+        if (!remove && target->m_uiPage + 1U != source->m_Pages.GetCount() &&
+            (frame - xiiMath::Min(frame, page.m_uiDemand) > 120U ||
+             (excess && frame - xiiMath::Min(frame, page.m_uiAdmittedFrame) > 60U)))
+        {
+          source->m_Retiring.PushBack(page.m_Texture);
+          source->m_uiRetiringBytes += page.m_uiBytes;
+          page.m_Texture     = {};
+          page.m_uiTrimFrame = frame;
+          source->m_bDirty   = true;
+          remove             = true;
+          ++m_StreamingStats.m_uiEvictions;
+        }
+      }
+    }
+    else if (target)
+    {
+      auto* source = m_SourceBindings.GetValue(target->m_pSource);
+      remove       = source == nullptr;
+      if (source)
+      {
+        auto& page        = source->m_Pages[target->m_uiPage];
+        remove            = !page.m_Buffer.IsValid();
+        const bool excess = pressure || m_uiResidentTopologyBytes > geometryLimit;
+        if (!remove && !page.m_bRequired &&
+            (frame - xiiMath::Min(frame, page.m_uiDemand) > 120U ||
+             (excess && frame - xiiMath::Min(frame, page.m_uiAdmittedFrame) > 60U)))
+        {
+          source->m_Retiring.PushBack(page.m_Buffer);
+          source->m_uiRetiringBytes += page.m_uiBytes;
+          page.m_Buffer                                       = {};
+          page.m_uiTrimFrame                                  = frame;
+          source->m_PageRecords[target->m_uiPage].m_Mapping.x = xiiInvalidIndex;
+          source->m_bPagesDirty                               = true;
+          remove                                              = true;
+          ++m_StreamingStats.m_uiEvictions;
+        }
+      }
+    }
+    if (remove)
+      m_ResidentPages.RemoveAtAndSwap(m_uiEvictionCursor);
+    else
+      ++m_uiEvictionCursor;
+  }
+  XII_IGNORE_UNUSED(completed);
 }
 
 void xiiGeometryResidencyManager::State::ProcessTextures(xiiUInt64 frame, xiiUInt64 completed)
@@ -1421,19 +1641,10 @@ void xiiGeometryResidencyManager::State::ProcessTextures(xiiUInt64 frame, xiiUIn
       if (mapped)
       {
         const auto* words = static_cast<const xiiUInt32*>(mapped);
-        for (auto it = m_SourceBindings.GetIterator(); it.IsValid(); ++it)
-          for (auto& page : it.Value().m_Pages)
-            if ((words[page.m_uiRequest / 32U] & XII_BIT(page.m_uiRequest % 32U)) != 0U && capture.m_uiFrame > page.m_uiTrimFrame)
-            {
-              ++m_uiPageRequests;
-              if (!page.m_Buffer.IsValid())
-                ++m_uiPageMisses;
-              page.m_uiDemand = xiiMath::Max(page.m_uiDemand, capture.m_uiFrame);
-            }
-        for (auto it = m_Textures.GetIterator(); it.IsValid(); ++it)
-          for (auto& page : it.Value().m_Pages)
-            if ((words[page.m_uiRequest / 32U] & XII_BIT(page.m_uiRequest % 32U)) != 0U && capture.m_uiFrame > page.m_uiTrimFrame)
-              page.m_uiDemand = xiiMath::Max(page.m_uiDemand, capture.m_uiFrame);
+        const auto  count = xiiMath::Min(s_uiFeedbackWords, (m_uiNextPageRequest + 31U) / 32U);
+        for (xiiUInt32 word = 0U; word < count; ++word)
+          for (xiiUInt32 mask = words[word]; mask != 0U; mask &= mask - 1U)
+            DemandPage(word * 32U + xiiMath::FirstBitLow(mask), capture.m_uiFrame, 0U);
       }
       commands->UnmapBuffer(capture.m_Staging.Borrow(), xiiGALMapType::Read).AssertSuccess();
       capture.m_bPending = false;
@@ -1451,36 +1662,20 @@ void xiiGeometryResidencyManager::State::ProcessTextures(xiiUInt64 frame, xiiUIn
         xiiGALBindlessResourceTable::RetireTextureSRV(handle, frame - 1U);
       }
       m_uiTextureBytes -= source.m_uiRetiringBytes;
+      m_uiTexturePageCount -= source.m_Retiring.GetCount();
       source.m_uiRetiringBytes = 0U;
       for (auto& tile : source.m_Pages)
+      {
+        m_PageRequests.Remove(tile.m_uiRequest);
         if (tile.m_Texture.IsValid())
         {
           xiiGALBindlessResourceTable::RetireTextureSRV(tile.m_Texture, frame - 1U);
           m_uiTextureBytes -= tile.m_uiBytes;
           --m_uiTexturePageCount;
         }
+      }
       it = m_Textures.Remove(it);
       continue;
-    }
-    xiiUInt32 uploaded = 0U;
-    for (xiiUInt32 p = 0U; p + 1U < source.m_Pages.GetCount(); ++p)
-    {
-      auto& tile = source.m_Pages[p];
-      if (tile.m_Texture.IsValid() && frame > tile.m_uiDemand && frame - tile.m_uiDemand > 120U)
-      {
-        source.m_Retiring.PushBack(tile.m_Texture);
-        source.m_uiRetiringBytes += tile.m_uiBytes;
-        tile.m_Texture     = {};
-        tile.m_uiTrimFrame = frame;
-        source.m_bDirty    = true;
-      }
-      else if (tile.m_Io && frame - xiiMath::Min(frame, tile.m_uiDemand) >= 30U)
-        tile.m_Io.Clear();
-      else if (!tile.m_Texture.IsValid() && tile.m_uiDemand != 0U && frame - xiiMath::Min(frame, tile.m_uiDemand) < 30U && uploaded < 8U)
-      {
-        if (UploadTextureTile(source, p, true) == AdmissionResult::Admitted)
-          ++uploaded;
-      }
     }
     if (source.m_bDirty)
       static_cast<void>(PublishTexture(source));
@@ -1657,12 +1852,14 @@ xiiGeometryResidencyManager::AdmissionResult xiiGeometryResidencyManager::State:
     return AdmissionResult::Failed;
   }
   source.m_Pages[index].m_Io.Clear();
+  source.m_Pages[index].m_uiAdmittedFrame = m_uiStreamingFrame;
   source.m_Pages[index].m_Buffer          = handle;
   source.m_Pages[index].m_uiBytes         = buffer->GetMemoryConsumption();
   source.m_PageRecords[index].m_Mapping.x = handle.m_uiIndex;
   source.m_bPagesDirty                    = true;
   m_uiResidentTopologyBytes += source.m_Pages[index].m_uiBytes;
   ++m_uiGeometryPageCount;
+  m_ResidentPages.PushBack(residency.m_uiRequest);
   m_StreamingStats.m_uiTopologyUploadBytes += page.m_uiSize;
   m_StreamingStats.m_uiAdmittedBytes += page.m_uiSize;
   m_uiRemainingUploadBudget -= xiiMath::Min(m_uiRemainingUploadBudget, xiiUInt64(page.m_uiSize));
@@ -1731,29 +1928,6 @@ void xiiGeometryResidencyManager::State::ProcessPages(xiiUInt64 frame, xiiUInt64
     auto& source = it.Value();
     if (source.m_Pages.IsEmpty())
       continue;
-    xiiResourceLock<xiiMeshBufferResource> mesh(source.m_hMesh, xiiResourceAcquireMode::PointerOnly);
-    if (mesh.GetAcquireResult() != xiiResourceAcquireResult::Final)
-      continue;
-    const auto& pages = mesh->GetDescriptor().m_GeometryPages;
-    for (xiiUInt32 p = 0U; p < source.m_Pages.GetCount(); ++p)
-    {
-      auto& page = source.m_Pages[p];
-      if (page.m_bRequired)
-        continue;
-      if (page.m_Buffer.IsValid() && frame > page.m_uiDemand && frame - page.m_uiDemand > 120U && page.m_uiDemand <= completed)
-      {
-        source.m_Retiring.PushBack(page.m_Buffer);
-        source.m_uiRetiringBytes += page.m_uiBytes;
-        page.m_Buffer                       = {};
-        page.m_uiTrimFrame                  = frame;
-        source.m_PageRecords[p].m_Mapping.x = xiiInvalidIndex;
-        source.m_bPagesDirty                = true;
-      }
-      else if (page.m_Io && frame - xiiMath::Min(frame, page.m_uiDemand) >= 30U)
-        page.m_Io.Clear();
-      else if (!page.m_Buffer.IsValid() && page.m_uiDemand != 0U && frame - xiiMath::Min(frame, page.m_uiDemand) < 30U)
-        static_cast<void>(UploadPage(source, p, true));
-    }
     if (source.m_bPagesDirty && PublishPages(source))
       for (auto index : m_ActiveSlots)
       {
@@ -1771,27 +1945,7 @@ void xiiGeometryResidencyManager::State::ProcessPages(xiiUInt64 frame, xiiUInt64
 
 bool xiiGeometryResidencyManager::ReportPageDemand(xiiUInt32 request, xiiUInt64 frame, xiiUInt32 priority)
 {
-  if (!s_pState)
-    return false;
-  const void* identity = nullptr;
-  if (!s_pState->m_PageRequests.TryGetValue(request, identity))
-    return false;
-  auto* source = s_pState->m_SourceBindings.GetValue(identity);
-  if (!source)
-    return false;
-  for (auto& page : source->m_Pages)
-    if (page.m_uiRequest == request)
-    {
-      if (frame <= page.m_uiTrimFrame)
-        return false;
-      ++s_pState->m_uiPageRequests;
-      if (!page.m_Buffer.IsValid())
-        ++s_pState->m_uiPageMisses;
-      page.m_uiDemand   = xiiMath::Max(page.m_uiDemand, frame);
-      page.m_uiPriority = xiiMath::Max(page.m_uiPriority, priority);
-      return true;
-    }
-  return false;
+  return s_pState && s_pState->DemandPage(request, frame, priority);
 }
 
 xiiGeometryResidencyManager::AdmissionResult xiiGeometryResidencyManager::State::UploadTopology(const xiiMeshBufferResource& mesh, xiiGALDevice& device, const TopologyRange& range, bool bOptional, TopologyBinding& out_binding)
@@ -1916,7 +2070,7 @@ xiiGeometryResidencyManager::AdmissionResult xiiGeometryResidencyManager::Regist
       s_pState->m_SourceBindings.Insert(identity, std::move(fresh));
       source = s_pState->m_SourceBindings.GetValue(identity);
       for (xiiUInt32 p = 0U; p < source->m_Pages.GetCount(); ++p)
-        s_pState->m_PageRequests.Insert(source->m_Pages[p].m_uiRequest, identity);
+        s_pState->m_PageRequests.Insert(source->m_Pages[p].m_uiRequest, State::PageRequest{identity, p, false});
     }
     bool committed = false;
     XII_SCOPE_EXIT(if (!committed && source->m_uiReferenceCount == 0U) {
@@ -2241,8 +2395,12 @@ void xiiGeometryResidencyManager::ProcessStreaming(xiiUInt64 uiFrameIndex, xiiUI
           slot.m_uiDirtyFrameMask |= xiiUInt64(1U) << (uiFrameIndex % s_pState->m_uiFramesInFlight);
         }
     }
+  if (bNewFrame)
+    s_pState->TrimPages(uiFrameIndex, uiCompletedFrame);
   s_pState->ProcessTextures(uiFrameIndex, uiCompletedFrame);
   s_pState->ProcessPages(uiFrameIndex, uiCompletedFrame);
+  if (bNewFrame)
+    s_pState->SchedulePages(uiFrameIndex);
   auto& streamingQueue = s_pState->m_StreamingQueue;
   for (xiiUInt32 n = 0; n < streamingQueue.GetCount();)
   {
