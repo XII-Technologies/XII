@@ -102,6 +102,12 @@ public:
   /// Inserts the temporary value into the table and returns the corresponding id.
   IdType Insert(ValueType&& value);
 
+  /// Inserts into an index below uiIndexLimit, for IDs addressing fixed-capacity storage.
+  /// Reserve() may allocate additional entries and does not impose an index limit.
+  /// Returns false and invalidates out_id when no eligible index is available.
+  bool TryInsert(const ValueType& value, IndexType uiIndexLimit, IdType& out_id);
+  bool TryInsert(ValueType&& value, IndexType uiIndexLimit, IdType& out_id);
+
   /// Removes the entry with the given id. Returns if an entry was removed and optionally writes out the old value to out_oldValue.
   bool Remove(const IdType id, ValueType* out_pOldValue = nullptr); // [tested]
 
@@ -160,8 +166,9 @@ private:
 
   xiiAllocator* m_pAllocator;
 
-  void SetCapacity(IndexType uiCapacity);
-  void InitializeFreelist(IndexType uiStart, IndexType uiEnd);
+  void      SetCapacity(IndexType uiCapacity);
+  void      InitializeFreelist(IndexType uiStart, IndexType uiEnd);
+  IndexType AcquireBoundedIndex(IndexType uiIndexLimit);
 };
 
 /// \see xiiIdTableBase

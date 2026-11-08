@@ -271,12 +271,14 @@ xiiMaterialGpuHandle xiiMaterialGpuStorage::RegisterMaterial(xiiSharedPtr<xiiMat
   if (pSchema == nullptr || pSchema->GetParameterBlockSize() > m_Description.m_uiMaxParameterBytes || m_pBuffer == nullptr || m_MaterialIds.GetCount() >= m_Slots.GetCount())
     return {};
 
-  const xiiMaterialGpuId id     = m_MaterialIds.Insert(0U);
-  const xiiUInt32        uiSlot = id.m_InstanceIndex;
-  m_MaterialIds[id]             = uiSlot;
-  Slot& slot                    = m_Slots[uiSlot];
-  slot.m_pInstance              = std::move(pInstance);
-  slot.m_Id                     = id;
+  xiiMaterialGpuId id;
+  if (!m_MaterialIds.TryInsert(0U, m_Slots.GetCount(), id))
+    return {};
+  const xiiUInt32 uiSlot = id.m_InstanceIndex;
+  m_MaterialIds[id]      = uiSlot;
+  Slot& slot             = m_Slots[uiSlot];
+  slot.m_pInstance       = std::move(pInstance);
+  slot.m_Id              = id;
   xiiMemoryUtils::ZeroFill(slot.m_LastUploadedRevision.GetData(), slot.m_LastUploadedRevision.GetCount());
   ++m_uiActiveCount;
 
