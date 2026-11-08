@@ -104,7 +104,7 @@ void xiiSceneLoadUtility::StartSceneLoading(xiiStringView sSceneFile, xiiStringV
 
   XII_LOG_BLOCK("StartSceneLoading");
 
-  m_LoadingState = LoadingState::Ongoing;
+  m_LoadingState         = LoadingState::Ongoing;
   m_sRequestedCollection = sPreloadCollectionFile;
 
   m_sRequestedFile                 = sSceneFile;

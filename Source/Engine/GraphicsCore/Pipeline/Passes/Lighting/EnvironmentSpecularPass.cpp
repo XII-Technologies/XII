@@ -38,8 +38,8 @@ xiiResult xiiEnvironmentSpecularPass::Configure(const xiiVariantDictionary& prop
 }
 xiiResult xiiEnvironmentSpecularPass::Build(xiiRenderPipelinePassContext& context)
 {
-  const auto probes = context.GetInputData(m_Probes).Downcast<const xiiReflectionProbeFrameData>();
-  const bool local  = probes && !probes->m_Textures.IsEmpty();
+  const auto probes              = context.GetInputData(m_Probes).Downcast<const xiiReflectionProbeFrameData>();
+  const bool local               = probes && !probes->m_Textures.IsEmpty();
   const bool environmentLighting = local || (probes && probes->m_Sky);
   if (!environmentLighting && !context.GetInputTexture(m_Radiance).IsValid() && m_bAllowAbsentRadiance)
     return XII_SUCCESS;

@@ -63,14 +63,14 @@ float3 xiiSampleReflectionProbe(uint probeIndexPlusOne, float3 worldPosition, fl
   // Influence scale changes the volume, not the cubemap's angular frame.
   const float3 inverseScale = float3(length(probe.WorldToProbe[0].xyz), length(probe.WorldToProbe[1].xyz), length(probe.WorldToProbe[2].xyz));
   localDirection /= max(inverseScale, 1e-6f);
-  const uint  textureIndex = NonUniformResourceIndex(probe.Metadata.y);
-  uint        width, height, levels;
+  const uint textureIndex = NonUniformResourceIndex(probe.Metadata.y);
+  uint       width, height, levels;
   g_ReflectionProbeTextures[textureIndex].GetDimensions(0, width, height, levels);
-  float3      radiance     = max(g_ReflectionProbeTextures[textureIndex].SampleLevel(XII_ENVIRONMENT_LINEAR_CLAMP_SAMPLER,
-                                                                                     xiiReflectionProbeCubeDirection(localDirection), saturate(roughness) * float(max(levels, 1u) - 1u))
-                                   .rgb,
-                                 0.0f);
-  const float luminance    = dot(radiance, float3(0.2126f, 0.7152f, 0.0722f));
+  float3      radiance  = max(g_ReflectionProbeTextures[textureIndex].SampleLevel(XII_ENVIRONMENT_LINEAR_CLAMP_SAMPLER,
+                                                                                  xiiReflectionProbeCubeDirection(localDirection), saturate(roughness) * float(max(levels, 1u) - 1u))
+                                .rgb,
+                              0.0f);
+  const float luminance = dot(radiance, float3(0.2126f, 0.7152f, 0.0722f));
   return lerp(luminance.xxx, radiance, probe.ProbeParameters.z) * probe.ProbeParameters.y;
 }
 
@@ -137,8 +137,8 @@ float3 xiiSampleLocalReflectionEnvironment(float3 worldPosition, float3 reflecti
   if (selectedProbes.x != 0u && selectedProbes.y != 0u &&
       asint(g_ReflectionProbeData[selectedProbes.x - 1u].Metadata.z) != asint(g_ReflectionProbeData[selectedProbes.y - 1u].Metadata.z))
     secondWeight *= 1.0f - saturate(firstWeight);
-  const float  totalWeight    = firstWeight + secondWeight;
-  coverage                    = saturate(totalWeight);
+  const float totalWeight = firstWeight + secondWeight;
+  coverage                = saturate(totalWeight);
   return totalWeight > 1e-4f ? (firstRadiance * firstWeight + secondRadiance * secondWeight) / totalWeight : 0.0f;
 }
 

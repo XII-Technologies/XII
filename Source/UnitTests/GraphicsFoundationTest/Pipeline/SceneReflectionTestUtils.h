@@ -516,7 +516,7 @@ namespace xiiSceneReflectionTest
       if (!XII_TEST_RESULT(recording.Build(foreignView, graph, retained.GetBlackboard())))
         return;
     }
-    const auto output = recording.GetInterfaceBinding(recording.GetPipeline()->FindInterface("ScreenReflections", false))->m_hTexture;
+    const auto output          = recording.GetInterfaceBinding(recording.GetPipeline()->FindInterface("ScreenReflections", false))->m_hTexture;
     const auto retiredLighting = recording.GetInterfaceBinding(recording.GetPipeline()->FindInterface("ReflectionLighting", false))->m_hTexture;
     graph.EndSetup();
     recording.Clear();

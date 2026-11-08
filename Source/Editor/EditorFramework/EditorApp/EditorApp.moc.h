@@ -162,13 +162,13 @@ public:
   /// Reads the list of last open documents in the current project.
   xiiRecentFilesList LoadOpenDocumentsList();
 
-  void     InitQt(xiiInt32 iArgc, char** pArgv);
-  void     StartupEditor();
-  void     StartupEditor(xiiBitflags<StartupFlags> startupFlags, const char* szUserDataFolder = nullptr);
-  void     ShutdownEditor();
+  void                InitQt(xiiInt32 iArgc, char** pArgv);
+  void                StartupEditor();
+  void                StartupEditor(xiiBitflags<StartupFlags> startupFlags, const char* szUserDataFolder = nullptr);
+  void                ShutdownEditor();
   xiiQtPlayerSession* GetPlayerSessions();
-  xiiInt32 RunEditor();
-  void     DeInitQt();
+  xiiInt32            RunEditor();
+  void                DeInitQt();
 
   void LoadEditorPlugins();
 

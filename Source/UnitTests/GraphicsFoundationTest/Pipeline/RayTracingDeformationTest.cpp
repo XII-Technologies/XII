@@ -162,7 +162,7 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, RayTracingDeformation)
   xiiWorld            world(description);
   XII_LOCK(world.GetWriteMarker());
   world.SetWorldSimulationEnabled(false);
-  auto               module = world.GetOrCreateModule<xiiRenderWorldModule>();
+  auto                          module = world.GetOrCreateModule<xiiRenderWorldModule>();
   xiiMaterialResourceDescriptor emissiveMaterial;
   emissiveMaterial.m_EmissiveColor   = xiiColor(2, 1, 0.5f);
   const auto         emitterMaterial = xiiResourceManager::CreateResource<xiiMaterialResource>("Deformed ray emitter", std::move(emissiveMaterial));

@@ -50,8 +50,8 @@ namespace xiiSceneProbeTest
         pixels[face][i] = xiiVec4(base.r, base.g, base.b, 1);
       const auto mipColor = directional ? base : coarse;
       pixels[face][4]     = xiiVec4(mipColor.r, mipColor.g, mipColor.b, 1);
-      data[face * 2]     = xiiGALTextureSubResourceData(xiiConstByteBlobPtr(reinterpret_cast<const xiiUInt8*>(pixels[face]), 4 * sizeof(xiiVec4)), 2 * sizeof(xiiVec4), 4 * sizeof(xiiVec4));
-      data[face * 2 + 1] = xiiGALTextureSubResourceData(xiiConstByteBlobPtr(reinterpret_cast<const xiiUInt8*>(&pixels[face][4]), sizeof(xiiVec4)), sizeof(xiiVec4), sizeof(xiiVec4));
+      data[face * 2]      = xiiGALTextureSubResourceData(xiiConstByteBlobPtr(reinterpret_cast<const xiiUInt8*>(pixels[face]), 4 * sizeof(xiiVec4)), 2 * sizeof(xiiVec4), 4 * sizeof(xiiVec4));
+      data[face * 2 + 1]  = xiiGALTextureSubResourceData(xiiConstByteBlobPtr(reinterpret_cast<const xiiUInt8*>(&pixels[face][4]), sizeof(xiiVec4)), sizeof(xiiVec4), sizeof(xiiVec4));
     }
     descriptor.m_InitialContent = data;
     return xiiResourceManager::CreateResource<xiiTextureCubeResource>(name, std::move(descriptor));
@@ -156,10 +156,10 @@ namespace xiiSceneProbeTest
       }
       return xiiResourceManager::CreateResource<xiiMaterialResource>(name, std::move(descriptor));
     };
-    const auto          mirror              = material("Probes.Mirror", 0.02f, false);
-    const auto          rough               = material("Probes.Rough", 1, false);
-    const auto          translucent         = material("Probes.Translucent", 0.02f, true);
-    const auto          authoredTranslucent = material("Probes.AuthoredTranslucent", 0.02f, true, true);
+    const auto          mirror                = material("Probes.Mirror", 0.02f, false);
+    const auto          rough                 = material("Probes.Rough", 1, false);
+    const auto          translucent           = material("Probes.Translucent", 0.02f, true);
+    const auto          authoredTranslucent   = material("Probes.AuthoredTranslucent", 0.02f, true, true);
     const auto          dielectric            = material("Probes.Dielectric", 0.02f, false, false, 0);
     const auto          dielectricTransparent = material("Probes.DielectricTransparent", 0.02f, true, false, 0);
     const auto          dielectricAuthored    = material("Probes.DielectricAuthored", 0.02f, true, true, 0);

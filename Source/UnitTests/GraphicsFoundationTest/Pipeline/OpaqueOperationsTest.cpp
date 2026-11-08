@@ -388,8 +388,8 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, IndependentAmbientOcclusionHistory)
   const auto           camera     = leaf.AddPass("Camera", xiiGetStaticRTTI<xiiViewConstantsPass>());
   xiiVariantDictionary screenProperties;
   screenProperties.Insert("UseRayTracing", false);
-  const auto generate = leaf.AddPass("Generate", xiiGetStaticRTTI<xiiAmbientOcclusionPass>(), screenProperties);
-  const auto temporal = leaf.AddPass("Filter", xiiGetStaticRTTI<xiiAmbientOcclusionTemporalPass>());
+  const auto generate       = leaf.AddPass("Generate", xiiGetStaticRTTI<xiiAmbientOcclusionPass>(), screenProperties);
+  const auto temporal       = leaf.AddPass("Filter", xiiGetStaticRTTI<xiiAmbientOcclusionTemporalPass>());
   const auto temporalCamera = leaf.AddPass("Temporal camera", xiiGetStaticRTTI<xiiTemporalCameraPass>());
   leaf.m_Passes[temporalCamera].m_Properties.Insert("Enabled", false);
   XII_TEST_RESULT(leaf.Connect(temporalCamera, "TemporalCamera", temporal, "TemporalCamera"));

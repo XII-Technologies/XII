@@ -132,7 +132,7 @@ void xiiBloomPass::Setup(Data& data, xiiRenderGraphBuilder& builder)
   const xiiUInt32 uiOutputWidth  = data.m_Size.width;
   const xiiUInt32 uiOutputHeight = data.m_Size.height;
 
-  data.m_hHDRIn = builder.ReadTexture(data.m_hHDRIn, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hHDRIn    = builder.ReadTexture(data.m_hHDRIn, xiiGALResourceStateFlags::ShaderResource);
   data.m_hLowBloom = builder.ReadTexture(data.m_hLowBloom, xiiGALResourceStateFlags::ShaderResource);
 
   xiiGALTextureCreationDescription description;

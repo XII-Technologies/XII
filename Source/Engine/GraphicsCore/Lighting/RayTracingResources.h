@@ -118,10 +118,10 @@ public:
     /// Shader-readable geometry addressing records indexed by HLSL InstanceIndex().
     xiiRenderGraphBufferHandle m_hGeometryData;
     /// Dense emissive primitive domain; geometry records map BLAS-local primitives into it.
-    xiiUInt32                  m_uiEmissivePrimitiveCount   = 0U;
-    xiiUInt32                  m_uiInstanceCount            = 0U;
-    xiiUInt32                  m_uiDeformationDispatchCount = 0;
-    xiiUInt32                  m_uiDynamicBLASBuildCount    = 0;
+    xiiUInt32 m_uiEmissivePrimitiveCount   = 0U;
+    xiiUInt32 m_uiInstanceCount            = 0U;
+    xiiUInt32 m_uiDeformationDispatchCount = 0;
+    xiiUInt32 m_uiDynamicBLASBuildCount    = 0;
   };
 
   /// Adds BLAS/TLAS construction to the graph on the compute queue.

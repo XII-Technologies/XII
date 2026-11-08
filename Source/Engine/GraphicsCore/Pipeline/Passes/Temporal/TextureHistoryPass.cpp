@@ -66,7 +66,7 @@ void xiiTextureHistoryPass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>& pins)
 
 xiiResult xiiTextureHistoryPass::Build(xiiRenderPipelinePassContext& context)
 {
-  const auto  input       = context.GetInputTexture(m_Input);
+  const auto input = context.GetInputTexture(m_Input);
   if (m_bAllowAbsentTexture && !input.IsValid())
   {
     InvalidateTemporalHistory();

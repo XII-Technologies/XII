@@ -35,10 +35,10 @@ xiiResult xiiDiffuseSurfaceLightingPass::Configure(const xiiVariantDictionary& p
 xiiResult xiiDiffuseSurfaceLightingPass::Build(xiiRenderPipelinePassContext& context)
 {
   const auto  depth = context.GetInputTexture(m_Depth), albedo = context.GetInputTexture(m_Albedo), material = context.GetInputTexture(m_Material), emissive = context.GetInputTexture(m_Emissive), irradiance = context.GetInputTexture(m_Irradiance), occlusion = context.GetInputTexture(m_Occlusion);
-  const auto  environment = context.GetInputBuffer(m_Environment);
+  const auto  environment     = context.GetInputBuffer(m_Environment);
   const auto  probeIrradiance = context.GetInputTexture(m_ProbeIrradiance);
-  const auto* d           = context.m_Graph.GetTextureDescription(depth);
-  const auto* env         = context.m_Graph.GetBufferDescription(environment);
+  const auto* d               = context.m_Graph.GetTextureDescription(depth);
+  const auto* env             = context.m_Graph.GetBufferDescription(environment);
   if (!d || !d->m_Size.HasNonZeroArea() || !env || env->m_uiSize != sizeof(xiiEnvironmentLightConstants))
     return context.ReportFailure("Diffuse lighting requires nonempty depth and exact environment constants.");
   const auto size  = d->m_Size;

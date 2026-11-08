@@ -13,7 +13,7 @@ class XII_GAMEENGINE_DLL xiiGameApplicationSettings : public xiiSettings
   XII_ADD_DYNAMIC_REFLECTION(xiiGameApplicationSettings, xiiSettings);
 
 public:
-  bool m_bVSync = true;
+  bool      m_bVSync                 = true;
   xiiUInt32 m_uiFrameLimit           = 0;
   xiiUInt32 m_uiBackgroundFrameLimit = 30;
   float     m_fRenderScale           = 1.0f;

@@ -116,7 +116,7 @@ private:
   virtual void closeEvent(QCloseEvent* e) override;
 
 private:
-  ads::CDockManager*                    m_pDockManager = nullptr;
+  ads::CDockManager*                    m_pDockManager  = nullptr;
   QLabel*                               m_pProjectLabel = nullptr;
   QMenuBar*                             m_pDocumentMenu = nullptr;
   QPointer<QMenuBar>                    m_pMenuSource;

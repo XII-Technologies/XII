@@ -378,7 +378,7 @@ static void RunWorldRaySceneTest(bool emissive)
             const float power = expectedArea * (4 * 0.2126f + 2 * 0.7152f + 0.0722f);
             XII_TEST_FLOAT(triangle.Position1AndPowerWeight.w, power, 1e-4f);
             storedTriangleProbabilities[triangleIndex] = entry.SelectionProbability;
-            weights[triangleIndex] = power;
+            weights[triangleIndex]                     = power;
             total += power;
             area += expectedArea;
             XII_TEST_BOOL(xiiMath::IsFinite(entry.Probability) && entry.Probability >= 0 && entry.Probability <= 1);

@@ -675,8 +675,8 @@ XII_CREATE_SIMPLE_TEST(CanonicalRenderer, EditorUsesScene)
     auto                                       editorDefinition = editor->GetAuthoring()->m_Descriptor;
     if (!XII_TEST_RESULT(xiiSceneIrradianceTest::UseDeterministicTransport(sceneDefinition, &editorDefinition)))
       return;
-    const auto                                 occurrence       = xiiUuid::MakeStableUuidFromString("XII.Scene/Transparency");
-    const auto                                 raster           = xiiUuid::MakeStableUuidFromString("XII.RenderPipelines.SceneTransparency/Raster Transparent Layers");
+    const auto occurrence = xiiUuid::MakeStableUuidFromString("XII.Scene/Transparency");
+    const auto raster     = xiiUuid::MakeStableUuidFromString("XII.RenderPipelines.SceneTransparency/Raster Transparent Layers");
     for (auto& pass : sceneDefinition.m_Passes)
       if (pass.m_Id == occurrence)
       {
@@ -760,8 +760,8 @@ XII_CREATE_SIMPLE_TEST(CanonicalRenderer, EditorUsesScene)
     auto                                       editorDefinition = editor->GetAuthoring()->m_Descriptor;
     if (!XII_TEST_RESULT(xiiSceneIrradianceTest::UseDeterministicTransport(sceneDefinition, &editorDefinition)))
       return;
-    const auto                                 occurrence       = xiiUuid::MakeStableUuidFromString("XII.Scene/ScreenIrradiance");
-    const auto                                 gate             = xiiUuid::MakeStableUuidFromString("XII.RenderPipelines.SceneScreenSpaceIrradiance/Bounce Depth");
+    const auto occurrence = xiiUuid::MakeStableUuidFromString("XII.Scene/ScreenIrradiance");
+    const auto gate       = xiiUuid::MakeStableUuidFromString("XII.RenderPipelines.SceneScreenSpaceIrradiance/Bounce Depth");
     for (auto& pass : sceneDefinition.m_Passes)
       if (pass.m_Id == occurrence)
       {
@@ -885,10 +885,10 @@ XII_CREATE_SIMPLE_TEST(CanonicalRenderer, EditorUsesScene)
     auto                                       editorDefinition = editor->GetAuthoring()->m_Descriptor;
     if (!XII_TEST_RESULT(xiiSceneIrradianceTest::UseDeterministicTransport(sceneDefinition, &editorDefinition)))
       return;
-    const auto                                 occurrence       = xiiUuid::MakeStableUuidFromString("XII.Scene/SpotShadows");
-    const auto                                 prepare          = xiiUuid::MakeStableUuidFromString("XII.RenderPipelines.SceneSpotShadows/World Spotlights");
-    const auto                                 irradiance       = xiiUuid::MakeStableUuidFromString("XII.Scene/ScreenIrradiance");
-    const auto                                 bounceDepth      = xiiUuid::MakeStableUuidFromString("XII.RenderPipelines.SceneScreenSpaceIrradiance/Bounce Depth");
+    const auto occurrence  = xiiUuid::MakeStableUuidFromString("XII.Scene/SpotShadows");
+    const auto prepare     = xiiUuid::MakeStableUuidFromString("XII.RenderPipelines.SceneSpotShadows/World Spotlights");
+    const auto irradiance  = xiiUuid::MakeStableUuidFromString("XII.Scene/ScreenIrradiance");
+    const auto bounceDepth = xiiUuid::MakeStableUuidFromString("XII.RenderPipelines.SceneScreenSpaceIrradiance/Bounce Depth");
     for (auto& pass : sceneDefinition.m_Passes)
     {
       if (pass.m_Id == occurrence)

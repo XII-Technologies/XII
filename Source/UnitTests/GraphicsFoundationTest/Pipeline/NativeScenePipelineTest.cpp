@@ -263,7 +263,7 @@ XII_CREATE_SIMPLE_TEST(NativeScenePipeline, DisplayRecordingRetirementAndExposur
         return;
     }
   }
-  float firstExposure = 0;
+  float firstExposure            = 0;
   float lastAutomaticExposure[2] = {};
   for (xiiUInt32 phase = 0; phase < 3; ++phase)
   {

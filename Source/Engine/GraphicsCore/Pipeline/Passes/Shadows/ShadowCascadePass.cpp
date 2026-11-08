@@ -50,7 +50,7 @@ xiiResult xiiShadowCascadePass::Build(xiiRenderPipelinePassContext& context)
 {
   if (!m_bEnabled)
     return XII_SUCCESS;
-  auto direction = m_LightDirection;
+  auto  direction   = m_LightDirection;
   float fSourceSine = 0;
   XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::ReadParameter(context, "ShadowLightDirection", direction));
   if (m_bUseWorldLight)
@@ -61,7 +61,7 @@ xiiResult xiiShadowCascadePass::Build(xiiRenderPipelinePassContext& context)
       return context.ReportFailure("World cascades require the selected directional-light snapshot.");
     if (!light->m_bCastsShadows || light->m_DirectionAndIlluminance.w <= 0)
       return XII_SUCCESS;
-    direction = light->m_DirectionAndIlluminance.GetAsVec3();
+    direction   = light->m_DirectionAndIlluminance.GetAsVec3();
     fSourceSine = light->m_ColorAndAngularRadius.w;
     if (!xiiMath::IsFinite(fSourceSine) || fSourceSine < 0 || fSourceSine >= 1)
       return context.ReportFailure("Directional shadow source requires a finite sine of the angular radius in [0, 1).");

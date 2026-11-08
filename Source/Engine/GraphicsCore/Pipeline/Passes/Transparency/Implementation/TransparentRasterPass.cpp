@@ -214,11 +214,11 @@ xiiResult xiiTransparentRasterPass::Build(xiiRenderPipelinePassContext& context)
       return context.ReportFailure("Active refraction requires matching immutable HDR background and shader-readable opaque D32 depth.");
     XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::LinearClampSampler(m_RefractionSampler));
   }
-  const auto probes      = context.GetInputData(m_Probes).Downcast<const xiiReflectionProbeFrameData>();
-  const bool localProbes = probes && !probes->m_Textures.IsEmpty();
+  const auto probes              = context.GetInputData(m_Probes).Downcast<const xiiReflectionProbeFrameData>();
+  const bool localProbes         = probes && !probes->m_Textures.IsEmpty();
   const bool skyLight            = probes && probes->m_Sky;
   const bool environmentLighting = localProbes || skyLight;
-  const auto brdf        = context.GetInputTexture(m_BRDFLut);
+  const auto brdf                = context.GetInputTexture(m_BRDFLut);
   if (environmentLighting)
   {
     if (localProbes && device->GetFeatures().m_BindlessResources != xiiGALDeviceFeatureState::Enabled)

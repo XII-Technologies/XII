@@ -42,7 +42,7 @@ void xiiCommandLineUtils::SplitCommandLineString(const char* szCommandString, bo
     const auto character = it.GetCharacter();
     if (character == '\"')
     {
-      inQuotes = !inQuotes;
+      inQuotes    = !inQuotes;
       hasArgument = true;
     }
     else if ((character == ' ' || character == '\t' || character == '\n' || character == '\r') && !inQuotes)

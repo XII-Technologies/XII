@@ -22,17 +22,17 @@ class xiiQtExportAndRunDlg : public QDialog, public Ui_ExportAndRunDlg
 public:
   xiiQtExportAndRunDlg(QWidget* pParent);
 
-  static bool    s_bTransformAll;
-  static bool    s_bUpdateThumbnail;
-  static bool    s_bCompileCpp;
-  bool           m_bRunAfterExport        = false;
-  bool           m_bShowThumbnailCheckbox = true;
+  static bool           s_bTransformAll;
+  static bool           s_bUpdateThumbnail;
+  static bool           s_bCompileCpp;
+  bool                  m_bRunAfterExport        = false;
+  bool                  m_bShowThumbnailCheckbox = true;
   xiiPlayerLaunchConfig m_Launch;
   xiiString             m_sCurrentScene;
   xiiString             m_sCurrentSourceScene;
   bool                  m_bUseCurrentScene = true;
-  xiiString      m_sCmdLine;
-  xiiCppSettings m_CppSettings;
+  xiiString             m_sCmdLine;
+  xiiCppSettings        m_CppSettings;
 
 private Q_SLOTS:
   void on_ExportOnly_clicked();
@@ -42,7 +42,7 @@ private Q_SLOTS:
   void on_ToolCombo_currentIndexChanged(int);
 
 private:
-  void PullFromUI();
+  void            PullFromUI();
   void            SelectLaunch();
   void            SaveLaunch();
   xiiPlayerConfig m_ProjectConfig;

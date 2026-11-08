@@ -23,7 +23,7 @@ xiiStatus xiiEnvironmentMap::Create(const xiiSharedPtr<xiiGALTexture>& source, x
   out_map.Clear();
   if (!source || !xiiGALDevice::HasDefaultDevice())
     return xiiStatus("Environment convolution requires a resident cubemap and a device.");
-  auto       device     = xiiGALDevice::GetDefaultDevice();
+  auto device = xiiGALDevice::GetDefaultDevice();
   if (source->GetDevice() != device || (sourceReady && (sourceReady->GetDevice() != device || sourceReady->GetDescription().m_Type != xiiGALFenceType::General)))
     return xiiStatus("Environment convolution requires a source and optional general readiness fence from the current device.");
   auto*      cache      = xiiRenderGraphManager::GetResourceCache();

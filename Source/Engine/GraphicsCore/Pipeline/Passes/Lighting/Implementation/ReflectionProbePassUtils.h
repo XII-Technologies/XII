@@ -21,7 +21,7 @@ namespace xiiReflectionProbePassUtils
   inline Bindings Read(const xiiSharedPtr<const xiiReflectionProbeFrameData>& snapshot, xiiRenderGraphBuilder& builder)
   {
     Bindings result;
-    result.m_Snapshot  = snapshot;
+    result.m_Snapshot = snapshot;
     if (!snapshot->m_Textures.IsEmpty())
     {
       result.m_Records   = builder.ReadBuffer(snapshot->m_Records, xiiGALResourceStateFlags::ShaderResource);
@@ -37,7 +37,7 @@ namespace xiiReflectionProbePassUtils
     {
       xiiStringBuilder name;
       name.SetFormat("Local Reflection Cubemap {}", i);
-      result.m_Textures[i] = builder.ReadTexture(builder.ImportTexture(name, snapshot->m_Textures[i], xiiGALResourceStateFlags::Unknown), xiiGALResourceStateFlags::ShaderResource);
+      result.m_Textures[i]    = builder.ReadTexture(builder.ImportTexture(name, snapshot->m_Textures[i], xiiGALResourceStateFlags::Unknown), xiiGALResourceStateFlags::ShaderResource);
       const auto& environment = snapshot->m_Environments[i];
       builder.WaitForFence(environment->m_Ready, 1).AssertSuccess();
       name.SetFormat("Local Irradiance Cubemap {}", i);

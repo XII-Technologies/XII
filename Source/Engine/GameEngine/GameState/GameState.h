@@ -62,7 +62,7 @@ public:
   xiiCamera* GetMainCamera() { return &m_MainCamera; }
 
   /// Returns the xiiView that is currently the one used for rendering the main output.
-  xiiView* GetMainView();
+  xiiView*   GetMainView();
   xiiWindow* GetMainWindow();
 
   /// Whether a scene is currently being loaded.
@@ -243,7 +243,7 @@ protected:
   xiiViewHandle             m_hMainView;
   xiiRegisteredWindowHandle m_hMainWindow;
 
-  bool m_bStateWantsToQuit = false;
+  bool m_bStateWantsToQuit       = false;
   bool m_bInSceneLoadingCallback = false;
   bool m_bDeactivating           = false;
 

@@ -252,12 +252,12 @@ public:
 protected:
   /// Application-wide pacing. Overrides may impose a lower background cap without changing saved CVars.
   virtual xiiUInt32 GetFrameLimit() const;
-  virtual void Run_InputUpdate();
-  virtual bool Run_ProcessApplicationInput();
-  virtual void Run_WorldUpdateAndRender() = 0;
-  virtual void Run_BeforeWorldUpdate();
-  virtual void Run_AfterWorldUpdate();
-  virtual void Run_UpdatePlugins();
+  virtual void      Run_InputUpdate();
+  virtual bool      Run_ProcessApplicationInput();
+  virtual void      Run_WorldUpdateAndRender() = 0;
+  virtual void      Run_BeforeWorldUpdate();
+  virtual void      Run_AfterWorldUpdate();
+  virtual void      Run_UpdatePlugins();
   /// This function can be used to present the final image to a window. It is run at the end of the rendering phase. It can also be used to inspect the swap-chain e.g. for screenshot purposes before presenting.
   virtual void Run_PresentImage();
   virtual void Run_FinishFrame();

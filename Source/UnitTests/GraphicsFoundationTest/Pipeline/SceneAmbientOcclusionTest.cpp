@@ -262,8 +262,8 @@ XII_CREATE_SIMPLE_TEST(SceneAmbientOcclusion, RetainedRecordingsAndInvalidationB
   const auto                          camera = descriptor.AddPass("View constants", xiiGetStaticRTTI<xiiViewConstantsPass>());
   xiiVariantDictionary                properties;
   properties.Insert("UseRayTracing", false);
-  const auto ao     = descriptor.AddPass("Ambient visibility", xiiGetStaticRTTI<xiiAmbientOcclusionPass>(), properties);
-  const auto filter = descriptor.AddPass("Temporal filter", xiiGetStaticRTTI<xiiAmbientOcclusionTemporalPass>());
+  const auto ao             = descriptor.AddPass("Ambient visibility", xiiGetStaticRTTI<xiiAmbientOcclusionPass>(), properties);
+  const auto filter         = descriptor.AddPass("Temporal filter", xiiGetStaticRTTI<xiiAmbientOcclusionTemporalPass>());
   const auto temporalCamera = descriptor.AddPass("Temporal camera", xiiGetStaticRTTI<xiiTemporalCameraPass>());
   descriptor.m_Passes[temporalCamera].m_Properties.Insert("Enabled", false);
   XII_TEST_RESULT(descriptor.Connect(temporalCamera, "TemporalCamera", filter, "TemporalCamera"));

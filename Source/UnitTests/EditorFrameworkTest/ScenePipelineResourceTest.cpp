@@ -61,9 +61,9 @@ void xiiCheckAuthoredSceneContract(const xiiRenderPipelineResource& scene)
       spotlightTransparent |= type == "xiiTransparentRasterPass";
     }
   XII_TEST_BOOL(spotlightOpaque && spotlightTransparent);
-  const auto ao            = xiiFindPipelineTestPass(descriptor, "xiiAmbientOcclusionPass");
-  const auto filter        = xiiFindPipelineTestPass(descriptor, "xiiAmbientOcclusionTemporalPass");
-  const auto trace         = xiiFindPipelineTestPass(descriptor, "xiiScreenIrradianceTracePass");
+  const auto ao     = xiiFindPipelineTestPass(descriptor, "xiiAmbientOcclusionPass");
+  const auto filter = xiiFindPipelineTestPass(descriptor, "xiiAmbientOcclusionTemporalPass");
+  const auto trace  = xiiFindPipelineTestPass(descriptor, "xiiScreenIrradianceTracePass");
   xiiUuid    selected;
   bool       screenFallback = false, rayPrimary = false;
   for (const auto& connection : descriptor.m_Connections)

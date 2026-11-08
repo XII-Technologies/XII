@@ -117,7 +117,7 @@ xiiResult xiiScenePickingReadback::AddCapture(xiiRenderPipelinePassContext& cont
       break;
   if (index == XII_ARRAY_SIZE(m_Slots))
     return XII_SUCCESS;
-  auto& slot                       = m_Slots[index];
+  auto& slot = m_Slots[index];
   ++slot.m_uiReservation;
   slot.m_State                     = Slot::Reserved;
   slot.m_uiSetupFrameIndex         = context.m_Graph.GetFrameIndex();

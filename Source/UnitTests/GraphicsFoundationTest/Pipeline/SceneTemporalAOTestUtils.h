@@ -112,7 +112,7 @@ namespace xiiSceneTemporalAOTest
         cameraOverride.m_Path.PushBack(editorScene);
       cameraOverride.m_Path.PushBack(xiiFindPipelineTestPass(loaded->GetAuthoring()->m_Descriptor, "xiiTemporalCameraPass"));
       cameraOverride.m_Properties.Insert("Enabled", jittered);
-      auto&      filterOverride = descriptor.m_Passes[node].m_Overrides.ExpandAndGetRef();
+      auto& filterOverride = descriptor.m_Passes[node].m_Overrides.ExpandAndGetRef();
       if (editor)
         filterOverride.m_Path.PushBack(editorScene);
       filterOverride.m_Path.PushBack(filter);

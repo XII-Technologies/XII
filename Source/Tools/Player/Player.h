@@ -28,7 +28,7 @@ protected:
   void      Init_ConfigureTelemetry() override;
 
 private:
-  void DetermineProjectPath();
+  void       DetermineProjectPath();
   void       ReportStatus(xiiStringView sStage, xiiStringView sDetail, float fProgress = -1.0f) override;
   void       LogMessage(const xiiLoggingEventData& e);
   void       UpdateRuntimeSettings();

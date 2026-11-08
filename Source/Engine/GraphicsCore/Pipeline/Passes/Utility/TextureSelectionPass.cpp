@@ -36,7 +36,7 @@ void xiiTextureSelectionPass::GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out
 }
 xiiResult xiiTextureSelectionPass::Build(xiiRenderPipelinePassContext& context)
 {
-  const auto primary = context.GetInputTexture(m_InputPrimary);
+  const auto primary  = context.GetInputTexture(m_InputPrimary);
   const auto selected = m_bPreferPrimary && primary.IsValid() ? primary : context.GetInputTexture(m_InputFallback);
   return !selected.IsValid() && m_bAllowAbsentFallback ? XII_SUCCESS : context.SetOutput(m_OutputTexture, selected);
 }

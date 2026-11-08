@@ -16,7 +16,7 @@ public:
   xiiRenderPipelineTextureInputPin  m_InputFallback;
   xiiRenderPipelineTextureOutputPin m_OutputTexture{xiiGALResourceFormat::Unknown, false, {}, xiiGALResourceDimension::Undefined, 0, xiiRenderPipelinePinAccess::Read};
 
-  bool m_bPreferPrimary = true;
+  bool m_bPreferPrimary       = true;
   bool m_bAllowAbsentFallback = false;
   void GetPins(xiiDynamicArray<xiiRenderPipelinePin>& out_pins) const override;
 

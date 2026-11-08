@@ -148,8 +148,8 @@ float SurfaceViewDepth(uint2 pixel, uint2 dimensions, float depth)
       const float4 sampleSignal = LoadSignal(samplePixel, dimensions);
       if (!all(isfinite(sampleSignal)))
         continue;
-      localMinimum              = min(localMinimum, sampleSignal);
-      localMaximum              = max(localMaximum, sampleSignal);
+      localMinimum = min(localMinimum, sampleSignal);
+      localMaximum = max(localMaximum, sampleSignal);
       spatialSum += sampleSignal;
       spatialSamples += 1.0f;
     }
@@ -173,8 +173,8 @@ float SurfaceViewDepth(uint2 pixel, uint2 dimensions, float depth)
     return;
   }
 
-  const float2 uv         = (float2(pixel) + 0.5f) / float2(dimensions);
-  const float2 velocity   = g_Velocity.Load(int3(pixel, 0));
+  const float2 uv       = (float2(pixel) + 0.5f) / float2(dimensions);
+  const float2 velocity = g_Velocity.Load(int3(pixel, 0));
 #  if defined(XII_DENOISE_REPROJECT_DEPTH)
   // Raster motion excludes projection jitter; raw AO and surface histories
   // retain the previous raster grid rather than TAA's stable color grid.
@@ -188,7 +188,7 @@ float SurfaceViewDepth(uint2 pixel, uint2 dimensions, float depth)
     return;
   }
 
-  const uint2  previousPixel   = min((uint2)(previousUV * float2(dimensions)), dimensions - 1U);
+  const uint2 previousPixel = min((uint2)(previousUV * float2(dimensions)), dimensions - 1U);
 #  if defined(XII_DENOISE_CAPTURE_IDENTITY)
 #    if defined(XII_DENOISE_LOCAL_LIGHT)
   if (any(g_PreviousIdentity.Load(int3(previousPixel, 0)).xyz != uint3(identity, domain)))
@@ -216,7 +216,7 @@ float SurfaceViewDepth(uint2 pixel, uint2 dimensions, float depth)
     return;
   }
 
-  float4 history          = g_PreviousSignal.Load(int3(previousPixel, 0));
+  float4 history = g_PreviousSignal.Load(int3(previousPixel, 0));
   if (!all(isfinite(history)))
     history = current;
   history                 = SignalMode == 1U ? history : history.xxxx;

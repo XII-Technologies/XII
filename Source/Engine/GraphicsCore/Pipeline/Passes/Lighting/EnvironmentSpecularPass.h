@@ -24,8 +24,8 @@ public:
   xiiRenderPipelineDataInputPin               m_Probes{xiiGetStaticRTTI<xiiReflectionProbeFrameData>(), true};
   xiiRenderPipelineTextureOutputPin           m_Irradiance{xiiGALResourceFormat::RGBA32Float, true, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess, xiiGALResourceDimension::Texture2D, 1};
   bool                                        m_bAllowAbsentRadiance = false;
-  float                                       m_fScale        = 1;
-  bool                                        m_bAsyncCompute = false;
+  float                                       m_fScale               = 1;
+  bool                                        m_bAsyncCompute        = false;
   xiiResult                                   Configure(const xiiVariantDictionary& properties) override;
   xiiResult                                   Build(xiiRenderPipelinePassContext& context) override;
   xiiBitflags<xiiRenderPipelineDeviceFeature> GetRequiredDeviceFeatures() const override { return xiiRenderPipelineDeviceFeature::Compute; }

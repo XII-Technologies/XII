@@ -74,8 +74,8 @@ bool IrradianceSampleEmitter(float3 position, float3 normal, float coneWidth, fl
   if (cosine <= 0 || lightPDF <= 0)
     return false;
   IrradiancePayload emissionQuery = (IrradiancePayload)0;
-  emissionQuery.Radiance = 0;
-  emissionQuery.Flags    = XII_IRRADIANCE_EMITTER_RAY;
+  emissionQuery.Radiance          = 0;
+  emissionQuery.Flags             = XII_IRRADIANCE_EMITTER_RAY;
   // These fields carry the exact target identity on a nonrecursive emission query.
   emissionQuery.Random      = emitter.Metadata.y;
   emissionQuery.Depth       = emitter.Metadata.z;

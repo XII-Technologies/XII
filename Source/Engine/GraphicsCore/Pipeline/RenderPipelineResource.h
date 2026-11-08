@@ -107,8 +107,8 @@ public:
     xiiRenderPipelinePin       m_Pin;
     xiiDynamicArray<xiiUInt32> m_Bindings;
   };
-  xiiArrayPtr<const Interface>                    GetInterface() const { return m_Interface; }
-  xiiUInt32                                       FindInterface(xiiStringView name, bool input) const;
+  xiiArrayPtr<const Interface> GetInterface() const { return m_Interface; }
+  xiiUInt32                    FindInterface(xiiStringView name, bool input) const;
   /// Conservative leaf-pass dependency after expansion. Independent subgraph outputs can feed
   /// other nodes without depending on the subgraph's unrelated image inputs. Unknown pins fail closed.
   bool                                            DoesInterfaceOutputDependOnInput(xiiStringView output, xiiStringView input) const;

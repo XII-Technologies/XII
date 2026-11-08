@@ -59,8 +59,8 @@ public:
   xiiRenderPipelineTextureOutputPin m_Lut{xiiGALResourceFormat::RG32Float, false, xiiGALBindFlags::ShaderResource, xiiGALResourceDimension::Texture2D, 1};
   xiiResult                         Build(xiiRenderPipelinePassContext& context) override
   {
-    const auto* parameter = context.m_Parameters.GetValue("IndirectCameraZ");
-    const float cameraZ   = parameter ? parameter->Get<float>() : 2.0f;
+    const auto* parameter    = context.m_Parameters.GetValue("IndirectCameraZ");
+    const float cameraZ      = parameter ? parameter->Get<float>() : 2.0f;
     const auto* mode         = context.m_Parameters.GetValue("IndirectOrthographic");
     const bool  orthographic = mode && mode->Get<bool>();
     struct Data
