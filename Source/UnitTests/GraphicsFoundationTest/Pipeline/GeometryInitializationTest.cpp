@@ -12,9 +12,21 @@
 #include <GraphicsCore/Meshes/MeshBufferResource.h>
 #include <GraphicsFoundation/Resources/BindlessResourceTable.h>
 #include <GraphicsFoundation/Resources/Buffer.h>
+#include <GraphicsFoundationTest/TestingEnvironment/BufferReadback.h>
+#include <GraphicsFoundationTest/TestingEnvironment/RenderGraphTestContext.h>
 
 namespace
 {
+  xiiUInt64 GetOccupiedGpuBytes(xiiGALDevice& device)
+  {
+    xiiHybridArray<xiiGALMemoryHeapStatistics, 16> heaps;
+    device.GetMemoryHeapStatistics(heaps);
+    xiiUInt64 uiBytes = 0U;
+    for (const auto& heap : heaps)
+      uiBytes += heap.m_uiAllocatedBytes;
+    return uiBytes;
+  }
+
   class GeometryInitializer final : public xiiThread
   {
   public:
@@ -209,36 +221,28 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, SharedTopologyRetirement)
   XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiTopologyUploadBytes, uiTopologyBytes);
   XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiResidentTopologyBytes, uiTopologyBytes);
 
-  auto getOccupiedBytes = [pDevice]() {
-    xiiHybridArray<xiiGALMemoryHeapStatistics, 16> heaps;
-    pDevice->GetMemoryHeapStatistics(heaps);
-    xiiUInt64 uiBytes = 0U;
-    for (const auto& heap : heaps)
-      uiBytes += heap.m_uiAllocatedBytes;
-    return uiBytes;
-  };
   pDevice->WaitIdle();
-  const xiiUInt64 uiBefore = getOccupiedBytes();
+  const xiiUInt64 uiBefore = GetOccupiedGpuBytes(*pDevice);
 
   xiiGeometryResidencyManager::UnregisterGeometry(hFirst, 1U);
   xiiGeometryResidencyManager::ProcessStreaming(2U, 1U, configuration.m_uiUploadBudgetPerFrameBytes);
   xiiGALBindlessResourceTable::Collect(1U);
   XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiResidentTopologyBytes, uiTopologyBytes);
-  XII_TEST_BOOL(getOccupiedBytes() == uiBefore);
+  XII_TEST_BOOL(GetOccupiedGpuBytes(*pDevice) == uiBefore);
 
   xiiGeometryResidencyManager::Touch(hSecond, 2U);
   xiiGeometryResidencyManager::UnregisterGeometry(hSecond, 2U);
   xiiGeometryResidencyManager::ProcessStreaming(3U, 1U, configuration.m_uiUploadBudgetPerFrameBytes);
   xiiGALBindlessResourceTable::Collect(1U);
-  XII_TEST_BOOL(getOccupiedBytes() == uiBefore);
+  XII_TEST_BOOL(GetOccupiedGpuBytes(*pDevice) == uiBefore);
 
   xiiGeometryResidencyManager::ProcessStreaming(4U, 2U, configuration.m_uiUploadBudgetPerFrameBytes);
   XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiResidentTopologyBytes, 0U);
   XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiRetiredTopologyBytes, uiTopologyBytes);
-  XII_TEST_BOOL(getOccupiedBytes() == uiBefore);
+  XII_TEST_BOOL(GetOccupiedGpuBytes(*pDevice) == uiBefore);
   xiiGALBindlessResourceTable::Collect(2U);
   pDevice->WaitIdle();
-  const xiiUInt64 uiAfter = getOccupiedBytes();
+  const xiiUInt64 uiAfter = GetOccupiedGpuBytes(*pDevice);
   if (XII_TEST_BOOL(uiBefore >= uiAfter + uiTopologyBytes))
     xiiTestFramework::Output(xiiTestOutput::Details, "Shared topology made %llu Vulkan allocation bytes reusable while the source mesh remained loaded.", static_cast<unsigned long long>(uiBefore - uiAfter));
 
@@ -274,4 +278,135 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, SharedTopologyRetirement)
   xiiGeometryResidencyManager::ProcessStreaming(137U, 5U, configuration.m_uiUploadBudgetPerFrameBytes);
   XII_TEST_INT(xiiGeometryResidencyManager::GetState(hReacquired), xiiGeometryResidencyState::Resident);
   XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiTopologyUploadBytes, uiTopologyBytes);
+}
+
+XII_CREATE_SIMPLE_TEST(PipelineResources, IndependentLodTopology)
+{
+  xiiGPUTestingEnvironment environment;
+  if (!XII_TEST_RESULT(environment.Initialize()))
+    return;
+  auto* pDevice = environment.GetDevice();
+  if (pDevice->GetGraphicsDeviceType() != xiiGALGraphicsDeviceType::Vulkan)
+    return;
+  xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
+  xiiStartup::StartupHighLevelSystems();
+  XII_SCOPE_EXIT(pDevice->WaitIdle(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
+
+  constexpr xiiUInt32 uiFinePrimitiveCount = 32U * 12U;
+  xiiGeometry         geometry;
+  for (xiiUInt32 i = 0U; i < 33U; ++i)
+  {
+    xiiGeometry::GeoOptions options;
+    options.m_Transform = xiiMat4::MakeTranslation(xiiVec3(static_cast<float>(i) * 2.0f, 0, 0));
+    geometry.AddBox(xiiVec3(1), true, options);
+  }
+  xiiMeshBufferResourceDescriptor descriptor;
+  descriptor.AllocateStreamsFromGeometry(geometry, xiiGALPrimitiveTopology::TriangleList, false);
+  const xiiMeshletBuildRange buildRanges[] = {
+    {.m_uiPrimitiveCount = uiFinePrimitiveCount},
+    {.m_uiFirstPrimitive = uiFinePrimitiveCount, .m_uiPrimitiveCount = 12U, .m_uiLodIndex = 1U},
+  };
+  if (!XII_TEST_RESULT(descriptor.BuildMeshlets(xiiMakeArrayPtr(buildRanges))) || !XII_TEST_BOOL(descriptor.m_Meshlets.GetCount() > 2U))
+    return;
+
+  // Keep valid offsets while making the fine range nonmonotonic.
+  xiiMath::Swap(descriptor.m_Meshlets[0], descriptor.m_Meshlets[1]);
+  const xiiUInt32  uiCoarseFirst = descriptor.m_Meshlets.GetCount() - 1U;
+  const xiiMeshlet coarse        = descriptor.m_Meshlets[uiCoarseFirst];
+  if (!XII_TEST_BOOL(coarse.m_uiLodIndex == 1U && coarse.m_uiVertexRemapOffset > 0U && coarse.m_uiPrimitiveIndexOffset > 0U))
+    return;
+  const xiiUInt64 uiCoarseBytes = coarse.m_uiVertexCount * sizeof(xiiUInt32) + xiiMath::RoundUp(xiiUInt32(coarse.m_uiPrimitiveCount) * 3U, 4U);
+  const xiiUInt64 uiFineBytes   = coarse.m_uiVertexRemapOffset * sizeof(xiiUInt32) + xiiMath::RoundUp(coarse.m_uiPrimitiveIndexOffset, 4U);
+
+  xiiGeometryResidencyDescription configuration;
+  configuration.m_uiMaxGeometries = 16U;
+  configuration.m_uiMaxMeshlets   = 2U * descriptor.m_Meshlets.GetCount();
+  if (!XII_TEST_RESULT(xiiGeometryResidencyManager::Configure(configuration)) || !XII_TEST_RESULT(xiiGeometryResidencyManager::EnsureInitialized()))
+    return;
+
+  const auto             hMesh = xiiResourceManager::CreateResource<xiiMeshBufferResource>("Independent topology LODs", std::move(descriptor));
+  xiiGeometryDescription description;
+  description.m_Lods.PushBack({.m_hMeshBuffer = hMesh, .m_uiMeshletCount = uiCoarseFirst});
+  description.m_Lods.PushBack({.m_hMeshBuffer = hMesh, .m_uiFirstMeshlet = uiCoarseFirst, .m_uiMeshletCount = 1U});
+  const auto             hGeometry = xiiGeometryResidencyManager::RegisterGeometry(description);
+  xiiGeometryDescription peer;
+  peer.m_Lods.PushBack({.m_hMeshBuffer = hMesh, .m_uiFirstMeshlet = uiCoarseFirst});
+  const auto hPeer = xiiGeometryResidencyManager::RegisterGeometry(peer);
+  xiiGeometryResidencyManager::RequestResidency(hGeometry, 1U, 1U);
+  xiiGeometryResidencyManager::RequestResidency(hPeer, 0U, 1U);
+  xiiGeometryResidencyManager::ProcessStreaming(1U, 0U, configuration.m_uiUploadBudgetPerFrameBytes);
+  const auto* pRecord = xiiGeometryResidencyManager::GetGpuRecord(hGeometry);
+  const auto* pPeer   = xiiGeometryResidencyManager::GetGpuRecord(hPeer);
+  if (!XII_TEST_BOOL(pRecord != nullptr && pPeer != nullptr))
+    return;
+  XII_TEST_INT(pRecord->m_uiResidentLodMask, 2U);
+  XII_TEST_INT(pPeer->m_uiResidentLodMask, 1U);
+  XII_TEST_INT(pRecord->m_Lods[1].m_uiMeshletRemapBufferIndex, pPeer->m_Lods[0].m_uiMeshletRemapBufferIndex);
+  XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiTopologyUploadBytes, uiCoarseBytes);
+
+  xiiRenderGraphTestContext context;
+  if (!XII_TEST_RESULT(context.Initialize("Rebased coarse meshlet")))
+    return;
+  context.GetResourceCache().BeginFrame(1U, 0U);
+  context.GetGraph().BeginSetup(1U);
+  const auto upload = xiiGeometryResidencyManager::AddUploadPass(context.GetGraph(), 1U);
+  XII_TEST_BOOL(!upload.m_hMeshletMetadata.IsInvalidated());
+  context.GetGraph().EndSetup();
+  if (!XII_TEST_RESULT(context.GetGraph().Compile()) ||
+      !XII_TEST_RESULT(context.GetGraph().Execute(pDevice, nullptr, &context.GetBlackboard(), &context.GetResourceCache())))
+    return;
+  context.GetResourceCache().EndFrame();
+  xiiMeshlet uploaded;
+  if (XII_TEST_BOOL(xiiGpuTestReadback::ReadBufferRecord(*pDevice, xiiGeometryResidencyManager::GetMeshletMetadataBuffer().Borrow(),
+                                                         pRecord->m_Lods[1].m_uiMeshletMetadataOffset * sizeof(xiiMeshlet), uploaded)))
+  {
+    XII_TEST_INT(uploaded.m_uiVertexRemapOffset, 0U);
+    XII_TEST_INT(uploaded.m_uiPrimitiveIndexOffset, 0U);
+    XII_TEST_INT(uploaded.m_uiFirstPrimitive, uiFinePrimitiveCount);
+  }
+
+  auto*                           pBudget = static_cast<xiiCVarInt*>(xiiCVar::FindCVarByName("Streaming.GpuBudgetMiB"));
+  xiiGALBufferCreationDescription pressure;
+  pressure.m_uiSize    = 2U * 1024U * 1024U;
+  pressure.m_BindFlags = xiiGALBindFlags::VertexBuffer;
+  auto pPressure       = pDevice->CreateBuffer(pressure);
+  if (!XII_TEST_BOOL(pBudget != nullptr && pPressure != nullptr))
+    return;
+  const xiiInt32 iPreviousBudget = pBudget->GetValue();
+  XII_SCOPE_EXIT(*pBudget = iPreviousBudget);
+  *pBudget = 1;
+  pDevice->BeginFrame();
+  XII_TEST_BOOL(pDevice->IsStreamingMemoryPressured());
+  xiiGeometryResidencyManager::RequestResidency(hGeometry, 0U, 2U);
+  xiiGeometryResidencyManager::ProcessStreaming(2U, 1U, configuration.m_uiUploadBudgetPerFrameBytes);
+  XII_TEST_INT(pRecord->m_uiResidentLodMask, 2U);
+  XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiMemoryDeferred, 1U);
+  XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiTopologyUploadBytes, 0U);
+  pDevice->EndFrame();
+
+  *pBudget = 0;
+  pDevice->BeginFrame();
+  xiiGeometryResidencyManager::ProcessStreaming(3U, 2U, configuration.m_uiUploadBudgetPerFrameBytes);
+  pDevice->EndFrame();
+  XII_TEST_INT(pRecord->m_uiResidentLodMask, 3U);
+  XII_TEST_INT(pRecord->m_Lods[0].m_uiVertexBufferIndex, pRecord->m_Lods[1].m_uiVertexBufferIndex);
+  XII_TEST_INT(pRecord->m_Lods[0].m_uiIndexBufferIndex, pRecord->m_Lods[1].m_uiIndexBufferIndex);
+  XII_TEST_BOOL(pRecord->m_Lods[0].m_uiMeshletRemapBufferIndex != pRecord->m_Lods[1].m_uiMeshletRemapBufferIndex);
+  XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiTopologyUploadBytes, uiFineBytes);
+
+  pDevice->WaitIdle();
+  const xiiUInt64 uiBefore = GetOccupiedGpuBytes(*pDevice);
+  xiiGeometryResidencyManager::UnregisterGeometry(hGeometry, 3U);
+  xiiGeometryResidencyManager::ProcessStreaming(4U, 2U, configuration.m_uiUploadBudgetPerFrameBytes);
+  XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiResidentTopologyBytes, uiCoarseBytes + uiFineBytes);
+  xiiGeometryResidencyManager::ProcessStreaming(5U, 3U, configuration.m_uiUploadBudgetPerFrameBytes);
+  XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiRetiredTopologyBytes, uiFineBytes);
+  XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiResidentTopologyBytes, uiCoarseBytes);
+  XII_TEST_INT(pPeer->m_uiResidentLodMask, 1U);
+  xiiGALBindlessResourceTable::Collect(3U);
+  pDevice->WaitIdle();
+  const xiiUInt64 uiAfter = GetOccupiedGpuBytes(*pDevice);
+  if (XII_TEST_BOOL(uiBefore >= uiAfter + uiFineBytes))
+    xiiTestFramework::Output(xiiTestOutput::Details, "Independent topology uploaded %llu coarse bytes before requesting %llu fine bytes. Retiring fine topology made %llu Vulkan allocation bytes reusable.",
+                             static_cast<unsigned long long>(uiCoarseBytes), static_cast<unsigned long long>(uiFineBytes), static_cast<unsigned long long>(uiBefore - uiAfter));
 }

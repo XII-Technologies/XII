@@ -7,6 +7,7 @@
 #include <Foundation/Containers/IdTable.h>
 #include <Foundation/Profiling/Profiling.h>
 #include <Foundation/Threading/Mutex.h>
+#include <Foundation/Types/ScopeExit.h>
 #include <Foundation/Utilities/Stats.h>
 
 #include <GraphicsCore/Geometry/GeometryResidency.h>
@@ -34,16 +35,31 @@ public:
     xiiUInt32             m_uiReferenceCount = 0U;
   };
 
-  struct SourceBinding
+  struct TopologyBinding
   {
-    xiiGALBindlessResourceHandle m_Vertex;
-    xiiGALBindlessResourceHandle m_Index;
     xiiGALBindlessResourceHandle m_Remap;
     xiiGALBindlessResourceHandle m_Primitives;
-    xiiUInt64                    m_uiTopologyBytes  = 0U;
+    TopologyRange                m_Range;
     xiiUInt64                    m_uiLastUseFrame   = 0U;
     xiiUInt32                    m_uiReferenceCount = 0U;
   };
+
+  struct SourceBinding
+  {
+    xiiGALBindlessResourceHandle             m_Vertex;
+    xiiGALBindlessResourceHandle             m_Index;
+    xiiHashTable<xiiUInt64, TopologyBinding> m_Topology;
+    xiiUInt64                                m_uiLastUseFrame   = 0U;
+    xiiUInt32                                m_uiReferenceCount = 0U;
+  };
+
+  xiiResult UploadTopology(const xiiMeshBufferResource& mesh, xiiGALDevice& device, const TopologyRange& range, TopologyBinding& out_binding);
+
+  const TopologyBinding* FindTopology(const xiiGALBuffer* pVertexBuffer, xiiUInt64 uiKey) const
+  {
+    const auto* pSource = m_SourceBindings.GetValue(pVertexBuffer);
+    return pSource != nullptr ? pSource->m_Topology.GetValue(uiKey) : nullptr;
+  }
 
   xiiUInt64 m_uiCoverageCacheHits = 0U;
   xiiUInt64 m_uiCoverageQueries = 0U, m_uiCoverageIndexBuilds = 0U, m_uiCoverageMeshlets = 0U;
@@ -135,10 +151,15 @@ namespace
   constexpr xiiUInt64 s_uiPressureMinimumIdleFrames = 120U;
   constexpr xiiUInt32 s_uiPressureMaxEvictions      = 4U;
 
-  xiiUInt64 GetTopologyBytes(const xiiMeshBufferResource& mesh)
+  xiiUInt64 MakeTopologyKey(xiiUInt32 uiFirstMeshlet, xiiUInt32 uiMeshletCount)
   {
-    return xiiUInt64(mesh.GetMeshletVertexRemap().GetCount()) * sizeof(xiiUInt32) +
-      xiiMemoryUtils::AlignSize(xiiUInt64(mesh.GetMeshletPrimitiveIndices().GetCount()), xiiUInt64(4));
+    return uiMeshletCount == 0U ? 0U : (xiiUInt64(uiFirstMeshlet) << 32U) | uiMeshletCount;
+  }
+
+  void RetireBufferBinding(xiiGALBindlessResourceHandle handle, xiiUInt64 uiLastUseFrame)
+  {
+    if (handle.IsValid() && xiiGALBindlessResourceTable::IsInitialized())
+      xiiGALBindlessResourceTable::RetireBufferSRV(handle, uiLastUseFrame);
   }
 
   xiiSharedPtr<xiiGALBuffer> CreateTopologyBuffer(xiiGALDevice& device, xiiGALCommandList& commands, xiiArrayPtr<const xiiUInt8> data, xiiUInt32 uiStride, xiiStringView sName)
@@ -687,6 +708,39 @@ void xiiGeometryResidencyManager::Touch(xiiGeometryHandle handle, xiiUInt64 uiFr
   }
 }
 
+xiiUInt64 xiiGeometryResidencyManager::TopologyRange::GetUploadBytes() const
+{
+  return xiiUInt64(m_uiRemapCount) * sizeof(xiiUInt32) +
+    xiiMemoryUtils::AlignSize(xiiUInt64(m_uiPrimitiveCount), xiiUInt64(4));
+}
+
+xiiResult xiiGeometryResidencyManager::TopologyRange::SetFromMeshlets(const xiiMeshBufferResource& mesh, xiiArrayPtr<const xiiMeshlet> meshlets)
+{
+  XII_ASSERT_DEV(!meshlets.IsEmpty(), "A topology range requires meshlets.");
+  const xiiUInt32 uiRemapSize     = mesh.GetMeshletVertexRemap().GetCount();
+  const xiiUInt32 uiPrimitiveSize = mesh.GetMeshletPrimitiveIndices().GetCount();
+  xiiUInt32       uiRemapEnd      = 0U;
+  xiiUInt32       uiPrimitiveEnd  = 0U;
+  m_uiRemapStart                  = uiRemapSize;
+  m_uiPrimitiveStart              = uiPrimitiveSize;
+  for (const xiiMeshlet& meshlet : meshlets)
+  {
+    const xiiUInt32 uiPrimitiveBytes = xiiUInt32(meshlet.m_uiPrimitiveCount) * 3U;
+    if (meshlet.m_uiVertexCount == 0U || uiPrimitiveBytes == 0U ||
+        meshlet.m_uiVertexRemapOffset > uiRemapSize || meshlet.m_uiVertexCount > uiRemapSize - meshlet.m_uiVertexRemapOffset ||
+        meshlet.m_uiPrimitiveIndexOffset > uiPrimitiveSize || uiPrimitiveBytes > uiPrimitiveSize - meshlet.m_uiPrimitiveIndexOffset)
+      return XII_FAILURE;
+
+    m_uiRemapStart     = xiiMath::Min(m_uiRemapStart, meshlet.m_uiVertexRemapOffset);
+    m_uiPrimitiveStart = xiiMath::Min(m_uiPrimitiveStart, meshlet.m_uiPrimitiveIndexOffset);
+    uiRemapEnd         = xiiMath::Max(uiRemapEnd, meshlet.m_uiVertexRemapOffset + meshlet.m_uiVertexCount);
+    uiPrimitiveEnd     = xiiMath::Max(uiPrimitiveEnd, meshlet.m_uiPrimitiveIndexOffset + uiPrimitiveBytes);
+  }
+  m_uiRemapCount     = uiRemapEnd - m_uiRemapStart;
+  m_uiPrimitiveCount = uiPrimitiveEnd - m_uiPrimitiveStart;
+  return GetUploadBytes() <= xiiMath::MaxValue<xiiUInt32>() ? XII_SUCCESS : XII_FAILURE;
+}
+
 xiiGeometryResidencyManager::AdmissionResult xiiGeometryResidencyManager::BuildResidentRecord(Slot& slot, xiiUInt64 uiFrameIndex, xiiUInt64 uiCompletedFrame)
 {
   XII_PROFILE_SCOPE("Geometry admission and commit");
@@ -743,6 +797,54 @@ xiiGeometryResidencyManager::AdmissionResult xiiGeometryResidencyManager::BuildR
     requiredMeshlets += record.m_Lods[lod].m_uiMeshletCount;
   if (requiredMeshlets > s_pState->m_Configuration.m_uiMaxMeshlets)
     return AdmissionResult::ArenaDeferred;
+
+  xiiUInt64     topologyKeys[xiiGpuGeometryRecord::s_uiMaxLods] = {};
+  TopologyRange topologyRanges[xiiGpuGeometryRecord::s_uiMaxLods];
+  const bool    bProtectFallback = record.m_uiResidentLodMask != 0U && !slot.m_Description.m_bPinned &&
+    s_pState->m_pMetadataBuffer->GetDevice()->IsStreamingMemoryPressured();
+  for (xiiUInt32 n = 0; n < newLods.GetCount(); ++n)
+  {
+    const xiiUInt32 uiLod   = newLods[n];
+    const xiiUInt32 uiFirst = slot.m_Description.m_Lods[uiLod].m_uiFirstMeshlet;
+    const xiiUInt32 uiCount = record.m_Lods[uiLod].m_uiMeshletCount;
+    if (uiCount == 0U)
+      continue;
+
+    topologyKeys[n] = MakeTopologyKey(uiFirst, uiCount);
+    if (const auto* pTopology = s_pState->FindTopology(vertices[n].Borrow(), topologyKeys[n]))
+      topologyRanges[n] = pTopology->m_Range;
+    else if (bProtectFallback)
+      return AdmissionResult::MemoryDeferred;
+    else if (topologyRanges[n].SetFromMeshlets(*sources[n].GetPointer(), sources[n]->GetMeshlets().GetSubArray(uiFirst, uiCount)).Failed())
+    {
+      slot.m_State = xiiGeometryResidencyState::Failed;
+      return AdmissionResult::Failed;
+    }
+  }
+
+  const auto checkTopologyBudget = [&]() {
+    xiiUInt64 uiNewTopologyBytes = 0U;
+    for (xiiUInt32 n = 0; n < newLods.GetCount(); ++n)
+    {
+      if (topologyKeys[n] == 0U || s_pState->FindTopology(vertices[n].Borrow(), topologyKeys[n]) != nullptr)
+        continue;
+      if (bProtectFallback)
+        return AdmissionResult::MemoryDeferred;
+
+      xiiUInt32 previous = 0U;
+      while (previous < n && (vertices[previous] != vertices[n] || topologyKeys[previous] != topologyKeys[n]))
+        ++previous;
+      if (previous == n)
+        uiNewTopologyBytes += topologyRanges[n].GetUploadBytes();
+    }
+    if (uiUploadBytes + uiNewTopologyBytes > s_pState->m_uiRemainingUploadBudget &&
+        (s_pState->m_StreamingStats.m_uiAdmittedBytes != 0U || s_pState->m_uiInitialUploadBudget == 0U))
+      return AdmissionResult::BudgetDeferred;
+    return AdmissionResult::Admitted;
+  };
+  if (const auto result = checkTopologyBudget(); result != AdmissionResult::Admitted)
+    return result;
+
   // Pinned assets may exceed the soft residency budget; ordinary streaming must
   // not evict and immediately readmit newly requested/current-frame geometry.
   if (!slot.m_Description.m_bPinned)
@@ -785,20 +887,9 @@ xiiGeometryResidencyManager::AdmissionResult xiiGeometryResidencyManager::BuildR
     if (!EvictOne(uiCompletedFrame))
       return AdmissionResult::ArenaDeferred;
 
-  // Arena eviction can retire a source used by this request, so inspect the
-  // remaining source bindings after making room for the new metadata.
-  xiiUInt64 uiNewTopologyBytes = 0U;
-  for (xiiUInt32 n = 0; n < vertices.GetCount(); ++n)
-  {
-    if (vertices.IndexOf(vertices[n]) == n && !s_pState->m_SourceBindings.Contains(vertices[n].Borrow()))
-      uiNewTopologyBytes += GetTopologyBytes(*sources[n].GetPointer());
-  }
-  if (uiNewTopologyBytes > s_pState->m_uiRemainingUploadBudget - xiiMath::Min(s_pState->m_uiRemainingUploadBudget, uiUploadBytes) &&
-      (s_pState->m_StreamingStats.m_uiAdmittedBytes != 0U || s_pState->m_uiInitialUploadBudget == 0U))
-    return AdmissionResult::BudgetDeferred;
-  if (uiNewTopologyBytes != 0U && record.m_uiResidentLodMask != 0U && !slot.m_Description.m_bPinned &&
-      s_pState->m_pMetadataBuffer->GetDevice()->IsStreamingMemoryPressured())
-    return AdmissionResult::MemoryDeferred;
+  // Arena eviction may have released a range this admission planned to reuse.
+  if (const auto result = checkTopologyBudget(); result != AdmissionResult::Admitted)
+    return result;
 
   xiiHybridArray<xiiSharedPtr<MeshletUpload>, xiiGpuGeometryRecord::s_uiMaxLods> uploads;
   xiiUInt32                                                                      allocated = 0U, registered = 0U;
@@ -833,7 +924,9 @@ xiiGeometryResidencyManager::AdmissionResult xiiGeometryResidencyManager::BuildR
       for (auto& meshlet : upload->m_Meshlets)
       {
         meshlet.m_uiLodIndex = static_cast<xiiUInt16>(i);
-        const xiiUInt64 end  = xiiUInt64(meshlet.m_uiFirstPrimitive) + meshlet.m_uiPrimitiveCount;
+        meshlet.m_uiVertexRemapOffset -= topologyRanges[n].m_uiRemapStart;
+        meshlet.m_uiPrimitiveIndexOffset -= topologyRanges[n].m_uiPrimitiveStart;
+        const xiiUInt64 end = xiiUInt64(meshlet.m_uiFirstPrimitive) + meshlet.m_uiPrimitiveCount;
         if (meshlet.m_uiFirstPrimitive < previousStart || end > xiiMath::MaxValue<xiiUInt32>())
           lod.m_uiMeshletRangesOrdered = 0U;
         previousStart             = meshlet.m_uiFirstPrimitive;
@@ -842,9 +935,7 @@ xiiGeometryResidencyManager::AdmissionResult xiiGeometryResidencyManager::BuildR
       }
       if (lod.m_uiMeshletRangesOrdered == 0U)
       {
-        // Authored section order need not follow primitive order. Arena metadata
-        // has no source-index identity: remap/primitive offsets remain absolute.
-        // Sort the admitted copy once, preserving source buffers and LOD spans.
+        // Sort the admitted copy once. Topology offsets already address the LOD buffers.
         upload->m_Meshlets.Sort([](const xiiMeshlet& a, const xiiMeshlet& b) {
           if (a.m_uiFirstPrimitive != b.m_uiFirstPrimitive)
             return a.m_uiFirstPrimitive < b.m_uiFirstPrimitive;
@@ -869,7 +960,7 @@ xiiGeometryResidencyManager::AdmissionResult xiiGeometryResidencyManager::BuildR
       s_pState->m_StreamingStats.m_uiPreparedMeshlets += lod.m_uiMeshletCount;
     }
     ++allocated;
-    if (!RegisterBindlessResources(slot, record, i, *sources[n].GetPointer(), vertices[n]))
+    if (!RegisterBindlessResources(slot, record, i, *sources[n].GetPointer(), vertices[n], topologyKeys[n], topologyRanges[n]))
     {
       rollback();
       return AdmissionResult::Failed;
@@ -908,137 +999,161 @@ xiiGeometryResidencyManager::AdmissionResult xiiGeometryResidencyManager::BuildR
   return AdmissionResult::Admitted;
 }
 
-bool xiiGeometryResidencyManager::RegisterBindlessResources(Slot& slot, xiiGpuGeometryRecord& record, xiiUInt32 uiLod, const xiiMeshBufferResource& mesh, const xiiSharedPtr<xiiGALBuffer>& pVertexBuffer)
+xiiResult xiiGeometryResidencyManager::State::UploadTopology(const xiiMeshBufferResource& mesh, xiiGALDevice& device, const TopologyRange& range, TopologyBinding& out_binding)
+{
+  if (!m_pTopologyUploadFence)
+  {
+    xiiGALFenceCreationDescription description;
+    description.m_Type     = xiiGALFenceType::General;
+    m_pTopologyUploadFence = device.CreateFence(description);
+    if (!m_pTopologyUploadFence)
+      return XII_FAILURE;
+    m_pTopologyUploadFence->SetDebugName("Geometry Topology Upload");
+  }
+
+  auto pCommands = device.CreateCommandList(xiiGALCommandListCreationDescription{.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
+  if (!pCommands)
+    return XII_FAILURE;
+
+  const auto       remap      = mesh.GetMeshletVertexRemap().GetSubArray(range.m_uiRemapStart, range.m_uiRemapCount);
+  const auto       primitives = mesh.GetMeshletPrimitiveIndices().GetSubArray(range.m_uiPrimitiveStart, range.m_uiPrimitiveCount);
+  xiiStringBuilder sName;
+  pCommands->Begin();
+  sName.Set(mesh.GetResourceIdOrDescription(), " LOD Meshlet Vertex Remap");
+  auto                       pRemapBuffer = CreateTopologyBuffer(device, *pCommands, remap.ToByteArray(), sizeof(xiiUInt32), sName);
+  xiiSharedPtr<xiiGALBuffer> pPrimitiveBuffer;
+  if (pRemapBuffer)
+  {
+    sName.Set(mesh.GetResourceIdOrDescription(), " LOD Meshlet Primitive Indices");
+    pPrimitiveBuffer = CreateTopologyBuffer(device, *pCommands, primitives, sizeof(xiiUInt8), sName);
+  }
+  if (!pRemapBuffer || !pPrimitiveBuffer)
+  {
+    pCommands->End();
+    return XII_FAILURE;
+  }
+
+  const auto hRemap      = xiiGALBindlessResourceTable::RegisterBufferSRV(pRemapBuffer->GetDefaultView(xiiGALBufferViewType::ShaderResource));
+  const auto hPrimitives = xiiGALBindlessResourceTable::RegisterBufferSRV(pPrimitiveBuffer->GetDefaultView(xiiGALBufferViewType::ShaderResource));
+  if (!hRemap.IsValid() || !hPrimitives.IsValid())
+  {
+    pCommands->End();
+    RetireBufferBinding(hRemap, 0U);
+    RetireBufferBinding(hPrimitives, 0U);
+    return XII_FAILURE;
+  }
+
+  xiiGALStateTransitionDescription transitions[] = {
+    {.m_pResource = pRemapBuffer.Borrow(), .m_NewState = xiiGALResourceStateFlags::ShaderResource, .m_TransitionFlags = xiiGALStateTransitionFlags::UpdateState},
+    {.m_pResource = pPrimitiveBuffer.Borrow(), .m_NewState = xiiGALResourceStateFlags::ShaderResource, .m_TransitionFlags = xiiGALStateTransitionFlags::UpdateState},
+  };
+  const xiiUInt64 uiSignal = m_uiTopologyUploadValue + 1U;
+  pCommands->TransitionResourceStates(xiiMakeArrayPtr(transitions));
+  pCommands->EnqueueSignal(m_pTopologyUploadFence.Borrow(), uiSignal);
+  pCommands->End();
+  if (device.GetCommandQueue(xiiGALCommandQueueFlags::Graphics)->Submit(pCommands.Borrow()) == 0U)
+  {
+    RetireBufferBinding(hRemap, 0U);
+    RetireBufferBinding(hPrimitives, 0U);
+    return XII_FAILURE;
+  }
+
+  out_binding.m_Remap      = hRemap;
+  out_binding.m_Primitives = hPrimitives;
+  out_binding.m_Range      = range;
+  m_uiTopologyUploadValue  = uiSignal;
+  const xiiUInt64 uiBytes  = range.GetUploadBytes();
+  m_uiResidentTopologyBytes += uiBytes;
+  m_StreamingStats.m_uiTopologyUploadBytes += uiBytes;
+  m_StreamingStats.m_uiAdmittedBytes += uiBytes;
+  m_uiRemainingUploadBudget -= xiiMath::Min(m_uiRemainingUploadBudget, uiBytes);
+  return XII_SUCCESS;
+}
+
+bool xiiGeometryResidencyManager::RegisterBindlessResources(Slot& slot, xiiGpuGeometryRecord& record, xiiUInt32 uiLod, const xiiMeshBufferResource& mesh, const xiiSharedPtr<xiiGALBuffer>& pVertexBuffer, xiiUInt64 uiTopologyKey, const TopologyRange& range)
 {
   if (!xiiGALBindlessResourceTable::IsInitialized() || uiLod >= record.m_uiLodCount)
     return false;
 
-  const xiiGALBuffer*   pSource  = pVertexBuffer.Borrow();
-  State::SourceBinding* pBinding = nullptr;
-  if (!s_pState->m_SourceBindings.TryGetValue(pSource, pBinding))
+  const auto*          pVertex = pVertexBuffer.Borrow();
+  auto*                pSource = s_pState->m_SourceBindings.GetValue(pVertex);
+  State::SourceBinding pending;
+  XII_SCOPE_EXIT(RetireBufferBinding(pending.m_Vertex, 0U); RetireBufferBinding(pending.m_Index, 0U));
+  if (pSource == nullptr)
   {
-    auto       pIndexBuffer    = mesh.GetIndexBuffer();
-    const auto remap           = mesh.GetMeshletVertexRemap();
-    const auto primitives      = mesh.GetMeshletPrimitiveIndices();
-    const auto uiTopologyBytes = GetTopologyBytes(mesh);
-    if (pIndexBuffer == nullptr || remap.IsEmpty() != primitives.IsEmpty() ||
-        (remap.IsEmpty() && record.m_Lods[uiLod].m_uiMeshletCount != 0U) ||
-        uiTopologyBytes > xiiMath::MaxValue<xiiUInt32>())
+    auto pIndexBuffer = mesh.GetIndexBuffer();
+    if (pIndexBuffer == nullptr)
       return false;
 
-    xiiSharedPtr<xiiGALBuffer>      pRemapBuffer;
-    xiiSharedPtr<xiiGALBuffer>      pPrimitiveBuffer;
-    xiiSharedPtr<xiiGALCommandList> pCommands;
-    auto                            pDevice = pVertexBuffer->GetDevice();
-    if (!remap.IsEmpty())
-    {
-      if (!s_pState->m_pTopologyUploadFence)
-      {
-        xiiGALFenceCreationDescription fenceDescription;
-        fenceDescription.m_Type          = xiiGALFenceType::General;
-        s_pState->m_pTopologyUploadFence = pDevice->CreateFence(fenceDescription);
-        if (!s_pState->m_pTopologyUploadFence)
-          return false;
-        s_pState->m_pTopologyUploadFence->SetDebugName("Geometry Topology Upload");
-      }
-
-      pCommands = pDevice->CreateCommandList(xiiGALCommandListCreationDescription{.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
-      if (!pCommands)
-        return false;
-      xiiStringBuilder sName;
-      pCommands->Begin();
-      sName.Set(mesh.GetResourceIdOrDescription(), " Meshlet Vertex Remap");
-      pRemapBuffer = CreateTopologyBuffer(*pDevice, *pCommands, remap.ToByteArray(), sizeof(xiiUInt32), sName);
-      if (pRemapBuffer)
-      {
-        sName.Set(mesh.GetResourceIdOrDescription(), " Meshlet Primitive Indices");
-        pPrimitiveBuffer = CreateTopologyBuffer(*pDevice, *pCommands, primitives, sizeof(xiiUInt8), sName);
-      }
-      if (!pRemapBuffer || !pPrimitiveBuffer)
-      {
-        pCommands->End();
-        return false;
-      }
-    }
-
-    State::SourceBinding binding;
-    binding.m_Vertex = xiiGALBindlessResourceTable::RegisterBufferSRV(pVertexBuffer->GetDefaultView(xiiGALBufferViewType::ShaderResource));
-    binding.m_Index  = xiiGALBindlessResourceTable::RegisterBufferSRV(pIndexBuffer->GetDefaultView(xiiGALBufferViewType::ShaderResource));
-    if (pCommands)
-    {
-      binding.m_Remap      = xiiGALBindlessResourceTable::RegisterBufferSRV(pRemapBuffer->GetDefaultView(xiiGALBufferViewType::ShaderResource));
-      binding.m_Primitives = xiiGALBindlessResourceTable::RegisterBufferSRV(pPrimitiveBuffer->GetDefaultView(xiiGALBufferViewType::ShaderResource));
-    }
-
-    bool bReady = binding.m_Vertex.IsValid() && binding.m_Index.IsValid() &&
-      (!pCommands || (binding.m_Remap.IsValid() && binding.m_Primitives.IsValid()));
-    if (pCommands)
-    {
-      const xiiUInt64 uiSignal = s_pState->m_uiTopologyUploadValue + 1U;
-      if (bReady)
-      {
-        xiiGALStateTransitionDescription transitions[] = {
-          {.m_pResource = pRemapBuffer.Borrow(), .m_NewState = xiiGALResourceStateFlags::ShaderResource, .m_TransitionFlags = xiiGALStateTransitionFlags::UpdateState},
-          {.m_pResource = pPrimitiveBuffer.Borrow(), .m_NewState = xiiGALResourceStateFlags::ShaderResource, .m_TransitionFlags = xiiGALStateTransitionFlags::UpdateState},
-        };
-        pCommands->TransitionResourceStates(xiiMakeArrayPtr(transitions));
-        pCommands->EnqueueSignal(s_pState->m_pTopologyUploadFence.Borrow(), uiSignal);
-      }
-      pCommands->End();
-      if (bReady)
-      {
-        bReady = pDevice->GetCommandQueue(xiiGALCommandQueueFlags::Graphics)->Submit(pCommands.Borrow()) != 0U;
-        if (bReady)
-          s_pState->m_uiTopologyUploadValue = uiSignal;
-      }
-    }
-    if (!bReady)
-    {
-      for (auto handle : {binding.m_Vertex, binding.m_Index, binding.m_Remap, binding.m_Primitives})
-        if (handle.IsValid())
-          xiiGALBindlessResourceTable::RetireBufferSRV(handle, 0U);
+    pending.m_Vertex = xiiGALBindlessResourceTable::RegisterBufferSRV(pVertexBuffer->GetDefaultView(xiiGALBufferViewType::ShaderResource));
+    pending.m_Index  = xiiGALBindlessResourceTable::RegisterBufferSRV(pIndexBuffer->GetDefaultView(xiiGALBufferViewType::ShaderResource));
+    if (!pending.m_Vertex.IsValid() || !pending.m_Index.IsValid())
       return false;
-    }
-
-    binding.m_uiTopologyBytes = uiTopologyBytes;
-    s_pState->m_uiResidentTopologyBytes += uiTopologyBytes;
-    s_pState->m_StreamingStats.m_uiTopologyUploadBytes += uiTopologyBytes;
-    s_pState->m_StreamingStats.m_uiAdmittedBytes += uiTopologyBytes;
-    s_pState->m_uiRemainingUploadBudget -= xiiMath::Min(s_pState->m_uiRemainingUploadBudget, uiTopologyBytes);
-    s_pState->m_SourceBindings.Insert(pSource, binding);
-    XII_VERIFY(s_pState->m_SourceBindings.TryGetValue(pSource, pBinding), "A newly inserted source binding must exist.");
+    pSource = &pending;
   }
 
-  ++pBinding->m_uiReferenceCount;
-  slot.m_pBoundSources[uiLod]         = pSource;
-  auto& lod                           = record.m_Lods[uiLod];
-  lod.m_uiVertexBufferIndex           = pBinding->m_Vertex.m_uiIndex;
-  lod.m_uiIndexBufferIndex            = pBinding->m_Index.m_uiIndex;
-  lod.m_uiMeshletRemapBufferIndex     = pBinding->m_Remap.m_uiIndex;
-  lod.m_uiMeshletPrimitiveBufferIndex = pBinding->m_Primitives.m_uiIndex;
+  auto& lod = record.m_Lods[uiLod];
+  if (uiTopologyKey != 0U)
+  {
+    auto* pTopology = pSource->m_Topology.GetValue(uiTopologyKey);
+    if (pTopology == nullptr)
+    {
+      State::TopologyBinding binding;
+      if (s_pState->UploadTopology(mesh, *pVertexBuffer->GetDevice(), range, binding).Failed())
+        return false;
+      pSource->m_Topology.Insert(uiTopologyKey, binding);
+      pTopology = pSource->m_Topology.GetValue(uiTopologyKey);
+    }
+    ++pTopology->m_uiReferenceCount;
+    lod.m_uiMeshletRemapBufferIndex     = pTopology->m_Remap.m_uiIndex;
+    lod.m_uiMeshletPrimitiveBufferIndex = pTopology->m_Primitives.m_uiIndex;
+  }
+
+  ++pSource->m_uiReferenceCount;
+  lod.m_uiVertexBufferIndex  = pSource->m_Vertex.m_uiIndex;
+  lod.m_uiIndexBufferIndex   = pSource->m_Index.m_uiIndex;
+  slot.m_BoundSources[uiLod] = {pVertex, uiTopologyKey};
+  if (pSource == &pending)
+  {
+    s_pState->m_SourceBindings.Insert(pVertex, std::move(pending));
+    pending.m_Vertex = {};
+    pending.m_Index  = {};
+  }
   return true;
 }
 
 void xiiGeometryResidencyManager::ReleaseSourceBinding(Slot& slot, xiiUInt32 uiLod, xiiUInt64 uiLastUseFrame)
 {
-  const auto* pSource = slot.m_pBoundSources[uiLod];
-  if (pSource == nullptr)
+  const LodBinding binding = slot.m_BoundSources[uiLod];
+  if (binding.m_pVertexBuffer == nullptr)
     return;
 
-  slot.m_pBoundSources[uiLod] = nullptr;
-  auto* pBinding              = s_pState->m_SourceBindings.GetValue(pSource);
-  XII_ASSERT_DEV(pBinding != nullptr && pBinding->m_uiReferenceCount != 0U, "An admitted LOD must own a source lease.");
-  pBinding->m_uiLastUseFrame = xiiMath::Max(pBinding->m_uiLastUseFrame, uiLastUseFrame);
-  if (--pBinding->m_uiReferenceCount != 0U)
-    return;
+  slot.m_BoundSources[uiLod] = {};
+  auto* pSource              = s_pState->m_SourceBindings.GetValue(binding.m_pVertexBuffer);
+  XII_ASSERT_DEV(pSource != nullptr && pSource->m_uiReferenceCount != 0U, "An admitted LOD must own a source lease.");
+  if (binding.m_uiTopologyKey != 0U)
+  {
+    auto* pTopology = pSource->m_Topology.GetValue(binding.m_uiTopologyKey);
+    XII_ASSERT_DEV(pTopology != nullptr && pTopology->m_uiReferenceCount != 0U, "An admitted meshlet range must own a topology lease.");
+    pTopology->m_uiLastUseFrame = xiiMath::Max(pTopology->m_uiLastUseFrame, uiLastUseFrame);
+    if (--pTopology->m_uiReferenceCount == 0U)
+    {
+      RetireBufferBinding(pTopology->m_Remap, pTopology->m_uiLastUseFrame);
+      RetireBufferBinding(pTopology->m_Primitives, pTopology->m_uiLastUseFrame);
+      const xiiUInt64 uiBytes = pTopology->m_Range.GetUploadBytes();
+      s_pState->m_uiResidentTopologyBytes -= uiBytes;
+      s_pState->m_StreamingStats.m_uiRetiredTopologyBytes += uiBytes;
+      pSource->m_Topology.Remove(binding.m_uiTopologyKey);
+    }
+  }
 
-  if (xiiGALBindlessResourceTable::IsInitialized())
-    for (auto handle : {pBinding->m_Vertex, pBinding->m_Index, pBinding->m_Remap, pBinding->m_Primitives})
-      if (handle.IsValid())
-        xiiGALBindlessResourceTable::RetireBufferSRV(handle, pBinding->m_uiLastUseFrame);
-  s_pState->m_uiResidentTopologyBytes -= pBinding->m_uiTopologyBytes;
-  s_pState->m_StreamingStats.m_uiRetiredTopologyBytes += pBinding->m_uiTopologyBytes;
-  s_pState->m_SourceBindings.Remove(pSource);
+  pSource->m_uiLastUseFrame = xiiMath::Max(pSource->m_uiLastUseFrame, uiLastUseFrame);
+  if (--pSource->m_uiReferenceCount == 0U)
+  {
+    RetireBufferBinding(pSource->m_Vertex, pSource->m_uiLastUseFrame);
+    RetireBufferBinding(pSource->m_Index, pSource->m_uiLastUseFrame);
+    s_pState->m_SourceBindings.Remove(binding.m_pVertexBuffer);
+  }
 }
 
 void xiiGeometryResidencyManager::ReleaseBindlessResources(Slot& slot, xiiUInt64 uiLastUseFrame)
