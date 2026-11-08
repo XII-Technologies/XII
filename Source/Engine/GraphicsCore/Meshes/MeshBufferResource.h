@@ -250,8 +250,8 @@ public:
   /// \param uiStride The byte stride between vertices for this vertex stream, used to calculate the memory address of this stream's data for each vertex when vertices are tightly packed or interleaved.
   void AddStream(xiiEnum<xiiMeshVertexSemantic> semantic, xiiEnum<xiiMeshVertexStreamFormat> format, xiiUInt16 uiOffset, xiiUInt16 uiStride);
 
-  /// Adds a set of common vertex streams (position, normal, tangent, texcoord0, texcoord1, color0, bone indices, bone weights) to this mesh buffer resource descriptor with standard formats and offsets for use with the provided geometry.
-  void AddCommonStreams();
+  /// Declares the packed vertex layout. Static imports can omit bone streams without changing the packed record stride.
+  void AddCommonStreams(bool bIncludeSkinning = true);
 
   /// Allocates memory for the vertex and index data in this mesh buffer resource descriptor based on the specified vertex count, primitive count, and index format.
   ///

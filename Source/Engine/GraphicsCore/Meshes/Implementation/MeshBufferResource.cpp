@@ -251,7 +251,7 @@ void xiiMeshBufferResourceDescriptor::AddStream(xiiEnum<xiiMeshVertexSemantic> s
   m_uiVertexStride = xiiMath::Max<xiiUInt32>(m_uiVertexStride, uiStride);
 }
 
-void xiiMeshBufferResourceDescriptor::AddCommonStreams()
+void xiiMeshBufferResourceDescriptor::AddCommonStreams(bool bIncludeSkinning)
 {
   m_VertexStreams.Clear();
   m_uiVertexStride = sizeof(xiiMeshPackedVertex);
@@ -262,8 +262,11 @@ void xiiMeshBufferResourceDescriptor::AddCommonStreams()
   AddStream(xiiMeshVertexSemantic::TexCoord0, xiiMeshVertexStreamFormat::Float2, static_cast<xiiUInt16>(offsetof(xiiMeshPackedVertex, m_vTexCoord0)), static_cast<xiiUInt16>(sizeof(xiiMeshPackedVertex)));
   AddStream(xiiMeshVertexSemantic::TexCoord1, xiiMeshVertexStreamFormat::Float2, static_cast<xiiUInt16>(offsetof(xiiMeshPackedVertex, m_vTexCoord1)), static_cast<xiiUInt16>(sizeof(xiiMeshPackedVertex)));
   AddStream(xiiMeshVertexSemantic::Color0, xiiMeshVertexStreamFormat::UByte4Normalized, static_cast<xiiUInt16>(offsetof(xiiMeshPackedVertex, m_Color0)), static_cast<xiiUInt16>(sizeof(xiiMeshPackedVertex)));
-  AddStream(xiiMeshVertexSemantic::BoneIndices0, xiiMeshVertexStreamFormat::UShort4, static_cast<xiiUInt16>(offsetof(xiiMeshPackedVertex, m_vBoneIndices0)), static_cast<xiiUInt16>(sizeof(xiiMeshPackedVertex)));
-  AddStream(xiiMeshVertexSemantic::BoneWeights0, xiiMeshVertexStreamFormat::UByte4Normalized, static_cast<xiiUInt16>(offsetof(xiiMeshPackedVertex, m_BoneWeights0)), static_cast<xiiUInt16>(sizeof(xiiMeshPackedVertex)));
+  if (bIncludeSkinning)
+  {
+    AddStream(xiiMeshVertexSemantic::BoneIndices0, xiiMeshVertexStreamFormat::UShort4, static_cast<xiiUInt16>(offsetof(xiiMeshPackedVertex, m_vBoneIndices0)), static_cast<xiiUInt16>(sizeof(xiiMeshPackedVertex)));
+    AddStream(xiiMeshVertexSemantic::BoneWeights0, xiiMeshVertexStreamFormat::UByte4Normalized, static_cast<xiiUInt16>(offsetof(xiiMeshPackedVertex, m_BoneWeights0)), static_cast<xiiUInt16>(sizeof(xiiMeshPackedVertex)));
+  }
 }
 
 void xiiMeshBufferResourceDescriptor::AllocateStreams(xiiUInt32 uiVertexCount, xiiUInt32 uiPrimitiveCount, bool bUse32BitIndices)
@@ -521,7 +524,13 @@ xiiResult xiiMeshBufferResourceDescriptor::Serialize(xiiStreamWriter& inout_stre
 xiiResult xiiMeshBufferResourceDescriptor::Deserialize(xiiStreamReader& source, const xiiResourceLoadData* pSource)
 {
   xiiStreamReaderWithStats inout_stream(&source);
-  const auto               version = inout_stream.ReadVersion(s_uiMeshBufferResourceVersion);
+  xiiTypeVersion           version = 0U;
+  XII_SUCCEED_OR_RETURN(inout_stream.ReadWordValue(&version));
+  if (version != 1U && version != s_uiMeshBufferResourceVersion)
+  {
+    xiiLog::Error("Unsupported mesh buffer version {}. Retransform the mesh asset in the editor.", version);
+    return XII_FAILURE;
+  }
 
   inout_stream >> m_Topology;
   inout_stream >> m_IndexType;
@@ -546,11 +555,6 @@ xiiResult xiiMeshBufferResourceDescriptor::Deserialize(xiiStreamReader& source, 
   XII_SUCCEED_OR_RETURN(inout_stream.ReadArray(m_DrawCommands));
   if (version >= 2U)
   {
-    if (version != 5U)
-    {
-      xiiLog::Error("Geometry pages use an obsolete cluster layout. Retransform the mesh asset.");
-      return XII_FAILURE;
-    }
     XII_SUCCEED_OR_RETURN(inout_stream.ReadArray(m_GeometryPages));
     inout_stream >> m_uiPageDataBytes;
     if (m_uiPageDataBytes > xiiMath::MaxValue<xiiUInt32>())

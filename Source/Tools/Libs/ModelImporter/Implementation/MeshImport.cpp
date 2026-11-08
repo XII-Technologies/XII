@@ -368,7 +368,7 @@ xiiResult xiiModelMeshImport::ReadFile(xiiStringView sAbsoluteFile, const xiiMod
   if (vertices.IsEmpty() || indices.IsEmpty())
     return Fail(out_pError, "Source file contains no renderable surface geometry.");
   auto& buffer = result.m_Mesh.GetMeshBufferDescriptor();
-  buffer.AddCommonStreams();
+  buffer.AddCommonStreams(options.m_bImportSkinning);
   buffer.SetVertexData(xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(vertices.GetData()), vertices.GetCount() * sizeof(xiiMeshPackedVertex)), vertices.GetCount(), sizeof(xiiMeshPackedVertex));
   if (vertices.GetCount() <= xiiMath::MaxValue<xiiUInt16>())
   {
@@ -387,9 +387,24 @@ xiiResult xiiModelMeshImport::ReadFile(xiiStringView sAbsoluteFile, const xiiMod
     result.m_Mesh.m_UsageFlags.Remove(xiiMeshResourceUsageFlags::StaticGeometry);
     result.m_Mesh.m_UsageFlags.Add(xiiMeshResourceUsageFlags::Skinned);
   }
+
+  // The descriptor owns the packed data now. Release import staging before
+  // clustering and compression allocate their own working sets.
+  importer.FreeScene();
+  vertices.Clear();
+  vertices.Compact();
+  indices.Clear();
+  indices.Compact();
+  localVertices.Clear();
+  localVertices.Compact();
+  localIndices.Clear();
+  localIndices.Compact();
+
   result.m_Mesh.ComputeBounds();
   if (result.m_Mesh.BuildMeshlets().Failed())
     return Fail(out_pError, "Could not compile native meshlets from imported geometry.");
+  if (!options.m_bImportSkinning && buffer.m_GeometryPages.IsEmpty())
+    return Fail(out_pError, "Static mesh import produced no streamable geometry pages.");
   out_import = std::move(result);
   return XII_SUCCESS;
 }

@@ -3,6 +3,7 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <Core/ResourceManager/ResourceManager.h>
+#include <Core/ResourceManager/ResourceTypeLoader.h>
 #include <Foundation/Memory/MemoryUtils.h>
 #include <Foundation/Profiling/Profiling.h>
 #include <Foundation/Threading/AtomicInteger.h>
@@ -182,6 +183,18 @@ xiiResourceLoadDescription xiiMeshResource::UpdateContent(xiiStreamReader* pStre
   xiiMeshResourceDescriptor descriptor;
   if (descriptor.Load(*pStream, GetCurrentlyUpdatingLoadData()).Failed())
   {
+    res.m_State = xiiResourceState::LoadedResourceMissing;
+    return res;
+  }
+
+  const auto* load   = GetCurrentlyUpdatingLoadData();
+  const auto& buffer = static_cast<const xiiMeshResourceDescriptor&>(descriptor).GetMeshBufferDescriptor();
+  if (load && !load->m_sSourceFile.IsEmpty() && !descriptor.GetExistingMeshBuffer().IsValid() &&
+      !descriptor.m_UsageFlags.IsSet(xiiMeshResourceUsageFlags::Skinned) && descriptor.m_MorphTargets.IsEmpty() &&
+      buffer.m_ResourceUsage == xiiGALResourceUsage::Immutable && buffer.m_Topology == xiiGALPrimitiveTopology::TriangleList &&
+      buffer.GetIndexCount() != 0U && buffer.m_GeometryPages.IsEmpty())
+  {
+    xiiLog::Error("Static mesh '{}' lacks compiled geometry pages. Retransform the mesh in the editor.", GetResourceID());
     res.m_State = xiiResourceState::LoadedResourceMissing;
     return res;
   }
