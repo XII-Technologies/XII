@@ -1200,7 +1200,7 @@ xiiResult xiiGALCommandListVulkan::CommitShaderResourcesPlatform(xiiEnum<xiiGALS
 
       for (xiiUInt32 uiSet = 0; uiSet < m_CommandListData.m_DescriptorSets.GetCount(); ++uiSet)
       {
-        m_CommandListData.m_DescriptorSets[uiSet] = m_CommandListData.m_pDescriptorSetPoolVulkan->RequestDescriptorSet(pResourceSignatureVulkan->GetVulkanDescriptorSetLayout(uiSet));
+        m_CommandListData.m_DescriptorSets[uiSet] = m_CommandListData.m_pDescriptorSetPoolVulkan->RequestDescriptorSet(pResourceSignatureVulkan->GetVulkanDescriptorSetLayout(uiSet), pResourceSignatureVulkan->GetPipelineResourceSetLayout(uiSet));
 
         auto& resources = m_CommandListData.m_ResourceSets[uiSet];
 

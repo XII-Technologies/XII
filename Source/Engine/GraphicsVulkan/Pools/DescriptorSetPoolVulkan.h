@@ -5,6 +5,8 @@
 #include <GraphicsVulkan/GraphicsVulkanDLL.h>
 
 #include <Foundation/Algorithm/HashingUtils.h>
+#include <Foundation/Containers/HashTable.h>
+#include <GraphicsVulkan/States/PipelineResourceSignatureVulkan.h>
 
 namespace vk
 {
@@ -26,7 +28,7 @@ class XII_GRAPHICSVULKAN_DLL xiiGALDescriptorSetPoolVulkan
 public:
   static float GetDescriptorTypeWeight(vk::DescriptorType vkDescriptorType);
 
-  vk::DescriptorSet RequestDescriptorSet(vk::DescriptorSetLayout vkDescriptorSetLayout);
+  vk::DescriptorSet RequestDescriptorSet(vk::DescriptorSetLayout vkDescriptorSetLayout, xiiArrayPtr<const xiiGALPipelineResourceDescriptionVulkan> resources);
 
   void ReclaimDescriptorPool(vk::DescriptorPool&& vkDescriptorPool);
 
@@ -38,13 +40,15 @@ private:
   xiiGALDescriptorSetPoolVulkan(xiiGALDeviceVulkan* pDeviceVulkan, xiiUInt32 uiBaseSize, xiiUInt32 uiMaxSets);
   ~xiiGALDescriptorSetPoolVulkan();
 
-  vk::DescriptorPool CreateVulkanDescriptorPool();
+  vk::DescriptorPool CreateVulkanDescriptorPool(const xiiHashTable<vk::DescriptorType, xiiUInt32>& required);
 
   xiiGALDeviceVulkan* m_pDeviceVulkan;
 
-  xiiDynamicArray<vk::DescriptorPool> m_DescriptorPools;
-  xiiDeque<vk::DescriptorPool>        m_QueuedDescriptorPools;
-  xiiUInt32                           m_uiBaseSize = 0U;
-  xiiUInt32                           m_uiMaxSets  = 0U;
-  vk::DescriptorPool                  m_vkCurrentDescriptorPool;
+  xiiDynamicArray<vk::DescriptorPool>         m_DescriptorPools;
+  xiiDeque<vk::DescriptorPool>                m_QueuedDescriptorPools;
+  xiiHashTable<vk::DescriptorType, xiiUInt32> m_Remaining;
+  xiiUInt32                                   m_uiRemainingSets = 0U;
+  xiiUInt32                                   m_uiBaseSize      = 0U;
+  xiiUInt32                                   m_uiMaxSets       = 0U;
+  vk::DescriptorPool                          m_vkCurrentDescriptorPool;
 };

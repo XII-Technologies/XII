@@ -31,6 +31,12 @@ xiiGALBufferVulkan::~xiiGALBufferVulkan()
   }
 }
 
+xiiUInt64 xiiGALBufferVulkan::GetMemoryConsumption() const
+{
+  const auto* device = static_cast<xiiGALDeviceVulkan*>(m_pDevice.Borrow());
+  return m_BufferMemoryAllocation ? device->GetVulkanMemoryAllocator()->GetAllocationInfo(m_BufferMemoryAllocation).m_uiSize : m_Description.m_uiSize;
+}
+
 xiiResult xiiGALBufferVulkan::InitPlatform(const xiiGALBufferData* pInitialData, xiiBitflags<xiiGALExternalMemoryKind> externalMemoryKind)
 {
   XII_IGNORE_UNUSED(externalMemoryKind);
