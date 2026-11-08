@@ -7,11 +7,6 @@
 #include <EditorFramework/ui_AssetBrowserPanel.h>
 #include <GuiFoundation/DockPanels/ApplicationPanel.moc.h>
 
-class QStatusBar;
-class QLabel;
-struct xiiToolsProjectEvent;
-class xiiQtCuratorControl;
-
 /// The application wide panel that shows and asset browser.
 class XII_EDITORFRAMEWORK_DLL xiiQtAssetBrowserPanel : public xiiQtApplicationPanel, public Ui_AssetBrowserPanel
 {
@@ -31,10 +26,5 @@ private Q_SLOTS:
   void SlotAssetCleared();
 
 private:
-  void AssetCuratorEvents(const xiiAssetCuratorEvent& e);
-  void ProjectEvents(const xiiToolsProjectEvent& e);
-
-  xiiUuid              m_LastSelected;
-  QStatusBar*          m_pStatusBar;
-  xiiQtCuratorControl* m_pCuratorControl;
+  xiiUuid m_LastSelected;
 };
