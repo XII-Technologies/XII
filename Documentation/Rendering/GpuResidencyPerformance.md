@@ -19,12 +19,12 @@ Graph metadata transfers retain shared upload payloads. Frame snapshots, subsyst
 - Changed primitive ranges query revision-owned interval indices in O(log(meshlets)); unchanged entries reuse counts.
 - Instance synchronization performs membership/state work without repeated meshlet traversal or unchanged matrix calculations.
 - Missing-page scheduling examines at most 4096 queued requests per frame. IO plus ready payloads is limited to 32 jobs.
-- Resident-page eviction examines at most 512 ring entries per frame. Physical retirement examines at most 512 entries; free-pool trimming examines at most 32 slots per size/color class.
+- Resident-page eviction examines at most 512 ring entries per frame. Physical retirement examines at most 512 entries; trimming examines at most 32 geometry backing buffers and 32 free texture slots per color class.
 - Native category queries read cached totals under the allocator ledger lock. Detailed allocation enumeration runs only on an explicit diagnostic request.
 
 Inspector exposes streaming latency, admitted/deferred requests, uploads, logical pages, feedback ID high water/reuse, pool backing/reuse/retirement/padding, native allocation owners, and heap usage. Keep active payload, reusable storage, native suballocation ownership, and committed heap capacity distinct when evaluating unload behavior.
 
-Static cluster metadata streams inside geometry payloads. The direct metadata arena is allocated only for mutable or deformable geometry. Root-cluster enumeration uses cumulative counts and binary search for coarse consumers. Source bindings include the mesh-buffer revision, preventing in-place editor reloads from reusing the previous page directory. Full authored-scene navigation, datasets larger than physical VRAM, and final hot-reload/device-loss acceptance remain in progress.
+Static cluster metadata streams inside geometry payloads. The direct metadata arena is allocated only for mutable or deformable geometry. Root selection uses a primitive interval index and cumulative cluster counts, avoiding a complete root scan for each material section. Source bindings include the mesh-buffer revision, preventing in-place editor reloads from reusing the previous page directory. Full authored-scene navigation, datasets larger than physical VRAM, and final hot-reload/device-loss acceptance remain in progress.
 
 ## Historical CPU and direct-culling measurements
 

@@ -35,7 +35,8 @@ bool xiiLoadCluster(uint key, out GpuMeshlet cluster)
 
 uint xiiGeometryClusterKey(uint4 mapping, uint localCluster, uint lodIndex)
 {
-  return 0x80000000u | (lodIndex << 28u) | (mapping.x << 16u) | ((mapping.z + localCluster * 96u) / 4u);
+  uint words = (mapping.z >> 16u) + (mapping.z & 0xffffu) + localCluster * 24u;
+  return 0x80000000u | (lodIndex << 28u) | (mapping.x << 16u) | words;
 }
 
 uint4 xiiGeometryPageMapping(GpuGeometryLod lod, uint page)
@@ -56,13 +57,20 @@ bool xiiResolveClusterLod(inout GpuGeometryLod lod, inout GpuMeshlet cluster)
   uint4 mapping = xiiGeometryPageMapping(lod, cluster.Page.x);
   if (mapping.x == 0xFFFFFFFFu)
     return false;
+  uint baseWords = mapping.z >> 16u;
   lod.VertexBufferIndex          = mapping.x;
+  lod.IndexBufferIndex           = baseWords * 4u; // Resolved virtual LODs store a vertex byte offset here.
   lod.MeshletTopologyBufferIndex = mapping.x;
   lod.MeshletPrimitiveByteOffset = 0u;
   lod.VertexCount                = cluster.Page.w;
-  cluster.Header.y               = cluster.Page.y / 4u;
-  cluster.Header.z               = cluster.Page.z;
+  cluster.Header.y               = baseWords + cluster.Page.y / 4u;
+  cluster.Header.z               = baseWords * 4u + cluster.Page.z;
   return true;
+}
+
+uint xiiGeometryVertexOffset(GpuGeometryLod lod)
+{
+  return lod.Padding != 0u ? lod.IndexBufferIndex : 0u;
 }
 
 
@@ -84,35 +92,76 @@ xiiGeometryPageInfo xiiLoadGeometryPage(GpuGeometryLod lod, uint page)
   return result;
 }
 
-// Root directory entries contain a page index and cumulative cluster count.
-// Non-view consumers enumerate this compact coarse representation, never fine clusters.
-uint xiiGeometryRootClusterCount(GpuGeometryLod lod)
+// A root row contains the page, cumulative cluster count, primitive start,
+// and prefix maximum primitive end. This bounds work to a draw's section.
+bool xiiGeometryRootDirectory(GpuGeometryLod lod, out uint table, out uint offset, out uint roots)
 {
-  uint bytes;
-  g_Buffers[NonUniformResourceIndex(lod.VertexBufferIndex)].GetDimensions(bytes);
-  return bytes >= 272u ? g_Buffers[NonUniformResourceIndex(lod.VertexBufferIndex)].Load(8u) : 0u;
-}
-bool xiiLoadGeometryRootCluster(GpuGeometryLod lod, uint lodIndex, uint ordinal, out GpuMeshlet cluster)
-{
-  cluster = (GpuMeshlet)0;
-  uint table = NonUniformResourceIndex(lod.VertexBufferIndex);
+  table = NonUniformResourceIndex(lod.VertexBufferIndex);
+  offset = 0u;
+  roots = 0u;
+  if (lod.VertexBufferIndex == 0xffffffffu) return false;
   uint bytes;
   g_Buffers[table].GetDimensions(bytes);
   if (bytes < 272u) return false;
   uint pages = g_Buffers[table].Load(0u);
   if (pages > (bytes - 272u) / 48u) return false;
-  uint offset = 272u + pages * 48u;
-  uint roots = min(g_Buffers[table].Load(4u), (bytes - offset) / 8u);
+  offset = 272u + pages * 48u;
+  roots = min(g_Buffers[table].Load(4u), (bytes - offset) / 16u);
+  return true;
+}
+
+void xiiGeometryRootRange(uint table, uint offset, uint roots, GpuSceneInstance instance, out uint first, out uint end)
+{
+  first = 0u;
+  end = roots;
+  if (instance.PrimitiveCount == 0u) return;
   uint low = 0u, high = roots;
   while (low < high)
   {
     uint middle = low + (high - low) / 2u;
-    if (g_Buffers[table].Load(offset + middle * 8u + 4u) <= ordinal) low = middle + 1u;
+    if (g_Buffers[NonUniformResourceIndex(table)].Load(offset + middle * 16u + 12u) <= instance.FirstPrimitive) low = middle + 1u;
+    else high = middle;
+  }
+  first = low;
+  high = roots;
+  while (low < high)
+  {
+    uint middle = low + (high - low) / 2u;
+    uint start = g_Buffers[NonUniformResourceIndex(table)].Load(offset + middle * 16u + 8u);
+    if (start < instance.FirstPrimitive || start - instance.FirstPrimitive < instance.PrimitiveCount) low = middle + 1u;
+    else high = middle;
+  }
+  end = low;
+}
+
+void xiiGeometryRootClusterRange(GpuGeometryLod lod, GpuSceneInstance instance, out uint first, out uint count)
+{
+  first = 0u;
+  count = 0u;
+  uint table, offset, roots;
+  if (!xiiGeometryRootDirectory(lod, table, offset, roots)) return;
+  uint begin, end;
+  xiiGeometryRootRange(table, offset, roots, instance, begin, end);
+  if (begin == end) return;
+  first = begin == 0u ? 0u : g_Buffers[NonUniformResourceIndex(table)].Load(offset + (begin - 1u) * 16u + 4u);
+  count = g_Buffers[NonUniformResourceIndex(table)].Load(offset + (end - 1u) * 16u + 4u) - first;
+}
+bool xiiLoadGeometryRootCluster(GpuGeometryLod lod, uint lodIndex, uint ordinal, out GpuMeshlet cluster)
+{
+  cluster = (GpuMeshlet)0;
+  uint table, offset, roots;
+  if (!xiiGeometryRootDirectory(lod, table, offset, roots)) return false;
+  table = NonUniformResourceIndex(table);
+  uint low = 0u, high = roots;
+  while (low < high)
+  {
+    uint middle = low + (high - low) / 2u;
+    if (g_Buffers[table].Load(offset + middle * 16u + 4u) <= ordinal) low = middle + 1u;
     else high = middle;
   }
   if (low >= roots) return false;
-  uint previous = low == 0u ? 0u : g_Buffers[table].Load(offset + (low - 1u) * 8u + 4u);
-  xiiGeometryPageInfo page = xiiLoadGeometryPage(lod, g_Buffers[table].Load(offset + low * 8u));
+  uint previous = low == 0u ? 0u : g_Buffers[table].Load(offset + (low - 1u) * 16u + 4u);
+  xiiGeometryPageInfo page = xiiLoadGeometryPage(lod, g_Buffers[table].Load(offset + low * 16u));
   uint first = asuint(page.Detail.y);
   if (page.Mapping.x == 0xffffffffu || first < lod.IndexBufferIndex ||
       first - lod.IndexBufferIndex >= lod.MeshletCount || ordinal - previous >= page.Mapping.w) return false;

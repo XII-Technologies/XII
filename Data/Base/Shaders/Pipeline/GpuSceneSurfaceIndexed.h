@@ -71,8 +71,9 @@ GBufferVertex xiiLoadIndexedSceneSurfaceVertex(uint vertexIndex, uint visibleInd
   uint vertexBufferBytes;
   g_Buffers[lod.VertexBufferIndex].GetDimensions(vertexBufferBytes);
   const uint attributeEnd = max(max(12u, NormalOffset + 12u), max(TangentOffset + 16u, TexCoordOffset + 8u));
-  if (VertexStride < attributeEnd || vertexBufferBytes < attributeEnd || any(indices >= lod.VertexCount) ||
-      any(indices > (vertexBufferBytes - attributeEnd) / VertexStride))
+  uint baseOffset = xiiGeometryVertexOffset(lod);
+  if (VertexStride < attributeEnd || baseOffset > vertexBufferBytes || vertexBufferBytes - baseOffset < attributeEnd || any(indices >= lod.VertexCount) ||
+      any(indices > (vertexBufferBytes - baseOffset - attributeEnd) / VertexStride))
     return xiiInvalidSceneSurfaceVertex();
   const uint sourcePrimitive = meshlet.Header.x + firstIndex / 3u;
   if ((instance.DrawLod != 0xFFFFFFFFu && instance.DrawLod != lodIndex) ||

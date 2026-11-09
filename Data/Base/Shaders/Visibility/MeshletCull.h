@@ -139,22 +139,17 @@ groupshared uint s_SelectedCount;
 
 void CullVirtualHierarchy(uint workGroup, uint workGroups, uint lane, uint index, GpuSceneInstance instance, GpuVisibilityView view, uint lodIndex, GpuGeometryLod lod)
 {
-  uint table = NonUniformResourceIndex(lod.VertexBufferIndex);
-  uint bytes;
-  g_Buffers[table].GetDimensions(bytes);
-  if (bytes < 272u)
-    return;
-  uint pageCount = g_Buffers[table].Load(0u);
-  if (pageCount > (bytes - 272u) / 48u)
-    return;
-  uint rootsOffset = 272u + pageCount * 48u;
-  uint rootCount   = min(g_Buffers[table].Load(4u), (bytes - rootsOffset) / 8u);
-  for (uint root = workGroup; root < rootCount; root += workGroups)
+  uint table, rootsOffset, rootCount;
+  if (!xiiGeometryRootDirectory(lod, table, rootsOffset, rootCount)) return;
+  table = NonUniformResourceIndex(table);
+  uint firstRoot, endRoot;
+  xiiGeometryRootRange(table, rootsOffset, rootCount, instance, firstRoot, endRoot);
+  for (uint root = firstRoot + workGroup; root < endRoot; root += workGroups)
   {
     if (lane == 0u)
     {
       s_PageStackSize = 1u;
-      s_PageStack[0]  = g_Buffers[table].Load(rootsOffset + root * 8u);
+      s_PageStack[0]  = g_Buffers[table].Load(rootsOffset + root * 16u);
     }
     GroupMemoryBarrierWithGroupSync();
     while (s_PageStackSize != 0u)

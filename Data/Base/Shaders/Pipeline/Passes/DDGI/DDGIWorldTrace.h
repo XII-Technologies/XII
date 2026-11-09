@@ -79,13 +79,13 @@ float4 ProbeTexture(uint textureIndex, uint samplerIndex, float2 uv)
   return textureIndex == 0xffffffffu ? 1.0f : xiiSampleSurfaceTextureLevel(textureIndex, samplerIndex, g_ProbeSampler, uv, 0);
 }
 
-void TraceProbePrimitive(float3 origin, float3 direction, float4x4 transform, uint vertexBufferIndex, uint vertexCount,
+void TraceProbePrimitive(float3 origin, float3 direction, float4x4 transform, uint vertexBufferIndex, uint vertexCount, uint vertexByteOffset,
                          xiiGpuSurfaceMaterial material, uint3 vertices, uint instanceFlags, bool shadowQuery, inout ProbeHit hit)
 {
   if (any(vertices >= vertexCount))
     return;
   const uint   vertexBuffer = NonUniformResourceIndex(vertexBufferIndex);
-  const uint3  offsets      = vertices * ProbeSceneLayout.z;
+  const uint3  offsets      = vertexByteOffset + vertices * ProbeSceneLayout.z;
   const float3 a            = mul(transform, float4(asfloat(g_Buffers[vertexBuffer].Load3(offsets.x)), 1.0f)).xyz;
   const float3 b            = mul(transform, float4(asfloat(g_Buffers[vertexBuffer].Load3(offsets.y)), 1.0f)).xyz;
   const float3 c            = mul(transform, float4(asfloat(g_Buffers[vertexBuffer].Load3(offsets.z)), 1.0f)).xyz;
@@ -139,13 +139,14 @@ bool TraceProbeMeshlets(float3 origin, float3 direction, GpuSceneInstance instan
   complete = false;
   if (lod.Padding != 0u)
   {
-    uint count = xiiGeometryRootClusterCount(lod);
+    uint first, count;
+    xiiGeometryRootClusterRange(lod, instance, first, count);
     if (count > remainingMeshlets) return false;
     remainingMeshlets -= count;
     [loop] for (uint n = 0u; n < count; ++n)
     {
       GpuMeshlet cluster;
-      if (!xiiLoadGeometryRootCluster(lod, lodIndex, n, cluster)) continue;
+      if (!xiiLoadGeometryRootCluster(lod, lodIndex, first + n, cluster)) continue;
       GpuGeometryLod resident = lod;
       if (!xiiResolveClusterLod(resident, cluster)) return false;
       uint triangles = cluster.PackedPrimitiveVertexCount & 0xffffu;
@@ -160,7 +161,7 @@ bool TraceProbeMeshlets(float3 origin, float3 direction, GpuSceneInstance instan
         uint3 indices = uint3(g_Buffers[resident.MeshletTopologyBufferIndex].Load((cluster.Header.y + local.x) * 4u),
           g_Buffers[resident.MeshletTopologyBufferIndex].Load((cluster.Header.y + local.y) * 4u),
           g_Buffers[resident.MeshletTopologyBufferIndex].Load((cluster.Header.y + local.z) * 4u));
-        TraceProbePrimitive(origin, direction, instance.GlobalTransform, resident.VertexBufferIndex, resident.VertexCount, material, indices, instance.Flags, shadowQuery, hit);
+        TraceProbePrimitive(origin, direction, instance.GlobalTransform, resident.VertexBufferIndex, resident.VertexCount, xiiGeometryVertexOffset(resident), material, indices, instance.Flags, shadowQuery, hit);
         if (shadowQuery && hit.Found) { complete = true; return true; }
       }
     }
@@ -228,7 +229,7 @@ bool TraceProbeMeshlets(float3 origin, float3 direction, GpuSceneInstance instan
         return true;
       const uint3 remap  = (meshlet.Header.y + local) * 4u;
       const uint3 source = uint3(g_Buffers[topologyBuffer].Load(remap.x), g_Buffers[topologyBuffer].Load(remap.y), g_Buffers[topologyBuffer].Load(remap.z));
-      TraceProbePrimitive(origin, direction, instance.GlobalTransform, lod.VertexBufferIndex, lod.VertexCount, material, source, instance.Flags, shadowQuery, hit);
+      TraceProbePrimitive(origin, direction, instance.GlobalTransform, lod.VertexBufferIndex, lod.VertexCount, 0u, material, source, instance.Flags, shadowQuery, hit);
       if (shadowQuery && hit.Found)
       {
         complete = true;
@@ -319,7 +320,7 @@ bool TraceProbeScene(float3 origin, float3 direction, float maximum, out ProbeHi
         vertices = uint3(LoadProbeIndex(g_Buffers[indexBuffer], vertices.x, shortIndex),
                          LoadProbeIndex(g_Buffers[indexBuffer], vertices.y, shortIndex),
                          LoadProbeIndex(g_Buffers[indexBuffer], vertices.z, shortIndex));
-      TraceProbePrimitive(origin, direction, instance.GlobalTransform, lod.VertexBufferIndex, lod.VertexCount, material, vertices, instance.Flags, shadowQuery, hit);
+      TraceProbePrimitive(origin, direction, instance.GlobalTransform, lod.VertexBufferIndex, lod.VertexCount, 0u, material, vertices, instance.Flags, shadowQuery, hit);
       if (shadowQuery && hit.Found)
         return true;
     }

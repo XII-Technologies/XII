@@ -147,8 +147,11 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID, uint3 groupId : SV_Group
   GpuMeshlet meshlet;
   if (lod.Padding != 0u)
   {
-    if (groupId.x >= min(xiiGeometryRootClusterCount(lod), MaxMeshletCount) ||
-        !xiiLoadGeometryRootCluster(lod, lodIndex, groupId.x, meshlet)) return;
+    if (lane == 0u)
+      xiiGeometryRootClusterRange(lod, instance, s_FirstMeshlet, s_RangeMeshletCount);
+    GroupMemoryBarrierWithGroupSync();
+    if (groupId.x >= min(s_RangeMeshletCount, MaxMeshletCount) ||
+        !xiiLoadGeometryRootCluster(lod, lodIndex, s_FirstMeshlet + groupId.x, meshlet)) return;
   }
   else
   {
@@ -194,7 +197,7 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID, uint3 groupId : SV_Group
     g_Buffers[lod.MeshletTopologyBufferIndex].Load((meshlet.Header.y + localIndices.x) * 4u),
     g_Buffers[lod.MeshletTopologyBufferIndex].Load((meshlet.Header.y + localIndices.y) * 4u),
     g_Buffers[lod.MeshletTopologyBufferIndex].Load((meshlet.Header.y + localIndices.z) * 4u));
-  const uint3 vertexOffsets = sourceVertices * VertexStride;
+  const uint3 vertexOffsets = xiiGeometryVertexOffset(lod) + sourceVertices * VertexStride;
   const uint lastAttributeEnd = max(12u, TexCoordOffset + 8u);
   if (VertexStride < lastAttributeEnd || any(vertexOffsets > vertexBufferBytes) ||
       any(lastAttributeEnd > vertexBufferBytes - vertexOffsets))
