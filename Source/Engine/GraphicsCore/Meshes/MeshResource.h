@@ -219,7 +219,7 @@ public:
   void      Save(xiiStreamWriter& inout_stream) const;
   xiiResult Save(xiiStringView sFile) const;
 
-  xiiResult Load(xiiStreamReader& inout_stream);
+  xiiResult Load(xiiStreamReader& inout_stream, const xiiResourceLoadData* pSource = nullptr);
   xiiResult Load(xiiStringView sFile);
 
 public:

@@ -8,6 +8,7 @@
 #include <GraphicsCore/Textures/Texture2DResource.h>
 #include <GraphicsCore/Textures/TextureCubeResource.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
+#include <GraphicsFoundation/Device/Device.h>
 #include <Shaders/Materials/NativeMaterialViewConstants.h>
 #include <Shaders/Pipeline/Passes/Geometry/GpuSceneGBufferConstants.h>
 #include <Shaders/Pipeline/ReflectionProbeData.h>
@@ -35,7 +36,19 @@ namespace
       type   = xiiGALShaderResourceType::BufferSRV;
       stages = xiiGALShaderType::Pixel;
     }
-    else if (name == "g_Textures")
+    else if (name == "g_VirtualTextureTables")
+    {
+      type   = xiiGALShaderResourceType::BufferSRV;
+      stages = xiiGALShaderType::Pixel;
+      array  = true;
+    }
+    else if (name == "g_VirtualTextureFeedback")
+    {
+      type   = xiiGALShaderResourceType::BufferUAV;
+      stages = xiiGALShaderType::Pixel;
+      array  = true;
+    }
+    else if (name == "g_Textures" || name == "g_VirtualTextureTiles")
     {
       type   = xiiGALShaderResourceType::TextureSRV;
       stages = xiiGALShaderType::Pixel;
@@ -192,10 +205,21 @@ xiiStatus xiiMaterialShaderBinding::Build(const xiiMaterialInstanceSnapshot& sna
           xiiUInt32                      bytes = 0;
           if (ParameterType(variable, type, bytes).Failed() || variable.m_uiOffset > packed.GetCount() || bytes > packed.GetCount() - variable.m_uiOffset)
             return xiiStatus(xiiFmt("Unsupported material constant '{}' layout.", variable.m_sName));
+          xiiStringView textureName(variable.m_sName.GetString());
+          if (textureName.StartsWith("_xiiTexture_"))
+          {
+            textureName = xiiStringView(textureName.GetStartPointer() + 12U, textureName.GetEndPointer());
+            if (type != xiiMaterialParameterType::UInt || bytes != sizeof(xiiUInt32))
+              return xiiStatus("Invalid compiler-generated texture index.");
+            const auto      index      = snapshot.m_pSchema->FindTextureIndex(xiiMaterialParameterId::Make(textureName));
+            const xiiUInt32 descriptor = index < snapshot.m_ResourceBindings.GetCount() ? snapshot.m_ResourceBindings[index].m_uiBindlessIndex : xiiInvalidIndex;
+            xiiMemoryUtils::Copy(packed.GetData() + variable.m_uiOffset, reinterpret_cast<const xiiUInt8*>(&descriptor), sizeof(descriptor));
+            continue;
+          }
           const auto* parameter = snapshot.m_pSchema->FindParameter(variable.m_sName);
           if (!parameter)
             continue; // Unassigned reflected parameters have zero defaults.
-          if (parameter->m_Type != type && !((type == xiiMaterialParameterType::Float3 || type == xiiMaterialParameterType::Float4) && parameter->m_Type == xiiMaterialParameterType::Color))
+          if (parameter->m_Type != type && !(parameter->m_Type == xiiMaterialParameterType::Bool && type == xiiMaterialParameterType::UInt) && !((type == xiiMaterialParameterType::Float3 || type == xiiMaterialParameterType::Float4) && parameter->m_Type == xiiMaterialParameterType::Color))
             return xiiStatus(xiiFmt("Material parameter '{}' has an incompatible reflected type.", variable.m_sName));
           if (parameter->m_uiOffset > snapshot.m_ParameterData.GetCount() || bytes > snapshot.m_ParameterData.GetCount() - parameter->m_uiOffset)
             return xiiStatus("Invalid native material parameter snapshot.");
@@ -257,7 +281,49 @@ xiiStatus xiiMaterialShaderBinding::Build(const xiiMaterialInstanceSnapshot& sna
         if (!textureName.TrimWordEnd("_AutoSampler") || resource.m_uiArraySize != 1)
           return xiiStatus(xiiFmt("Material sampler '{}' must belong to a reflected texture.", name));
         const auto* texture = shader.GetShaderByteCode(stage)->GetDescription(xiiTempHashedString(textureName));
-        if (!texture || (texture->m_Type != xiiGALShaderResourceType::TextureSRV && texture->m_Type != xiiGALShaderResourceType::TextureAndSampler) || texture->m_uiArraySize != 1)
+        if (!texture)
+        {
+          const auto*            layout    = shader.GetShaderByteCode(stage)->GetDescription("xiiMaterialConstants");
+          bool                   generated = false;
+          const xiiStringBuilder indexName("_xiiTexture_", textureName);
+          if (layout)
+            for (const auto& variable : layout->m_Variables)
+              generated |= variable.m_sName.GetString() == indexName;
+          if (!generated)
+            return xiiStatus(xiiFmt("Material sampler '{}' has no matching texture index.", name));
+          const auto index  = snapshot.m_pSchema->FindTextureIndex(xiiMaterialParameterId::Make(textureName));
+          auto       handle = index < snapshot.m_ResourceBindings.GetCount() ? snapshot.m_ResourceBindings[index].m_hTexture2D : xiiTexture2DResourceHandle{};
+          if (!handle.IsValid())
+            handle = xiiResourceManager::GetResourceTypeMissingFallback<xiiTexture2DResource>();
+          if (!handle.IsValid())
+          {
+            const auto* definition = snapshot.m_pSchema->FindTexture(xiiMaterialParameterId::Make(textureName));
+            if (definition && definition->m_bRequired)
+              return xiiStatus(xiiFmt("Required material texture '{}' is unbound.", textureName));
+            Texture binding;
+            binding.m_bNamedVirtual = true;
+            binding.m_Name.Assign(textureName);
+            binding.m_Sampler = xiiGALDevice::GetDefaultDevice()->CreateSampler({});
+            if (!binding.m_Sampler)
+              return xiiStatus("The default material sampler is unavailable.");
+            m_Textures.PushBack(std::move(binding));
+            continue;
+          }
+          xiiResourceLock<xiiTexture2DResource> loaded(handle, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+          if (!loaded.IsValid())
+            return xiiStatus("The named material texture is unavailable.");
+          Texture binding;
+          binding.m_bNamedVirtual = true;
+          binding.m_Name.Assign(textureName);
+          binding.m_hTexture2D = handle;
+          binding.m_Texture    = loaded->GetGALTexture();
+          binding.m_Sampler    = loaded->GetGALSampler();
+          if (!binding.m_Texture || !binding.m_Sampler)
+            return xiiStatus("The named material sampler is unavailable.");
+          m_Textures.PushBack(std::move(binding));
+          continue;
+        }
+        if ((texture->m_Type != xiiGALShaderResourceType::TextureSRV && texture->m_Type != xiiGALShaderResourceType::TextureAndSampler) || texture->m_uiArraySize != 1)
           return xiiStatus(xiiFmt("Material sampler '{}' has no matching texture.", name));
       }
       else
@@ -279,10 +345,12 @@ void xiiMaterialShaderBinding::Bind(xiiGALCommandList& commands, xiiGALBuffer* c
     commands.ResolveAndSetConstantBuffer("xiiMaterialConstants", constants);
   for (const auto& texture : m_Textures)
   {
-    commands.ResolveAndSetShaderResourceTextureView(texture.m_Name, texture.m_Texture->GetDefaultView(xiiGALTextureViewType::ShaderResource));
+    if (!texture.m_bNamedVirtual)
+      commands.ResolveAndSetShaderResourceTextureView(texture.m_Name, texture.m_Texture->GetDefaultView(xiiGALTextureViewType::ShaderResource));
     const xiiStringBuilder sampler(texture.m_Name.GetString(), "_AutoSampler");
     commands.ResolveAndSetSampler(xiiTempHashedString(sampler), texture.m_Sampler.Borrow());
-    commands.ResolveAndSetSampler(texture.m_Name, texture.m_Sampler.Borrow()); // Combined image/sampler backends.
+    if (!texture.m_bNamedVirtual)
+      commands.ResolveAndSetSampler(texture.m_Name, texture.m_Sampler.Borrow()); // Combined image/sampler backends.
   }
 }
 

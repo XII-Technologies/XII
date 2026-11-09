@@ -169,6 +169,10 @@ xiiResult xiiMaterialCompiler::ValidateShaderLayout(const xiiMaterialSchema& sch
     const xiiGALShaderResourceDescription* pTexture = FindResource(permutation, xiiTempHashedString(texture.m_sName.GetString()));
     if (pTexture == nullptr)
     {
+      const xiiStringBuilder generatedName("_xiiTexture_", texture.m_sName.GetString());
+      if (texture.m_TextureType == xiiGALShaderTextureType::Texture2D &&
+          FindVariable(*pParameterBlock, xiiTempHashedString(generatedName)) != nullptr)
+        continue;
       if (texture.m_bRequired)
       {
         AddMessage(out_layout, xiiMaterialCompilationSeverity::Error, texture.m_sName.GetString(), "A required material texture is missing from shader reflection.");

@@ -16,6 +16,7 @@ struct XII_GRAPHICSCORE_DLL xiiMaterialShaderBinding
 {
   struct Texture
   {
+    bool                         m_bNamedVirtual = false;
     xiiHashedString              m_Name;
     xiiSharedPtr<xiiGALTexture>  m_Texture;
     xiiSharedPtr<xiiGALSampler>  m_Sampler;

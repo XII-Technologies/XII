@@ -7,6 +7,7 @@
 #include <Core/ResourceManager/Resource.h>
 #include <Core/ResourceManager/ResourceTypeLoader.h>
 #include <Texture/Image/Image.h>
+#include <Texture/Utilities/VirtualTextureData.h>
 
 class XII_GRAPHICSCORE_DLL xiiTextureResourceLoader : public xiiResourceTypeLoader
 {
@@ -18,9 +19,11 @@ public:
     {
     }
 
-    xiiContiguousMemoryStreamStorage m_Storage;
-    xiiMemoryStreamReader            m_Reader;
-    xiiImage                         m_Image;
+    xiiContiguousMemoryStreamStorage    m_Storage;
+    xiiMemoryStreamReader               m_Reader;
+    xiiImage                            m_Image;
+    xiiString                           m_sFile;
+    xiiSharedPtr<xiiVirtualTextureData> m_pVirtual;
 
     xiiGALTextureCreationDescription m_TextureDescription;
     xiiGALSamplerCreationDescription m_SamplerDescription;

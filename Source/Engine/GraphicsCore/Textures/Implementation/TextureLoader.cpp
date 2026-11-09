@@ -2,6 +2,8 @@
 
 #include <GraphicsCore/GraphicsCorePCH.h>
 
+#include <Foundation/IO/StreamWithStats.h>
+
 #include <Foundation/Configuration/CVar.h>
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/IO/FileSystem/FileReader.h>
@@ -110,6 +112,7 @@ xiiResourceLoadData xiiTextureResourceLoader::OpenDataStream(const xiiResource* 
 
     if (sAbsolutePath.HasExtension("xiiBinTexture2D") || sAbsolutePath.HasExtension("xiiBinTexture3D") || sAbsolutePath.HasExtension("xiiBinTextureCube") || sAbsolutePath.HasExtension("xiiBinRenderTarget") || sAbsolutePath.HasExtension("xiiBinLUT"))
     {
+      pData->m_sFile = sAbsolutePath;
       if (LoadTexFile(file, *pData).Failed())
         return res;
     }
@@ -173,8 +176,9 @@ bool xiiTextureResourceLoader::IsResourceOutdated(const xiiResource* pResource) 
   return true;
 }
 
-xiiResult xiiTextureResourceLoader::LoadTexFile(xiiStreamReader& inout_stream, LoadedData& ref_data)
+xiiResult xiiTextureResourceLoader::LoadTexFile(xiiStreamReader& source, LoadedData& ref_data)
 {
+  xiiStreamReaderWithStats inout_stream(&source);
   ref_data.m_Image.Clear();
   // read the hash, ignore it
   xiiAssetFileHeader AssetHash;
@@ -185,6 +189,15 @@ xiiResult xiiTextureResourceLoader::LoadTexFile(xiiStreamReader& inout_stream, L
 
   if (ref_data.m_TextureDescription.m_Size.width == 0)
   {
+    if (ref_data.m_TextureDescription.m_Size.height == xiiVirtualTextureData::s_uiMarker)
+    {
+      ref_data.m_pVirtual = XII_DEFAULT_NEW(xiiVirtualTextureData);
+      const auto base     = inout_stream.m_uiBytesRead;
+      XII_SUCCEED_OR_RETURN(ref_data.m_pVirtual->Deserialize(inout_stream, ref_data.m_sFile, base));
+      ref_data.m_pVirtual->m_uiFileHash     = AssetHash.GetFileHash();
+      ref_data.m_pVirtual->m_uiAssetVersion = AssetHash.GetFileVersion();
+      return XII_SUCCESS;
+    }
     xiiDdsFileFormat fmt;
     return fmt.ReadImage(inout_stream, ref_data.m_Image, "dds");
   }
@@ -207,6 +220,8 @@ void xiiTextureResourceLoader::WriteTextureLoadStream(xiiStreamWriter& w, const 
 
   const xiiImage* pImage = &data.m_Image;
   w.WriteBytes(&pImage, sizeof(xiiImage*)).IgnoreResult();
+  auto* virtualData = data.m_pVirtual.Borrow();
+  w.WriteBytes(&virtualData, sizeof(virtualData)).IgnoreResult();
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Textures_Implementation_TextureLoader);

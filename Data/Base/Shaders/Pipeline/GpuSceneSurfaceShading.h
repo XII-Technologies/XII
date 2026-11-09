@@ -31,22 +31,22 @@ xiiMaterialSurface xiiSampleSceneSurface(xiiGpuSurfaceMaterial material, GBuffer
 
   if (material.TextureIndices0.z != 0xFFFFFFFFu)
   {
-    const float4 metallicRoughness = xiiSampleSurfaceTexture(g_Textures[NonUniformResourceIndex(material.TextureIndices0.z)], material.SamplerIndices0.z, g_sLinearWrap, input.TexCoord);
+    const float4 metallicRoughness = xiiSampleSurfaceTexture(material.TextureIndices0.z, material.SamplerIndices0.z, g_sLinearWrap, input.TexCoord);
     roughness *= metallicRoughness.g;
     metallic *= metallicRoughness.b;
   }
   if (material.TextureIndices0.w != 0xFFFFFFFFu)
   {
-    const float sampledOcclusion = xiiSampleSurfaceTexture(g_Textures[NonUniformResourceIndex(material.TextureIndices0.w)], material.SamplerIndices0.w, g_sLinearWrap, input.TexCoord).r;
+    const float sampledOcclusion = xiiSampleSurfaceTexture(material.TextureIndices0.w, material.SamplerIndices0.w, g_sLinearWrap, input.TexCoord).r;
     occlusion                    = lerp(1.0f, sampledOcclusion, saturate(material.SurfaceParameters.w));
   }
   if (material.TextureIndices1.w != 0xFFFFFFFFu)
-    transmission *= saturate(xiiSampleSurfaceTexture(g_Textures[NonUniformResourceIndex(material.TextureIndices1.w)], material.SamplerIndices1.w, g_sLinearWrap, input.TexCoord).r);
+    transmission *= saturate(xiiSampleSurfaceTexture(material.TextureIndices1.w, material.SamplerIndices1.w, g_sLinearWrap, input.TexCoord).r);
 
   float3 worldNormal = normalize(input.WorldNormal) * (isFrontFace ? 1.0f : -1.0f);
   if (material.TextureIndices0.y != 0xFFFFFFFFu)
   {
-    float3 tangentNormal = xiiSampleSurfaceTexture(g_Textures[NonUniformResourceIndex(material.TextureIndices0.y)], material.SamplerIndices0.y, g_sAnisotropicWrap, input.TexCoord).xyz * 2.0f - 1.0f;
+    float3 tangentNormal = xiiSampleSurfaceTexture(material.TextureIndices0.y, material.SamplerIndices0.y, g_sAnisotropicWrap, input.TexCoord).xyz * 2.0f - 1.0f;
     tangentNormal.xy *= material.LayerParameters.y;
     tangentNormal.z             = sqrt(saturate(1.0f - dot(tangentNormal.xy, tangentNormal.xy)));
     const float3 worldTangent   = normalize(input.WorldTangent);

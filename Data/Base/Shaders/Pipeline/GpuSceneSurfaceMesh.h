@@ -10,6 +10,7 @@ StructuredBuffer<GpuMeshlet>        g_Meshlets;
 StructuredBuffer<uint2>             g_VisibleMeshlets;
 StructuredBuffer<uint>              g_VisibleMeshletCount;
 ByteAddressBuffer                   g_Buffers[];
+#include <Shaders/Geometry/VirtualGeometry.h>
 
 #include <Shaders/Pipeline/GpuSceneSurfaceData.h>
 
@@ -53,7 +54,7 @@ ByteAddressBuffer                   g_Buffers[];
     }
 
     const GpuGeometryRecord geometry = g_Geometry[GeometryBaseIndex + instance.GeometryIndex];
-    const GpuMeshlet        meshlet  = g_Meshlets[visible.y];
+    GpuMeshlet        meshlet  = g_Meshlets[visible.y];
     const uint              lodIndex = meshlet.PackedLodSection & 0xFFFFu;
     if (lodIndex >= min(geometry.LodCount, 8u) || (instance.DrawLod != 0xFFFFFFFFu && instance.DrawLod != lodIndex))
     {
@@ -61,7 +62,9 @@ ByteAddressBuffer                   g_Buffers[];
       return;
     }
 
-    const GpuGeometryLod lod            = geometry.Lods[lodIndex];
+    GpuGeometryLod lod = geometry.Lods[lodIndex];
+    if (!xiiResolveClusterLod(lod, meshlet))
+    { SetMeshOutputCounts(0u, 0u); return; }
     const uint           primitiveCount = meshlet.PackedPrimitiveVertexCount & 0xFFFFu;
     const uint           vertexCount    = meshlet.PackedPrimitiveVertexCount >> 16u;
     if (instance.PrimitiveCount != 0u)
@@ -86,13 +89,13 @@ ByteAddressBuffer                   g_Buffers[];
     uint primitiveBufferBytes;
     g_Buffers[lod.VertexBufferIndex].GetDimensions(vertexBufferBytes);
     g_Buffers[lod.MeshletTopologyBufferIndex].GetDimensions(primitiveBufferBytes);
-    remapBufferBytes = lod.MeshletPrimitiveByteOffset;
+    remapBufferBytes = lod.Padding != 0u ? primitiveBufferBytes : lod.MeshletPrimitiveByteOffset;
     if (remapBufferBytes > primitiveBufferBytes)
     {
       SetMeshOutputCounts(0u, 0u);
       return;
     }
-    primitiveBufferBytes -= remapBufferBytes;
+    if (lod.Padding == 0u) primitiveBufferBytes -= remapBufferBytes;
     const uint lastAttributeEnd = max(max(12u, NormalOffset + 12u), max(TangentOffset + 16u, TexCoordOffset + 8u));
     if (VertexStride < lastAttributeEnd || meshlet.Header.y > remapBufferBytes / 4u || vertexCount > remapBufferBytes / 4u - meshlet.Header.y ||
         meshlet.Header.z > primitiveBufferBytes || primitiveCount * 3u > primitiveBufferBytes - meshlet.Header.z)
@@ -115,9 +118,9 @@ ByteAddressBuffer                   g_Buffers[];
       const uint  sourcePrimitive  = meshlet.Header.x + primitiveIndex;
       const uint  primitiveOffset  = meshlet.Header.z + primitiveIndex * 3u;
       const uint3 primitiveIndices = uint3(
-        LoadByte(g_Buffers[lod.MeshletTopologyBufferIndex], remapBufferBytes + primitiveOffset + 0u),
-        LoadByte(g_Buffers[lod.MeshletTopologyBufferIndex], remapBufferBytes + primitiveOffset + 1u),
-        LoadByte(g_Buffers[lod.MeshletTopologyBufferIndex], remapBufferBytes + primitiveOffset + 2u));
+        LoadByte(g_Buffers[lod.MeshletTopologyBufferIndex], lod.MeshletPrimitiveByteOffset + primitiveOffset + 0u),
+        LoadByte(g_Buffers[lod.MeshletTopologyBufferIndex], lod.MeshletPrimitiveByteOffset + primitiveOffset + 1u),
+        LoadByte(g_Buffers[lod.MeshletTopologyBufferIndex], lod.MeshletPrimitiveByteOffset + primitiveOffset + 2u));
       const bool primitiveSelected = instance.PrimitiveCount == 0u ||
         (sourcePrimitive >= instance.FirstPrimitive && sourcePrimitive - instance.FirstPrimitive < instance.PrimitiveCount);
       triangles[primitiveIndex] = primitiveSelected && all(primitiveIndices < vertexCount) ? primitiveIndices : uint3(0u, 0u, 0u);

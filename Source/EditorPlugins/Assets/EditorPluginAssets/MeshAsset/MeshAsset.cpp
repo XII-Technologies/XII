@@ -11,7 +11,7 @@
 #include <ModelImporter/MeshImport.h>
 
 // clang-format off
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMeshAssetDocument, 14, xiiRTTINoAllocator)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMeshAssetDocument, 16, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 

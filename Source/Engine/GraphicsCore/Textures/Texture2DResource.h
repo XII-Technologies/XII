@@ -19,6 +19,7 @@
 #include <GraphicsFoundation/Utilities/TextureUtilities.h>
 
 class xiiImage;
+#include <Texture/Utilities/VirtualTextureData.h>
 
 using xiiTexture2DResourceHandle = xiiTypedResourceHandle<class xiiTexture2DResource>;
 
@@ -29,7 +30,6 @@ struct XII_GRAPHICSCORE_DLL xiiTexture2DResourceDescriptor
   xiiGALSamplerCreationDescription          m_SamplerDescription         = xiiGALGraphicsUtilities::GetDefaultSamplerDescription();  ///< Sampler creation description.
   xiiUInt8                                  m_uiQualityLevelsDiscardable = 0;                                                        ///< How many quality levels can be discarded and reloaded. For created textures this can currently only be 0 or 1.
   xiiUInt8                                  m_uiQualityLevelsLoadable    = 0;                                                        ///< How many additional quality levels can be loaded (typically from file).
-  bool                                      m_bStreamingRefinement       = false;                                                    ///< A resident image remains available if creation is deferred.
   xiiArrayPtr<xiiGALTextureSubResourceData> m_InitialContent;                                                                        ///< One texture subresource data per (array * faces * mipmap) (in that order) (array is outer loop, mipmap is inner loop). Can be empty to not initialize data.
 };
 
@@ -64,6 +64,8 @@ public:
     return m_Type;
   }
 
+  xiiSharedPtr<xiiVirtualTextureData> GetVirtualData() const;
+
   static void FillOutDescriptor(xiiTexture2DResourceDescriptor& ref_td, const xiiImage* pImage, xiiUInt32 uiNumMipLevels, xiiUInt32& out_uiMemoryUsed, xiiHybridArray<xiiGALTextureSubResourceData, 32>& ref_initData);
 
   xiiSharedPtr<xiiGALTexture> GetGALTexture() const
@@ -80,14 +82,13 @@ public:
 protected:
   virtual xiiResourceLoadDescription UnloadData(Unload WhatToUnload) override;
   virtual xiiResourceLoadDescription UpdateContent(xiiStreamReader* pStream) override;
-  [[nodiscard]] virtual bool         CanLoadAdditionalQualityLevel() const override;
   virtual void                       UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage) override;
 
   xiiTexture2DResource(DoUpdate ResourceUpdateThread);
 
-  mutable xiiMutex            m_TextureMutex;
-  xiiTime                     m_NextRefinementAttempt;
-  xiiSharedPtr<xiiGALTexture> m_pGALTexture;
+  mutable xiiMutex                    m_TextureMutex;
+  xiiSharedPtr<xiiVirtualTextureData> m_pVirtualData;
+  xiiSharedPtr<xiiGALTexture>         m_pGALTexture;
 
   xiiEnum<xiiGALResourceDimension> m_Type     = xiiGALResourceDimension::Undefined;
   xiiEnum<xiiGALResourceFormat>    m_Format   = xiiGALResourceFormat::Unknown;

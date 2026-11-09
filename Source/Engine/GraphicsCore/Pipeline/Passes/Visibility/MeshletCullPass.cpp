@@ -1,6 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #include <GraphicsCore/GraphicsCorePCH.h>
+#include <GraphicsFoundation/Resources/BindlessResourceTable.h>
 
 #include <GraphicsCore/Geometry/GeometryResidency.h>
 #include <GraphicsCore/Meshes/GpuInstanceData.h>
@@ -127,6 +128,8 @@ xiiResult xiiMeshletCullPass::Build(xiiRenderPipelinePassContext& context)
         commands.ResolveAndSetUnorderedAccessBufferView("g_DiagnosticMeshlets", execute.GetBuffer(data.m_DiagnosticMeshlets)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
         commands.ResolveAndSetUnorderedAccessBufferView("g_DiagnosticMeshletCount", execute.GetBuffer(data.m_DiagnosticCount)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
       }
+      xiiGALBindlessResourceTable::BindBufferSRVs(commands, "g_Buffers", xiiGALShaderType::Compute);
+      xiiGALBindlessResourceTable::BindBufferUAVs(commands, "g_VirtualTextureFeedback", xiiGALShaderType::Compute);
       commands.CommitShaderResources(xiiGALStateTransitionMode::Transition).AssertSuccess();
       commands.DispatchComputeIndirect({execute.GetBuffer(data.m_Arguments), xiiGALStateTransitionMode::None}); });
   XII_SUCCEED_OR_RETURN(context.SetOutput(m_Output, emitted.first->m_Output));

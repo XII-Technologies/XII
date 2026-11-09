@@ -7,6 +7,7 @@
 #include <GraphicsFoundation/Utilities/GraphicsUtilities.h>
 #include <Texture/Image/Formats/DdsFileFormat.h>
 #include <Texture/Image/Image.h>
+#include <Texture/Utilities/VirtualTextureData.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTexture2DResource, 1, xiiRTTIDefaultAllocator<xiiTexture2DResource>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
@@ -27,21 +28,18 @@ xiiResourceLoadDescription xiiTexture2DResource::UnloadData(Unload whatToUnload)
 {
   XII_IGNORE_UNUSED(whatToUnload);
   XII_LOCK(m_TextureMutex);
+  m_pVirtualData.Clear();
   m_pGALTexture.Clear();
   m_pSampler.Clear();
-  m_NextRefinementAttempt = xiiTime::MakeZero();
   return {xiiResourceState::Unloaded, 0, 1};
 }
 
-bool xiiTexture2DResource::CanLoadAdditionalQualityLevel() const
+xiiSharedPtr<xiiVirtualTextureData> xiiTexture2DResource::GetVirtualData() const
 {
-  const auto pDevice = xiiGALDevice::HasDefaultDevice() ? xiiGALDevice::GetDefaultDevice() : nullptr;
-  if (pDevice == nullptr || pDevice->IsStreamingMemoryPressured())
-    return false;
-
   XII_LOCK(m_TextureMutex);
-  return xiiTime::Now() >= m_NextRefinementAttempt;
+  return m_pVirtualData;
 }
+
 
 void xiiTexture2DResource::FillOutDescriptor(xiiTexture2DResourceDescriptor& ref_td, const xiiImage* pImage, xiiUInt32 uiNumMipLevels, xiiUInt32& out_uiMemoryUsed, xiiHybridArray<xiiGALTextureSubResourceData, 32>& ref_initData)
 {
@@ -138,6 +136,33 @@ xiiResourceLoadDescription xiiTexture2DResource::UpdateContent(xiiStreamReader* 
       return previous;
   }
 
+  xiiVirtualTextureData* virtualData = nullptr;
+  if (pStream->ReadBytes(&virtualData, sizeof(virtualData)) == sizeof(virtualData) && virtualData != nullptr)
+  {
+    // The conventional view is the resident last mip used by preview and native-view consumers.
+    auto                      description = virtualData->m_Description;
+    xiiDynamicArray<xiiUInt8> tile;
+    if (virtualData->ReadTile(virtualData->m_Tiles.GetCount() - 1U, tile).Failed())
+      return previous;
+    const auto* pixel         = tile.GetData() + (xiiVirtualTextureData::s_uiBorder * xiiVirtualTextureData::s_uiPhysicalSize + xiiVirtualTextureData::s_uiBorder) * 4U;
+    description.m_Size        = {1U, 1U};
+    description.m_uiMipLevels = 1U;
+    description.m_Usage       = xiiGALResourceUsage::Immutable;
+    description.m_BindFlags   = xiiGALBindFlags::ShaderResource;
+    xiiGALTextureSubResourceData subresource(xiiConstByteBlobPtr(pixel, 4U), 4U, 4U);
+    td.m_TextureDescription      = description;
+    td.m_InitialContent          = xiiMakeArrayPtr(&subresource, 1U);
+    td.m_uiQualityLevelsLoadable = 0U;
+    const auto result            = CreateResource(std::move(td));
+    if (result.m_State == xiiResourceState::Loaded)
+    {
+      XII_LOCK(m_TextureMutex);
+      m_pVirtualData = xiiSharedPtr<xiiVirtualTextureData>(virtualData, xiiFoundation::GetDefaultAllocator());
+      m_uiWidth      = virtualData->m_Description.m_Size.width;
+      m_uiHeight     = virtualData->m_Description.m_Size.height;
+    }
+    return result;
+  }
   if (td.m_TextureDescription.m_Size.width > 0)
   {
     // Definition-backed render targets have no image or streaming quality levels.
@@ -151,21 +176,15 @@ xiiResourceLoadDescription xiiTexture2DResource::UpdateContent(xiiStreamReader* 
     return previous;
 
   const xiiUInt32 uiTotalMipLevels = pImage->GetMipLevelCount();
-  const xiiUInt32 uiNumMipLevels   = bHasResidentImage ? uiTotalMipLevels : xiiMath::Min(uiTotalMipLevels, 6U);
+  const xiiUInt32 uiNumMipLevels   = uiTotalMipLevels;
   td.m_uiQualityLevelsDiscardable  = 0U;
-  td.m_uiQualityLevelsLoadable     = bIsFallback || uiNumMipLevels < uiTotalMipLevels ? 1U : 0U;
-  td.m_bStreamingRefinement        = bHasResidentImage;
+  td.m_uiQualityLevelsLoadable     = bIsFallback ? 1U : 0U;
 
   xiiTemporaryHybridArray<xiiGALTextureSubResourceData, 32> initData;
   xiiUInt32                                                 uiImageBytes = 0U;
   FillOutDescriptor(td, pImage, uiNumMipLevels, uiImageBytes, initData);
 
   const auto result = CreateResource(std::move(td));
-  if (result.m_State != xiiResourceState::Loaded && bHasResidentImage)
-  {
-    XII_LOCK(m_TextureMutex);
-    m_NextRefinementAttempt = xiiTime::Now() + xiiTime::MakeFromSeconds(1);
-  }
   return result.m_State == xiiResourceState::Loaded ? result : previous;
 }
 
@@ -173,6 +192,8 @@ void xiiTexture2DResource::UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage)
 {
   XII_LOCK(m_TextureMutex);
   out_NewMemoryUsage.m_uiMemoryCPU = sizeof(xiiTexture2DResource);
+  if (m_pVirtualData)
+    out_NewMemoryUsage.m_uiMemoryCPU += static_cast<xiiUInt32>(sizeof(xiiVirtualTextureData) + m_pVirtualData->m_Tiles.GetHeapMemoryUsage() + m_pVirtualData->m_Data.GetHeapMemoryUsage());
   out_NewMemoryUsage.m_uiMemoryGPU = m_pGALTexture ? m_pGALTexture->GetMemoryConsumption() : 0U;
 }
 
@@ -185,8 +206,7 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiTexture2DResource, xiiTexture2DResourceDesc
   auto& description = descriptor.m_TextureDescription;
   description.m_BindFlags.Add(xiiGALBindFlags::ShaderResource);
   xiiGALTextureData textureData(descriptor.m_InitialContent);
-  textureData.m_bStreamingRefinement = descriptor.m_bStreamingRefinement;
-  auto pTexture                      = pDevice->CreateTexture(description, descriptor.m_InitialContent.IsEmpty() ? nullptr : &textureData);
+  auto              pTexture = pDevice->CreateTexture(description, descriptor.m_InitialContent.IsEmpty() ? nullptr : &textureData);
   if (pTexture == nullptr)
     return {xiiResourceState::LoadedResourceMissing, 0, 0};
   auto pSampler = pDevice->CreateSampler(descriptor.m_SamplerDescription);

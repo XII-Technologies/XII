@@ -2,9 +2,13 @@
 
 #include <GraphicsCore/GraphicsCorePCH.h>
 
+#include <Core/ResourceManager/ResourceTypeLoader.h>
+#include <Foundation/IO/StreamWithStats.h>
+
 #include <Core/Graphics/Geometry.h>
 #include <Foundation/Algorithm/HashingUtils.h>
 #include <Foundation/Memory/MemoryUtils.h>
+#include <Foundation/Utilities/Compression.h>
 #include <GraphicsCore/Meshes/MeshBufferResource.h>
 #include <GraphicsFoundation/Device/Device.h>
 
@@ -45,7 +49,7 @@ XII_RESOURCE_IMPLEMENT_COMMON_CODE(xiiMeshBufferResource);
 
 namespace
 {
-  static constexpr xiiUInt32 s_uiMeshBufferResourceVersion = 1U;
+  static constexpr xiiUInt32 s_uiMeshBufferResourceVersion = 4U;
 
   static xiiUInt32 GetIndexSize(xiiEnum<xiiGALValueType> indexType)
   {
@@ -224,6 +228,11 @@ void xiiMeshBufferResourceDescriptor::Clear()
   m_MeshletPrimitiveIndices.Clear();
   m_MeshletMaterialIndices.Clear();
   m_DrawCommands.Clear();
+  m_GeometryPages.Clear();
+  m_GeometryPageData.Clear();
+  m_sGeometryPageFile.Clear();
+  m_uiGeometryFileOffset = m_uiGeometryFileHash = m_uiPageDataBytes = 0U;
+  m_uiGeometryFileVersion                                           = 0U;
 
   m_uiVertexCount  = 0U;
   m_uiIndexCount   = 0U;
@@ -480,13 +489,39 @@ xiiResult xiiMeshBufferResourceDescriptor::Serialize(xiiStreamWriter& inout_stre
   XII_SUCCEED_OR_RETURN(inout_stream.WriteArray(m_MeshletPrimitiveIndices));
   XII_SUCCEED_OR_RETURN(inout_stream.WriteArray(m_MeshletMaterialIndices));
   XII_SUCCEED_OR_RETURN(inout_stream.WriteArray(m_DrawCommands));
+  if (m_sGeometryPageFile.IsEmpty())
+  {
+    XII_SUCCEED_OR_RETURN(inout_stream.WriteArray(m_GeometryPages));
+    XII_SUCCEED_OR_RETURN(inout_stream.WriteArray(m_GeometryPageData));
+  }
+  else
+  {
+    // A loaded descriptor may be saved again by editor and export consumers.
+    auto                      pages = m_GeometryPages;
+    xiiDynamicArray<xiiUInt8> payload, decoded, encoded;
+    for (xiiUInt32 page = 0U; page < pages.GetCount(); ++page)
+    {
+      XII_SUCCEED_OR_RETURN(ReadGeometryPage(page, decoded));
+      XII_SUCCEED_OR_RETURN(xiiCompressionUtils::Compress(decoded, xiiCompressionMethod::ZStd, encoded));
+      if (encoded.GetCount() > xiiMath::MaxValue<xiiUInt32>() - payload.GetCount())
+        return XII_FAILURE;
+      pages[page].m_uiOffset     = payload.GetCount();
+      pages[page].m_uiStoredSize = encoded.GetCount();
+      payload.PushBackRange(encoded);
+    }
+    XII_SUCCEED_OR_RETURN(inout_stream.WriteArray(pages));
+    XII_SUCCEED_OR_RETURN(inout_stream.WriteArray(payload));
+  }
+  for (const auto& meshlet : m_Meshlets)
+    inout_stream << meshlet.m_Page << meshlet.m_Hierarchy << meshlet.m_uiGpuPadding[1];
 
   return XII_SUCCESS;
 }
 
-xiiResult xiiMeshBufferResourceDescriptor::Deserialize(xiiStreamReader& inout_stream)
+xiiResult xiiMeshBufferResourceDescriptor::Deserialize(xiiStreamReader& source, const xiiResourceLoadData* pSource)
 {
-  inout_stream.ReadVersion(s_uiMeshBufferResourceVersion);
+  xiiStreamReaderWithStats inout_stream(&source);
+  const auto               version = inout_stream.ReadVersion(s_uiMeshBufferResourceVersion);
 
   inout_stream >> m_Topology;
   inout_stream >> m_IndexType;
@@ -509,6 +544,69 @@ xiiResult xiiMeshBufferResourceDescriptor::Deserialize(xiiStreamReader& inout_st
   XII_SUCCEED_OR_RETURN(inout_stream.ReadArray(m_MeshletPrimitiveIndices));
   XII_SUCCEED_OR_RETURN(inout_stream.ReadArray(m_MeshletMaterialIndices));
   XII_SUCCEED_OR_RETURN(inout_stream.ReadArray(m_DrawCommands));
+  if (version >= 2U)
+  {
+    if (version != 4U)
+      return XII_FAILURE;
+    XII_SUCCEED_OR_RETURN(inout_stream.ReadArray(m_GeometryPages));
+    inout_stream >> m_uiPageDataBytes;
+    if (m_uiPageDataBytes > xiiMath::MaxValue<xiiUInt32>())
+      return XII_FAILURE;
+    if (pSource && !pSource->m_sSourceFile.IsEmpty())
+    {
+      m_sGeometryPageFile     = pSource->m_sSourceFile;
+      m_uiGeometryFileOffset  = pSource->m_uiSourceOffset + inout_stream.m_uiBytesRead;
+      m_uiGeometryFileHash    = pSource->m_uiSourceHash;
+      m_uiGeometryFileVersion = pSource->m_uiSourceVersion;
+      if (inout_stream.SkipBytes(m_uiPageDataBytes) != m_uiPageDataBytes)
+        return XII_FAILURE;
+    }
+    else
+    {
+      m_GeometryPageData.SetCountUninitialized(static_cast<xiiUInt32>(m_uiPageDataBytes));
+      if (inout_stream.ReadBytes(m_GeometryPageData.GetData(), m_uiPageDataBytes) != m_uiPageDataBytes)
+        return XII_FAILURE;
+    }
+    for (auto& meshlet : m_Meshlets)
+    {
+      inout_stream >> meshlet.m_Page >> meshlet.m_Hierarchy >> meshlet.m_uiGpuPadding[1];
+      if ((!m_GeometryPages.IsEmpty() && meshlet.m_Page.x >= m_GeometryPages.GetCount()) ||
+          !meshlet.m_Hierarchy.IsValid() || meshlet.m_Hierarchy.x < 0.0f)
+        return XII_FAILURE;
+    }
+    for (const auto& cluster : m_Meshlets)
+    {
+      if (m_GeometryPages.IsEmpty())
+        break;
+      const auto size = m_GeometryPages[cluster.m_Page.x].m_uiSize;
+      if (cluster.m_Page.y % 4U != 0U || cluster.m_Page.y > size || cluster.m_uiVertexCount * 4U > size - cluster.m_Page.y ||
+          cluster.m_Page.z > size || cluster.m_uiPrimitiveCount * 3U > size - cluster.m_Page.z ||
+          xiiUInt64(cluster.m_Page.w) * GetVertexStride() > size ||
+          cluster.m_Hierarchy.y < 1.0f || cluster.m_Hierarchy.y > static_cast<float>(m_GeometryPages.GetCount()))
+        return XII_FAILURE;
+    }
+    for (xiiUInt32 index = 0U; index < m_GeometryPages.GetCount(); ++index)
+    {
+      const auto& page = m_GeometryPages[index];
+      if (page.m_uiSize == 0U || page.m_uiSize > 128U * 1024U || page.m_uiClusterCount == 0U ||
+          page.m_uiFirstCluster > m_Meshlets.GetCount() || page.m_uiClusterCount > m_Meshlets.GetCount() - page.m_uiFirstCluster ||
+          !xiiMath::IsFinite(page.m_fGeometricError) || page.m_fGeometricError < 0.0f ||
+          page.m_bRequired != (page.m_uiParent == xiiInvalidIndex) ||
+          (page.m_uiParent != xiiInvalidIndex && (page.m_uiParent <= index || page.m_uiParent >= m_GeometryPages.GetCount())) ||
+          page.m_uiChildCount > 8U || (page.m_uiChildCount != 0U && (page.m_uiFirstChild >= index || page.m_uiChildCount > index - page.m_uiFirstChild)))
+        return XII_FAILURE;
+      for (xiiUInt32 child = 0U; child < page.m_uiChildCount; ++child)
+        if (m_GeometryPages[page.m_uiFirstChild + child].m_uiParent != index ||
+            m_GeometryPages[page.m_uiFirstChild + child].m_fGeometricError > page.m_fGeometricError)
+          return XII_FAILURE;
+      xiiUInt32 depth = 0U;
+      for (auto parent = page.m_uiParent; parent != xiiInvalidIndex; parent = m_GeometryPages[parent].m_uiParent)
+        if (parent >= m_GeometryPages.GetCount() || ++depth > 7U)
+          return XII_FAILURE;
+      if (page.m_uiOffset > m_uiPageDataBytes || (page.m_uiStoredSize == 0U ? page.m_uiSize : page.m_uiStoredSize) > m_uiPageDataBytes - page.m_uiOffset)
+        return XII_FAILURE;
+    }
+  }
 
   return XII_SUCCESS;
 }
@@ -582,11 +680,17 @@ xiiArrayPtr<const xiiUInt8> xiiMeshBufferResource::GetMeshletPrimitiveIndices() 
 
 xiiSharedPtr<xiiGALBuffer> xiiMeshBufferResource::GetVertexBuffer() const
 {
+  XII_LOCK(m_BufferMutex);
+  if (!m_pVertexBuffer && HasGeometryPages())
+    const_cast<xiiMeshBufferResource*>(this)->CreateGpuBuffer(m_pVertexBuffer, m_Descriptor.m_VertexData, GetVertexStride(), xiiGALBindFlags::VertexBuffer | xiiGALBindFlags::ShaderResource | (xiiGALDevice::GetDefaultDevice()->GetFeatures().m_RayTracing == xiiGALDeviceFeatureState::Enabled ? xiiGALBindFlags::RayTracing : xiiGALBindFlags::None), GetResourceIdOrDescription());
   return m_pVertexBuffer;
 }
 
 xiiSharedPtr<xiiGALBuffer> xiiMeshBufferResource::GetIndexBuffer() const
 {
+  XII_LOCK(m_BufferMutex);
+  if (!m_pIndexBuffer && HasGeometryPages())
+    const_cast<xiiMeshBufferResource*>(this)->CreateGpuBuffer(m_pIndexBuffer, m_Descriptor.m_IndexData, GetIndexSize(GetIndexType()), xiiGALBindFlags::IndexBuffer | xiiGALBindFlags::ShaderResource | (xiiGALDevice::GetDefaultDevice()->GetFeatures().m_RayTracing == xiiGALDeviceFeatureState::Enabled ? xiiGALBindFlags::RayTracing : xiiGALBindFlags::None), GetResourceIdOrDescription());
   return m_pIndexBuffer;
 }
 
@@ -603,6 +707,7 @@ const xiiMeshBufferResourceDescriptor& xiiMeshBufferResource::GetDescriptor() co
 xiiResourceLoadDescription xiiMeshBufferResource::UnloadData(Unload whatToUnload)
 {
   XII_IGNORE_UNUSED(whatToUnload);
+  XII_LOCK(m_BufferMutex);
 
   m_pVertexBuffer.Clear();
   m_pIndexBuffer.Clear();
@@ -631,7 +736,7 @@ xiiResourceLoadDescription xiiMeshBufferResource::UpdateContent(xiiStreamReader*
   }
 
   xiiMeshBufferResourceDescriptor descriptor;
-  if (descriptor.Deserialize(*pStream).Failed())
+  if (descriptor.Deserialize(*pStream, GetCurrentlyUpdatingLoadData()).Failed())
   {
     res.m_State = xiiResourceState::LoadedResourceMissing;
     return res;
@@ -641,9 +746,18 @@ xiiResourceLoadDescription xiiMeshBufferResource::UpdateContent(xiiStreamReader*
   return res;
 }
 
+xiiResult xiiMeshBufferResource::ReadGeometryPage(xiiUInt32 page, xiiUInt32 revision, xiiDynamicArray<xiiUInt8>& out_data) const
+{
+  XII_LOCK(m_BufferMutex);
+  if (GetLoadingState() != xiiResourceState::Loaded || GetCurrentResourceChangeCounter() != revision)
+    return XII_FAILURE;
+  return m_Descriptor.ReadGeometryPage(page, out_data);
+}
+
 void xiiMeshBufferResource::UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage)
 {
-  out_NewMemoryUsage.m_uiMemoryCPU = sizeof(xiiMeshBufferResource) + static_cast<xiiUInt32>(m_Descriptor.m_VertexStreams.GetHeapMemoryUsage() + m_Descriptor.m_VertexData.GetHeapMemoryUsage() + m_Descriptor.m_IndexData.GetHeapMemoryUsage() + m_Descriptor.m_Meshlets.GetHeapMemoryUsage() + m_Descriptor.m_MeshletVertexRemap.GetHeapMemoryUsage() + m_Descriptor.m_MeshletPrimitiveIndices.GetHeapMemoryUsage() + m_Descriptor.m_MeshletMaterialIndices.GetHeapMemoryUsage() + m_Descriptor.m_DrawCommands.GetHeapMemoryUsage());
+  XII_LOCK(m_BufferMutex);
+  out_NewMemoryUsage.m_uiMemoryCPU = sizeof(xiiMeshBufferResource) + static_cast<xiiUInt32>(m_Descriptor.m_VertexStreams.GetHeapMemoryUsage() + m_Descriptor.m_VertexData.GetHeapMemoryUsage() + m_Descriptor.m_IndexData.GetHeapMemoryUsage() + m_Descriptor.m_Meshlets.GetHeapMemoryUsage() + m_Descriptor.m_MeshletVertexRemap.GetHeapMemoryUsage() + m_Descriptor.m_MeshletPrimitiveIndices.GetHeapMemoryUsage() + m_Descriptor.m_MeshletMaterialIndices.GetHeapMemoryUsage() + m_Descriptor.m_DrawCommands.GetHeapMemoryUsage() + m_Descriptor.m_GeometryPages.GetHeapMemoryUsage() + m_Descriptor.m_GeometryPageData.GetHeapMemoryUsage());
   out_NewMemoryUsage.m_uiMemoryGPU = m_uiMemoryGPU;
 }
 
@@ -682,7 +796,7 @@ void xiiMeshBufferResource::CreateGpuBuffer(xiiSharedPtr<xiiGALBuffer>& out_pBuf
   if (out_pBuffer)
   {
     out_pBuffer->SetDebugName(sDebugName);
-    m_uiMemoryGPU += data.GetCount();
+    m_uiMemoryGPU += out_pBuffer->GetMemoryConsumption();
   }
 }
 
@@ -693,12 +807,18 @@ void xiiMeshBufferResource::CreateGpuBuffer(xiiSharedPtr<xiiGALBuffer>& out_pBuf
 
 XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiMeshBufferResource, xiiMeshBufferResourceDescriptor)
 {
+  XII_LOCK(m_BufferMutex);
   m_pVertexBuffer.Clear();
   m_pIndexBuffer.Clear();
   m_pDrawCommandBuffer.Clear();
   m_uiMemoryGPU = 0U;
 
   m_Descriptor = std::move(descriptor);
+
+  if (HasGeometryPages())
+  {
+    return {xiiResourceState::Loaded, 0U, 0U};
+  }
 
   // BLAS builds consume the canonical render vertex/index buffers directly.
   // Request device addresses only on ray-tracing-capable devices so the same

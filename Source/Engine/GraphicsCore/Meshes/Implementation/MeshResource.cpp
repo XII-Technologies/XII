@@ -180,7 +180,7 @@ xiiResourceLoadDescription xiiMeshResource::UpdateContent(xiiStreamReader* pStre
   }
 
   xiiMeshResourceDescriptor descriptor;
-  if (descriptor.Load(*pStream).Failed())
+  if (descriptor.Load(*pStream, GetCurrentlyUpdatingLoadData()).Failed())
   {
     res.m_State = xiiResourceState::LoadedResourceMissing;
     return res;
@@ -210,6 +210,7 @@ void xiiMeshResource::CreateMeshBufferFromDescriptor(xiiMeshResourceDescriptor& 
   sBufferResourceId.SetFormat("{}#MeshBuffer-{}", GetResourceID(), s_uiBufferGeneration.Increment());
 
   xiiMeshBufferResourceDescriptor bufferDescriptor = std::move(inout_descriptor.GetMeshBufferDescriptor());
+  bufferDescriptor.m_bStreamableGeometry           = !inout_descriptor.m_UsageFlags.IsSet(xiiMeshResourceUsageFlags::Skinned) && inout_descriptor.m_MorphTargets.IsEmpty();
   bufferDescriptor.m_bKeepCpuMeshData              = inout_descriptor.m_UsageFlags.IsSet(xiiMeshResourceUsageFlags::CpuReadable);
 
   m_hMeshBuffer = xiiResourceManager::GetOrCreateResource<xiiMeshBufferResource>(sBufferResourceId, std::move(bufferDescriptor), GetResourceIdOrDescription());
@@ -274,7 +275,7 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiMeshResource, xiiMeshResourceDescriptor)
 
   xiiResourceLoadDescription res;
   res.m_uiQualityLevelsDiscardable = 0U;
-  res.m_uiQualityLevelsLoadable    = m_Descriptor.m_UsageFlags.IsSet(xiiMeshResourceUsageFlags::Streaming) ? 1U : 0U;
+  res.m_uiQualityLevelsLoadable    = 0U;
   res.m_State                      = xiiResourceState::Loaded;
 
   return res;

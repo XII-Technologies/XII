@@ -62,6 +62,14 @@ struct xiiGeometryLodFeedbackReadbackPass::State : xiiRefCounted
             const auto& request = requests[i];
             if (!request.m_uiKey)
               continue;
+            if ((request.m_uiPurposeMask & 0x80000000U) != 0U)
+            {
+              if (xiiGeometryResidencyManager::ReportPageDemand(request.m_uiKey, slot->m_uiFrame, request.m_uiPriority))
+                ++stats.m_uiAcceptedRequests;
+              else
+                ++stats.m_uiStaleRequests;
+              continue;
+            }
             if (!request.m_uiPurposeMask ||
                 !xiiGeometryResidencyManager::ReportLodDemand(request.GetGeometry(), request.m_uiDesiredLod, slot->m_uiFrame, request.m_uiPriority))
             {

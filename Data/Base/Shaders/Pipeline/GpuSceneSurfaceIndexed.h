@@ -12,6 +12,7 @@ StructuredBuffer<uint4> g_VisibleMeshlets;
 StructuredBuffer<uint2> g_VisibleMeshlets;
 #endif
 ByteAddressBuffer g_Buffers[];
+#include <Shaders/Geometry/VirtualGeometry.h>
 
 #include <Shaders/Pipeline/GpuSceneSurfaceData.h>
 
@@ -35,8 +36,10 @@ GBufferVertex xiiLoadIndexedSceneSurfaceVertex(uint vertexIndex, uint visibleInd
   const uint              lodIndex = g_Meshlets[visible.y].PackedLodSection & 0xFFFFu;
   if (lodIndex >= min(geometry.LodCount, 8u))
     return xiiInvalidSceneSurfaceVertex();
-  const GpuGeometryLod lod            = geometry.Lods[lodIndex];
-  const GpuMeshlet     meshlet        = g_Meshlets[visible.y];
+  GpuGeometryLod lod            = geometry.Lods[lodIndex];
+  GpuMeshlet     meshlet        = g_Meshlets[visible.y];
+  if (!xiiResolveClusterLod(lod, meshlet))
+    return xiiInvalidSceneSurfaceVertex();
   const uint           primitiveCount = meshlet.PackedPrimitiveVertexCount & 0xFFFFu;
   const uint           vertexCount    = meshlet.PackedPrimitiveVertexCount >> 16u;
   const uint           firstIndex     = vertexIndex - vertexIndex % 3u;
@@ -44,10 +47,10 @@ GBufferVertex xiiLoadIndexedSceneSurfaceVertex(uint vertexIndex, uint visibleInd
   if (lod.MeshletTopologyBufferIndex == 0xFFFFFFFFu)
     return xiiInvalidSceneSurfaceVertex();
   g_Buffers[lod.MeshletTopologyBufferIndex].GetDimensions(primitiveBufferBytes);
-  remapBufferBytes = lod.MeshletPrimitiveByteOffset;
+  remapBufferBytes = lod.Padding != 0u ? primitiveBufferBytes : lod.MeshletPrimitiveByteOffset;
   if (remapBufferBytes > primitiveBufferBytes)
     return xiiInvalidSceneSurfaceVertex();
-  primitiveBufferBytes -= remapBufferBytes;
+  if (lod.Padding == 0u) primitiveBufferBytes -= remapBufferBytes;
 
   if (primitiveCount > 126u || vertexCount == 0u || vertexCount > 64u || firstIndex / 3u >= primitiveCount ||
       meshlet.Header.y > remapBufferBytes / 4u || vertexCount > remapBufferBytes / 4u - meshlet.Header.y ||
@@ -58,7 +61,7 @@ GBufferVertex xiiLoadIndexedSceneSurfaceVertex(uint vertexIndex, uint visibleInd
   uint3 indices;
   [unroll] for (uint i = 0u; i < 3u; ++i)
   {
-    const uint localIndex = LoadByte(g_Buffers[lod.MeshletTopologyBufferIndex], remapBufferBytes + meshlet.Header.z + firstIndex + i);
+    const uint localIndex = LoadByte(g_Buffers[lod.MeshletTopologyBufferIndex], lod.MeshletPrimitiveByteOffset + meshlet.Header.z + firstIndex + i);
     if (localIndex >= vertexCount)
       return xiiInvalidSceneSurfaceVertex();
     indices[i] = g_Buffers[lod.MeshletTopologyBufferIndex].Load((meshlet.Header.y + localIndex) * 4u);

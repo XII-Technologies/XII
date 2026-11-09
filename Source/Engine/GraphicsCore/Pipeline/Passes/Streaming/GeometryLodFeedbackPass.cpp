@@ -7,6 +7,7 @@
 #include <GraphicsCore/Pipeline/Passes/Streaming/GeometryLodFeedbackTypes.h>
 #include <GraphicsCore/Visibility/GpuVisibilityTypes.h>
 #include <GraphicsFoundation/Device/Device.h>
+#include <GraphicsFoundation/Resources/BindlessResourceTable.h>
 #include <GraphicsFoundation/Tools/MapHelper.h>
 #include <Shaders/Streaming/GeometryLodFeedbackConstants.h>
 // clang-format off
@@ -81,6 +82,8 @@ xiiResult xiiGeometryLodFeedbackPass::Build(xiiRenderPipelinePassContext& contex
     commands.ResolveAndSetShaderResourceBufferView("g_Geometry", execute.GetBuffer(data.m_Geometry)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
     commands.ResolveAndSetShaderResourceBufferView("g_Candidates", execute.GetBuffer(data.m_Candidates)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
     commands.ResolveAndSetUnorderedAccessBufferView("g_Requests", execute.GetBuffer(data.m_Requests)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
+    xiiGALBindlessResourceTable::BindBufferSRVs(commands, "g_Buffers", xiiGALShaderType::Compute);
+    xiiGALBindlessResourceTable::BindBufferUAVs(commands, "g_VirtualTextureFeedback", xiiGALShaderType::Compute);
     commands.CommitShaderResources(xiiGALStateTransitionMode::Verify).AssertSuccess(); commands.DispatchCompute({data.m_uiGroups, 1, 1}); });
   return context.SetOutput(m_Requests, emitted.first->m_Requests);
 }

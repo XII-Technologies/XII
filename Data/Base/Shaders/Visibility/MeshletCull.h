@@ -13,7 +13,9 @@ StructuredBuffer<uint>              g_MeshletWorkArguments;
 RWStructuredBuffer<uint2>           g_VisibleMeshlets;
 RWStructuredBuffer<uint>            g_VisibleMeshletCount;
 RWStructuredBuffer<uint>            g_VisibleMeshletOverflow;
+ByteAddressBuffer                   g_Buffers[];
 #include "MeshletRange.h"
+#include <Shaders/Geometry/VirtualGeometry.h>
 groupshared uint s_FirstMeshlet;
 groupshared uint s_RangeMeshletCount;
 #if defined(XII_CULL_DIAGNOSTICS)
@@ -91,7 +93,7 @@ bool CullMeshlet(uint index, uint meshletIndex, GpuSceneInstance instance, GpuVi
       if (meshlet.Header.x - instance.FirstPrimitive >= instance.PrimitiveCount)
         return false;
     }
-    else if (instance.FirstPrimitive - meshlet.Header.x >= primitives)
+    else if (instance.FirstPrimitive - meshlet.Header.x >= (meshlet.Padding.y != 0u ? meshlet.Padding.y : primitives))
       return false;
   }
   float3 c0          = float3(instance.GlobalTransform[0][0], instance.GlobalTransform[1][0], instance.GlobalTransform[2][0]);
@@ -127,6 +129,85 @@ bool CullMeshlet(uint index, uint meshletIndex, GpuSceneInstance instance, GpuVi
   RecordDecision(index, meshletIndex, 0u);
   return true;
 }
+
+groupshared uint s_PageStack[64];
+groupshared uint s_PageStackSize;
+groupshared uint s_SelectedPage;
+groupshared uint s_SelectedFirst;
+groupshared uint s_SelectedCount;
+
+void CullVirtualHierarchy(uint workGroup, uint workGroups, uint lane, uint index, GpuSceneInstance instance, GpuVisibilityView view, uint lodIndex, GpuGeometryLod lod)
+{
+  uint table = NonUniformResourceIndex(lod.VertexBufferIndex);
+  uint bytes;
+  g_Buffers[table].GetDimensions(bytes);
+  if (bytes < 272u)
+    return;
+  uint pageCount = g_Buffers[table].Load(0u);
+  if (pageCount > (bytes - 272u) / 48u)
+    return;
+  uint rootsOffset = 272u + pageCount * 48u;
+  uint rootCount   = min(g_Buffers[table].Load(4u), (bytes - rootsOffset) / 4u);
+  for (uint root = workGroup; root < rootCount; root += workGroups)
+  {
+    if (lane == 0u)
+    {
+      s_PageStackSize = 1u;
+      s_PageStack[0]  = g_Buffers[table].Load(rootsOffset + root * 4u);
+    }
+    GroupMemoryBarrierWithGroupSync();
+    while (s_PageStackSize != 0u)
+    {
+      if (lane == 0u)
+      {
+        s_SelectedPage                = 0xffffffffu;
+        uint                pageIndex = s_PageStack[--s_PageStackSize];
+        xiiGeometryPageInfo page      = xiiLoadGeometryPage(lod, pageIndex);
+        if (page.Mapping.x != 0xffffffffu && page.Mapping.z >= lod.IndexBufferIndex &&
+            page.Mapping.z - lod.IndexBufferIndex < lod.MeshletCount && xiiGeometryPageVisible(page, instance, view))
+        {
+          uint children = min((uint)page.Detail.w, 8u);
+          if (xiiGeometryPageRefines(lod, page, instance, view) && s_PageStackSize + children <= 64u)
+          {
+            for (uint child = 0u; child < children; ++child)
+              s_PageStack[s_PageStackSize++] = (uint)page.Detail.z - 1u + child;
+          }
+          else
+          {
+            s_SelectedPage  = pageIndex;
+            s_SelectedFirst = lod.MeshletMetadataOffset + page.Mapping.z - lod.IndexBufferIndex;
+            s_SelectedCount = min(page.Mapping.w, lod.MeshletCount - (page.Mapping.z - lod.IndexBufferIndex));
+            uint feedback   = g_Buffers[table].Load(16u + (lod.Padding >> 1u) * 4u);
+            xiiRecordPageDemand(feedback, page.Mapping.y);
+          }
+        }
+      }
+      GroupMemoryBarrierWithGroupSync();
+      if (s_SelectedPage != 0xffffffffu)
+      {
+        for (uint base = 0u; base < s_SelectedCount; base += 64u)
+        {
+          if (lane == 0u)
+            s_VisibleCount = 0u;
+          GroupMemoryBarrierWithGroupSync();
+          uint meshlet = s_SelectedFirst + base + lane;
+          uint rank    = 0xffffffffu;
+          if (base + lane < s_SelectedCount && CullMeshlet(index, meshlet, instance, view, lodIndex))
+            InterlockedAdd(s_VisibleCount, 1u, rank);
+          GroupMemoryBarrierWithGroupSync();
+          if (lane == 0u)
+            ReserveMeshletBatch(s_VisibleCount);
+          GroupMemoryBarrierWithGroupSync();
+          if (rank < s_Granted)
+            g_VisibleMeshlets[s_Destination + rank] = uint2(index, meshlet);
+          GroupMemoryBarrierWithGroupSync();
+        }
+      }
+      GroupMemoryBarrierWithGroupSync();
+    }
+  }
+}
+
 [numthreads(64, 1, 1)] void main(uint3 tid : SV_DispatchThreadID, uint3 group : SV_GroupID, uint lane : SV_GroupIndex) {
   uint capacity, stride, sceneCount, geometryCount, meshletCount, historyCount, viewCount;
   g_VisibleInstances.GetDimensions(capacity, stride);
@@ -157,6 +238,11 @@ bool CullMeshlet(uint index, uint meshletIndex, GpuSceneInstance instance, GpuVi
       (geometry.ResidentLodMask & (1u << history.x)) == 0u || (instance.DrawLod != 0xFFFFFFFFu && instance.DrawLod != history.x))
     return;
   GpuGeometryLod lod = geometry.Lods[history.x];
+  if (lod.Padding != 0u)
+  {
+    CullVirtualHierarchy(group.x, max(g_MeshletWorkArguments[0], 1u), lane, index, instance, view, history.x, lod);
+    return;
+  }
   if (lane == 0u)
     GetCandidateMeshletRange(instance, lod, s_FirstMeshlet, s_RangeMeshletCount);
   GroupMemoryBarrierWithGroupSync();

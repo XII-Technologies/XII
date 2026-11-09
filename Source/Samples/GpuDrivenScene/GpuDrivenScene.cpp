@@ -4,6 +4,7 @@
 
 #include <Foundation/Application/Application.h>
 #include <Foundation/Communication/Telemetry.h>
+#include <Foundation/Configuration/CVar.h>
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/IO/DirectoryWatcher.h>
 #include <Foundation/IO/FileSystem/DataDirTypeFolder.h>
@@ -38,6 +39,13 @@
 #endif
 
 xiiCommandLineOptionInt    opt_GpuDrivenMonitor("GpuDrivenScene", "-monitor", "Monitor used by the scene sample.", 0U);
+xiiCommandLineOptionInt    opt_GpuDrivenMeshDetail("GpuDrivenScene", "-mesh-detail", "Sphere segments used to demonstrate independent geometry pages.", 32, 8, 512);
+xiiCommandLineOptionString opt_GpuDrivenTexture("GpuDrivenScene", "-texture", "Compiled sampled texture asset used by scene materials.", "");
+xiiCommandLineOptionString opt_GpuDrivenMesh("GpuDrivenScene", "-mesh", "Compiled mesh asset to stream in place of generated primitives.", "");
+xiiCommandLineOptionString opt_GpuDrivenExportMesh("GpuDrivenScene", "-export-mesh", "Export the generated sphere as a compiled native mesh asset.", "");
+xiiCommandLineOptionBool   opt_GpuDrivenAuthoredMaterials("GpuDrivenScene", "-authored-materials", "Render through the authored default material shader.", false);
+xiiCommandLineOptionBool   opt_GpuDrivenMeshShaders("GpuDrivenScene", "-mesh-shaders", "Use mesh shaders when supported.", true);
+xiiCommandLineOptionBool   opt_GpuDrivenCameraTour("GpuDrivenScene", "-camera-tour", "Move between near and distant geometry to exercise page demand.", false);
 xiiCommandLineOptionInt    opt_GpuDrivenFrameCount("GpuDrivenScene", "-frames", "Quit normally after this many rendered frames (zero runs until closed).", 0U);
 xiiCommandLineOptionInt    opt_GpuDrivenGridWidth("GpuDrivenScene", "-grid-width", "Number of scene instances along the X axis.", 24, 1, 512);
 xiiCommandLineOptionInt    opt_GpuDrivenGridHeight("GpuDrivenScene", "-grid-height", "Number of scene instances along the Y axis.", 16, 1, 512);
@@ -88,6 +96,12 @@ public:
       auto*      view = m_World.GetRenderView();
       const auto size = m_pSwapChain->GetCurrentSize();
       view->SetViewport({0, 0, float(size.width), float(size.height)});
+      if (opt_GpuDrivenCameraTour.GetOptionValue(xiiCommandLineOption::LogMode::Never))
+      {
+        const float phase    = static_cast<float>(m_uiFrameIndex % 720U) / 720.0f;
+        const float distance = 4.0f + 90.0f * (1.0f - xiiMath::Cos(xiiAngle::MakeFromRadian(phase * xiiMath::Pi<float>() * 2.0f)));
+        m_Camera.LookAt(xiiVec3(25.0f - distance, -2.0f, 1.0f + distance * 0.1f), xiiVec3(25.0f, 0.0f, 0.0f), xiiVec3(0.0f, 0.0f, 1.0f));
+      }
       m_World.Update(xiiClock::GetGlobalClock()->GetTimeDiff());
       if (view->GetLastRenderResult().Failed() || view->GetRenderPipelineInstance().GetResourceAcquireResult() != xiiResourceAcquireResult::Final)
       {
@@ -101,6 +115,14 @@ public:
       {
         const auto& statistics = view->GetRenderGraph()->GetStatistics();
         xiiLog::Info("Scene resource: {} operations, {} submissions, {} barriers.", statistics.m_uiCompiledPassCount, statistics.m_uiQueueSubmissionCount, statistics.m_uiTotalBarrierCount);
+      }
+      if (m_uiFrameIndex % 60U == 0U)
+      {
+        const auto residency = xiiGeometryResidencyManager::GetStats();
+        xiiLog::Info("Residency frame {}: {} geometry pages / {} bytes, {} texture pages / {} bytes, {} requests / {} misses.",
+                     m_uiFrameIndex, residency.m_uiGeometryPages, residency.m_uiGeometryPageBytes, residency.m_uiTexturePages,
+                     residency.m_uiTexturePageBytes, residency.m_uiPageRequests, residency.m_uiPageMisses);
+        xiiLog::Info("Page scheduler: {} geometry requests, {} geometry uploads, {} queued, {} IO pending, {} geometry upload bytes remaining.", residency.m_uiGeometryPageRequests, residency.m_uiGeometryPageUploads, residency.m_uiPendingPageRequests, residency.m_uiPendingPageIO, residency.m_uiRemainingUploadBytes);
       }
       m_pSwapChain->Present();
     }
@@ -180,7 +202,7 @@ public:
     {
       xiiGALDeviceCreationDescription deviceDescription;
       deviceDescription.m_DeviceFeatures.m_ComputeShaders                = xiiGALDeviceFeatureState::Enabled;
-      deviceDescription.m_DeviceFeatures.m_MeshShaders                   = xiiGALDeviceFeatureState::Disabled;
+      deviceDescription.m_DeviceFeatures.m_MeshShaders                   = opt_GpuDrivenMeshShaders.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified) ? xiiGALDeviceFeatureState::Optional : xiiGALDeviceFeatureState::Disabled;
       deviceDescription.m_DeviceFeatures.m_BindlessResources             = xiiGALDeviceFeatureState::Enabled;
       deviceDescription.m_DeviceFeatures.m_ShaderResourceRuntimeArray    = xiiGALDeviceFeatureState::Enabled;
       deviceDescription.m_DeviceFeatures.m_TimestampQueries              = xiiGALDeviceFeatureState::Optional;
@@ -221,11 +243,21 @@ public:
 
     UpdateSwapChain();
 
-    m_Configuration                = {};
-    m_Configuration.m_uiGridWidth  = static_cast<xiiUInt32>(opt_GpuDrivenGridWidth.GetOptionValue(xiiCommandLineOption::LogMode::Always));
-    m_Configuration.m_uiGridHeight = static_cast<xiiUInt32>(opt_GpuDrivenGridHeight.GetOptionValue(xiiCommandLineOption::LogMode::Always));
+    m_Configuration                      = {};
+    m_Configuration.m_uiMeshDetail       = static_cast<xiiUInt32>(opt_GpuDrivenMeshDetail.GetOptionValue(xiiCommandLineOption::LogMode::Always));
+    m_Configuration.m_bAuthoredMaterials = opt_GpuDrivenAuthoredMaterials.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified);
+    m_Configuration.m_sMesh              = opt_GpuDrivenMesh.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified);
+    m_Configuration.m_sExportMesh        = opt_GpuDrivenExportMesh.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified);
+    m_Configuration.m_sTexture           = opt_GpuDrivenTexture.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified);
+    m_Configuration.m_uiGridWidth        = static_cast<xiiUInt32>(opt_GpuDrivenGridWidth.GetOptionValue(xiiCommandLineOption::LogMode::Always));
+    m_Configuration.m_uiGridHeight       = static_cast<xiiUInt32>(opt_GpuDrivenGridHeight.GetOptionValue(xiiCommandLineOption::LogMode::Always));
     xiiGpuDrivenSceneWorld::ConfigureSubsystems(m_Configuration).AssertSuccess();
 
+    xiiDynamicArray<xiiCVar*> overrides;
+    xiiCVar::LoadCVarsFromCommandLine(false, true, &overrides);
+    for (auto* value : overrides)
+      if (value->GetType() == xiiCVarType::Int)
+        xiiLog::Info("CVar {} = {}", value->GetName(), static_cast<xiiCVarInt*>(value)->GetValue());
     xiiStartup::StartupHighLevelSystems();
 
     m_Camera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovY, 60.0f, 0.1f, 250.0f);

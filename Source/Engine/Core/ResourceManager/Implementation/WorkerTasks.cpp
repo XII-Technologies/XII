@@ -119,7 +119,7 @@ void xiiResourceManagerWorkerUpdateContent::Execute()
   {
     m_pResourceToLoad->SetResourceDescription(m_LoaderData.m_sResourceDescription);
   }
-  m_pResourceToLoad->CallUpdateContent(m_LoaderData.m_pDataStream);
+  m_pResourceToLoad->CallUpdateContent(m_LoaderData.m_pDataStream, &m_LoaderData);
 
   if (m_pResourceToLoad->m_uiQualityLevelsLoadable > 0)
   {

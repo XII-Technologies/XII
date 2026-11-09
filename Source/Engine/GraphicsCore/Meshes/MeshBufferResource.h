@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <GraphicsCore/GraphicsCoreDLL.h>
+
 #include <Core/ResourceManager/Resource.h>
 #include <Foundation/Containers/DynamicArray.h>
 #include <Foundation/Math/BoundingBoxSphere.h>
@@ -11,6 +13,7 @@
 #include <Foundation/Math/Vec2.h>
 #include <Foundation/Math/Vec3.h>
 #include <Foundation/Math/Vec4.h>
+#include <Foundation/Threading/Mutex.h>
 #include <GraphicsCore/Declarations.h>
 #include <GraphicsFoundation/Declarations/GraphicsTypes.h>
 #include <GraphicsFoundation/Resources/Buffer.h>
@@ -137,16 +140,34 @@ struct XII_GRAPHICSCORE_DLL alignas(16) xiiMeshlet
   xiiUInt16         m_uiVertexCount          = 0U;                            ///< The number of unique vertices in this meshlet, used to identify how many unique vertices are referenced by the primitives in this meshlet for rendering and culling purposes.
   xiiUInt16         m_uiLodIndex             = 0U;                            ///< The index of the LOD this meshlet belongs to, used to identify which level of detail this meshlet is part of for LOD-based rendering and culling.
   xiiUInt16         m_uiSectionIndex         = 0U;                            ///< The index of the section this meshlet belongs to, used to identify which section of the mesh this meshlet is part of for rendering and culling purposes.
-  xiiUInt32         m_uiGpuPadding[2]        = {};                            ///< Aligns Bounds and Cone to the float4 members in the portable GPU record. Not serialized.
+  xiiUInt32         m_uiGpuPadding[2]        = {};                            ///< Prefix primitive end and hierarchy coverage count. The coverage count is serialized by the descriptor.
   xiiBoundingSphere m_Bounds                 = xiiBoundingSphere::MakeZero(); ///< The bounding sphere of this meshlet, used for frustum culling and other spatial queries during rendering.
   xiiVec3           m_vConeAxis              = xiiVec3(0.0f, 0.0f, 1.0f);     ///< The axis of the normal cone for this meshlet, used for backface culling and other orientation-based culling techniques during rendering.
   float             m_fConeCutoff            = -1.0f;                         ///< The cutoff angle for the normal cone of this meshlet, where values in the range [-1, 1] represent the cosine of the cutoff angle and are used for backface culling and other orientation-based culling techniques during rendering. A value of -1 means no normal cone culling, while a value of 0 means a 90-degree cutoff angle.
+
+  // Virtual cluster metadata. Serialized by the owning descriptor after the legacy meshlet stream.
+  xiiVec4U32 m_Page      = xiiVec4U32(xiiInvalidIndex, 0U, 0U, 0U); // page, remap bytes, primitive bytes, page vertex count
+  xiiVec4    m_Hierarchy = xiiVec4(0.0f);                           // object-space error, detail page plus one, root flag, reserved
 
   xiiResult Serialize(xiiStreamWriter& inout_stream) const;
   xiiResult Deserialize(xiiStreamReader& inout_stream);
 };
 
-static_assert(sizeof(xiiMeshlet) == 64U && offsetof(xiiMeshlet, m_Bounds) == 32U && offsetof(xiiMeshlet, m_vConeAxis) == 48U && offsetof(xiiMeshlet, m_fConeCutoff) == 60U,
+struct XII_GRAPHICSCORE_DLL xiiGeometryPage
+{
+  XII_DECLARE_POD_TYPE();
+  xiiUInt32 m_uiOffset       = 0U;
+  xiiUInt32 m_uiSize         = 0U;
+  bool      m_bRequired      = false;
+  xiiUInt32 m_uiStoredSize   = 0U;
+  xiiUInt32 m_uiFirstCluster = 0U, m_uiClusterCount = 0U;
+  xiiUInt32 m_uiParent = xiiInvalidIndex, m_uiFirstChild = xiiInvalidIndex, m_uiChildCount = 0U;
+  float     m_fGeometricError = 0.0f;
+  xiiResult Serialize(xiiStreamWriter& stream) const;
+  xiiResult Deserialize(xiiStreamReader& stream);
+};
+
+static_assert(sizeof(xiiMeshlet) == 96U && offsetof(xiiMeshlet, m_Bounds) == 32U && offsetof(xiiMeshlet, m_vConeAxis) == 48U && offsetof(xiiMeshlet, m_fConeCutoff) == 60U,
               "Meshlet records must match GpuMeshlet's structured-buffer member offsets, including the aligned float4 bounds and cone.");
 
 /// DrawMeshIndirect-compatible command payload.
@@ -282,15 +303,24 @@ public:
   void SetBounds(const xiiBoundingBoxSphere& bounds);
 
   xiiResult Serialize(xiiStreamWriter& inout_stream) const;
-  xiiResult Deserialize(xiiStreamReader& inout_stream);
+  xiiResult Deserialize(xiiStreamReader& inout_stream, const xiiResourceLoadData* pSource = nullptr);
 
 public:
-  xiiEnum<xiiGALPrimitiveTopology> m_Topology            = xiiGALPrimitiveTopology::TriangleList; ///< The primitive topology for this mesh, used to identify how the primitives in this mesh are defined and rendered (e.g., triangle list, triangle strip, line list, etc.) and may influence how the vertex and index data is organized in memory for optimal rendering performance.
-  xiiEnum<xiiGALValueType>         m_IndexType           = xiiGALValueType::UInt32;               ///< The data format of the index data for this mesh, used to identify how the index data is organized and interpreted by the renderer (e.g., 16-bit unsigned integer or 32-bit unsigned integer) and to calculate the expected index data size based on the index count and index stride for this descriptor.
-  xiiEnum<xiiGALResourceUsage>     m_ResourceUsage       = xiiGALResourceUsage::Immutable;        ///< The resource usage pattern for this mesh buffer resource, used to identify how the vertex and index data will be used and updated during rendering (e.g., immutable, dynamic, staging, etc.) and to optimize the memory allocation and access patterns for the GPU based on the expected usage of this mesh.
-  bool                             m_bKeepCpuMeshData    = false;                                 ///< Whether to keep a copy of the vertex and index data in CPU memory after uploading it to the GPU, which can be useful for CPU-side processing, collision detection, or other operations that require access to the mesh data on the CPU, but may increase memory usage. If true, a copy of the vertex and index data will be retained in CPU memory after uploading it to the GPU. If false, the vertex and index data will be released from CPU memory after uploading it to the GPU to reduce memory usage.
-  bool                             m_bAllowGpuDrivenDraw = true;                                  ///< Whether to allow GPU-driven rendering techniques such as mesh shaders or compute shader-based rendering for this mesh, which can improve rendering performance by reducing draw calls and enabling more efficient culling, but may require additional GPU resources and may not be supported on all hardware. If true, this mesh buffer resource can be used with GPU-driven rendering techniques if the hardware supports it. If false, this mesh buffer resource will not be used with GPU-driven rendering techniques and will fall back to traditional vertex and index buffer rendering.
-  bool                             m_bAllowCpuFallback   = true;                                  ///< Whether to allow CPU-based rendering fallback for this mesh, which can be useful for compatibility with older hardware or for debugging purposes, but may reduce rendering performance compared to GPU-driven rendering techniques. If true, this mesh buffer resource can be rendered using CPU-based rendering techniques if GPU-driven rendering is not available or not allowed. If false, this mesh buffer resource will not be rendered using CPU-based rendering techniques and may require GPU-driven rendering techniques to be enabled for rendering.
+  xiiEnum<xiiGALPrimitiveTopology> m_Topology  = xiiGALPrimitiveTopology::TriangleList; ///< The primitive topology for this mesh, used to identify how the primitives in this mesh are defined and rendered (e.g., triangle list, triangle strip, line list, etc.) and may influence how the vertex and index data is organized in memory for optimal rendering performance.
+  xiiEnum<xiiGALValueType>         m_IndexType = xiiGALValueType::UInt32;               ///< The data format of the index data for this mesh, used to identify how the index data is organized and interpreted by the renderer (e.g., 16-bit unsigned integer or 32-bit unsigned integer) and to calculate the expected index data size based on the index count and index stride for this descriptor.
+  [[nodiscard]] xiiResult          BuildGeometryPages();
+  [[nodiscard]] xiiResult          ReadGeometryPage(xiiUInt32 page, xiiDynamicArray<xiiUInt8>& out_data) const;
+  xiiString                        m_sGeometryPageFile;
+  xiiUInt64                        m_uiGeometryFileOffset = 0U, m_uiGeometryFileHash = 0U, m_uiPageDataBytes = 0U;
+  xiiUInt16                        m_uiGeometryFileVersion = 0U;
+  xiiDynamicArray<xiiGeometryPage> m_GeometryPages;
+  xiiDynamicArray<xiiUInt8>        m_GeometryPageData;
+  bool                             m_bStreamableGeometry = true;
+
+  xiiEnum<xiiGALResourceUsage> m_ResourceUsage       = xiiGALResourceUsage::Immutable; ///< The resource usage pattern for this mesh buffer resource, used to identify how the vertex and index data will be used and updated during rendering (e.g., immutable, dynamic, staging, etc.) and to optimize the memory allocation and access patterns for the GPU based on the expected usage of this mesh.
+  bool                         m_bKeepCpuMeshData    = false;                          ///< Whether to keep a copy of the vertex and index data in CPU memory after uploading it to the GPU, which can be useful for CPU-side processing, collision detection, or other operations that require access to the mesh data on the CPU, but may increase memory usage. If true, a copy of the vertex and index data will be retained in CPU memory after uploading it to the GPU. If false, the vertex and index data will be released from CPU memory after uploading it to the GPU to reduce memory usage.
+  bool                         m_bAllowGpuDrivenDraw = true;                           ///< Whether to allow GPU-driven rendering techniques such as mesh shaders or compute shader-based rendering for this mesh, which can improve rendering performance by reducing draw calls and enabling more efficient culling, but may require additional GPU resources and may not be supported on all hardware. If true, this mesh buffer resource can be used with GPU-driven rendering techniques if the hardware supports it. If false, this mesh buffer resource will not be used with GPU-driven rendering techniques and will fall back to traditional vertex and index buffer rendering.
+  bool                         m_bAllowCpuFallback   = true;                           ///< Whether to allow CPU-based rendering fallback for this mesh, which can be useful for compatibility with older hardware or for debugging purposes, but may reduce rendering performance compared to GPU-driven rendering techniques. If true, this mesh buffer resource can be rendered using CPU-based rendering techniques if GPU-driven rendering is not available or not allowed. If false, this mesh buffer resource will not be rendered using CPU-based rendering techniques and may require GPU-driven rendering techniques to be enabled for rendering.
 
   xiiDynamicArray<xiiMeshVertexStream> m_VertexStreams; ///< The vertex stream layout for this mesh, used to identify the semantic meaning, data format, byte offset, and stride for each vertex stream in the vertex data, which is essential for correctly interpreting the vertex data and for configuring the vertex input layout for rendering this mesh.
   xiiDynamicArray<xiiUInt8>            m_VertexData;    ///< The raw vertex data for this mesh, formatted according to the vertex stream layout specified in m_VertexStreams. This data is typically tightly packed based on the vertex stream layout, with each vertex's data organized according to the specified offsets and strides for each vertex stream. This vertex data will be uploaded to the GPU for rendering this mesh, and can also be retained in CPU memory if m_bKeepCpuMeshData is true for CPU-side processing or other operations that require access to the mesh data on the CPU.
@@ -324,6 +354,7 @@ public:
 
   /// Returns the mesh buffer resource descriptor for this mesh buffer resource, used to identify the properties and data of this mesh buffer resource for rendering and other operations. The mesh buffer resource descriptor contains information about the vertex stream layout, vertex and index data, meshlet data, and other properties of this mesh buffer resource that are essential for correctly interpreting the mesh data and for configuring the rendering pipeline for this mesh.
   const xiiMeshBufferResourceDescriptor& GetDescriptor() const;
+  [[nodiscard]] xiiResult                ReadGeometryPage(xiiUInt32 page, xiiUInt32 revision, xiiDynamicArray<xiiUInt8>& out_data) const;
 
   /// Returns the bounding box sphere for this mesh buffer resource, used to identify the spatial bounds of this mesh for frustum culling, collision detection, and other spatial queries during rendering. The bounding box sphere is typically calculated based on the vertex positions in the geometry data used to create this mesh buffer resource, and can be used for efficient culling and intersection tests during rendering.
   const xiiBoundingBoxSphere& GetBounds() const;
@@ -362,6 +393,7 @@ public:
   xiiArrayPtr<const xiiUInt8> GetMeshletPrimitiveIndices() const;
 
   /// Returns the GPU vertex buffer for this mesh buffer resource, used to identify the GPU resource that contains the vertex data for this mesh and to bind it for rendering. The vertex buffer is typically created from the vertex data in the mesh buffer resource descriptor and uploaded to the GPU for efficient rendering of this mesh.
+  bool                       HasGeometryPages() const { return m_Descriptor.m_bStreamableGeometry && !m_Descriptor.m_GeometryPages.IsEmpty(); }
   xiiSharedPtr<xiiGALBuffer> GetVertexBuffer() const;
 
   /// Returns the GPU index buffer for this mesh buffer resource, used to identify the GPU resource that contains the index data for this mesh and to bind it for rendering. The index buffer is typically created from the index data in the mesh buffer resource descriptor and uploaded to the GPU for efficient rendering of this mesh.
@@ -378,11 +410,12 @@ private:
   void CreateGpuBuffer(xiiSharedPtr<xiiGALBuffer>& out_pBuffer, xiiArrayPtr<const xiiUInt8> pData, xiiUInt32 uiStride, xiiBitflags<xiiGALBindFlags> bindFlags, xiiStringView sDebugName);
   void CreateGpuBuffer(xiiSharedPtr<xiiGALBuffer>& out_pBuffer, xiiArrayPtr<const xiiMeshDrawCommand> pData, xiiUInt32 uiStride, xiiBitflags<xiiGALBindFlags> bindFlags, xiiStringView sDebugName);
 
+  mutable xiiMutex                m_BufferMutex;
   xiiMeshBufferResourceDescriptor m_Descriptor; ///< The mesh buffer resource descriptor for this mesh buffer resource, used to identify the properties and data of this mesh buffer resource for rendering and other operations. The mesh buffer resource descriptor contains information about the vertex stream layout, vertex and index data, meshlet data, and other properties of this mesh buffer resource that are essential for correctly interpreting the mesh data and for configuring the rendering pipeline for this mesh.
 
-  xiiSharedPtr<xiiGALBuffer> m_pVertexBuffer;      ///< The GPU vertex buffer for this mesh buffer resource, used to identify the GPU resource that contains the vertex data for this mesh and to bind it for rendering. The vertex buffer is typically created from the vertex data in the mesh buffer resource descriptor and uploaded to the GPU for efficient rendering of this mesh.
-  xiiSharedPtr<xiiGALBuffer> m_pIndexBuffer;       ///< The GPU index buffer for this mesh buffer resource, used to identify the GPU resource that contains the index data for this mesh and to bind it for rendering. The index buffer is typically created from the index data in the mesh buffer resource descriptor and uploaded to the GPU for efficient rendering of this mesh.
-  xiiSharedPtr<xiiGALBuffer> m_pDrawCommandBuffer; ///< The GPU draw command buffer for this mesh buffer resource, used to identify the GPU resource that contains the draw command data for this mesh and to bind it for rendering with GPU-driven techniques such as mesh shaders or compute shader-based rendering. The draw command buffer is typically created from the draw command data in the mesh buffer resource descriptor and uploaded to the GPU for efficient rendering of this mesh with GPU-driven techniques.
+  mutable xiiSharedPtr<xiiGALBuffer> m_pVertexBuffer;      ///< The GPU vertex buffer for this mesh buffer resource, used to identify the GPU resource that contains the vertex data for this mesh and to bind it for rendering. The vertex buffer is typically created from the vertex data in the mesh buffer resource descriptor and uploaded to the GPU for efficient rendering of this mesh.
+  mutable xiiSharedPtr<xiiGALBuffer> m_pIndexBuffer;       ///< The GPU index buffer for this mesh buffer resource, used to identify the GPU resource that contains the index data for this mesh and to bind it for rendering. The index buffer is typically created from the index data in the mesh buffer resource descriptor and uploaded to the GPU for efficient rendering of this mesh.
+  xiiSharedPtr<xiiGALBuffer>         m_pDrawCommandBuffer; ///< The GPU draw command buffer for this mesh buffer resource, used to identify the GPU resource that contains the draw command data for this mesh and to bind it for rendering with GPU-driven techniques such as mesh shaders or compute shader-based rendering. The draw command buffer is typically created from the draw command data in the mesh buffer resource descriptor and uploaded to the GPU for efficient rendering of this mesh with GPU-driven techniques.
 
   xiiUInt64 m_uiMemoryGPU = 0U; ///< Sum of buffer payload sizes owned by this resource.
 };

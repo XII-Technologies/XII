@@ -8,7 +8,7 @@
 #include <Foundation/IO/FileSystem/DeferredFileWriter.h>
 
 // clang-format off
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTextureAssetDocument, 10, xiiRTTINoAllocator)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTextureAssetDocument, 11, xiiRTTINoAllocator)
 {
   XII_BEGIN_PROPERTIES
   {

@@ -28,16 +28,17 @@ struct xiiRayTracingResources::GeometrySlot
   xiiSharedPtr<xiiGALBottomLevelAS> m_pBottomLevelAS;
   xiiGALBindlessResourceHandle      m_hVertexBufferSRV;
   xiiGALBindlessResourceHandle      m_hIndexBufferSRV;
-  xiiUInt64                         m_uiVertexBufferOffset = 0U;
-  xiiUInt64                         m_uiVertexStride       = 0U;
-  xiiUInt32                         m_uiNormalStride       = 0U;
-  xiiUInt32                         m_uiNormalOffset       = xiiInvalidIndex;
-  xiiUInt32                         m_uiTangentStride      = 0U;
-  xiiUInt32                         m_uiTangentOffset      = xiiInvalidIndex;
-  xiiUInt32                         m_uiTexCoordStride     = 0U;
-  xiiUInt32                         m_uiTexCoordOffset     = xiiInvalidIndex;
-  xiiUInt32                         m_uiIndexStride        = 0U;
-  xiiUInt32                         m_uiPrimitiveCount     = 0U;
+  xiiUInt64                         m_uiVertexBufferOffset     = 0U;
+  xiiUInt64                         m_uiVertexStride           = 0U;
+  xiiUInt32                         m_uiNormalStride           = 0U;
+  xiiUInt32                         m_uiNormalOffset           = xiiInvalidIndex;
+  xiiUInt32                         m_uiTangentStride          = 0U;
+  xiiUInt32                         m_uiTangentOffset          = xiiInvalidIndex;
+  xiiUInt32                         m_uiTexCoordStride         = 0U;
+  xiiUInt32                         m_uiTexCoordOffset         = xiiInvalidIndex;
+  xiiUInt32                         m_uiIndexStride            = 0U;
+  xiiUInt32                         m_uiPrimitiveCount         = 0U;
+  xiiUInt32                         m_uiResidentFirstPrimitive = 0U;
   xiiRayTracingGeometryId           m_Id;
   xiiUInt32                         m_uiReferences      = 0;
   xiiUInt32                         m_uiResourceVersion = 0;
@@ -556,8 +557,64 @@ bool xiiRayTracingResources::PrepareGeometry(xiiUInt32 uiGeometryIndex)
   if (pPositionStream == nullptr || pPositionStream->m_Format != xiiMeshVertexStreamFormat::Float3 || pPositionStream->m_uiStride == 0U)
     return false;
 
-  xiiSharedPtr<xiiGALBuffer> pVertexBuffer = mesh->GetVertexBuffer();
-  xiiSharedPtr<xiiGALBuffer> pIndexBuffer  = mesh->GetIndexBuffer();
+  xiiSharedPtr<xiiGALBuffer> pVertexBuffer, pIndexBuffer;
+  xiiUInt32                  residentVertexCount    = mesh->GetVertexCount();
+  xiiUInt32                  residentPrimitiveCount = 0U;
+  xiiEnum<xiiGALValueType>   residentIndexType      = mesh->GetIndexType();
+  slot.m_uiResidentFirstPrimitive                   = slot.m_Description.m_uiFirstPrimitive;
+  if (mesh->HasGeometryPages())
+  {
+    // Hardware ray tracing uses the guaranteed coarse clusters. Its BLAS and hit
+    // attributes never acquire the complete canonical buffers of a virtual mesh.
+    const auto&                        descriptor = mesh->GetDescriptor();
+    xiiDynamicArray<xiiUInt8>          vertices;
+    xiiDynamicArray<xiiUInt32>         indices;
+    xiiHashTable<xiiUInt32, xiiUInt32> remap;
+    const auto                         first     = slot.m_Description.m_uiFirstPrimitive;
+    const auto                         requested = slot.m_Description.m_uiPrimitiveCount == 0U ? mesh->GetPrimitiveCount() - xiiMath::Min(first, mesh->GetPrimitiveCount()) : slot.m_Description.m_uiPrimitiveCount;
+    for (const auto& cluster : descriptor.m_Meshlets)
+    {
+      if (cluster.m_Hierarchy.z == 0.0f || cluster.m_uiFirstPrimitive < first ||
+          cluster.m_uiFirstPrimitive - first >= requested)
+        continue;
+      for (xiiUInt32 p = 0U; p < cluster.m_uiPrimitiveCount * 3U; ++p)
+      {
+        const auto local  = descriptor.m_MeshletPrimitiveIndices[cluster.m_uiPrimitiveIndexOffset + p];
+        const auto source = descriptor.m_MeshletVertexRemap[cluster.m_uiVertexRemapOffset + local];
+        xiiUInt32  destination;
+        if (!remap.TryGetValue(source, destination))
+        {
+          destination = remap.GetCount();
+          remap.Insert(source, destination);
+          vertices.PushBackRange(descriptor.m_VertexData.GetArrayPtr().GetSubArray(source * mesh->GetVertexStride(), mesh->GetVertexStride()));
+        }
+        indices.PushBack(destination);
+      }
+    }
+    if (indices.IsEmpty())
+      return false;
+    residentVertexCount                    = remap.GetCount();
+    residentPrimitiveCount                 = indices.GetCount() / 3U;
+    residentIndexType                      = xiiGALValueType::UInt32;
+    slot.m_uiResidentFirstPrimitive        = 0U;
+    auto                            device = xiiGALDevice::GetDefaultDevice();
+    xiiGALBufferCreationDescription description;
+    description.m_uiSize    = vertices.GetCount();
+    description.m_Usage     = xiiGALResourceUsage::Immutable;
+    description.m_Mode      = xiiGALBufferMode::Raw;
+    description.m_BindFlags = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::RayTracing | xiiGALBindFlags::VertexBuffer;
+    xiiGALBufferData vertexData(vertices.GetData(), vertices.GetCount());
+    pVertexBuffer           = device->CreateBuffer(description, &vertexData);
+    description.m_uiSize    = indices.GetCount() * sizeof(xiiUInt32);
+    description.m_BindFlags = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::RayTracing | xiiGALBindFlags::IndexBuffer;
+    xiiGALBufferData indexData(indices.GetData(), description.m_uiSize);
+    pIndexBuffer = device->CreateBuffer(description, &indexData);
+  }
+  else
+  {
+    pVertexBuffer = mesh->GetVertexBuffer();
+    pIndexBuffer  = mesh->GetIndexBuffer();
+  }
   if (pVertexBuffer == nullptr || (mesh->GetIndexCount() > 0U && pIndexBuffer == nullptr))
     return false;
 
@@ -583,19 +640,20 @@ bool xiiRayTracingResources::PrepareGeometry(xiiUInt32 uiGeometryIndex)
   blasDescription.m_BuildASFlags          = xiiGALRayTracingBuildASFlags::PreferFastTrace;
   xiiGALBLASTriangleDescription& triangle = blasDescription.m_Triangles.ExpandAndGetRef();
   triangle.m_sGeometryName                = "Mesh";
-  triangle.m_uiMaxVertexCount             = mesh->GetVertexCount();
+  triangle.m_uiMaxVertexCount             = residentVertexCount;
   triangle.m_VertexValueType              = xiiGALValueType::Float32;
   triangle.m_uiVertexComponentCount       = 3U;
   if (slot.m_Description.m_uiFirstPrimitive >= mesh->GetPrimitiveCount())
     return false;
-  const auto available = mesh->GetPrimitiveCount() - slot.m_Description.m_uiFirstPrimitive;
-  const auto count     = slot.m_Description.m_uiPrimitiveCount == 0 ? available : slot.m_Description.m_uiPrimitiveCount;
-  if (count > available)
+  const auto available   = mesh->GetPrimitiveCount() - slot.m_Description.m_uiFirstPrimitive;
+  const auto sourceCount = slot.m_Description.m_uiPrimitiveCount == 0 ? available : slot.m_Description.m_uiPrimitiveCount;
+  const auto count       = mesh->HasGeometryPages() ? residentPrimitiveCount : sourceCount;
+  if (sourceCount > available)
     return false;
   triangle.m_uiMaxPrimitiveCount = count;
   triangle.m_IndexType           = xiiGALValueType::Undefined;
   if (mesh->GetIndexCount() > 0U)
-    triangle.m_IndexType = mesh->GetIndexType();
+    triangle.m_IndexType = residentIndexType;
 
   xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
   if (pDevice == nullptr)
@@ -650,7 +708,7 @@ bool xiiRayTracingResources::PrepareGeometry(xiiUInt32 uiGeometryIndex)
   slot.m_uiTangentOffset      = pTangentStream != nullptr ? pTangentStream->m_uiOffset : xiiInvalidIndex;
   slot.m_uiTexCoordStride     = pTexCoordStream != nullptr ? pTexCoordStream->m_uiStride : 0U;
   slot.m_uiTexCoordOffset     = pTexCoordStream != nullptr ? pTexCoordStream->m_uiOffset : xiiInvalidIndex;
-  slot.m_uiIndexStride        = slot.m_pIndexBuffer == nullptr ? 0U : (mesh->GetIndexType() == xiiGALValueType::UInt32 ? 4U : 2U);
+  slot.m_uiIndexStride        = slot.m_pIndexBuffer == nullptr ? 0U : (residentIndexType == xiiGALValueType::UInt32 ? 4U : 2U);
   slot.m_uiPrimitiveCount     = count;
   slot.m_bBLASDirty           = true;
   return true;
@@ -852,10 +910,10 @@ xiiRayTracingResources::BuildHandles xiiRayTracingResources::AddBuildPass(xiiRen
     build.m_pScratchBuffer       = geometry.m_pScratchBuffer;
     build.m_uiVertexBufferOffset = geometry.m_uiVertexBufferOffset;
     if (geometry.m_pIndexBuffer == nullptr)
-      build.m_uiVertexBufferOffset += xiiUInt64(geometry.m_Description.m_uiFirstPrimitive) * 3U * geometry.m_uiVertexStride;
+      build.m_uiVertexBufferOffset += xiiUInt64(geometry.m_uiResidentFirstPrimitive) * 3U * geometry.m_uiVertexStride;
     build.m_uiVertexStride      = geometry.m_uiVertexStride;
     build.m_uiPrimitiveCount    = geometry.m_uiPrimitiveCount;
-    build.m_uiIndexBufferOffset = xiiUInt64(geometry.m_Description.m_uiFirstPrimitive) * 3U * geometry.m_uiIndexStride;
+    build.m_uiIndexBufferOffset = xiiUInt64(geometry.m_uiResidentFirstPrimitive) * 3U * geometry.m_uiIndexStride;
   }
 
   for (const auto& instance : inputs)
@@ -924,10 +982,10 @@ xiiRayTracingResources::BuildHandles xiiRayTracingResources::AddBuildPass(xiiRen
         build.m_hVertexBuffer        = deformed->m_Handle;
         build.m_pIndexBuffer         = geometry.m_pIndexBuffer;
         build.m_pScratchBuffer       = dynamic->m_Scratch;
-        build.m_uiVertexBufferOffset = geometry.m_uiVertexBufferOffset + (geometry.m_pIndexBuffer ? 0 : xiiUInt64(geometry.m_Description.m_uiFirstPrimitive) * 3 * geometry.m_uiVertexStride);
+        build.m_uiVertexBufferOffset = geometry.m_uiVertexBufferOffset + (geometry.m_pIndexBuffer ? 0 : xiiUInt64(geometry.m_uiResidentFirstPrimitive) * 3 * geometry.m_uiVertexStride);
         build.m_uiVertexStride       = geometry.m_uiVertexStride;
         build.m_uiPrimitiveCount     = geometry.m_uiPrimitiveCount;
-        build.m_uiIndexBufferOffset  = xiiUInt64(geometry.m_Description.m_uiFirstPrimitive) * 3 * geometry.m_uiIndexStride;
+        build.m_uiIndexBufferOffset  = xiiUInt64(geometry.m_uiResidentFirstPrimitive) * 3 * geometry.m_uiIndexStride;
         build.m_Dynamic              = dynamic;
         build.m_DeformationRevision  = deformed->m_Revision;
         build.m_Update               = dynamic->m_ReadyRevision != 0;
@@ -968,7 +1026,7 @@ xiiRayTracingResources::BuildHandles xiiRayTracingResources::AddBuildPass(xiiRen
     xiiRayTracingGeometryData& gpuGeometry = geometryData.ExpandAndGetRef();
     gpuGeometry.BufferIndices              = xiiVec4U32(geometry.m_hVertexBufferSRV.m_uiIndex, geometry.m_hIndexBufferSRV.m_uiIndex, geometry.m_uiIndexStride, geometry.m_uiNormalStride);
     gpuGeometry.VertexLayout               = xiiVec4U32(static_cast<xiiUInt32>(geometry.m_uiVertexStride), static_cast<xiiUInt32>(geometry.m_uiVertexBufferOffset), geometry.m_uiNormalOffset, geometry.m_uiTexCoordOffset);
-    gpuGeometry.VertexAttributes           = xiiVec4U32(geometry.m_uiTangentOffset, geometry.m_uiTangentStride, geometry.m_uiTexCoordStride, geometry.m_Description.m_uiFirstPrimitive);
+    gpuGeometry.VertexAttributes           = xiiVec4U32(geometry.m_uiTangentOffset, geometry.m_uiTangentStride, geometry.m_uiTexCoordStride, geometry.m_uiResidentFirstPrimitive);
     gpuGeometry.ObjectToWorld0             = instance.m_Transform.GetRow(0);
     gpuGeometry.ObjectToWorld1             = instance.m_Transform.GetRow(1);
     gpuGeometry.ObjectToWorld2             = instance.m_Transform.GetRow(2);

@@ -6,6 +6,7 @@
 #include <Foundation/Configuration/Singleton.h>
 #include <Foundation/IO/FileSystem/DeferredFileWriter.h>
 #include <Foundation/IO/FileSystem/FileReader.h>
+#include <Foundation/IO/MemoryStream.h>
 #include <Foundation/Interfaces/RemoteToolingInterface.h>
 #include <Foundation/Profiling/Profiling.h>
 #include <Foundation/Types/UniquePtr.h>
@@ -235,6 +236,15 @@ xiiResult xiiGALShaderCompiler::CompileShaderPermutationForPlatforms(xiiStringVi
   xiiGALShaderTextSectionizer sections;
   xiiGALShaderSections::GetShaderSections(sFileContent, sections);
 
+  m_ShaderData.m_MaterialTextures.Clear();
+  xiiRawMemoryStreamReader                                    materialSource(sFileContent.GetData(), sFileContent.GetElementCount());
+  xiiHybridArray<xiiGALShaderParser::ParameterDefinition, 16> parameters;
+  xiiHybridArray<xiiGALShaderParser::EnumDefinition, 4>       enums;
+  xiiGALShaderParser::ParseMaterialParameterSection(materialSource, parameters, enums);
+  for (const auto& parameter : parameters)
+    if (parameter.m_sType == "Texture2D")
+      m_ShaderData.m_MaterialTextures.PushBack(parameter.m_sName);
+
   xiiUInt32 uiFirstLine = 0;
   sTemp                 = sections.GetSectionContent(xiiGALShaderSections::Platforms, uiFirstLine);
   sTemp.ToUpper();
@@ -290,12 +300,16 @@ xiiResult xiiGALShaderCompiler::CompileShaderPermutationForPlatforms(xiiStringVi
 
       // Source declarations are shared; backend reflection determines which
       // stages actually use the buffer. Empty sections create no resource.
-      if (!trimmedConstants.IsEmpty())
+      if (!trimmedConstants.IsEmpty() || !m_ShaderData.m_MaterialTextures.IsEmpty())
       {
         sTemp.Append("#include <Shaders/Common/ShaderResourceMacros.h>\n");
         sTemp.Append("DECLARE_CONSTANT_BUFFER_AUTO(xiiMaterialConstants)\n{\n");
         sTemp.AppendFormat("#line {0}\n{1}\n", uiFirstConstantsLine, sMaterialConstants);
+        for (const auto& name : m_ShaderData.m_MaterialTextures)
+          sTemp.AppendFormat("uint _xiiTexture_{0};\n", name);
         sTemp.Append("};\n");
+        if (!m_ShaderData.m_MaterialTextures.IsEmpty())
+          sTemp.Append("#define XII_NAMED_TEXTURES\n#include <Shaders/Materials/NamedTexture.h>\n");
       }
 
       // prepend common shader section if there is any
@@ -505,6 +519,36 @@ xiiResult xiiGALShaderCompiler::RunShaderCompiler(xiiStringView sFile, xiiString
       }
       else
       {
+        if (!m_ShaderData.m_MaterialTextures.IsEmpty())
+        {
+          xiiDynamicArray<xiiGALShaderResourceDefinition> resources;
+          xiiGALShaderParser::ParseShaderResources(sProcessedSource, resources);
+          struct Replacement
+          {
+            xiiUInt32 m_uiStart, m_uiEnd;
+            xiiString m_Text;
+          };
+          xiiDynamicArray<Replacement> replacements;
+          for (xiiUInt32 index = resources.GetCount(); index > 0U; --index)
+          {
+            const auto& resource = resources[index - 1U];
+            const auto  name     = resource.m_ResourceDescription.m_sName.GetString();
+            if (resource.m_ResourceDescription.m_TextureType != xiiGALShaderTextureType::Texture2D ||
+                resource.m_ResourceDescription.m_uiArraySize != 1U || !m_ShaderData.m_MaterialTextures.Contains(name))
+              continue;
+            xiiStringBuilder replacement;
+            replacement.SetFormat("\n#define {0} xiiMakeMaterialTexture(_xiiTexture_{0})\n", name);
+            const auto* start = resource.m_sDeclarationAndRegister.GetStartPointer();
+            const auto* end   = resource.m_sDeclarationAndRegister.GetEndPointer();
+            while (end < sProcessedSource.GetData() + sProcessedSource.GetElementCount() && *end != ';')
+              ++end;
+            if (end == sProcessedSource.GetData() + sProcessedSource.GetElementCount())
+              return XII_FAILURE;
+            replacements.PushBack({static_cast<xiiUInt32>(start - sProcessedSource.GetData()), static_cast<xiiUInt32>(end + 1U - sProcessedSource.GetData()), replacement});
+          }
+          for (const auto& replacement : replacements)
+            sProcessedSource.ReplaceSubString(sProcessedSource.GetData() + replacement.m_uiStart, sProcessedSource.GetData() + replacement.m_uiEnd, replacement.m_Text);
+        }
         spd.m_StageData[it.Key()].m_sShaderSource = sProcessedSource;
       }
     }

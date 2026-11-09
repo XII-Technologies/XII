@@ -46,7 +46,7 @@ void main(uint3 tid : SV_DispatchThreadID)
       ((geometry.Flags & TrackLodDemand) == 0u || (instance.DrawLod != 0xFFFFFFFFu && instance.DrawLod != desired))) return;
   // Complete 24-bit slot and 8-bit generation identity. The invalid slot was rejected above.
   uint key = ((geometry.Generation << 24u) | instance.GeometryIndex) + 1u;
-  uint capacity = entries - 1u, base = HashKey(key) & (capacity - 1u), ignored;
+  uint capacity = max(1u, (entries - 1u) / 2u), base = HashKey(key) & (capacity - 1u), ignored;
   InterlockedAdd(g_Requests[0].Key, 1u, ignored);
   // Bound worst-case GPU work. Collisions/full tables are reported explicitly, never silently complete.
   for (uint probe = 0u; probe < min(capacity, 32u); ++probe)

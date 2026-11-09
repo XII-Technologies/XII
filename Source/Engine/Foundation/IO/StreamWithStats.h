@@ -9,24 +9,11 @@ class XII_FOUNDATION_DLL xiiStreamReaderWithStats : public xiiStreamReader
 {
 public:
   xiiStreamReaderWithStats() = default;
-  xiiStreamReaderWithStats(xiiStreamReader* pStream) :
-    m_pStream(pStream)
-  {
-  }
+  xiiStreamReaderWithStats(xiiStreamReader* pStream);
+  ~xiiStreamReaderWithStats() override;
 
-  virtual xiiUInt64 ReadBytes(void* pReadBuffer, xiiUInt64 uiBytesToRead) override
-  {
-    const xiiUInt64 uiRead = m_pStream->ReadBytes(pReadBuffer, uiBytesToRead);
-    m_uiBytesRead += uiRead;
-    return uiRead;
-  }
-
-  xiiUInt64 SkipBytes(xiiUInt64 uiBytesToSkip) override
-  {
-    const xiiUInt64 uiSkipped = m_pStream->SkipBytes(uiBytesToSkip);
-    m_uiBytesSkipped += uiSkipped;
-    return uiSkipped;
-  }
+  xiiUInt64 ReadBytes(void* pReadBuffer, xiiUInt64 uiBytesToRead) override;
+  xiiUInt64 SkipBytes(xiiUInt64 uiBytesToSkip) override;
 
   /// the stream to forward all requests to
   xiiStreamReader* m_pStream = nullptr;

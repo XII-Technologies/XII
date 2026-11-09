@@ -5,6 +5,7 @@
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Containers/HashTable.h>
 #include <Foundation/Threading/Mutex.h>
+#include <GraphicsCore/Geometry/GeometryResidency.h>
 #include <GraphicsCore/Material/MaterialManager.h>
 #include <GraphicsCore/Material/MaterialResource.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
@@ -107,6 +108,14 @@ namespace
     if (!texture.IsValid())
       return xiiInvalidIndex;
 
+    if constexpr (std::is_same_v<ResourceType, xiiTexture2DResource>)
+    {
+      if (auto pages = texture->GetVirtualData())
+      {
+        out_uiSamplerIndex = ResolveBindlessSampler(samplers, texture->GetGALSampler(), uiFrameIndex);
+        return xiiGeometryResidencyManager::ResolveVirtualTexture(std::move(pages), uiFrameIndex);
+      }
+    }
     const xiiSharedPtr<xiiGALTexture> pTexture = texture->GetGALTexture();
     if (pTexture == nullptr)
       return xiiInvalidIndex;
