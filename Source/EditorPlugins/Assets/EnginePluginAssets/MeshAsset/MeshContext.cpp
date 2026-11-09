@@ -6,6 +6,7 @@
 #include <EnginePluginAssets/MeshAsset/MeshView.h>
 
 #include <GraphicsCore/Meshes/MeshComponent.h>
+#include <GraphicsCore/Streaming/GpuResidencyManager.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMeshContext, 1, xiiRTTIDefaultAllocator<xiiMeshContext>)
@@ -124,7 +125,10 @@ bool xiiMeshContext::UpdateThumbnailViewContext(xiiEngineProcessViewContext* pTh
   xiiBoundingBoxSphere bounds = GetWorldBounds(m_pWorld);
 
   xiiMeshViewContext* pMeshViewContext = static_cast<xiiMeshViewContext*>(pThumbnailViewContext);
-  return pMeshViewContext->UpdateThumbnailCamera(bounds);
+  const bool          cameraStable     = pMeshViewContext->UpdateThumbnailCamera(bounds);
+  // Large compiled meshes can need several frames of root IO before their first
+  // draw. A successful clear/render pass alone does not establish mesh readiness.
+  return cameraStable && xiiGpuResidencyManager::IsMeshGeometryReady(m_hMesh);
 }
 
 

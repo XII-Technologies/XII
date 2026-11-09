@@ -387,10 +387,19 @@ xiiResult xiiMeshResourceDescriptor::BuildMeshlets(xiiUInt32 uiMaxVertices, xiiU
       m_LODs[0].m_Sections[0]        = m_Sections[0];
       m_UsageFlags.AddOrRemove(xiiMeshResourceUsageFlags::MeshShaderReady, count > 0);
     }
+    if (buffer->HasGeometryPages())
+    {
+      if (m_LODs.GetCount() > 1U)
+        return XII_FAILURE;
+      m_LODs.Clear();
+    }
     return XII_SUCCESS;
   }
 
   m_MeshBufferDescriptor.m_bStreamableGeometry = !m_UsageFlags.IsSet(xiiMeshResourceUsageFlags::Skinned) && m_MorphTargets.IsEmpty();
+  for (const auto& stream : m_MeshBufferDescriptor.m_VertexStreams)
+    if (stream.m_Semantic == xiiMeshVertexSemantic::BoneIndices0 || stream.m_Semantic == xiiMeshVertexSemantic::BoneWeights0)
+      m_MeshBufferDescriptor.m_bStreamableGeometry = false;
   m_UsageFlags.Remove(xiiMeshResourceUsageFlags::MeshShaderReady);
   for (auto& section : m_Sections)
   {
@@ -417,6 +426,41 @@ xiiResult xiiMeshResourceDescriptor::BuildMeshlets(xiiUInt32 uiMaxVertices, xiiU
 
   xiiDynamicArray<xiiMeshletBuildRange> ranges;
   ranges.Reserve(m_Sections.GetCount());
+  if (m_MeshBufferDescriptor.m_bStreamableGeometry && m_MeshBufferDescriptor.m_ResourceUsage == xiiGALResourceUsage::Immutable)
+  {
+    if (m_LODs.GetCount() > 1U)
+    {
+      xiiLog::Error("Immutable static meshes require a single source topology for their geometry hierarchy.");
+      return XII_FAILURE;
+    }
+
+    for (xiiUInt32 i = 0; i < m_Sections.GetCount(); ++i)
+    {
+      const auto& section = m_Sections[i];
+      ranges.PushBack({section.m_uiFirstPrimitive, section.m_uiPrimitiveCount, section.m_uiMaterialIndex, static_cast<xiiUInt16>(i), 0U});
+    }
+    if (ranges.IsEmpty())
+    {
+      XII_SUCCEED_OR_RETURN(m_MeshBufferDescriptor.BuildMeshlets(uiMaxVertices, uiMaxPrimitives));
+    }
+    else
+    {
+      XII_SUCCEED_OR_RETURN(m_MeshBufferDescriptor.BuildMeshlets(ranges, uiMaxVertices, uiMaxPrimitives));
+      xiiUInt32 cursor = 0U;
+      for (xiiUInt32 i = 0; i < m_Sections.GetCount(); ++i)
+      {
+        auto& section            = m_Sections[i];
+        section.m_uiFirstMeshlet = cursor;
+        while (cursor < m_MeshBufferDescriptor.m_Meshlets.GetCount() && m_MeshBufferDescriptor.m_Meshlets[cursor].m_uiSectionIndex == i)
+          ++cursor;
+        section.m_uiMeshletCount = cursor - section.m_uiFirstMeshlet;
+      }
+    }
+    m_LODs.Clear();
+    m_UsageFlags.AddOrRemove(xiiMeshResourceUsageFlags::MeshShaderReady, !m_MeshBufferDescriptor.m_Meshlets.IsEmpty());
+    return XII_SUCCESS;
+  }
+
   xiiHashTable<SectionKey, xiiUInt32, SectionKeyHash> firstSection;
   xiiDynamicArray<xiiUInt32>                          nextSection;
   nextSection.SetCount(m_Sections.GetCount(), xiiInvalidIndex);

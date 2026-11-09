@@ -165,30 +165,17 @@ xiiResult xiiGpuDrivenSceneWorld::CreateGeometry()
   m_GeometryAssets.SetCount(2);
   for (xiiUInt32 i = 0; i < 2; ++i)
   {
-    xiiGeometry high, low;
+    xiiGeometry geometry;
     if (i == 0)
-    {
-      high.AddStackedSphere(0.8f, m_Configuration.m_uiMeshDetail, m_Configuration.m_uiMeshDetail / 2U);
-      low.AddStackedSphere(0.8f, 12, 6);
-    }
+      geometry.AddStackedSphere(0.8f, m_Configuration.m_uiMeshDetail, m_Configuration.m_uiMeshDetail / 2U);
     else
-    {
-      high.AddBox(xiiVec3(1.5f), true);
-      low.AddBox(xiiVec3(1.5f), false);
-    }
-    high.TriangulatePolygons();
-    low.TriangulatePolygons();
-    const auto fineCount   = high.GetPolygons().GetCount();
-    const auto coarseCount = low.GetPolygons().GetCount();
-    high.Merge(low);
+      geometry.AddBox(xiiVec3(1.5f), true);
+    geometry.TriangulatePolygons();
     xiiMeshResourceDescriptor descriptor;
-    descriptor.GetMeshBufferDescriptor().AllocateStreamsFromGeometry(high, xiiGALPrimitiveTopology::TriangleList, true);
+    descriptor.GetMeshBufferDescriptor().AllocateStreamsFromGeometry(geometry, xiiGALPrimitiveTopology::TriangleList, true);
     descriptor.GetMeshBufferDescriptor().m_bAllowGpuDrivenDraw = true;
     descriptor.AddMaterialSlot("");
-    descriptor.GetLODs()[0].m_fScreenSize = 80.0f / 1080.0f;
-    descriptor.AddSection(fineCount, 0, 0, 0);
-    descriptor.AddLOD(0);
-    descriptor.AddSection(coarseCount, fineCount, 0, 1);
+    descriptor.AddSection(geometry.GetPolygons().GetCount(), 0, 0, 0);
     descriptor.ComputeBounds();
     if (i == 0U && !m_Configuration.m_sExportMesh.IsEmpty())
     {
@@ -197,7 +184,7 @@ xiiResult xiiGpuDrivenSceneWorld::CreateGeometry()
       xiiFileWriter file;
       XII_SUCCEED_OR_RETURN(file.Open(m_Configuration.m_sExportMesh));
       xiiAssetFileHeader header;
-      header.SetFileHashAndVersion(xiiHashingUtils::xxHash64(buffer.m_GeometryPageData.GetData(), buffer.m_GeometryPageData.GetCount()), 17U);
+      header.SetFileHashAndVersion(xiiHashingUtils::xxHash64(buffer.m_GeometryPageData.GetData(), buffer.m_GeometryPageData.GetCount()), 19U);
       header.SetGenerator("GpuDrivenScene");
       XII_SUCCEED_OR_RETURN(header.Write(file));
       XII_SUCCEED_OR_RETURN(descriptor.Save(file));
@@ -209,6 +196,14 @@ xiiResult xiiGpuDrivenSceneWorld::CreateGeometry()
     asset.m_hMesh = xiiResourceManager::GetOrCreateResource<xiiMeshResource>(name, std::move(descriptor));
   }
   return XII_SUCCESS;
+}
+
+xiiBoundingBoxSphere xiiGpuDrivenSceneWorld::GetImportedMeshBounds() const
+{
+  if (m_Configuration.m_sMesh.IsEmpty() || m_GeometryAssets.IsEmpty())
+    return xiiBoundingBoxSphere::MakeInvalid();
+  xiiResourceLock<xiiMeshResource> mesh(m_GeometryAssets[0].m_hMesh, xiiResourceAcquireMode::PointerOnly);
+  return mesh->GetBounds();
 }
 
 xiiResult xiiGpuDrivenSceneWorld::CreateSceneObjects()
@@ -223,7 +218,7 @@ xiiResult xiiGpuDrivenSceneWorld::CreateSceneObjects()
     for (xiiUInt32 x = 0; x < m_Configuration.m_uiGridWidth; ++x)
     {
       const auto               index = m_Objects.GetCount();
-      const xiiVec3            position(6 + y * m_Configuration.m_fObjectSpacing, (float(x) - float(m_Configuration.m_uiGridWidth - 1) * 0.5f) * m_Configuration.m_fObjectSpacing, (float(index % 5) - 2) * 0.32f);
+      const xiiVec3            position(6 + y * m_Configuration.m_fObjectSpacing, (float(x) - float(m_Configuration.m_uiGridWidth - 1) * 0.5f) * m_Configuration.m_fObjectSpacing, m_Configuration.m_sMesh.IsEmpty() ? (float(index % 5) - 2) * 0.32f : 0.0f);
       xiiGameObjectDescription description;
       description.m_bDynamic      = true;
       description.m_LocalPosition = position;
@@ -235,7 +230,17 @@ xiiResult xiiGpuDrivenSceneWorld::CreateSceneObjects()
       xiiLODMeshComponent* mesh = nullptr;
       xiiLODMeshComponent::CreateComponent(object, mesh);
       mesh->SetMesh(m_GeometryAssets[index % m_GeometryAssets.GetCount()].m_hMesh);
-      mesh->SetMaterialOverride(0, m_Materials[index % m_Materials.GetCount()]);
+      const auto& material = m_Materials[index % m_Materials.GetCount()];
+      if (m_Configuration.m_sMesh.IsEmpty())
+      {
+        mesh->SetMaterialOverride(0, material);
+      }
+      else if (!m_Configuration.m_bAuthoredMaterials)
+      {
+        xiiResourceLock<xiiMeshResource> imported(mesh->GetMesh(), xiiResourceAcquireMode::PointerOnly);
+        for (xiiUInt32 slot = 0; slot < imported->GetMaterials().GetCount(); ++slot)
+          mesh->SetMaterialOverride(slot, material);
+      }
     }
   m_World->Update();
   return XII_SUCCESS;
@@ -244,6 +249,11 @@ xiiResult xiiGpuDrivenSceneWorld::CreateSceneObjects()
 void xiiGpuDrivenSceneWorld::Update(xiiTime deltaTime)
 {
   XII_LOCK(m_World->GetWriteMarker());
+  if (!m_Configuration.m_sMesh.IsEmpty())
+  {
+    m_World->Update();
+    return;
+  }
   m_fAnimationTime += static_cast<float>(deltaTime.GetSeconds());
   const auto animated = xiiMath::Min<xiiUInt32>(m_Objects.GetCount(), 64);
   for (xiiUInt32 i = 0; i < animated; ++i)

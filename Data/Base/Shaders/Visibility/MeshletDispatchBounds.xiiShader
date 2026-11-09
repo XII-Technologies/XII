@@ -13,6 +13,8 @@ StructuredBuffer<uint> g_VisibleInstanceCount;
 StructuredBuffer<uint4> g_CurrentLodHistory;
 RWStructuredBuffer<uint> g_MaximumMeshletGroups;
 #include "MeshletRange.h"
+ByteAddressBuffer g_Buffers[];
+#include <Shaders/Geometry/VirtualGeometry.h>
 groupshared uint s_Maximum;
 uint GroupsForCandidate(uint candidate)
 {
@@ -32,6 +34,14 @@ uint GroupsForCandidate(uint candidate)
   uint base = view.GeometryBaseIndex;
   if (base >= geometryCount || instance.GeometryIndex >= geometryCount - base) return 0u;
   GpuGeometryRecord geometry = g_Geometry[base + instance.GeometryIndex];
+  if (geometry.HierarchyReady != 0u)
+  {
+    uint table, offset, roots;
+    if (!xiiGeometryRootDirectory(geometry.Lods[0], table, offset, roots)) return 0u;
+    uint first, end;
+    xiiGeometryRootRange(table, offset, roots, instance, first, end);
+    return end - first;
+  }
   // Section candidates share one geometry-level LOD decision and representative ID.
   // Validate the same representative that InstanceCull used when publishing history.
   uint selectionIndex = index;

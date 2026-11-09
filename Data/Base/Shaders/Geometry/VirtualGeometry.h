@@ -2,8 +2,8 @@
 #pragma once
 #include <Shaders/Streaming/GpuResidencyFeedback.h>
 
-// Visible clusters reference their physical page directly: flag, authored LOD
-// (3 bits), descriptor (12 bits), and metadata offset in words (16 bits).
+// Visible clusters reference their physical page using a flag, a 12-bit
+// descriptor and a 16-bit metadata offset in words.
 // Page/descriptor retirement protects this identity until every using frame completes.
 bool xiiLoadCluster(uint key, out GpuMeshlet cluster)
 {
@@ -24,7 +24,7 @@ bool xiiLoadCluster(uint key, out GpuMeshlet cluster)
   cluster.Header = g_Buffers[descriptor].Load4(offset);
   uint4 packed = g_Buffers[descriptor].Load4(offset + 16u);
   cluster.PackedPrimitiveVertexCount = packed.x;
-  cluster.PackedLodSection = (packed.y & 0xffff0000u) | ((key >> 28u) & 7u);
+  cluster.PackedLodSection = packed.y & 0xffff0000u;
   cluster.Padding = packed.zw;
   cluster.Bounds = asfloat(g_Buffers[descriptor].Load4(offset + 32u));
   cluster.Cone = asfloat(g_Buffers[descriptor].Load4(offset + 48u));
@@ -33,9 +33,10 @@ bool xiiLoadCluster(uint key, out GpuMeshlet cluster)
   return true;
 }
 
-uint xiiGeometryClusterKey(uint4 mapping, uint localCluster, uint lodIndex)
+uint xiiGeometryClusterKey(uint4 mapping, uint localCluster)
 {
-  return 0x80000000u | (lodIndex << 28u) | (mapping.x << 16u) | ((mapping.z + localCluster * 96u) / 4u);
+  uint words = (mapping.z >> 16u) + (mapping.z & 0xffffu) + localCluster * 24u;
+  return 0x80000000u | (mapping.x << 16u) | words;
 }
 
 uint4 xiiGeometryPageMapping(GpuGeometryLod lod, uint page)
@@ -44,9 +45,9 @@ uint4 xiiGeometryPageMapping(GpuGeometryLod lod, uint page)
     return uint4(0xFFFFFFFFu, 0u, 0u, 0u);
   uint bytes;
   g_Buffers[NonUniformResourceIndex(lod.VertexBufferIndex)].GetDimensions(bytes);
-  if (bytes < 272u || page >= g_Buffers[NonUniformResourceIndex(lod.VertexBufferIndex)].Load(0u) || page >= (bytes - 272u) / 48u)
+  if (bytes < 272u || page >= g_Buffers[NonUniformResourceIndex(lod.VertexBufferIndex)].Load(0u) || page >= (bytes - 272u) / 80u)
     return uint4(0xFFFFFFFFu, 0u, 0u, 0u);
-  return g_Buffers[NonUniformResourceIndex(lod.VertexBufferIndex)].Load4(272u + page * 48u);
+  return g_Buffers[NonUniformResourceIndex(lod.VertexBufferIndex)].Load4(272u + page * 80u);
 }
 
 bool xiiResolveClusterLod(inout GpuGeometryLod lod, inout GpuMeshlet cluster)
@@ -56,13 +57,20 @@ bool xiiResolveClusterLod(inout GpuGeometryLod lod, inout GpuMeshlet cluster)
   uint4 mapping = xiiGeometryPageMapping(lod, cluster.Page.x);
   if (mapping.x == 0xFFFFFFFFu)
     return false;
+  uint baseWords = mapping.z >> 16u;
   lod.VertexBufferIndex          = mapping.x;
+  lod.IndexBufferIndex           = baseWords * 4u; // Resolved virtual LODs store a vertex byte offset here.
   lod.MeshletTopologyBufferIndex = mapping.x;
   lod.MeshletPrimitiveByteOffset = 0u;
   lod.VertexCount                = cluster.Page.w;
-  cluster.Header.y               = cluster.Page.y / 4u;
-  cluster.Header.z               = cluster.Page.z;
+  cluster.Header.y               = baseWords + cluster.Page.y / 4u;
+  cluster.Header.z               = baseWords * 4u + cluster.Page.z;
   return true;
+}
+
+uint xiiGeometryVertexOffset(GpuGeometryLod lod)
+{
+  return lod.Padding != 0u ? lod.IndexBufferIndex : 0u;
 }
 
 
@@ -70,7 +78,7 @@ struct xiiGeometryPageInfo
 {
   uint4  Mapping;
   float4 Bounds;
-  float4 Detail; // error, source first-cluster bits, first child plus one, child count
+  float4 Detail; // error, primitive start and end (uint bits), child count
 };
 xiiGeometryPageInfo xiiLoadGeometryPage(GpuGeometryLod lod, uint page)
 {
@@ -78,45 +86,89 @@ xiiGeometryPageInfo xiiLoadGeometryPage(GpuGeometryLod lod, uint page)
   result.Mapping             = xiiGeometryPageMapping(lod, page);
   if (result.Mapping.w != 0u)
   {
-    result.Bounds = asfloat(g_Buffers[NonUniformResourceIndex(lod.VertexBufferIndex)].Load4(288u + page * 48u));
-    result.Detail = asfloat(g_Buffers[NonUniformResourceIndex(lod.VertexBufferIndex)].Load4(304u + page * 48u));
+    result.Bounds = asfloat(g_Buffers[NonUniformResourceIndex(lod.VertexBufferIndex)].Load4(288u + page * 80u));
+    result.Detail = asfloat(g_Buffers[NonUniformResourceIndex(lod.VertexBufferIndex)].Load4(304u + page * 80u));
   }
   return result;
 }
 
-// Root directory entries contain a page index and cumulative cluster count.
-// Non-view consumers enumerate this compact coarse representation, never fine clusters.
-uint xiiGeometryRootClusterCount(GpuGeometryLod lod)
+uint xiiGeometryChild(GpuGeometryLod lod, uint page, uint child)
 {
-  uint bytes;
-  g_Buffers[NonUniformResourceIndex(lod.VertexBufferIndex)].GetDimensions(bytes);
-  return bytes >= 272u ? g_Buffers[NonUniformResourceIndex(lod.VertexBufferIndex)].Load(8u) : 0u;
+  return g_Buffers[NonUniformResourceIndex(lod.VertexBufferIndex)].Load(320u + page * 80u + child * 4u);
 }
-bool xiiLoadGeometryRootCluster(GpuGeometryLod lod, uint lodIndex, uint ordinal, out GpuMeshlet cluster)
+
+// A root row contains the page, cumulative cluster count, primitive start,
+// and prefix maximum primitive end. This bounds work to a draw's section.
+bool xiiGeometryRootDirectory(GpuGeometryLod lod, out uint table, out uint offset, out uint roots)
 {
-  cluster = (GpuMeshlet)0;
-  uint table = NonUniformResourceIndex(lod.VertexBufferIndex);
+  table = NonUniformResourceIndex(lod.VertexBufferIndex);
+  offset = 0u;
+  roots = 0u;
+  if (lod.VertexBufferIndex == 0xffffffffu) return false;
   uint bytes;
   g_Buffers[table].GetDimensions(bytes);
   if (bytes < 272u) return false;
   uint pages = g_Buffers[table].Load(0u);
-  if (pages > (bytes - 272u) / 48u) return false;
-  uint offset = 272u + pages * 48u;
-  uint roots = min(g_Buffers[table].Load(4u), (bytes - offset) / 8u);
+  if (pages > (bytes - 272u) / 80u) return false;
+  offset = 272u + pages * 80u;
+  roots = min(g_Buffers[table].Load(4u), (bytes - offset) / 16u);
+  return true;
+}
+
+void xiiGeometryRootRange(uint table, uint offset, uint roots, GpuSceneInstance instance, out uint first, out uint end)
+{
+  first = 0u;
+  end = roots;
+  if (instance.PrimitiveCount == 0u) return;
   uint low = 0u, high = roots;
   while (low < high)
   {
     uint middle = low + (high - low) / 2u;
-    if (g_Buffers[table].Load(offset + middle * 8u + 4u) <= ordinal) low = middle + 1u;
+    if (g_Buffers[NonUniformResourceIndex(table)].Load(offset + middle * 16u + 12u) <= instance.FirstPrimitive) low = middle + 1u;
+    else high = middle;
+  }
+  first = low;
+  high = roots;
+  while (low < high)
+  {
+    uint middle = low + (high - low) / 2u;
+    uint start = g_Buffers[NonUniformResourceIndex(table)].Load(offset + middle * 16u + 8u);
+    if (start < instance.FirstPrimitive || start - instance.FirstPrimitive < instance.PrimitiveCount) low = middle + 1u;
+    else high = middle;
+  }
+  end = low;
+}
+
+void xiiGeometryRootClusterRange(GpuGeometryLod lod, GpuSceneInstance instance, out uint first, out uint count)
+{
+  first = 0u;
+  count = 0u;
+  uint table, offset, roots;
+  if (!xiiGeometryRootDirectory(lod, table, offset, roots)) return;
+  uint begin, end;
+  xiiGeometryRootRange(table, offset, roots, instance, begin, end);
+  if (begin == end) return;
+  first = begin == 0u ? 0u : g_Buffers[NonUniformResourceIndex(table)].Load(offset + (begin - 1u) * 16u + 4u);
+  count = g_Buffers[NonUniformResourceIndex(table)].Load(offset + (end - 1u) * 16u + 4u) - first;
+}
+bool xiiLoadGeometryRootCluster(GpuGeometryLod lod, uint ordinal, out GpuMeshlet cluster)
+{
+  cluster = (GpuMeshlet)0;
+  uint table, offset, roots;
+  if (!xiiGeometryRootDirectory(lod, table, offset, roots)) return false;
+  table = NonUniformResourceIndex(table);
+  uint low = 0u, high = roots;
+  while (low < high)
+  {
+    uint middle = low + (high - low) / 2u;
+    if (g_Buffers[table].Load(offset + middle * 16u + 4u) <= ordinal) low = middle + 1u;
     else high = middle;
   }
   if (low >= roots) return false;
-  uint previous = low == 0u ? 0u : g_Buffers[table].Load(offset + (low - 1u) * 8u + 4u);
-  xiiGeometryPageInfo page = xiiLoadGeometryPage(lod, g_Buffers[table].Load(offset + low * 8u));
-  uint first = asuint(page.Detail.y);
-  if (page.Mapping.x == 0xffffffffu || first < lod.IndexBufferIndex ||
-      first - lod.IndexBufferIndex >= lod.MeshletCount || ordinal - previous >= page.Mapping.w) return false;
-  return xiiLoadCluster(xiiGeometryClusterKey(page.Mapping, ordinal - previous, lodIndex), cluster);
+  uint previous = low == 0u ? 0u : g_Buffers[table].Load(offset + (low - 1u) * 16u + 4u);
+  xiiGeometryPageInfo page = xiiLoadGeometryPage(lod, g_Buffers[table].Load(offset + low * 16u));
+  if (page.Mapping.x == 0xffffffffu || ordinal - previous >= page.Mapping.w) return false;
+  return xiiLoadCluster(xiiGeometryClusterKey(page.Mapping, ordinal - previous), cluster);
 }
 float xiiGeometryMaximumScale(GpuSceneInstance instance)
 {
@@ -133,7 +185,7 @@ bool xiiGeometryPageVisible(xiiGeometryPageInfo page, GpuSceneInstance instance,
   float3 center = mul(instance.GlobalTransform, float4(page.Bounds.xyz, 1.0f)).xyz;
   return SphereInsideFrustum(center, page.Bounds.w * xiiGeometryMaximumScale(instance), view);
 }
-bool xiiGeometryPageRefines(GpuGeometryLod lod, xiiGeometryPageInfo page, GpuSceneInstance instance, GpuVisibilityView view)
+bool xiiGeometryPageRefines(GpuGeometryLod lod, uint pageIndex, xiiGeometryPageInfo page, GpuSceneInstance instance, GpuVisibilityView view)
 {
   uint children = min((uint)page.Detail.w, 8u);
   if (children == 0u)
@@ -150,12 +202,9 @@ bool xiiGeometryPageRefines(GpuGeometryLod lod, xiiGeometryPageInfo page, GpuSce
   bool complete = true;
   for (uint child = 0u; child < children; ++child)
   {
-    xiiGeometryPageInfo childPage = xiiLoadGeometryPage(lod, (uint)page.Detail.z - 1u + child);
-    if (xiiGeometryPageVisible(childPage, instance, view))
-    {
-      xiiRecordPageDemand(feedback, childPage.Mapping.y);
-      complete = complete && childPage.Mapping.x != 0xffffffffu;
-    }
+    uint4 mapping = xiiGeometryPageMapping(lod, xiiGeometryChild(lod, pageIndex, child));
+    xiiRecordPageDemand(feedback, mapping.y);
+    complete = complete && mapping.x != 0xffffffffu;
   }
   return complete;
 }

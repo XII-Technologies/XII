@@ -161,7 +161,8 @@ struct XII_GRAPHICSCORE_DLL xiiGeometryPage
   bool      m_bRequired      = false;
   xiiUInt32 m_uiStoredSize   = 0U;
   xiiUInt32 m_uiFirstCluster = 0U, m_uiClusterCount = 0U;
-  xiiUInt32 m_uiParent = xiiInvalidIndex, m_uiFirstChild = xiiInvalidIndex, m_uiChildCount = 0U;
+  xiiUInt32 m_uiParent = xiiInvalidIndex, m_uiChildCount = 0U;
+  xiiUInt32 m_Children[8]     = {};
   float     m_fGeometricError = 0.0f;
   xiiResult Serialize(xiiStreamWriter& stream) const;
   xiiResult Deserialize(xiiStreamReader& stream);
@@ -250,8 +251,8 @@ public:
   /// \param uiStride The byte stride between vertices for this vertex stream, used to calculate the memory address of this stream's data for each vertex when vertices are tightly packed or interleaved.
   void AddStream(xiiEnum<xiiMeshVertexSemantic> semantic, xiiEnum<xiiMeshVertexStreamFormat> format, xiiUInt16 uiOffset, xiiUInt16 uiStride);
 
-  /// Adds a set of common vertex streams (position, normal, tangent, texcoord0, texcoord1, color0, bone indices, bone weights) to this mesh buffer resource descriptor with standard formats and offsets for use with the provided geometry.
-  void AddCommonStreams();
+  /// Declares the packed vertex layout. Static imports can omit bone streams without changing the packed record stride.
+  void AddCommonStreams(bool bIncludeSkinning = true);
 
   /// Allocates memory for the vertex and index data in this mesh buffer resource descriptor based on the specified vertex count, primitive count, and index format.
   ///
@@ -265,7 +266,7 @@ public:
   /// \param geometry The geometry data used to determine the vertex count, primitive count, and index format for allocating the vertex and index streams in this mesh buffer resource descriptor. The vertex count is typically determined by the number of unique vertices in the geometry, while the primitive count is determined by the number of primitives (triangles, lines, etc.) in the geometry. The index format is determined based on whether the vertex count exceeds 65535, which would require 32-bit indices instead of 16-bit indices.
   /// \param topology The primitive topology of the geometry, used to determine how the primitives are defined and rendered (e.g., triangle list, triangle strip, line list, etc.) and may influence how the vertex and index data is organized in memory for optimal rendering performance.
   /// \param bBuildMeshlets Whether to build meshlets for this geometry, which can improve rendering performance by allowing for more efficient culling and draw call batching, but may increase memory usage and build time. If true, meshlets will be built based on the geometry data and included in this mesh buffer resource descriptor. If false, no meshlets will be built and the mesh will be rendered using traditional vertex and index buffers without meshlet-based culling or batching optimizations.
-  void AllocateStreamsFromGeometry(const xiiGeometry& geometry, xiiEnum<xiiGALPrimitiveTopology> topology, bool bBuildMeshlets = true);
+  void AllocateStreamsFromGeometry(const xiiGeometry& geometry, xiiEnum<xiiGALPrimitiveTopology> topology, bool bBuildMeshlets = true, bool bIncludeSkinning = false);
 
   /// Sets the vertex and index data for this mesh buffer resource descriptor, copying the provided data into the internal storage of this descriptor and updating the vertex count, index count, and vertex stride based on the provided data and the vertex stream layout and formats specified in this descriptor.
   ///

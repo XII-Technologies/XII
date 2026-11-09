@@ -16,10 +16,11 @@ GBufferVertex xiiLoadSceneSurfaceVertex(GpuSceneInstance instance, GpuGeometryLo
   uint vertexBufferBytes;
   g_Buffers[lod.VertexBufferIndex].GetDimensions(vertexBufferBytes);
   const uint lastAttributeEnd = max(max(12u, NormalOffset + 12u), max(TangentOffset + 16u, TexCoordOffset + 8u));
-  if (VertexStride < lastAttributeEnd || sourceVertex >= lod.VertexCount ||
-      vertexBufferBytes < lastAttributeEnd || sourceVertex > (vertexBufferBytes - lastAttributeEnd) / VertexStride)
+  uint baseOffset = xiiGeometryVertexOffset(lod);
+  if (VertexStride < lastAttributeEnd || sourceVertex >= lod.VertexCount || baseOffset > vertexBufferBytes ||
+      vertexBufferBytes - baseOffset < lastAttributeEnd || sourceVertex > (vertexBufferBytes - baseOffset - lastAttributeEnd) / VertexStride)
     return xiiInvalidSceneSurfaceVertex();
-  const uint   vertexOffset  = sourceVertex * VertexStride;
+  const uint   vertexOffset  = baseOffset + sourceVertex * VertexStride;
   float3       localPosition = asfloat(g_Buffers[lod.VertexBufferIndex].Load3(vertexOffset));
   float3       localNormal   = asfloat(g_Buffers[lod.VertexBufferIndex].Load3(vertexOffset + NormalOffset));
   float4       localTangent  = asfloat(g_Buffers[lod.VertexBufferIndex].Load4(vertexOffset + TangentOffset));

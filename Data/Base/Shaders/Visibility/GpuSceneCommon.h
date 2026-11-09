@@ -77,8 +77,15 @@ struct GpuGeometryRecord
   uint           LodCount;
   uint           Generation;
   uint           AvailableLodMask;
-  uint           Reserved;
+  uint           HierarchyReady;
 };
+
+bool xiiGeometryLodAvailable(GpuGeometryRecord geometry, uint lod)
+{
+  if (geometry.HierarchyReady != 0u)
+    return lod == 0u;
+  return lod < min(geometry.LodCount, 8u) && (geometry.AvailableLodMask & (1u << lod)) != 0u;
+}
 
 struct GpuMeshlet
 {

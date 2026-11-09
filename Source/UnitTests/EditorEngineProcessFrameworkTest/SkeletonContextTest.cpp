@@ -76,7 +76,7 @@ XII_CREATE_SIMPLE_TEST(EditorViews, SkeletonContext)
     geometry.AddBox(xiiVec3(1), false);
     geometry.TriangulatePolygons();
     xiiMeshResourceDescriptor mesh;
-    mesh.GetMeshBufferDescriptor().AllocateStreamsFromGeometry(geometry, xiiGALPrimitiveTopology::TriangleList);
+    mesh.GetMeshBufferDescriptor().AllocateStreamsFromGeometry(geometry, xiiGALPrimitiveTopology::TriangleList, true, true);
     mesh.AddSubMesh(12, 0, 0);
     mesh.AddMaterialSlot(xiiMaterialResource::GetDefaultMaterial(xiiMaterialResource::DefaultMaterialType::Preview).GetResourceID());
     mesh.ComputeBounds();

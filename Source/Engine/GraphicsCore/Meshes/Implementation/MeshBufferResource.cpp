@@ -49,7 +49,7 @@ XII_RESOURCE_IMPLEMENT_COMMON_CODE(xiiMeshBufferResource);
 
 namespace
 {
-  static constexpr xiiUInt32 s_uiMeshBufferResourceVersion = 5U;
+  static constexpr xiiUInt32 s_uiMeshBufferResourceVersion = 6U;
 
   static xiiUInt32 GetIndexSize(xiiEnum<xiiGALValueType> indexType)
   {
@@ -251,7 +251,7 @@ void xiiMeshBufferResourceDescriptor::AddStream(xiiEnum<xiiMeshVertexSemantic> s
   m_uiVertexStride = xiiMath::Max<xiiUInt32>(m_uiVertexStride, uiStride);
 }
 
-void xiiMeshBufferResourceDescriptor::AddCommonStreams()
+void xiiMeshBufferResourceDescriptor::AddCommonStreams(bool bIncludeSkinning)
 {
   m_VertexStreams.Clear();
   m_uiVertexStride = sizeof(xiiMeshPackedVertex);
@@ -262,8 +262,11 @@ void xiiMeshBufferResourceDescriptor::AddCommonStreams()
   AddStream(xiiMeshVertexSemantic::TexCoord0, xiiMeshVertexStreamFormat::Float2, static_cast<xiiUInt16>(offsetof(xiiMeshPackedVertex, m_vTexCoord0)), static_cast<xiiUInt16>(sizeof(xiiMeshPackedVertex)));
   AddStream(xiiMeshVertexSemantic::TexCoord1, xiiMeshVertexStreamFormat::Float2, static_cast<xiiUInt16>(offsetof(xiiMeshPackedVertex, m_vTexCoord1)), static_cast<xiiUInt16>(sizeof(xiiMeshPackedVertex)));
   AddStream(xiiMeshVertexSemantic::Color0, xiiMeshVertexStreamFormat::UByte4Normalized, static_cast<xiiUInt16>(offsetof(xiiMeshPackedVertex, m_Color0)), static_cast<xiiUInt16>(sizeof(xiiMeshPackedVertex)));
-  AddStream(xiiMeshVertexSemantic::BoneIndices0, xiiMeshVertexStreamFormat::UShort4, static_cast<xiiUInt16>(offsetof(xiiMeshPackedVertex, m_vBoneIndices0)), static_cast<xiiUInt16>(sizeof(xiiMeshPackedVertex)));
-  AddStream(xiiMeshVertexSemantic::BoneWeights0, xiiMeshVertexStreamFormat::UByte4Normalized, static_cast<xiiUInt16>(offsetof(xiiMeshPackedVertex, m_BoneWeights0)), static_cast<xiiUInt16>(sizeof(xiiMeshPackedVertex)));
+  if (bIncludeSkinning)
+  {
+    AddStream(xiiMeshVertexSemantic::BoneIndices0, xiiMeshVertexStreamFormat::UShort4, static_cast<xiiUInt16>(offsetof(xiiMeshPackedVertex, m_vBoneIndices0)), static_cast<xiiUInt16>(sizeof(xiiMeshPackedVertex)));
+    AddStream(xiiMeshVertexSemantic::BoneWeights0, xiiMeshVertexStreamFormat::UByte4Normalized, static_cast<xiiUInt16>(offsetof(xiiMeshPackedVertex, m_BoneWeights0)), static_cast<xiiUInt16>(sizeof(xiiMeshPackedVertex)));
+  }
 }
 
 void xiiMeshBufferResourceDescriptor::AllocateStreams(xiiUInt32 uiVertexCount, xiiUInt32 uiPrimitiveCount, bool bUse32BitIndices)
@@ -281,10 +284,18 @@ void xiiMeshBufferResourceDescriptor::AllocateStreams(xiiUInt32 uiVertexCount, x
   m_IndexData.SetCountUninitialized(m_uiIndexCount * GetIndexSize(m_IndexType));
 }
 
-void xiiMeshBufferResourceDescriptor::AllocateStreamsFromGeometry(const xiiGeometry& geometry, xiiEnum<xiiGALPrimitiveTopology> topology, bool bBuildMeshlets)
+void xiiMeshBufferResourceDescriptor::AllocateStreamsFromGeometry(const xiiGeometry& geometry, xiiEnum<xiiGALPrimitiveTopology> topology, bool bBuildMeshlets, bool bIncludeSkinning)
 {
   Clear();
-  AddCommonStreams();
+  for (const auto& vertex : geometry.GetVertices())
+  {
+    if (vertex.m_BoneIndices != xiiVec4U16(0U) || vertex.m_BoneWeights != xiiColorLinearUB(255, 0, 0, 0))
+    {
+      bIncludeSkinning = true;
+      break;
+    }
+  }
+  AddCommonStreams(bIncludeSkinning);
 
   m_Topology       = topology;
   m_uiVertexCount  = geometry.GetVertices().GetCount();
@@ -521,7 +532,13 @@ xiiResult xiiMeshBufferResourceDescriptor::Serialize(xiiStreamWriter& inout_stre
 xiiResult xiiMeshBufferResourceDescriptor::Deserialize(xiiStreamReader& source, const xiiResourceLoadData* pSource)
 {
   xiiStreamReaderWithStats inout_stream(&source);
-  const auto               version = inout_stream.ReadVersion(s_uiMeshBufferResourceVersion);
+  xiiTypeVersion           version = 0U;
+  XII_SUCCEED_OR_RETURN(inout_stream.ReadWordValue(&version));
+  if (version != 1U && version != 5U && version != s_uiMeshBufferResourceVersion)
+  {
+    xiiLog::Error("Unsupported mesh buffer version {}. Retransform the mesh asset in the editor.", version);
+    return XII_FAILURE;
+  }
 
   inout_stream >> m_Topology;
   inout_stream >> m_IndexType;
@@ -546,12 +563,20 @@ xiiResult xiiMeshBufferResourceDescriptor::Deserialize(xiiStreamReader& source, 
   XII_SUCCEED_OR_RETURN(inout_stream.ReadArray(m_DrawCommands));
   if (version >= 2U)
   {
-    if (version != 5U)
+    if (version == 5U)
     {
-      xiiLog::Error("Geometry pages use an obsolete cluster layout. Retransform the mesh asset.");
-      return XII_FAILURE;
+      xiiUInt64 pageCount = 0;
+      XII_SUCCEED_OR_RETURN(inout_stream.ReadQWordValue(&pageCount));
+      if (pageCount != 0U)
+      {
+        xiiLog::Error("Static mesh uses an obsolete geometry hierarchy. Retransform the mesh asset in the editor.");
+        return XII_FAILURE;
+      }
     }
-    XII_SUCCEED_OR_RETURN(inout_stream.ReadArray(m_GeometryPages));
+    else
+    {
+      XII_SUCCEED_OR_RETURN(inout_stream.ReadArray(m_GeometryPages));
+    }
     inout_stream >> m_uiPageDataBytes;
     if (m_uiPageDataBytes > xiiMath::MaxValue<xiiUInt32>())
       return XII_FAILURE;
@@ -588,6 +613,15 @@ xiiResult xiiMeshBufferResourceDescriptor::Deserialize(xiiStreamReader& source, 
           cluster.m_Hierarchy.y < 1.0f || cluster.m_Hierarchy.y > static_cast<float>(m_GeometryPages.GetCount()))
         return XII_FAILURE;
     }
+    struct Coverage
+    {
+      XII_DECLARE_POD_TYPE();
+      xiiUInt32 m_uiBegin, m_uiEnd, m_uiSection, m_uiMaterial;
+    };
+    xiiDynamicArray<Coverage> coverage;
+    coverage.Reserve(m_GeometryPages.GetCount());
+    xiiDynamicArray<bool> linked;
+    linked.SetCount(m_GeometryPages.GetCount(), false);
     for (xiiUInt32 index = 0U; index < m_GeometryPages.GetCount(); ++index)
     {
       const auto& page = m_GeometryPages[index];
@@ -597,12 +631,48 @@ xiiResult xiiMeshBufferResourceDescriptor::Deserialize(xiiStreamReader& source, 
           !xiiMath::IsFinite(page.m_fGeometricError) || page.m_fGeometricError < 0.0f ||
           page.m_bRequired != (page.m_uiParent == xiiInvalidIndex) ||
           (page.m_uiParent != xiiInvalidIndex && (page.m_uiParent <= index || page.m_uiParent >= m_GeometryPages.GetCount())) ||
-          page.m_uiChildCount > 8U || (page.m_uiChildCount != 0U && (page.m_uiFirstChild >= index || page.m_uiChildCount > index - page.m_uiFirstChild)))
+          page.m_uiChildCount > XII_ARRAY_SIZE(page.m_Children))
         return XII_FAILURE;
-      for (xiiUInt32 child = 0U; child < page.m_uiChildCount; ++child)
-        if (m_GeometryPages[page.m_uiFirstChild + child].m_uiParent != index ||
-            m_GeometryPages[page.m_uiFirstChild + child].m_fGeometricError > page.m_fGeometricError)
+      const auto clusters = m_Meshlets.GetArrayPtr().GetSubArray(page.m_uiFirstCluster, page.m_uiClusterCount);
+      Coverage   range{clusters[0].m_uiFirstPrimitive, clusters[0].m_uiFirstPrimitive, clusters[0].m_uiSectionIndex, clusters[0].m_uiMaterialIndex};
+      for (const auto& cluster : clusters)
+      {
+        const auto begin = cluster.m_uiFirstPrimitive;
+        const auto count = cluster.m_uiGpuPadding[1];
+        if (cluster.m_Page.x != index || cluster.m_uiLodIndex != 0U ||
+            cluster.m_uiSectionIndex != range.m_uiSection || cluster.m_uiMaterialIndex != range.m_uiMaterial ||
+            begin > GetPrimitiveCount() || count < cluster.m_uiPrimitiveCount || count > GetPrimitiveCount() - begin)
           return XII_FAILURE;
+        if (page.m_uiChildCount == 0U)
+        {
+          if (begin != range.m_uiEnd || count != cluster.m_uiPrimitiveCount)
+            return XII_FAILURE;
+          range.m_uiEnd = begin + count;
+        }
+        else
+        {
+          if (begin != range.m_uiBegin || count != clusters[0].m_uiGpuPadding[1])
+            return XII_FAILURE;
+          range.m_uiEnd = begin + count;
+        }
+      }
+      auto childBegin = range.m_uiBegin;
+      for (xiiUInt32 child = 0U; child < page.m_uiChildCount; ++child)
+      {
+        const auto childIndex = page.m_Children[child];
+        if (childIndex >= index || linked[childIndex] ||
+            m_GeometryPages[childIndex].m_uiParent != index ||
+            m_GeometryPages[childIndex].m_fGeometricError > page.m_fGeometricError)
+          return XII_FAILURE;
+        const auto& childRange = coverage[childIndex];
+        if (childRange.m_uiBegin != childBegin || childRange.m_uiSection != range.m_uiSection || childRange.m_uiMaterial != range.m_uiMaterial)
+          return XII_FAILURE;
+        childBegin         = childRange.m_uiEnd;
+        linked[childIndex] = true;
+      }
+      if (page.m_uiChildCount != 0U && childBegin != range.m_uiEnd)
+        return XII_FAILURE;
+      coverage.PushBack(range);
       xiiUInt32 depth = 0U;
       for (auto parent = page.m_uiParent; parent != xiiInvalidIndex; parent = m_GeometryPages[parent].m_uiParent)
         if (parent >= m_GeometryPages.GetCount() || ++depth > 7U)
@@ -610,6 +680,9 @@ xiiResult xiiMeshBufferResourceDescriptor::Deserialize(xiiStreamReader& source, 
       if (page.m_uiOffset > m_uiPageDataBytes || (page.m_uiStoredSize == 0U ? page.m_uiSize : page.m_uiStoredSize) > m_uiPageDataBytes - page.m_uiOffset)
         return XII_FAILURE;
     }
+    for (xiiUInt32 index = 0U; index < m_GeometryPages.GetCount(); ++index)
+      if (!m_GeometryPages[index].m_bRequired && !linked[index])
+        return XII_FAILURE;
   }
 
   return XII_SUCCESS;

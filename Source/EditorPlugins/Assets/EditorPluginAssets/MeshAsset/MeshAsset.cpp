@@ -11,7 +11,7 @@
 #include <ModelImporter/MeshImport.h>
 
 // clang-format off
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMeshAssetDocument, 17, xiiRTTINoAllocator)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMeshAssetDocument, 19, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
@@ -211,17 +211,9 @@ xiiTransformStatus xiiMeshAssetDocument::CreateMeshFromFile(xiiMeshAssetProperti
 
   xiiModelMeshImportOptions options;
   options.m_bRecalculateNormals   = pProp->m_bRecalculateNormals;
-  options.m_uiGeneratedLODs       = pProp->m_uiGeneratedLODs;
   options.m_bRecalculateTangents  = pProp->m_bRecalculateTangents;
   options.m_VertexColorConversion = pProp->m_VertexColorConversion;
   options.m_RootTransform         = xiiMat4(CalculateTransformationMatrix(pProp), xiiVec3::MakeZero());
-  if (pProp->m_bSimplifyMesh)
-  {
-    // Authored 100% previously meant maximum simplification, not an empty mesh.
-    options.m_fSimplification           = xiiMath::Min<xiiUInt32>(pProp->m_uiMeshSimplification, 99) / 100.0f;
-    options.m_fMaxSimplificationError   = pProp->m_uiMaxSimplificationError / 100.0f;
-    options.m_bAggressiveSimplification = pProp->m_bAggressiveSimplification;
-  }
   xiiModelMeshImport imported;
   xiiStringBuilder   error;
   if (xiiModelMeshImport::ReadFile(sAbsFilename, options, imported, &error).Failed())
