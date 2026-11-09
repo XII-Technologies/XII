@@ -240,8 +240,17 @@ namespace
   }
 } // namespace
 
-xiiResult xiiModelMeshImport::ReadFile(xiiStringView sAbsoluteFile, const xiiModelMeshImportOptions& options, xiiModelMeshImport& out_import, xiiStringBuilder* out_pError)
+xiiResult xiiModelMeshImport::ReadFile(xiiStringView sAbsoluteFile, const xiiModelMeshImportOptions& importOptions, xiiModelMeshImport& out_import, xiiStringBuilder* out_pError)
 {
+  xiiModelMeshImportOptions options = importOptions;
+  if (!options.m_bImportSkinning)
+  {
+    options.m_uiGeneratedLODs           = 0;
+    options.m_fSimplification           = 0.0f;
+    options.m_fMaxSimplificationError   = 0.0f;
+    options.m_bAggressiveSimplification = false;
+  }
+
   out_import.m_Mesh.Clear();
   out_import.m_Materials.Clear();
   out_import.m_EmbeddedTextures.Clear();

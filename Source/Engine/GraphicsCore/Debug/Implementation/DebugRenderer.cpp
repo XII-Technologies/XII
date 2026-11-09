@@ -2738,7 +2738,7 @@ void xiiDebugRenderer::OnEngineStartup()
     geom.AddBox(xiiVec3(2.0f), false);
 
     xiiMeshBufferResourceDescriptor desc;
-    desc.AllocateStreamsFromGeometry(geom, xiiGALPrimitiveTopology::TriangleList);
+    desc.AllocateStreamsFromGeometry(geom, xiiGALPrimitiveTopology::TriangleList, false);
 
     s_hSolidBoxMeshBuffer = xiiResourceManager::CreateResource<xiiMeshBufferResource>("DebugSolidBox", std::move(desc), "Mesh for Rendering Debug Solid Boxes");
   }

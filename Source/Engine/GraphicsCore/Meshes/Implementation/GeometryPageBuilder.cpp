@@ -14,14 +14,20 @@
 xiiResult xiiGeometryPage::Serialize(xiiStreamWriter& stream) const
 {
   stream << m_uiOffset << m_uiSize << m_bRequired << m_uiStoredSize;
-  stream << m_uiFirstCluster << m_uiClusterCount << m_uiParent << m_uiFirstChild << m_uiChildCount << m_fGeometricError;
+  stream << m_uiFirstCluster << m_uiClusterCount << m_uiParent << m_uiChildCount << m_fGeometricError;
+  for (xiiUInt32 child = 0U; child < m_uiChildCount; ++child)
+    stream << m_Children[child];
   return XII_SUCCESS;
 }
 
 xiiResult xiiGeometryPage::Deserialize(xiiStreamReader& stream)
 {
   stream >> m_uiOffset >> m_uiSize >> m_bRequired >> m_uiStoredSize;
-  stream >> m_uiFirstCluster >> m_uiClusterCount >> m_uiParent >> m_uiFirstChild >> m_uiChildCount >> m_fGeometricError;
+  stream >> m_uiFirstCluster >> m_uiClusterCount >> m_uiParent >> m_uiChildCount >> m_fGeometricError;
+  if (m_uiChildCount > XII_ARRAY_SIZE(m_Children))
+    return XII_FAILURE;
+  for (xiiUInt32 child = 0U; child < m_uiChildCount; ++child)
+    stream >> m_Children[child];
   return XII_SUCCESS;
 }
 
@@ -54,6 +60,44 @@ xiiResult xiiMeshBufferResourceDescriptor::BuildGeometryPages()
   positions.SetCountUninitialized(GetVertexCount());
   for (xiiUInt32 vertex = 0U; vertex < positions.GetCount(); ++vertex)
     xiiMemoryUtils::Copy(reinterpret_cast<xiiUInt8*>(&positions[vertex]), m_VertexData.GetData() + vertex * stride + position->m_uiOffset, sizeof(xiiVec3));
+
+  // Measure appearance error in addition to position error. The simplified
+  // indices still reference the original vertices and their complete attributes.
+  xiiHybridArray<xiiUInt32, 12> attributeOffsets;
+  xiiHybridArray<float, 12>     attributeWeights;
+  for (const auto& stream : m_VertexStreams)
+  {
+    xiiUInt32 components = 0U;
+    float     weight     = 0.0f;
+    switch (stream.m_Semantic)
+    {
+      case xiiMeshVertexSemantic::TexCoord0:
+      case xiiMeshVertexSemantic::TexCoord1:
+        if (stream.m_Format == xiiMeshVertexStreamFormat::Float2)
+          components = 2U;
+        weight = 0.5f;
+        break;
+      case xiiMeshVertexSemantic::Normal:
+        if (stream.m_Format == xiiMeshVertexStreamFormat::Float3)
+          components = 3U;
+        weight = 0.5f;
+        break;
+      case xiiMeshVertexSemantic::Tangent:
+        if (stream.m_Format == xiiMeshVertexStreamFormat::Float4)
+          components = 4U;
+        weight = 0.25f;
+        break;
+      default:
+        break;
+    }
+    if (components == 0U || stream.m_uiOffset + components * sizeof(float) > stride)
+      continue;
+    for (xiiUInt32 component = 0; component < components; ++component)
+    {
+      attributeOffsets.PushBack(stream.m_uiOffset + component * sizeof(float));
+      attributeWeights.PushBack(weight);
+    }
+  }
 
   auto                                                    original = std::move(m_Meshlets);
   xiiDynamicArray<xiiMeshlet, xiiAlignedAllocatorWrapper> clusters;
@@ -125,8 +169,7 @@ xiiResult xiiMeshBufferResourceDescriptor::BuildGeometryPages()
   for (xiiUInt32 sectionBegin = 0U; sectionBegin < original.GetCount();)
   {
     xiiUInt32 sectionEnd = sectionBegin + 1U;
-    while (sectionEnd < original.GetCount() && original[sectionEnd].m_uiSectionIndex == original[sectionBegin].m_uiSectionIndex &&
-           original[sectionEnd].m_uiLodIndex == original[sectionBegin].m_uiLodIndex)
+    while (sectionEnd < original.GetCount() && original[sectionEnd].m_uiSectionIndex == original[sectionBegin].m_uiSectionIndex)
       ++sectionEnd;
     xiiDynamicArray<xiiUInt32> level;
     for (xiiUInt32 first = sectionBegin; first < sectionEnd;)
@@ -161,20 +204,11 @@ xiiResult xiiMeshBufferResourceDescriptor::BuildGeometryPages()
           next.PushBack(level[first++]);
           continue;
         }
-        // Carried nodes can make the level non-contiguous. They remain roots
-        // rather than manufacturing a discontinuous dependency range.
-        bool contiguous = true;
-        for (xiiUInt32 child = 1U; child < childCount; ++child)
-          contiguous &= level[first + child] == level[first] + child;
-        if (!contiguous)
-        {
-          next.PushBack(level[first++]);
-          continue;
-        }
         xiiDynamicArray<xiiUInt32>         indices, simplified;
         xiiHashTable<xiiUInt32, xiiUInt32> localVertexMap;
         xiiDynamicArray<xiiUInt32>         sourceVertices;
         xiiDynamicArray<xiiVec3>           localPositions;
+        xiiDynamicArray<float>             localAttributes;
         auto                               bounds        = xiiBoundingSphere::MakeInvalid();
         float                              childError    = 0.0f;
         xiiUInt32                          coverageFirst = xiiInvalidIndex, coverageEnd = 0U;
@@ -202,6 +236,12 @@ xiiResult xiiMeshBufferResourceDescriptor::BuildGeometryPages()
                 localVertexMap.Insert(source, local);
                 sourceVertices.PushBack(source);
                 localPositions.PushBack(positions[source]);
+                for (const auto offset : attributeOffsets)
+                {
+                  float value;
+                  xiiMemoryUtils::Copy(reinterpret_cast<xiiUInt8*>(&value), m_VertexData.GetData() + source * stride + offset, sizeof(value));
+                  localAttributes.PushBack(xiiMath::IsFinite(value) ? value : 0.0f);
+                }
               }
               indices.PushBack(local);
             }
@@ -210,9 +250,12 @@ xiiResult xiiMeshBufferResourceDescriptor::BuildGeometryPages()
         simplified.SetCountUninitialized(indices.GetCount());
         float      error        = 0.0f;
         const auto target       = xiiMath::Max(3U, (48U * 1024U / (stride * 3U + 7U)) * 3U);
-        const auto count        = meshopt_simplify(simplified.GetData(), indices.GetData(), indices.GetCount(), &localPositions[0].x, localPositions.GetCount(),
-                                                   sizeof(xiiVec3), xiiMath::Min(target, indices.GetCount() / 2U / 3U * 3U), xiiMath::MaxValue<float>(),
-                                                   meshopt_SimplifyErrorAbsolute | meshopt_SimplifyLockBorder, &error);
+        const auto targetCount  = xiiMath::Min(target, indices.GetCount() / 2U / 3U * 3U);
+        const auto errorLimit   = meshopt_simplifyScale(&localPositions[0].x, localPositions.GetCount(), sizeof(xiiVec3)) * 0.025f;
+        const auto count        = meshopt_simplifyWithAttributes(simplified.GetData(), indices.GetData(), indices.GetCount(), &localPositions[0].x,
+                                                                 localPositions.GetCount(), sizeof(xiiVec3), localAttributes.GetData(),
+                                                                 attributeOffsets.GetCount() * sizeof(float), attributeWeights.GetData(), attributeWeights.GetCount(),
+                                                                 nullptr, targetCount, errorLimit, meshopt_SimplifyErrorAbsolute | meshopt_SimplifyLockBorder, &error);
         const auto keepChildren = [&]() {
           for (xiiUInt32 child = 0U; child < childCount; ++child)
             next.PushBack(level[first + child]);
@@ -284,10 +327,12 @@ xiiResult xiiMeshBufferResourceDescriptor::BuildGeometryPages()
         const auto parentPage = m_GeometryPages.GetCount();
         XII_SUCCEED_OR_RETURN(pack(parents, childError + error));
         auto& parent          = m_GeometryPages[parentPage];
-        parent.m_uiFirstChild = level[first];
         parent.m_uiChildCount = childCount;
         for (xiiUInt32 child = 0U; child < childCount; ++child)
-          m_GeometryPages[level[first + child]].m_uiParent = parentPage;
+        {
+          parent.m_Children[child]                             = level[first + child];
+          m_GeometryPages[parent.m_Children[child]].m_uiParent = parentPage;
+        }
         next.PushBack(parentPage);
         first += childCount;
       }

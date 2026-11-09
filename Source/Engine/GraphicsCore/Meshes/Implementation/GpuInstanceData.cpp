@@ -220,7 +220,7 @@ xiiResult xiiGpuInstanceData::UpdateFromExtraction(xiiArrayPtr<xiiRenderData* co
   state.m_Groups.Clear();
   state.m_MaterialFlags.Clear();
   auto& groups = state.m_Groups;
-  auto  pack   = [&](const xiiMeshRenderData& packet, const xiiMeshResource& mesh, const xiiExtractedMeshSkinning& skinning, xiiUInt32 bufferRevision, const PacketKey& key, xiiUInt32 materialIndex, xiiUInt32 first, xiiUInt32 count, xiiUInt32& representative) -> xiiResult {
+  auto  pack   = [&](const xiiMeshRenderData& packet, const xiiMeshResource& mesh, const xiiExtractedMeshSkinning& skinning, xiiUInt32 bufferRevision, const PacketKey& key, xiiUInt32 materialIndex, xiiUInt32 first, xiiUInt32 count, xiiUInt32& representative, bool bHierarchy) -> xiiResult {
     xiiUInt32  index           = 0;
     const bool fresh           = !state.m_Packets.TryGetValue(key, index);
     const bool acquireGeometry = fresh || state.m_Entries[index].m_Mesh != packet.m_hMesh ||
@@ -318,7 +318,7 @@ xiiResult xiiGpuInstanceData::UpdateFromExtraction(xiiArrayPtr<xiiRenderData* co
     const bool coverageChanged = resetPose || record.m_uiFirstPrimitive != first || record.m_uiPrimitiveCount != count;
     record.m_uiFirstPrimitive  = first;
     record.m_uiPrimitiveCount  = count;
-    record.m_uiForcedLod       = packet.m_Flags.IsSet(xiiMeshRenderDataFlags::ForceLOD) ? packet.m_uiLODIndex : xiiInvalidIndex;
+    record.m_uiForcedLod       = !bHierarchy && packet.m_Flags.IsSet(xiiMeshRenderDataFlags::ForceLOD) ? packet.m_uiLODIndex : xiiInvalidIndex;
     record.m_uiDrawLod         = key.m_Lod;
     record.m_fLodBias          = packet.m_fLodBias;
     if (record.m_uiObjectId == representative)
@@ -365,6 +365,7 @@ xiiResult xiiGpuInstanceData::UpdateFromExtraction(xiiArrayPtr<xiiRenderData* co
     if (sourceBuffer.GetAcquireResult() != xiiResourceAcquireResult::Final)
       continue;
     const auto bufferRevision = sourceBuffer->GetCurrentResourceChangeCounter();
+    const bool bHierarchy     = sourceBuffer->HasGeometryPages();
     const bool instanced      = packet->m_Flags.IsSet(xiiMeshRenderDataFlags::Instanced);
     const auto group          = key;
     for (xiiUInt32 instance = 0; instance < (instanced ? packet->m_InstanceTransforms.GetCount() : 1U); ++instance)
@@ -378,17 +379,17 @@ xiiResult xiiGpuInstanceData::UpdateFromExtraction(xiiArrayPtr<xiiRenderData* co
       if (packet->m_RangeMode == xiiMeshRenderData::RangeMode::PrimitiveRange)
       {
         xiiUInt32  material = 0;
-        const auto sections = mesh->GetLODs().IsEmpty() ? mesh->GetSections() : mesh->GetLODs()[xiiMath::Min(packet->m_uiLODIndex, mesh->GetLODs().GetCount() - 1)].m_Sections.GetArrayPtr();
+        const auto sections = bHierarchy || mesh->GetLODs().IsEmpty() ? mesh->GetSections() : mesh->GetLODs()[xiiMath::Min(packet->m_uiLODIndex, mesh->GetLODs().GetCount() - 1)].m_Sections.GetArrayPtr();
         if (key.m_Section < sections.GetCount())
           material = sections[key.m_Section].m_uiMaterialIndex;
-        XII_SUCCEED_OR_RETURN(pack(*packet, *mesh.GetPointer(), skinning, bufferRevision, key, material, packet->m_uiFirstPrimitive, packet->m_uiPrimitiveCount, representative));
+        XII_SUCCEED_OR_RETURN(pack(*packet, *mesh.GetPointer(), skinning, bufferRevision, key, material, packet->m_uiFirstPrimitive, packet->m_uiPrimitiveCount, representative, bHierarchy));
       }
       else
-        for (xiiUInt32 lod = 0; lod < xiiMath::Max(1U, mesh->GetLODs().GetCount()); ++lod)
+        for (xiiUInt32 lod = 0; lod < (bHierarchy ? 1U : xiiMath::Max(1U, mesh->GetLODs().GetCount())); ++lod)
         {
-          if (packet->m_Flags.IsSet(xiiMeshRenderDataFlags::ForceLOD) && lod != packet->m_uiLODIndex)
+          if (!bHierarchy && packet->m_Flags.IsSet(xiiMeshRenderDataFlags::ForceLOD) && lod != packet->m_uiLODIndex)
             continue;
-          const auto sections = mesh->GetLODs().IsEmpty() ? mesh->GetSections() : mesh->GetLODs()[lod].m_Sections.GetArrayPtr();
+          const auto sections = bHierarchy || mesh->GetLODs().IsEmpty() ? mesh->GetSections() : mesh->GetLODs()[lod].m_Sections.GetArrayPtr();
           for (xiiUInt32 section = 0; section < sections.GetCount(); ++section)
           {
             if (packet->m_RangeMode == xiiMeshRenderData::RangeMode::MeshSection && section != packet->m_uiSectionIndex)
@@ -396,8 +397,8 @@ xiiResult xiiGpuInstanceData::UpdateFromExtraction(xiiArrayPtr<xiiRenderData* co
             if (sections[section].m_uiPrimitiveCount == 0)
               continue;
             key.m_Section = section;
-            key.m_Lod     = lod;
-            XII_SUCCEED_OR_RETURN(pack(*packet, *mesh.GetPointer(), skinning, bufferRevision, key, sections[section].m_uiMaterialIndex, sections[section].m_uiFirstPrimitive, sections[section].m_uiPrimitiveCount, representative));
+            key.m_Lod     = bHierarchy ? xiiInvalidIndex : lod;
+            XII_SUCCEED_OR_RETURN(pack(*packet, *mesh.GetPointer(), skinning, bufferRevision, key, sections[section].m_uiMaterialIndex, sections[section].m_uiFirstPrimitive, sections[section].m_uiPrimitiveCount, representative, bHierarchy));
           }
         }
     }

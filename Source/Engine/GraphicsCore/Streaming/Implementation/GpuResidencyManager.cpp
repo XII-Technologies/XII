@@ -182,7 +182,9 @@ public:
     xiiVec4U32 m_Mapping = xiiVec4U32(xiiInvalidIndex, 0U, 0U, 0U);
     xiiVec4    m_Bounds  = xiiVec4(0.0f);
     xiiVec4    m_Detail  = xiiVec4(0.0f);
+    xiiUInt32  m_Children[8] = {};
   };
+  static_assert(sizeof(PageRecord) == 80U);
   struct RootPage
   {
     XII_DECLARE_POD_TYPE();
@@ -383,7 +385,10 @@ namespace
     if (!hMeshBuffer.IsValid())
       return XII_FAILURE;
 
-    const xiiArrayPtr<const xiiMeshLOD> lods = mesh.GetLODs();
+    xiiResourceLock<xiiMeshBufferResource> buffer(hMeshBuffer, xiiResourceAcquireMode::PointerOnly);
+    if (buffer.GetAcquireResult() != xiiResourceAcquireResult::Final)
+      return XII_FAILURE;
+    const xiiArrayPtr<const xiiMeshLOD> lods = buffer->HasGeometryPages() ? xiiArrayPtr<const xiiMeshLOD>() : mesh.GetLODs();
     if (lods.GetCount() > xiiGpuGeometryRecord::s_uiMaxLods)
       return XII_FAILURE;
 
@@ -528,7 +533,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGpuGeometryRecord, xiiNoBase, 2, xiiRTTIDefau
       XII_MEMBER_PROPERTY("LodCount", m_uiLodCount),
       XII_MEMBER_PROPERTY("Generation", m_uiGeneration),
       XII_MEMBER_PROPERTY("AvailableLodMask", m_uiAvailableLodMask),
-      XII_MEMBER_PROPERTY("Reserved", m_uiReserved),
+      XII_MEMBER_PROPERTY("HierarchyReady", m_uiHierarchyReady),
     } XII_END_PROPERTIES;
   }
 XII_END_STATIC_REFLECTED_TYPE;
@@ -936,7 +941,7 @@ xiiGpuResidencyManager::AdmissionResult xiiGpuResidencyManager::BuildResidentRec
   xiiUInt32       directCounts[xiiGpuGeometryRecord::s_uiMaxLods] = {};
   for (xiiUInt32 i = uiNextLod; i < uiEndLod; ++i)
   {
-    if ((record.m_uiAvailableLodMask & XII_BIT(i)) != 0U)
+    if (record.m_uiHierarchyReady != 0U || (record.m_uiAvailableLodMask & XII_BIT(i)) != 0U)
       continue;
     const auto& source = slot.m_Description.m_Lods[i];
     if (!source.m_hMeshBuffer.IsValid())
@@ -1118,7 +1123,10 @@ xiiGpuResidencyManager::AdmissionResult xiiGpuResidencyManager::BuildResidentRec
       uploads.PushBack(std::move(upload));
       s_pState->m_StreamingStats.m_uiPreparedMeshlets += lod.m_uiMeshletCount;
     }
-    record.m_uiAvailableLodMask |= XII_BIT(i);
+    if (sources[n]->HasGeometryPages())
+      record.m_uiHierarchyReady = 1U;
+    else
+      record.m_uiAvailableLodMask |= XII_BIT(i);
   }
   if (!newLods.IsEmpty() && (slot.m_GpuRecord.m_uiAvailableLodMask == 0U || newLods[0] < xiiMath::FirstBitLow(slot.m_GpuRecord.m_uiAvailableLodMask)))
   {
@@ -1145,7 +1153,7 @@ xiiGpuResidencyManager::AdmissionResult xiiGpuResidencyManager::BuildResidentRec
   slot.m_uiAdmissionFrame         = uiFrameIndex;
   slot.m_GpuRecord                = record;
   const xiiUInt32 uiRequestedMask = (1U << uiLodCount) - 1U;
-  slot.m_State                    = (record.m_uiAvailableLodMask & uiRequestedMask) == uiRequestedMask ? xiiGeometryResidencyState::Resident : xiiGeometryResidencyState::Requested;
+  slot.m_State                    = record.m_uiHierarchyReady != 0U || (record.m_uiAvailableLodMask & uiRequestedMask) == uiRequestedMask ? xiiGeometryResidencyState::Resident : xiiGeometryResidencyState::Requested;
   slot.m_uiDirtyFrameMask         = s_pState->m_uiAllFrameMask;
   slot.m_uiVisibilityPriority     = 0U;
   slot.m_uiFirstRequestFrame      = xiiMath::MaxValue<xiiUInt64>();
@@ -2427,22 +2435,20 @@ xiiGpuResidencyManager::AdmissionResult xiiGpuResidencyManager::RegisterBindless
         const auto& compiled               = descriptor.m_GeometryPages[p];
         fresh.m_PageRecords[p].m_Mapping.z = (compiled.m_uiSize - compiled.m_uiClusterCount * sizeof(xiiMeshlet)) / 4U;
         fresh.m_PageRecords[p].m_Mapping.w = compiled.m_uiClusterCount;
-        fresh.m_PageRecords[p].m_Detail    = xiiVec4(compiled.m_fGeometricError,
-                                                     std::bit_cast<float>(compiled.m_uiFirstCluster),
-                                                     compiled.m_uiChildCount == 0U ? 0.0f : static_cast<float>(compiled.m_uiFirstChild + 1U),
-                                                     static_cast<float>(compiled.m_uiChildCount));
-        if (page.m_bRequired)
+        auto&           record             = fresh.m_PageRecords[p];
+        State::RootPage root{p, 0U, xiiInvalidIndex, 0U};
+        for (const auto& cluster : descriptor.m_Meshlets.GetArrayPtr().GetSubArray(compiled.m_uiFirstCluster, compiled.m_uiClusterCount))
         {
-          State::RootPage root{p, 0U, xiiInvalidIndex, 0U};
-          for (const auto& cluster : descriptor.m_Meshlets.GetArrayPtr().GetSubArray(compiled.m_uiFirstCluster, compiled.m_uiClusterCount))
-          {
-            root.m_uiFirstPrimitive = xiiMath::Min(root.m_uiFirstPrimitive, cluster.m_uiFirstPrimitive);
-            const auto covered      = xiiMath::Max<xiiUInt32>(cluster.m_uiGpuPadding[1], cluster.m_uiPrimitiveCount);
-            const auto end          = xiiMath::Min<xiiUInt64>(mesh.GetPrimitiveCount(), xiiUInt64(cluster.m_uiFirstPrimitive) + covered);
-            root.m_uiPrimitiveEnd   = xiiMath::Max(root.m_uiPrimitiveEnd, static_cast<xiiUInt32>(end));
-          }
-          fresh.m_RootPages.PushBack(root);
+          root.m_uiFirstPrimitive = xiiMath::Min(root.m_uiFirstPrimitive, cluster.m_uiFirstPrimitive);
+          const auto covered      = xiiMath::Max<xiiUInt32>(cluster.m_uiGpuPadding[1], cluster.m_uiPrimitiveCount);
+          const auto end          = xiiMath::Min<xiiUInt64>(mesh.GetPrimitiveCount(), xiiUInt64(cluster.m_uiFirstPrimitive) + covered);
+          root.m_uiPrimitiveEnd   = xiiMath::Max(root.m_uiPrimitiveEnd, static_cast<xiiUInt32>(end));
         }
+        record.m_Detail = xiiVec4(compiled.m_fGeometricError, std::bit_cast<float>(root.m_uiFirstPrimitive),
+                                  std::bit_cast<float>(root.m_uiPrimitiveEnd), static_cast<float>(compiled.m_uiChildCount));
+        xiiMemoryUtils::Copy(record.m_Children, compiled.m_Children, compiled.m_uiChildCount);
+        if (page.m_bRequired)
+          fresh.m_RootPages.PushBack(root);
       }
       fresh.m_RootPages.Sort([](const State::RootPage& a, const State::RootPage& b) {
         return a.m_uiFirstPrimitive != b.m_uiFirstPrimitive ? a.m_uiFirstPrimitive < b.m_uiFirstPrimitive : a.m_uiPage < b.m_uiPage;
@@ -2517,7 +2523,7 @@ xiiGpuResidencyManager::AdmissionResult xiiGpuResidencyManager::RegisterBindless
       return AdmissionResult::Failed;
     auto& lod                          = record.m_Lods[uiLod];
     lod.m_uiPadding                    = 1U | (static_cast<xiiUInt32>(s_pState->m_uiStreamingFrame % s_pState->m_uiFramesInFlight) << 1U);
-    lod.m_uiIndexBufferIndex           = slot.m_Description.m_Lods[uiLod].m_uiFirstMeshlet;
+    lod.m_uiIndexBufferIndex           = xiiInvalidIndex;
     lod.m_uiVertexBufferIndex          = source->m_PageTable.m_uiIndex;
     lod.m_uiMeshletTopologyBufferIndex = source->m_PageTable.m_uiIndex;
     lod.m_uiMeshletPrimitiveByteOffset = 0U;
@@ -2670,6 +2676,7 @@ bool xiiGpuResidencyManager::EvictOne(xiiUInt64 uiCompletedFrame, xiiUInt64 uiMi
     s_pState->m_uiResidentBytes -= victim.m_uiResidentBytes;
     victim.m_uiResidentBytes                = 0U;
     victim.m_GpuRecord.m_uiAvailableLodMask = 0U;
+    victim.m_GpuRecord.m_uiHierarchyReady   = 0U;
     ReleaseBindlessResources(victim, victim.m_uiLastUsedFrame);
     ReleaseMeshletAllocations(victim);
     victim.m_State            = xiiGeometryResidencyState::Unloaded;
@@ -3022,7 +3029,7 @@ xiiGpuResidencyManager::UploadHandles xiiGpuResidencyManager::AddUploadPass(xiiR
     const auto& slot = pState->m_Slots[i];
     if (pState->m_bMaximumDirty)
       for (xiiUInt32 lod = 0; lod < slot.m_GpuRecord.m_uiLodCount; ++lod)
-        if (slot.m_GpuRecord.m_uiAvailableLodMask & XII_BIT(lod))
+        if (slot.m_GpuRecord.m_uiHierarchyReady != 0U || (slot.m_GpuRecord.m_uiAvailableLodMask & XII_BIT(lod)) != 0U)
           pState->m_uiMaximumResidentMeshletCount = xiiMath::Max(pState->m_uiMaximumResidentMeshletCount, slot.m_GpuRecord.m_Lods[lod].m_uiMeshletCount);
     if (slot.m_uiDirtyFrameMask & bit)
       dirty.PushBack(i);
@@ -3035,7 +3042,10 @@ xiiGpuResidencyManager::UploadHandles xiiGpuResidencyManager::AddUploadPass(xiiR
     upload.m_uiOffset    = (slice * pState->m_Slots.GetCount() + i) * sizeof(xiiGpuGeometryRecord);
     upload.m_uiSlotIndex = i;
     upload.m_uiFrameBit  = bit;
-    snapshot.m_Records.PushBack(pState->m_Slots[i].m_GpuRecord);
+    auto& gpuRecord      = snapshot.m_Records.ExpandAndGetRef();
+    gpuRecord            = pState->m_Slots[i].m_GpuRecord;
+    if (gpuRecord.m_uiHierarchyReady != 0U)
+      gpuRecord.m_uiLodCount = 0U;
   }
   for (const auto& upload : pState->m_PendingMeshletUploads)
     if (!upload->m_bRecorded && !upload->m_bCanceled)

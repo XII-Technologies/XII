@@ -8,6 +8,7 @@
 #include <GraphicsCore/Streaming/GpuResidencyManager.h>
 #include <GraphicsCore/Visibility/GpuVisibilityTypes.h>
 #include <GraphicsFoundation/Device/Device.h>
+#include <GraphicsFoundation/Resources/BindlessResourceTable.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMeshletDispatchBoundsPass, 1, xiiRTTIDefaultAllocator<xiiMeshletDispatchBoundsPass>)
@@ -76,6 +77,7 @@ xiiResult xiiMeshletDispatchBoundsPass::Build(xiiRenderPipelinePassContext& cont
       commands.ResolveAndSetShaderResourceBufferView("g_VisibleInstanceCount", execute.GetBuffer(data.m_Count)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
       commands.ResolveAndSetShaderResourceBufferView("g_CurrentLodHistory", execute.GetBuffer(data.m_Lod)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
       commands.ResolveAndSetUnorderedAccessBufferView("g_MaximumMeshletGroups", execute.GetBuffer(data.m_Maximum)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
+      xiiGALBindlessResourceTable::BindBufferSRVs(commands, "g_Buffers", xiiGALShaderType::Compute);
       commands.CommitShaderResources(xiiGALStateTransitionMode::Transition).AssertSuccess();
       commands.DispatchCompute({data.m_uiGroups, 1, 1}); });
   return context.SetOutput(m_Maximum, emitted.first->m_Maximum);

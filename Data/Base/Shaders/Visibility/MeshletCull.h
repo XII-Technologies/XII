@@ -137,7 +137,7 @@ groupshared uint s_SelectedPage;
 groupshared uint s_SelectedFirst;
 groupshared uint s_SelectedCount;
 
-void CullVirtualHierarchy(uint workGroup, uint workGroups, uint lane, uint index, GpuSceneInstance instance, GpuVisibilityView view, uint lodIndex, GpuGeometryLod lod)
+void CullVirtualHierarchy(uint workGroup, uint workGroups, uint lane, uint index, GpuSceneInstance instance, GpuVisibilityView view, GpuGeometryLod lod)
 {
   uint table, rootsOffset, rootCount;
   if (!xiiGeometryRootDirectory(lod, table, rootsOffset, rootCount)) return;
@@ -152,28 +152,31 @@ void CullVirtualHierarchy(uint workGroup, uint workGroups, uint lane, uint index
       s_PageStack[0]  = g_Buffers[table].Load(rootsOffset + root * 16u);
     }
     GroupMemoryBarrierWithGroupSync();
-    while (s_PageStackSize != 0u)
+    while (true)
     {
+      uint stackSize = s_PageStackSize;
+      // Snapshot the loop condition before lane zero mutates the stack.
+      GroupMemoryBarrierWithGroupSync();
+      if (stackSize == 0u)
+        break;
       if (lane == 0u)
       {
         s_SelectedPage                = 0xffffffffu;
         uint                pageIndex = s_PageStack[--s_PageStackSize];
         xiiGeometryPageInfo page      = xiiLoadGeometryPage(lod, pageIndex);
-        uint sourceFirst = asuint(page.Detail.y);
-        if (page.Mapping.x != 0xffffffffu && sourceFirst >= lod.IndexBufferIndex &&
-            sourceFirst - lod.IndexBufferIndex < lod.MeshletCount && xiiGeometryPageVisible(page, instance, view))
+        if (page.Mapping.x != 0xffffffffu && xiiGeometryPageVisible(page, instance, view))
         {
           uint children = min((uint)page.Detail.w, 8u);
-          if (xiiGeometryPageRefines(lod, page, instance, view) && s_PageStackSize + children <= 64u)
+          if (xiiGeometryPageRefines(lod, pageIndex, page, instance, view) && s_PageStackSize + children <= 64u)
           {
             for (uint child = 0u; child < children; ++child)
-              s_PageStack[s_PageStackSize++] = (uint)page.Detail.z - 1u + child;
+              s_PageStack[s_PageStackSize++] = xiiGeometryChild(lod, pageIndex, child);
           }
           else
           {
             s_SelectedPage  = pageIndex;
-            s_SelectedFirst = xiiGeometryClusterKey(page.Mapping, 0u, lodIndex);
-            s_SelectedCount = min(page.Mapping.w, lod.MeshletCount - (sourceFirst - lod.IndexBufferIndex));
+            s_SelectedFirst = xiiGeometryClusterKey(page.Mapping, 0u);
+            s_SelectedCount = page.Mapping.w;
             uint feedback   = g_Buffers[table].Load(16u + (lod.Padding >> 1u) * 4u);
             xiiRecordPageDemand(feedback, page.Mapping.y);
           }
@@ -189,7 +192,7 @@ void CullVirtualHierarchy(uint workGroup, uint workGroups, uint lane, uint index
           GroupMemoryBarrierWithGroupSync();
           uint meshlet = s_SelectedFirst + (base + lane) * 24u;
           uint rank    = 0xffffffffu;
-          if (base + lane < s_SelectedCount && CullMeshlet(index, meshlet, instance, view, lodIndex))
+          if (base + lane < s_SelectedCount && CullMeshlet(index, meshlet, instance, view, 0u))
             InterlockedAdd(s_VisibleCount, 1u, rank);
           GroupMemoryBarrierWithGroupSync();
           if (lane == 0u)
@@ -224,6 +227,11 @@ void CullVirtualHierarchy(uint workGroup, uint workGroups, uint lane, uint index
   if (view.GeometryBaseIndex >= geometryCount || instance.GeometryIndex >= geometryCount - view.GeometryBaseIndex)
     return;
   GpuGeometryRecord geometry = g_Geometry[view.GeometryBaseIndex + instance.GeometryIndex];
+  if (geometry.HierarchyReady != 0u)
+  {
+    CullVirtualHierarchy(group.x, max(g_MeshletWorkArguments[0], 1u), lane, index, instance, view, geometry.Lods[0]);
+    return;
+  }
   // Section candidates share one geometry-level LOD decision and representative ID.
   // Validate the same representative that InstanceCull used when publishing history.
   uint selectionIndex = index;
@@ -235,11 +243,6 @@ void CullVirtualHierarchy(uint workGroup, uint workGroups, uint lane, uint index
       (geometry.AvailableLodMask & (1u << history.x)) == 0u || (instance.DrawLod != 0xFFFFFFFFu && instance.DrawLod != history.x))
     return;
   GpuGeometryLod lod = geometry.Lods[history.x];
-  if (lod.Padding != 0u)
-  {
-    CullVirtualHierarchy(group.x, max(g_MeshletWorkArguments[0], 1u), lane, index, instance, view, history.x, lod);
-    return;
-  }
   if (lane == 0u)
     GetCandidateMeshletRange(instance, lod, s_FirstMeshlet, s_RangeMeshletCount);
   GroupMemoryBarrierWithGroupSync();

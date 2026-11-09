@@ -7,7 +7,7 @@
 #include <GuiFoundation/PropertyGrid/PropertyMetaState.h>
 
 // clang-format off
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMeshAssetProperties, 5, xiiRTTIDefaultAllocator<xiiMeshAssetProperties>)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMeshAssetProperties, 6, xiiRTTIDefaultAllocator<xiiMeshAssetProperties>)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -19,7 +19,6 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMeshAssetProperties, 5, xiiRTTIDefaultAlloca
     XII_MEMBER_PROPERTY("FlipForwardDir", m_bFlipForwardDir)->AddAttributes(new xiiDefaultValueAttribute(true)),
     XII_MEMBER_PROPERTY("UniformScaling", m_fUniformScaling)->AddAttributes(new xiiDefaultValueAttribute(1.0f), new xiiClampValueAttribute(0.0001f, 10000.0f)),
     XII_MEMBER_PROPERTY("RecalculateNormals", m_bRecalculateNormals),
-    XII_MEMBER_PROPERTY("GeneratedLOD", m_uiGeneratedLODs)->AddAttributes(new xiiDefaultValueAttribute(4), new xiiClampValueAttribute(0, 4)),
     XII_MEMBER_PROPERTY("RecalculateTangents", m_bRecalculateTangents)->AddAttributes(new xiiDefaultValueAttribute(true)),
     XII_ENUM_MEMBER_PROPERTY("VertexColorConversion", xiiModelVertexColorConversion, m_VertexColorConversion),
     XII_MEMBER_PROPERTY("ImportMaterials", m_bImportMaterials)->AddAttributes(new xiiDefaultValueAttribute(true)),
@@ -32,10 +31,6 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMeshAssetProperties, 5, xiiRTTIDefaultAlloca
     XII_MEMBER_PROPERTY("Cap2", m_bCap2)->AddAttributes(new xiiDefaultValueAttribute(true)),
     XII_MEMBER_PROPERTY("Angle", m_Angle)->AddAttributes(new xiiDefaultValueAttribute(xiiAngle::MakeFromDegree(360.0f)), new xiiClampValueAttribute(xiiAngle::MakeFromDegree(0.0f), xiiAngle::MakeFromDegree(360.0f))),
     XII_ARRAY_MEMBER_PROPERTY("Materials", m_Slots)->AddAttributes(new xiiContainerAttribute(false, true, true)),
-    XII_MEMBER_PROPERTY("SimplifyMesh", m_bSimplifyMesh),
-    XII_MEMBER_PROPERTY("MeshSimplification", m_uiMeshSimplification)->AddAttributes(new xiiDefaultValueAttribute(50), new xiiClampValueAttribute(1, 100)),
-    XII_MEMBER_PROPERTY("MaxSimplificationError", m_uiMaxSimplificationError)->AddAttributes(new xiiDefaultValueAttribute(5), new xiiClampValueAttribute(1, 100)),
-    XII_MEMBER_PROPERTY("AggressiveSimplification", m_bAggressiveSimplification),
   }
   XII_END_PROPERTIES;
 }
@@ -92,8 +87,7 @@ void xiiMeshAssetProperties::PropertyMetaStateEventHandler(xiiPropertyMetaStateE
 {
   if (e.m_pObject->GetTypeAccessor().GetType() == xiiGetStaticRTTI<xiiMeshAssetProperties>())
   {
-    const xiiInt64 primType  = e.m_pObject->GetTypeAccessor().GetValue("PrimitiveType").ConvertTo<xiiInt64>();
-    const bool     bSimplify = e.m_pObject->GetTypeAccessor().GetValue("SimplifyMesh").ConvertTo<bool>();
+    const xiiInt64 primType = e.m_pObject->GetTypeAccessor().GetValue("PrimitiveType").ConvertTo<xiiInt64>();
 
     auto& props = *e.m_pPropertyStates;
 
@@ -111,9 +105,6 @@ void xiiMeshAssetProperties::PropertyMetaStateEventHandler(xiiPropertyMetaStateE
     props["RecalculateTangents"].m_Visibility   = xiiPropertyUiState::Invisible;
     props["VertexColorConversion"].m_Visibility = xiiPropertyUiState::Invisible;
 
-    props["MeshSimplification"].m_Visibility       = bSimplify ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
-    props["MaxSimplificationError"].m_Visibility   = bSimplify ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
-    props["AggressiveSimplification"].m_Visibility = bSimplify ? xiiPropertyUiState::Default : xiiPropertyUiState::Invisible;
 
     const xiiInt64 importTransform       = e.m_pObject->GetTypeAccessor().GetValue("ImportTransform").ConvertTo<xiiInt64>();
     const bool     bCustomTransform      = importTransform == 127;
@@ -266,3 +257,24 @@ public:
 };
 
 xiiMeshAssetPropertiesPatch_3_4 g_xiiMeshAssetPropertiesPatch_3_4;
+
+class xiiMeshAssetPropertiesPatch_5_6 : public xiiGraphPatch
+{
+public:
+  xiiMeshAssetPropertiesPatch_5_6() :
+    xiiGraphPatch("xiiMeshAssetProperties", 6)
+  {
+  }
+
+  void Patch(xiiGraphPatchContext&, xiiAbstractObjectGraph*, xiiAbstractObjectNode* pNode) const override
+  {
+    pNode->RemoveProperty("GeneratedLOD");
+    pNode->RemoveProperty("GeneratedLODs");
+    pNode->RemoveProperty("SimplifyMesh");
+    pNode->RemoveProperty("MeshSimplification");
+    pNode->RemoveProperty("MaxSimplificationError");
+    pNode->RemoveProperty("AggressiveSimplification");
+  }
+};
+
+xiiMeshAssetPropertiesPatch_5_6 g_xiiMeshAssetPropertiesPatch_5_6;

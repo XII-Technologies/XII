@@ -98,7 +98,7 @@ struct XII_GRAPHICSCORE_DLL alignas(16) xiiGpuGeometryRecord
   xiiUInt32         m_uiLodCount         = 0U;
   xiiUInt32         m_uiGeneration       = 0U;
   xiiUInt32         m_uiAvailableLodMask = 0U;
-  xiiUInt32         m_uiReserved         = 0U;
+  xiiUInt32         m_uiHierarchyReady   = 0U;
 
   [[nodiscard]] XII_ALWAYS_INLINE xiiUInt32         GetReflectedLodCount() const { return m_uiLodCount; }
   [[nodiscard]] XII_ALWAYS_INLINE xiiGpuGeometryLod GetReflectedLod(xiiUInt32 uiIndex) const { return m_Lods[uiIndex]; }

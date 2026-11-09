@@ -36,7 +36,7 @@ GBufferVertex xiiLoadIndexedSceneSurfaceVertex(uint vertexIndex, uint visibleInd
   GpuMeshlet meshlet;
   if (!xiiLoadCluster(visible.y, meshlet)) return xiiInvalidSceneSurfaceVertex();
   const uint lodIndex = meshlet.PackedLodSection & 0xFFFFu;
-  if (lodIndex >= min(geometry.LodCount, 8u))
+  if (!xiiGeometryLodAvailable(geometry, lodIndex))
     return xiiInvalidSceneSurfaceVertex();
   GpuGeometryLod lod            = geometry.Lods[lodIndex];
   if (!xiiResolveClusterLod(lod, meshlet))

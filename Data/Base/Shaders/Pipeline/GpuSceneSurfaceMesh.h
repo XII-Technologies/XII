@@ -58,7 +58,7 @@ ByteAddressBuffer                   g_Buffers[];
     if (!xiiLoadCluster(visible.y, meshlet))
     { SetMeshOutputCounts(0u, 0u); return; }
     const uint              lodIndex = meshlet.PackedLodSection & 0xFFFFu;
-    if (lodIndex >= min(geometry.LodCount, 8u) || (instance.DrawLod != 0xFFFFFFFFu && instance.DrawLod != lodIndex))
+    if (!xiiGeometryLodAvailable(geometry, lodIndex) || (instance.DrawLod != 0xFFFFFFFFu && instance.DrawLod != lodIndex))
     {
       SetMeshOutputCounts(0u, 0u);
       return;

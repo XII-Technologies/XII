@@ -146,7 +146,7 @@ bool TraceProbeMeshlets(float3 origin, float3 direction, GpuSceneInstance instan
     [loop] for (uint n = 0u; n < count; ++n)
     {
       GpuMeshlet cluster;
-      if (!xiiLoadGeometryRootCluster(lod, lodIndex, first + n, cluster)) continue;
+      if (!xiiLoadGeometryRootCluster(lod, first + n, cluster)) return false;
       GpuGeometryLod resident = lod;
       if (!xiiResolveClusterLod(resident, cluster)) return false;
       uint triangles = cluster.PackedPrimitiveVertexCount & 0xffffu;
@@ -271,8 +271,8 @@ bool TraceProbeScene(float3 origin, float3 direction, float maximum, out ProbeHi
     if (instance.GeometryIndex == 0xffffffffu || geometryIndex >= geometryCount || instance.MaterialIndex == 0xffffffffu || materialIndex >= materialCount)
       return false;
     const GpuGeometryRecord geometry = g_ProbeGeometry[geometryIndex];
-    const uint              lodIndex = instance.ForcedLod != 0xffffffffu ? instance.ForcedLod : 0u;
-    if (lodIndex >= min(geometry.LodCount, 8u) || (geometry.AvailableLodMask & (1u << lodIndex)) == 0u)
+    const uint lodIndex = geometry.HierarchyReady == 0u && instance.ForcedLod != 0xffffffffu ? instance.ForcedLod : 0u;
+    if (!xiiGeometryLodAvailable(geometry, lodIndex))
       return false;
     const GpuGeometryLod lod = geometry.Lods[lodIndex];
     if (lod.VertexBufferIndex == 0xffffffffu)
@@ -280,6 +280,19 @@ bool TraceProbeScene(float3 origin, float3 direction, float maximum, out ProbeHi
     const xiiGpuSurfaceMaterial material = g_ProbeMaterials[materialIndex];
     if (material.Metadata.z >= 2u || (shadowQuery && (material.Metadata.y & (1u << 13u)) == 0u))
       continue;
+    if (geometry.HierarchyReady != 0u)
+    {
+#if defined(XII_DDGI_MESHLET_BOUNDS)
+      bool complete;
+      if (!TraceProbeMeshlets(origin, direction, instance, lod, 0u, material, 0u, 0u, remainingMeshlets, remaining, shadowQuery, hit, complete) || !complete)
+        return false;
+      if (shadowQuery && hit.Found)
+        return true;
+      continue;
+#else
+      return false;
+#endif
+    }
     const bool indexed      = lod.IndexBufferIndex != 0xffffffffu;
     const uint available    = (indexed ? lod.IndexCount : lod.VertexCount) / 3u;
     const uint begin        = min(instance.FirstPrimitive, available);

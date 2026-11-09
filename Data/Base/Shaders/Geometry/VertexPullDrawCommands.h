@@ -45,7 +45,7 @@ ByteAddressBuffer g_Buffers[];
   GpuMeshlet meshlet;
   if (!xiiLoadCluster(visible.y, meshlet)) return;
   uint              lodIndex = meshlet.PackedLodSection & 0xFFFFu;
-  if (lodIndex >= min(geometry.LodCount, 8u) || (geometry.AvailableLodMask & (1u << lodIndex)) == 0u ||
+  if (!xiiGeometryLodAvailable(geometry, lodIndex) ||
       (instance.DrawLod != 0xFFFFFFFFu && instance.DrawLod != lodIndex))
     return;
   GpuGeometryLod lod = geometry.Lods[lodIndex];

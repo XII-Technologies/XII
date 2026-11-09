@@ -123,25 +123,30 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID, uint3 groupId : SV_Group
     return;
 
   const GpuGeometryRecord geometry = g_Geometry[GeometryBaseIndex + instance.GeometryIndex];
-  uint lodIndex = 0xFFFFFFFFu;
-  [unroll] for (uint lod = 0u; lod < min(geometry.LodCount, 8u); ++lod)
+  uint lodIndex = 0u;
+  if (geometry.HierarchyReady == 0u)
   {
-    if ((geometry.AvailableLodMask & (1u << lod)) != 0u)
+    lodIndex = 0xffffffffu;
+    [unroll] for (uint lod = 0u; lod < min(geometry.LodCount, 8u); ++lod)
     {
-      lodIndex = lod;
-      break;
+      if ((geometry.AvailableLodMask & (1u << lod)) != 0u)
+      {
+        lodIndex = lod;
+        break;
+      }
     }
-  }
-  // Emissive sampling uses the finest resident geometry independently of per-view LOD.
-  // Forced selection still applies, and only candidates authored for that LOD contribute.
-  if (instance.ForcedLod != 0xFFFFFFFFu)
-  {
-    lodIndex = instance.ForcedLod;
-    if (lodIndex >= min(geometry.LodCount, 8u) || (geometry.AvailableLodMask & (1u << lodIndex)) == 0u)
+    // Emissive sampling uses the finest resident geometry independently of per-view LOD.
+    // Forced selection still applies, and only candidates authored for that LOD contribute.
+    if (instance.ForcedLod != 0xFFFFFFFFu)
+    {
+      lodIndex = instance.ForcedLod;
+      if (lodIndex >= min(geometry.LodCount, 8u) || (geometry.AvailableLodMask & (1u << lodIndex)) == 0u)
+        return;
+    }
+    if (lodIndex == 0xFFFFFFFFu || (instance.DrawLod != 0xFFFFFFFFu && instance.DrawLod != lodIndex))
       return;
+
   }
-  if (lodIndex == 0xFFFFFFFFu || (instance.DrawLod != 0xFFFFFFFFu && instance.DrawLod != lodIndex))
-    return;
 
   GpuGeometryLod lod = geometry.Lods[lodIndex];
   GpuMeshlet meshlet;
@@ -151,7 +156,7 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID, uint3 groupId : SV_Group
       xiiGeometryRootClusterRange(lod, instance, s_FirstMeshlet, s_RangeMeshletCount);
     GroupMemoryBarrierWithGroupSync();
     if (groupId.x >= min(s_RangeMeshletCount, MaxMeshletCount) ||
-        !xiiLoadGeometryRootCluster(lod, lodIndex, s_FirstMeshlet + groupId.x, meshlet)) return;
+        !xiiLoadGeometryRootCluster(lod, s_FirstMeshlet + groupId.x, meshlet)) return;
   }
   else
   {
