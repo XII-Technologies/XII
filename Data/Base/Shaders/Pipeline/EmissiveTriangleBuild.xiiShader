@@ -126,7 +126,7 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID, uint3 groupId : SV_Group
   uint lodIndex = 0xFFFFFFFFu;
   [unroll] for (uint lod = 0u; lod < min(geometry.LodCount, 8u); ++lod)
   {
-    if ((geometry.ResidentLodMask & (1u << lod)) != 0u)
+    if ((geometry.AvailableLodMask & (1u << lod)) != 0u)
     {
       lodIndex = lod;
       break;
@@ -137,7 +137,7 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID, uint3 groupId : SV_Group
   if (instance.ForcedLod != 0xFFFFFFFFu)
   {
     lodIndex = instance.ForcedLod;
-    if (lodIndex >= min(geometry.LodCount, 8u) || (geometry.ResidentLodMask & (1u << lodIndex)) == 0u)
+    if (lodIndex >= min(geometry.LodCount, 8u) || (geometry.AvailableLodMask & (1u << lodIndex)) == 0u)
       return;
   }
   if (lodIndex == 0xFFFFFFFFu || (instance.DrawLod != 0xFFFFFFFFu && instance.DrawLod != lodIndex))

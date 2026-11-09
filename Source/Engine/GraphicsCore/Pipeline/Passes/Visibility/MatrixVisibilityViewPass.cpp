@@ -3,11 +3,11 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <Foundation/Math/Frustum.h>
-#include <GraphicsCore/Geometry/GeometryResidency.h>
 #include <GraphicsCore/Meshes/GpuInstanceData.h>
 #include <GraphicsCore/Pipeline/Passes/Implementation/RenderPassUtils.h>
 #include <GraphicsCore/Pipeline/Passes/Visibility/MatrixVisibilityViewPass.h>
 #include <GraphicsCore/Pipeline/View.h>
+#include <GraphicsCore/Streaming/GpuResidencyManager.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 
 // clang-format off
@@ -77,7 +77,7 @@ xiiResult xiiMatrixVisibilityViewPass::Build(xiiRenderPipelinePassContext& conte
   snapshot.m_uiVisibilityMask    = m_uiVisibilityMask;
   snapshot.m_uiRequiredFlags     = required;
   snapshot.m_uiExcludedFlags     = excluded;
-  snapshot.m_uiGeometryBaseIndex = xiiGeometryResidencyManager::GetMetadataBaseIndex(context.m_Graph.GetFrameIndex());
+  snapshot.m_uiGeometryBaseIndex = xiiGpuResidencyManager::GetMetadataBaseIndex(context.m_Graph.GetFrameIndex());
   // Other worlds and views may advance the device frame clock between executions.
   // LOD validity follows this occurrence's published snapshots instead.
   const auto token            = (m_uiLastLodToken + 1U) % 65535U;

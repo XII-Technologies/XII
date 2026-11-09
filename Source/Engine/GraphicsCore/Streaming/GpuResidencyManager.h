@@ -49,8 +49,8 @@ struct XII_GRAPHICSCORE_DLL xiiGeometryLodSource
 
   xiiMeshBufferResourceHandle m_hMeshBuffer;
   float                       m_fMinimumScreenCoverage = 0.0f;
-  /// First source meshlet in this LOD. LODs share canonical vertex and index buffers.
-  /// Residency uploads and binds topology for this meshlet range.
+  /// First compiled cluster in this authored LOD. Static geometry resolves independently resident pages.
+  /// Deformable geometry shares a direct topology binding across authored ranges.
   xiiUInt32 m_uiFirstMeshlet = 0U;
   /// Number of source meshlets in this LOD. Zero consumes every meshlet after m_uiFirstMeshlet.
   xiiUInt32 m_uiMeshletCount = 0U;
@@ -95,10 +95,10 @@ struct XII_GRAPHICSCORE_DLL alignas(16) xiiGpuGeometryRecord
   xiiVec4           m_BoundsCenterRadius = xiiVec4::MakeZero();
   xiiVec4           m_BoundsExtents      = xiiVec4::MakeZero();
   xiiGpuGeometryLod m_Lods[s_uiMaxLods];
-  xiiUInt32         m_uiLodCount        = 0U;
-  xiiUInt32         m_uiGeneration      = 0U;
-  xiiUInt32         m_uiResidentLodMask = 0U;
-  xiiUInt32         m_uiFlags           = 0U;
+  xiiUInt32         m_uiLodCount         = 0U;
+  xiiUInt32         m_uiGeneration       = 0U;
+  xiiUInt32         m_uiAvailableLodMask = 0U;
+  xiiUInt32         m_uiReserved         = 0U;
 
   [[nodiscard]] XII_ALWAYS_INLINE xiiUInt32         GetReflectedLodCount() const { return m_uiLodCount; }
   [[nodiscard]] XII_ALWAYS_INLINE xiiGpuGeometryLod GetReflectedLod(xiiUInt32 uiIndex) const { return m_Lods[uiIndex]; }
@@ -106,7 +106,7 @@ struct XII_GRAPHICSCORE_DLL alignas(16) xiiGpuGeometryRecord
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGpuGeometryRecord);
 
-struct XII_GRAPHICSCORE_DLL xiiGeometryResidencyStats
+struct XII_GRAPHICSCORE_DLL xiiGpuResidencyStats
 {
   XII_DECLARE_POD_TYPE();
   xiiUInt32 m_uiGeometryCount         = 0U;
@@ -115,13 +115,15 @@ struct XII_GRAPHICSCORE_DLL xiiGeometryResidencyStats
   xiiUInt64 m_uiGeometryPageBytes = 0U, m_uiTexturePageBytes = 0U;
   xiiUInt32 m_uiGeometryPages = 0U, m_uiTexturePages = 0U;
   xiiUInt64 m_uiPageRequests = 0U, m_uiPageMisses = 0U;
+  xiiUInt32 m_uiLogicalPageCount = 0U, m_uiRequestIdHighWater = 0U, m_uiRetiredRequestIds = 0U;
+  xiiUInt64 m_uiRequestIdReuses      = 0U;
   xiiUInt64 m_uiGeometryPageRequests = 0U, m_uiGeometryPageUploads = 0U;
   xiiUInt32 m_uiPendingPageRequests = 0U, m_uiPendingPageIO = 0U;
   xiiUInt64 m_uiResidentBytes               = 0U; ///< Occupied meshlet metadata arena bytes.
   xiiUInt64 m_uiBudgetBytes                 = 0U; ///< Soft meshlet metadata occupancy limit.
   xiiUInt64 m_uiUploadedBytes               = 0U;
   xiiUInt64 m_uiAdmittedBytes               = 0U; ///< Metadata and topology transfer bytes charged this frame.
-  xiiUInt64 m_uiResidentTopologyBytes       = 0U; ///< Unique live LOD topology payload bytes, including word padding.
+  xiiUInt64 m_uiResidentTopologyBytes       = 0U; ///< Active physical geometry pages and shared direct deformable topology.
   xiiUInt64 m_uiTopologyUploadBytes         = 0U; ///< Topology bytes submitted by admissions this frame.
   xiiUInt64 m_uiRetiredTopologyBytes        = 0U; ///< Payload bytes passed to deferred retirement this frame.
   xiiUInt64 m_uiReclaimedArenaBytes         = 0U; ///< Arena bytes made reusable by evictions this frame.
@@ -142,10 +144,10 @@ struct XII_GRAPHICSCORE_DLL xiiGeometryResidencyStats
   xiiUInt64 m_uiCoverageMeshlets     = 0U;
 };
 
-XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGeometryResidencyStats);
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGpuResidencyStats);
 
-/// Startup configuration for the process-wide geometry residency service.
-struct XII_GRAPHICSCORE_DLL xiiGeometryResidencyDescription
+/// Startup configuration for the default device residency service.
+struct XII_GRAPHICSCORE_DLL xiiGpuResidencyDescription
 {
   xiiUInt32 m_uiMaxGeometries             = 65536U;
   xiiUInt32 m_uiFramesInFlight            = 3U;
@@ -154,25 +156,25 @@ struct XII_GRAPHICSCORE_DLL xiiGeometryResidencyDescription
   xiiUInt32 m_uiMaxMeshlets               = 1024U * 1024U;
 };
 
-XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGeometryResidencyDescription);
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGpuResidencyDescription);
 
-/// Static subsystem facade for the stable GPU geometry table and mesh LOD residency service.
+/// Default-device residency service for geometry pages, virtual texture tiles, and stable GPU tables.
 ///
 /// Allocator-backed CPU state is created during core startup and GPU resources are created during
 /// high-level startup. Callers never construct, own, cache, or destroy a manager object.
-class XII_GRAPHICSCORE_DLL xiiGeometryResidencyManager
+class XII_GRAPHICSCORE_DLL xiiGpuResidencyManager
 {
-  XII_DISALLOW_COPY_AND_ASSIGN(xiiGeometryResidencyManager);
-  XII_MAKE_SUBSYSTEM_STARTUP_FRIEND(GraphicsCore, GeometryResidencyManager);
+  XII_DISALLOW_COPY_AND_ASSIGN(xiiGpuResidencyManager);
+  XII_MAKE_SUBSYSTEM_STARTUP_FRIEND(GraphicsCore, GpuResidencyManager);
 
 public:
-  xiiGeometryResidencyManager() = delete;
+  xiiGpuResidencyManager() = delete;
 
   /// Stores startup configuration or reapplies it while no geometry handles are active.
-  [[nodiscard]] static xiiResult                              Configure(const xiiGeometryResidencyDescription& description);
-  [[nodiscard]] static const xiiGeometryResidencyDescription& GetConfiguration();
-  [[nodiscard]] static bool                                   IsSubsystemInitialized();
-  [[nodiscard]] static bool                                   IsInitialized();
+  [[nodiscard]] static xiiResult                         Configure(const xiiGpuResidencyDescription& description);
+  [[nodiscard]] static const xiiGpuResidencyDescription& GetConfiguration();
+  [[nodiscard]] static bool                              IsSubsystemInitialized();
+  [[nodiscard]] static bool                              IsInitialized();
   /// Allocates shared device buffers on first consumption. Concurrent initialization requests
   /// share one completed allocation; subsequent residency mutations use the render-frame scope.
   [[nodiscard]] static xiiResult EnsureInitialized();
@@ -213,7 +215,7 @@ public:
   /// Shader-visible first element in the shared metadata frame slice.
   [[nodiscard]] static xiiUInt32                  GetMetadataBaseIndex(xiiUInt64 frameIndex);
   [[nodiscard]] static xiiSharedPtr<xiiGALBuffer> GetMeshletMetadataBuffer();
-  [[nodiscard]] static xiiGeometryResidencyStats  GetStats();
+  [[nodiscard]] static xiiGpuResidencyStats       GetStats();
 
   struct UploadHandles
   {
@@ -230,7 +232,7 @@ public:
 
 private:
   static void      Startup();
-  static xiiResult Initialize(xiiGALDevice* pDevice, const xiiGeometryResidencyDescription& description);
+  static xiiResult Initialize(xiiGALDevice* pDevice, const xiiGpuResidencyDescription& description);
   static void      Shutdown();
   static void      EngineStartup();
   static void      EngineShutdown();

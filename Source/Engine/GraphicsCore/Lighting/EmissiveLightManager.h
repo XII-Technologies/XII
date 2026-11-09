@@ -5,9 +5,9 @@
 #include <Foundation/Configuration/StaticSubSystem.h>
 #include <Foundation/Reflection/Reflection.h>
 #include <Foundation/Types/UniquePtr.h>
-#include <GraphicsCore/Geometry/GeometryResidency.h>
 #include <GraphicsCore/Material/MaterialGpuStorage.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
+#include <GraphicsCore/Streaming/GpuResidencyManager.h>
 #include <GraphicsCore/Visibility/GpuVisibilityResources.h>
 #include <Shaders/Pipeline/Passes/ReSTIR/EmissiveLightData.h>
 
@@ -62,9 +62,9 @@ public:
 
   struct BuildDescription
   {
-    xiiGpuVisibilityOutputs                    m_Visibility;
-    xiiGeometryResidencyManager::UploadHandles m_Geometry;
-    xiiMaterialGpuStorage::UploadHandles       m_Materials;
+    xiiGpuVisibilityOutputs               m_Visibility;
+    xiiGpuResidencyManager::UploadHandles m_Geometry;
+    xiiMaterialGpuStorage::UploadHandles  m_Materials;
     /// Optional canonical ray-scene input. Supply all three versions from the same BuildHandles,
     /// its active instance and emissive primitive counts, and no legacy meshlet inputs. Dispatch
     /// depends on the TLAS build token to retain and synchronize bindless deformed vertex buffers.

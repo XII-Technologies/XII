@@ -21,6 +21,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGpuDrivenSceneConfiguration, xiiNoBase, 1, xi
       XII_MEMBER_PROPERTY("MeshDetail", m_uiMeshDetail),
       XII_MEMBER_PROPERTY("Texture", m_sTexture),
       XII_MEMBER_PROPERTY("AuthoredMaterials", m_bAuthoredMaterials),
+      XII_MEMBER_PROPERTY("PopulateScene", m_bPopulateScene),
       XII_MEMBER_PROPERTY("GridWidth", m_uiGridWidth)->AddAttributes(new xiiDefaultValueAttribute(24U), new xiiClampValueAttribute(1U, 512U)),
       XII_MEMBER_PROPERTY("GridHeight", m_uiGridHeight)->AddAttributes(new xiiDefaultValueAttribute(16U), new xiiClampValueAttribute(1U, 512U)),
       XII_MEMBER_PROPERTY("ObjectSpacing", m_fObjectSpacing)->AddAttributes(new xiiDefaultValueAttribute(2.4f), new xiiClampValueAttribute(0.25f, 20.0f)),
@@ -39,13 +40,13 @@ xiiResult xiiGpuDrivenSceneWorld::ConfigureSubsystems(const xiiGpuDrivenSceneCon
   bindlessDescription.m_uiBufferSRVCapacity = 256U;
   XII_SUCCEED_OR_RETURN(xiiGALBindlessResourceTable::Configure(bindlessDescription));
 
-  xiiGeometryResidencyDescription geometryDescription;
+  xiiGpuResidencyDescription geometryDescription;
   geometryDescription.m_uiMaxGeometries             = 64U;
   geometryDescription.m_uiFramesInFlight            = configuration.m_uiFramesInFlight;
   geometryDescription.m_uiBudgetBytes               = 128ULL * 1024ULL * 1024ULL;
   geometryDescription.m_uiUploadBudgetPerFrameBytes = 8ULL * 1024ULL * 1024ULL;
   geometryDescription.m_uiMaxMeshlets               = configuration.m_uiMaxVisibleMeshlets;
-  XII_SUCCEED_OR_RETURN(xiiGeometryResidencyManager::Configure(geometryDescription));
+  XII_SUCCEED_OR_RETURN(xiiGpuResidencyManager::Configure(geometryDescription));
 
   xiiMaterialGpuStorageDescription materialDescription;
   materialDescription.m_uiMaxMaterials   = 64U;
@@ -59,8 +60,6 @@ xiiResult xiiGpuDrivenSceneWorld::Initialize(xiiGALDevice* pDevice, const xiiGpu
 {
   if (pDevice == nullptr)
     return XII_FAILURE;
-
-  XII_SUCCEED_OR_RETURN(ConfigureSubsystems(configuration));
 
   m_Configuration = configuration;
   xiiWorldDescription worldDescription("GPU-driven component world");
@@ -77,9 +76,14 @@ xiiResult xiiGpuDrivenSceneWorld::Initialize(xiiGALDevice* pDevice, const xiiGpu
   light->SetLightColor(xiiColorGammaUB(sunlight.m_Color));
   light->SetIntensity(sunlight.m_fIntensity);
 
-  XII_SUCCEED_OR_RETURN(CreateMaterials());
-  XII_SUCCEED_OR_RETURN(CreateGeometry());
-  XII_SUCCEED_OR_RETURN(CreateSceneObjects());
+  if (m_Configuration.m_bPopulateScene)
+  {
+    XII_SUCCEED_OR_RETURN(CreateMaterials());
+    XII_SUCCEED_OR_RETURN(CreateGeometry());
+    XII_SUCCEED_OR_RETURN(CreateSceneObjects());
+  }
+  else
+    m_World->GetOrCreateModule<xiiRenderWorldModule>();
   xiiView* view = nullptr;
   m_hRenderView = m_World->GetModule<xiiRenderWorldModule>()->CreateView("GPU-driven authored extraction", view);
   return view ? XII_SUCCESS : XII_FAILURE;
@@ -135,7 +139,7 @@ xiiResult xiiGpuDrivenSceneWorld::CreateMaterials()
     material.m_FeatureFlags = xiiMaterialFeatureFlags::ReceivesLighting | xiiMaterialFeatureFlags::CastsShadows;
     xiiStringBuilder name;
     name.SetFormat("GpuDrivenScene.Material{}", i);
-    m_Materials.PushBack(xiiResourceManager::CreateResource<xiiMaterialResource>(name, std::move(material)));
+    m_Materials.PushBack(xiiResourceManager::GetOrCreateResource<xiiMaterialResource>(name, std::move(material)));
   }
   return XII_SUCCESS;
 }
@@ -202,7 +206,7 @@ xiiResult xiiGpuDrivenSceneWorld::CreateGeometry()
     xiiStringBuilder name;
     name.SetFormat("GpuDrivenScene.Mesh{}", i);
     auto& asset   = m_GeometryAssets[i];
-    asset.m_hMesh = xiiResourceManager::CreateResource<xiiMeshResource>(name, std::move(descriptor));
+    asset.m_hMesh = xiiResourceManager::GetOrCreateResource<xiiMeshResource>(name, std::move(descriptor));
   }
   return XII_SUCCESS;
 }

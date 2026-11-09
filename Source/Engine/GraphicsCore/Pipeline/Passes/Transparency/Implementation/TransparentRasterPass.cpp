@@ -2,7 +2,6 @@
 
 #include <GraphicsCore/GraphicsCorePCH.h>
 
-#include <GraphicsCore/Geometry/GeometryResidency.h>
 #include <GraphicsCore/Lighting/LightingData.h>
 #include <GraphicsCore/Material/MaterialManager.h>
 #include <GraphicsCore/Meshes/GpuInstanceData.h>
@@ -17,6 +16,7 @@
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/Shader/ShaderPermutationUtilities.h>
 #include <GraphicsCore/Shader/ShaderResource.h>
+#include <GraphicsCore/Streaming/GpuResidencyManager.h>
 #include <GraphicsCore/Visibility/GpuVisibilityTypes.h>
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Resources/BindlessResourceTable.h>

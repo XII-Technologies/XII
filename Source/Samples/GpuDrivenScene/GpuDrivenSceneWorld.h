@@ -6,11 +6,11 @@
 #include <Foundation/Containers/DynamicArray.h>
 #include <Foundation/Math/BoundingBox.h>
 #include <Foundation/Math/Color.h>
-#include <GraphicsCore/Geometry/GeometryResidency.h>
 #include <GraphicsCore/Material/MaterialManager.h>
 #include <GraphicsCore/Meshes/GpuInstanceData.h>
 #include <GraphicsCore/Meshes/MeshResource.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
+#include <GraphicsCore/Streaming/GpuResidencyManager.h>
 #include <GraphicsFoundation/Resources/BindlessResourceTable.h>
 
 /// Reflected sample configuration doubles as an editor/tooling example for the new systems.
@@ -19,6 +19,7 @@ struct xiiGpuDrivenSceneConfiguration
   xiiUInt32 m_uiMeshDetail = 32U;
   xiiString m_sTexture;
   xiiString m_sMesh, m_sExportMesh;
+  bool      m_bPopulateScene       = true;
   bool      m_bAuthoredMaterials   = false;
   xiiUInt32 m_uiGridWidth          = 24U;
   xiiUInt32 m_uiGridHeight         = 16U;

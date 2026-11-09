@@ -272,7 +272,7 @@ bool TraceProbeScene(float3 origin, float3 direction, float maximum, out ProbeHi
       return false;
     const GpuGeometryRecord geometry = g_ProbeGeometry[geometryIndex];
     const uint              lodIndex = instance.ForcedLod != 0xffffffffu ? instance.ForcedLod : 0u;
-    if (lodIndex >= min(geometry.LodCount, 8u) || (geometry.ResidentLodMask & (1u << lodIndex)) == 0u)
+    if (lodIndex >= min(geometry.LodCount, 8u) || (geometry.AvailableLodMask & (1u << lodIndex)) == 0u)
       return false;
     const GpuGeometryLod lod = geometry.Lods[lodIndex];
     if (lod.VertexBufferIndex == 0xffffffffu)

@@ -235,7 +235,7 @@ void CullVirtualHierarchy(uint workGroup, uint workGroups, uint lane, uint index
     selectionIndex = instance.LodSelectionIndex;
   uint4 history = g_CurrentLodHistory[index];
   if (history.x >= min(geometry.LodCount, 8u) || history.y != geometry.Generation || history.z != g_SceneInstances[selectionIndex].ObjectId ||
-      (geometry.ResidentLodMask & (1u << history.x)) == 0u || (instance.DrawLod != 0xFFFFFFFFu && instance.DrawLod != history.x))
+      (geometry.AvailableLodMask & (1u << history.x)) == 0u || (instance.DrawLod != 0xFFFFFFFFu && instance.DrawLod != history.x))
     return;
   GpuGeometryLod lod = geometry.Lods[history.x];
   if (lod.Padding != 0u)

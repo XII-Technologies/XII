@@ -5,11 +5,11 @@
 #include <Core/Graphics/Camera.h>
 #include <Foundation/Math/Frustum.h>
 #include <Foundation/Threading/Mutex.h>
-#include <GraphicsCore/Geometry/GeometryResidency.h>
 #include <GraphicsCore/Meshes/GpuInstanceData.h>
 #include <GraphicsCore/Pipeline/Passes/Implementation/RenderPassUtils.h>
 #include <GraphicsCore/Pipeline/Passes/Visibility/VisibilityViewPass.h>
 #include <GraphicsCore/Pipeline/View.h>
+#include <GraphicsCore/Streaming/GpuResidencyManager.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 
 struct xiiVisibilityViewPass::State : xiiRefCounted
@@ -130,7 +130,7 @@ xiiResult xiiVisibilityViewPass::Build(xiiRenderPipelinePassContext& context)
   snapshot.m_uiVisibilityMask    = m_uiVisibilityMask;
   snapshot.m_uiRequiredFlags     = m_uiRequiredFlags;
   snapshot.m_uiExcludedFlags     = m_uiExcludedFlags;
-  snapshot.m_uiGeometryBaseIndex = xiiGeometryResidencyManager::GetMetadataBaseIndex(context.m_Graph.GetFrameIndex());
+  snapshot.m_uiGeometryBaseIndex = xiiGpuResidencyManager::GetMetadataBaseIndex(context.m_Graph.GetFrameIndex());
   snapshot.m_ViewportAndHiZ.y *= m_fLodScreenScale;
   // Other worlds and views may advance the device frame clock between executions.
   // LOD validity follows this occurrence's published snapshots instead.

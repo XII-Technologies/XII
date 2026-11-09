@@ -2,10 +2,10 @@
 
 #include <GraphicsCore/GraphicsCorePCH.h>
 
-#include <GraphicsCore/Geometry/GeometryResidency.h>
 #include <GraphicsCore/Material/MaterialManager.h>
 #include <GraphicsCore/Pipeline/Passes/Geometry/MatrixRasterConstantsPass.h>
 #include <GraphicsCore/Pipeline/Passes/Implementation/RenderPassUtils.h>
+#include <GraphicsCore/Streaming/GpuResidencyManager.h>
 #include <GraphicsFoundation/Tools/MapHelper.h>
 #include <Shaders/Pipeline/Passes/Geometry/GpuSceneGBufferConstants.h>
 
@@ -42,7 +42,7 @@ xiiResult xiiMatrixRasterConstantsPass::Configure(const xiiVariantDictionary& pr
 }
 xiiResult xiiMatrixRasterConstantsPass::Build(xiiRenderPipelinePassContext& context)
 {
-  if (!xiiGeometryResidencyManager::IsInitialized() || !xiiMaterialManager::IsInitialized())
+  if (!xiiGpuResidencyManager::IsInitialized() || !xiiMaterialManager::IsInitialized())
     return context.ReportFailure("Matrix raster constants require initialized device residency producers.");
   auto width = m_uiWidth, height = m_uiHeight, groupsX = m_uiMeshGroupCountX, groupsY = m_uiMeshGroupCountY;
   auto projection = m_ViewProjection, previous = m_PreviousViewProjection;
@@ -66,7 +66,7 @@ xiiResult xiiMatrixRasterConstantsPass::Build(xiiRenderPipelinePassContext& cont
       data.m_Snapshot.PreviousViewProjectionMatrix = previous;
       data.m_Snapshot.InvRenderSize = xiiVec2(1.0f / width, 1.0f / height);
       data.m_Snapshot.CurrentJitter = data.m_Snapshot.PreviousJitter = xiiVec2::MakeZero();
-      data.m_Snapshot.GeometryBaseIndex = xiiGeometryResidencyManager::GetMetadataBaseIndex(context.m_Graph.GetFrameIndex());
+      data.m_Snapshot.GeometryBaseIndex = xiiGpuResidencyManager::GetMetadataBaseIndex(context.m_Graph.GetFrameIndex());
       data.m_Snapshot.MaterialBaseIndex = xiiMaterialManager::GetGpuStorage().GetSurfaceBaseIndex(context.m_Graph.GetFrameIndex());
       data.m_Snapshot.VertexStride = m_uiVertexStride;
       data.m_Snapshot.NormalOffset = m_uiNormalOffset;

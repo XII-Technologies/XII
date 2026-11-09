@@ -225,6 +225,65 @@ IdType xiiIdTableBase<IdType, ValueType>::Insert(ValueType&& value)
 }
 
 template <typename IdType, typename ValueType>
+bool xiiIdTableBase<IdType, ValueType>::TryInsert(const ValueType& value, IndexType uiIndexLimit, IdType& out_id)
+{
+  out_id.Invalidate();
+  const auto index = AcquireBoundedIndex(uiIndexLimit);
+  if (index == IndexType(-1))
+    return false;
+  Entry& entry = m_pEntries[index];
+  xiiMemoryUtils::CopyConstruct(&entry.value, value, 1);
+  ++m_Count;
+  out_id = entry.id;
+  return true;
+}
+
+template <typename IdType, typename ValueType>
+bool xiiIdTableBase<IdType, ValueType>::TryInsert(ValueType&& value, IndexType uiIndexLimit, IdType& out_id)
+{
+  out_id.Invalidate();
+  const auto index = AcquireBoundedIndex(uiIndexLimit);
+  if (index == IndexType(-1))
+    return false;
+  Entry& entry = m_pEntries[index];
+  xiiMemoryUtils::MoveConstruct<ValueType>(&entry.value, std::move(value));
+  ++m_Count;
+  out_id = entry.id;
+  return true;
+}
+
+template <typename IdType, typename ValueType>
+typename xiiIdTableBase<IdType, ValueType>::IndexType xiiIdTableBase<IdType, ValueType>::AcquireBoundedIndex(IndexType uiIndexLimit)
+{
+  // Retain the free-list sentinel space without extending the usable ID range.
+  const xiiUInt64 required = (static_cast<xiiUInt64>(uiIndexLimit) + CAPACITY_ALIGNMENT * 2U - 1U) & ~xiiUInt64(CAPACITY_ALIGNMENT - 1U);
+  if (uiIndexLimit == 0U || required > IdType::INVALID_INSTANCE_INDEX)
+    return IndexType(-1);
+  if (m_Capacity < required)
+    SetCapacity(static_cast<IndexType>(required));
+
+  IndexType previous = IndexType(-1);
+  IndexType index    = m_FreelistDequeue;
+  while (index < m_Capacity && index >= uiIndexLimit)
+  {
+    previous = index;
+    index    = m_pEntries[index].id.m_InstanceIndex;
+  }
+  if (index >= m_Capacity)
+    return IndexType(-1);
+  Entry&          entry = m_pEntries[index];
+  const IndexType next  = entry.id.m_InstanceIndex;
+  if (previous == IndexType(-1))
+    m_FreelistDequeue = next;
+  else
+    m_pEntries[previous].id.m_InstanceIndex = static_cast<decltype(entry.id.m_InstanceIndex)>(next);
+  if (m_FreelistEnqueue == index)
+    m_FreelistEnqueue = previous;
+  entry.id.m_InstanceIndex = static_cast<decltype(entry.id.m_InstanceIndex)>(index);
+  return index;
+}
+
+template <typename IdType, typename ValueType>
 bool xiiIdTableBase<IdType, ValueType>::Remove(const IdType id, ValueType* out_pOldValue /*= nullptr*/)
 {
   if (m_Capacity <= id.m_InstanceIndex)

@@ -76,8 +76,8 @@ struct GpuGeometryRecord
   GpuGeometryLod Lods[8];
   uint           LodCount;
   uint           Generation;
-  uint           ResidentLodMask;
-  uint           Flags;
+  uint           AvailableLodMask;
+  uint           Reserved;
 };
 
 struct GpuMeshlet
@@ -114,7 +114,7 @@ uint SelectResidentLod(GpuGeometryRecord geometry, float worldSpaceRadius, float
   uint  fallback          = 0xFFFFFFFFu;
   [unroll] for (uint lod = 0u; lod < geometry.LodCount; ++lod)
   {
-    if ((geometry.ResidentLodMask & (1u << lod)) == 0u)
+    if ((geometry.AvailableLodMask & (1u << lod)) == 0u)
       continue;
     fallback = lod;
     if (projectedCoverage >= geometry.Lods[lod].MinimumScreenCoverage)
@@ -135,7 +135,7 @@ uint SelectResidentLodWithHistory(GpuGeometryRecord geometry, float worldSpaceRa
     previousHistory.y == geometry.Generation &&
     previousHistory.z == instanceUserData &&
     previousLod < min(geometry.LodCount, 8u) &&
-    (geometry.ResidentLodMask & (1u << previousLod)) != 0u;
+    (geometry.AvailableLodMask & (1u << previousLod)) != 0u;
   if (!historyMatches || previousLod == desiredLod)
     return desiredLod;
 
@@ -176,7 +176,7 @@ uint SelectInstanceResidentLod(GpuGeometryRecord geometry, GpuSceneInstance inst
     const uint desired = SelectInstanceDesiredLod(geometry, instance, distanceToCamera, viewportHeight);
     if (desired == 0xFFFFFFFFu)
       return desired;
-    return (geometry.ResidentLodMask & (1u << desired)) != 0u ? desired : 0xFFFFFFFFu;
+    return (geometry.AvailableLodMask & (1u << desired)) != 0u ? desired : 0xFFFFFFFFu;
   }
   return SelectResidentLodWithHistory(geometry, GetInstanceLodRadius(instance), distanceToCamera, viewportHeight,
                                       instance.ObjectId, previousHistory, previousHistoryToken, hysteresis);

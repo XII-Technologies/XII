@@ -3,13 +3,13 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <Foundation/Math/Frustum.h>
-#include <GraphicsCore/Geometry/GeometryResidency.h>
 #include <GraphicsCore/Material/MaterialManager.h>
 #include <GraphicsCore/Meshes/GpuInstanceData.h>
 #include <GraphicsCore/Meshes/MeshBufferResource.h>
 #include <GraphicsCore/Pipeline/Passes/Implementation/RenderPassUtils.h>
 #include <GraphicsCore/Pipeline/Passes/Shadows/ShadowCascadeViewPass.h>
 #include <GraphicsCore/Pipeline/View.h>
+#include <GraphicsCore/Streaming/GpuResidencyManager.h>
 #include <GraphicsCore/Visibility/GpuVisibilityTypes.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/Tools/MapHelper.h>
@@ -48,7 +48,7 @@ xiiResult xiiShadowCascadeViewPass::Build(xiiRenderPipelinePassContext& context)
     return context.ReportFailure("Shadow view requires exactly one directional or spotlight snapshot.");
   if (m_uiCascadeIndex >= (spots ? spots->m_Views.GetCount() : cascades->m_Cascades.GetCount()))
     return XII_SUCCESS;
-  if (!context.m_pView || !context.m_pView->GetGpuInstanceData() || !xiiGeometryResidencyManager::IsInitialized() || !xiiMaterialManager::IsInitialized())
+  if (!context.m_pView || !context.m_pView->GetGpuInstanceData() || !xiiGpuResidencyManager::IsInitialized() || !xiiMaterialManager::IsInitialized())
     return context.ReportFailure("Shadow view requires authoritative world extraction and device residency.");
   const auto  resolution = spots ? spots->m_uiResolution : cascades->m_uiResolution;
   const auto  matrix     = spots ? spots->m_Views[m_uiCascadeIndex].m_ViewProjection : cascades->m_Cascades[m_uiCascadeIndex].m_mViewProjection;
@@ -70,7 +70,7 @@ xiiResult xiiShadowCascadeViewPass::Build(xiiRenderPipelinePassContext& context)
   view.m_uiVisibilityMask    = 0xFFFFFFFFU;
   view.m_uiRequiredFlags     = (xiiGpuInstanceFlags::Enabled | xiiGpuInstanceFlags::CastShadows).GetValue();
   view.m_uiExcludedFlags     = xiiGpuInstanceFlags::Transparent;
-  view.m_uiGeometryBaseIndex = xiiGeometryResidencyManager::GetMetadataBaseIndex(context.m_Graph.GetFrameIndex());
+  view.m_uiGeometryBaseIndex = xiiGpuResidencyManager::GetMetadataBaseIndex(context.m_Graph.GetFrameIndex());
   view.m_uiUseCandidates     = 1;
   view.m_uiCandidateCount    = context.m_pView->GetGpuInstanceSelection().GetCount();
   view.m_fGeometryPixelScale = float(resolution) * 0.5f * matrix.GetRow(1U).GetAsVec3().GetLength();

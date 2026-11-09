@@ -2,9 +2,9 @@
 
 #include <GraphicsCore/GraphicsCorePCH.h>
 
-#include <GraphicsCore/Geometry/GeometryResidency.h>
 #include <GraphicsCore/Pipeline/Passes/Implementation/RenderPassUtils.h>
 #include <GraphicsCore/Pipeline/Passes/Residency/GeometryUploadPass.h>
+#include <GraphicsCore/Streaming/GpuResidencyManager.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGeometryUploadPass, 1, xiiRTTIDefaultAllocator<xiiGeometryUploadPass>)
@@ -20,7 +20,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGeometryUploadPass, 1, xiiRTTIDefaultAllocat
 xiiResult xiiGeometryUploadPass::Build(xiiRenderPipelinePassContext& context)
 {
   xiiRenderPassResourceScope scope(context);
-  const auto                 uploaded = xiiGeometryResidencyManager::AddUploadPass(context.m_Graph, context.m_Graph.GetFrameIndex());
+  const auto                 uploaded = xiiGpuResidencyManager::AddUploadPass(context.m_Graph, context.m_Graph.GetFrameIndex());
   if (!uploaded.m_hGeometryMetadata.IsValid() || !uploaded.m_hMeshletMetadata.IsValid())
     return context.ReportFailure("Could not publish device geometry residency.");
   XII_SUCCEED_OR_RETURN(context.SetOutput(m_Geometry, uploaded.m_hGeometryMetadata));
