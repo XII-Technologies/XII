@@ -935,7 +935,7 @@ xiiGpuResidencyManager::AdmissionResult xiiGpuResidencyManager::BuildResidentRec
   const auto                                                                                slotIndex = static_cast<xiiUInt32>(&slot - s_pState->m_Slots.GetData());
   s_pState->m_MeshGeometries.TryGetValue(xiiGeometryHandle(xiiGeometryId(slotIndex, record.m_uiGeneration)), meshEntry);
   // Authored LODs are selection metadata. Payload residency is exclusively page-granular.
-  const xiiUInt32 uiLodCount = record.m_uiLodCount;
+  const xiiUInt32 uiLodCount = slot.m_Description.m_Lods.GetCount();
   const xiiUInt32 uiNextLod = 0U, uiEndLod = uiLodCount;
   xiiUInt64       uiArenaBytes                                    = 0U;
   xiiUInt32       directCounts[xiiGpuGeometryRecord::s_uiMaxLods] = {};
@@ -1124,7 +1124,10 @@ xiiGpuResidencyManager::AdmissionResult xiiGpuResidencyManager::BuildResidentRec
       s_pState->m_StreamingStats.m_uiPreparedMeshlets += lod.m_uiMeshletCount;
     }
     if (sources[n]->HasGeometryPages())
+    {
       record.m_uiHierarchyReady = 1U;
+      record.m_uiLodCount = 0U;
+    }
     else
       record.m_uiAvailableLodMask |= XII_BIT(i);
   }
@@ -2311,7 +2314,7 @@ void xiiGpuResidencyManager::State::ProcessPages(xiiUInt64 frame, xiiUInt64 comp
       for (auto index : m_ActiveSlots)
       {
         auto& slot = m_Slots[index];
-        for (xiiUInt32 lod = 0U; lod < slot.m_GpuRecord.m_uiLodCount; ++lod)
+        for (xiiUInt32 lod = 0U; lod < slot.m_Description.m_Lods.GetCount(); ++lod)
           if (slot.m_BoundSources[lod].m_Identity == it.Key())
           {
             slot.m_GpuRecord.m_Lods[lod].m_uiVertexBufferIndex          = source.m_PageTable.m_uiIndex;
@@ -2403,7 +2406,7 @@ xiiGpuResidencyManager::AdmissionResult xiiGpuResidencyManager::State::UploadDir
 
 xiiGpuResidencyManager::AdmissionResult xiiGpuResidencyManager::RegisterBindlessResources(Slot& slot, xiiGpuGeometryRecord& record, xiiUInt32 uiLod, const xiiMeshBufferResource& mesh, const xiiSharedPtr<xiiGALBuffer>& pVertexBuffer)
 {
-  if (!xiiGALBindlessResourceTable::IsInitialized() || uiLod >= record.m_uiLodCount)
+  if (!xiiGALBindlessResourceTable::IsInitialized() || uiLod >= slot.m_Description.m_Lods.GetCount())
     return AdmissionResult::Failed;
 
   if (mesh.HasGeometryPages())
@@ -2735,7 +2738,7 @@ void xiiGpuResidencyManager::ProcessStreaming(xiiUInt64 uiFrameIndex, xiiUInt64 
     for (auto index : s_pState->m_ActiveSlots)
     {
       auto& slot = s_pState->m_Slots[index];
-      for (xiiUInt32 lod = 0U; lod < slot.m_GpuRecord.m_uiLodCount; ++lod)
+      for (xiiUInt32 lod = 0U; lod < slot.m_Description.m_Lods.GetCount(); ++lod)
         if (slot.m_GpuRecord.m_Lods[lod].m_uiPadding != 0U)
         {
           slot.m_GpuRecord.m_Lods[lod].m_uiPadding = 1U | (static_cast<xiiUInt32>(uiFrameIndex % s_pState->m_uiFramesInFlight) << 1U);
@@ -3028,7 +3031,7 @@ xiiGpuResidencyManager::UploadHandles xiiGpuResidencyManager::AddUploadPass(xiiR
   {
     const auto& slot = pState->m_Slots[i];
     if (pState->m_bMaximumDirty)
-      for (xiiUInt32 lod = 0; lod < slot.m_GpuRecord.m_uiLodCount; ++lod)
+      for (xiiUInt32 lod = 0; lod < slot.m_Description.m_Lods.GetCount(); ++lod)
         if (slot.m_GpuRecord.m_uiHierarchyReady != 0U || (slot.m_GpuRecord.m_uiAvailableLodMask & XII_BIT(lod)) != 0U)
           pState->m_uiMaximumResidentMeshletCount = xiiMath::Max(pState->m_uiMaximumResidentMeshletCount, slot.m_GpuRecord.m_Lods[lod].m_uiMeshletCount);
     if (slot.m_uiDirtyFrameMask & bit)
@@ -3042,10 +3045,7 @@ xiiGpuResidencyManager::UploadHandles xiiGpuResidencyManager::AddUploadPass(xiiR
     upload.m_uiOffset    = (slice * pState->m_Slots.GetCount() + i) * sizeof(xiiGpuGeometryRecord);
     upload.m_uiSlotIndex = i;
     upload.m_uiFrameBit  = bit;
-    auto& gpuRecord      = snapshot.m_Records.ExpandAndGetRef();
-    gpuRecord            = pState->m_Slots[i].m_GpuRecord;
-    if (gpuRecord.m_uiHierarchyReady != 0U)
-      gpuRecord.m_uiLodCount = 0U;
+    snapshot.m_Records.PushBack(pState->m_Slots[i].m_GpuRecord);
   }
   for (const auto& upload : pState->m_PendingMeshletUploads)
     if (!upload->m_bRecorded && !upload->m_bCanceled)
