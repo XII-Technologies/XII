@@ -103,6 +103,7 @@ public:
     xiiUInt64                           m_Seen            = 0;
     xiiUInt32                           m_Representative  = 0;
     xiiUInt32                           m_MaximumMeshlets = 0;
+    xiiUInt32                           m_RootMeshlets    = 0;
     xiiUInt64                           m_Version         = 0;
     bool                                m_Changed         = true;
   };
@@ -336,11 +337,13 @@ xiiResult xiiGpuInstanceData::UpdateFromExtraction(xiiArrayPtr<xiiRenderData* co
     if (coverageChanged)
     {
       xiiUInt32 counts[xiiGpuGeometryRecord::s_uiMaxLods] = {};
-      XII_SUCCEED_OR_RETURN(xiiGpuResidencyManager::GetPrimitiveRangeMeshletCounts(geometry, first, count, xiiMakeArrayPtr(counts)));
+      XII_SUCCEED_OR_RETURN(xiiGpuResidencyManager::GetPrimitiveRangeMeshletCounts(geometry, first, count, xiiMakeArrayPtr(counts), &entry.m_RootMeshlets));
       entry.m_MaximumMeshlets = 0;
       for (xiiUInt32 lod = 0; lod < xiiGpuGeometryRecord::s_uiMaxLods; ++lod)
         if (key.m_Lod == xiiInvalidIndex || key.m_Lod == lod)
           entry.m_MaximumMeshlets = xiiMath::Max(entry.m_MaximumMeshlets, counts[lod]);
+      if (!bHierarchy)
+        entry.m_RootMeshlets = entry.m_MaximumMeshlets;
     }
     xiiGpuResidencyManager::RequestGeometry(geometry, frame);
     entry.m_Changed |= xiiMemoryUtils::Compare(&before, &record, 1) != 0;
@@ -487,11 +490,11 @@ xiiResult xiiGpuInstanceData::UpdateFromExtraction(xiiArrayPtr<xiiRenderData* co
   return XII_SUCCESS;
 }
 
-xiiUInt64 xiiGpuInstanceData::GetMaximumMeshletCount() const
+xiiUInt64 xiiGpuInstanceData::GetMaximumMeshletCount(bool bRootsOnly) const
 {
   xiiUInt64 count = 0;
   for (const auto& entry : m_pState->m_Entries)
-    count += entry.m_MaximumMeshlets;
+    count += bRootsOnly ? entry.m_RootMeshlets : entry.m_MaximumMeshlets;
   return count;
 }
 

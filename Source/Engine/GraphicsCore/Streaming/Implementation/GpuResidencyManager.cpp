@@ -179,9 +179,9 @@ public:
   };
   struct alignas(16) PageRecord
   {
-    xiiVec4U32 m_Mapping = xiiVec4U32(xiiInvalidIndex, 0U, 0U, 0U);
-    xiiVec4    m_Bounds  = xiiVec4(0.0f);
-    xiiVec4    m_Detail  = xiiVec4(0.0f);
+    xiiVec4U32 m_Mapping     = xiiVec4U32(xiiInvalidIndex, 0U, 0U, 0U);
+    xiiVec4    m_Bounds      = xiiVec4(0.0f);
+    xiiVec4    m_Detail      = xiiVec4(0.0f);
     xiiUInt32  m_Children[8] = {};
   };
   static_assert(sizeof(PageRecord) == 80U);
@@ -1126,7 +1126,7 @@ xiiGpuResidencyManager::AdmissionResult xiiGpuResidencyManager::BuildResidentRec
     if (sources[n]->HasGeometryPages())
     {
       record.m_uiHierarchyReady = 1U;
-      record.m_uiLodCount = 0U;
+      record.m_uiLodCount       = 0U;
     }
     else
       record.m_uiAvailableLodMask |= XII_BIT(i);
@@ -2874,8 +2874,10 @@ const xiiGpuGeometryRecord* xiiGpuResidencyManager::GetGpuRecord(xiiGeometryHand
   return IsValid(handle) ? &s_pState->m_Slots[handle.GetInternalID().m_InstanceIndex].m_GpuRecord : nullptr;
 }
 
-xiiResult xiiGpuResidencyManager::GetPrimitiveRangeMeshletCounts(xiiGeometryHandle handle, xiiUInt32 uiFirstPrimitive, xiiUInt32 uiPrimitiveCount, xiiArrayPtr<xiiUInt32> out_counts)
+xiiResult xiiGpuResidencyManager::GetPrimitiveRangeMeshletCounts(xiiGeometryHandle handle, xiiUInt32 uiFirstPrimitive, xiiUInt32 uiPrimitiveCount, xiiArrayPtr<xiiUInt32> out_counts, xiiUInt32* out_pRootMeshlets)
 {
+  if (out_pRootMeshlets != nullptr)
+    *out_pRootMeshlets = 0U;
   for (auto& count : out_counts)
     count = 0;
   if (!IsValid(handle) || out_counts.GetCount() != xiiGpuGeometryRecord::s_uiMaxLods || uiPrimitiveCount > xiiMath::MaxValue<xiiUInt32>() - uiFirstPrimitive)
@@ -2898,6 +2900,76 @@ xiiResult xiiGpuResidencyManager::GetPrimitiveRangeMeshletCounts(xiiGeometryHand
       return XII_FAILURE;
     auto&      index    = slot.m_pCoverage->m_Lods[lod];
     const auto revision = buffer->GetCurrentResourceChangeCounter();
+    if (buffer->HasGeometryPages())
+    {
+      if (!index.m_bValid || index.m_uiRevision != revision)
+      {
+        cacheHit                              = false;
+        const auto&                descriptor = buffer->GetDescriptor();
+        const auto&                pages      = descriptor.m_GeometryPages;
+        const auto                 meshlets   = buffer->GetMeshlets();
+        xiiDynamicArray<xiiUInt32> cutMeshlets;
+        cutMeshlets.SetCountUninitialized(pages.GetCount());
+        index.m_HierarchyStarts.Clear();
+        index.m_HierarchyEnds.Clear();
+        for (xiiUInt32 p = 0U; p < pages.GetCount(); ++p)
+        {
+          const auto& page     = pages[p];
+          xiiUInt32   children = 0U;
+          for (xiiUInt32 c = 0U; c < page.m_uiChildCount; ++c)
+            children += cutMeshlets[page.m_Children[c]];
+          // A cut selects the parent or a complete set of child cuts.
+          cutMeshlets[p] = xiiMath::Max(page.m_uiClusterCount, children);
+          if (!page.m_bRequired)
+            continue;
+
+          xiiUInt32 first = xiiInvalidIndex, end = 0U;
+          for (const auto& cluster : meshlets.GetSubArray(page.m_uiFirstCluster, page.m_uiClusterCount))
+          {
+            first = xiiMath::Min(first, cluster.m_uiFirstPrimitive);
+            end   = xiiMath::Max(end, cluster.m_uiFirstPrimitive + cluster.m_uiGpuPadding[1]);
+          }
+          index.m_HierarchyStarts.PushBack({first, page.m_uiClusterCount, cutMeshlets[p]});
+          index.m_HierarchyEnds.PushBack({end, page.m_uiClusterCount, cutMeshlets[p]});
+        }
+
+        for (auto* endpoints : {&index.m_HierarchyStarts, &index.m_HierarchyEnds})
+        {
+          endpoints->Sort([](const CoverageIndex::Endpoint& a, const CoverageIndex::Endpoint& b) {
+            return a.m_uiPrimitive < b.m_uiPrimitive;
+          });
+          for (xiiUInt32 i = 1U; i < endpoints->GetCount(); ++i)
+          {
+            (*endpoints)[i].m_uiRootMeshlets += (*endpoints)[i - 1U].m_uiRootMeshlets;
+            (*endpoints)[i].m_uiCutMeshlets += (*endpoints)[i - 1U].m_uiCutMeshlets;
+          }
+        }
+        index.m_uiRevision = revision;
+        index.m_bValid     = true;
+        ++s_pState->m_uiCoverageIndexBuilds;
+        s_pState->m_uiCoverageMeshlets += meshlets.GetCount();
+      }
+
+      const auto starts = index.m_HierarchyStarts.GetArrayPtr();
+      const auto ends   = index.m_HierarchyEnds.GetArrayPtr();
+      if (!starts.IsEmpty())
+      {
+        // Count entire intersecting roots conservatively even when the query
+        // covers only part of a root. The GPU tests individual clusters.
+        const auto*                   last     = uiPrimitiveCount == 0U ? starts.GetEndPtr() :
+                                                                          std::lower_bound(starts.GetPtr(), starts.GetEndPtr(), uiFirstPrimitive + uiPrimitiveCount,
+                                                                                           [](const CoverageIndex::Endpoint& endpoint, xiiUInt32 primitive) { return endpoint.m_uiPrimitive < primitive; });
+        const auto*                   before   = uiPrimitiveCount == 0U ? ends.GetPtr() :
+                                                                          std::upper_bound(ends.GetPtr(), ends.GetEndPtr(), uiFirstPrimitive,
+                                                                                           [](xiiUInt32 primitive, const CoverageIndex::Endpoint& endpoint) { return primitive < endpoint.m_uiPrimitive; });
+        const CoverageIndex::Endpoint included = last == starts.GetPtr() ? CoverageIndex::Endpoint{} : last[-1];
+        const CoverageIndex::Endpoint excluded = before == ends.GetPtr() ? CoverageIndex::Endpoint{} : before[-1];
+        counts[lod]                            = included.m_uiCutMeshlets - excluded.m_uiCutMeshlets;
+        if (out_pRootMeshlets != nullptr)
+          *out_pRootMeshlets = included.m_uiRootMeshlets - excluded.m_uiRootMeshlets;
+      }
+      continue;
+    }
     if (!index.m_bValid || index.m_uiRevision != revision)
     {
       cacheHit            = false;

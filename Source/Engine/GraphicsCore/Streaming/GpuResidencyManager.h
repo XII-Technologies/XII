@@ -213,7 +213,7 @@ public:
   /// s_uiMaxLods entries and is cleared on failure. Builds a revision-owned interval index once,
   /// then counts exact overlaps in O(LODs * log(meshlets)). Rejects reloaded
   /// source buffers belonging to a different revision. Call on the render thread.
-  [[nodiscard]] static xiiResult                  GetPrimitiveRangeMeshletCounts(xiiGeometryHandle handle, xiiUInt32 uiFirstPrimitive, xiiUInt32 uiPrimitiveCount, xiiArrayPtr<xiiUInt32> out_counts);
+  [[nodiscard]] static xiiResult                  GetPrimitiveRangeMeshletCounts(xiiGeometryHandle handle, xiiUInt32 uiFirstPrimitive, xiiUInt32 uiPrimitiveCount, xiiArrayPtr<xiiUInt32> out_counts, xiiUInt32* out_pRootMeshlets = nullptr);
   [[nodiscard]] static xiiSharedPtr<xiiGALBuffer> GetMetadataBuffer();
   /// Shader-visible first element in the shared metadata frame slice.
   [[nodiscard]] static xiiUInt32                  GetMetadataBaseIndex(xiiUInt64 frameIndex);
@@ -242,10 +242,17 @@ private:
 
   struct CoverageIndex
   {
+    struct Endpoint
+    {
+      XII_DECLARE_POD_TYPE();
+      xiiUInt32 m_uiPrimitive, m_uiRootMeshlets, m_uiCutMeshlets;
+    };
+
     struct Lod
     {
       xiiDynamicArray<xiiUInt32> m_Starts;
       xiiDynamicArray<xiiUInt64> m_Ends;
+      xiiDynamicArray<Endpoint>  m_HierarchyStarts, m_HierarchyEnds;
       xiiUInt32                  m_uiRevision = 0U;
       bool                       m_bValid     = false;
     };

@@ -10,6 +10,7 @@
 #include <GraphicsCore/Streaming/GpuResidencyManager.h>
 #include <GraphicsCore/Visibility/GpuVisibilityTypes.h>
 #include <GraphicsFoundation/Device/Device.h>
+#include <GraphicsFoundation/Tools/MapHelper.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMeshletCullPass, 1, xiiRTTIDefaultAllocator<xiiMeshletCullPass>)
@@ -51,9 +52,27 @@ xiiResult xiiMeshletCullPass::Build(xiiRenderPipelinePassContext& context)
     return XII_SUCCESS;
   const auto mode        = context.m_pView ? context.m_pView->GetViewRenderMode().GetValue() : xiiViewRenderMode::Default;
   const bool diagnostics = m_bVisualizeView && (mode == xiiViewRenderMode::CullingOutcome || mode == xiiViewRenderMode::OcclusionHeatmap);
-  if ((m_bRequireComplete || diagnostics) && (!context.m_pView || !context.m_pView->GetGpuInstanceData() || context.m_pView->GetGpuInstanceData()->GetMaximumMeshletCount() > m_uiMaxVisibleMeshlets))
-    return context.ReportFailure("Complete meshlet coverage exceeds the authored capacity; increase MaxVisibleMeshlets.");
-  const xiiUInt32 diagnosticCapacity = diagnostics ? xiiUInt32(xiiMath::Max<xiiUInt64>(1, context.m_pView->GetGpuInstanceData()->GetMaximumMeshletCount())) : 0;
+  bool       rootsOnly   = false;
+  xiiUInt64  coverage    = 0U;
+  if (m_bRequireComplete || diagnostics)
+  {
+    const auto* instances = context.m_pView ? context.m_pView->GetGpuInstanceData() : nullptr;
+    if (instances == nullptr)
+      return context.ReportFailure("Complete meshlet coverage requires GPU scene instance data.");
+    coverage = instances->GetMaximumMeshletCount();
+    if (coverage > m_uiMaxVisibleMeshlets)
+    {
+      rootsOnly = true;
+      coverage  = instances->GetMaximumMeshletCount(true);
+      if (coverage > m_uiMaxVisibleMeshlets)
+      {
+        xiiStringBuilder reason;
+        reason.SetFormat("The coarsest meshlet coverage ({}) exceeds the authored capacity ({}).", coverage, m_uiMaxVisibleMeshlets);
+        return context.ReportFailure(reason);
+      }
+    }
+  }
+  const xiiUInt32 diagnosticCapacity = diagnostics ? static_cast<xiiUInt32>(xiiMath::Max<xiiUInt64>(1U, coverage)) : 0U;
   const auto      scene = context.GetInputBuffer(m_Scene), view = context.GetInputBuffer(m_View), geometry = context.GetInputBuffer(m_Geometry), meshlets = context.GetInputBuffer(m_Meshlets);
   const auto      visible = context.GetInputBuffer(m_Visible), count = context.GetInputBuffer(m_Count), lod = context.GetInputBuffer(m_Lod), arguments = context.GetInputBuffer(m_Arguments);
   const auto      initialCount = context.GetInputBuffer(m_InitialCount), initialOverflow = context.GetInputBuffer(m_InitialOverflow);
@@ -84,7 +103,8 @@ xiiResult xiiMeshletCullPass::Build(xiiRenderPipelinePassContext& context)
   struct Data
   {
     xiiRenderGraphBufferHandle m_Scene, m_View, m_Geometry, m_Meshlets, m_Visible, m_Count, m_Lod, m_Arguments, m_Output, m_OutputCount, m_Overflow;
-    xiiRenderGraphBufferHandle m_DiagnosticMeshlets, m_DiagnosticCount;
+    xiiRenderGraphBufferHandle m_DiagnosticMeshlets, m_DiagnosticCount, m_Constants;
+    xiiVec4U32                 m_Options;
   };
   const auto emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, m_bAsyncCompute ? xiiGALCommandQueueFlags::Compute : xiiGALCommandQueueFlags::Graphics, [&](Data& data, xiiRenderGraphBuilder& builder) {
       data.m_Scene = builder.ReadBuffer(scene, xiiGALResourceStateFlags::ShaderResource);
@@ -97,6 +117,8 @@ xiiResult xiiMeshletCullPass::Build(xiiRenderPipelinePassContext& context)
       data.m_Arguments   = builder.ReadBuffer(arguments, xiiGALResourceStateFlags::IndirectArgument | xiiGALResourceStateFlags::ShaderResource);
       data.m_OutputCount = builder.ReadWriteBuffer(initialCount, xiiGALResourceStateFlags::UnorderedAccess);
       data.m_Overflow = builder.ReadWriteBuffer(initialOverflow, xiiGALResourceStateFlags::UnorderedAccess);
+      data.m_Constants = xiiRenderPassUtils::Constants(builder, "Meshlet Cull Options", sizeof(data.m_Options));
+      data.m_Options = xiiVec4U32(rootsOnly ? 1U : 0U, 0U, 0U, 0U);
       xiiGALBufferCreationDescription description;
       description.m_uiSize = xiiUInt64(m_uiMaxVisibleMeshlets) * sizeof(xiiVec2U32);
       description.m_uiElementByteStride = sizeof(xiiVec2U32);
@@ -111,7 +133,12 @@ xiiResult xiiMeshletCullPass::Build(xiiRenderPipelinePassContext& context)
         data.m_DiagnosticCount = builder.ReadWriteBuffer(diagnosticCounter, xiiGALResourceStateFlags::UnorderedAccess);
       } }, [pipeline](const Data& data, xiiRenderGraphPassContext& execute) {
       auto& commands = execute.GetCommandList();
+      {
+        xiiGALMapHelper<xiiVec4U32> mapped(commands, execute.GetBuffer(data.m_Constants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
+        *mapped = data.m_Options;
+      }
       commands.SetPipelineState(pipeline.Borrow());
+      commands.ResolveAndSetConstantBuffer("MeshletCullOptions", execute.GetBuffer(data.m_Constants), xiiGALShaderType::Compute);
       commands.ResolveAndSetShaderResourceBufferView("g_SceneInstances", execute.GetBuffer(data.m_Scene)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
       commands.ResolveAndSetShaderResourceBufferView("g_VisibilityView", execute.GetBuffer(data.m_View)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
       commands.ResolveAndSetShaderResourceBufferView("g_Geometry", execute.GetBuffer(data.m_Geometry)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);

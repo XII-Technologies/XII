@@ -27,7 +27,7 @@ public:
   xiiRenderPipelineBufferOutputPin m_OutputCount{true, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess, xiiRenderPipelinePinAccess::ReadWrite};
   xiiRenderPipelineBufferOutputPin m_Overflow{true, xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess, xiiRenderPipelinePinAccess::ReadWrite};
   xiiUInt32                        m_uiMaxVisibleMeshlets = 1024U * 1024U;
-  /// Reject an insufficient authored capacity before dispatch rather than publishing partial caster coverage.
+  /// Use resident roots when refinement can exceed capacity, or reject if complete root coverage cannot fit.
   bool m_bRequireComplete = false;
   bool m_bAsyncCompute    = true;
   /// Retain pre-compaction frustum/cone decisions only for diagnostic views.

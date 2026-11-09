@@ -14,6 +14,10 @@ RWStructuredBuffer<uint2>           g_VisibleMeshlets;
 RWStructuredBuffer<uint>            g_VisibleMeshletCount;
 RWStructuredBuffer<uint>            g_VisibleMeshletOverflow;
 ByteAddressBuffer                   g_Buffers[];
+cbuffer MeshletCullOptions
+{
+  uint4 MeshletCullFlags;
+};
 #include "MeshletRange.h"
 #include <Shaders/Geometry/VirtualGeometry.h>
 groupshared uint s_FirstMeshlet;
@@ -167,7 +171,7 @@ void CullVirtualHierarchy(uint workGroup, uint workGroups, uint lane, uint index
         if (page.Mapping.x != 0xffffffffu && xiiGeometryPageVisible(page, instance, view))
         {
           uint children = min((uint)page.Detail.w, 8u);
-          if (xiiGeometryPageRefines(lod, pageIndex, page, instance, view) && s_PageStackSize + children <= 64u)
+          if (MeshletCullFlags.x == 0u && xiiGeometryPageRefines(lod, pageIndex, page, instance, view) && s_PageStackSize + children <= 64u)
           {
             for (uint child = 0u; child < children; ++child)
               s_PageStack[s_PageStackSize++] = xiiGeometryChild(lod, pageIndex, child);
