@@ -3,7 +3,8 @@
 RWByteAddressBuffer g_VirtualTextureFeedback[];
 void                xiiRecordPageDemand(uint feedback, uint request)
 {
-  if (request == 0u || feedback == 0xffffffffu) return;
+  if (request == 0u || feedback == 0xffffffffu)
+    return;
   uint ignored;
   g_VirtualTextureFeedback[NonUniformResourceIndex(feedback)].InterlockedOr((request / 32u) * 4u, 1u << (request % 32u), ignored);
 }

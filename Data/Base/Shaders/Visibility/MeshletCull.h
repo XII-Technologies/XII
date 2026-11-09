@@ -84,7 +84,8 @@ void             ReserveMeshletBatch(uint requested)
 bool CullMeshlet(uint index, uint meshletIndex, GpuSceneInstance instance, GpuVisibilityView view, uint lodIndex)
 {
   GpuMeshlet meshlet;
-  if (!xiiLoadCluster(meshletIndex, meshlet)) return false;
+  if (!xiiLoadCluster(meshletIndex, meshlet))
+    return false;
   if ((meshlet.PackedLodSection & 0xFFFFu) != lodIndex)
     return false;
   uint primitives = meshlet.PackedPrimitiveVertexCount & 0xFFFFu;
@@ -144,7 +145,8 @@ groupshared uint s_SelectedCount;
 void CullVirtualHierarchy(uint workGroup, uint workGroups, uint lane, uint index, GpuSceneInstance instance, GpuVisibilityView view, GpuGeometryLod lod)
 {
   uint table, rootsOffset, rootCount;
-  if (!xiiGeometryRootDirectory(lod, table, rootsOffset, rootCount)) return;
+  if (!xiiGeometryRootDirectory(lod, table, rootsOffset, rootCount))
+    return;
   table = NonUniformResourceIndex(table);
   uint firstRoot, endRoot;
   xiiGeometryRootRange(table, rootsOffset, rootCount, instance, firstRoot, endRoot);

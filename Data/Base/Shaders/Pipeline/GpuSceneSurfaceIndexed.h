@@ -33,25 +33,27 @@ GBufferVertex xiiLoadIndexedSceneSurfaceVertex(uint vertexIndex, uint visibleInd
   if (GeometryBaseIndex >= geometryCapacity || instance.GeometryIndex >= geometryCapacity - GeometryBaseIndex)
     return xiiInvalidSceneSurfaceVertex();
   const GpuGeometryRecord geometry = g_Geometry[GeometryBaseIndex + instance.GeometryIndex];
-  GpuMeshlet meshlet;
-  if (!xiiLoadCluster(visible.y, meshlet)) return xiiInvalidSceneSurfaceVertex();
+  GpuMeshlet              meshlet;
+  if (!xiiLoadCluster(visible.y, meshlet))
+    return xiiInvalidSceneSurfaceVertex();
   const uint lodIndex = meshlet.PackedLodSection & 0xFFFFu;
   if (!xiiGeometryLodAvailable(geometry, lodIndex))
     return xiiInvalidSceneSurfaceVertex();
-  GpuGeometryLod lod            = geometry.Lods[lodIndex];
+  GpuGeometryLod lod = geometry.Lods[lodIndex];
   if (!xiiResolveClusterLod(lod, meshlet))
     return xiiInvalidSceneSurfaceVertex();
-  const uint           primitiveCount = meshlet.PackedPrimitiveVertexCount & 0xFFFFu;
-  const uint           vertexCount    = meshlet.PackedPrimitiveVertexCount >> 16u;
-  const uint           firstIndex     = vertexIndex - vertexIndex % 3u;
-  uint                 primitiveBufferBytes, remapBufferBytes;
+  const uint primitiveCount = meshlet.PackedPrimitiveVertexCount & 0xFFFFu;
+  const uint vertexCount    = meshlet.PackedPrimitiveVertexCount >> 16u;
+  const uint firstIndex     = vertexIndex - vertexIndex % 3u;
+  uint       primitiveBufferBytes, remapBufferBytes;
   if (lod.MeshletTopologyBufferIndex == 0xFFFFFFFFu)
     return xiiInvalidSceneSurfaceVertex();
   g_Buffers[lod.MeshletTopologyBufferIndex].GetDimensions(primitiveBufferBytes);
   remapBufferBytes = lod.Padding != 0u ? primitiveBufferBytes : lod.MeshletPrimitiveByteOffset;
   if (remapBufferBytes > primitiveBufferBytes)
     return xiiInvalidSceneSurfaceVertex();
-  if (lod.Padding == 0u) primitiveBufferBytes -= remapBufferBytes;
+  if (lod.Padding == 0u)
+    primitiveBufferBytes -= remapBufferBytes;
 
   if (primitiveCount > 126u || vertexCount == 0u || vertexCount > 64u || firstIndex / 3u >= primitiveCount ||
       meshlet.Header.y > remapBufferBytes / 4u || vertexCount > remapBufferBytes / 4u - meshlet.Header.y ||
@@ -71,7 +73,7 @@ GBufferVertex xiiLoadIndexedSceneSurfaceVertex(uint vertexIndex, uint visibleInd
   uint vertexBufferBytes;
   g_Buffers[lod.VertexBufferIndex].GetDimensions(vertexBufferBytes);
   const uint attributeEnd = max(max(12u, NormalOffset + 12u), max(TangentOffset + 16u, TexCoordOffset + 8u));
-  uint baseOffset = xiiGeometryVertexOffset(lod);
+  uint       baseOffset   = xiiGeometryVertexOffset(lod);
   if (VertexStride < attributeEnd || baseOffset > vertexBufferBytes || vertexBufferBytes - baseOffset < attributeEnd || any(indices >= lod.VertexCount) ||
       any(indices > (vertexBufferBytes - baseOffset - attributeEnd) / VertexStride))
     return xiiInvalidSceneSurfaceVertex();

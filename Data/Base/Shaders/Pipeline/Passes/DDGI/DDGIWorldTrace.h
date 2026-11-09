@@ -12,9 +12,9 @@ StructuredBuffer<GpuGeometryRecord>     g_ProbeGeometry;
 StructuredBuffer<xiiGpuSurfaceMaterial> g_ProbeMaterials;
 ByteAddressBuffer                       g_Buffers[];
 Texture2D<float4>                       g_Textures[];
-StructuredBuffer<GpuMeshlet> g_Meshlets;
+StructuredBuffer<GpuMeshlet>            g_Meshlets;
 #include <Shaders/Geometry/VirtualGeometry.h>
-SamplerState                            g_ProbeSampler;
+SamplerState g_ProbeSampler;
 
 #if defined(XII_DDGI_MESHLET_BOUNDS)
 #  include <Shaders/Visibility/MeshletRange.h>
@@ -141,28 +141,36 @@ bool TraceProbeMeshlets(float3 origin, float3 direction, GpuSceneInstance instan
   {
     uint first, count;
     xiiGeometryRootClusterRange(lod, instance, first, count);
-    if (count > remainingMeshlets) return false;
+    if (count > remainingMeshlets)
+      return false;
     remainingMeshlets -= count;
     [loop] for (uint n = 0u; n < count; ++n)
     {
       GpuMeshlet cluster;
-      if (!xiiLoadGeometryRootCluster(lod, first + n, cluster)) return false;
+      if (!xiiLoadGeometryRootCluster(lod, first + n, cluster))
+        return false;
       GpuGeometryLod resident = lod;
-      if (!xiiResolveClusterLod(resident, cluster)) return false;
+      if (!xiiResolveClusterLod(resident, cluster))
+        return false;
       uint triangles = cluster.PackedPrimitiveVertexCount & 0xffffu;
-      if (triangles > remainingTriangles) return false;
+      if (triangles > remainingTriangles)
+        return false;
       remainingTriangles -= triangles;
       [loop] for (uint p = 0u; p < triangles; ++p)
       {
-        uint offset = cluster.Header.z + p * 3u;
-        uint3 local = uint3(ProbeMeshletByte(g_Buffers[resident.MeshletTopologyBufferIndex], offset),
-          ProbeMeshletByte(g_Buffers[resident.MeshletTopologyBufferIndex], offset + 1u),
-          ProbeMeshletByte(g_Buffers[resident.MeshletTopologyBufferIndex], offset + 2u));
+        uint  offset  = cluster.Header.z + p * 3u;
+        uint3 local   = uint3(ProbeMeshletByte(g_Buffers[resident.MeshletTopologyBufferIndex], offset),
+                              ProbeMeshletByte(g_Buffers[resident.MeshletTopologyBufferIndex], offset + 1u),
+                              ProbeMeshletByte(g_Buffers[resident.MeshletTopologyBufferIndex], offset + 2u));
         uint3 indices = uint3(g_Buffers[resident.MeshletTopologyBufferIndex].Load((cluster.Header.y + local.x) * 4u),
-          g_Buffers[resident.MeshletTopologyBufferIndex].Load((cluster.Header.y + local.y) * 4u),
-          g_Buffers[resident.MeshletTopologyBufferIndex].Load((cluster.Header.y + local.z) * 4u));
+                              g_Buffers[resident.MeshletTopologyBufferIndex].Load((cluster.Header.y + local.y) * 4u),
+                              g_Buffers[resident.MeshletTopologyBufferIndex].Load((cluster.Header.y + local.z) * 4u));
         TraceProbePrimitive(origin, direction, instance.GlobalTransform, resident.VertexBufferIndex, resident.VertexCount, xiiGeometryVertexOffset(resident), material, indices, instance.Flags, shadowQuery, hit);
-        if (shadowQuery && hit.Found) { complete = true; return true; }
+        if (shadowQuery && hit.Found)
+        {
+          complete = true;
+          return true;
+        }
       }
     }
     complete = true;
@@ -271,7 +279,7 @@ bool TraceProbeScene(float3 origin, float3 direction, float maximum, out ProbeHi
     if (instance.GeometryIndex == 0xffffffffu || geometryIndex >= geometryCount || instance.MaterialIndex == 0xffffffffu || materialIndex >= materialCount)
       return false;
     const GpuGeometryRecord geometry = g_ProbeGeometry[geometryIndex];
-    const uint lodIndex = geometry.HierarchyReady == 0u && instance.ForcedLod != 0xffffffffu ? instance.ForcedLod : 0u;
+    const uint              lodIndex = geometry.HierarchyReady == 0u && instance.ForcedLod != 0xffffffffu ? instance.ForcedLod : 0u;
     if (!xiiGeometryLodAvailable(geometry, lodIndex))
       return false;
     const GpuGeometryLod lod = geometry.Lods[lodIndex];

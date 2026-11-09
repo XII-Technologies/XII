@@ -73,7 +73,7 @@ XII_CREATE_SIMPLE_TEST(Meshes, AuthoredLodThresholds)
   descriptor.GetMeshBufferDescriptor().AllocateStreamsFromGeometry(fine, xiiGALPrimitiveTopology::TriangleList, true);
   XII_TEST_INT(descriptor.GetLODs().GetCount(), 1);
   descriptor.GetMeshBufferDescriptor().m_ResourceUsage = xiiGALResourceUsage::Default;
-  descriptor.GetLODs()[0].m_fScreenSize = 80;
+  descriptor.GetLODs()[0].m_fScreenSize                = 80;
   descriptor.AddSection(firstCount, 0, 0, 0);
   descriptor.AddLOD(0);
   descriptor.AddSection(secondCount, firstCount, 0, 1);

@@ -16,7 +16,7 @@ GBufferVertex xiiLoadSceneSurfaceVertex(GpuSceneInstance instance, GpuGeometryLo
   uint vertexBufferBytes;
   g_Buffers[lod.VertexBufferIndex].GetDimensions(vertexBufferBytes);
   const uint lastAttributeEnd = max(max(12u, NormalOffset + 12u), max(TangentOffset + 16u, TexCoordOffset + 8u));
-  uint baseOffset = xiiGeometryVertexOffset(lod);
+  uint       baseOffset       = xiiGeometryVertexOffset(lod);
   if (VertexStride < lastAttributeEnd || sourceVertex >= lod.VertexCount || baseOffset > vertexBufferBytes ||
       vertexBufferBytes - baseOffset < lastAttributeEnd || sourceVertex > (vertexBufferBytes - baseOffset - lastAttributeEnd) / VertexStride)
     return xiiInvalidSceneSurfaceVertex();

@@ -404,8 +404,8 @@ public:
 private:
   xiiRenderPipelineResourceHandle CreateMeshCapturePipeline(const xiiRenderPipelineResource& source)
   {
-    auto definition = source.GetAuthoring()->m_Descriptor;
-    const auto meshGroupCount = xiiMath::Min(65535U, m_pDevice->GetGraphicsDeviceAdapterProperties().m_MeshShaderProperties.m_uiMaxThreadGroupCountX);
+    auto                       definition     = source.GetAuthoring()->m_Descriptor;
+    const auto                 meshGroupCount = xiiMath::Min(65535U, m_pDevice->GetGraphicsDeviceAdapterProperties().m_MeshShaderProperties.m_uiMaxThreadGroupCountX);
     xiiDynamicArray<xiiUInt32> commands;
     for (const auto& connection : definition.m_Connections)
     {
@@ -426,7 +426,7 @@ private:
     }
     for (const auto index : commands)
     {
-      auto& command = definition.m_Passes[index];
+      auto& command   = definition.m_Passes[index];
       command.m_pType = xiiGetStaticRTTI<xiiMeshDrawCommandsPass>();
       command.m_Properties.Clear();
       command.m_Properties.Insert("MeshGroupCountX", meshGroupCount);
@@ -480,17 +480,17 @@ private:
   }
 #endif
 
-  xiiSharedPtr<xiiGALDevice>     m_pDevice;
-  xiiSharedPtr<xiiGALSwapChain>  m_pSwapChain;
-  xiiUniquePtr<xiiWindow>        m_pWindow;
+  xiiSharedPtr<xiiGALDevice>             m_pDevice;
+  xiiSharedPtr<xiiGALSwapChain>          m_pSwapChain;
+  xiiUniquePtr<xiiWindow>                m_pWindow;
   xiiUniquePtr<xiiWindowOutputTargetGAL> m_pWindowOutput;
   xiiString                              m_sCaptureDir;
   xiiBoundingBoxSphere                   m_ImportedBounds = xiiBoundingBoxSphere::MakeInvalid();
-  xiiRenderPipelineResourceHandle m_hPipeline;
-  xiiGpuDrivenSceneConfiguration m_Configuration;
-  xiiGpuDrivenSceneWorld         m_World;
-  xiiCamera                      m_Camera;
-  xiiUInt64                      m_uiFrameIndex = 0;
+  xiiRenderPipelineResourceHandle        m_hPipeline;
+  xiiGpuDrivenSceneConfiguration         m_Configuration;
+  xiiGpuDrivenSceneWorld                 m_World;
+  xiiCamera                              m_Camera;
+  xiiUInt64                              m_uiFrameIndex = 0;
 #if XII_ENABLED(USE_DIRECTORY_WATCHER)
   xiiUniquePtr<xiiDirectoryWatcher> m_pDirectoryWatcher;
   bool                              m_bFileModified = false;

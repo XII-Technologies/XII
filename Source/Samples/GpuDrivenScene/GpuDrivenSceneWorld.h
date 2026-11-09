@@ -54,7 +54,7 @@ public:
   void                           Shutdown();
   void                           Update(xiiTime deltaTime);
 
-  xiiView* GetRenderView() const;
+  xiiView*             GetRenderView() const;
   xiiBoundingBoxSphere GetImportedMeshBounds() const;
 
 private:

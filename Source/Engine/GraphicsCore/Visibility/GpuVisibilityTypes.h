@@ -24,8 +24,8 @@ struct XII_GRAPHICSCORE_DLL alignas(16) xiiGpuVisibilityView
   xiiUInt32 m_uiMaxVisibleMeshlets = 0U;
   xiiUInt32 m_uiCandidateCount     = 0U;
   xiiUInt32 m_uiUseCandidates      = 0U;
-  float m_fGeometryPixelScale = 1.0f; ///< Projection scale in pixels at unit view depth.
-  xiiUInt32 m_Reserved[3] = {};
+  float     m_fGeometryPixelScale  = 1.0f; ///< Projection scale in pixels at unit view depth.
+  xiiUInt32 m_Reserved[3]          = {};
 
   [[nodiscard]] XII_ALWAYS_INLINE xiiUInt32 GetFrustumPlaneCount() const { return 6U; }
   [[nodiscard]] XII_ALWAYS_INLINE xiiVec4   GetFrustumPlane(xiiUInt32 uiIndex) const { return m_FrustumPlanes[uiIndex]; }

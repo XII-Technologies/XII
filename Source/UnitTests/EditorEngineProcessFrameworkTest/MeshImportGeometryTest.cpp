@@ -79,7 +79,7 @@ XII_CREATE_SIMPLE_TEST(EditorViews, MeshImportGeometry)
   {
     options.m_uiGeneratedLODs           = 4;
     options.m_fSimplification           = 0.8f;
-    options.m_fMaxSimplificationError = 1.0f;
+    options.m_fMaxSimplificationError   = 1.0f;
     options.m_bAggressiveSimplification = true;
     xiiModelMeshImport reimported;
     if (!XII_TEST_RESULT(xiiModelMeshImport::ReadFile(source, options, reimported, &error)))

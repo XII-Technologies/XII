@@ -54,10 +54,13 @@ ByteAddressBuffer                   g_Buffers[];
     }
 
     const GpuGeometryRecord geometry = g_Geometry[GeometryBaseIndex + instance.GeometryIndex];
-    GpuMeshlet meshlet;
+    GpuMeshlet              meshlet;
     if (!xiiLoadCluster(visible.y, meshlet))
-    { SetMeshOutputCounts(0u, 0u); return; }
-    const uint              lodIndex = meshlet.PackedLodSection & 0xFFFFu;
+    {
+      SetMeshOutputCounts(0u, 0u);
+      return;
+    }
+    const uint lodIndex = meshlet.PackedLodSection & 0xFFFFu;
     if (!xiiGeometryLodAvailable(geometry, lodIndex) || (instance.DrawLod != 0xFFFFFFFFu && instance.DrawLod != lodIndex))
     {
       SetMeshOutputCounts(0u, 0u);
@@ -66,9 +69,12 @@ ByteAddressBuffer                   g_Buffers[];
 
     GpuGeometryLod lod = geometry.Lods[lodIndex];
     if (!xiiResolveClusterLod(lod, meshlet))
-    { SetMeshOutputCounts(0u, 0u); return; }
-    const uint           primitiveCount = meshlet.PackedPrimitiveVertexCount & 0xFFFFu;
-    const uint           vertexCount    = meshlet.PackedPrimitiveVertexCount >> 16u;
+    {
+      SetMeshOutputCounts(0u, 0u);
+      return;
+    }
+    const uint primitiveCount = meshlet.PackedPrimitiveVertexCount & 0xFFFFu;
+    const uint vertexCount    = meshlet.PackedPrimitiveVertexCount >> 16u;
     if (instance.PrimitiveCount != 0u)
     {
       const uint selectedEnd = instance.FirstPrimitive + instance.PrimitiveCount;
@@ -97,7 +103,8 @@ ByteAddressBuffer                   g_Buffers[];
       SetMeshOutputCounts(0u, 0u);
       return;
     }
-    if (lod.Padding == 0u) primitiveBufferBytes -= remapBufferBytes;
+    if (lod.Padding == 0u)
+      primitiveBufferBytes -= remapBufferBytes;
     const uint lastAttributeEnd = max(max(12u, NormalOffset + 12u), max(TangentOffset + 16u, TexCoordOffset + 8u));
     if (VertexStride < lastAttributeEnd || meshlet.Header.y > remapBufferBytes / 4u || vertexCount > remapBufferBytes / 4u - meshlet.Header.y ||
         meshlet.Header.z > primitiveBufferBytes || primitiveCount * 3u > primitiveBufferBytes - meshlet.Header.z)

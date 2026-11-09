@@ -14,8 +14,10 @@ float xiiComputeRayTracingTextureMip(uint textureIndex, float worldTriangleArea,
   uint       textureWidth;
   uint       textureHeight;
   uint       mipCount;
-  uint4 dimensions = xiiSurfaceTextureDimensions(textureIndex);
-  textureWidth = dimensions.x; textureHeight = dimensions.y; mipCount = dimensions.z;
+  uint4      dimensions = xiiSurfaceTextureDimensions(textureIndex);
+  textureWidth          = dimensions.x;
+  textureHeight         = dimensions.y;
+  mipCount              = dimensions.z;
 
   // Ratios of doubled triangle areas preserve UV-to-world texel density while
   // avoiding two unnecessary 0.5 factors.
