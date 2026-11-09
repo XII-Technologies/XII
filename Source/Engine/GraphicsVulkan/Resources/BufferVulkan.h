@@ -24,6 +24,7 @@ public:
   [[nodiscard]] XII_ALWAYS_INLINE xiiVulkanAllocation GetAllocationDescription() const { return m_BufferMemoryAllocation; }
 
   [[nodiscard]] vk::DeviceAddress GetVulkanBufferDeviceAddress() const;
+  [[nodiscard]] xiiUInt64         GetMemoryConsumption() const override final;
 
   void                                 SetAccessFlags(vk::AccessFlags accessFlags);
   [[nodiscard]] vk::AccessFlags        GetAccessFlags() const;

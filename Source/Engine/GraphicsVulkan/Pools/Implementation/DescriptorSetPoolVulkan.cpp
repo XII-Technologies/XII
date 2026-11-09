@@ -38,11 +38,22 @@ xiiGALDescriptorSetPoolVulkan::~xiiGALDescriptorSetPoolVulkan()
   m_DescriptorPools.Compact();
 }
 
-vk::DescriptorSet xiiGALDescriptorSetPoolVulkan::RequestDescriptorSet(vk::DescriptorSetLayout vkDescriptorSetLayout)
+vk::DescriptorSet xiiGALDescriptorSetPoolVulkan::RequestDescriptorSet(vk::DescriptorSetLayout vkDescriptorSetLayout, xiiArrayPtr<const xiiGALPipelineResourceDescriptionVulkan> resources)
 {
+  xiiHashTable<vk::DescriptorType, xiiUInt32> required;
+  for (const auto& resource : resources)
+  {
+    auto type = xiiVulkanTypeConversions::GetDescriptorType(resource.m_DescriptorType);
+    required[type] += resource.m_uiArraySize;
+  }
+  bool fits = m_uiRemainingSets != 0U;
+  for (auto it = required.GetIterator(); it.IsValid(); ++it)
+    fits &= m_Remaining[it.Key()] >= it.Value();
+  if (!fits)
+    m_vkCurrentDescriptorPool = VK_NULL_HANDLE;
   if (!m_vkCurrentDescriptorPool)
   {
-    m_vkCurrentDescriptorPool = CreateVulkanDescriptorPool();
+    m_vkCurrentDescriptorPool = CreateVulkanDescriptorPool(required);
   }
 
   vk::DescriptorSetAllocateInfo vkDescriptorSetAllocateInfo = {};
@@ -76,13 +87,19 @@ vk::DescriptorSet xiiGALDescriptorSetPoolVulkan::RequestDescriptorSet(vk::Descri
     // We now create a descriptor set allocator per command list. Thus, we can't necessarily 'reclaim' without more complex tracking.
     // m_pDeviceVulkan->ReclaimLater(m_vkCurrentDescriptorPool);
 
-    m_vkCurrentDescriptorPool = CreateVulkanDescriptorPool();
+    m_vkCurrentDescriptorPool = CreateVulkanDescriptorPool(required);
 
     vkDescriptorSetAllocateInfo.descriptorPool = m_vkCurrentDescriptorPool;
 
     VK_ASSERT_DEV(vkLogicalDevice.allocateDescriptorSets(&vkDescriptorSetAllocateInfo, &vkDescriptorSet, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
   }
 
+  if (vkResult == vk::Result::eSuccess || bPoolExhausted)
+  {
+    for (auto it = required.GetIterator(); it.IsValid(); ++it)
+      m_Remaining[it.Key()] -= it.Value();
+    --m_uiRemainingSets;
+  }
   return vkDescriptorSet;
 }
 
@@ -95,11 +112,18 @@ void xiiGALDescriptorSetPoolVulkan::ReclaimDescriptorPool(vk::DescriptorPool&& v
   m_QueuedDescriptorPools.PushBack(vkDescriptorPool);
 }
 
-vk::DescriptorPool xiiGALDescriptorSetPoolVulkan::CreateVulkanDescriptorPool()
+vk::DescriptorPool xiiGALDescriptorSetPoolVulkan::CreateVulkanDescriptorPool(const xiiHashTable<vk::DescriptorType, xiiUInt32>& required)
 {
   vk::DescriptorPool vkDescriptorPool = VK_NULL_HANDLE;
 
-  if (m_QueuedDescriptorPools.IsEmpty())
+  // Reclaimed pools have the standard capacities. Oversized layouts need a pool
+  // constructed for their actual descriptor counts.
+  bool oversized = false;
+  for (auto it = required.GetIterator(); it.IsValid(); ++it)
+    oversized |= it.Value() > static_cast<xiiUInt32>(GetDescriptorTypeWeight(it.Key()) * m_uiBaseSize);
+  m_Remaining.Clear();
+  m_uiRemainingSets = m_uiMaxSets;
+  if (m_QueuedDescriptorPools.IsEmpty() || oversized)
   {
     vk::Device  vkLogicalDevice   = m_pDeviceVulkan->GetVulkanLogicalDevice();
     const auto& extensionFeatures = m_pDeviceVulkan->GetVulkanLogicalDeviceExtensionFeatures();
@@ -112,6 +136,10 @@ vk::DescriptorPool xiiGALDescriptorSetPoolVulkan::CreateVulkanDescriptorPool()
     {
       xiiUInt32 uiDescriptorCount = static_cast<xiiUInt32>(GetDescriptorTypeWeight(vkDescriptorType) * m_uiBaseSize);
 
+      const auto* needed = required.GetValue(vkDescriptorType);
+      if (needed)
+        uiDescriptorCount = xiiMath::Max(uiDescriptorCount, *needed);
+      m_Remaining.Insert(vkDescriptorType, uiDescriptorCount);
       if (uiDescriptorCount > 0)
       {
         if (vkDescriptorType == vk::DescriptorType::eAccelerationStructureKHR && extensionFeatures.m_AccelerationStructure.accelerationStructure == vk::False)
@@ -139,6 +167,8 @@ vk::DescriptorPool xiiGALDescriptorSetPoolVulkan::CreateVulkanDescriptorPool()
     vkDescriptorPool = m_QueuedDescriptorPools.PeekFront();
 
     m_QueuedDescriptorPools.PopFront();
+    for (auto it = required.GetIterator(); it.IsValid(); ++it)
+      m_Remaining.Insert(it.Key(), static_cast<xiiUInt32>(GetDescriptorTypeWeight(it.Key()) * m_uiBaseSize));
   }
 
   XII_ASSERT_DEBUG(vkDescriptorPool != VK_NULL_HANDLE, "Invalid descriptor pool.");
