@@ -107,6 +107,25 @@ namespace
   {
     return xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(data.GetPtr()), data.GetCount() * sizeof(T));
   }
+  // The native byte arrays already store a 64-bit count followed by raw bytes.
+  // Transfer the same representation in bulk for large vertex and page payloads.
+  xiiResult WriteByteArray(xiiStreamWriter& stream, xiiArrayPtr<const xiiUInt8> bytes)
+  {
+    const xiiUInt64 count = bytes.GetCount();
+    XII_SUCCEED_OR_RETURN(stream.WriteQWordValue(&count));
+    return count == 0U ? XII_SUCCESS : stream.WriteBytes(bytes.GetPtr(), count);
+  }
+
+  xiiResult ReadByteArray(xiiStreamReader& stream, xiiDynamicArray<xiiUInt8>& out_bytes)
+  {
+    xiiUInt64 count = 0U;
+    XII_SUCCEED_OR_RETURN(stream.ReadQWordValue(&count));
+    if (count >= xiiMath::MaxValue<xiiUInt32>())
+      return XII_FAILURE;
+
+    out_bytes.SetCountUninitialized(static_cast<xiiUInt32>(count));
+    return count == 0U || stream.ReadBytes(out_bytes.GetData(), count) == count ? XII_SUCCESS : XII_FAILURE;
+  }
 } // namespace
 
 xiiResult xiiMeshVertexStream::Serialize(xiiStreamWriter& inout_stream) const
@@ -493,17 +512,17 @@ xiiResult xiiMeshBufferResourceDescriptor::Serialize(xiiStreamWriter& inout_stre
   inout_stream << m_Bounds.m_vBoxHalfExtents;
 
   XII_SUCCEED_OR_RETURN(inout_stream.WriteArray(m_VertexStreams));
-  XII_SUCCEED_OR_RETURN(inout_stream.WriteArray(m_VertexData));
-  XII_SUCCEED_OR_RETURN(inout_stream.WriteArray(m_IndexData));
+  XII_SUCCEED_OR_RETURN(WriteByteArray(inout_stream, m_VertexData));
+  XII_SUCCEED_OR_RETURN(WriteByteArray(inout_stream, m_IndexData));
   XII_SUCCEED_OR_RETURN(inout_stream.WriteArray(m_Meshlets));
   XII_SUCCEED_OR_RETURN(inout_stream.WriteArray(m_MeshletVertexRemap));
-  XII_SUCCEED_OR_RETURN(inout_stream.WriteArray(m_MeshletPrimitiveIndices));
+  XII_SUCCEED_OR_RETURN(WriteByteArray(inout_stream, m_MeshletPrimitiveIndices));
   XII_SUCCEED_OR_RETURN(inout_stream.WriteArray(m_MeshletMaterialIndices));
   XII_SUCCEED_OR_RETURN(inout_stream.WriteArray(m_DrawCommands));
   if (m_sGeometryPageFile.IsEmpty())
   {
     XII_SUCCEED_OR_RETURN(inout_stream.WriteArray(m_GeometryPages));
-    XII_SUCCEED_OR_RETURN(inout_stream.WriteArray(m_GeometryPageData));
+    XII_SUCCEED_OR_RETURN(WriteByteArray(inout_stream, m_GeometryPageData));
   }
   else
   {
@@ -521,7 +540,7 @@ xiiResult xiiMeshBufferResourceDescriptor::Serialize(xiiStreamWriter& inout_stre
       payload.PushBackRange(encoded);
     }
     XII_SUCCEED_OR_RETURN(inout_stream.WriteArray(pages));
-    XII_SUCCEED_OR_RETURN(inout_stream.WriteArray(payload));
+    XII_SUCCEED_OR_RETURN(WriteByteArray(inout_stream, payload));
   }
   for (const auto& meshlet : m_Meshlets)
     inout_stream << meshlet.m_Page << meshlet.m_Hierarchy << meshlet.m_uiGpuPadding[1];
@@ -554,11 +573,11 @@ xiiResult xiiMeshBufferResourceDescriptor::Deserialize(xiiStreamReader& source, 
   inout_stream >> m_Bounds.m_vBoxHalfExtents;
 
   XII_SUCCEED_OR_RETURN(inout_stream.ReadArray(m_VertexStreams));
-  XII_SUCCEED_OR_RETURN(inout_stream.ReadArray(m_VertexData));
-  XII_SUCCEED_OR_RETURN(inout_stream.ReadArray(m_IndexData));
+  XII_SUCCEED_OR_RETURN(ReadByteArray(inout_stream, m_VertexData));
+  XII_SUCCEED_OR_RETURN(ReadByteArray(inout_stream, m_IndexData));
   XII_SUCCEED_OR_RETURN(inout_stream.ReadArray(m_Meshlets));
   XII_SUCCEED_OR_RETURN(inout_stream.ReadArray(m_MeshletVertexRemap));
-  XII_SUCCEED_OR_RETURN(inout_stream.ReadArray(m_MeshletPrimitiveIndices));
+  XII_SUCCEED_OR_RETURN(ReadByteArray(inout_stream, m_MeshletPrimitiveIndices));
   XII_SUCCEED_OR_RETURN(inout_stream.ReadArray(m_MeshletMaterialIndices));
   XII_SUCCEED_OR_RETURN(inout_stream.ReadArray(m_DrawCommands));
   if (version >= 2U)

@@ -12,24 +12,26 @@ bool xiiLoadCluster(uint key, out GpuMeshlet cluster)
   {
     uint capacity, stride;
     g_Meshlets.GetDimensions(capacity, stride);
-    if (key >= capacity) return false;
+    if (key >= capacity)
+      return false;
     cluster = g_Meshlets[key];
     return true;
   }
   uint descriptor = NonUniformResourceIndex((key >> 16u) & 0xfffu);
-  uint offset = (key & 0xffffu) * 4u;
+  uint offset     = (key & 0xffffu) * 4u;
   uint bytes;
   g_Buffers[descriptor].GetDimensions(bytes);
-  if (offset > bytes || 96u > bytes - offset) return false;
-  cluster.Header = g_Buffers[descriptor].Load4(offset);
-  uint4 packed = g_Buffers[descriptor].Load4(offset + 16u);
+  if (offset > bytes || 96u > bytes - offset)
+    return false;
+  cluster.Header                     = g_Buffers[descriptor].Load4(offset);
+  uint4 packed                       = g_Buffers[descriptor].Load4(offset + 16u);
   cluster.PackedPrimitiveVertexCount = packed.x;
-  cluster.PackedLodSection = packed.y & 0xffff0000u;
-  cluster.Padding = packed.zw;
-  cluster.Bounds = asfloat(g_Buffers[descriptor].Load4(offset + 32u));
-  cluster.Cone = asfloat(g_Buffers[descriptor].Load4(offset + 48u));
-  cluster.Page = g_Buffers[descriptor].Load4(offset + 64u);
-  cluster.Hierarchy = asfloat(g_Buffers[descriptor].Load4(offset + 80u));
+  cluster.PackedLodSection           = packed.y & 0xffff0000u;
+  cluster.Padding                    = packed.zw;
+  cluster.Bounds                     = asfloat(g_Buffers[descriptor].Load4(offset + 32u));
+  cluster.Cone                       = asfloat(g_Buffers[descriptor].Load4(offset + 48u));
+  cluster.Page                       = g_Buffers[descriptor].Load4(offset + 64u);
+  cluster.Hierarchy                  = asfloat(g_Buffers[descriptor].Load4(offset + 80u));
   return true;
 }
 
@@ -57,7 +59,7 @@ bool xiiResolveClusterLod(inout GpuGeometryLod lod, inout GpuMeshlet cluster)
   uint4 mapping = xiiGeometryPageMapping(lod, cluster.Page.x);
   if (mapping.x == 0xFFFFFFFFu)
     return false;
-  uint baseWords = mapping.z >> 16u;
+  uint baseWords                 = mapping.z >> 16u;
   lod.VertexBufferIndex          = mapping.x;
   lod.IndexBufferIndex           = baseWords * 4u; // Resolved virtual LODs store a vertex byte offset here.
   lod.MeshletTopologyBufferIndex = mapping.x;
@@ -101,40 +103,48 @@ uint xiiGeometryChild(GpuGeometryLod lod, uint page, uint child)
 // and prefix maximum primitive end. This bounds work to a draw's section.
 bool xiiGeometryRootDirectory(GpuGeometryLod lod, out uint table, out uint offset, out uint roots)
 {
-  table = NonUniformResourceIndex(lod.VertexBufferIndex);
+  table  = NonUniformResourceIndex(lod.VertexBufferIndex);
   offset = 0u;
-  roots = 0u;
-  if (lod.VertexBufferIndex == 0xffffffffu) return false;
+  roots  = 0u;
+  if (lod.VertexBufferIndex == 0xffffffffu)
+    return false;
   uint bytes;
   g_Buffers[table].GetDimensions(bytes);
-  if (bytes < 272u) return false;
+  if (bytes < 272u)
+    return false;
   uint pages = g_Buffers[table].Load(0u);
-  if (pages > (bytes - 272u) / 80u) return false;
+  if (pages > (bytes - 272u) / 80u)
+    return false;
   offset = 272u + pages * 80u;
-  roots = min(g_Buffers[table].Load(4u), (bytes - offset) / 16u);
+  roots  = min(g_Buffers[table].Load(4u), (bytes - offset) / 16u);
   return true;
 }
 
 void xiiGeometryRootRange(uint table, uint offset, uint roots, GpuSceneInstance instance, out uint first, out uint end)
 {
   first = 0u;
-  end = roots;
-  if (instance.PrimitiveCount == 0u) return;
+  end   = roots;
+  if (instance.PrimitiveCount == 0u)
+    return;
   uint low = 0u, high = roots;
   while (low < high)
   {
     uint middle = low + (high - low) / 2u;
-    if (g_Buffers[NonUniformResourceIndex(table)].Load(offset + middle * 16u + 12u) <= instance.FirstPrimitive) low = middle + 1u;
-    else high = middle;
+    if (g_Buffers[NonUniformResourceIndex(table)].Load(offset + middle * 16u + 12u) <= instance.FirstPrimitive)
+      low = middle + 1u;
+    else
+      high = middle;
   }
   first = low;
-  high = roots;
+  high  = roots;
   while (low < high)
   {
     uint middle = low + (high - low) / 2u;
-    uint start = g_Buffers[NonUniformResourceIndex(table)].Load(offset + middle * 16u + 8u);
-    if (start < instance.FirstPrimitive || start - instance.FirstPrimitive < instance.PrimitiveCount) low = middle + 1u;
-    else high = middle;
+    uint start  = g_Buffers[NonUniformResourceIndex(table)].Load(offset + middle * 16u + 8u);
+    if (start < instance.FirstPrimitive || start - instance.FirstPrimitive < instance.PrimitiveCount)
+      low = middle + 1u;
+    else
+      high = middle;
   }
   end = low;
 }
@@ -144,10 +154,12 @@ void xiiGeometryRootClusterRange(GpuGeometryLod lod, GpuSceneInstance instance, 
   first = 0u;
   count = 0u;
   uint table, offset, roots;
-  if (!xiiGeometryRootDirectory(lod, table, offset, roots)) return;
+  if (!xiiGeometryRootDirectory(lod, table, offset, roots))
+    return;
   uint begin, end;
   xiiGeometryRootRange(table, offset, roots, instance, begin, end);
-  if (begin == end) return;
+  if (begin == end)
+    return;
   first = begin == 0u ? 0u : g_Buffers[NonUniformResourceIndex(table)].Load(offset + (begin - 1u) * 16u + 4u);
   count = g_Buffers[NonUniformResourceIndex(table)].Load(offset + (end - 1u) * 16u + 4u) - first;
 }
@@ -155,19 +167,24 @@ bool xiiLoadGeometryRootCluster(GpuGeometryLod lod, uint ordinal, out GpuMeshlet
 {
   cluster = (GpuMeshlet)0;
   uint table, offset, roots;
-  if (!xiiGeometryRootDirectory(lod, table, offset, roots)) return false;
-  table = NonUniformResourceIndex(table);
+  if (!xiiGeometryRootDirectory(lod, table, offset, roots))
+    return false;
+  table    = NonUniformResourceIndex(table);
   uint low = 0u, high = roots;
   while (low < high)
   {
     uint middle = low + (high - low) / 2u;
-    if (g_Buffers[table].Load(offset + middle * 16u + 4u) <= ordinal) low = middle + 1u;
-    else high = middle;
+    if (g_Buffers[table].Load(offset + middle * 16u + 4u) <= ordinal)
+      low = middle + 1u;
+    else
+      high = middle;
   }
-  if (low >= roots) return false;
-  uint previous = low == 0u ? 0u : g_Buffers[table].Load(offset + (low - 1u) * 16u + 4u);
-  xiiGeometryPageInfo page = xiiLoadGeometryPage(lod, g_Buffers[table].Load(offset + low * 16u));
-  if (page.Mapping.x == 0xffffffffu || ordinal - previous >= page.Mapping.w) return false;
+  if (low >= roots)
+    return false;
+  uint                previous = low == 0u ? 0u : g_Buffers[table].Load(offset + (low - 1u) * 16u + 4u);
+  xiiGeometryPageInfo page     = xiiLoadGeometryPage(lod, g_Buffers[table].Load(offset + low * 16u));
+  if (page.Mapping.x == 0xffffffffu || ordinal - previous >= page.Mapping.w)
+    return false;
   return xiiLoadCluster(xiiGeometryClusterKey(page.Mapping, ordinal - previous), cluster);
 }
 float xiiGeometryMaximumScale(GpuSceneInstance instance)
@@ -190,11 +207,11 @@ bool xiiGeometryPageRefines(GpuGeometryLod lod, uint pageIndex, xiiGeometryPageI
   uint children = min((uint)page.Detail.w, 8u);
   if (children == 0u)
     return false;
-  float3 center     = mul(instance.GlobalTransform, float4(page.Bounds.xyz, 1.0f)).xyz;
-  float  scale      = xiiGeometryMaximumScale(instance);
-  float  distance   = length(view.ViewProjectionMatrix[3].xyz) < 0.0001f ? 1.0f :
-                                                                           max(0.001f, abs(mul(view.ViewProjectionMatrix, float4(center, 1.0f)).w) - page.Bounds.w * scale);
-  float  error      = page.Detail.x * scale * view.GeometryPixelScale *
+  float3 center   = mul(instance.GlobalTransform, float4(page.Bounds.xyz, 1.0f)).xyz;
+  float  scale    = xiiGeometryMaximumScale(instance);
+  float  distance = length(view.ViewProjectionMatrix[3].xyz) < 0.0001f ? 1.0f :
+                                                                         max(0.001f, abs(mul(view.ViewProjectionMatrix, float4(center, 1.0f)).w) - page.Bounds.w * scale);
+  float  error    = page.Detail.x * scale * view.GeometryPixelScale *
     exp2(clamp(instance.LodBias, -16.0f, 16.0f)) / distance;
   if (error <= 1.0f)
     return false;

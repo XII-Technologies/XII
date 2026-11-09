@@ -14,7 +14,7 @@ StructuredBuffer<uint2> g_VisibleMeshlets;
 StructuredBuffer<uint>    g_VisibleMeshletCount;
 RWStructuredBuffer<uint4> g_DrawCommands;
 RWStructuredBuffer<uint>  g_DrawCommandCount;
-ByteAddressBuffer g_Buffers[];
+ByteAddressBuffer         g_Buffers[];
 #include <Shaders/Geometry/VirtualGeometry.h>
 
 [numthreads(64, 1, 1)] void main(uint3 tid : SV_DispatchThreadID) {
@@ -42,9 +42,10 @@ ByteAddressBuffer g_Buffers[];
   if (base >= geometryCount || instance.GeometryIndex >= geometryCount - base)
     return;
   GpuGeometryRecord geometry = g_Geometry[base + instance.GeometryIndex];
-  GpuMeshlet meshlet;
-  if (!xiiLoadCluster(visible.y, meshlet)) return;
-  uint              lodIndex = meshlet.PackedLodSection & 0xFFFFu;
+  GpuMeshlet        meshlet;
+  if (!xiiLoadCluster(visible.y, meshlet))
+    return;
+  uint lodIndex = meshlet.PackedLodSection & 0xFFFFu;
   if (!xiiGeometryLodAvailable(geometry, lodIndex) ||
       (instance.DrawLod != 0xFFFFFFFFu && instance.DrawLod != lodIndex))
     return;

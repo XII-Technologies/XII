@@ -43,7 +43,7 @@ public:
   xiiUInt32                                    GetInstanceCount() const { return m_Instances.GetCount(); }
   /// Changes when packed records, membership or pose bytes change; never a serialized identity.
   xiiUInt64                             GetDataRevision() const { return m_uiDataRevision; }
-  xiiUInt64                             GetMaximumMeshletCount() const;
+  xiiUInt64                             GetMaximumMeshletCount(bool bRootsOnly = false) const;
   xiiMeshResourceHandle                 GetMeshResource(xiiUInt32 drawIndex) const;
   xiiMaterialGpuHandle                  GetMaterialHandle(xiiUInt32 drawIndex) const;
   xiiArrayPtr<const float>              GetMorphWeights(xiiUInt32 drawIndex) const;

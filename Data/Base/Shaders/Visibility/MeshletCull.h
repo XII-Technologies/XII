@@ -14,6 +14,10 @@ RWStructuredBuffer<uint2>           g_VisibleMeshlets;
 RWStructuredBuffer<uint>            g_VisibleMeshletCount;
 RWStructuredBuffer<uint>            g_VisibleMeshletOverflow;
 ByteAddressBuffer                   g_Buffers[];
+cbuffer MeshletCullOptions
+{
+  uint4 MeshletCullFlags;
+};
 #include "MeshletRange.h"
 #include <Shaders/Geometry/VirtualGeometry.h>
 groupshared uint s_FirstMeshlet;
@@ -80,7 +84,8 @@ void             ReserveMeshletBatch(uint requested)
 bool CullMeshlet(uint index, uint meshletIndex, GpuSceneInstance instance, GpuVisibilityView view, uint lodIndex)
 {
   GpuMeshlet meshlet;
-  if (!xiiLoadCluster(meshletIndex, meshlet)) return false;
+  if (!xiiLoadCluster(meshletIndex, meshlet))
+    return false;
   if ((meshlet.PackedLodSection & 0xFFFFu) != lodIndex)
     return false;
   uint primitives = meshlet.PackedPrimitiveVertexCount & 0xFFFFu;
@@ -140,7 +145,8 @@ groupshared uint s_SelectedCount;
 void CullVirtualHierarchy(uint workGroup, uint workGroups, uint lane, uint index, GpuSceneInstance instance, GpuVisibilityView view, GpuGeometryLod lod)
 {
   uint table, rootsOffset, rootCount;
-  if (!xiiGeometryRootDirectory(lod, table, rootsOffset, rootCount)) return;
+  if (!xiiGeometryRootDirectory(lod, table, rootsOffset, rootCount))
+    return;
   table = NonUniformResourceIndex(table);
   uint firstRoot, endRoot;
   xiiGeometryRootRange(table, rootsOffset, rootCount, instance, firstRoot, endRoot);
@@ -167,7 +173,7 @@ void CullVirtualHierarchy(uint workGroup, uint workGroups, uint lane, uint index
         if (page.Mapping.x != 0xffffffffu && xiiGeometryPageVisible(page, instance, view))
         {
           uint children = min((uint)page.Detail.w, 8u);
-          if (xiiGeometryPageRefines(lod, pageIndex, page, instance, view) && s_PageStackSize + children <= 64u)
+          if (MeshletCullFlags.x == 0u && xiiGeometryPageRefines(lod, pageIndex, page, instance, view) && s_PageStackSize + children <= 64u)
           {
             for (uint child = 0u; child < children; ++child)
               s_PageStack[s_PageStackSize++] = xiiGeometryChild(lod, pageIndex, child);
