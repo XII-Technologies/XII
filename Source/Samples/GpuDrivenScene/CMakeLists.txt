@@ -14,6 +14,7 @@ xii_add_renderers(${PROJECT_NAME})
 target_link_libraries(${PROJECT_NAME}
   PUBLIC
   GraphicsCore
+  GameEngine
 )
 
 add_dependencies(${PROJECT_NAME}

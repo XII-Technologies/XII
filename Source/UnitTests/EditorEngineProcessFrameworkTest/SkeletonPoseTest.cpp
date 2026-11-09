@@ -274,7 +274,7 @@ XII_CREATE_SIMPLE_TEST(EditorViews, SkeletonPose)
     xiiMeshResourceDescriptor descriptor;
     xiiGeometry               geometry;
     geometry.AddBox(xiiVec3(1), true);
-    descriptor.GetMeshBufferDescriptor().AllocateStreamsFromGeometry(geometry, xiiGALPrimitiveTopology::TriangleList);
+    descriptor.GetMeshBufferDescriptor().AllocateStreamsFromGeometry(geometry, xiiGALPrimitiveTopology::TriangleList, true, true);
     descriptor.AddSubMesh(descriptor.GetMeshBufferDescriptor().GetPrimitiveCount(), 0, 0);
     descriptor.ComputeBounds();
     descriptor.m_hDefaultSkeleton = hSkeleton;

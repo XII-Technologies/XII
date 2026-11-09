@@ -55,6 +55,7 @@ public:
   void                           Update(xiiTime deltaTime);
 
   xiiView* GetRenderView() const;
+  xiiBoundingBoxSphere GetImportedMeshBounds() const;
 
 private:
   struct GeometryAsset

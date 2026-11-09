@@ -72,6 +72,7 @@ XII_CREATE_SIMPLE_TEST(Meshes, AuthoredLodThresholds)
   xiiMeshResourceDescriptor descriptor;
   descriptor.GetMeshBufferDescriptor().AllocateStreamsFromGeometry(fine, xiiGALPrimitiveTopology::TriangleList, true);
   XII_TEST_INT(descriptor.GetLODs().GetCount(), 1);
+  descriptor.GetMeshBufferDescriptor().m_ResourceUsage = xiiGALResourceUsage::Default;
   descriptor.GetLODs()[0].m_fScreenSize = 80;
   descriptor.AddSection(firstCount, 0, 0, 0);
   descriptor.AddLOD(0);
@@ -83,7 +84,8 @@ XII_CREATE_SIMPLE_TEST(Meshes, AuthoredLodThresholds)
     XII_TEST_BOOL(lod.m_uiMeshletCount != 0);
   xiiContiguousMemoryStreamStorage bytes;
   xiiMemoryStreamWriter            writer(&bytes);
-  descriptor.Save(writer);
+  if (!XII_TEST_RESULT(descriptor.Save(writer)))
+    return;
   xiiMemoryStreamReader     reader(&bytes);
   xiiMeshResourceDescriptor decoded;
   if (!XII_TEST_RESULT(decoded.Load(reader)))
@@ -107,6 +109,7 @@ XII_CREATE_SIMPLE_TEST(Meshes, MeshletSections)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Materials and interleaved LODs have independent, contiguous clusters")
   {
+    buffer.m_ResourceUsage = xiiGALResourceUsage::Default;
     mesh.AddSection(5, 0, 2, 0);
     mesh.AddSection(12, 0, 4, 1);
     mesh.AddSection(7, 5, 9, 0);

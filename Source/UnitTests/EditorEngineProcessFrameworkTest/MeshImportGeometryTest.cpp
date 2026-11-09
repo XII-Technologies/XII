@@ -2,6 +2,8 @@
 
 #include <EditorEngineProcessFrameworkTest/EditorEngineProcessFrameworkTestPCH.h>
 
+#include <Core/Graphics/Geometry.h>
+#include <Foundation/IO/MemoryStream.h>
 #include <Foundation/IO/OSFile.h>
 #include <ModelImporter/MeshImport.h>
 
@@ -71,56 +73,141 @@ XII_CREATE_SIMPLE_TEST(EditorViews, MeshImportGeometry)
     }
     XII_TEST_BOOL(valid);
     XII_TEST_DOUBLE(area, static_cast<double>((size - 1) * (size - 1)), 0.0001);
-    xiiUInt32 meshletTriangles = 0;
-    for (const auto& meshlet : buffer.m_Meshlets)
-      meshletTriangles += meshlet.m_uiPrimitiveCount;
-    XII_TEST_INT(meshletTriangles, originalTriangles);
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Simplification compacts unused vertices and preserves a valid surface")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Static import ignores obsolete LOD and simplification settings")
   {
-    options.m_fSimplification         = 0.8f;
+    options.m_uiGeneratedLODs           = 4;
+    options.m_fSimplification           = 0.8f;
     options.m_fMaxSimplificationError = 1.0f;
-    for (bool aggressive : {false, true})
-    {
-      options.m_bAggressiveSimplification = aggressive;
-      xiiModelMeshImport simplified;
-      if (!XII_TEST_RESULT(xiiModelMeshImport::ReadFile(source, options, simplified, &error)))
-      {
-        XII_TEST_FAILURE("Grid simplification: {}", error);
-        continue;
-      }
-      const auto& reduced = simplified.m_Mesh.GetMeshBufferDescriptor();
-      XII_TEST_BOOL(reduced.GetPrimitiveCount() > 0 && reduced.GetPrimitiveCount() < originalTriangles / 2);
-      XII_TEST_BOOL(reduced.GetVertexCount() < buffer.GetVertexCount());
-      XII_TEST_BOOL(reduced.m_IndexType == xiiGALValueType::UInt16);
-      XII_TEST_BOOL(!reduced.m_Meshlets.IsEmpty());
-      XII_TEST_INT(simplified.m_Mesh.GetSubMeshes().GetCount(), 1);
-      XII_TEST_INT(simplified.m_Mesh.GetSubMeshes()[0].m_uiPrimitiveCount, reduced.GetPrimitiveCount());
-    }
+    options.m_bAggressiveSimplification = true;
+    xiiModelMeshImport reimported;
+    if (!XII_TEST_RESULT(xiiModelMeshImport::ReadFile(source, options, reimported, &error)))
+      return;
+    const auto& full = reimported.m_Mesh.GetMeshBufferDescriptor();
+    XII_TEST_INT(reimported.m_Mesh.GetSubMeshes().GetCount(), 1);
+    XII_TEST_BOOL(reimported.m_Mesh.GetLODs().IsEmpty());
+    XII_TEST_INT(full.GetVertexCount(), buffer.GetVertexCount());
+    XII_TEST_INT(full.GetPrimitiveCount(), originalTriangles);
+    XII_TEST_BOOL(full.m_GeometryPageData == buffer.m_GeometryPageData);
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Generated LODs use native sections and meshlet ranges")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Native hierarchy cuts cover the surface with valid page-local remaps")
   {
-    options                   = {};
-    options.m_uiGeneratedLODs = 2;
-    xiiModelMeshImport lodMesh;
-    if (!XII_TEST_RESULT(xiiModelMeshImport::ReadFile(source, options, lodMesh, &error)))
+    xiiContiguousMemoryStreamStorage bytes;
+    xiiMemoryStreamWriter            writer(&bytes);
+    if (!XII_TEST_RESULT(imported.m_Mesh.Save(writer)))
       return;
-    const auto lods = lodMesh.m_Mesh.GetLODs();
-    if (!XII_TEST_INT(lods.GetCount(), 3))
+    xiiMemoryStreamReader     reader(&bytes);
+    xiiMeshResourceDescriptor decoded;
+    if (!XII_TEST_RESULT(decoded.Load(reader)))
       return;
-    for (xiiUInt32 i = 0; i < lods.GetCount(); ++i)
+    const auto& geometry = decoded.GetMeshBufferDescriptor();
+    const auto& pages    = geometry.m_GeometryPages;
+    xiiUInt32   parents  = 0;
+    for (const auto& page : pages)
+      parents += page.m_uiChildCount != 0U ? 1U : 0U;
+    if (!XII_TEST_BOOL(parents > 0))
+      return;
+
+    xiiDynamicArray<xiiUInt32> pending;
+    xiiDynamicArray<xiiUInt8>  payload;
+    xiiDynamicArray<xiiUInt8>  coverage;
+    const xiiUInt32            stride          = geometry.GetVertexStride();
+    xiiUInt32                  coarseTriangles = 0;
+    for (xiiUInt32 cut = 0; cut < 3; ++cut)
     {
-      XII_TEST_INT(lods[i].m_Sections.GetCount(), 1);
-      XII_TEST_BOOL(lods[i].m_uiMeshletCount > 0);
-      if (i > 0)
+      coverage.Clear();
+      coverage.SetCount(originalTriangles, 0);
+      for (xiiUInt32 p = 0; p < pages.GetCount(); ++p)
+        if (pages[p].m_bRequired)
+          pending.PushBack(p);
+      xiiUInt32 triangles = 0;
+      double    area      = 0;
+      bool      valid     = true;
+      while (!pending.IsEmpty())
       {
-        XII_TEST_BOOL(lods[i].m_fScreenSize < lods[i - 1].m_fScreenSize);
-        XII_TEST_BOOL(lods[i].m_Sections[0].m_uiPrimitiveCount < lods[i - 1].m_Sections[0].m_uiPrimitiveCount);
+        const auto index = pending.PeekBack();
+        pending.PopBack();
+        const auto& page = pages[index];
+        // Root-only, partially resident and fully resident cuts. A missing
+        // sibling keeps the complete parent in the partially resident cut.
+        const bool complete = cut == 2 || (cut == 1 && page.m_uiChildCount != 0 && page.m_Children[0] % 2 == 0);
+        if (complete && page.m_uiChildCount != 0)
+        {
+          for (xiiUInt32 child = 0; child < page.m_uiChildCount; ++child)
+            pending.PushBack(page.m_Children[child]);
+          continue;
+        }
+        if (!XII_TEST_RESULT(geometry.ReadGeometryPage(index, payload)))
+          return;
+        const auto metadata = payload.GetCount() - page.m_uiClusterCount * sizeof(xiiMeshlet);
+        for (xiiUInt32 c = 0; c < page.m_uiClusterCount; ++c)
+        {
+          xiiMeshlet cluster;
+          xiiMemoryUtils::Copy(reinterpret_cast<xiiUInt8*>(&cluster), payload.GetData() + metadata + c * sizeof(xiiMeshlet), sizeof(xiiMeshlet));
+          XII_TEST_INT(cluster.m_Page.x, index);
+          XII_TEST_INT(cluster.m_uiMaterialIndex, 0);
+          // Every parent cluster shares the page's full source range.
+          if (page.m_uiChildCount == 0 || c == 0)
+          {
+            const auto first = cluster.m_uiFirstPrimitive;
+            const auto count = cluster.m_uiGpuPadding[1];
+            if (!XII_TEST_BOOL(first <= originalTriangles && count <= originalTriangles - first))
+              return;
+            for (xiiUInt32 p = first; p < first + count; ++p)
+              ++coverage[p];
+          }
+          triangles += cluster.m_uiPrimitiveCount;
+          for (xiiUInt32 p = 0; p < cluster.m_uiPrimitiveCount; ++p)
+          {
+            xiiVec3 position[3];
+            for (xiiUInt32 corner = 0; corner < 3; ++corner)
+            {
+              const auto local = payload[cluster.m_Page.z + p * 3U + corner];
+              if (!XII_TEST_BOOL(local < cluster.m_uiVertexCount))
+                return;
+              xiiUInt32 vertex;
+              xiiMemoryUtils::Copy(reinterpret_cast<xiiUInt8*>(&vertex), payload.GetData() + cluster.m_Page.y + local * sizeof(vertex), sizeof(vertex));
+              if (!XII_TEST_BOOL(vertex < cluster.m_Page.w))
+                return;
+              xiiMemoryUtils::Copy(reinterpret_cast<xiiUInt8*>(&position[corner]), payload.GetData() + vertex * stride, sizeof(xiiVec3));
+            }
+            const auto cross = (position[1] - position[0]).CrossRH(position[2] - position[0]);
+            valid &= cross.z >= 0;
+            area += cross.z * 0.5;
+          }
+        }
       }
-      for (xiiUInt32 m = lods[i].m_uiFirstMeshlet; m < lods[i].m_uiFirstMeshlet + lods[i].m_uiMeshletCount; ++m)
-        XII_TEST_INT(lodMesh.m_Mesh.GetMeshBufferDescriptor().m_Meshlets[m].m_uiLodIndex, i);
+      for (auto covered : coverage)
+        valid &= covered == 1;
+      XII_TEST_BOOL(valid);
+      XII_TEST_DOUBLE(area, static_cast<double>((size - 1) * (size - 1)), 0.0001);
+      if (cut == 0)
+        coarseTriangles = triangles;
+      if (cut == 2)
+      {
+        XII_TEST_INT(triangles, originalTriangles);
+        XII_TEST_BOOL(coarseTriangles < triangles);
+      }
     }
   }
+}
+
+XII_CREATE_SIMPLE_TEST(EditorViews, ProceduralGeometryHierarchy)
+{
+  xiiGeometry source;
+  source.AddStackedSphere(1.0f, 128, 64);
+  xiiMeshResourceDescriptor mesh;
+  auto&                     buffer = mesh.GetMeshBufferDescriptor();
+  buffer.AllocateStreamsFromGeometry(source, xiiGALPrimitiveTopology::TriangleList, false);
+  mesh.AddSubMesh(buffer.GetPrimitiveCount(), 0U, 0U);
+  if (!XII_TEST_RESULT(mesh.BuildMeshlets()))
+    return;
+  XII_TEST_BOOL(mesh.GetLODs().IsEmpty());
+  XII_TEST_BOOL(!buffer.m_GeometryPages.IsEmpty());
+  xiiUInt32 parents = 0U;
+  for (const auto& page : buffer.m_GeometryPages)
+    parents += page.m_uiChildCount != 0U ? 1U : 0U;
+  XII_TEST_BOOL(parents > 0U);
 }

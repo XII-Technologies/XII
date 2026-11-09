@@ -190,7 +190,7 @@ XII_CREATE_SIMPLE_TEST(EditorViews, AnimationPreview)
   {
     xiiGeometry geometry;
     geometry.AddBox(xiiVec3(1), true);
-    mesh.GetMeshBufferDescriptor().AllocateStreamsFromGeometry(geometry, xiiGALPrimitiveTopology::TriangleList);
+    mesh.GetMeshBufferDescriptor().AllocateStreamsFromGeometry(geometry, xiiGALPrimitiveTopology::TriangleList, true, true);
     mesh.AddSubMesh(mesh.GetMeshBufferDescriptor().GetPrimitiveCount(), 0, 0);
     mesh.ComputeBounds();
     auto                hMesh = xiiResourceManager::CreateResource<xiiMeshResource>("EditorAnimationPreviewMesh", std::move(mesh));
