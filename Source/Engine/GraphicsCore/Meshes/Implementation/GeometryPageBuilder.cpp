@@ -37,8 +37,15 @@ xiiResult xiiMeshBufferResourceDescriptor::BuildGeometryPages()
   const auto                 stride   = GetVertexStride();
   const xiiMeshVertexStream* position = nullptr;
   for (const auto& stream : m_VertexStreams)
+  {
+    if (stream.m_Semantic == xiiMeshVertexSemantic::BoneIndices0 || stream.m_Semantic == xiiMeshVertexSemantic::BoneWeights0)
+    {
+      m_bStreamableGeometry = false;
+      return XII_SUCCESS;
+    }
     if (stream.m_Semantic == xiiMeshVertexSemantic::Position && stream.m_Format == xiiMeshVertexStreamFormat::Float3)
       position = &stream;
+  }
   if (!position || stride == 0U || position->m_uiOffset + sizeof(xiiVec3) > stride ||
       xiiUInt64(GetVertexCount()) * stride > m_VertexData.GetCount())
     return XII_FAILURE;

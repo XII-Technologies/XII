@@ -136,6 +136,62 @@ namespace
 
 struct xiiVulkanMemoryAllocator::Implementation
 {
+  struct Allocation
+  {
+    xiiEnum<xiiGALMemoryCategory> m_Category;
+    xiiUInt64                     m_uiBytes      = 0U;
+    xiiUInt32                     m_uiMemoryType = 0U;
+    bool                          m_bRetiring    = false;
+    xiiString                     m_sName;
+  };
+
+  xiiMutex                                      m_AllocationsMutex;
+  xiiHashTable<xiiVulkanAllocation, Allocation> m_Allocations;
+  xiiGALMemoryCategoryStatistics                m_CategoryStatistics[xiiGALMemoryCategory::ENUM_COUNT];
+
+  void RegisterAllocation(xiiVulkanAllocation allocation, const xiiVulkanAllocationCreateInfo& description)
+  {
+    VmaAllocationInfo info;
+    vmaGetAllocationInfo(m_VmaAllocator, reinterpret_cast<VmaAllocation>(allocation), &info);
+    XII_LOCK(m_AllocationsMutex);
+    Allocation entry;
+    entry.m_Category     = description.m_MemoryCategory;
+    entry.m_uiBytes      = info.size;
+    entry.m_uiMemoryType = info.memoryType;
+    entry.m_sName        = description.m_pUserData;
+    XII_ASSERT_DEV(!m_Allocations.Contains(allocation), "Allocation ownership must be registered once.");
+    m_Allocations.Insert(allocation, std::move(entry));
+    auto& statistics      = m_CategoryStatistics[description.m_MemoryCategory.GetValue()];
+    statistics.m_Category = description.m_MemoryCategory;
+    statistics.m_uiAllocatedBytes += info.size;
+    ++statistics.m_uiAllocationCount;
+    const auto flags = m_vkMemoryProperties.memoryTypes[info.memoryType].propertyFlags;
+    if (flags & vk::MemoryPropertyFlagBits::eDeviceLocal)
+      statistics.m_uiDeviceLocalBytes += info.size;
+    if (flags & vk::MemoryPropertyFlagBits::eHostVisible)
+      statistics.m_uiHostVisibleBytes += info.size;
+  }
+
+  // Caller holds the ledger lock through native destruction, preventing a
+  // recycled VMA allocation address from being mistaken for the retired owner.
+  void UnregisterAllocation(xiiVulkanAllocation allocation)
+  {
+    if (allocation == nullptr)
+      return;
+    Allocation entry;
+    XII_VERIFY(m_Allocations.Remove(allocation, &entry), "Native allocation has no owner.");
+    auto& statistics = m_CategoryStatistics[entry.m_Category.GetValue()];
+    statistics.m_uiAllocatedBytes -= entry.m_uiBytes;
+    --statistics.m_uiAllocationCount;
+    if (entry.m_bRetiring)
+      statistics.m_uiRetiringBytes -= entry.m_uiBytes;
+    const auto flags = m_vkMemoryProperties.memoryTypes[entry.m_uiMemoryType].propertyFlags;
+    if (flags & vk::MemoryPropertyFlagBits::eDeviceLocal)
+      statistics.m_uiDeviceLocalBytes -= entry.m_uiBytes;
+    if (flags & vk::MemoryPropertyFlagBits::eHostVisible)
+      statistics.m_uiHostVisibleBytes -= entry.m_uiBytes;
+  }
+
   VmaAllocator                       m_VmaAllocator = VK_NULL_HANDLE; ///< The VMA allocator handle.
   vk::Instance                       m_vkInstance;                    ///< The Vulkan instance.
   vk::PhysicalDevice                 m_vkPhysicalDevice;              ///< The Vulkan physical device.
@@ -211,6 +267,9 @@ vk::Result xiiVulkanMemoryAllocator::Initialize(xiiGALDeviceVulkan* pDeviceVulka
 void xiiVulkanMemoryAllocator::DeInitialize()
 {
   XII_ASSERT_DEV(m_pImplementation != nullptr && m_pImplementation->m_VmaAllocator != VK_NULL_HANDLE, "xiiVulkanMemoryAllocator not initialized or already de-initialized.");
+  if (!m_pImplementation->m_Allocations.IsEmpty())
+    DumpAllocations();
+  XII_ASSERT_DEV(m_pImplementation->m_Allocations.IsEmpty(), "Native GPU allocations still have owners at allocator shutdown.");
 
   for (auto& it : m_pImplementation->m_ExportedSharedPools)
   {
@@ -288,14 +347,17 @@ vk::Result xiiVulkanMemoryAllocator::CreateBuffer(const vk::BufferCreateInfo& vk
     vmaAllocationCreateInfo.pool = pExportedSharedPool->m_Pool;
   }
 
-  return static_cast<vk::Result>(vmaCreateBuffer(m_pImplementation->m_VmaAllocator, reinterpret_cast<const VkBufferCreateInfo*>(&vkBufferCreateInfo), &vmaAllocationCreateInfo, reinterpret_cast<VkBuffer*>(&out_buffer), reinterpret_cast<VmaAllocation*>(&out_allocation), reinterpret_cast<VmaAllocationInfo*>(pAllocationInfo)));
+  const auto result = static_cast<vk::Result>(vmaCreateBuffer(m_pImplementation->m_VmaAllocator, reinterpret_cast<const VkBufferCreateInfo*>(&vkBufferCreateInfo), &vmaAllocationCreateInfo, reinterpret_cast<VkBuffer*>(&out_buffer), reinterpret_cast<VmaAllocation*>(&out_allocation), reinterpret_cast<VmaAllocationInfo*>(pAllocationInfo)));
+  if (result == vk::Result::eSuccess)
+    m_pImplementation->RegisterAllocation(out_allocation, allocationCreateInfo);
+  return result;
 }
 
 void xiiVulkanMemoryAllocator::DestroyBuffer(vk::Buffer& vkBuffer, xiiVulkanAllocation& allocation) const
 {
-  vmaSetAllocationUserData(m_pImplementation->m_VmaAllocator, reinterpret_cast<VmaAllocation&>(allocation), nullptr);
-
+  XII_LOCK(m_pImplementation->m_AllocationsMutex);
   vmaDestroyBuffer(m_pImplementation->m_VmaAllocator, reinterpret_cast<VkBuffer&>(vkBuffer), reinterpret_cast<VmaAllocation&>(allocation));
+  m_pImplementation->UnregisterAllocation(allocation);
 
   vkBuffer   = VK_NULL_HANDLE;
   allocation = VK_NULL_HANDLE;
@@ -367,14 +429,17 @@ vk::Result xiiVulkanMemoryAllocator::CreateImage(const vk::ImageCreateInfo& vkIm
     vmaAllocationCreateInfo.pool = pExportedSharedPool->m_Pool;
   }
 
-  return static_cast<vk::Result>(vmaCreateImage(m_pImplementation->m_VmaAllocator, reinterpret_cast<const VkImageCreateInfo*>(&vkImageCreateInfo), &vmaAllocationCreateInfo, reinterpret_cast<VkImage*>(&out_image), reinterpret_cast<VmaAllocation*>(&out_allocation), reinterpret_cast<VmaAllocationInfo*>(pAllocationInfo)));
+  const auto result = static_cast<vk::Result>(vmaCreateImage(m_pImplementation->m_VmaAllocator, reinterpret_cast<const VkImageCreateInfo*>(&vkImageCreateInfo), &vmaAllocationCreateInfo, reinterpret_cast<VkImage*>(&out_image), reinterpret_cast<VmaAllocation*>(&out_allocation), reinterpret_cast<VmaAllocationInfo*>(pAllocationInfo)));
+  if (result == vk::Result::eSuccess)
+    m_pImplementation->RegisterAllocation(out_allocation, allocationCreateInfo);
+  return result;
 }
 
 void xiiVulkanMemoryAllocator::DestroyImage(vk::Image& vkImage, xiiVulkanAllocation& allocation) const
 {
-  vmaSetAllocationUserData(m_pImplementation->m_VmaAllocator, reinterpret_cast<VmaAllocation&>(allocation), nullptr);
-
+  XII_LOCK(m_pImplementation->m_AllocationsMutex);
   vmaDestroyImage(m_pImplementation->m_VmaAllocator, reinterpret_cast<VkImage&>(vkImage), reinterpret_cast<VmaAllocation&>(allocation));
+  m_pImplementation->UnregisterAllocation(allocation);
 
   vkImage    = VK_NULL_HANDLE;
   allocation = VK_NULL_HANDLE;
@@ -401,9 +466,47 @@ vk::MemoryPropertyFlags xiiVulkanMemoryAllocator::GetMemoryPropertyFlags(xiiVulk
   return reinterpret_cast<vk::MemoryPropertyFlags&>(vkMemoryPropertyFlags);
 }
 
-void xiiVulkanMemoryAllocator::SetAllocationUserData(xiiVulkanAllocation allocation, const char* pUserData) const
+void xiiVulkanMemoryAllocator::SetAllocationDebugName(xiiVulkanAllocation allocation, const char* szName) const
 {
-  vmaSetAllocationUserData(m_pImplementation->m_VmaAllocator, reinterpret_cast<VmaAllocation&>(allocation), (void*)pUserData);
+  XII_LOCK(m_pImplementation->m_AllocationsMutex);
+  auto* entry = m_pImplementation->m_Allocations.GetValue(allocation);
+  XII_ASSERT_DEV(entry != nullptr, "Native allocation has no owner.");
+  if (entry != nullptr)
+    entry->m_sName = szName;
+  vmaSetAllocationName(m_pImplementation->m_VmaAllocator, reinterpret_cast<VmaAllocation>(allocation), szName);
+}
+
+void xiiVulkanMemoryAllocator::MarkAllocationRetiring(xiiVulkanAllocation allocation) const
+{
+  XII_LOCK(m_pImplementation->m_AllocationsMutex);
+  auto* entry = m_pImplementation->m_Allocations.GetValue(allocation);
+  XII_ASSERT_DEV(entry != nullptr && !entry->m_bRetiring, "Allocation must retire exactly once.");
+  if (entry != nullptr && !entry->m_bRetiring)
+  {
+    entry->m_bRetiring = true;
+    m_pImplementation->m_CategoryStatistics[entry->m_Category.GetValue()].m_uiRetiringBytes += entry->m_uiBytes;
+  }
+}
+
+bool xiiVulkanMemoryAllocator::GetMemoryCategoryStatistics(xiiGALMemoryCategory::Enum category, xiiGALMemoryCategoryStatistics& out_statistics) const
+{
+  if (category >= xiiGALMemoryCategory::ENUM_COUNT)
+    return false;
+  XII_LOCK(m_pImplementation->m_AllocationsMutex);
+  out_statistics            = m_pImplementation->m_CategoryStatistics[category];
+  out_statistics.m_Category = category;
+  return true;
+}
+
+void xiiVulkanMemoryAllocator::DumpAllocations() const
+{
+  XII_LOCK(m_pImplementation->m_AllocationsMutex);
+  for (const auto& allocation : m_pImplementation->m_Allocations)
+  {
+    const auto& entry = allocation.Value();
+    xiiLog::Info("GPU allocation: category='{0}', name='{1}', bytes={2}, memory type={3}, retiring={4}",
+                 xiiGALMemoryCategory::Names[entry.m_Category.GetValue()], entry.m_sName, entry.m_uiBytes, entry.m_uiMemoryType, entry.m_bRetiring);
+  }
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -44,8 +44,9 @@ void xiiGALStagingBufferPoolVulkan::CreateStagingBufferPage()
   vkBufferCreateInfo.sharingMode          = vk::SharingMode::eExclusive;
 
   xiiVulkanAllocationCreateInfo allocationCreateInfo;
-  allocationCreateInfo.m_Usage = xiiVulkanMemoryUsage::Auto;
-  allocationCreateInfo.m_Flags = xiiVulkanAllocationCreateFlags::StrategyHostSequential;
+  allocationCreateInfo.m_MemoryCategory = xiiGALMemoryCategory::Upload;
+  allocationCreateInfo.m_Usage          = xiiVulkanMemoryUsage::Auto;
+  allocationCreateInfo.m_Flags          = xiiVulkanAllocationCreateFlags::StrategyHostSequential;
 
   VK_ASSERT_DEV(pVulkanMemoryAllocator->CreateBuffer(vkBufferCreateInfo, allocationCreateInfo, stagingBufferPage.m_vkBuffer, stagingBufferPage.m_VulkanAllocation));
 
@@ -68,8 +69,9 @@ void xiiGALStagingBufferPoolVulkan::CreateLargeBuffer(xiiUInt64 uiSize)
   vkBufferCreateInfo.sharingMode          = vk::SharingMode::eExclusive;
 
   xiiVulkanAllocationCreateInfo allocationCreateInfo;
-  allocationCreateInfo.m_Usage = xiiVulkanMemoryUsage::Auto;
-  allocationCreateInfo.m_Flags = xiiVulkanAllocationCreateFlags::StrategyHostSequential;
+  allocationCreateInfo.m_MemoryCategory = xiiGALMemoryCategory::Upload;
+  allocationCreateInfo.m_Usage          = xiiVulkanMemoryUsage::Auto;
+  allocationCreateInfo.m_Flags          = xiiVulkanAllocationCreateFlags::StrategyHostSequential;
 
   VK_ASSERT_DEV(pVulkanMemoryAllocator->CreateBuffer(vkBufferCreateInfo, allocationCreateInfo, stagingBufferPage.m_vkBuffer, stagingBufferPage.m_VulkanAllocation));
 

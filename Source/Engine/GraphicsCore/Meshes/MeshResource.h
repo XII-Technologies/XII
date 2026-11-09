@@ -298,7 +298,7 @@ private:
   virtual void                       UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage) override;
 
   /// Creates the mesh buffer resource for this mesh based on the mesh buffer descriptor contained in the provided mesh resource descriptor, used to initialize the GPU buffers for this mesh.
-  void CreateMeshBufferFromDescriptor(xiiMeshResourceDescriptor& inout_descriptor);
+  xiiResult CreateMeshBufferFromDescriptor(xiiMeshResourceDescriptor& inout_descriptor);
 
   /// Loads the material resources for this mesh based on the material paths contained in the provided mesh resource descriptor, used to initialize the materials for this mesh.
   void LoadMaterialSlots(const xiiMeshResourceDescriptor& descriptor);

@@ -195,12 +195,12 @@ void xiiMeshResource::UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage)
   out_NewMemoryUsage.m_uiMemoryGPU = 0U;
 }
 
-void xiiMeshResource::CreateMeshBufferFromDescriptor(xiiMeshResourceDescriptor& inout_descriptor)
+xiiResult xiiMeshResource::CreateMeshBufferFromDescriptor(xiiMeshResourceDescriptor& inout_descriptor)
 {
   if (inout_descriptor.GetExistingMeshBuffer().IsValid())
   {
     m_hMeshBuffer = inout_descriptor.GetExistingMeshBuffer();
-    return;
+    return XII_SUCCESS;
   }
 
   xiiStringBuilder sBufferResourceId;
@@ -214,7 +214,11 @@ void xiiMeshResource::CreateMeshBufferFromDescriptor(xiiMeshResourceDescriptor& 
   bufferDescriptor.m_bKeepCpuMeshData              = inout_descriptor.m_UsageFlags.IsSet(xiiMeshResourceUsageFlags::CpuReadable);
 
   m_hMeshBuffer = xiiResourceManager::GetOrCreateResource<xiiMeshBufferResource>(sBufferResourceId, std::move(bufferDescriptor), GetResourceIdOrDescription());
+  xiiResourceLock<xiiMeshBufferResource> buffer(m_hMeshBuffer, xiiResourceAcquireMode::PointerOnly);
+  if (buffer->GetLoadingState() != xiiResourceState::Loaded)
+    return XII_FAILURE;
   inout_descriptor.UseExistingMeshBuffer(m_hMeshBuffer);
+  return XII_SUCCESS;
 }
 
 void xiiMeshResource::LoadMaterialSlots(const xiiMeshResourceDescriptor& descriptor)
@@ -268,7 +272,8 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiMeshResource, xiiMeshResourceDescriptor)
   if (preparation.Failed())
     return {xiiResourceState::LoadedResourceMissing, 0, 0};
 
-  CreateMeshBufferFromDescriptor(descriptor);
+  if (CreateMeshBufferFromDescriptor(descriptor).Failed())
+    return {xiiResourceState::LoadedResourceMissing, 0U, 0U};
   LoadMaterialSlots(descriptor);
 
   m_Descriptor = std::move(descriptor);

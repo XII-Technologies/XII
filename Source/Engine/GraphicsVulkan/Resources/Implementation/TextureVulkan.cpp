@@ -187,6 +187,9 @@ xiiResult xiiGALTextureVulkan::InitPlatform(const xiiGALTextureData* pInitialDat
     if (m_Description.m_Usage == xiiGALResourceUsage::Sparse)
     {
       xiiVulkanAllocationCreateInfo allocationCreateInfo;
+      allocationCreateInfo.m_MemoryCategory = m_Description.m_MemoryCategory;
+      if (allocationCreateInfo.m_MemoryCategory == xiiGALMemoryCategory::Other)
+        allocationCreateInfo.m_MemoryCategory = xiiGALMemoryCategory::Textures;
       allocationCreateInfo.m_Usage = xiiVulkanMemoryUsage::Auto;
 
       if (externalMemoryKind.IsSet(xiiGALExternalMemoryKind::Exportable))
@@ -213,16 +216,10 @@ xiiResult xiiGALTextureVulkan::InitPlatform(const xiiGALTextureData* pInitialDat
     }
     else
     {
-      const bool bRefinement       = pInitialData != nullptr && pInitialData->m_bStreamingRefinement && externalMemoryKind.IsNoFlagSet();
+      const bool bStreaming        = pInitialData != nullptr && pInitialData->m_bStreamingAllocation && externalMemoryKind.IsNoFlagSet();
       xiiUInt64  uiAllocationBytes = 0U;
-      if (bRefinement)
+      if (bStreaming)
       {
-        xiiUInt64 uiUploadBytes = 0U;
-        for (xiiUInt32 uiMip = 0; uiMip < vkImageCreateInfo.mipLevels; ++uiMip)
-          uiUploadBytes += xiiGALTextureUtilities::GetMipLevelProperties(m_Description, uiMip).m_uiMipSize;
-        uiUploadBytes *= vkImageCreateInfo.arrayLayers;
-
-        uiAllocationBytes    = uiUploadBytes;
         const auto& dispatch = pDeviceVulkan->GetVulkanDynamicDispatchLoader();
         if (pDeviceVulkan->GetVulkanVersion() >= VK_API_VERSION_1_3 &&
             pDeviceVulkan->GetVulkanPhysicalDeviceProperties().apiVersion >= VK_API_VERSION_1_3 &&
@@ -234,15 +231,28 @@ xiiResult xiiGALTextureVulkan::InitPlatform(const xiiGALTextureData* pInitialDat
           pDeviceVulkan->GetVulkanLogicalDevice().getImageMemoryRequirements(&query, &requirements, dispatch);
           uiAllocationBytes = requirements.memoryRequirements.size;
         }
-        if (!pDeviceVulkan->TryReserveStreamingAllocation(uiAllocationBytes, uiUploadBytes))
+        else
+        {
+          vk::Image   image;
+          const auto& device = pDeviceVulkan->GetVulkanLogicalDevice();
+          VK_SUCCEED_OR_RETURN_XII_FAILURE(device.createImage(&vkImageCreateInfo, nullptr, &image, dispatch));
+          vk::MemoryRequirements requirements;
+          device.getImageMemoryRequirements(image, &requirements, dispatch);
+          device.destroyImage(image, nullptr, dispatch);
+          uiAllocationBytes = requirements.size;
+        }
+        if (uiAllocationBytes > pInitialData->m_uiMaxStreamingAllocationBytes || !pDeviceVulkan->TryReserveStreamingAllocation(uiAllocationBytes))
           return XII_FAILURE;
       }
-      XII_SCOPE_EXIT(if (bRefinement) pDeviceVulkan->ReleaseStreamingAllocationReservation(uiAllocationBytes));
+      XII_SCOPE_EXIT(if (bStreaming) pDeviceVulkan->ReleaseStreamingAllocationReservation(uiAllocationBytes));
 
       xiiVulkanAllocationCreateInfo allocationCreateInfo;
+      allocationCreateInfo.m_MemoryCategory = m_Description.m_MemoryCategory;
+      if (allocationCreateInfo.m_MemoryCategory == xiiGALMemoryCategory::Other)
+        allocationCreateInfo.m_MemoryCategory = xiiGALMemoryCategory::Textures;
       allocationCreateInfo.m_Usage         = xiiVulkanMemoryUsage::Auto;
       allocationCreateInfo.m_RequiredFlags = bIsMemoryLess ? xiiVulkanMemoryPropertyFlags::LazilyAllocated : xiiVulkanMemoryPropertyFlags::DeviceLocal;
-      if (bRefinement)
+      if (bStreaming)
         allocationCreateInfo.m_Flags.Add(xiiVulkanAllocationCreateFlags::StrategyWithinBudget);
 
       if (externalMemoryKind.IsSet(xiiGALExternalMemoryKind::Exportable))
@@ -253,7 +263,7 @@ xiiResult xiiGALTextureVulkan::InitPlatform(const xiiGALTextureData* pInitialDat
       if (!externalMemoryKind.IsSet(xiiGALExternalMemoryKind::Imported))
       {
         const vk::Result result = pVulkanMemoryAllocator->CreateImage(vkImageCreateInfo, allocationCreateInfo, m_vkImage, m_ImageMemoryAllocation, &m_ImageMemoryAllocationInfo);
-        if (bRefinement && result == vk::Result::eErrorOutOfDeviceMemory)
+        if (bStreaming && result == vk::Result::eErrorOutOfDeviceMemory)
           return XII_FAILURE;
         VK_SUCCEED_OR_RETURN_XII_FAILURE(result);
       }
@@ -369,9 +379,10 @@ vk::Result xiiGALTextureVulkan::CreateVulkanStagingBuffer(const xiiGALTextureDat
   vkStagingBufferCreateInfo.queueFamilyIndexCount = 0;
 
   xiiVulkanAllocationCreateInfo allocationCreateInfo;
-  allocationCreateInfo.m_Usage         = xiiVulkanMemoryUsage::Auto;
-  allocationCreateInfo.m_RequiredFlags = FromVkMemoryPropertyFlags(vkMemoryPropertyFlags);
-  allocationCreateInfo.m_Flags         = xiiVulkanAllocationCreateFlags::StrategyHostSequential | xiiVulkanAllocationCreateFlags::Mapped;
+  allocationCreateInfo.m_Usage          = xiiVulkanMemoryUsage::Auto;
+  allocationCreateInfo.m_MemoryCategory = m_Description.m_CPUAccessFlags.IsSet(xiiGALCPUAccessFlag::Read) ? xiiGALMemoryCategory::Readback : xiiGALMemoryCategory::Upload;
+  allocationCreateInfo.m_RequiredFlags  = FromVkMemoryPropertyFlags(vkMemoryPropertyFlags);
+  allocationCreateInfo.m_Flags          = xiiVulkanAllocationCreateFlags::StrategyHostSequential | xiiVulkanAllocationCreateFlags::Mapped;
 
   xiiVulkanAllocationInfo stagingBufferAllocationInfo;
   VK_SUCCEED_OR_RETURN_LOG(pVulkanMemoryAllocator->CreateBuffer(vkStagingBufferCreateInfo, allocationCreateInfo, m_vkStagingBuffer, m_StagingBufferMemoryAllocation, &stagingBufferAllocationInfo));

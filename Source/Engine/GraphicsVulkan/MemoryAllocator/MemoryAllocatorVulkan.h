@@ -4,6 +4,8 @@
 
 #include <GraphicsVulkan/GraphicsVulkanDLL.h>
 
+#include <GraphicsFoundation/Device/MemoryStatistics.h>
+
 /// Preferred memory usage hints for Vulkan allocations using VMA.
 ///
 /// These usage modes guide VMA in selecting the most suitable memory type based on the intended access patterns and performance goals.
@@ -111,6 +113,7 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSVULKAN_DLL, xiiVulkanMemoryPropertyFlag
 /// This structure defines how memory should be allocated, including usage hints, allocation strategy flags, and optional user metadata.
 struct XII_GRAPHICSVULKAN_DLL xiiVulkanAllocationCreateInfo
 {
+  xiiEnum<xiiGALMemoryCategory>               m_MemoryCategory;
   xiiBitflags<xiiVulkanAllocationCreateFlags> m_Flags;                             ///< Flags that control allocation strategy and behavior.
   xiiEnum<xiiVulkanMemoryUsage>               m_Usage;                             ///< Intended usage pattern for the allocation (e.g., GPU-only, CPU-to-GPU).
   xiiBitflags<xiiVulkanMemoryPropertyFlags>   m_RequiredFlags;                     ///< Memory property flags that must be present in the selected memory type. Used to enforce strict compatibility (e.g., HostVisible, DeviceLocal).
@@ -201,12 +204,12 @@ public:
   /// \return Vulkan memory property flags (e.g., host-visible, coherent).
   vk::MemoryPropertyFlags GetMemoryPropertyFlags(xiiVulkanAllocation allocation) const;
 
-  /// Sets user-defined metadata for a memory allocation.
+  /// Copies a debug name so it remains valid throughout native retirement.
   ///
   /// \param allocation - Allocation handle.
   ///
-  /// \param pUserData Pointer to user data string.
-  void SetAllocationUserData(xiiVulkanAllocation allocation, const char* pUserData) const;
+  /// \param szName - Debug name.
+  void SetAllocationDebugName(xiiVulkanAllocation allocation, const char* szName) const;
 
   /// Maps a memory allocation to a CPU-accessible pointer.
   ///
@@ -243,6 +246,9 @@ public:
   ///
   /// \return Struct containing block and allocation counts and sizes.
   void GetMemoryHeapStatistics(xiiDynamicArray<xiiGALMemoryHeapStatistics>& out_heaps) const;
+  bool GetMemoryCategoryStatistics(xiiGALMemoryCategory::Enum category, xiiGALMemoryCategoryStatistics& out_statistics) const;
+  void MarkAllocationRetiring(xiiVulkanAllocation allocation) const;
+  void DumpAllocations() const;
 
   /// Updates the allocator's cached native budget at the frame boundary.
   void BeginFrame(xiiUInt32 uiFrameIndex);

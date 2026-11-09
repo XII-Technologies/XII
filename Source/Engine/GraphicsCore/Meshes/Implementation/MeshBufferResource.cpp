@@ -772,6 +772,7 @@ void xiiMeshBufferResource::CreateGpuBuffer(xiiSharedPtr<xiiGALBuffer>& out_pBuf
     return;
 
   xiiGALBufferCreationDescription desc;
+  desc.m_MemoryCategory      = xiiGALMemoryCategory::Geometry;
   desc.m_uiSize              = data.GetCount();
   desc.m_BindFlags           = bindFlags;
   desc.m_Usage               = m_Descriptor.m_ResourceUsage;
@@ -813,6 +814,18 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiMeshBufferResource, xiiMeshBufferResourceDe
   m_pDrawCommandBuffer.Clear();
   m_uiMemoryGPU = 0U;
 
+  if (descriptor.m_bStreamableGeometry && descriptor.m_ResourceUsage == xiiGALResourceUsage::Immutable &&
+      !descriptor.m_Meshlets.IsEmpty() && descriptor.m_GeometryPages.IsEmpty())
+  {
+    const auto* load = GetCurrentlyUpdatingLoadData();
+    if (load && !load->m_sSourceFile.IsEmpty())
+    {
+      xiiLog::Error("Static mesh '{}' lacks compiled geometry pages. Re-transform its source asset.", GetResourceID());
+      return {xiiResourceState::LoadedResourceMissing, 0U, 0U};
+    }
+    if (descriptor.BuildGeometryPages().Failed())
+      return {xiiResourceState::LoadedResourceMissing, 0U, 0U};
+  }
   m_Descriptor = std::move(descriptor);
 
   if (HasGeometryPages())

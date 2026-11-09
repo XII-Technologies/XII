@@ -207,6 +207,7 @@ xiiResult xiiMaterialGpuStorage::Initialize(xiiGALDevice* pDevice, const xiiMate
   }
 
   xiiGALBufferCreationDescription bufferDescription;
+  bufferDescription.m_MemoryCategory      = xiiGALMemoryCategory::Materials;
   bufferDescription.m_uiSize              = uiBufferSize;
   bufferDescription.m_uiElementByteStride = m_uiMaterialStride;
   bufferDescription.m_BindFlags           = xiiGALBindFlags::ShaderResource;
