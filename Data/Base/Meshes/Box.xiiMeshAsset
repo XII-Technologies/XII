@@ -11,7 +11,7 @@ o
 		s %AssetType{"Mesh"}
 		VarArray %Dependencies{}
 		Uuid %DocumentID{u4{486196851106552969,5174691280726343252}}
-		u4 %Hash{9774161418094557061}
+		u4 %Hash{13579391988646018700}
 		VarArray %MetaInfo{}
 		VarArray %Outputs{}
 		VarArray %PackageDeps
@@ -32,17 +32,15 @@ o
 {
 	Uuid %id{u4{5573904549189432742,5123875510794023401}}
 	s %t{"xiiMeshAssetProperties"}
-	u3 %v{5}
+	u3 %v{6}
 	p
 	{
-		b %AggressiveSimplification{0}
 		Angle %Angle{f{0xDB0FC940}}
 		b %Cap{1}
 		b %Cap2{1}
 		u2 %Detail{3}
 		u2 %Detail2{1}
 		b %FlipForwardDir{0}
-		u1 %GeneratedLOD{4}
 		f %Height{0x0000803F}
 		b %ImportMaterials{1}
 		s %ImportTransform{"xiiMeshImportTransform::Custom"}
@@ -50,16 +48,13 @@ o
 		{
 			Uuid{u4{7270213638529936312,5170035467784267792}}
 		}
-		u1 %MaxSimplificationError{5}
 		s %MeshFile{""}
-		u1 %MeshSimplification{50}
 		s %PrimitiveType{"xiiMeshPrimitive::Box"}
 		f %Radius{0x0000003F}
 		f %Radius2{0x0000003F}
 		b %RecalculateNormals{0}
 		b %RecalculateTangents{1}
 		s %RightDir{"xiiBasisAxis::PositiveX"}
-		b %SimplifyMesh{0}
 		f %UniformScaling{0x0000803F}
 		s %UpDir{"xiiBasisAxis::PositiveY"}
 		s %VertexColorConversion{"xiiModelVertexColorConversion::None"}
@@ -192,7 +187,7 @@ o
 		s %PluginName{"xiiEditorPluginAssets"}
 		VarArray %Properties{}
 		s %TypeName{"xiiMeshAssetProperties"}
-		u3 %TypeVersion{5}
+		u3 %TypeVersion{6}
 	}
 }
 o

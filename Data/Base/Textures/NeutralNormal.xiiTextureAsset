@@ -16,10 +16,7 @@ o
 		Uuid %DocumentID{u4{15840237980637101481,5475314895401003152}}
 		u4 %Hash{7422485308206861229}
 		VarArray %MetaInfo{}
-		VarArray %Outputs
-		{
-			s{"LOWRES"}
-		}
+		VarArray %Outputs{}
 		VarArray %PackageDeps{}
 		VarArray %References
 		{
