@@ -7,6 +7,7 @@
 #include <GraphicsCore/Pipeline/Passes/Visibility/MeshletOcclusionPass.h>
 #include <GraphicsCore/Visibility/GpuVisibilityTypes.h>
 #include <GraphicsFoundation/Device/Device.h>
+#include <GraphicsFoundation/Resources/BindlessResourceTable.h>
 #include <GraphicsFoundation/Tools/MapHelper.h>
 #include <Shaders/Visibility/DepthOcclusionConstants.h>
 // clang-format off
@@ -79,6 +80,7 @@ xiiResult xiiMeshletOcclusionPass::Build(xiiRenderPipelinePassContext& context)
     xiiGALStateTransitionDescription transition; transition.m_pResource = execute.GetBuffer(data.m_Constants); transition.m_NewState = xiiGALResourceStateFlags::ConstantBuffer; transition.m_TransitionFlags = xiiGALStateTransitionFlags::UpdateState;
     commands.TransitionResourceStates(xiiMakeArrayPtr(&transition, 1));
     commands.SetPipelineState(data.m_Pipeline.Borrow());
+    xiiGALBindlessResourceTable::BindBufferSRVs(commands, "g_Buffers", xiiGALShaderType::Compute);
     commands.ResolveAndSetConstantBuffer("xiiDepthOcclusionConstants", execute.GetBuffer(data.m_Constants), xiiGALShaderType::Compute);
     commands.ResolveAndSetShaderResourceBufferView("g_SceneInstances", execute.GetBuffer(data.m_Scene)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
     commands.ResolveAndSetShaderResourceBufferView("g_OcclusionView", execute.GetBuffer(data.m_View)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);

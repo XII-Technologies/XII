@@ -139,7 +139,7 @@ xiiResourceLoadDescription xiiTexture2DResource::UpdateContent(xiiStreamReader* 
   xiiVirtualTextureData* virtualData = nullptr;
   if (pStream->ReadBytes(&virtualData, sizeof(virtualData)) == sizeof(virtualData) && virtualData != nullptr)
   {
-    // The conventional view is the resident last mip used by preview and native-view consumers.
+    // Native-view consumers retain only the last mip. Virtual-aware previews and materials use the tile cache.
     auto                      description = virtualData->m_Description;
     xiiDynamicArray<xiiUInt8> tile;
     if (virtualData->ReadTile(virtualData->m_Tiles.GetCount() - 1U, tile).Failed())
@@ -172,7 +172,7 @@ xiiResourceLoadDescription xiiTexture2DResource::UpdateContent(xiiStreamReader* 
     td.m_uiQualityLevelsLoadable    = 0;
     return CreateResource(std::move(td));
   }
-  if (!pImage->IsValid() || (bHasResidentImage && (bIsFallback || previous.m_uiQualityLevelsLoadable == 0U)))
+  if (!pImage->IsValid() || (bHasResidentImage && bIsFallback))
     return previous;
 
   const xiiUInt32 uiTotalMipLevels = pImage->GetMipLevelCount();
@@ -221,6 +221,7 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiTexture2DResource, xiiTexture2DResourceDesc
   m_uiHeight    = description.m_Size.height;
   m_pGALTexture = std::move(pTexture);
   m_pSampler    = std::move(pSampler);
+  m_pVirtualData.Clear();
   return {xiiResourceState::Loaded, descriptor.m_uiQualityLevelsDiscardable, descriptor.m_uiQualityLevelsLoadable};
 }
 

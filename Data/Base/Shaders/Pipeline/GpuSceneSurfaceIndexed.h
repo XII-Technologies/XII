@@ -27,17 +27,18 @@ GBufferVertex xiiLoadIndexedSceneSurfaceVertex(uint vertexIndex, uint visibleInd
     return xiiInvalidSceneSurfaceVertex();
   const uint2 visible       = g_VisibleMeshlets[visibleIndex].xy;
   const uint  instanceIndex = visible.x;
-  if (instanceIndex >= sceneCapacity || visible.y >= meshletCapacity)
+  if (instanceIndex >= sceneCapacity)
     return xiiInvalidSceneSurfaceVertex();
   const GpuSceneInstance instance = g_SceneInstances[instanceIndex];
   if (GeometryBaseIndex >= geometryCapacity || instance.GeometryIndex >= geometryCapacity - GeometryBaseIndex)
     return xiiInvalidSceneSurfaceVertex();
   const GpuGeometryRecord geometry = g_Geometry[GeometryBaseIndex + instance.GeometryIndex];
-  const uint              lodIndex = g_Meshlets[visible.y].PackedLodSection & 0xFFFFu;
+  GpuMeshlet meshlet;
+  if (!xiiLoadCluster(visible.y, meshlet)) return xiiInvalidSceneSurfaceVertex();
+  const uint lodIndex = meshlet.PackedLodSection & 0xFFFFu;
   if (lodIndex >= min(geometry.LodCount, 8u))
     return xiiInvalidSceneSurfaceVertex();
   GpuGeometryLod lod            = geometry.Lods[lodIndex];
-  GpuMeshlet     meshlet        = g_Meshlets[visible.y];
   if (!xiiResolveClusterLod(lod, meshlet))
     return xiiInvalidSceneSurfaceVertex();
   const uint           primitiveCount = meshlet.PackedPrimitiveVertexCount & 0xFFFFu;

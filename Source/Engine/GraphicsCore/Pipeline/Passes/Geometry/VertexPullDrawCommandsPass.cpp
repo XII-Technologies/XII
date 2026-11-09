@@ -8,6 +8,7 @@
 #include <GraphicsCore/Streaming/GpuResidencyManager.h>
 #include <GraphicsCore/Visibility/GpuVisibilityTypes.h>
 #include <GraphicsFoundation/Device/Device.h>
+#include <GraphicsFoundation/Resources/BindlessResourceTable.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVertexPullDrawCommandsPass, 1, xiiRTTIDefaultAllocator<xiiVertexPullDrawCommandsPass>)
@@ -82,6 +83,7 @@ xiiResult xiiVertexPullDrawCommandsPass::Build(xiiRenderPipelinePassContext& con
       data.m_uiGroups = static_cast<xiiUInt32>(groups); }, [pipeline](const Data& data, xiiRenderGraphPassContext& execute) {
       auto& commands = execute.GetCommandList();
       commands.SetPipelineState(pipeline.Borrow());
+      xiiGALBindlessResourceTable::BindBufferSRVs(commands, "g_Buffers", xiiGALShaderType::Compute);
       commands.ResolveAndSetShaderResourceBufferView("g_SceneInstances", execute.GetBuffer(data.m_Scene)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
       commands.ResolveAndSetShaderResourceBufferView("g_VisibilityView", execute.GetBuffer(data.m_View)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
       commands.ResolveAndSetShaderResourceBufferView("g_Geometry", execute.GetBuffer(data.m_Geometry)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);

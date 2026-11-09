@@ -121,7 +121,7 @@ xiiResourceLoadDescription xiiTexture3DResource::UpdateContent(xiiStreamReader* 
       return previous;
   }
 
-  if (!pImage->IsValid() || (bHasResidentImage && (bIsFallback || previous.m_uiQualityLevelsLoadable == 0U)))
+  if (!pImage->IsValid() || (bHasResidentImage && bIsFallback))
     return previous;
 
   const xiiUInt32 uiTotalMipLevels = pImage->GetMipLevelCount();

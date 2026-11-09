@@ -144,15 +144,20 @@ void main(uint3 dispatchThreadId : SV_DispatchThreadID, uint3 groupId : SV_Group
     return;
 
   GpuGeometryLod lod = geometry.Lods[lodIndex];
-  if (lane == 0u)
-    GetCandidateMeshletRange(instance, lod, s_FirstMeshlet, s_RangeMeshletCount);
-  GroupMemoryBarrierWithGroupSync();
-  if (groupId.x >= min(s_RangeMeshletCount, MaxMeshletCount))
-    return;
-  const uint localMeshlet = s_FirstMeshlet + groupId.x;
-
-  GpuMeshlet meshlet = g_Meshlets[lod.MeshletMetadataOffset + localMeshlet];
-  if (lod.Padding != 0u && meshlet.Hierarchy.z == 0.0f) return;
+  GpuMeshlet meshlet;
+  if (lod.Padding != 0u)
+  {
+    if (groupId.x >= min(xiiGeometryRootClusterCount(lod), MaxMeshletCount) ||
+        !xiiLoadGeometryRootCluster(lod, lodIndex, groupId.x, meshlet)) return;
+  }
+  else
+  {
+    if (lane == 0u)
+      GetCandidateMeshletRange(instance, lod, s_FirstMeshlet, s_RangeMeshletCount);
+    GroupMemoryBarrierWithGroupSync();
+    if (groupId.x >= min(s_RangeMeshletCount, MaxMeshletCount)) return;
+    if (!xiiLoadCluster(lod.MeshletMetadataOffset + s_FirstMeshlet + groupId.x, meshlet)) return;
+  }
   if (!xiiResolveClusterLod(lod, meshlet)) return;
   const uint primitiveCount = meshlet.PackedPrimitiveVertexCount & 0xFFFFu;
   const uint vertexCount = meshlet.PackedPrimitiveVertexCount >> 16u;

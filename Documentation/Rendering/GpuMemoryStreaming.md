@@ -44,9 +44,9 @@ Render graph allocations participate in native pressure and ownership attributio
 
 ## Compiled geometry
 
-Mesh document version 16 and mesh-buffer descriptor version 4 contain compiled meshlet hierarchies and independently compressed geometry pages. Eligible immutable static triangle meshes allocate page payloads after admission, without full canonical GPU vertex and index buffers. Deformable and mutable geometry retain their direct rendering representation. Unsupported older compiled page formats require asset transformation.
+Mesh document version 17 and mesh-buffer descriptor version 5 contain compiled meshlet hierarchies and independently compressed geometry pages. Animated mesh documents use version 11. Eligible immutable static triangle meshes allocate page payloads after admission, without full canonical GPU vertex, index, or cluster-metadata buffers. Deformable and mutable geometry retain their direct rendering representation. Unsupported older compiled page formats require asset transformation.
 
-Pages contain compact vertices, remaps, and primitive indices, targeting 64 KiB with a 128 KiB maximum. Spatial groups simplify into parents with accumulated geometric error and locked borders. Material sections, primitive ranges, and authored LODs remain distinct. Small persistent hierarchy metadata is separate from payload residency. Native loading retains the directory and streams compressed pages directly from the compiled file.
+Pages contain compact vertices, remaps, primitive indices, and cluster records, targeting 64 KiB with a 128 KiB maximum including metadata. Spatial groups simplify into parents with accumulated geometric error and locked borders. Material sections, primitive ranges, and authored LODs remain distinct. Small persistent hierarchy metadata is separate from payload residency. Native loading retains the directory and streams compressed pages directly from the compiled file. Visible cluster keys identify a physical buffer descriptor, metadata offset, and authored LOD; GPU-safe pool retirement protects those keys. Static geometry does not consume the direct meshlet arena. DDGI and emissive preparation enumerate a compact root directory rather than scanning nonresident fine clusters.
 
 GPU traversal uses conservative visibility and projected screen error. Visible missing children generate requests, while an admitted parent remains drawable until all required visible children are ready. Mesh shaders and vertex pulling resolve the same page mapping. Ray tracing and emissive preparation consume coarse geometry. Canonical CPU mesh data remains available for specialized consumers.
 
@@ -56,9 +56,13 @@ Authored LOD selection metadata is admitted together. LODs no longer own competi
 
 Eligible ordinary 2D material textures compile into independently compressed 128 by 128 tiles with a two-texel border and resident coarse fallback. HDR, signed formats, cube/3D textures, small textures, and incomplete mip chains currently use ordinary single-allocation resources. The old low/full replacement texture model has been removed.
 
-GPU material sampling derives wanted mip from derivatives or explicit level, records missing and resident demand, and walks coarse ancestors until a resident tile is found. Named material texture bindings and the standard surface, DDGI, and ray tracing paths use the shared mapping. IO and decompression run asynchronously, with source hash/version checks before publication.
+GPU material sampling derives wanted mip from derivatives or explicit level, records missing and resident demand, and walks coarse ancestors until a resident tile is found. Adjacent resident mips blend, and a footprint crossing a tile boundary predicts one neighboring request. `Streaming.TextureMipBias` and `Streaming.TextureMinimumMip` control demand. Named material texture bindings, editor 2D previews, and the standard surface, DDGI, and ray tracing paths use the shared mapping. IO and bounded decompression run asynchronously, with source hash/version checks before publication.
 
-The software cache pools individual physical tile images. Native allocation padding is charged, rather than the smaller decompressed payload. Reused slots consume the same scheduler upload allowance as newly allocated slots. Native sparse mapping, feedback capability fallback, broader texture formats, predictive requests, and filtering refinement remain migration work.
+Texture document version 12 removes the obsolete LOWRES output and converter options. Texture imports produce one compiled asset containing its virtual pages. Mesh transforms propagate serialization failures, and texture resource replacement clears obsolete virtual data when switching to conventional content.
+
+The final 1x1 mip is stored as its exact RGBA8 color in the GPU page table, with sRGB decoding where required. It consumes no physical tile, upload allowance, or feedback identity. Native-view consumers retain their 1x1 resource. Particle materials resolve virtual textures through the same residency service and bind the tile, table, and feedback resources.
+
+The software cache pools individual physical tile images. Native allocation padding is charged, rather than the smaller decompressed payload. Reused slots consume the same scheduler upload allowance as newly allocated slots. Native sparse mapping, feedback capability fallback, broader texture formats, view-based prediction, and anisotropic filtering refinement remain migration work.
 
 ## Focused validation
 

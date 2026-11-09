@@ -11,7 +11,7 @@
 #include <ModelImporter/MeshImport.h>
 
 // clang-format off
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAnimatedMeshAssetDocument, 10, xiiRTTINoAllocator)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAnimatedMeshAssetDocument, 11, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
@@ -50,7 +50,7 @@ xiiTransformStatus xiiAnimatedMeshAssetDocument::InternalTransformAsset(xiiStrea
 
   xiiDefaultMemoryStreamStorage storage;
   xiiMemoryStreamWriter         writer(&storage);
-  desc.Save(writer);
+  XII_SUCCEED_OR_RETURN(desc.Save(writer));
   return storage.CopyToStream(stream);
 }
 

@@ -487,7 +487,7 @@ void xiiMeshResourceDescriptor::SetBounds(const xiiBoundingBoxSphere& bounds)
   m_Bounds = bounds;
 }
 
-void xiiMeshResourceDescriptor::Save(xiiStreamWriter& inout_stream) const
+xiiResult xiiMeshResourceDescriptor::Save(xiiStreamWriter& inout_stream) const
 {
   inout_stream.WriteVersion(s_uiMeshResourceDescriptorVersion);
 
@@ -503,13 +503,13 @@ void xiiMeshResourceDescriptor::Save(xiiStreamWriter& inout_stream) const
   inout_stream << m_Bounds.m_vBoxHalfExtents;
   inout_stream << m_hMeshBuffer;
 
-  inout_stream.WriteArray(m_Materials).IgnoreResult();
-  inout_stream.WriteArray(m_Sections).IgnoreResult();
-  inout_stream.WriteArray(m_LODs).IgnoreResult();
-  inout_stream.WriteArray(m_MorphTargets).IgnoreResult();
-  inout_stream.WriteHashTable(m_Bones).IgnoreResult();
+  XII_SUCCEED_OR_RETURN(inout_stream.WriteArray(m_Materials));
+  XII_SUCCEED_OR_RETURN(inout_stream.WriteArray(m_Sections));
+  XII_SUCCEED_OR_RETURN(inout_stream.WriteArray(m_LODs));
+  XII_SUCCEED_OR_RETURN(inout_stream.WriteArray(m_MorphTargets));
+  XII_SUCCEED_OR_RETURN(inout_stream.WriteHashTable(m_Bones));
 
-  m_MeshBufferDescriptor.Serialize(inout_stream).IgnoreResult();
+  return m_MeshBufferDescriptor.Serialize(inout_stream);
 }
 
 xiiResult xiiMeshResourceDescriptor::Save(xiiStringView sFile) const
@@ -517,8 +517,8 @@ xiiResult xiiMeshResourceDescriptor::Save(xiiStringView sFile) const
   xiiFileWriter file;
   XII_SUCCEED_OR_RETURN(file.Open(sFile));
 
-  Save(file);
-  return XII_SUCCESS;
+  XII_SUCCEED_OR_RETURN(Save(file));
+  return file.Flush();
 }
 
 xiiResult xiiMeshResourceDescriptor::Load(xiiStreamReader& source, const xiiResourceLoadData* pSource)

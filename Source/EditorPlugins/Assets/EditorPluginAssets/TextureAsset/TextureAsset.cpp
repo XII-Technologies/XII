@@ -8,7 +8,7 @@
 #include <Foundation/IO/FileSystem/DeferredFileWriter.h>
 
 // clang-format off
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTextureAssetDocument, 11, xiiRTTINoAllocator)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTextureAssetDocument, 12, xiiRTTINoAllocator)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -183,20 +183,6 @@ xiiStatus xiiTextureAssetDocument::RunTextureConverter(xiiStringView sTargetFile
     arguments << "-thumbnailOut";
 
     arguments << QString::fromUtf8(sThumbnail.GetData());
-  }
-
-  // low resolution data
-  {
-    xiiStringBuilder lowResPath = sTargetFile;
-    xiiStringBuilder name       = lowResPath.GetFileName();
-    name.Append("-lowres");
-    lowResPath.ChangeFileName(name);
-
-    arguments << "-lowMips";
-    arguments << "6";
-    arguments << "-lowOut";
-
-    arguments << QString::fromUtf8(lowResPath.GetData());
   }
 
   arguments << "-mipmaps";
@@ -379,12 +365,6 @@ void xiiTextureAssetDocument::UpdateAssetDocumentInfo(xiiAssetDocumentInfo* pInf
 {
   SUPER::UpdateAssetDocumentInfo(pInfo);
 
-  if (!m_bIsRenderTarget)
-  {
-    // every 2D texture also generates a "-lowres" output, which is used to be embedded into materials for quick streaming
-    pInfo->m_Outputs.Insert("LOWRES");
-  }
-
   for (xiiUInt32 i = GetProperties()->GetNumInputFiles(); i < 4; ++i)
   {
     // remove unused dependencies
@@ -395,6 +375,13 @@ void xiiTextureAssetDocument::UpdateAssetDocumentInfo(xiiAssetDocumentInfo* pInf
 void xiiTextureAssetDocument::InitializeAfterLoading(bool bFirstTimeCreation)
 {
   SUPER::InitializeAfterLoading(bFirstTimeCreation);
+
+  auto* info = static_cast<xiiAssetDocumentInfo*>(m_pDocumentInfo);
+  if (!info->m_Outputs.IsEmpty())
+  {
+    info->m_Outputs.Clear();
+    SetModified(true);
+  }
 
   if (m_bIsRenderTarget)
   {
@@ -410,12 +397,6 @@ void xiiTextureAssetDocument::InitializeAfterLoading(bool bFirstTimeCreation)
 
 xiiTransformStatus xiiTextureAssetDocument::InternalTransformAsset(xiiStringView sTargetFile, xiiStringView sOutputTag, const xiiPlatformProfile* pAssetProfile, const xiiAssetFileHeader& AssetHeader, xiiBitflags<xiiTransformFlags> transformFlags)
 {
-  if (sOutputTag.IsEqual("LOWRES"))
-  {
-    // no need to generate this file, it will be generated together with the main output
-    return xiiTransformStatus();
-  }
-
   const auto* pAssetConfig = pAssetProfile->GetTypeConfig<xiiTextureAssetProfileConfig>();
 
   if (m_bIsRenderTarget)

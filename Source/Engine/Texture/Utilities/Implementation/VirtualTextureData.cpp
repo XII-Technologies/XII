@@ -112,6 +112,9 @@ xiiResult xiiVirtualTextureData::Deserialize(xiiStreamReader& source, xiiStringV
   if (m_Description.m_Type != xiiGALResourceDimension::Texture2D || m_Description.m_uiMipLevels == 0U || m_Description.m_uiMipLevels > 32U ||
       !m_Description.m_Size.HasNonZeroArea() || (m_Description.m_Format != xiiGALResourceFormat::RGBA8UNormalized && m_Description.m_Format != xiiGALResourceFormat::RGBA8UNormalizedSRGB))
     return XII_FAILURE;
+  // The last mip is the single tile guaranteed resident by the runtime.
+  if ((xiiMath::Max(m_Description.m_Size.width, m_Description.m_Size.height) >> (m_Description.m_uiMipLevels - 1U)) != 1U)
+    return XII_FAILURE;
   XII_SUCCEED_OR_RETURN(stream.ReadArray(m_Tiles));
   stream >> m_uiPayloadBytes;
   if (m_uiPayloadBytes > xiiMath::MaxValue<xiiUInt32>())
@@ -134,8 +137,8 @@ xiiResult xiiVirtualTextureData::Deserialize(xiiStreamReader& source, xiiStringV
   {
     const auto width  = xiiMath::Max(1U, m_Description.m_Size.width >> mip);
     const auto height = xiiMath::Max(1U, m_Description.m_Size.height >> mip);
-    for (xiiUInt32 y = 0U; y < (height + 127U) / 128U; ++y)
-      for (xiiUInt32 x = 0U; x < (width + 127U) / 128U; ++x)
+    for (xiiUInt32 y = 0U; y <= (height - 1U) / s_uiTileSize; ++y)
+      for (xiiUInt32 x = 0U; x <= (width - 1U) / s_uiTileSize; ++x)
       {
         if (expected >= m_Tiles.GetCount())
           return XII_FAILURE;
@@ -151,7 +154,9 @@ xiiResult xiiVirtualTextureData::ReadTile(xiiUInt32 index, xiiDynamicArray<xiiUI
 {
   if (index >= m_Tiles.GetCount())
     return XII_FAILURE;
-  const auto&               tile = m_Tiles[index];
+  const auto& tile = m_Tiles[index];
+  if (tile.m_uiStoredSize == 0U || tile.m_uiStoredSize > s_uiTileBytes + 1024U)
+    return XII_FAILURE;
   xiiDynamicArray<xiiUInt8> encoded;
   if (m_sFile.IsEmpty())
   {
@@ -175,6 +180,6 @@ xiiResult xiiVirtualTextureData::ReadTile(xiiUInt32 index, xiiDynamicArray<xiiUI
     if (stream.ReadBytes(encoded.GetData(), encoded.GetCount()) != encoded.GetCount())
       return XII_FAILURE;
   }
-  XII_SUCCEED_OR_RETURN(xiiCompressionUtils::Decompress(encoded, xiiCompressionMethod::ZStd, out_data));
+  XII_SUCCEED_OR_RETURN(xiiCompressionUtils::Decompress(encoded, xiiCompressionMethod::ZStd, s_uiTileBytes, out_data));
   return out_data.GetCount() == s_uiTileBytes ? XII_SUCCESS : XII_FAILURE;
 }

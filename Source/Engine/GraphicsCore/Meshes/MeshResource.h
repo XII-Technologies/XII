@@ -216,7 +216,7 @@ public:
   void SetBounds(const xiiBoundingBoxSphere& bounds);
 
 public:
-  void      Save(xiiStreamWriter& inout_stream) const;
+  xiiResult Save(xiiStreamWriter& inout_stream) const;
   xiiResult Save(xiiStringView sFile) const;
 
   xiiResult Load(xiiStreamReader& inout_stream, const xiiResourceLoadData* pSource = nullptr);

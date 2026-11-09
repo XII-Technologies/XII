@@ -55,15 +55,6 @@ xiiCommandLineOptionPath opt_ThumbnailOut("_TextureConverter", "-thumbnailOut",
 ",
                                           "");
 
-xiiCommandLineOptionPath opt_LowOut("_TextureConverter", "-lowOut",
-                                    "\
-  Path to low-resolution output file.\n\
-  ext = Same as main output\n\
-",
-                                    "");
-
-xiiCommandLineOptionInt opt_LowMips("_TextureConverter", "-lowMips", "Number of mipmaps to use from main result as low-res data.", 0, 0, 8);
-
 xiiCommandLineOptionInt opt_MinRes("_TextureConverter", "-minRes", "The minimum resolution allowed for the output.", 16, 4, 8 * 1024);
 
 xiiCommandLineOptionInt opt_MaxRes("_TextureConverter", "-maxRes", "The maximum resolution allowed for the output.", 1024 * 8, 4, 16 * 1024);
@@ -351,13 +342,6 @@ xiiResult xiiTextureConverter::ParseOutputFiles()
   if (!m_sOutputThumbnailFile.IsEmpty())
   {
     m_Processor.m_Descriptor.m_uiThumbnailOutputResolution = opt_ThumbnailRes.GetOptionValue(xiiCommandLineOption::LogMode::Always);
-  }
-
-  m_sOutputLowResFile = opt_LowOut.GetOptionValue(xiiCommandLineOption::LogMode::Always);
-
-  if (!m_sOutputLowResFile.IsEmpty())
-  {
-    m_Processor.m_Descriptor.m_uiLowResMipmaps = opt_LowMips.GetOptionValue(xiiCommandLineOption::LogMode::Always);
   }
 
   return XII_SUCCESS;

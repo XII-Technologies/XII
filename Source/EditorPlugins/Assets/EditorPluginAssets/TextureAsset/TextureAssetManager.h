@@ -15,6 +15,7 @@ public:
   ~xiiTextureAssetDocumentManager();
 
   virtual OutputReliability GetAssetTypeOutputReliability() const override { return xiiAssetDocumentManager::OutputReliability::Perfect; }
+  xiiStatus                 ReadAssetDocumentInfo(xiiUniquePtr<xiiAssetDocumentInfo>& out_pInfo, xiiStreamReader& inout_stream) const override;
 
 private:
   void OnDocumentManagerEvent(const xiiDocumentManager::Event& e);
@@ -25,8 +26,6 @@ private:
   virtual void      InternalGetSupportedDocumentTypes(xiiDynamicArray<const xiiDocumentTypeDescriptor*>& inout_DocumentTypes) const override;
 
   virtual bool GeneratesProfileSpecificAssets() const override { return true; }
-
-  virtual xiiString GetRelativeOutputFileName(const xiiAssetDocumentTypeDescriptor* pTypeDescriptor, xiiStringView sDataDirectory, xiiStringView sDocumentPath, xiiStringView sOutputTag, const xiiPlatformProfile* pAssetProfile) const override;
 
 private:
   xiiAssetDocumentTypeDescriptor m_DocTypeDesc;

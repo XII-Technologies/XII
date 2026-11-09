@@ -20,7 +20,7 @@
 #include <ToolsFoundation/FileSystem/FileSystemModel.h>
 
 #define XII_CURATOR_CACHE_VERSION      2 // Change this to delete and re-gen all asset caches.
-#define XII_CURATOR_CACHE_FILE_VERSION 8 // Change this if for cache format changes.
+#define XII_CURATOR_CACHE_FILE_VERSION 9 // Includes normalized single-output texture headers. Reindex without deleting compiled assets.
 
 XII_IMPLEMENT_SINGLETON(xiiAssetCurator);
 

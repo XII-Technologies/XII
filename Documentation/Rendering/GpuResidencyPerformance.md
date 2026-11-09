@@ -24,7 +24,7 @@ Graph metadata transfers retain shared upload payloads. Frame snapshots, subsyst
 
 Inspector exposes streaming latency, admitted/deferred requests, uploads, logical pages, feedback ID high water/reuse, pool backing/reuse/retirement/padding, native allocation owners, and heap usage. Keep active payload, reusable storage, native suballocation ownership, and committed heap capacity distinct when evaluating unload behavior.
 
-GPU cluster metadata currently retains an arena per admitted geometry record. Large logical geometry datasets still require migration of fine cluster metadata into independently resident page payloads. Full authored-scene navigation, datasets larger than physical VRAM, and final hot-reload/device-loss acceptance remain in progress.
+Static cluster metadata streams inside geometry payloads. The direct metadata arena is allocated only for mutable or deformable geometry. Root-cluster enumeration uses cumulative counts and binary search for coarse consumers. Source bindings include the mesh-buffer revision, preventing in-place editor reloads from reusing the previous page directory. Full authored-scene navigation, datasets larger than physical VRAM, and final hot-reload/device-loss acceptance remain in progress.
 
 ## Historical CPU and direct-culling measurements
 

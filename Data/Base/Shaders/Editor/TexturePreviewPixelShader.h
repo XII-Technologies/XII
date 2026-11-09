@@ -3,6 +3,10 @@
 #include <Shaders/Common/Common.h>
 #include <Shaders/Editor/TexturePreviewConstants.h>
 
+#ifndef PREVIEW_VIRTUAL_TEXTURE
+#  define PREVIEW_VIRTUAL_TEXTURE FALSE
+#endif
+
 struct PS_IN
 {
   float4 Position : SV_Position;
@@ -12,6 +16,8 @@ struct PS_IN
 
 #if PREVIEW_CUBE
 TextureCube<float4> PreviewTexture;
+#elif PREVIEW_VIRTUAL_TEXTURE == TRUE
+#  include <Shaders/Materials/GpuSurfaceSampling.h>
 #else
 Texture2D<float4> PreviewTexture;
 #endif
@@ -24,7 +30,12 @@ float4 main(PS_IN input) : SV_Target
 #else
   float2 uv = input.UV;
 #endif
+#if !PREVIEW_CUBE && PREVIEW_VIRTUAL_TEXTURE == TRUE
+  float4 texel = Mip < 0 ? xiiSampleSurfaceTexture(VirtualTextureIndex, 0xffffffffu, PreviewSampler, uv) :
+                           xiiSampleSurfaceTextureLevel(VirtualTextureIndex, 0xffffffffu, PreviewSampler, uv, Mip);
+#else
   float4 texel = Mip < 0 ? PreviewTexture.Sample(PreviewSampler, uv) : PreviewTexture.SampleLevel(PreviewSampler, uv, Mip);
+#endif
   float3 color = texel.rgb;
   if (Channel == 0)
   {
