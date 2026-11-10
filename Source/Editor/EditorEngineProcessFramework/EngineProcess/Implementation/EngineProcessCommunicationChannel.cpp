@@ -13,6 +13,13 @@
 #  include <signal.h>
 #endif
 
+void xiiEngineProcessCommunicationChannel::CloseConnection()
+{
+  m_pProtocol.Clear();
+  m_pChannel.Clear();
+  m_iHostPID = 0;
+}
+
 bool xiiEngineProcessCommunicationChannel::IsHostAlive() const
 {
   if (xiiEditorEngineProcessApp::GetSingleton()->IsRemoteMode())

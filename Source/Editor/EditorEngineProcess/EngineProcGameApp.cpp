@@ -174,6 +174,8 @@ void xiiEngineProcessGameApplication::BeforeHighLevelSystemsShutdown()
 
 void xiiEngineProcessGameApplication::BeforeCoreSystemsShutdown()
 {
+  // The application and its IPC member outlive Core systems, including the message loop.
+  m_IPC.CloseConnection();
   RemoveEditorAssertHandler();
 
   SUPER::BeforeCoreSystemsShutdown();

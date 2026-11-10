@@ -9,6 +9,10 @@ class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiEngineProcessCommunicationChannel 
 public:
   xiiResult ConnectToHostProcess();
 
+  /// Releases the protocol and channel while the Core message loop is still running.
+  /// Safe to call repeatedly, including before connecting.
+  void CloseConnection();
+
   bool IsHostAlive() const;
 
 private:
