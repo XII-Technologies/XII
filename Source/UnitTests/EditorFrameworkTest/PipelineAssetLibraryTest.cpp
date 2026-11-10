@@ -198,7 +198,7 @@ XII_CREATE_SIMPLE_TEST(RendererAssets, PipelineAssetLibrary)
       {
         xiiSharedPtr<const xiiRenderPipeline> variant;
         xiiStringBuilder                      error;
-        const auto                            result = loaded->GetPipelineVariant(base, mode, variant, error);
+        const auto                            result = loaded->GetPipelineVariant(base, {mode, {}}, variant, error);
         if (!XII_TEST_BOOL_MSG(result.Succeeded(), "%s", error.GetData()))
           return;
         bool bHasProbeScheduler = false;
@@ -213,6 +213,17 @@ XII_CREATE_SIMPLE_TEST(RendererAssets, PipelineAssetLibrary)
         XII_TEST_BOOL(bHasProbeScheduler == (mode == xiiRenderGlobalIllumination::DDGI));
         XII_TEST_BOOL(bHasRayTracing == (mode == xiiRenderGlobalIllumination::RayTraced));
         XII_TEST_BOOL(bHasScreenSpace == (mode == xiiRenderGlobalIllumination::DDGI || mode == xiiRenderGlobalIllumination::ScreenSpace));
+      }
+      xiiSharedPtr<const xiiRenderPipeline> noOptional;
+      xiiStringBuilder                      error;
+      const auto                            result = loaded->GetPipelineVariant(base, {xiiRenderGlobalIllumination::Disabled, xiiOptionalRenderFeature::All}, noOptional, error);
+      if (!XII_TEST_BOOL_MSG(result.Succeeded(), "%s", error.GetData()))
+        return;
+      XII_TEST_BOOL(noOptional->GetExecutionOrder().GetCount() < base->GetExecutionOrder().GetCount());
+      for (const auto& pass : noOptional->GetDescriptor().m_Passes)
+      {
+        const auto type = pass.m_pType->GetTypeName();
+        XII_TEST_BOOL(type != "xiiSpotShadowPass" && type != "xiiDirectionalShadowVisibilityPass" && type != "xiiScreenSpaceReflectionsPass");
       }
     }
     const auto       identity = xiiPipelineLibraryTestIdentity(name);

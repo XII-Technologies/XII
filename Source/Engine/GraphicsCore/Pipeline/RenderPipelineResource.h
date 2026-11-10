@@ -7,6 +7,7 @@
 #include <Core/Graph/Graph.h>
 #include <Core/Graph/GraphComposition.h>
 #include <Core/ResourceManager/Resource.h>
+#include <Foundation/Containers/HashTable.h>
 #include <Foundation/Memory/CommonAllocators.h>
 #include <Foundation/Reflection/Reflection.h>
 #include <Foundation/Threading/Mutex.h>
@@ -115,8 +116,8 @@ public:
   bool                                            DoesInterfaceOutputDependOnInput(xiiStringView output, xiiStringView input) const;
   static xiiResult                                Compile(const xiiRenderPipelineResourceDescriptor& descriptor, xiiSharedPtr<const xiiRenderPipeline>& out_pipeline, xiiStringBuilder* out_error = nullptr);
   static xiiResult                                Compile(const xiiRenderPipelineResourceDescriptor& descriptor, xiiGraphComposition::Resolver resolver, xiiSharedPtr<const xiiRenderPipeline>& out_pipeline, xiiStringBuilder* out_error = nullptr);
-  /// Compile an explicitly selected GI variant of an already resolved authored pipeline.
-  static xiiResult                                CompileVariant(const xiiRenderPipelineResourceDescriptor& descriptor, xiiRenderGlobalIllumination::Enum mode, xiiSharedPtr<const xiiRenderPipeline>& out_pipeline, xiiStringBuilder* out_error = nullptr);
+  /// Compile a structural configuration of an already resolved authored pipeline.
+  static xiiResult                                CompileVariant(const xiiRenderPipelineResourceDescriptor& descriptor, const xiiRenderPipelineVariant& variant, xiiSharedPtr<const xiiRenderPipeline>& out_pipeline, xiiStringBuilder* out_error = nullptr);
   const xiiGraph&                                 GetTopology() const { return m_Topology; }
   const xiiRenderPipelineResourceDescriptor&      GetDescriptor() const { return m_Descriptor; }
   xiiArrayPtr<const xiiUInt32>                    GetExecutionOrder() const { return m_Order; }
@@ -138,7 +139,7 @@ public:
 
 private:
   friend class xiiRenderPipelineInstance;
-  static xiiResult                                                                            Compile(const xiiRenderPipelineResourceDescriptor& descriptor, xiiGraphComposition::Resolver resolver, xiiRenderGlobalIllumination::Enum mode, xiiSharedPtr<const xiiRenderPipeline>& out_pipeline, xiiStringBuilder* out_error);
+  static xiiResult                                                                            Compile(const xiiRenderPipelineResourceDescriptor& descriptor, xiiGraphComposition::Resolver resolver, const xiiRenderPipelineVariant& variant, xiiSharedPtr<const xiiRenderPipeline>& out_pipeline, xiiStringBuilder* out_error);
   xiiAllocatorWithPolicy<xiiAllocationPolicyProxy, xiiAllocatorTrackingMode::AllocationStats> m_TopologyAllocator;
   xiiGraph                                                                                    m_Topology;
   xiiRenderPipelineResourceDescriptor                                                         m_Descriptor;
@@ -169,7 +170,7 @@ public:
   xiiRenderPipelineResource();
   xiiSharedPtr<const xiiRenderPipeline>          GetPipeline() const;
   /// Variants are cached per immutable definition snapshot. Failures also remain cached until reload.
-  xiiResult                                      GetPipelineVariant(const xiiSharedPtr<const xiiRenderPipeline>& base, xiiRenderGlobalIllumination::Enum mode,
+  xiiResult                                      GetPipelineVariant(const xiiSharedPtr<const xiiRenderPipeline>& base, const xiiRenderPipelineVariant& variant,
                                                                     xiiSharedPtr<const xiiRenderPipeline>& out_pipeline, xiiStringBuilder& out_error) const;
   xiiSharedPtr<const xiiRenderPipelineAuthoring> GetAuthoring() const;
   struct DefinitionDependency
@@ -188,7 +189,6 @@ private:
   {
     xiiSharedPtr<const xiiRenderPipeline> m_pPipeline;
     xiiString                             m_sError;
-    bool                                  m_bCompiled = false;
   };
   xiiResourceLoadDescription                     UnloadData(Unload whatToUnload) override;
   xiiResourceLoadDescription                     UpdateContent(xiiStreamReader* stream) override;
@@ -196,7 +196,7 @@ private:
   mutable xiiMutex                               m_Mutex;
   mutable xiiSharedPtr<const xiiRenderPipeline>  m_pPipeline;
   mutable xiiSharedPtr<const xiiRenderPipelineAuthoring> m_pResolvedAuthoring;
-  mutable Variant                                        m_Variants[xiiRenderGlobalIllumination::ENUM_COUNT];
+  mutable xiiHashTable<xiiUInt16, Variant>               m_Variants;
   xiiSharedPtr<const xiiRenderPipelineAuthoring> m_pAuthoring;
   mutable xiiDynamicArray<DefinitionDependency>  m_DefinitionDependencies;
 };

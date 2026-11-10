@@ -27,6 +27,12 @@ Bloom visualization can still inspect it. Render scale is an internal
 resolution multiplier, with zero selecting inheritance. It leaves the output
 extent unchanged.
 
+**Shadows** controls the authored directional and spotlight shadow branches.
+**Screen Space Reflections** controls the screen trace and its reconstruction.
+Environment and probe reflections remain available when screen reflections
+are disabled. **Pipeline Default** restores the authored feature behavior
+when an earlier scope disabled the branch.
+
 ## Indirect lighting
 
 **Pipeline Default** restores the pipeline's authored GI behavior.
@@ -55,10 +61,20 @@ to that operation in explicit variants. For example, it enables the
 shipped irradiance subgraph's depth forwarding operation without changing
 its authored default or its debug visualization settings.
 
+Use the unsigned 8-bit `OptionalRenderFeatures` parameter to mark an optional
+operation or a subgraph occurrence. Bit 0 marks shadow work and bit 1 marks
+screen-space reflections. An occurrence's parameter applies to its expanded
+operations. The compiler omits these operations when the corresponding
+feature is disabled, including when an explicit GI variant is selected.
+Public outputs from a disabled optional feature remain visible as optional
+interfaces with no binding. Downstream required inputs still need a
+producer in every selected variant.
+
 The compiler expands reusable subgraphs and validates their pin contracts
 before pruning inactive operations. It validates required connections and
 ordering on the remaining graph. Author optional inputs or shared selectors
 where an implementation can be absent. Preserve required root outputs.
+Re-transform changed pipeline assets to publish the authored branch metadata.
 
 The pipeline resource caches compiled variants against its immutable source
 snapshot. Views prepare replacement pass instances before publishing them

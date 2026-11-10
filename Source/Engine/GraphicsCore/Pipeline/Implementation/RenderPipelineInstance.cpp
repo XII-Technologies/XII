@@ -129,7 +129,8 @@ xiiResult xiiRenderPipelineInstance::Synchronize(const xiiRenderPipelineResource
   const auto*      pPrevious = m_pPipeline.Borrow();
   auto             pipeline  = base;
   const auto       requested = acquireResult == xiiResourceAcquireResult::Final ? configuration : xiiRenderConfiguration{};
-  const auto       mode      = static_cast<xiiRenderGlobalIllumination::Enum>(requested.m_GlobalIllumination.GetValue());
+  const auto       selection = requested.GetPipelineVariant();
+  const auto       mode      = selection.m_GlobalIllumination;
   xiiStringBuilder error;
   xiiResult        status = XII_SUCCESS;
   if (!requested.IsValid())
@@ -137,9 +138,9 @@ xiiResult xiiRenderPipelineInstance::Synchronize(const xiiRenderPipelineResource
     error  = "Invalid render configuration.";
     status = XII_FAILURE;
   }
-  else if (base && mode >= xiiRenderGlobalIllumination::Disabled)
+  else if (base && !selection.UsesAuthoredTopology())
   {
-    status = acquired->GetPipelineVariant(base, mode, pipeline, error);
+    status = acquired->GetPipelineVariant(base, selection, pipeline, error);
     if (status.Succeeded())
     {
       const auto pDevice = xiiGALDevice::HasDefaultDevice() ? xiiGALDevice::GetDefaultDevice() : xiiSharedPtr<xiiGALDevice>();

@@ -8,6 +8,8 @@
 #include <GraphicsCore/Pipeline/RenderPipelineComposition.h>
 #include <GraphicsCore/Pipeline/RenderPipelineResource.h>
 
+#include <algorithm>
+
 xiiRenderPipeline::xiiRenderPipeline() :
   m_TopologyAllocator("Render Pipeline Topology", xiiDefaultAllocatorWrapper::GetAllocator()), m_Topology(&m_TopologyAllocator)
 {
@@ -74,15 +76,15 @@ xiiResult xiiRenderPipeline::Compile(const xiiRenderPipelineResourceDescriptor& 
 
 xiiResult xiiRenderPipeline::Compile(const xiiRenderPipelineResourceDescriptor& authored, xiiGraphComposition::Resolver externalResolver, xiiSharedPtr<const xiiRenderPipeline>& out_pipeline, xiiStringBuilder* out_error)
 {
-  return Compile(authored, externalResolver, xiiRenderGlobalIllumination::PipelineDefault, out_pipeline, out_error);
+  return Compile(authored, externalResolver, {}, out_pipeline, out_error);
 }
 
-xiiResult xiiRenderPipeline::CompileVariant(const xiiRenderPipelineResourceDescriptor& descriptor, xiiRenderGlobalIllumination::Enum mode, xiiSharedPtr<const xiiRenderPipeline>& out_pipeline, xiiStringBuilder* out_error)
+xiiResult xiiRenderPipeline::CompileVariant(const xiiRenderPipelineResourceDescriptor& descriptor, const xiiRenderPipelineVariant& variant, xiiSharedPtr<const xiiRenderPipeline>& out_pipeline, xiiStringBuilder* out_error)
 {
-  return Compile(descriptor, {}, mode, out_pipeline, out_error);
+  return Compile(descriptor, {}, variant, out_pipeline, out_error);
 }
 
-xiiResult xiiRenderPipeline::Compile(const xiiRenderPipelineResourceDescriptor& authored, xiiGraphComposition::Resolver externalResolver, xiiRenderGlobalIllumination::Enum mode, xiiSharedPtr<const xiiRenderPipeline>& out_pipeline, xiiStringBuilder* out_error)
+xiiResult xiiRenderPipeline::Compile(const xiiRenderPipelineResourceDescriptor& authored, xiiGraphComposition::Resolver externalResolver, const xiiRenderPipelineVariant& variant, xiiSharedPtr<const xiiRenderPipeline>& out_pipeline, xiiStringBuilder* out_error)
 {
   xiiRenderPipelineResourceDescriptor descriptor;
   xiiUInt32                           diagnosticPass = xiiInvalidIndex;
@@ -97,8 +99,9 @@ xiiResult xiiRenderPipeline::Compile(const xiiRenderPipelineResourceDescriptor& 
   };
   if (out_error)
     out_error->Clear();
-  if (mode >= xiiRenderGlobalIllumination::ENUM_COUNT)
-    return fail("Invalid global illumination selection.");
+  const auto mode = variant.m_GlobalIllumination;
+  if (mode >= xiiRenderGlobalIllumination::ENUM_COUNT || (variant.m_Disabled.GetValue() & ~xiiOptionalRenderFeature::All) != 0)
+    return fail("Invalid structural render configuration.");
   const bool         bExplicit       = mode >= xiiRenderGlobalIllumination::Disabled;
   const xiiUInt8     uiModeBit       = xiiRenderGlobalIllumination::BranchBit(mode);
   constexpr xiiUInt8 uiValidBranches = xiiRenderGlobalIllumination::BranchBit(xiiRenderGlobalIllumination::Disabled) |
@@ -135,6 +138,7 @@ xiiResult xiiRenderPipeline::Compile(const xiiRenderPipelineResourceDescriptor& 
   descriptor.m_Settings   = authored.m_Settings;
   xiiDynamicArray<bool> active;
   xiiUInt8              uiAvailableBranches = 0;
+  xiiBitflags<xiiOptionalRenderFeature> availableFeatures;
   for (const auto& node : expanded.m_Nodes)
   {
     xiiStringBuilder name, id;
@@ -157,7 +161,16 @@ xiiResult xiiRenderPipeline::Compile(const xiiRenderPipelineResourceDescriptor& 
       uiBranches = pBranches->Get<xiiUInt8>();
       uiAvailableBranches |= uiBranches;
     }
-    const bool bActive = !bExplicit || uiBranches == 0 || (uiBranches & uiModeBit) != 0;
+    xiiBitflags<xiiOptionalRenderFeature> optionalFeatures;
+    if (const auto* pFeatures = pass.m_Parameters.GetValue("OptionalRenderFeatures"))
+    {
+      diagnosticPass = index;
+      if (!pFeatures->IsA<xiiUInt8>() || (pFeatures->Get<xiiUInt8>() & ~xiiOptionalRenderFeature::All) != 0)
+        return fail("Invalid authored optional render feature mask.");
+      optionalFeatures.SetValue(pFeatures->Get<xiiUInt8>());
+      availableFeatures.Add(optionalFeatures);
+    }
+    const bool bActive = (!bExplicit || uiBranches == 0 || (uiBranches & uiModeBit) != 0) && !optionalFeatures.IsAnySet(variant.m_Disabled);
     active.PushBack(bActive);
     if (const auto* pProperties = pass.m_Parameters.GetValue("ExplicitGlobalIlluminationProperties"))
     {
@@ -183,6 +196,8 @@ xiiResult xiiRenderPipeline::Compile(const xiiRenderPipelineResourceDescriptor& 
   diagnosticPass = xiiInvalidIndex;
   if (bExplicit && (uiAvailableBranches == 0 || (mode != xiiRenderGlobalIllumination::Disabled && (uiAvailableBranches & uiModeBit) == 0)))
     return fail("The selected pipeline does not author this global illumination technique.");
+  if (!availableFeatures.AreAllSet(variant.m_Disabled))
+    return fail("The selected pipeline does not author one or more optional render features.");
   for (const auto& edge : expanded.m_Edges)
   {
     auto& connection      = descriptor.m_Connections.ExpandAndGetRef();
@@ -280,6 +295,22 @@ xiiResult xiiRenderPipeline::Compile(const xiiRenderPipelineResourceDescriptor& 
     }
   // Lower the chosen branch after validating authored interfaces. The usual
   // required-pin and ordering checks then run on the surviving connections.
+  for (const auto& boundary : expanded.m_Boundary)
+  {
+    const auto uiOld = expanded.m_Graph.GetVertexIndex(boundary.m_hVertex);
+    if (active[uiOld] || !boundary.m_Source.m_InstancePath.IsEmpty() || boundary.m_bInput)
+      continue;
+    const auto& pins             = result->m_Passes[uiOld].m_Pins;
+    const auto* pPin             = std::find_if(begin(pins), end(pins), [&](const xiiRenderPipelinePin& pin) { return !pin.m_bInput && pin.m_sName == boundary.m_sPort; });
+    const auto* pFeatures        = descriptor.m_Passes[uiOld].m_Parameters.GetValue("OptionalRenderFeatures");
+    const bool  bOptionalFeature = pFeatures && (pFeatures->Get<xiiUInt8>() & variant.m_Disabled.GetValue()) != 0;
+    if (pPin == end(pins) || (!pPin->m_bOptional && !bOptionalFeature))
+      return fail(xiiStringBuilder("A conditional branch removes required root output '", boundary.m_sName, "'. Author a shared output selector."));
+    auto& output             = result->m_Interface.ExpandAndGetRef();
+    output.m_Pin             = *pPin;
+    output.m_Pin.m_sName     = boundary.m_sName;
+    output.m_Pin.m_bOptional = true;
+  }
   xiiDynamicArray<xiiUInt32>              indices;
   xiiDynamicArray<xiiRenderPipelinePass*> activePrototypes;
   indices.SetCount(active.GetCount(), xiiInvalidIndex);
@@ -298,12 +329,6 @@ xiiResult xiiRenderPipeline::Compile(const xiiRenderPipelineResourceDescriptor& 
       result->m_PassParameters[uiIndex] = std::move(result->m_PassParameters[i]);
       result->m_ResourceScopes[uiIndex] = std::move(result->m_ResourceScopes[i]);
     }
-  }
-  for (const auto& boundary : expanded.m_Boundary)
-  {
-    const auto uiOld = expanded.m_Graph.GetVertexIndex(boundary.m_hVertex);
-    if (!active[uiOld] && boundary.m_Source.m_InstancePath.IsEmpty() && !boundary.m_bInput)
-      return fail("A conditional branch removes a root pipeline output. Author a shared output selector.");
   }
   const auto uiPassCount = activePrototypes.GetCount();
   result->m_Passes.SetCount(uiPassCount);

@@ -146,6 +146,15 @@ XII_CREATE_SIMPLE_TEST(CanonicalRenderer, ViewRenderConfiguration)
   XII_TEST_RESULT(views[0]->SetRenderConfiguration(configuration));
   if (render())
     XII_TEST_BOOL(instance.GetPipeline() == pDisabled);
+  configuration.m_Shadows                = xiiRenderFeaturePolicy::Disabled;
+  configuration.m_ScreenSpaceReflections = xiiRenderFeaturePolicy::Disabled;
+  XII_TEST_RESULT(views[0]->SetRenderConfiguration(configuration));
+  if (render())
+  {
+    XII_TEST_BOOL(instance.GetPipeline() != pDisabled);
+    XII_TEST_BOOL(views[0]->GetEffectiveRenderConfiguration() == configuration);
+    XII_TEST_BOOL(views[1]->GetRenderPipelineInstance().GetPipeline() == pIndependent);
+  }
 }
 
 XII_CREATE_SIMPLE_TEST(CanonicalRenderer, EditorUsesScene)

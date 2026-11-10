@@ -7,7 +7,7 @@
 #include <GraphicsCore/Components/Render/RenderWorldSettingsComponent.h>
 
 // clang-format off
-XII_BEGIN_COMPONENT_TYPE(xiiRenderWorldSettingsComponent, 4, xiiComponentMode::Static)
+XII_BEGIN_COMPONENT_TYPE(xiiRenderWorldSettingsComponent, 5, xiiComponentMode::Static)
 {
   XII_BEGIN_PROPERTIES
   {

@@ -9,7 +9,7 @@
 #include <Foundation/IO/ChunkStream.h>
 #include <GraphicsCore/Pipeline/RenderPipelineProfileConfig.h>
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineProfileConfig, 6, xiiRTTIDefaultAllocator<xiiRenderPipelineProfileConfig>)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineProfileConfig, 7, xiiRTTIDefaultAllocator<xiiRenderPipelineProfileConfig>)
   {
     XII_BEGIN_PROPERTIES
     {

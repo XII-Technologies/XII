@@ -3,10 +3,12 @@
 #include <GraphicsCoreTest/GraphicsCoreTestPCH.h>
 
 #include <Core/ResourceManager/ResourceManager.h>
+#include <Foundation/IO/ChunkStream.h>
 #include <Foundation/IO/MemoryStream.h>
 #include <GraphicsCore/Pipeline/Passes/GlobalIllumination/DDGIProbeSchedulePass.h>
 #include <GraphicsCore/Pipeline/RenderConfiguration.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
+#include <GraphicsCore/Pipeline/RenderPipelineProfileConfig.h>
 #include <GraphicsFoundation/Declarations/Descriptors.h>
 #include <GraphicsFoundation/Resources/Texture.h>
 #include <TestFramework/Utilities/TestLogInterface.h>
@@ -34,6 +36,7 @@ XII_CREATE_SIMPLE_TEST(Pipeline, ScopedRenderConfiguration)
   project.m_fBloomStrength = 0.2f;
   project.m_fRenderScale   = 0.8f;
   project.m_GlobalIllumination = xiiRenderGlobalIllumination::DDGI;
+  project.m_Shadows            = xiiRenderFeaturePolicy::Disabled;
 
   xiiRenderConfiguration scene;
   scene.m_fBloomStrength = 0.5f;
@@ -43,6 +46,7 @@ XII_CREATE_SIMPLE_TEST(Pipeline, ScopedRenderConfiguration)
   xiiRenderConfiguration viewport;
   viewport.m_fBloomStrength = 0.0f;
   viewport.m_GlobalIllumination = xiiRenderGlobalIllumination::Disabled;
+  viewport.m_Shadows              = xiiRenderFeaturePolicy::PipelineDefault;
   viewport.m_DDGI.m_uiProbeCountX = 12;
 
   auto inherited = project;
@@ -55,6 +59,7 @@ XII_CREATE_SIMPLE_TEST(Pipeline, ScopedRenderConfiguration)
   XII_TEST_FLOAT(inherited.m_fBloomStrength, 0.5f, 0.001f);
   XII_TEST_BOOL(inherited.m_GlobalIllumination == xiiRenderGlobalIllumination::DDGI);
   XII_TEST_BOOL(effective.m_GlobalIllumination == xiiRenderGlobalIllumination::Disabled);
+  XII_TEST_BOOL(effective.m_Shadows == xiiRenderFeaturePolicy::PipelineDefault);
   XII_TEST_INT(effective.m_DDGI.m_uiProbeCountX, 12);
   XII_TEST_INT(effective.m_DDGI.m_uiProbeUpdateBudget, 64);
 
@@ -75,6 +80,46 @@ XII_CREATE_SIMPLE_TEST(Pipeline, ScopedRenderConfiguration)
   XII_TEST_BOOL(pType->FindPropertyByName("RenderScale") != nullptr);
 }
 
+XII_CREATE_SIMPLE_TEST(Pipeline, RenderConfigurationProfileMigration)
+{
+  xiiRenderPipelineProfileConfig saved;
+  saved.m_sMainRenderPipeline                              = "CustomPipeline";
+  saved.m_RenderConfiguration.m_GlobalIllumination         = xiiRenderGlobalIllumination::DDGI;
+  saved.m_RenderConfiguration.m_DDGI.m_uiProbeUpdateBudget = 64;
+  saved.m_RenderConfiguration.m_Shadows                    = xiiRenderFeaturePolicy::Disabled;
+  xiiContiguousMemoryStreamStorage storage;
+  xiiMemoryStreamWriter            writer(&storage);
+  xiiChunkStreamWriter             chunks(writer);
+  chunks.BeginStream(1);
+  saved.SaveRuntimeData(chunks);
+  chunks.EndStream();
+
+  xiiMemoryStreamReader reader(&storage);
+  xiiChunkStreamReader  stream(reader);
+  stream.BeginStream();
+  xiiRenderPipelineProfileConfig loaded;
+  loaded.LoadRuntimeData(stream);
+  XII_TEST_BOOL(loaded.IsRuntimeDataValid());
+  XII_TEST_BOOL(loaded.GetResourceReference() == saved.GetResourceReference());
+  XII_TEST_BOOL(loaded.m_RenderConfiguration == saved.m_RenderConfiguration);
+
+  xiiContiguousMemoryStreamStorage legacy;
+  xiiMemoryStreamWriter            legacyWriter(&legacy);
+  xiiChunkStreamWriter             legacyChunks(legacyWriter);
+  legacyChunks.BeginStream(1);
+  legacyChunks.BeginChunk("RenderPipelineReferences", 3);
+  legacyChunks << saved.m_sMainRenderPipeline;
+  legacyChunks.EndChunk();
+  legacyChunks.EndStream();
+  xiiMemoryStreamReader legacyReader(&legacy);
+  xiiChunkStreamReader  legacyStream(legacyReader);
+  legacyStream.BeginStream();
+  loaded.LoadRuntimeData(legacyStream);
+  XII_TEST_BOOL(loaded.IsRuntimeDataValid());
+  XII_TEST_BOOL(loaded.GetResourceReference() == saved.GetResourceReference());
+  XII_TEST_BOOL(loaded.m_RenderConfiguration == xiiRenderConfiguration{});
+}
+
 XII_CREATE_SIMPLE_TEST(Pipeline, RenderConfigurationVariants)
 {
   xiiRenderPipelineResourceDescriptor descriptor;
@@ -87,11 +132,11 @@ XII_CREATE_SIMPLE_TEST(Pipeline, RenderConfigurationVariants)
   XII_TEST_INT(base->GetExecutionOrder().GetCount(), 2);
   xiiSharedPtr<const xiiRenderPipeline> disabled, reused;
   xiiStringBuilder                      error;
-  XII_TEST_RESULT(acquired->GetPipelineVariant(base, xiiRenderGlobalIllumination::Disabled, disabled, error));
-  XII_TEST_RESULT(acquired->GetPipelineVariant(base, xiiRenderGlobalIllumination::Disabled, reused, error));
+  XII_TEST_RESULT(acquired->GetPipelineVariant(base, {xiiRenderGlobalIllumination::Disabled, {}}, disabled, error));
+  XII_TEST_RESULT(acquired->GetPipelineVariant(base, {xiiRenderGlobalIllumination::Disabled, {}}, reused, error));
   XII_TEST_BOOL(disabled == reused);
   XII_TEST_INT(disabled->GetExecutionOrder().GetCount(), 1);
-  XII_TEST_BOOL(acquired->GetPipelineVariant(base, xiiRenderGlobalIllumination::ScreenSpace, reused, error).Failed());
+  XII_TEST_BOOL(acquired->GetPipelineVariant(base, {xiiRenderGlobalIllumination::ScreenSpace, {}}, reused, error).Failed());
   XII_TEST_BOOL(error.FindSubString("does not author") != nullptr);
   XII_TEST_BOOL(reused == disabled);
 

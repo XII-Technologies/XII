@@ -5,6 +5,7 @@
 #include <GraphicsCore/GraphicsCoreDLL.h>
 
 #include <Foundation/Reflection/Reflection.h>
+#include <Foundation/Types/Bitflags.h>
 #include <Foundation/Types/Enum.h>
 
 class xiiStreamReader;
@@ -29,6 +30,51 @@ struct xiiRenderGlobalIllumination
   static constexpr xiiUInt8 BranchBit(Enum mode) { return static_cast<xiiUInt8>(1U << mode); }
 };
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderGlobalIllumination);
+
+struct xiiRenderFeaturePolicy
+{
+  using StorageType = xiiUInt8;
+  enum Enum : StorageType
+  {
+    Inherit,
+    PipelineDefault,
+    Disabled,
+    Default = Inherit
+  };
+};
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderFeaturePolicy);
+
+struct xiiOptionalRenderFeature
+{
+  using StorageType = xiiUInt8;
+  enum Enum : StorageType
+  {
+    Shadows                = XII_BIT(0),
+    ScreenSpaceReflections = XII_BIT(1),
+    All                    = Shadows | ScreenSpaceReflections,
+    Default                = 0
+  };
+  struct Bits
+  {
+    StorageType Shadows : 1;
+    StorageType ScreenSpaceReflections : 1;
+  };
+};
+XII_DECLARE_FLAGS_OPERATORS(xiiOptionalRenderFeature);
+
+/// The structural subset of a resolved configuration. Runtime values do not enter the cache key.
+struct xiiRenderPipelineVariant
+{
+  xiiRenderGlobalIllumination::Enum     m_GlobalIllumination = xiiRenderGlobalIllumination::PipelineDefault;
+  xiiBitflags<xiiOptionalRenderFeature> m_Disabled;
+
+  bool      UsesAuthoredTopology() const { return m_GlobalIllumination < xiiRenderGlobalIllumination::Disabled && m_Disabled.IsNoFlagSet(); }
+  xiiUInt16 GetCacheKey() const
+  {
+    const auto mode = m_GlobalIllumination < xiiRenderGlobalIllumination::Disabled ? xiiRenderGlobalIllumination::PipelineDefault : m_GlobalIllumination;
+    return static_cast<xiiUInt16>(mode | (m_Disabled.GetValue() << 8));
+  }
+};
 
 /// Sparse overrides of the scheduling properties authored on a DDGI pass.
 struct XII_GRAPHICSCORE_DLL xiiDDGIProbeOverrides
@@ -59,12 +105,15 @@ struct XII_GRAPHICSCORE_DLL xiiRenderConfiguration
   float m_fRenderScale   = s_fInheritRenderScale;   ///< An explicit scale is in [0.1, 1].
   xiiEnum<xiiRenderGlobalIllumination> m_GlobalIllumination;
   xiiDDGIProbeOverrides                m_DDGI;
+  xiiEnum<xiiRenderFeaturePolicy>      m_Shadows;
+  xiiEnum<xiiRenderFeaturePolicy>      m_ScreenSpaceReflections;
 
-  static constexpr xiiUInt32 s_uiSerializationVersion = 3;
+  static constexpr xiiUInt32 s_uiSerializationVersion = 4;
 
   bool operator==(const xiiRenderConfiguration&) const = default;
 
   bool IsValid() const;
+  xiiRenderPipelineVariant GetPipelineVariant() const;
 
   /// Applies the authored fields of a validated, higher-priority scope.
   void ApplyOverrides(const xiiRenderConfiguration& overrides);

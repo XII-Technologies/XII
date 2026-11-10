@@ -151,7 +151,7 @@ void xiiCameraComponentManager::OnCameraConfigsChanged(void* dummy)
 //////////////////////////////////////////////////////////////////////////
 
 // clang-format off
-XII_BEGIN_COMPONENT_TYPE(xiiCameraComponent, 5, xiiComponentMode::Static)
+XII_BEGIN_COMPONENT_TYPE(xiiCameraComponent, 6, xiiComponentMode::Static)
 {
   XII_BEGIN_PROPERTIES
   {
