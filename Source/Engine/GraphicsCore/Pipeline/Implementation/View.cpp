@@ -2,14 +2,18 @@
 
 #include <GraphicsCore/GraphicsCorePCH.h>
 
+#include <Core/GameApplication/GameApplicationBase.h>
 #include <Foundation/Configuration/CVar.h>
 #include <Foundation/Math/Math.h>
 #include <Foundation/Time/Clock.h>
+#include <GraphicsCore/Components/Render/CameraComponent.h>
+#include <GraphicsCore/Components/Render/RenderWorldSettingsComponent.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
 #include <GraphicsCore/Pipeline/ExtractedRenderData.h>
 
 #include <GraphicsCore/Pipeline/Passes/Sensors/SensorCapture.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
+#include <GraphicsCore/Pipeline/RenderPipelineProfileConfig.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsFoundation/Device/Device.h>
@@ -174,7 +178,13 @@ void xiiView::SetRenderScale(float fRenderScale)
 {
   if (!xiiMath::IsFinite(fRenderScale))
     return;
-  fRenderScale = xiiMath::Clamp(fRenderScale, 0.1f, 1.0f);
+  m_fDefaultRenderScale = xiiMath::Clamp(fRenderScale, 0.1f, 1.0f);
+  if (m_EffectiveRenderConfiguration.m_fRenderScale == xiiRenderConfiguration::s_fInheritRenderScale)
+    ApplyRenderScale(m_fDefaultRenderScale);
+}
+
+void xiiView::ApplyRenderScale(float fRenderScale)
+{
   if (m_DynamicResolution.m_fRenderScale == fRenderScale)
     return;
   m_DynamicResolution.m_fRenderScale = fRenderScale;
@@ -427,6 +437,7 @@ xiiResult xiiView::SynchronizeRenderPipeline()
     m_RuntimeFeatures                = m_CustomRuntimeFeatures;
     return XII_SUCCESS;
   }
+  SynchronizeRenderConfiguration();
   bool changed = false;
   if (runtime->Synchronize(m_hRenderPipeline, &changed).Failed())
   {
@@ -451,6 +462,51 @@ xiiResult xiiView::SynchronizeRenderPipeline()
   m_ExtractionRequirements = runtime->GetPipeline()->GetExtractionRequirements();
   m_RuntimeFeatures        = runtime->GetPipeline()->GetRuntimeFeatures();
   return XII_SUCCESS;
+}
+
+xiiResult xiiView::SetRenderConfiguration(const xiiRenderConfiguration& configuration)
+{
+  if (!configuration.IsValid())
+    return XII_FAILURE;
+  m_RenderConfiguration = configuration;
+  return XII_SUCCESS;
+}
+
+void xiiView::SynchronizeRenderConfiguration()
+{
+  xiiRenderConfiguration effective;
+  if (const auto* pApplication = xiiGameApplicationBase::GetGameApplicationBaseInstance())
+    if (const auto* pProfile = pApplication->GetPlatformProfile().GetTypeConfig<xiiRenderPipelineProfileConfig>())
+      if (pProfile->m_RenderConfiguration.IsValid())
+        effective.ApplyOverrides(pProfile->m_RenderConfiguration);
+
+  if (const auto* pWorld = GetWorld())
+  {
+    if (const auto* pManager = pWorld->GetComponentManager<xiiRenderWorldSettingsComponentManager>())
+      if (const auto* pSettings = pManager->GetSingletonComponent())
+        if (pSettings->m_RenderConfiguration.IsValid())
+          effective.ApplyOverrides(pSettings->m_RenderConfiguration);
+
+    const xiiCameraComponent* pCamera = nullptr;
+    if (!m_hRenderConfigurationCamera.IsInvalidated())
+    {
+      if (!pWorld->TryGetComponent(m_hRenderConfigurationCamera, pCamera) || !pCamera->IsActiveAndInitialized())
+        pCamera = nullptr;
+    }
+    else if (GetCameraUsageHint() != xiiCameraUsageHint::None && GetCameraUsageHint() != xiiCameraUsageHint::EditorView && GetCameraUsageHint() != xiiCameraUsageHint::RenderTarget)
+    {
+      if (const auto* pManager = pWorld->GetComponentManager<xiiCameraComponentManager>())
+        pCamera = pManager->GetCameraByUsageHint(GetCameraUsageHint());
+    }
+    if (pCamera && pCamera->m_RenderConfiguration.IsValid())
+      effective.ApplyOverrides(pCamera->m_RenderConfiguration);
+  }
+
+  effective.ApplyOverrides(m_RenderConfiguration);
+  if (effective == m_EffectiveRenderConfiguration)
+    return;
+  m_EffectiveRenderConfiguration = effective;
+  ApplyRenderScale(effective.m_fRenderScale == xiiRenderConfiguration::s_fInheritRenderScale ? m_fDefaultRenderScale : effective.m_fRenderScale);
 }
 
 xiiResult xiiView::BuildRenderPipeline(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)

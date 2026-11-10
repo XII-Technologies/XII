@@ -9,19 +9,25 @@
 #include <Foundation/IO/ChunkStream.h>
 #include <GraphicsCore/Pipeline/RenderPipelineProfileConfig.h>
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineProfileConfig, 3, xiiRTTIDefaultAllocator<xiiRenderPipelineProfileConfig>)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineProfileConfig, 4, xiiRTTIDefaultAllocator<xiiRenderPipelineProfileConfig>)
   {
     XII_BEGIN_PROPERTIES
     {
       XII_MEMBER_PROPERTY("MainRenderPipeline", m_sMainRenderPipeline)->AddAttributes(new xiiDefaultValueAttribute(xiiRenderPipelineProfileConfig::s_szScenePipeline), new xiiAssetBrowserAttribute("CompatibleAsset_RenderPipeline")),
+      XII_MEMBER_PROPERTY("RenderConfiguration", m_RenderConfiguration),
     } XII_END_PROPERTIES;
   }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 void xiiRenderPipelineProfileConfig::SaveRuntimeData(xiiChunkStreamWriter& stream) const
 {
-  stream.BeginChunk("RenderPipelineReferences", 3);
+  stream.BeginChunk("RenderPipelineReferences", 4);
   stream << GetResourceReference();
+  if (m_RenderConfiguration.Serialize(stream).Failed())
+  {
+    xiiLog::Error("Invalid platform render configuration. Writing inherited defaults.");
+    xiiRenderConfiguration{}.Serialize(stream).AssertSuccess();
+  }
   stream.EndChunk();
 }
 
@@ -31,13 +37,13 @@ void xiiRenderPipelineProfileConfig::LoadRuntimeData(xiiChunkStreamReader& strea
   if (chunk.m_sChunkName != "RenderPipelineReferences")
     return;
   m_bRuntimeDataValid = false;
-  if (chunk.m_uiChunkVersion < 1 || chunk.m_uiChunkVersion > 3)
+  if (chunk.m_uiChunkVersion < 1 || chunk.m_uiChunkVersion > 4)
   {
     xiiLog::Error("Unsupported render pipeline profile version {}.", chunk.m_uiChunkVersion);
     return;
   }
   xiiString references[5];
-  for (xiiUInt32 index = 0; index < (chunk.m_uiChunkVersion == 3 ? 1U : 5U); ++index)
+  for (xiiUInt32 index = 0; index < (chunk.m_uiChunkVersion >= 3 ? 1U : 5U); ++index)
     if (stream.ReadString(references[index]).Failed())
     {
       xiiLog::Error("Invalid render pipeline references in the platform profile.");
@@ -46,6 +52,10 @@ void xiiRenderPipelineProfileConfig::LoadRuntimeData(xiiChunkStreamReader& strea
   // Version one had an empty default world selection. Later versions preserve an explicit empty choice.
   if (chunk.m_uiChunkVersion == 1 && references[0].IsEmpty())
     references[0] = s_szScenePipeline;
+  xiiRenderConfiguration configuration;
+  if (chunk.m_uiChunkVersion >= 4 && configuration.Deserialize(stream).Failed())
+    xiiLog::Error("Invalid render configuration in the platform profile. Using inherited defaults.");
+  m_RenderConfiguration = configuration;
   m_sMainRenderPipeline = references[0];
   m_bRuntimeDataValid   = true;
 }

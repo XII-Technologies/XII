@@ -3,6 +3,7 @@
 #pragma once
 
 #include <Foundation/Types/ScopeExit.h>
+#include <GraphicsCore/Pipeline/RenderConfiguration.h>
 #include <GraphicsCore/Pipeline/RenderPipelineConfiguration.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 #include <GraphicsFoundation/Resources/Sampler.h>
@@ -58,6 +59,7 @@ namespace xiiRenderPassUtils
     xiiVariant               m_Override;
     const xiiView*           m_pView          = nullptr; // Compared only; never dereferenced outside Resolve's live context.
     xiiUInt64                m_uiViewRevision = 0;
+    float                    m_fBloomStrength = xiiRenderConfiguration::s_fInheritBloomStrength;
     bool                     m_bValid         = false;
     xiiResult                Resolve(const xiiRenderPipelinePassContext& context, const xiiDisplayOutputSettings& authored, bool useViewDefaults);
   };

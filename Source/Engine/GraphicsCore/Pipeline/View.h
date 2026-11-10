@@ -11,12 +11,14 @@
 #include <Foundation/Types/TagSet.h>
 #include <Foundation/Types/UniquePtr.h>
 
+#include <Core/World/Declarations.h>
 #include <GraphicsFoundation/Device/SwapChain.h>
 
 #include <GraphicsCore/Declarations.h>
 #include <GraphicsCore/Lighting/DisplayOutput.h>
 #include <GraphicsCore/Lighting/SensorRendering.h>
 #include <GraphicsCore/Meshes/GpuInstanceData.h>
+#include <GraphicsCore/Pipeline/RenderConfiguration.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
 #include <GraphicsCore/Pipeline/RenderGraphBlackboard.h>
 #include <GraphicsCore/Pipeline/RenderGraphManager.h>
@@ -206,6 +208,15 @@ public:
   void                        RemovePipelineParameter(xiiStringView name);
   const xiiVariantDictionary& GetPipelineParameters() const { return m_PipelineParameters; }
 
+  /// Sets the highest-priority scope. Resolved with project, scene and camera settings at the next frame boundary.
+  xiiResult                     SetRenderConfiguration(const xiiRenderConfiguration& configuration);
+  const xiiRenderConfiguration& GetRenderConfiguration() const { return m_RenderConfiguration; }
+  xiiRenderConfiguration        GetEffectiveRenderConfiguration() const { return m_EffectiveRenderConfiguration; }
+
+  /// Binds a specific camera in this view's world (e.g. a preview or render target).
+  /// An invalid handle restores ordinary camera selection by usage hint.
+  void SetRenderConfigurationCamera(const xiiComponentHandle& hCamera) { m_hRenderConfigurationCamera = hCamera; }
+
   using RenderGraphBuilder = xiiDelegate<void(xiiView&, xiiRenderGraph&, xiiRenderGraphBlackboard&)>;
   void                      SetRenderGraphBuilder(RenderGraphBuilder builder);
   const RenderGraphBuilder& GetRenderGraphBuilder() const;
@@ -246,6 +257,8 @@ private:
   void UpdateFrameStats();
 
   xiiResult SynchronizeRenderPipeline();
+  void      SynchronizeRenderConfiguration();
+  void      ApplyRenderScale(float fRenderScale);
 
   /// Instantiates the selected resource and emits its frame-specific render graph.
   ///        Called by xiiRenderWorldModule::ExecuteRenderGraphs each frame.
@@ -309,6 +322,10 @@ private:
   bool                                     m_bPipelineSynchronizationFailed = false;
   xiiResult                                m_LastRenderResult               = XII_FAILURE;
   xiiVariantDictionary                     m_PipelineParameters;
+  xiiRenderConfiguration                   m_RenderConfiguration;
+  xiiRenderConfiguration                   m_EffectiveRenderConfiguration;
+  xiiComponentHandle                       m_hRenderConfigurationCamera;
+  float                                    m_fDefaultRenderScale = 1.0f;
   xiiBitflags<xiiRenderExtractionCategory> m_ExtractionRequirements;
   xiiBitflags<xiiRenderExtractionCategory> m_CustomExtractionRequirements = xiiRenderExtractionCategory::All;
   xiiRenderExtractionStatistics            m_ExtractionStatistics;

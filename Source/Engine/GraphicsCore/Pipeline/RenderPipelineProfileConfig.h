@@ -5,6 +5,7 @@
 #include <GraphicsCore/GraphicsCoreDLL.h>
 
 #include <Core/Configuration/PlatformProfile.h>
+#include <GraphicsCore/Pipeline/RenderConfiguration.h>
 #include <GraphicsCore/Pipeline/RenderPipelineResource.h>
 
 /// Project/platform policy selects resource references, never embeds a rendering stack.
@@ -18,6 +19,7 @@ public:
   static constexpr const char* s_szEditorPipeline = "{ 7e79df72-9ebd-674a-bcd5-ca4405549c82 }";
 
   xiiString m_sMainRenderPipeline = s_szScenePipeline;
+  xiiRenderConfiguration m_RenderConfiguration;
 
   void          SaveRuntimeData(xiiChunkStreamWriter& stream) const override;
   void          LoadRuntimeData(xiiChunkStreamReader& stream) override;

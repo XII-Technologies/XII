@@ -4,6 +4,7 @@
 
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Foundation/IO/MemoryStream.h>
+#include <GraphicsCore/Pipeline/RenderConfiguration.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsFoundation/Declarations/Descriptors.h>
 #include <GraphicsFoundation/Resources/Texture.h>
@@ -25,6 +26,45 @@ public:
 xiiUInt32 xiiSettingsPipelinePass::s_uiBuilds = 0;
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSettingsPipelinePass, 1, xiiRTTIDefaultAllocator<xiiSettingsPipelinePass>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
+
+XII_CREATE_SIMPLE_TEST(Pipeline, ScopedRenderConfiguration)
+{
+  xiiRenderConfiguration project;
+  project.m_fBloomStrength = 0.2f;
+  project.m_fRenderScale   = 0.8f;
+
+  xiiRenderConfiguration scene;
+  scene.m_fBloomStrength = 0.5f;
+  xiiRenderConfiguration camera;
+  camera.m_fRenderScale = 0.6f;
+  xiiRenderConfiguration viewport;
+  viewport.m_fBloomStrength = 0.0f;
+
+  auto inherited = project;
+  inherited.ApplyOverrides(scene);
+  inherited.ApplyOverrides(camera);
+  auto effective = inherited;
+  effective.ApplyOverrides(viewport);
+  XII_TEST_FLOAT(effective.m_fBloomStrength, 0.0f, 0.001f);
+  XII_TEST_FLOAT(effective.m_fRenderScale, 0.6f, 0.001f);
+  XII_TEST_FLOAT(inherited.m_fBloomStrength, 0.5f, 0.001f);
+
+  xiiContiguousMemoryStreamStorage storage;
+  xiiMemoryStreamWriter            writer(&storage);
+  XII_TEST_RESULT(effective.Serialize(writer));
+  xiiMemoryStreamReader  reader(&storage);
+  xiiRenderConfiguration restored;
+  XII_TEST_RESULT(restored.Deserialize(reader));
+  XII_TEST_BOOL(restored == effective);
+  XII_TEST_BOOL(restored.Deserialize(reader).Failed());
+  XII_TEST_BOOL(restored == effective);
+  restored.m_fRenderScale = 0.05f;
+  XII_TEST_BOOL(restored.Serialize(writer).Failed());
+
+  const auto* pType = xiiGetStaticRTTI<xiiRenderConfiguration>();
+  XII_TEST_BOOL(pType->FindPropertyByName("BloomStrength") != nullptr);
+  XII_TEST_BOOL(pType->FindPropertyByName("RenderScale") != nullptr);
+}
 
 XII_CREATE_SIMPLE_TEST(Pipeline, AssetSettings)
 {

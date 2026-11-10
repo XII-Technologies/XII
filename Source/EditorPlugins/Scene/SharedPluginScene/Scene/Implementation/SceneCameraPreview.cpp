@@ -99,6 +99,7 @@ xiiResult xiiSceneCameraPreview::Update(const xiiView& editorView, const xiiCame
   view->m_ExcludeTags.SetByName("Editor");
   view->m_ExcludeTags.SetByName("EditorHidden");
   view->SetRenderScale(camera.GetRenderScale());
+  view->SetRenderConfigurationCamera(camera.GetHandle());
   view->SetRenderPipelineResource(editorView.GetRenderPipelineResource());
   view->SetRenderEnabled(true);
   xiiDebugRenderer::Draw2DRectangle(editorView, xiiRectFloat(20, 20, 256, 144), 0, xiiColor::White, m_pTarget->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiVec2(1), xiiDebugRendererDepthMode::Overlay);
