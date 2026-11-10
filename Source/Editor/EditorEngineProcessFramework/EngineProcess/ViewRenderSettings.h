@@ -8,6 +8,7 @@
 #include <EditorEngineProcessFramework/IPC/SyncObject.h>
 #include <Foundation/Reflection/Reflection.h>
 #include <GraphicsCore/Pipeline/Declarations.h>
+#include <GraphicsCore/Pipeline/RenderConfiguration.h>
 
 struct XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiSceneViewPerspective
 {
@@ -34,6 +35,7 @@ struct XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiEngineViewConfig
 
   bool  m_bShowFrameStats = false;
   float m_fRenderScale    = 1.0f;
+  xiiRenderConfiguration m_RenderConfiguration;
   bool  m_bVSync          = true; ///< Presentation preference for this viewport window/swapchain.
 
   bool m_bShowNavigationGizmo = true; ///< Per-viewport editor UI state, preserved across projection changes.

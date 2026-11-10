@@ -10,6 +10,7 @@
 #include <Foundation/Communication/RemoteMessage.h>
 #include <Foundation/Logging/LogEntry.h>
 #include <GraphicsCore/Pipeline/Declarations.h>
+#include <GraphicsCore/Pipeline/RenderConfiguration.h>
 #include <GraphicsFoundation/Declarations/Descriptors.h>
 #include <ToolsFoundation/Object/DocumentObjectMirror.h>
 #include <ToolsFoundation/Reflection/ReflectedType.h>
@@ -296,6 +297,7 @@ class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiViewRedrawMsgToEngine : public xii
 public:
   bool      m_bShowFrameStats   = false;
   float     m_fRenderScale      = 1.0f;
+  xiiRenderConfiguration m_RenderConfiguration;
   bool      m_bUseSharedTexture = false;
   xiiUInt16 m_uiWindowWidth;
   xiiUInt16 m_uiWindowHeight;

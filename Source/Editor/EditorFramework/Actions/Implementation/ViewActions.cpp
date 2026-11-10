@@ -11,9 +11,28 @@
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
 #include <EditorFramework/IPC/EngineProcessConnection.h>
 #include <EditorFramework/Panels/CVarPanel/CVarPanel.moc.h>
+#include <Foundation/Serialization/RttiConverter.h>
 #include <GraphicsCore/Pipeline/RenderPipelineProfileConfig.h>
+#include <GuiFoundation/PropertyGrid/PropertyGridWidget.moc.h>
 #include <QApplication>
+#include <QDialog>
+#include <QDialogButtonBox>
 #include <QInputDialog>
+#include <QLabel>
+#include <QPushButton>
+#include <QVBoxLayout>
+#include <ToolsFoundation/Serialization/DocumentObjectConverter.h>
+
+class xiiViewportRenderSettingsDocument final : public xiiDocument
+{
+public:
+  xiiViewportRenderSettingsDocument() :
+    xiiDocument("<viewport render settings>", XII_DEFAULT_NEW(xiiDocumentObjectManager))
+  {
+  }
+
+  xiiDocumentInfo* CreateDocumentInfo() override { return XII_DEFAULT_NEW(xiiDocumentInfo); }
+};
 
 xiiActionDescriptorHandle xiiViewActions::s_hRenderingControls;
 xiiActionDescriptorHandle xiiViewActions::s_hRenderMode;
@@ -210,6 +229,58 @@ void xiiViewAction::Execute(const xiiVariant& value)
 
 namespace
 {
+  void EditViewportRenderSettings(xiiQtEngineViewWidget& view)
+  {
+    auto&                             configuration = view.m_pViewConfig->m_RenderConfiguration;
+    auto                              original      = configuration;
+    xiiViewportRenderSettingsDocument document;
+    auto*                             pManager = document.GetObjectManager();
+    const auto*                       pType    = xiiGetStaticRTTI<xiiRenderConfiguration>();
+    auto*                             pObject  = pManager->CreateObject(pType);
+    pManager->AddObject(pObject, pManager->GetRootObject(), "Children", -1);
+    {
+      xiiAbstractObjectGraph  graph;
+      xiiRttiConverterContext context;
+      xiiRttiConverterWriter  writer(&graph, &context, true, true);
+      context.RegisterObject(pObject->GetGuid(), pType, &original);
+      const auto*                      pNode = writer.AddObjectToGraph(pType, &original, "root");
+      xiiDocumentObjectConverterReader reader(&graph, pManager, xiiDocumentObjectConverterReader::Mode::CreateAndAddToDocument);
+      reader.ApplyPropertiesToObject(pNode, pObject);
+    }
+
+    QDialog dialog(&view);
+    dialog.setWindowTitle("Viewport Render Settings");
+    auto* pLayout = new QVBoxLayout(&dialog);
+    auto* pInfo   = new QLabel("Viewport overrides preview live. Reset a field to its default to inherit. Bloom strength 0 disables bloom.", &dialog);
+    pInfo->setWordWrap(true);
+    pLayout->addWidget(pInfo);
+    auto* pGrid = new xiiQtPropertyGridWidget(&dialog, &document);
+    document.GetSelectionManager()->SetSelection(pObject);
+    pLayout->addWidget(pGrid);
+    auto* pButtons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dialog);
+    pLayout->addWidget(pButtons);
+    QObject::connect(pButtons, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
+    QObject::connect(pButtons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
+
+    xiiEventSubscriptionID subscription = pManager->m_PropertyEvents.AddEventHandler([&](const xiiDocumentObjectPropertyEvent&) {
+      xiiAbstractObjectGraph           graph;
+      xiiDocumentObjectConverterWriter writer(&graph, pManager);
+      const auto*                      pNode = writer.AddObjectToGraph(pObject, "root");
+      xiiRttiConverterContext          context;
+      xiiRttiConverterReader           reader(&graph, &context);
+      xiiRenderConfiguration           preview;
+      reader.ApplyPropertiesToObject(pNode, pType, &preview);
+      const bool bValid = preview.IsValid();
+      pButtons->button(QDialogButtonBox::Ok)->setEnabled(bValid);
+      if (bValid)
+        configuration = preview;
+    });
+    dialog.resize(440, 300);
+    if (dialog.exec() != QDialog::Accepted)
+      configuration = original;
+    pManager->m_PropertyEvents.RemoveEventHandler(subscription);
+  }
+
   xiiQtEngineViewWidget* FindRenderingView(xiiUInt32 uiViewID)
   {
     for (QWidget* widget : QApplication::allWidgets())
@@ -288,6 +359,9 @@ void xiiRenderingControlsAction::GetEntries(xiiDynamicArray<Item>& out_entries)
   auto& quality       = out_entries.ExpandAndGetRef();
   quality.m_sDisplay  = "Editor scene pipeline quality...";
   quality.m_UserValue = 4;
+  auto& settings       = out_entries.ExpandAndGetRef();
+  settings.m_sDisplay  = "Viewport Render Settings...";
+  settings.m_UserValue = 5;
 }
 
 void xiiRenderingControlsAction::Execute(const xiiVariant& value)
@@ -337,6 +411,9 @@ void xiiRenderingControlsAction::Execute(const xiiVariant& value)
         xiiLog::Warning("The Editor scene pipeline asset is unavailable in this project.");
       break;
     }
+    case 5:
+      EditViewportRenderSettings(*view);
+      break;
   }
   TriggerUpdate();
 }

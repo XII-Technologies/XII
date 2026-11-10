@@ -116,6 +116,7 @@ void xiiEngineProcessViewContext::HandleViewMessage(const xiiEditorEngineViewMsg
       {
         view->SetShowFrameStats(pViewRedrawMsg->m_bShowFrameStats);
         view->SetRenderScale(pViewRedrawMsg->m_fRenderScale);
+        view->SetRenderConfiguration(pViewRedrawMsg->m_RenderConfiguration).IgnoreResult();
       }
     }
     if (ready)

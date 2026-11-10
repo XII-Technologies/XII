@@ -300,7 +300,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiViewFrameConsumedMsgToEngine, 1, xiiRTTIDefa
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiViewRedrawMsgToEngine, 2, xiiRTTIDefaultAllocator<xiiViewRedrawMsgToEngine>)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiViewRedrawMsgToEngine, 3, xiiRTTIDefaultAllocator<xiiViewRedrawMsgToEngine>)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -314,6 +314,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiViewRedrawMsgToEngine, 2, xiiRTTIDefaultAllo
     XII_MEMBER_PROPERTY("UseCamOnDevice", m_bUseCameraTransformOnDevice),
     XII_MEMBER_PROPERTY("ShowFrameStats", m_bShowFrameStats),
     XII_MEMBER_PROPERTY("RenderScale", m_fRenderScale),
+    XII_MEMBER_PROPERTY("RenderConfiguration", m_RenderConfiguration),
     XII_MEMBER_PROPERTY("ShowNavigationGizmo", m_bShowNavigationGizmo),
     XII_MEMBER_PROPERTY("NavigationHovered", m_bNavigationHovered),
     XII_MEMBER_PROPERTY("NavigationHoveredAxis", m_iNavigationHoveredAxis),
