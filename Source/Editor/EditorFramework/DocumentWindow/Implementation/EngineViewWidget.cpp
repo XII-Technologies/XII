@@ -396,6 +396,8 @@ void xiiQtEngineViewWidget::HandleViewMessage(const xiiEditorEngineViewMsg* pMsg
   if (const auto* frame = xiiDynamicCast<const xiiViewFrameMsgToEditor*>(pMsg))
   {
     m_RenderResolution = xiiSizeU32(frame->m_uiRenderWidth, frame->m_uiRenderHeight);
+    m_EffectiveRenderConfiguration = frame->m_EffectiveRenderConfiguration;
+    m_sRenderConfigurationError    = frame->m_sRenderConfigurationError;
     if (m_pViewportWidget)
       static_cast<xiiQtSharedTextureWidget*>(m_pViewportWidget)->SetFrame(*frame);
     return;

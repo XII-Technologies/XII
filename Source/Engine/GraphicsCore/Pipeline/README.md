@@ -54,6 +54,9 @@ returns `xiiResult` plus an optional diagnostic; failure leaves its output uncha
 
 ## Passes and bindings
 
+[Render configuration](../../../../Documentation/Rendering/RenderConfiguration.md)
+describes scoped view policy and conditional GI branches.
+
 Derive a reflected concrete type from `xiiRenderPipelinePass`. Declare writable
 configuration properties and concrete typed pin members through `XII_MEMBER_PROPERTY`,
 and implement `Build`. The base `GetPins` discovers the reflected members; operations

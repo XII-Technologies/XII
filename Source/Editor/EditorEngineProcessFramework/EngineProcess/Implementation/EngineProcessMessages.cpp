@@ -272,7 +272,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiViewDestroyedResponseMsgToEditor, 1, xiiRTTIDefaultAllocator<xiiViewDestroyedResponseMsgToEditor>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiViewFrameMsgToEditor, 1, xiiRTTIDefaultAllocator<xiiViewFrameMsgToEditor>)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiViewFrameMsgToEditor, 2, xiiRTTIDefaultAllocator<xiiViewFrameMsgToEditor>)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -280,6 +280,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiViewFrameMsgToEditor, 1, xiiRTTIDefaultAlloc
     XII_MEMBER_PROPERTY("TextureID", m_uiTextureID),
     XII_MEMBER_PROPERTY("RenderWidth", m_uiRenderWidth),
     XII_MEMBER_PROPERTY("RenderHeight", m_uiRenderHeight),
+    XII_MEMBER_PROPERTY("EffectiveRenderConfiguration", m_EffectiveRenderConfiguration),
+    XII_MEMBER_PROPERTY("RenderConfigurationError", m_sRenderConfigurationError),
     XII_MEMBER_PROPERTY("Width", m_uiWidth),
     XII_MEMBER_PROPERTY("Height", m_uiHeight),
     XII_MEMBER_PROPERTY("Memory", m_Memory),

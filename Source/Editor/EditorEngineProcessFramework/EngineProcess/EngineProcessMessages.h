@@ -274,6 +274,8 @@ public:
   xiiUInt64                       m_uiTextureID    = 0;
   xiiUInt32                       m_uiRenderWidth  = 0;
   xiiUInt32                       m_uiRenderHeight = 0;
+  xiiRenderConfiguration          m_EffectiveRenderConfiguration;
+  xiiString                       m_sRenderConfigurationError;
   xiiUInt16                       m_uiWidth        = 0;
   xiiUInt16                       m_uiHeight       = 0;
   xiiGALExternalMemoryDescription m_Memory;

@@ -14,6 +14,7 @@
 #include <EditorEngineProcessFramework/Rendering/ViewportNavigationGizmo.h>
 #include <GraphicsCore/Components/Render/CameraComponent.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
+#include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
@@ -235,6 +236,8 @@ void xiiEngineProcessViewContext::PresentFrame()
     {
       frame.m_uiRenderWidth  = view->GetRenderResolutionWidth();
       frame.m_uiRenderHeight = view->GetRenderResolutionHeight();
+      frame.m_EffectiveRenderConfiguration = view->GetEffectiveRenderConfiguration();
+      frame.m_sRenderConfigurationError    = view->GetRenderPipelineInstance().GetConfigurationError();
     }
   }
   frame.m_uiFrameID   = ++m_uiFrameID;
