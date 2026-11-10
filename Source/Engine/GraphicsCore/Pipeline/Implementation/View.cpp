@@ -179,7 +179,7 @@ void xiiView::SetRenderScale(float fRenderScale)
   if (!xiiMath::IsFinite(fRenderScale))
     return;
   m_fDefaultRenderScale = xiiMath::Clamp(fRenderScale, 0.1f, 1.0f);
-  if (m_EffectiveRenderConfiguration.m_fRenderScale == xiiRenderConfiguration::s_fInheritRenderScale)
+  if (GetPipelineInstance()->GetRenderConfiguration().m_fRenderScale == xiiRenderConfiguration::s_fInheritRenderScale)
     ApplyRenderScale(m_fDefaultRenderScale);
 }
 
@@ -438,9 +438,8 @@ xiiResult xiiView::SynchronizeRenderPipeline()
     return XII_SUCCESS;
   }
   const auto configuration = ResolveRenderConfiguration();
-  const auto mode          = configuration.m_GlobalIllumination == xiiRenderGlobalIllumination::Inherit ? xiiRenderGlobalIllumination::PipelineDefault : static_cast<xiiRenderGlobalIllumination::Enum>(configuration.m_GlobalIllumination.GetValue());
   bool changed = false;
-  if (runtime->Synchronize(m_hRenderPipeline, &changed, mode).Failed())
+  if (runtime->Synchronize(m_hRenderPipeline, &changed, configuration).Failed())
   {
     if (!m_bPipelineSynchronizationFailed)
     {
@@ -456,18 +455,8 @@ xiiResult xiiView::SynchronizeRenderPipeline()
     return XII_FAILURE;
   }
   m_bPipelineSynchronizationFailed = false;
-  if (runtime->GetGlobalIlluminationMode() == mode)
-  {
-    if (configuration != m_EffectiveRenderConfiguration)
-    {
-      m_EffectiveRenderConfiguration = configuration;
-      ApplyRenderScale(configuration.m_fRenderScale == xiiRenderConfiguration::s_fInheritRenderScale ? m_fDefaultRenderScale : configuration.m_fRenderScale);
-    }
-  }
-  else if (changed)
-  {
-    m_EffectiveRenderConfiguration.m_GlobalIllumination = runtime->GetGlobalIlluminationMode();
-  }
+  const float fRenderScale         = runtime->GetRenderConfiguration().m_fRenderScale;
+  ApplyRenderScale(fRenderScale == xiiRenderConfiguration::s_fInheritRenderScale ? m_fDefaultRenderScale : fRenderScale);
   if (changed)
   {
     InvalidateTemporalHistory();
@@ -483,6 +472,11 @@ xiiResult xiiView::SetRenderConfiguration(const xiiRenderConfiguration& configur
     return XII_FAILURE;
   m_RenderConfiguration = configuration;
   return XII_SUCCESS;
+}
+
+xiiRenderConfiguration xiiView::GetEffectiveRenderConfiguration() const
+{
+  return GetPipelineInstance()->GetRenderConfiguration();
 }
 
 xiiRenderConfiguration xiiView::ResolveRenderConfiguration() const

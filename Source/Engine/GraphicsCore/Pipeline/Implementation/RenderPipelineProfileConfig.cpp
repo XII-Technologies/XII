@@ -9,7 +9,7 @@
 #include <Foundation/IO/ChunkStream.h>
 #include <GraphicsCore/Pipeline/RenderPipelineProfileConfig.h>
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineProfileConfig, 5, xiiRTTIDefaultAllocator<xiiRenderPipelineProfileConfig>)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineProfileConfig, 6, xiiRTTIDefaultAllocator<xiiRenderPipelineProfileConfig>)
   {
     XII_BEGIN_PROPERTIES
     {
@@ -21,13 +21,13 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 void xiiRenderPipelineProfileConfig::SaveRuntimeData(xiiChunkStreamWriter& stream) const
 {
-  stream.BeginChunk("RenderPipelineReferences", 5);
+  stream.BeginChunk("RenderPipelineReferences", 3 + xiiRenderConfiguration::s_uiSerializationVersion);
   stream << GetResourceReference();
-  if (m_RenderConfiguration.Serialize(stream).Failed())
-  {
+  const bool bValid = m_RenderConfiguration.IsValid();
+  if (!bValid)
     xiiLog::Error("Invalid platform render configuration. Writing inherited defaults.");
-    xiiRenderConfiguration{}.Serialize(stream).AssertSuccess();
-  }
+  if ((bValid ? m_RenderConfiguration : xiiRenderConfiguration{}).Serialize(stream).Failed())
+    xiiLog::Error("Could not write the platform render configuration.");
   stream.EndChunk();
 }
 
@@ -37,7 +37,7 @@ void xiiRenderPipelineProfileConfig::LoadRuntimeData(xiiChunkStreamReader& strea
   if (chunk.m_sChunkName != "RenderPipelineReferences")
     return;
   m_bRuntimeDataValid = false;
-  if (chunk.m_uiChunkVersion < 1 || chunk.m_uiChunkVersion > 5)
+  if (chunk.m_uiChunkVersion < 1 || chunk.m_uiChunkVersion > 3 + xiiRenderConfiguration::s_uiSerializationVersion)
   {
     xiiLog::Error("Unsupported render pipeline profile version {}.", chunk.m_uiChunkVersion);
     return;
@@ -53,7 +53,7 @@ void xiiRenderPipelineProfileConfig::LoadRuntimeData(xiiChunkStreamReader& strea
   if (chunk.m_uiChunkVersion == 1 && references[0].IsEmpty())
     references[0] = s_szScenePipeline;
   xiiRenderConfiguration configuration;
-  if (chunk.m_uiChunkVersion >= 4 && configuration.Deserialize(stream, chunk.m_uiChunkVersion >= 5).Failed())
+  if (chunk.m_uiChunkVersion >= 4 && configuration.Deserialize(stream, chunk.m_uiChunkVersion - 3).Failed())
     xiiLog::Error("Invalid render configuration in the platform profile. Using inherited defaults.");
   m_RenderConfiguration = configuration;
   m_sMainRenderPipeline = references[0];

@@ -120,6 +120,8 @@ public:
 
   /// Initialize CPU scheduling. Invalid settings preserve the existing configuration.
   xiiResult          Initialize(const xiiDDGISettings& settings = {});
+  /// Changes the next frame's work budget and blending without resetting probes.
+  xiiResult          SetUpdatePolicy(xiiUInt32 uiProbeUpdateBudget, float fTemporalHysteresis);
   void               Shutdown();
   [[nodiscard]] bool IsInitialized() const;
   /// Discard accumulated lighting without reallocating storage or disturbing another view.

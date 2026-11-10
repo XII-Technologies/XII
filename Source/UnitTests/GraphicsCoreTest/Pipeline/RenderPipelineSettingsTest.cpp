@@ -4,6 +4,7 @@
 
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Foundation/IO/MemoryStream.h>
+#include <GraphicsCore/Pipeline/Passes/GlobalIllumination/DDGIProbeSchedulePass.h>
 #include <GraphicsCore/Pipeline/RenderConfiguration.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsFoundation/Declarations/Descriptors.h>
@@ -36,11 +37,13 @@ XII_CREATE_SIMPLE_TEST(Pipeline, ScopedRenderConfiguration)
 
   xiiRenderConfiguration scene;
   scene.m_fBloomStrength = 0.5f;
+  scene.m_DDGI.m_uiProbeUpdateBudget = 64;
   xiiRenderConfiguration camera;
   camera.m_fRenderScale = 0.6f;
   xiiRenderConfiguration viewport;
   viewport.m_fBloomStrength = 0.0f;
   viewport.m_GlobalIllumination = xiiRenderGlobalIllumination::Disabled;
+  viewport.m_DDGI.m_uiProbeCountX = 12;
 
   auto inherited = project;
   inherited.ApplyOverrides(scene);
@@ -52,15 +55,17 @@ XII_CREATE_SIMPLE_TEST(Pipeline, ScopedRenderConfiguration)
   XII_TEST_FLOAT(inherited.m_fBloomStrength, 0.5f, 0.001f);
   XII_TEST_BOOL(inherited.m_GlobalIllumination == xiiRenderGlobalIllumination::DDGI);
   XII_TEST_BOOL(effective.m_GlobalIllumination == xiiRenderGlobalIllumination::Disabled);
+  XII_TEST_INT(effective.m_DDGI.m_uiProbeCountX, 12);
+  XII_TEST_INT(effective.m_DDGI.m_uiProbeUpdateBudget, 64);
 
   xiiContiguousMemoryStreamStorage storage;
   xiiMemoryStreamWriter            writer(&storage);
   XII_TEST_RESULT(effective.Serialize(writer));
   xiiMemoryStreamReader  reader(&storage);
   xiiRenderConfiguration restored;
-  XII_TEST_RESULT(restored.Deserialize(reader, true));
+  XII_TEST_RESULT(restored.Deserialize(reader, xiiRenderConfiguration::s_uiSerializationVersion));
   XII_TEST_BOOL(restored == effective);
-  XII_TEST_BOOL(restored.Deserialize(reader, true).Failed());
+  XII_TEST_BOOL(restored.Deserialize(reader, xiiRenderConfiguration::s_uiSerializationVersion).Failed());
   XII_TEST_BOOL(restored == effective);
   restored.m_fRenderScale = 0.05f;
   XII_TEST_BOOL(restored.Serialize(writer).Failed());
@@ -91,14 +96,40 @@ XII_CREATE_SIMPLE_TEST(Pipeline, RenderConfigurationVariants)
   XII_TEST_BOOL(reused == disabled);
 
   xiiRenderPipelineInstance first, second;
-  XII_TEST_RESULT(first.Synchronize(resource, nullptr, xiiRenderGlobalIllumination::Disabled));
+  xiiRenderConfiguration    selection;
+  selection.m_GlobalIllumination = xiiRenderGlobalIllumination::Disabled;
+  XII_TEST_RESULT(first.Synchronize(resource, nullptr, selection));
   XII_TEST_RESULT(second.Synchronize(resource));
   XII_TEST_BOOL(first.GetPipeline() == disabled.Borrow());
   XII_TEST_BOOL(second.GetPipeline() == base.Borrow());
-  XII_TEST_RESULT(first.Synchronize(resource, nullptr, xiiRenderGlobalIllumination::ScreenSpace));
+  selection.m_GlobalIllumination = xiiRenderGlobalIllumination::ScreenSpace;
+  XII_TEST_RESULT(first.Synchronize(resource, nullptr, selection));
   XII_TEST_BOOL(first.GetPipeline() == disabled.Borrow());
-  XII_TEST_BOOL(first.GetGlobalIlluminationMode() == xiiRenderGlobalIllumination::Disabled);
+  XII_TEST_BOOL(first.GetRenderConfiguration().m_GlobalIllumination == xiiRenderGlobalIllumination::Disabled);
   XII_TEST_BOOL(!first.GetConfigurationError().IsEmpty());
+}
+
+XII_CREATE_SIMPLE_TEST(Pipeline, DDGIConfigurationValidation)
+{
+  xiiRenderPipelineResourceDescriptor descriptor;
+  descriptor.AddPass("Probes", xiiGetStaticRTTI<xiiDDGIProbeSchedulePass>());
+  const auto                resource = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("PipelineSettings/ProbeSettings", std::move(descriptor));
+  xiiRenderPipelineInstance instance;
+  xiiRenderConfiguration    requested;
+  requested.m_DDGI.m_uiProbeUpdateBudget = 16;
+  XII_TEST_RESULT(instance.Synchronize(resource, nullptr, requested));
+  const auto* pPass = instance.GetPass(0);
+  if (!XII_TEST_BOOL(pPass != nullptr))
+    return;
+  requested.m_DDGI.m_uiProbeCountX = requested.m_DDGI.m_uiProbeCountY = requested.m_DDGI.m_uiProbeCountZ = 256;
+  XII_TEST_RESULT(instance.Synchronize(resource, nullptr, requested));
+  XII_TEST_BOOL(instance.GetPass(0) == pPass);
+  XII_TEST_INT(instance.GetRenderConfiguration().m_DDGI.m_uiProbeCountX, 0);
+  XII_TEST_BOOL(instance.GetConfigurationError().FindSubString("dimensions") != nullptr);
+  requested.m_DDGI.m_uiProbeCountX = requested.m_DDGI.m_uiProbeCountY = requested.m_DDGI.m_uiProbeCountZ = 8;
+  XII_TEST_RESULT(instance.Synchronize(resource, nullptr, requested));
+  XII_TEST_BOOL(instance.GetPass(0) == pPass);
+  XII_TEST_BOOL(instance.GetRenderConfiguration() == requested);
 }
 
 XII_CREATE_SIMPLE_TEST(Pipeline, AssetSettings)

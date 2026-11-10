@@ -27,9 +27,11 @@ public:
   xiiDDGIProbeSchedulePass();
   ~xiiDDGIProbeSchedulePass();
   xiiResult Configure(const xiiVariantDictionary& properties) override;
+  xiiResult ValidateRenderConfiguration(const xiiRenderConfiguration& configuration, xiiStringBuilder& out_error) const override;
   xiiResult Build(xiiRenderPipelinePassContext& context) override;
   void      InvalidateTemporalHistory() override;
 
 private:
+  xiiDDGISettings                          GetProbeSettings(const xiiRenderConfiguration* pConfiguration) const;
   xiiSharedPtr<xiiDDGIProbeSchedulerState> m_State;
 };

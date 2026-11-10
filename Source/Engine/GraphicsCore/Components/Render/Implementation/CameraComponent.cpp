@@ -151,7 +151,7 @@ void xiiCameraComponentManager::OnCameraConfigsChanged(void* dummy)
 //////////////////////////////////////////////////////////////////////////
 
 // clang-format off
-XII_BEGIN_COMPONENT_TYPE(xiiCameraComponent, 4, xiiComponentMode::Static)
+XII_BEGIN_COMPONENT_TYPE(xiiCameraComponent, 5, xiiComponentMode::Static)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -214,11 +214,11 @@ void xiiCameraComponent::SerializeComponent(xiiWorldWriter& inout_stream) const
   s << m_vRenderTargetRectSize;
   s << m_bShowStats;
   s << m_bShowFrameStats;
-  if (m_RenderConfiguration.Serialize(s).Failed())
-  {
+  const bool bValid = m_RenderConfiguration.IsValid();
+  if (!bValid)
     xiiLog::Error("Invalid camera render configuration. Writing inherited defaults.");
-    xiiRenderConfiguration{}.Serialize(s).AssertSuccess();
-  }
+  if ((bValid ? m_RenderConfiguration : xiiRenderConfiguration{}).Serialize(s).Failed())
+    xiiLog::Error("Could not write the camera render configuration.");
 }
 
 void xiiCameraComponent::DeserializeComponent(xiiWorldReader& inout_stream)
@@ -247,7 +247,7 @@ void xiiCameraComponent::DeserializeComponent(xiiWorldReader& inout_stream)
   const auto uiVersion = inout_stream.GetComponentTypeVersion(GetStaticRTTI());
   if (uiVersion >= 2)
     s >> m_bShowFrameStats;
-  if (uiVersion >= 3 && m_RenderConfiguration.Deserialize(s, uiVersion >= 4).Failed())
+  if (uiVersion >= 3 && m_RenderConfiguration.Deserialize(s, uiVersion - 2).Failed())
     xiiLog::Error("Invalid render configuration in the camera. Using inherited defaults.");
 
   MarkAsModified();

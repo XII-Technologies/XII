@@ -211,7 +211,7 @@ public:
   /// Sets the highest-priority scope. Resolved with project, scene and camera settings at the next frame boundary.
   xiiResult                     SetRenderConfiguration(const xiiRenderConfiguration& configuration);
   const xiiRenderConfiguration& GetRenderConfiguration() const { return m_RenderConfiguration; }
-  xiiRenderConfiguration        GetEffectiveRenderConfiguration() const { return m_EffectiveRenderConfiguration; }
+  xiiRenderConfiguration        GetEffectiveRenderConfiguration() const;
 
   /// Binds a specific camera in this view's world (e.g. a preview or render target).
   /// An invalid handle restores ordinary camera selection by usage hint.
@@ -323,7 +323,6 @@ private:
   xiiResult                                m_LastRenderResult               = XII_FAILURE;
   xiiVariantDictionary                     m_PipelineParameters;
   xiiRenderConfiguration                   m_RenderConfiguration;
-  xiiRenderConfiguration                   m_EffectiveRenderConfiguration;
   xiiComponentHandle                       m_hRenderConfigurationCamera;
   float                                    m_fDefaultRenderScale = 1.0f;
   xiiBitflags<xiiRenderExtractionCategory> m_ExtractionRequirements;

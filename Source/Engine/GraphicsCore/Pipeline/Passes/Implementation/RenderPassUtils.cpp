@@ -78,7 +78,7 @@ xiiResult xiiRenderPassUtils::DisplayConfiguration::Resolve(const xiiRenderPipel
   const auto*      override = context.m_Parameters.GetValue("DisplayOutput");
   const xiiVariant value    = override ? *override : xiiVariant();
   const xiiUInt64  revision = context.m_pView && useViewDefaults ? context.m_pView->GetDisplayOutputSettingsRevision() : 0;
-  const float      fBloomStrength = context.m_pView ? context.m_pView->GetEffectiveRenderConfiguration().m_fBloomStrength : xiiRenderConfiguration::s_fInheritBloomStrength;
+  const float      fBloomStrength = context.m_pRenderConfiguration ? context.m_pRenderConfiguration->m_fBloomStrength : xiiRenderConfiguration::s_fInheritBloomStrength;
   if (m_bValid && context.m_pView == m_pView && revision == m_uiViewRevision && value == m_Override && fBloomStrength == m_fBloomStrength)
     return XII_SUCCESS;
   auto settings = context.m_pView && useViewDefaults ? context.m_pView->GetDisplayOutputSettings() : authored;

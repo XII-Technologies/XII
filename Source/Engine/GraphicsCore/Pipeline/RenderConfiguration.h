@@ -9,6 +9,7 @@
 
 class xiiStreamReader;
 class xiiStreamWriter;
+struct xiiDDGISettings;
 
 struct xiiRenderGlobalIllumination
 {
@@ -29,6 +30,24 @@ struct xiiRenderGlobalIllumination
 };
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderGlobalIllumination);
 
+/// Sparse overrides of the scheduling properties authored on a DDGI pass.
+struct XII_GRAPHICSCORE_DLL xiiDDGIProbeOverrides
+{
+  xiiUInt32 m_uiProbeCountX              = 0;
+  xiiUInt32 m_uiProbeCountY              = 0;
+  xiiUInt32 m_uiProbeCountZ              = 0;
+  xiiUInt32 m_uiProbeUpdateBudget        = 0;
+  float     m_fProbeSpacing              = 0.0f;
+  float     m_fTemporalHysteresis        = -1.0f;
+  float     m_fMaximumRelocationDistance = -1.0f;
+
+  bool operator==(const xiiDDGIProbeOverrides&) const = default;
+  bool IsValid() const;
+  void ApplyOverrides(const xiiDDGIProbeOverrides& overrides);
+  void ApplyTo(xiiDDGISettings& settings) const;
+};
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiDDGIProbeOverrides);
+
 /// Sparse rendering policy. Each field can independently inherit the preceding scope.
 /// Pipeline and view defaults apply when no scope authors a value.
 struct XII_GRAPHICSCORE_DLL xiiRenderConfiguration
@@ -39,6 +58,9 @@ struct XII_GRAPHICSCORE_DLL xiiRenderConfiguration
   float m_fBloomStrength = s_fInheritBloomStrength; ///< Zero disables bloom in normal views.
   float m_fRenderScale   = s_fInheritRenderScale;   ///< An explicit scale is in [0.1, 1].
   xiiEnum<xiiRenderGlobalIllumination> m_GlobalIllumination;
+  xiiDDGIProbeOverrides                m_DDGI;
+
+  static constexpr xiiUInt32 s_uiSerializationVersion = 3;
 
   bool operator==(const xiiRenderConfiguration&) const = default;
 
@@ -49,7 +71,7 @@ struct XII_GRAPHICSCORE_DLL xiiRenderConfiguration
 
   /// The enclosing asset or component owns the format version.
   xiiResult Serialize(xiiStreamWriter& stream) const;
-  xiiResult Deserialize(xiiStreamReader& stream, bool bHasGlobalIllumination);
+  xiiResult Deserialize(xiiStreamReader& stream, xiiUInt32 uiVersion);
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderConfiguration);
