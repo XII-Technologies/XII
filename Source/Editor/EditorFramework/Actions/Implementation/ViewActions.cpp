@@ -429,7 +429,17 @@ namespace
       return;
     }
     if (auto* view = FindRenderingView(uiViewID))
+    {
+      // Keep the existing per-view preference and apply this action at view scope.
       view->m_pViewConfig->m_fRenderScale = fScale;
+      view->m_pViewConfig->m_RenderConfiguration.m_fRenderScale = fScale;
+    }
+  }
+
+  float GetReportedRenderScale(const xiiQtEngineViewWidget& view)
+  {
+    const auto fScale = view.GetEffectiveRenderConfiguration().m_fRenderScale;
+    return fScale == xiiRenderConfiguration::s_fInheritRenderScale ? view.m_pViewConfig->m_fRenderScale : fScale;
   }
   void SetViewStats(xiiUInt32 uiViewID, bool bEnabled)
   {
@@ -448,7 +458,7 @@ namespace
       {
         const auto size = view->GetRenderResolution();
         xiiLog::Info("View {}: {} | scale {}%%, {} x {}, Show FPS {}, VSync {}", view->GetViewID(), view->GetDocumentWindow()->GetDocument()->GetDocumentPath(),
-                     view->m_pViewConfig->m_fRenderScale * 100.0f, size.width, size.height, view->m_pViewConfig->m_bShowFrameStats, view->m_pViewConfig->m_bVSync);
+                     GetReportedRenderScale(*view) * 100.0f, size.width, size.height, view->m_pViewConfig->m_bShowFrameStats, view->m_pViewConfig->m_bVSync);
       }
   }
   xiiConsoleFunction<void(xiiUInt32, float)> s_ViewScale("View_RenderScale", "(viewID, scale): scale 0.1-1.0; View_List() lists explicit targets.", SetViewScale);
@@ -477,7 +487,7 @@ void xiiRenderingControlsAction::GetEntries(xiiDynamicArray<Item>& out_entries)
   auto&            scale = out_entries.ExpandAndGetRef();
   const auto       size  = view->GetRenderResolution();
   xiiStringBuilder label;
-  label.SetFormat("Render scale: {}%% ({} x {})...", xiiArgF(config.m_fRenderScale * 100.0f, 0), size.width, size.height);
+  label.SetFormat("Render scale: {}%% ({} x {})...", xiiArgF(GetReportedRenderScale(*view) * 100.0f, 0), size.width, size.height);
   scale.m_sDisplay    = label;
   scale.m_UserValue   = 1;
   auto& vsync         = out_entries.ExpandAndGetRef();
@@ -506,7 +516,7 @@ void xiiRenderingControlsAction::Execute(const xiiVariant& value)
       break;
     case 1:
     {
-      const double percent = QInputDialog::getDouble(view, "Render scale", "Internal scene resolution (%)", view->m_pViewConfig->m_fRenderScale * 100.0, 10, 100, 0, &accepted);
+      const double percent = QInputDialog::getDouble(view, "Render scale", "Internal scene resolution (%)", GetReportedRenderScale(*view) * 100.0, 10, 100, 0, &accepted);
       if (accepted)
         SetViewScale(view->GetViewID(), static_cast<float>(percent / 100.0));
       break;
