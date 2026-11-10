@@ -16,8 +16,10 @@ xiiResult xiiComputeMorphedMeshBounds(const xiiMeshResource& mesh, xiiArrayPtr<c
     out_bounds = mesh.GetBounds();
     return XII_SUCCESS;
   }
+  if (!mesh.GetMeshBuffer().IsValid())
+    return XII_FAILURE;
   xiiResourceLock<xiiMeshBufferResource> buffer(mesh.GetMeshBuffer(), xiiResourceAcquireMode::PointerOnly);
-  if (buffer.GetAcquireResult() != xiiResourceAcquireResult::Final)
+  if (buffer->GetLoadingState() != xiiResourceState::Loaded)
     return XII_FAILURE;
   auto center  = mesh.GetBounds().m_vCenter;
   auto extents = mesh.GetBounds().m_vBoxHalfExtents;
@@ -54,8 +56,10 @@ xiiResult xiiPrepareExtractedMeshSkinning(const xiiMeshResource& mesh, const xii
   XII_SUCCEED_OR_RETURN(xiiMeshSkinning::ComputeBounds(morphed, packet.m_SkinningMatrices, result.m_Bounds));
   if (!packet.m_SkinningMatrices.IsEmpty())
   {
+    if (!mesh.GetMeshBuffer().IsValid())
+      return XII_FAILURE;
     xiiResourceLock<xiiMeshBufferResource> buffer(mesh.GetMeshBuffer(), xiiResourceAcquireMode::PointerOnly);
-    if (buffer.GetAcquireResult() != xiiResourceAcquireResult::Final)
+    if (buffer->GetLoadingState() != xiiResourceState::Loaded)
       return XII_FAILURE;
     const auto& descriptor  = buffer->GetDescriptor();
     result.m_uiVertexStride = descriptor.GetVertexStride();

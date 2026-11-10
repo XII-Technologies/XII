@@ -107,6 +107,14 @@ xiiArrayPtr<const xiiMaterialResourceHandle> xiiMeshResource::GetMaterials() con
   return m_hMaterials;
 }
 
+bool xiiMeshResource::IsReadyForRendering() const
+{
+  if (GetLoadingState() != xiiResourceState::Loaded || !m_hMeshBuffer.IsValid())
+    return false;
+  xiiResourceLock<xiiMeshBufferResource> buffer(m_hMeshBuffer, xiiResourceAcquireMode::PointerOnly);
+  return buffer->GetLoadingState() == xiiResourceState::Loaded;
+}
+
 xiiArrayPtr<const xiiMeshLOD> xiiMeshResource::GetLODs() const
 {
   return m_Descriptor.GetLODs();
