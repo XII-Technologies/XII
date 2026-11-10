@@ -278,6 +278,33 @@ XII_CREATE_SIMPLE_TEST(PipelineEditor, SubgraphPinsFromSourceAsset)
   connections = manager->GetConnections(*manager->GetInputPinByName(accessor->GetObject(consumerId), "Texture"));
   if (XII_TEST_INT(connections.GetCount(), 1))
     XII_TEST_BOOL(connections[0]->GetParent()->GetGuid() == connectionId);
+
+  // Startup restores graphs while the curator's file worker can be blocked by
+  // the caller. Dependency checks must read the export without queuing a load.
+  xiiUuid independentPass, independentOutput;
+  liveAccessor->StartTransaction("Add an independent output");
+  XII_TEST_STATUS(liveAccessor->AddObject(nullptr, nullptr, -1, xiiGetStaticRTTI<xiiClearTexturePass>(), independentPass));
+  XII_TEST_STATUS(liveAccessor->AddObject(nullptr, nullptr, -1, xiiGetStaticRTTI<xiiRenderPipelineInterfacePass>(), independentOutput));
+  XII_TEST_STATUS(liveAccessor->SetValueByName(liveAccessor->GetObject(independentOutput), "Input", false));
+  XII_TEST_STATUS(liveAccessor->SetValueByName(liveAccessor->GetObject(independentOutput), "Name", "Independent"));
+  XII_TEST_STATUS(xiiNodeCommands::AddAndConnectCommand(live->GetCommandHistory(), liveNodes->GetConnectionType(), *liveNodes->GetOutputPinByName(liveAccessor->GetObject(independentPass), "Texture"), *liveNodes->GetInputPinByName(liveAccessor->GetObject(independentOutput), "Value")));
+  liveAccessor->FinishTransaction();
+  XII_TEST_STATUS(live->SaveDocument());
+  curator->MainThreadTick(false);
+  PinCompiler compiler;
+  if (!XII_TEST_RESULT(compiler.Import(*live)))
+    return;
+  xiiExportDocumentMsgToEngine message;
+  message.m_sOutputFile = compiledPath;
+  message.m_uiAssetHash = 1;
+  message.m_uiVersion   = 7;
+  XII_TEST_STATUS(compiler.ExportDocument(&message));
+  XII_TEST_BOOL(!xiiResourceManager::GetExistingResource<xiiRenderPipelineResource>(compiledPath).IsValid());
+  xiiDocumentNodeManager::CanConnectResult result;
+  const auto*                              instance = accessor->GetObject(id);
+  XII_TEST_BOOL(manager->CanConnect(manager->GetConnectionType(), *manager->GetOutputPinByName(instance, "Result"), *manager->GetInputPinByName(instance, "Color"), result).Failed());
+  XII_TEST_STATUS(manager->CanConnect(manager->GetConnectionType(), *manager->GetOutputPinByName(instance, "Independent"), *manager->GetInputPinByName(instance, "Color"), result));
+  XII_TEST_BOOL(!xiiResourceManager::GetExistingResource<xiiRenderPipelineResource>(compiledPath).IsValid());
 }
 
 XII_CREATE_SIMPLE_TEST(EditorDocuments, DefaultSubgraphInputs)

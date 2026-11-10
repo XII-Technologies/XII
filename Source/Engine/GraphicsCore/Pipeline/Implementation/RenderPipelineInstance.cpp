@@ -33,6 +33,9 @@ void xiiRenderPipelineInstance::Clear()
   m_Passes.Clear();
   m_Bindings.Clear();
   m_pPipeline = nullptr;
+  m_pBasePipeline      = nullptr;
+  m_RenderConfiguration = {};
+  m_sConfigurationError.Clear();
   m_Parameters.Clear();
   m_Overrides.Clear();
   m_PassParameters.Clear();
@@ -44,24 +47,47 @@ void xiiRenderPipelineInstance::Clear()
 }
 xiiResult xiiRenderPipelineInstance::Initialize(xiiSharedPtr<const xiiRenderPipeline> pipeline)
 {
+  xiiStringBuilder error;
+  return Initialize(std::move(pipeline), {}, error);
+}
+
+xiiResult xiiRenderPipelineInstance::Initialize(xiiSharedPtr<const xiiRenderPipeline> pipeline, const xiiRenderConfiguration& configuration, xiiStringBuilder& out_error)
+{
   if (pipeline == m_pPipeline && pipeline)
-    return XII_SUCCESS;
-  Clear();
-  if (!pipeline)
-    return XII_FAILURE;
-  m_pPipeline = std::move(pipeline);
-  for (xiiUInt32 i = 0; i < m_pPipeline->m_Passes.GetCount(); ++i)
   {
-    xiiRenderPipelinePass* pass = m_pPipeline->m_Passes[i].m_pType->GetAllocator()->Allocate<xiiRenderPipelinePass>();
-    m_Passes.PushBack(pass);
-    auto properties = m_pPipeline->m_Descriptor.m_Passes[i].m_Properties;
-    properties.Remove("PinConfigurations"); // Authored pin objects are lowered into immutable compiled contracts.
-    if (pass->Configure(properties).Failed() || pass->InitializePinBindings(m_pPipeline->m_Passes[i].m_Pins).Failed())
-    {
-      Clear();
-      return XII_FAILURE;
-    }
+    if (configuration == m_RenderConfiguration)
+      return XII_SUCCESS;
+    for (const auto* pPass : m_Passes)
+      XII_SUCCEED_OR_RETURN(pPass->ValidateRenderConfiguration(configuration, out_error));
+    const auto& before = m_RenderConfiguration.m_DDGI;
+    const auto& after  = configuration.m_DDGI;
+    if (before.m_uiProbeCountX != after.m_uiProbeCountX || before.m_uiProbeCountY != after.m_uiProbeCountY || before.m_uiProbeCountZ != after.m_uiProbeCountZ ||
+        before.m_fProbeSpacing != after.m_fProbeSpacing || before.m_fMaximumRelocationDistance != after.m_fMaximumRelocationDistance)
+      InvalidateTemporalHistory();
+    m_RenderConfiguration = configuration;
+    return XII_SUCCESS;
   }
+  if (!pipeline)
+  {
+    Clear();
+    return XII_FAILURE;
+  }
+  xiiDynamicArray<xiiRenderPipelinePass*> passes;
+  XII_SCOPE_EXIT(for (auto* pass : passes) pass->GetDynamicRTTI()->GetAllocator()->Deallocate(pass));
+  for (xiiUInt32 i = 0; i < pipeline->m_Passes.GetCount(); ++i)
+  {
+    xiiRenderPipelinePass* pass = pipeline->m_Passes[i].m_pType->GetAllocator()->Allocate<xiiRenderPipelinePass>();
+    passes.PushBack(pass);
+    auto properties = pipeline->m_Descriptor.m_Passes[i].m_Properties;
+    properties.Remove("PinConfigurations"); // Authored pin objects are lowered into immutable compiled contracts.
+    if (pass->Configure(properties).Failed() || pass->InitializePinBindings(pipeline->m_Passes[i].m_Pins).Failed())
+      return XII_FAILURE;
+    XII_SUCCEED_OR_RETURN(pass->ValidateRenderConfiguration(configuration, out_error));
+  }
+  Clear();
+  m_pPipeline = std::move(pipeline);
+  m_RenderConfiguration = configuration;
+  m_Passes.Swap(passes);
   m_Bindings.SetCount(m_pPipeline->m_uiBindingCount);
   m_HistoryBindings.SetCount(m_pPipeline->m_uiBindingCount);
   m_Parameters     = m_pPipeline->m_Descriptor.m_Parameters;
@@ -83,7 +109,7 @@ xiiResult xiiRenderPipelineInstance::Initialize(xiiSharedPtr<const xiiRenderPipe
   }
   return XII_SUCCESS;
 }
-xiiResult xiiRenderPipelineInstance::Synchronize(const xiiRenderPipelineResourceHandle& resource, bool* out_changed)
+xiiResult xiiRenderPipelineInstance::Synchronize(const xiiRenderPipelineResourceHandle& resource, bool* out_changed, const xiiRenderConfiguration& configuration)
 {
   if (out_changed)
     *out_changed = false;
@@ -95,15 +121,70 @@ xiiResult xiiRenderPipelineInstance::Synchronize(const xiiRenderPipelineResource
     return XII_FAILURE;
   }
   xiiResourceLock<xiiRenderPipelineResource> acquired(resource, xiiResourceAcquireMode::AllowLoadingFallback_NeverFail);
-  auto                                       pipeline      = acquired.IsValid() ? acquired->GetPipeline() : xiiSharedPtr<const xiiRenderPipeline>();
+  auto                                       base          = acquired.IsValid() ? acquired->GetPipeline() : xiiSharedPtr<const xiiRenderPipeline>();
   const auto                                 acquireResult = acquired.GetAcquireResult();
-  if (acquireResult == xiiResourceAcquireResult::MissingFallback && (m_ResourceAcquireResult != acquireResult || pipeline != m_pPipeline))
+  if (acquireResult == xiiResourceAcquireResult::MissingFallback && (m_ResourceAcquireResult != acquireResult || base != m_pBasePipeline))
     xiiLog::Error("Render pipeline '{}' is missing or failed to compile. Rendering its missing-resource fallback.", resource.GetResourceID());
-  if (out_changed)
-    *out_changed = pipeline != m_pPipeline;
-  const auto result       = Initialize(std::move(pipeline));
+
+  const auto*      pPrevious = m_pPipeline.Borrow();
+  auto             pipeline  = base;
+  const auto       requested = acquireResult == xiiResourceAcquireResult::Final ? configuration : xiiRenderConfiguration{};
+  const auto       selection = requested.GetPipelineVariant();
+  const auto       mode      = selection.m_GlobalIllumination;
+  xiiStringBuilder error;
+  xiiResult        status = XII_SUCCESS;
+  if (!requested.IsValid())
+  {
+    error  = "Invalid render configuration.";
+    status = XII_FAILURE;
+  }
+  else if (base && !selection.UsesAuthoredTopology())
+  {
+    status = acquired->GetPipelineVariant(base, selection, pipeline, error);
+    if (status.Succeeded())
+    {
+      const auto pDevice = xiiGALDevice::HasDefaultDevice() ? xiiGALDevice::GetDefaultDevice() : xiiSharedPtr<xiiGALDevice>();
+      status             = pipeline->m_Descriptor.m_Settings.ValidateDevice(pDevice ? &pDevice->GetFeatures() : nullptr, &error);
+      if (status.Succeeded() && mode == xiiRenderGlobalIllumination::DDGI && (!pDevice || pDevice->GetFeatures().m_TextureUAVExtendedFormats != xiiGALDeviceFeatureState::Enabled))
+      {
+        error  = "DDGI requires extended typed texture UAV formats. Select Screen Space or Pipeline Default.";
+        status = XII_FAILURE;
+      }
+      if (status.Succeeded() && mode == xiiRenderGlobalIllumination::RayTraced &&
+          (!pDevice || pDevice->GetFeatures().m_RayTracing != xiiGALDeviceFeatureState::Enabled ||
+           !pDevice->GetGraphicsDeviceAdapterProperties().m_RayTracingProperties.m_CapabilityFlags.IsSet(xiiGALRayTracingCapabilityFlags::StandaloneShaders) ||
+           pDevice->GetFeatures().m_BindlessResources != xiiGALDeviceFeatureState::Enabled))
+      {
+        error  = "Ray-traced GI requires standalone ray shaders and bindless resources. Select DDGI, Screen Space, or Pipeline Default.";
+        status = XII_FAILURE;
+      }
+    }
+  }
+
+  if (status.Succeeded())
+    status = Initialize(pipeline, requested, error);
+  if (status.Failed() && base)
+  {
+    if (error.IsEmpty())
+      error = "The render configuration could not be applied.";
+    if (m_sConfigurationError != error)
+      xiiLog::Warning("Render pipeline '{}': {}", resource.GetResourceID(), error);
+    if (m_pPipeline && m_pBasePipeline == base)
+    {
+      m_sConfigurationError = error;
+      return XII_SUCCESS;
+    }
+    xiiStringBuilder fallbackError;
+    status = Initialize(base, {}, fallbackError);
+  }
+  if (status.Failed())
+    Clear();
+  m_pBasePipeline         = std::move(base);
   m_ResourceAcquireResult = acquireResult;
-  return result;
+  m_sConfigurationError   = error;
+  if (out_changed)
+    *out_changed = pPrevious != m_pPipeline.Borrow();
+  return status;
 }
 xiiResult xiiRenderPipelineInstance::BeginFrame(xiiView* view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard, const xiiVariantDictionary& overrides)
 {
@@ -208,6 +289,7 @@ xiiResult xiiRenderPipelineInstance::BeginFrame(xiiView* view, xiiRenderGraph& g
     history.m_ExtractionRequirements = m_pPipeline->m_GroupRequirements[index];
     history.m_RuntimeFeatures        = m_pPipeline->m_GroupFeatures[index];
     history.m_bTemporalHistoryPhase  = true;
+    history.m_pRenderConfiguration   = &m_RenderConfiguration;
     XII_SUCCEED_OR_RETURN(m_Passes[index]->BuildTemporalHistory(history));
     for (xiiUInt32 i = 0; i < pass.m_Pins.GetCount(); ++i)
     {
@@ -317,6 +399,7 @@ xiiResult xiiRenderPipelineInstance::Build(xiiView* view, xiiRenderGraph& graph,
     context.m_sInstanceScope         = m_ExecutionScopes[index];
     context.m_ExtractionRequirements = m_pPipeline->m_GroupRequirements[index];
     context.m_RuntimeFeatures        = m_pPipeline->m_GroupFeatures[index];
+    context.m_pRenderConfiguration   = &m_RenderConfiguration;
     auto validateBindings            = [&](bool inputs) -> xiiResult {
       for (xiiUInt32 i = 0; i < pass.m_Pins.GetCount(); ++i)
       {

@@ -2242,7 +2242,10 @@ o
 		Uuid %DepthPyramid{u4{7575818932598030787,10812304091994716784}}
 		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x000015C3,0x00000B43}}
-		VarDict %ParameterOverrides{}
+		VarDict %ParameterOverrides
+		{
+			u1 %OptionalRenderFeatures{2}
+		}
 		VarArray %PinConfigurations
 		{
 			Uuid{u4{9807031507175102118,5616182403361242840}}
@@ -3052,7 +3055,10 @@ o
 		Uuid %BRDFLut{u4{8919420513857437492,17204259517975940315}}
 		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x008012C3,0x00002AC2}}
-		VarDict %ParameterOverrides{}
+		VarDict %ParameterOverrides
+		{
+			u1 %OptionalRenderFeatures{2}
+		}
 		VarArray %PinConfigurations
 		{
 			Uuid{u4{14039676609035463185,17680187842446484019}}
@@ -3294,7 +3300,10 @@ o
 		Uuid %Color{u4{14248016302444304056,3220917708349765927}}
 		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x000017C3,0x0000E343}}
-		VarDict %ParameterOverrides{}
+		VarDict %ParameterOverrides
+		{
+			u1 %OptionalRenderFeatures{2}
+		}
 		VarArray %PinConfigurations
 		{
 			Uuid{u4{11804536938615363323,13498316870925634623}}
@@ -3430,7 +3439,10 @@ o
 		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x0080D8C3,0xD6795E43}}
 		Uuid %Output{u4{5266775969208624893,17019060085211477732}}
-		VarDict %ParameterOverrides{}
+		VarDict %ParameterOverrides
+		{
+			u1 %OptionalRenderFeatures{2}
+		}
 		VarArray %PinConfigurations
 		{
 			Uuid{u4{6040616529616979061,4996110669666733540}}
@@ -4311,7 +4323,10 @@ o
 		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x00001B44,0xF2151444}}
 		f %NormalThreshold{0x3333733F}
-		VarDict %ParameterOverrides{}
+		VarDict %ParameterOverrides
+		{
+			u1 %OptionalRenderFeatures{2}
+		}
 		VarArray %PinConfigurations
 		{
 			Uuid{u4{6364922747081681895,7876252020688513182}}
@@ -6464,7 +6479,10 @@ o
 		Uuid %DepthPyramid{u4{3196243806560124443,12637267315400336775}}
 		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x000015C3,0x00409443}}
-		VarDict %ParameterOverrides{}
+		VarDict %ParameterOverrides
+		{
+			u1 %OptionalRenderFeatures{2}
+		}
 		VarArray %PinConfigurations
 		{
 			Uuid{u4{15752447382858143838,16761926449649528110}}
@@ -6555,7 +6573,10 @@ o
 		u3 %MaxSteps{256}
 		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x00004743,0x2C615943}}
-		VarDict %ParameterOverrides{}
+		VarDict %ParameterOverrides
+		{
+			u1 %OptionalRenderFeatures{2}
+		}
 		Uuid %PerFrameCamera{u4{8373480441401037386,4310619474516560671}}
 		Uuid %PerFrameGlobal{u4{7806466444998683668,11735862756442182201}}
 		VarArray %PinConfigurations

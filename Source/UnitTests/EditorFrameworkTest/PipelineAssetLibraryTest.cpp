@@ -21,6 +21,7 @@
 #include <GuiFoundation/NodeEditor/NodeScene.moc.h>
 #include <QImage>
 #include <QPainter>
+#include <SharedPluginScene/Scene/SceneMeshPickingPass.h>
 #include <ToolsFoundation/Document/DocumentManager.h>
 #include <ToolsFoundation/Serialization/DocumentObjectConverter.h>
 
@@ -87,6 +88,8 @@ void xiiCheckAuthoredEditorVisualizationContract(const xiiRenderPipelineResource
 XII_CREATE_SIMPLE_TEST_GROUP(RendererAssets);
 XII_CREATE_SIMPLE_TEST(RendererAssets, PipelineAssetLibrary)
 {
+  // The Editor asset uses scene plugin RTTI even when this test runs on its own.
+  XII_TEST_BOOL(xiiRTTI::FindTypeByName("xiiSceneMeshPickingPass") == xiiGetStaticRTTI<xiiSceneMeshPickingPass>());
   if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(">sdk/Data/Base", "PipelineLibraryTest", "PipelineLibrary", xiiDataDirUsage::ReadOnly)) || !XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(">sdk/Data/Base/AssetCache/Common", "PipelineLibraryTest", ":", xiiDataDirUsage::AllowWrites)))
     return;
   XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("PipelineLibraryTest"));
@@ -188,6 +191,41 @@ XII_CREATE_SIMPLE_TEST(RendererAssets, PipelineAssetLibrary)
       xiiCheckAuthoredSceneContract(*loaded.operator->());
     if (name == "Editor")
       xiiCheckAuthoredEditorVisualizationContract(*loaded.operator->());
+    if (name == "Scene" || name == "Editor")
+    {
+      const auto base = loaded->GetPipeline();
+      for (const auto mode : {xiiRenderGlobalIllumination::Disabled, xiiRenderGlobalIllumination::ScreenSpace, xiiRenderGlobalIllumination::DDGI, xiiRenderGlobalIllumination::RayTraced})
+      {
+        xiiSharedPtr<const xiiRenderPipeline> variant;
+        xiiStringBuilder                      error;
+        const auto                            result = loaded->GetPipelineVariant(base, {mode, {}}, variant, error);
+        if (!XII_TEST_BOOL_MSG(result.Succeeded(), "%s", error.GetData()))
+          return;
+        bool bHasProbeScheduler = false;
+        bool bHasRayTracing     = false;
+        bool bHasScreenSpace    = false;
+        for (const auto& pass : variant->GetDescriptor().m_Passes)
+        {
+          bHasProbeScheduler |= pass.m_pType->GetTypeName() == "xiiDDGIProbeSchedulePass";
+          bHasRayTracing |= pass.m_pType->GetTypeName() == "xiiRayTracedIrradiancePass";
+          bHasScreenSpace |= pass.m_pType->GetTypeName() == "xiiScreenIrradianceTracePass";
+        }
+        XII_TEST_BOOL(bHasProbeScheduler == (mode == xiiRenderGlobalIllumination::DDGI));
+        XII_TEST_BOOL(bHasRayTracing == (mode == xiiRenderGlobalIllumination::RayTraced));
+        XII_TEST_BOOL(bHasScreenSpace == (mode == xiiRenderGlobalIllumination::DDGI || mode == xiiRenderGlobalIllumination::ScreenSpace));
+      }
+      xiiSharedPtr<const xiiRenderPipeline> noOptional;
+      xiiStringBuilder                      error;
+      const auto                            result = loaded->GetPipelineVariant(base, {xiiRenderGlobalIllumination::Disabled, xiiOptionalRenderFeature::All}, noOptional, error);
+      if (!XII_TEST_BOOL_MSG(result.Succeeded(), "%s", error.GetData()))
+        return;
+      XII_TEST_BOOL(noOptional->GetExecutionOrder().GetCount() < base->GetExecutionOrder().GetCount());
+      for (const auto& pass : noOptional->GetDescriptor().m_Passes)
+      {
+        const auto type = pass.m_pType->GetTypeName();
+        XII_TEST_BOOL(type != "xiiSpotShadowPass" && type != "xiiDirectionalShadowVisibilityPass" && type != "xiiScreenSpaceReflectionsPass");
+      }
+    }
     const auto       identity = xiiPipelineLibraryTestIdentity(name);
     xiiStringBuilder documentIdentity;
     xiiConversionUtils::ToString(document->GetGuid(), documentIdentity);

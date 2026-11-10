@@ -2217,7 +2217,10 @@ o
 		b %AsyncCopy{0}
 		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x000014C2,0xBD2DB144}}
-		VarDict %ParameterOverrides{}
+		VarDict %ParameterOverrides
+		{
+			u1 %GlobalIlluminationBranches{16}
+		}
 		VarArray %PinConfigurations
 		{
 			Uuid{u4{13576891265984708949,8568520271003346543}}
@@ -3105,7 +3108,10 @@ o
 		f %Intensity{0x0000803F}
 		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x00809B43,0x00D0A744}}
-		VarDict %ParameterOverrides{}
+		VarDict %ParameterOverrides
+		{
+			u1 %GlobalIlluminationBranches{16}
+		}
 		Uuid %PerFrameCamera{u4{3329913051974392638,5202691435764675599}}
 		VarArray %PinConfigurations
 		{
@@ -4193,7 +4199,14 @@ o
 		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x004069C4,0xB8352F44}}
 		Uuid %Output{u4{2019506354815979185,14856713496310580486}}
-		VarDict %ParameterOverrides{}
+		VarDict %ParameterOverrides
+		{
+			u1 %GlobalIlluminationBranches{56}
+			VarDict %ExplicitGlobalIlluminationProperties
+			{
+				b %Enabled{1}
+			}
+		}
 		VarArray %PinConfigurations
 		{
 			Uuid{u4{7814433985249868187,7871168015980476686}}
@@ -4587,7 +4600,10 @@ o
 		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x0000AF43,0}}
 		b %OnlyDiagnosticViews{0}
-		VarDict %ParameterOverrides{}
+		VarDict %ParameterOverrides
+		{
+			u1 %GlobalIlluminationBranches{32}
+		}
 		VarArray %PinConfigurations
 		{
 			Uuid{u4{5670247233999881352,5369708400390219002}}
@@ -5914,7 +5930,10 @@ o
 		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x00C03844,0x001CA743}}
 		Uuid %Normal{u4{3907951674222111928,1485654795365769161}}
-		VarDict %ParameterOverrides{}
+		VarDict %ParameterOverrides
+		{
+			u1 %GlobalIlluminationBranches{32}
+		}
 		VarArray %PinConfigurations
 		{
 			Uuid{u4{8632694143691791933,10866714722446529810}}
@@ -7405,7 +7424,10 @@ o
 		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x0080B643,0x00208B44}}
 		Uuid %Normal{u4{6492267906890607595,1559207601517764906}}
-		VarDict %ParameterOverrides{}
+		VarDict %ParameterOverrides
+		{
+			u1 %GlobalIlluminationBranches{24}
+		}
 		VarArray %PinConfigurations
 		{
 			Uuid{u4{13188939303033768346,13766513010545868535}}
@@ -8361,7 +8383,14 @@ o
 		f %MaximumRelocationDistance{0x6666E63F}
 		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x000044C2,0xBDCD8344}}
-		VarDict %ParameterOverrides{}
+		VarDict %ParameterOverrides
+		{
+			u1 %GlobalIlluminationBranches{16}
+			VarDict %ExplicitGlobalIlluminationProperties
+			{
+				b %SkipOnRayHardware{0}
+			}
+		}
 		VarArray %PinConfigurations
 		{
 			Uuid{u4{8640960065390029960,8635339154501310029}}
@@ -8717,7 +8746,10 @@ o
 		Uuid %Irradiance{u4{14957018688211787301,12407155145183491154}}
 		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x00004CC2,0x7ADB2044}}
-		VarDict %ParameterOverrides{}
+		VarDict %ParameterOverrides
+		{
+			u1 %GlobalIlluminationBranches{16}
+		}
 		VarArray %PinConfigurations
 		{
 			Uuid{u4{9530922238718647420,13617163763250929323}}
@@ -9450,7 +9482,10 @@ o
 		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x00203D44,0x00EE6C44}}
 		f %Opacity{0x0000803F}
-		VarDict %ParameterOverrides{}
+		VarDict %ParameterOverrides
+		{
+			u1 %GlobalIlluminationBranches{24}
+		}
 		VarArray %PinConfigurations
 		{
 			Uuid{u4{1681587428799810351,10884302236339585815}}
@@ -9920,7 +9955,10 @@ o
 		b %AllowAbsentSchedule{1}
 		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x00002AC2,0x7A3B5444}}
-		VarDict %ParameterOverrides{}
+		VarDict %ParameterOverrides
+		{
+			u1 %GlobalIlluminationBranches{16}
+		}
 		VarArray %PinConfigurations
 		{
 			Uuid{u4{1853572905768794258,16472653874287367179}}
@@ -11828,7 +11866,10 @@ o
 		Uuid %MeshletMetadata{u4{12944192345513396768,5047517612292875720}}
 		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x000070C2,0xBD8DD844}}
-		VarDict %ParameterOverrides{}
+		VarDict %ParameterOverrides
+		{
+			u1 %GlobalIlluminationBranches{16}
+		}
 		VarArray %PinConfigurations
 		{
 			Uuid{u4{1334015336602792731,3844017162802849996}}
@@ -13792,7 +13833,10 @@ o
 		b %AsyncCopy{0}
 		s %Node::Comment{""}
 		Vec2 %Node::Pos{f{0x000014C2,0xBD7D9D44}}
-		VarDict %ParameterOverrides{}
+		VarDict %ParameterOverrides
+		{
+			u1 %GlobalIlluminationBranches{16}
+		}
 		VarArray %PinConfigurations
 		{
 			Uuid{u4{13762411629188100608,10644985281775116528}}

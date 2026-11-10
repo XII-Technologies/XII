@@ -16,6 +16,7 @@
 
 class xiiView;
 struct xiiRenderPipelinePassContext;
+struct xiiRenderConfiguration;
 struct xiiRenderPipelineResourceDescriptor;
 
 /// Frame-local TLAS ownership and its graph version establishing build readiness.
@@ -72,6 +73,8 @@ public:
   /// Optional domain validation after generic connectivity and ordering have been validated.
   /// Runs on CPU during compilation; failure prevents publication of the entire resource.
   virtual xiiResult ValidatePipeline(const xiiRenderPipelineResourceDescriptor&, xiiArrayPtr<const xiiUInt32>, xiiUInt32, xiiStringBuilder*) const { return XII_SUCCESS; }
+  /// Validate resolved view policy against authored defaults before publishing it.
+  virtual xiiResult ValidateRenderConfiguration(const xiiRenderConfiguration&, xiiStringBuilder&) const { return XII_SUCCESS; }
   /// Clears view-local history after camera cuts and configuration changes.
   virtual void InvalidateTemporalHistory() {}
 };
@@ -91,6 +94,7 @@ struct XII_GRAPHICSCORE_DLL xiiRenderPipelinePassContext
   xiiBitflags<xiiRenderExtractionCategory> m_ExtractionRequirements;
   xiiBitflags<xiiRenderPipelineFeature>    m_RuntimeFeatures;
   bool                                     m_bTemporalHistoryPhase = false;
+  const xiiRenderConfiguration*            m_pRenderConfiguration  = nullptr; ///< Borrowed only for graph construction.
   /// Build-only diagnostic sink; execute delegates must not retain this context.
   xiiStringBuilder* m_pBuildError = nullptr;
   xiiResult         ReportFailure(xiiStringView reason) const;

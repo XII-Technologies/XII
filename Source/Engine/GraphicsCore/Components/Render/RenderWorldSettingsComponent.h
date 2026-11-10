@@ -7,6 +7,7 @@
 #include <Core/World/SettingsComponent.h>
 #include <Core/World/SettingsComponentManager.h>
 #include <GraphicsCore/Pipeline/Declarations.h>
+#include <GraphicsCore/Pipeline/RenderConfiguration.h>
 
 using xiiRenderWorldSettingsComponentManager = xiiSettingsComponentManager<class xiiRenderWorldSettingsComponent>;
 
@@ -28,6 +29,8 @@ public:
 public:
   xiiRenderWorldSettingsComponent();
   ~xiiRenderWorldSettingsComponent();
+
+  xiiRenderConfiguration m_RenderConfiguration;
 
 protected:
   xiiEnum<xiiShadingQualityLevel> m_ShadingQualityLevel;

@@ -6,11 +6,13 @@
 #include <EditorFramework/Assets/AssetCurator.h>
 #include <EditorFramework/Assets/AssetDocumentManager.h>
 #include <EditorPluginAssets/RenderPipelineAsset/RenderPipelineAsset.h>
+#include <Foundation/IO/FileSystem/FileReader.h>
 #include <Foundation/IO/FileSystem/FileSystem.h>
 #include <Foundation/Reflection/ReflectionUtils.h>
 #include <Foundation/Serialization/BinarySerializer.h>
 #include <Foundation/Serialization/RttiConverter.h>
 #include <Foundation/Types/ScopeExit.h>
+#include <Foundation/Utilities/AssetFileHeader.h>
 #include <GraphicsCore/Pipeline/RenderPipelineComposition.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 #include <GuiFoundation/NodeEditor/NodeScene.moc.h>
@@ -577,21 +579,35 @@ namespace
     if (!resource.IsA<xiiString>() || resource.Get<xiiString>().IsEmpty())
       return true;
     const auto resolved = ResolvePipelineResource(resource.Get<xiiString>());
-    const bool exported = xiiFileSystem::ExistsFile(resolved);
-    auto       handle   = xiiResourceManager::GetExistingResource<xiiRenderPipelineResource>(resolved);
-    if (!handle.IsValid() && exported)
-      handle = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(resolved);
-    if (!handle.IsValid())
-      return true;
-    xiiResourceLock<xiiRenderPipelineResource> loaded(handle, exported ? xiiResourceAcquireMode::BlockTillLoaded_NeverFail : xiiResourceAcquireMode::PointerOnly);
-    const auto                                 authoring = loaded.GetAcquireResult() == xiiResourceAcquireResult::Final ? loaded->GetAuthoring() : xiiSharedPtr<const xiiRenderPipelineAuthoring>();
+    xiiRenderPipelineResourceDescriptor descriptor;
+    if (xiiFileSystem::ExistsFile(resolved))
+    {
+      // Document restoration can hold the curator mutex while its file worker waits for that mutex.
+      // Read exported authoring data directly rather than waiting for a resource task on that worker.
+      xiiFileReader      file;
+      xiiAssetFileHeader header;
+      xiiUInt8           version = 0;
+      if (file.Open(resolved).Failed() || header.Read(file).Failed() || file.ReadBytes(&version, sizeof(version)) != sizeof(version) || version != 3 || descriptor.Deserialize(file).Failed())
+        return true;
+    }
+    else
+    {
+      const auto handle = xiiResourceManager::GetExistingResource<xiiRenderPipelineResource>(resolved);
+      if (!handle.IsValid())
+        return true;
+      xiiResourceLock<xiiRenderPipelineResource> loaded(handle, xiiResourceAcquireMode::PointerOnly);
+      const auto                                 authoring = loaded->GetAuthoring();
+      if (!authoring)
+        return true;
+      descriptor = authoring->m_Descriptor;
+    }
     // Pin discovery also runs before project indexing and asset transformation.
     // Inspect only already-exported or resident resources. Do not transform assets
     // or load unresolved nested references while discovering pins.
-    if (!authoring || !authoring->m_Descriptor.m_References.IsEmpty())
+    if (!descriptor.m_References.IsEmpty())
       return true;
     xiiSharedPtr<const xiiRenderPipeline> pipeline;
-    if (xiiRenderPipeline::Compile(authoring->m_Descriptor, pipeline).Failed())
+    if (xiiRenderPipeline::Compile(descriptor, pipeline).Failed())
       return true;
     return !pipeline || pipeline->DoesInterfaceOutputDependOnInput(output.GetName(), input.GetName());
   }

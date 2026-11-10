@@ -51,6 +51,8 @@ public:
 
   /// Returns the ID of this view
   xiiSizeU32                 GetRenderResolution() const { return m_RenderResolution; }
+  const xiiRenderConfiguration& GetEffectiveRenderConfiguration() const { return m_EffectiveRenderConfiguration; }
+  xiiStringView                 GetRenderConfigurationError() const { return m_sRenderConfigurationError; }
   xiiUInt32                  GetViewID() const { return m_uiViewID; }
   xiiQtEngineDocumentWindow* GetDocumentWindow() const { return m_pDocumentWindow; }
 
@@ -164,6 +166,8 @@ protected:
   xiiQtEngineDocumentWindow* m_pDocumentWindow = nullptr;
 
   xiiSizeU32       m_RenderResolution = xiiSizeU32(0, 0);
+  xiiRenderConfiguration m_EffectiveRenderConfiguration;
+  xiiString              m_sRenderConfigurationError;
   static xiiUInt32 s_uiNextViewID;
 
   // Owned by this view; removed before the view is destroyed.

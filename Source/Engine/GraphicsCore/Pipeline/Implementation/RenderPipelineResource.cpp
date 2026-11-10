@@ -48,9 +48,60 @@ xiiSharedPtr<const xiiRenderPipeline> xiiRenderPipelineResource::GetPipeline() c
   XII_LOCK(m_Mutex);
   if (m_pAuthoring != authoring)
     return nullptr;
+  if (m_pPipeline != cached)
+    return m_pPipeline;
+  xiiSharedPtr<xiiRenderPipelineAuthoring> resolvedAuthoring = XII_DEFAULT_NEW(xiiRenderPipelineAuthoring);
+  resolvedAuthoring->m_Descriptor                            = std::move(resolved);
+  m_pResolvedAuthoring                                       = std::move(resolvedAuthoring);
+  m_Variants.Clear();
   m_pPipeline              = pipeline;
   m_DefinitionDependencies = std::move(dependencies);
   return pipeline;
+}
+
+xiiResult xiiRenderPipelineResource::GetPipelineVariant(const xiiSharedPtr<const xiiRenderPipeline>& base, const xiiRenderPipelineVariant& selection,
+                                                        xiiSharedPtr<const xiiRenderPipeline>& out_pipeline, xiiStringBuilder& out_error) const
+{
+  out_error.Clear();
+  if (selection.UsesAuthoredTopology() || selection.m_GlobalIllumination >= xiiRenderGlobalIllumination::ENUM_COUNT || (selection.m_Disabled.GetValue() & ~xiiOptionalRenderFeature::All) != 0)
+    return XII_FAILURE;
+  const auto                                     uiKey = selection.GetCacheKey();
+  xiiSharedPtr<const xiiRenderPipelineAuthoring> authoring;
+  {
+    XII_LOCK(m_Mutex);
+    if (!base || base != m_pPipeline)
+      return XII_FAILURE;
+    authoring           = m_pResolvedAuthoring;
+    const Variant* pVariant = nullptr;
+    if (m_Variants.TryGetValue(uiKey, pVariant))
+    {
+      if (!pVariant->m_pPipeline)
+      {
+        out_error = pVariant->m_sError;
+        return XII_FAILURE;
+      }
+      out_pipeline = pVariant->m_pPipeline;
+      return XII_SUCCESS;
+    }
+  }
+  if (!authoring)
+    return XII_FAILURE;
+  xiiSharedPtr<const xiiRenderPipeline> pipeline;
+  xiiRenderPipeline::CompileVariant(authoring->m_Descriptor, selection, pipeline, &out_error).IgnoreResult();
+  XII_LOCK(m_Mutex);
+  if (base != m_pPipeline)
+    return XII_FAILURE;
+  bool  bExisted = false;
+  auto& variant  = m_Variants.FindOrAdd(uiKey, &bExisted);
+  if (!bExisted)
+    variant = {std::move(pipeline), out_error};
+  if (!variant.m_pPipeline)
+  {
+    out_error = variant.m_sError;
+    return XII_FAILURE;
+  }
+  out_pipeline = variant.m_pPipeline;
+  return XII_SUCCESS;
 }
 
 xiiSharedPtr<const xiiRenderPipelineAuthoring> xiiRenderPipelineResource::GetAuthoring() const
@@ -150,6 +201,8 @@ xiiResourceLoadDescription xiiRenderPipelineResource::UnloadData(Unload)
   XII_LOCK(m_Mutex);
   m_pPipeline  = nullptr;
   m_pAuthoring = nullptr;
+  m_pResolvedAuthoring = nullptr;
+  m_Variants.Clear();
   m_DefinitionDependencies.Clear();
   return {xiiResourceState::Unloaded, 0, 0};
 }
@@ -185,6 +238,16 @@ void xiiRenderPipelineResource::UpdateMemoryUsage(MemoryUsage& usage)
   usage.m_uiMemoryCPU += static_cast<xiiUInt32>(m_DefinitionDependencies.GetHeapMemoryUsage());
   if (m_pAuthoring)
     usage.m_uiMemoryCPU += static_cast<xiiUInt32>(sizeof(xiiRenderPipelineAuthoring) + m_pAuthoring->m_Descriptor.GetHeapMemoryUsage());
+  if (m_pResolvedAuthoring && m_pResolvedAuthoring != m_pAuthoring)
+    usage.m_uiMemoryCPU += static_cast<xiiUInt32>(sizeof(xiiRenderPipelineAuthoring) + m_pResolvedAuthoring->m_Descriptor.GetHeapMemoryUsage());
+  usage.m_uiMemoryCPU += static_cast<xiiUInt32>(m_Variants.GetHeapMemoryUsage());
+  for (const auto& entry : m_Variants)
+  {
+    const auto& variant = entry.Value();
+    usage.m_uiMemoryCPU += static_cast<xiiUInt32>(variant.m_sError.GetHeapMemoryUsage());
+    if (variant.m_pPipeline)
+      usage.m_uiMemoryCPU += static_cast<xiiUInt32>(sizeof(xiiRenderPipeline) + variant.m_pPipeline->GetHeapMemoryUsage());
+  }
   usage.m_uiMemoryGPU = 0;
   if (m_pPipeline)
   {
@@ -205,6 +268,8 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiRenderPipelineResource, xiiRenderPipelineRe
   xiiSharedPtr<xiiRenderPipelineAuthoring> authoring = XII_DEFAULT_NEW(xiiRenderPipelineAuthoring);
   authoring->m_Descriptor                            = descriptor;
   m_pAuthoring                                       = std::move(authoring);
+  m_pResolvedAuthoring                               = pipeline ? m_pAuthoring : nullptr;
+  m_Variants.Clear();
   m_DefinitionDependencies.Clear();
   m_pPipeline = std::move(pipeline);
   return {xiiResourceState::Loaded, 0, 0};

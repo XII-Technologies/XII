@@ -7,11 +7,12 @@
 #include <GraphicsCore/Components/Render/RenderWorldSettingsComponent.h>
 
 // clang-format off
-XII_BEGIN_COMPONENT_TYPE(xiiRenderWorldSettingsComponent, 1, xiiComponentMode::Static)
+XII_BEGIN_COMPONENT_TYPE(xiiRenderWorldSettingsComponent, 5, xiiComponentMode::Static)
 {
   XII_BEGIN_PROPERTIES
   {
     XII_ENUM_MEMBER_PROPERTY("ShadingQualityLevel", xiiShadingQualityLevel, m_ShadingQualityLevel),
+    XII_MEMBER_PROPERTY("RenderConfiguration", m_RenderConfiguration),
   }
   XII_END_PROPERTIES;
   XII_BEGIN_ATTRIBUTES
@@ -32,6 +33,11 @@ void xiiRenderWorldSettingsComponent::SerializeComponent(xiiWorldWriter& inout_s
   auto& s = inout_stream.GetStream();
 
   s << m_ShadingQualityLevel;
+  const bool bValid = m_RenderConfiguration.IsValid();
+  if (!bValid)
+    xiiLog::Error("Invalid scene render configuration. Writing inherited defaults.");
+  if ((bValid ? m_RenderConfiguration : xiiRenderConfiguration{}).Serialize(s).Failed())
+    xiiLog::Error("Could not write the scene render configuration.");
 }
 
 void xiiRenderWorldSettingsComponent::DeserializeComponent(xiiWorldReader& inout_stream)
@@ -40,6 +46,9 @@ void xiiRenderWorldSettingsComponent::DeserializeComponent(xiiWorldReader& inout
   auto& s = inout_stream.GetStream();
 
   s >> m_ShadingQualityLevel;
+  const auto uiVersion = inout_stream.GetComponentTypeVersion(GetStaticRTTI());
+  if (uiVersion >= 2 && m_RenderConfiguration.Deserialize(s, uiVersion - 1).Failed())
+    xiiLog::Error("Invalid render configuration in the scene. Using inherited defaults.");
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Components_Render_Implementation_RenderWorldSettingsComponent);

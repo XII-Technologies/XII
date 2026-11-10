@@ -69,6 +69,38 @@ xiiResult xiiDDGIProbeSchedulePass::Configure(const xiiVariantDictionary& proper
     m_State.Clear();
   return result;
 }
+
+xiiDDGISettings xiiDDGIProbeSchedulePass::GetProbeSettings(const xiiRenderConfiguration* pConfiguration) const
+{
+  xiiDDGISettings settings;
+  settings.m_uiProbeCountX              = m_CountX;
+  settings.m_uiProbeCountY              = m_CountY;
+  settings.m_uiProbeCountZ              = m_CountZ;
+  settings.m_uiProbeUpdateBudget        = m_Budget;
+  settings.m_fProbeSpacing              = m_fSpacing;
+  settings.m_fTemporalHysteresis        = m_fHysteresis;
+  settings.m_fMaximumRelocationDistance = m_fRelocation;
+  if (pConfiguration)
+    pConfiguration->m_DDGI.ApplyTo(settings);
+  return settings;
+}
+
+xiiResult xiiDDGIProbeSchedulePass::ValidateRenderConfiguration(const xiiRenderConfiguration& configuration, xiiStringBuilder& out_error) const
+{
+  const auto settings = GetProbeSettings(&configuration);
+  const auto uiCount  = xiiUInt64(settings.m_uiProbeCountX) * settings.m_uiProbeCountY * settings.m_uiProbeCountZ;
+  if (uiCount > 1048576)
+  {
+    out_error = "The combined DDGI probe dimensions exceed 1,048,576 probes.";
+    return XII_FAILURE;
+  }
+  if (!xiiMath::IsFinite(settings.m_fProbeSpacing * settings.m_fProbeSpacing * 16.0f))
+  {
+    out_error = "DDGI probe spacing exceeds the supported world-space distance.";
+    return XII_FAILURE;
+  }
+  return XII_SUCCESS;
+}
 void xiiDDGIProbeSchedulePass::InvalidateTemporalHistory()
 {
   if (m_State)
@@ -95,26 +127,32 @@ xiiResult xiiDDGIProbeSchedulePass::Build(xiiRenderPipelinePassContext& context)
     camera = context.m_pView->GetCamera()->GetPosition() + context.m_pView->GetCamera()->GetCenterDirForwards() * m_fForwardOffset;
   }
   XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::ReadParameter(context, "DDGICameraPosition", camera));
-  if (!m_State)
+  const auto settings   = GetProbeSettings(context.m_pRenderConfiguration);
+  bool       bNewVolume = !m_State;
+  if (m_State)
   {
-    m_State = XII_DEFAULT_NEW(xiiDDGIProbeSchedulerState);
-    xiiDDGISettings settings;
-    settings.m_uiProbeCountX              = m_CountX;
-    settings.m_uiProbeCountY              = m_CountY;
-    settings.m_uiProbeCountZ              = m_CountZ;
-    settings.m_uiProbeUpdateBudget        = m_Budget;
-    settings.m_fProbeSpacing              = m_fSpacing;
-    settings.m_fTemporalHysteresis        = m_fHysteresis;
-    settings.m_fMaximumRelocationDistance = m_fRelocation;
-    XII_SUCCEED_OR_RETURN(m_State->m_Context.Initialize(settings));
+    // Graph callbacks may read the scheduling policy. Only this pass changes it.
+    const auto& current = m_State->m_Context.GetConfiguration();
+    bNewVolume          = settings.m_uiProbeCountX != current.m_uiProbeCountX || settings.m_uiProbeCountY != current.m_uiProbeCountY ||
+      settings.m_uiProbeCountZ != current.m_uiProbeCountZ || settings.m_fProbeSpacing != current.m_fProbeSpacing ||
+      settings.m_fMaximumRelocationDistance != current.m_fMaximumRelocationDistance;
+  }
+  if (bNewVolume)
+  {
+    xiiSharedPtr<xiiDDGIProbeSchedulerState> state = XII_DEFAULT_NEW(xiiDDGIProbeSchedulerState);
+    XII_SUCCEED_OR_RETURN(state->m_Context.Initialize(settings));
+    m_State = std::move(state);
   }
   XII_LOCK(m_State->m_Mutex);
-  const auto       count = m_CountX * m_CountY * m_CountZ;
+  const auto& current = m_State->m_Context.GetConfiguration();
+  if (settings.m_uiProbeUpdateBudget != current.m_uiProbeUpdateBudget || settings.m_fTemporalHysteresis != current.m_fTemporalHysteresis)
+    XII_SUCCEED_OR_RETURN(m_State->m_Context.SetUpdatePolicy(settings.m_uiProbeUpdateBudget, settings.m_fTemporalHysteresis));
+  const auto       count = settings.m_uiProbeCountX * settings.m_uiProbeCountY * settings.m_uiProbeCountZ;
   const xiiUInt32  width = xiiUInt32(xiiMath::Ceil(xiiMath::Sqrt(float(count))));
   const xiiSizeU32 size(width * (m_bDirectional ? XII_DDGI_DIRECTION_COUNT : 1U), (count + width - 1) / width);
   const auto*      irradiance = context.m_Graph.GetTextureDescription(context.GetInputTexture(m_PreviousIrradiance));
   const auto*      distance   = context.m_Graph.GetTextureDescription(context.GetInputTexture(m_PreviousDistance));
-  const bool       history    = irradiance && distance && irradiance->m_Size == size && distance->m_Size == size;
+  const bool       history    = !bNewVolume && irradiance && distance && irradiance->m_Size == size && distance->m_Size == size;
   if (!history)
     m_State->m_Context.InvalidateHistory();
   if (m_State->m_Context.BeginFrame(camera, context.m_Graph.GetFrameIndex()).Failed())
@@ -126,8 +164,8 @@ xiiResult xiiDDGIProbeSchedulePass::Build(xiiRenderPipelinePassContext& context)
   snapshot->m_bHistoryValid                       = history;
   const auto minimum                              = m_State->m_Context.GetMinimumCell();
   snapshot->m_Constants.MinimumCellAndAtlasWidth  = xiiVec4I32(minimum.x, minimum.y, minimum.z, xiiInt32(width));
-  snapshot->m_Constants.ProbeCountsAndUpdateCount = xiiVec4U32(m_CountX, m_CountY, m_CountZ, m_State->m_Context.GetScheduledUpdates().GetCount());
-  snapshot->m_Constants.SpacingHysteresisDistance = xiiVec4(m_fSpacing, m_fHysteresis, m_fSpacing * 4, float(m_State->m_Frame));
+  snapshot->m_Constants.ProbeCountsAndUpdateCount = xiiVec4U32(settings.m_uiProbeCountX, settings.m_uiProbeCountY, settings.m_uiProbeCountZ, m_State->m_Context.GetScheduledUpdates().GetCount());
+  snapshot->m_Constants.SpacingHysteresisDistance = xiiVec4(settings.m_fProbeSpacing, settings.m_fTemporalHysteresis, settings.m_fProbeSpacing * 4, float(m_State->m_Frame));
   for (const auto& probe : m_State->m_Context.GetProbes())
   {
     auto& record                    = snapshot->m_Probes.ExpandAndGetRef();

@@ -8,6 +8,8 @@
 #include <GraphicsCore/Pipeline/RenderPipelineComposition.h>
 #include <GraphicsCore/Pipeline/RenderPipelineResource.h>
 
+#include <algorithm>
+
 xiiRenderPipeline::xiiRenderPipeline() :
   m_TopologyAllocator("Render Pipeline Topology", xiiDefaultAllocatorWrapper::GetAllocator()), m_Topology(&m_TopologyAllocator)
 {
@@ -74,6 +76,16 @@ xiiResult xiiRenderPipeline::Compile(const xiiRenderPipelineResourceDescriptor& 
 
 xiiResult xiiRenderPipeline::Compile(const xiiRenderPipelineResourceDescriptor& authored, xiiGraphComposition::Resolver externalResolver, xiiSharedPtr<const xiiRenderPipeline>& out_pipeline, xiiStringBuilder* out_error)
 {
+  return Compile(authored, externalResolver, {}, out_pipeline, out_error);
+}
+
+xiiResult xiiRenderPipeline::CompileVariant(const xiiRenderPipelineResourceDescriptor& descriptor, const xiiRenderPipelineVariant& variant, xiiSharedPtr<const xiiRenderPipeline>& out_pipeline, xiiStringBuilder* out_error)
+{
+  return Compile(descriptor, {}, variant, out_pipeline, out_error);
+}
+
+xiiResult xiiRenderPipeline::Compile(const xiiRenderPipelineResourceDescriptor& authored, xiiGraphComposition::Resolver externalResolver, const xiiRenderPipelineVariant& variant, xiiSharedPtr<const xiiRenderPipeline>& out_pipeline, xiiStringBuilder* out_error)
+{
   xiiRenderPipelineResourceDescriptor descriptor;
   xiiUInt32                           diagnosticPass = xiiInvalidIndex;
   const auto                          fail           = [&](xiiStringView message) {
@@ -87,6 +99,15 @@ xiiResult xiiRenderPipeline::Compile(const xiiRenderPipelineResourceDescriptor& 
   };
   if (out_error)
     out_error->Clear();
+  const auto mode = variant.m_GlobalIllumination;
+  if (mode >= xiiRenderGlobalIllumination::ENUM_COUNT || (variant.m_Disabled.GetValue() & ~xiiOptionalRenderFeature::All) != 0)
+    return fail("Invalid structural render configuration.");
+  const bool         bExplicit       = mode >= xiiRenderGlobalIllumination::Disabled;
+  const xiiUInt8     uiModeBit       = xiiRenderGlobalIllumination::BranchBit(mode);
+  constexpr xiiUInt8 uiValidBranches = xiiRenderGlobalIllumination::BranchBit(xiiRenderGlobalIllumination::Disabled) |
+    xiiRenderGlobalIllumination::BranchBit(xiiRenderGlobalIllumination::ScreenSpace) |
+    xiiRenderGlobalIllumination::BranchBit(xiiRenderGlobalIllumination::DDGI) |
+    xiiRenderGlobalIllumination::BranchBit(xiiRenderGlobalIllumination::RayTraced);
   XII_SUCCEED_OR_RETURN(authored.m_Settings.Validate(out_error));
   if (authored.m_Passes.GetCount() > 4096 || authored.m_Connections.GetCount() > 65536 || authored.m_Definitions.GetCount() > 4096)
     return fail("Pipeline exceeds definition limits.");
@@ -115,6 +136,9 @@ xiiResult xiiRenderPipeline::Compile(const xiiRenderPipelineResourceDescriptor& 
   descriptor.m_Id         = authored.m_Id;
   descriptor.m_Parameters = authored.m_Parameters;
   descriptor.m_Settings   = authored.m_Settings;
+  xiiDynamicArray<bool> active;
+  xiiUInt8              uiAvailableBranches = 0;
+  xiiBitflags<xiiOptionalRenderFeature> availableFeatures;
   for (const auto& node : expanded.m_Nodes)
   {
     xiiStringBuilder name, id;
@@ -127,6 +151,36 @@ xiiResult xiiRenderPipeline::Compile(const xiiRenderPipelineResourceDescriptor& 
     const auto index                        = descriptor.AddPass(name, xiiRTTI::FindTypeByName(node.m_sType), node.m_Properties);
     descriptor.m_Passes[index].m_Id         = node.m_Source.m_Element;
     descriptor.m_Passes[index].m_Parameters = node.m_Parameters;
+    auto&    pass                           = descriptor.m_Passes[index];
+    xiiUInt8 uiBranches                     = 0;
+    if (const auto* pBranches = pass.m_Parameters.GetValue("GlobalIlluminationBranches"))
+    {
+      diagnosticPass = index;
+      if (!pBranches->IsA<xiiUInt8>() || (pBranches->Get<xiiUInt8>() & ~uiValidBranches) != 0)
+        return fail("Invalid authored global illumination branch mask.");
+      uiBranches = pBranches->Get<xiiUInt8>();
+      uiAvailableBranches |= uiBranches;
+    }
+    xiiBitflags<xiiOptionalRenderFeature> optionalFeatures;
+    if (const auto* pFeatures = pass.m_Parameters.GetValue("OptionalRenderFeatures"))
+    {
+      diagnosticPass = index;
+      if (!pFeatures->IsA<xiiUInt8>() || (pFeatures->Get<xiiUInt8>() & ~xiiOptionalRenderFeature::All) != 0)
+        return fail("Invalid authored optional render feature mask.");
+      optionalFeatures.SetValue(pFeatures->Get<xiiUInt8>());
+      availableFeatures.Add(optionalFeatures);
+    }
+    const bool bActive = (!bExplicit || uiBranches == 0 || (uiBranches & uiModeBit) != 0) && !optionalFeatures.IsAnySet(variant.m_Disabled);
+    active.PushBack(bActive);
+    if (const auto* pProperties = pass.m_Parameters.GetValue("ExplicitGlobalIlluminationProperties"))
+    {
+      diagnosticPass = index;
+      if (!pProperties->IsA<xiiVariantDictionary>())
+        return fail("Explicit global illumination properties must be a reflected property dictionary.");
+      if (bExplicit && bActive)
+        for (const auto& property : pProperties->Get<xiiVariantDictionary>())
+          pass.m_Properties.Insert(property.Key(), property.Value());
+    }
     xiiStringBuilder instanceScope;
     for (const auto& instance : node.m_Source.m_InstancePath)
     {
@@ -139,6 +193,11 @@ xiiResult xiiRenderPipeline::Compile(const xiiRenderPipelineResourceDescriptor& 
     for (const auto& instance : node.m_Source.m_InstancePath)
       descriptor.m_Passes[index].m_Id.HashCombine(instance);
   }
+  diagnosticPass = xiiInvalidIndex;
+  if (bExplicit && (uiAvailableBranches == 0 || (mode != xiiRenderGlobalIllumination::Disabled && (uiAvailableBranches & uiModeBit) == 0)))
+    return fail("The selected pipeline does not author this global illumination technique.");
+  if (!availableFeatures.AreAllSet(variant.m_Disabled))
+    return fail("The selected pipeline does not author one or more optional render features.");
   for (const auto& edge : expanded.m_Edges)
   {
     auto& connection      = descriptor.m_Connections.ExpandAndGetRef();
@@ -153,7 +212,6 @@ xiiResult xiiRenderPipeline::Compile(const xiiRenderPipelineResourceDescriptor& 
     connection.m_Id.HashCombine(xiiUuid::MakeStableUuidFromString(connection.m_sInput));
   }
   xiiSharedPtr<xiiRenderPipeline> result = XII_DEFAULT_NEW(xiiRenderPipeline);
-  result->m_Descriptor                   = descriptor;
   result->m_Dependencies                 = expanded.m_Dependencies;
   for (const auto& node : expanded.m_Nodes)
   {
@@ -169,7 +227,6 @@ xiiResult xiiRenderPipeline::Compile(const xiiRenderPipelineResourceDescriptor& 
     }
     result->m_ResourceScopes.PushBack(scope);
   }
-  XII_SUCCEED_OR_RETURN(result->m_Topology.Reserve(descriptor.m_Passes.GetCount(), descriptor.m_Connections.GetCount()));
   xiiDynamicArray<xiiGraphVertexHandle>   vertices;
   xiiDynamicArray<xiiRenderPipelinePass*> prototypes;
   XII_SCOPE_EXIT(for (auto* prototype : prototypes) prototype->GetDynamicRTTI()->GetAllocator()->Deallocate(prototype));
@@ -191,13 +248,9 @@ xiiResult xiiRenderPipeline::Compile(const xiiRenderPipelineResourceDescriptor& 
       return fail("Invalid pass configuration.");
     auto& pass             = result->m_Passes.ExpandAndGetRef();
     pass.m_pType           = type;
-    pass.m_uiBindingOffset = result->m_uiBindingCount;
     xiiStringBuilder pinError;
     if (prototype->GetConfiguredPins(pass.m_Pins, &pinError).Failed())
       return fail(pinError.IsEmpty() ? "Invalid authored pin configuration."_xiisv : pinError.GetView());
-    result->m_ExtractionRequirements |= prototype->GetExtractionRequirements();
-    result->m_RuntimeFeatures |= prototype->GetRuntimeFeatures();
-    result->m_Descriptor.m_Settings.m_RequiredDeviceFeatures.Add(prototype->GetRequiredDeviceFeatures());
     if (pass.m_Pins.GetCount() > 256)
       return fail("Pass exceeds pin limit.");
     for (xiiUInt32 i = 0; i < pass.m_Pins.GetCount(); ++i)
@@ -219,10 +272,6 @@ xiiResult xiiRenderPipeline::Compile(const xiiRenderPipelineResourceDescriptor& 
         if (pass.m_Pins[j].m_bInput == pin.m_bInput && pass.m_Pins[j].m_sName == pin.m_sName)
           return fail("Duplicate pin name.");
     }
-    result->m_uiBindingCount += pass.m_Pins.GetCount();
-    xiiGraphVertexHandle vertex;
-    XII_SUCCEED_OR_RETURN(result->m_Topology.TryAddVertex(vertex));
-    vertices.PushBack(vertex);
   }
   xiiDynamicArray<xiiArrayPtr<xiiRenderPipelinePin>> pinSchemas;
   for (auto& pass : result->m_Passes)
@@ -244,14 +293,86 @@ xiiResult xiiRenderPipeline::Compile(const xiiRenderPipelineResourceDescriptor& 
       pin.m_Id.HashCombine(descriptor.m_Id);
       pin.m_Id.HashCombine(descriptor.m_Passes[index].m_Id);
     }
+  // Lower the chosen branch after validating authored interfaces. The usual
+  // required-pin and ordering checks then run on the surviving connections.
+  for (const auto& boundary : expanded.m_Boundary)
+  {
+    const auto uiOld = expanded.m_Graph.GetVertexIndex(boundary.m_hVertex);
+    if (active[uiOld] || !boundary.m_Source.m_InstancePath.IsEmpty() || boundary.m_bInput)
+      continue;
+    const auto& pins             = result->m_Passes[uiOld].m_Pins;
+    const auto* pPin             = std::find_if(begin(pins), end(pins), [&](const xiiRenderPipelinePin& pin) { return !pin.m_bInput && pin.m_sName == boundary.m_sPort; });
+    const auto* pFeatures        = descriptor.m_Passes[uiOld].m_Parameters.GetValue("OptionalRenderFeatures");
+    const bool  bOptionalFeature = pFeatures && (pFeatures->Get<xiiUInt8>() & variant.m_Disabled.GetValue()) != 0;
+    if (pPin == end(pins) || (!pPin->m_bOptional && !bOptionalFeature))
+      return fail(xiiStringBuilder("A conditional branch removes required root output '", boundary.m_sName, "'. Author a shared output selector."));
+    auto& output             = result->m_Interface.ExpandAndGetRef();
+    output.m_Pin             = *pPin;
+    output.m_Pin.m_sName     = boundary.m_sName;
+    output.m_Pin.m_bOptional = true;
+  }
+  xiiDynamicArray<xiiUInt32>              indices;
+  xiiDynamicArray<xiiRenderPipelinePass*> activePrototypes;
+  indices.SetCount(active.GetCount(), xiiInvalidIndex);
+  for (xiiUInt32 i = 0; i < active.GetCount(); ++i)
+  {
+    if (!active[i])
+      continue;
+    const auto uiIndex = activePrototypes.GetCount();
+    indices[i]         = uiIndex;
+    activePrototypes.PushBack(prototypes[i]);
+    if (i != uiIndex)
+    {
+      result->m_Passes[uiIndex]         = std::move(result->m_Passes[i]);
+      descriptor.m_Passes[uiIndex]      = std::move(descriptor.m_Passes[i]);
+      result->m_Provenance[uiIndex]     = std::move(result->m_Provenance[i]);
+      result->m_PassParameters[uiIndex] = std::move(result->m_PassParameters[i]);
+      result->m_ResourceScopes[uiIndex] = std::move(result->m_ResourceScopes[i]);
+    }
+  }
+  const auto uiPassCount = activePrototypes.GetCount();
+  result->m_Passes.SetCount(uiPassCount);
+  descriptor.m_Passes.SetCount(uiPassCount);
+  result->m_Provenance.SetCount(uiPassCount);
+  result->m_PassParameters.SetCount(uiPassCount);
+  result->m_ResourceScopes.SetCount(uiPassCount);
+  xiiUInt32 uiConnections = 0;
+  for (auto& connection : descriptor.m_Connections)
+  {
+    const auto uiSource = indices[connection.m_uiSource];
+    const auto uiTarget = indices[connection.m_uiTarget];
+    if (uiSource == xiiInvalidIndex || uiTarget == xiiInvalidIndex)
+      continue;
+    connection.m_uiSource = uiSource;
+    connection.m_uiTarget = uiTarget;
+    if (&connection != &descriptor.m_Connections[uiConnections])
+      descriptor.m_Connections[uiConnections] = std::move(connection);
+    ++uiConnections;
+  }
+  descriptor.m_Connections.SetCount(uiConnections);
+  result->m_Descriptor = descriptor;
+  XII_SUCCEED_OR_RETURN(result->m_Topology.Reserve(uiPassCount, uiConnections));
+  for (xiiUInt32 i = 0; i < uiPassCount; ++i)
+  {
+    auto& pass             = result->m_Passes[i];
+    pass.m_uiBindingOffset = result->m_uiBindingCount;
+    result->m_uiBindingCount += pass.m_Pins.GetCount();
+    const auto* pPrototype = activePrototypes[i];
+    result->m_ExtractionRequirements |= pPrototype->GetExtractionRequirements();
+    result->m_RuntimeFeatures |= pPrototype->GetRuntimeFeatures();
+    result->m_Descriptor.m_Settings.m_RequiredDeviceFeatures.Add(pPrototype->GetRequiredDeviceFeatures());
+    xiiGraphVertexHandle vertex;
+    XII_SUCCEED_OR_RETURN(result->m_Topology.TryAddVertex(vertex));
+    vertices.PushBack(vertex);
+  }
   xiiHashTable<xiiString, xiiBitflags<xiiRenderExtractionCategory>> groups;
-  for (xiiUInt32 i = 0; i < prototypes.GetCount(); ++i)
-    groups[result->m_ResourceScopes[i]] |= prototypes[i]->GetExtractionRequirements();
+  for (xiiUInt32 i = 0; i < uiPassCount; ++i)
+    groups[result->m_ResourceScopes[i]] |= activePrototypes[i]->GetExtractionRequirements();
   for (const auto& scope : result->m_ResourceScopes)
     result->m_GroupRequirements.PushBack(groups[scope]);
   xiiHashTable<xiiString, xiiBitflags<xiiRenderPipelineFeature>> featureGroups;
-  for (xiiUInt32 i = 0; i < prototypes.GetCount(); ++i)
-    featureGroups[result->m_ResourceScopes[i]] |= prototypes[i]->GetRuntimeFeatures();
+  for (xiiUInt32 i = 0; i < uiPassCount; ++i)
+    featureGroups[result->m_ResourceScopes[i]] |= activePrototypes[i]->GetRuntimeFeatures();
   for (const auto& scope : result->m_ResourceScopes)
     result->m_GroupFeatures.PushBack(featureGroups[scope]);
   xiiDynamicArray<xiiUInt8> connected;
@@ -269,7 +390,9 @@ xiiResult xiiRenderPipeline::Compile(const xiiRenderPipelineResourceDescriptor& 
       boundaryKey.Append(sourceId, "/");
     }
     boundaryKey.AppendFormat("{}:{}", boundary.m_sName.GetElementCount(), boundary.m_sName);
-    diagnosticPass    = expanded.m_Graph.GetVertexIndex(boundary.m_hVertex);
+    diagnosticPass = indices[expanded.m_Graph.GetVertexIndex(boundary.m_hVertex)];
+    if (diagnosticPass == xiiInvalidIndex)
+      continue;
     bool        found = false;
     const auto& pass  = result->m_Passes[diagnosticPass];
     for (xiiUInt32 i = 0; i < pass.m_Pins.GetCount(); ++i)
@@ -378,9 +501,9 @@ xiiResult xiiRenderPipeline::Compile(const xiiRenderPipelineResourceDescriptor& 
   }
   for (auto vertex : order)
     result->m_Order.PushBack(result->m_Topology.GetVertexIndex(vertex));
-  for (xiiUInt32 i = 0; i < prototypes.GetCount(); ++i)
+  for (xiiUInt32 i = 0; i < uiPassCount; ++i)
   {
-    if (prototypes[i]->ValidatePipeline(descriptor, result->m_Order, i, out_error).Failed())
+    if (activePrototypes[i]->ValidatePipeline(descriptor, result->m_Order, i, out_error).Failed())
     {
       if (out_error)
         out_error->Append(" Pass/instance: ", descriptor.m_Passes[i].m_sName);

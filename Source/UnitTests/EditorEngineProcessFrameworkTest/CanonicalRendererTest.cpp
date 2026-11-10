@@ -19,6 +19,7 @@
 #include <GraphicsCore/Meshes/MeshResource.h>
 #include <GraphicsCore/Particles/ParticleSystem.h>
 #include <GraphicsCore/Pipeline/Passes/AmbientOcclusion/AmbientOcclusionPass.h>
+#include <GraphicsCore/Pipeline/Passes/GlobalIllumination/DDGIProbeFrameData.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
@@ -31,6 +32,131 @@
 #include <SharedPluginScene/Scene/SceneShapeIconPass.h>
 
 XII_CREATE_SIMPLE_TEST_GROUP(CanonicalRenderer);
+XII_CREATE_SIMPLE_TEST(CanonicalRenderer, ViewRenderConfiguration)
+{
+  xiiGPUTestingEnvironment environment;
+  if (!XII_TEST_RESULT(environment.Initialize()))
+    return;
+  xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
+  xiiStartup::StartupHighLevelSystems();
+  XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiFrameAllocator::Reset(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
+
+  const auto pipeline = xiiLoadPipelineLibraryResource("Scene");
+  if (!XII_TEST_BOOL(pipeline.IsValid()))
+    return;
+  xiiWorldDescription description("Render configuration");
+  xiiWorld            world(description);
+  XII_LOCK(world.GetWriteMarker());
+  auto*     pModule = world.GetOrCreateModule<xiiRenderWorldModule>();
+  xiiCamera camera;
+  camera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovY, 60, 0.1f, 100);
+  camera.LookAt({-4, 0, 0}, {0, 0, 0}, {0, 0, 1});
+  xiiGALTextureCreationDescription target;
+  target.m_Type                        = xiiGALResourceDimension::Texture2D;
+  target.m_Size                        = {64, 64};
+  target.m_Format                      = xiiGALResourceFormat::RGBA8UNormalized;
+  target.m_BindFlags                   = xiiGALBindFlags::RenderTarget;
+  xiiView*                    views[2] = {};
+  xiiSharedPtr<xiiGALTexture> targets[2];
+  for (xiiUInt32 i = 0; i < 2; ++i)
+  {
+    pModule->CreateView(i == 0 ? "Configured" : "Independent", views[i]);
+    views[i]->SetCamera(&camera);
+    views[i]->SetViewport({0, 0, 64, 64});
+    views[i]->SetRenderPipelineResource(pipeline);
+    targets[i] = environment.GetDevice()->CreateTexture(target);
+    if (!XII_TEST_BOOL(targets[i] != nullptr))
+      return;
+    views[i]->SetRenderTargetView(targets[i]->GetDefaultView(xiiGALTextureViewType::RenderTarget));
+  }
+  const auto render = [&] {
+    for (xiiUInt32 i = 0; i < 3; ++i)
+    {
+      world.Update();
+      environment.GetDevice()->WaitIdle();
+    }
+    return XII_TEST_RESULT(views[0]->GetLastRenderResult()) && XII_TEST_RESULT(views[1]->GetLastRenderResult());
+  };
+
+  xiiRenderConfiguration configuration;
+  configuration.m_GlobalIllumination = xiiRenderGlobalIllumination::Disabled;
+  configuration.m_fBloomStrength     = 0.0f;
+  XII_TEST_RESULT(views[0]->SetRenderConfiguration(configuration));
+  if (!render())
+    return;
+  const auto* pDisabled    = views[0]->GetRenderPipelineInstance().GetPipeline();
+  const auto* pIndependent = views[1]->GetRenderPipelineInstance().GetPipeline();
+  XII_TEST_BOOL(pDisabled != pIndependent);
+  configuration.m_GlobalIllumination = xiiRenderGlobalIllumination::ScreenSpace;
+  XII_TEST_RESULT(views[0]->SetRenderConfiguration(configuration));
+  if (!render())
+    return;
+  XII_TEST_BOOL(views[0]->GetRenderPipelineInstance().GetPipeline() != pDisabled);
+  XII_TEST_BOOL(views[1]->GetRenderPipelineInstance().GetPipeline() == pIndependent);
+
+  if (environment.GetDevice()->GetFeatures().m_TextureUAVExtendedFormats != xiiGALDeviceFeatureState::Enabled)
+  {
+    xiiTestFramework::Output(xiiTestOutput::Details, "DDGI execution requires extended typed texture UAV formats on the test device.");
+    return;
+  }
+  configuration.m_GlobalIllumination   = xiiRenderGlobalIllumination::DDGI;
+  configuration.m_DDGI.m_uiProbeCountX = configuration.m_DDGI.m_uiProbeCountY = configuration.m_DDGI.m_uiProbeCountZ = 4;
+  configuration.m_DDGI.m_uiProbeUpdateBudget                                                                         = 8;
+  XII_TEST_RESULT(views[0]->SetRenderConfiguration(configuration));
+  if (!render())
+    return;
+  const auto& instance = views[0]->GetRenderPipelineInstance();
+  const auto* pDDGI    = instance.GetPipeline();
+  XII_TEST_BOOL(views[0]->GetEffectiveRenderConfiguration() == configuration);
+  xiiUInt32 uiSchedule = xiiInvalidIndex;
+  for (xiiUInt32 i = 0; i < pDDGI->GetDescriptor().m_Passes.GetCount(); ++i)
+    if (pDDGI->GetDescriptor().m_Passes[i].m_pType->GetTypeName() == "xiiDDGIProbeSchedulePass")
+      uiSchedule = i;
+  if (!XII_TEST_BOOL(uiSchedule != xiiInvalidIndex))
+    return;
+  const auto* pBinding = instance.GetOutputBinding(uiSchedule, "Schedule");
+  if (!XII_TEST_BOOL(pBinding && pBinding->m_pFrameData))
+    return;
+  const auto snapshot = pBinding->m_pFrameData.Downcast<const xiiDDGIProbeFrameData>();
+  XII_TEST_INT(snapshot->m_Constants.ProbeCountsAndUpdateCount.x, 4);
+  XII_TEST_INT(snapshot->m_Constants.ProbeCountsAndUpdateCount.w, 8);
+  configuration.m_DDGI.m_uiProbeUpdateBudget = 4;
+  XII_TEST_RESULT(views[0]->SetRenderConfiguration(configuration));
+  if (!render())
+    return;
+  XII_TEST_BOOL(instance.GetPipeline() == pDDGI);
+  pBinding = instance.GetOutputBinding(uiSchedule, "Schedule");
+  if (!XII_TEST_BOOL(pBinding && pBinding->m_pFrameData))
+    return;
+  const auto reduced = pBinding->m_pFrameData.Downcast<const xiiDDGIProbeFrameData>();
+  XII_TEST_INT(reduced->m_Constants.ProbeCountsAndUpdateCount.w, 4);
+  configuration.m_DDGI.m_uiProbeCountX = 8;
+  XII_TEST_RESULT(views[0]->SetRenderConfiguration(configuration));
+  if (!render())
+    return;
+  XII_TEST_BOOL(instance.GetPipeline() == pDDGI);
+  pBinding = instance.GetOutputBinding(uiSchedule, "Schedule");
+  if (!XII_TEST_BOOL(pBinding && pBinding->m_pFrameData))
+    return;
+  const auto resized = pBinding->m_pFrameData.Downcast<const xiiDDGIProbeFrameData>();
+  XII_TEST_INT(resized->m_Constants.ProbeCountsAndUpdateCount.x, 8);
+  XII_TEST_BOOL(resized->m_AtlasSize != reduced->m_AtlasSize);
+  xiiTestFramework::Output(xiiTestOutput::Details, "DDGI rendered with live budget and probe-volume changes.");
+  configuration.m_GlobalIllumination = xiiRenderGlobalIllumination::Disabled;
+  XII_TEST_RESULT(views[0]->SetRenderConfiguration(configuration));
+  if (render())
+    XII_TEST_BOOL(instance.GetPipeline() == pDisabled);
+  configuration.m_Shadows                = xiiRenderFeaturePolicy::Disabled;
+  configuration.m_ScreenSpaceReflections = xiiRenderFeaturePolicy::Disabled;
+  XII_TEST_RESULT(views[0]->SetRenderConfiguration(configuration));
+  if (render())
+  {
+    XII_TEST_BOOL(instance.GetPipeline() != pDisabled);
+    XII_TEST_BOOL(views[0]->GetEffectiveRenderConfiguration() == configuration);
+    XII_TEST_BOOL(views[1]->GetRenderPipelineInstance().GetPipeline() == pIndependent);
+  }
+}
+
 XII_CREATE_SIMPLE_TEST(CanonicalRenderer, EditorUsesScene)
 {
   xiiGPUTestingEnvironment environment;

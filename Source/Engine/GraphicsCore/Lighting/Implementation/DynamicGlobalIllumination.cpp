@@ -153,6 +153,15 @@ bool xiiDDGIContext::IsInitialized() const
   return m_pState != nullptr;
 }
 
+xiiResult xiiDDGIContext::SetUpdatePolicy(xiiUInt32 uiProbeUpdateBudget, float fTemporalHysteresis)
+{
+  if (!IsInitialized() || uiProbeUpdateBudget == 0 || !(fTemporalHysteresis >= 0.0f && fTemporalHysteresis < 1.0f))
+    return XII_FAILURE;
+  m_pState->m_Settings.m_uiProbeUpdateBudget = uiProbeUpdateBudget;
+  m_pState->m_Settings.m_fTemporalHysteresis = fTemporalHysteresis;
+  return XII_SUCCESS;
+}
+
 void xiiDDGIContext::InvalidateHistory()
 {
   if (!IsInitialized())

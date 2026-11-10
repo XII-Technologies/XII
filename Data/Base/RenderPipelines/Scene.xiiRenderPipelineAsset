@@ -22579,7 +22579,10 @@ o
 		Vec2 %Node::Pos{f{0x00805AC4,0x74889543}}
 		VarArray %Overrides{}
 		VarDict %ParameterOverrides{}
-		VarDict %Parameters{}
+		VarDict %Parameters
+		{
+			u1 %OptionalRenderFeatures{1}
+		}
 		VarArray %PinConfigurations
 		{
 			Uuid{u4{13997478721644623278,9855773289214227648}}
@@ -36837,7 +36840,10 @@ o
 		Vec2 %Node::Pos{f{0x00402345,0xC0BB5C43}}
 		VarArray %Overrides{}
 		VarDict %ParameterOverrides{}
-		VarDict %Parameters{}
+		VarDict %Parameters
+		{
+			u1 %OptionalRenderFeatures{1}
+		}
 		VarArray %PinConfigurations
 		{
 			Uuid{u4{13765150388869499813,10591729953951749409}}

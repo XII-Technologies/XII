@@ -4,6 +4,8 @@
 
 #include <GraphicsCore/GraphicsCoreDLL.h>
 
+#include <GraphicsCore/Pipeline/RenderConfiguration.h>
+
 #include <Core/Graphics/Camera.h>
 #include <Core/World/World.h>
 #include <Foundation/Communication/Event.h>
@@ -97,6 +99,7 @@ public:
   /// Per-camera render scale baseline (1.0 = native resolution).
   float GetRenderScale() const { return m_fRenderScale; } // [ property ]
   void  SetRenderScale(float fVal);                       // [ property ]
+  xiiRenderConfiguration m_RenderConfiguration;
 
   xiiViewHandle GetRenderTargetView() const;
 
