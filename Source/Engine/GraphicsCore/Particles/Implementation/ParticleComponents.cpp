@@ -189,7 +189,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiParticleColliderComponent, 1, xiiComponentMode::Dyna
   {
     XII_MEMBER_PROPERTY("SystemBinding", m_sSystemBinding),
     XII_ENUM_ACCESSOR_PROPERTY("Shape", xiiParticleColliderShape, GetShape, SetShape),
-    XII_RESOURCE_MEMBER_PROPERTY("CollisionMesh", m_hCollisionMesh)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Mesh", xiiDependencyFlags::Package)),
+    XII_RESOURCE_MEMBER_PROPERTY("CollisionMesh", m_hCollisionMesh)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Mesh_Static", xiiDependencyFlags::Package)),
     XII_RESOURCE_MEMBER_PROPERTY("SignedDistanceField", m_hSignedDistanceField)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Texture_2D", xiiDependencyFlags::Package)),
     XII_MEMBER_PROPERTY("CollisionLayer", m_uiCollisionLayer),
     XII_ACCESSOR_PROPERTY("Radius", GetRadius, SetRadius)->AddAttributes(new xiiDefaultValueAttribute(1.0f), new xiiClampValueAttribute(0.0f, xiiVariant())),
@@ -224,7 +224,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiParticleRendererComponent, 1, xiiComponentMode::Stat
     XII_MEMBER_PROPERTY("SystemBinding", m_sSystemBinding),
     XII_ENUM_MEMBER_PROPERTY("RendererType", xiiParticleRendererType, m_RendererType),
     XII_RESOURCE_MEMBER_PROPERTY("Material", m_hMaterial)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Material", xiiDependencyFlags::Package)),
-    XII_RESOURCE_MEMBER_PROPERTY("Mesh", m_hMesh)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Mesh", xiiDependencyFlags::Package)),
+    XII_RESOURCE_MEMBER_PROPERTY("Mesh", m_hMesh)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Mesh_Static", xiiDependencyFlags::Package)),
     XII_MEMBER_PROPERTY("Tint", m_Tint)->AddAttributes(new xiiDefaultValueAttribute(xiiColor::White)),
     XII_MEMBER_PROPERTY("Size", m_fSize)->AddAttributes(new xiiDefaultValueAttribute(0.05f), new xiiClampValueAttribute(0.0f, xiiVariant())),
     XII_MEMBER_PROPERTY("Stretch", m_fStretch)->AddAttributes(new xiiDefaultValueAttribute(1.0f), new xiiClampValueAttribute(0.0f, xiiVariant())),

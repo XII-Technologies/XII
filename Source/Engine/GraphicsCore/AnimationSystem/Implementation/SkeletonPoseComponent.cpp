@@ -12,7 +12,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiSkeletonPoseComponent, 2, xiiComponentMode::Dynamic)
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_RESOURCE_ACCESSOR_PROPERTY("Skeleton", GetSkeleton, SetSkeleton)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Skeleton", xiiDependencyFlags::Package)),
+    XII_RESOURCE_ACCESSOR_PROPERTY("Skeleton", GetSkeleton, SetSkeleton)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Mesh_Skeleton", xiiDependencyFlags::Package)),
     XII_MAP_WRITE_ACCESSOR_PROPERTY("BoneTransforms", GetBoneTransforms, ReflectionSetBoneTransform, RemoveBoneTransform),
     XII_ACCESSOR_PROPERTY("ApplyToOwnerMesh", GetApplyToOwnerMesh, SetApplyToOwnerMesh)->AddAttributes(new xiiDefaultValueAttribute(true)),
   }

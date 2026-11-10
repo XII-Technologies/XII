@@ -32,7 +32,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiDecalComponent, 1, xiiComponentMode::Static)
     XII_RESOURCE_ACCESSOR_PROPERTY("Decal", GetDecal, SetDecal)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Decal", xiiDependencyFlags::Package)),
     XII_RESOURCE_ACCESSOR_PROPERTY("Atlas", GetAtlas, SetAtlas)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_DecalAtlas", xiiDependencyFlags::Package)),
     XII_ACCESSOR_PROPERTY("AtlasId", GetAtlasId, SetAtlasId),
-    XII_RESOURCE_ACCESSOR_PROPERTY("Mesh", GetMesh, SetMesh)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Mesh", xiiDependencyFlags::Package)),
+    XII_RESOURCE_ACCESSOR_PROPERTY("Mesh", GetMesh, SetMesh)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Mesh_Static", xiiDependencyFlags::Package)),
     XII_ACCESSOR_PROPERTY("Extents", GetExtents, SetExtents)->AddAttributes(new xiiDefaultValueAttribute(xiiVec3(1.0f, 1.0f, 0.25f)), new xiiClampValueAttribute(xiiVec3(0.001f), xiiVariant())),
     XII_ACCESSOR_PROPERTY("UVOffset", GetUVOffset, SetUVOffset),
     XII_ACCESSOR_PROPERTY("UVScale", GetUVScale, SetUVScale)->AddAttributes(new xiiDefaultValueAttribute(xiiVec2(1.0f))),

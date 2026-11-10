@@ -12,7 +12,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiSkeletonComponent, 1, xiiComponentMode::Dynamic)
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_RESOURCE_ACCESSOR_PROPERTY("Skeleton", GetSkeleton, SetSkeleton)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Skeleton", xiiDependencyFlags::Package)),
+    XII_RESOURCE_ACCESSOR_PROPERTY("Skeleton", GetSkeleton, SetSkeleton)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Mesh_Skeleton", xiiDependencyFlags::Package)),
     XII_RESOURCE_ACCESSOR_PROPERTY("AnimationClip", GetAnimationClip, SetAnimationClip)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Animation_Clip", xiiDependencyFlags::Package)),
     XII_RESOURCE_ACCESSOR_PROPERTY("AnimationGraph", GetAnimationGraph, SetAnimationGraph)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Animation_Graph", xiiDependencyFlags::Package)),
     XII_ACCESSOR_PROPERTY("PlaybackSpeed", GetPlaybackSpeed, SetPlaybackSpeed)->AddAttributes(new xiiDefaultValueAttribute(1.0f)),
