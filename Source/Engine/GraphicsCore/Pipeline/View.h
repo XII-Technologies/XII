@@ -257,7 +257,7 @@ private:
   void UpdateFrameStats();
 
   xiiResult SynchronizeRenderPipeline();
-  void      SynchronizeRenderConfiguration();
+  xiiRenderConfiguration ResolveRenderConfiguration() const;
   void      ApplyRenderScale(float fRenderScale);
 
   /// Instantiates the selected resource and emits its frame-specific render graph.

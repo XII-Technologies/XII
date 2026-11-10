@@ -437,9 +437,10 @@ xiiResult xiiView::SynchronizeRenderPipeline()
     m_RuntimeFeatures                = m_CustomRuntimeFeatures;
     return XII_SUCCESS;
   }
-  SynchronizeRenderConfiguration();
+  const auto configuration = ResolveRenderConfiguration();
+  const auto mode          = configuration.m_GlobalIllumination == xiiRenderGlobalIllumination::Inherit ? xiiRenderGlobalIllumination::PipelineDefault : static_cast<xiiRenderGlobalIllumination::Enum>(configuration.m_GlobalIllumination.GetValue());
   bool changed = false;
-  if (runtime->Synchronize(m_hRenderPipeline, &changed).Failed())
+  if (runtime->Synchronize(m_hRenderPipeline, &changed, mode).Failed())
   {
     if (!m_bPipelineSynchronizationFailed)
     {
@@ -455,6 +456,18 @@ xiiResult xiiView::SynchronizeRenderPipeline()
     return XII_FAILURE;
   }
   m_bPipelineSynchronizationFailed = false;
+  if (runtime->GetGlobalIlluminationMode() == mode)
+  {
+    if (configuration != m_EffectiveRenderConfiguration)
+    {
+      m_EffectiveRenderConfiguration = configuration;
+      ApplyRenderScale(configuration.m_fRenderScale == xiiRenderConfiguration::s_fInheritRenderScale ? m_fDefaultRenderScale : configuration.m_fRenderScale);
+    }
+  }
+  else if (changed)
+  {
+    m_EffectiveRenderConfiguration.m_GlobalIllumination = runtime->GetGlobalIlluminationMode();
+  }
   if (changed)
   {
     InvalidateTemporalHistory();
@@ -472,7 +485,7 @@ xiiResult xiiView::SetRenderConfiguration(const xiiRenderConfiguration& configur
   return XII_SUCCESS;
 }
 
-void xiiView::SynchronizeRenderConfiguration()
+xiiRenderConfiguration xiiView::ResolveRenderConfiguration() const
 {
   xiiRenderConfiguration effective;
   if (const auto* pApplication = xiiGameApplicationBase::GetGameApplicationBaseInstance())
@@ -503,10 +516,7 @@ void xiiView::SynchronizeRenderConfiguration()
   }
 
   effective.ApplyOverrides(m_RenderConfiguration);
-  if (effective == m_EffectiveRenderConfiguration)
-    return;
-  m_EffectiveRenderConfiguration = effective;
-  ApplyRenderScale(effective.m_fRenderScale == xiiRenderConfiguration::s_fInheritRenderScale ? m_fDefaultRenderScale : effective.m_fRenderScale);
+  return effective;
 }
 
 xiiResult xiiView::BuildRenderPipeline(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)

@@ -32,7 +32,8 @@ class XII_GRAPHICSCORE_DLL xiiRenderPipelineInstance
 public:
   xiiRenderPipelineInstance();
   ~xiiRenderPipelineInstance();
-  xiiResult Synchronize(const xiiRenderPipelineResourceHandle& resource, bool* out_changed = nullptr);
+  xiiResult Synchronize(const xiiRenderPipelineResourceHandle& resource, bool* out_changed = nullptr,
+                        xiiRenderGlobalIllumination::Enum mode = xiiRenderGlobalIllumination::PipelineDefault);
   xiiResult Initialize(xiiSharedPtr<const xiiRenderPipeline> pipeline);
   /// Publish explicit previous-frame resources before current-frame inputs are available.
   /// Repeated calls within one setup are idempotent; changes to context/configuration require a new setup.
@@ -44,6 +45,8 @@ public:
   /// Frame-local binding inspection. Handles expire when the graph starts its next setup.
   const xiiRenderPipelineBinding* GetOutputBinding(xiiUInt32 passIndex, xiiStringView pin) const;
   const xiiRenderPipeline*        GetPipeline() const { return m_pPipeline.Borrow(); }
+  xiiRenderGlobalIllumination::Enum GetGlobalIlluminationMode() const { return m_GlobalIllumination; }
+  xiiStringView                     GetConfigurationError() const { return m_sConfigurationError; }
   /// Distinguishes a usable loading/missing fallback from the selected pipeline's final compilation.
   xiiResourceAcquireResult     GetResourceAcquireResult() const { return m_ResourceAcquireResult; }
   xiiStringView                GetLastBuildError() const { return m_sBuildError; }
@@ -61,6 +64,9 @@ private:
   xiiDynamicArray<xiiRenderPipelineBinding>                       m_HistoryBindings;
   xiiString                                                       m_sBuildError;
   xiiSharedPtr<const xiiRenderPipeline>                           m_pPipeline;
+  xiiSharedPtr<const xiiRenderPipeline>                           m_pBasePipeline;
+  xiiRenderGlobalIllumination::Enum                               m_GlobalIllumination = xiiRenderGlobalIllumination::PipelineDefault;
+  xiiString                                                       m_sConfigurationError;
   xiiDynamicArray<xiiRenderPipelinePass*>                         m_Passes;
   xiiDynamicArray<xiiRenderPipelineBinding>                       m_Bindings;
   xiiVariantDictionary                                            m_Parameters;

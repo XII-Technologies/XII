@@ -7,7 +7,7 @@
 #include <GraphicsCore/Components/Render/RenderWorldSettingsComponent.h>
 
 // clang-format off
-XII_BEGIN_COMPONENT_TYPE(xiiRenderWorldSettingsComponent, 2, xiiComponentMode::Static)
+XII_BEGIN_COMPONENT_TYPE(xiiRenderWorldSettingsComponent, 3, xiiComponentMode::Static)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -46,7 +46,8 @@ void xiiRenderWorldSettingsComponent::DeserializeComponent(xiiWorldReader& inout
   auto& s = inout_stream.GetStream();
 
   s >> m_ShadingQualityLevel;
-  if (inout_stream.GetComponentTypeVersion(GetStaticRTTI()) >= 2 && m_RenderConfiguration.Deserialize(s).Failed())
+  const auto uiVersion = inout_stream.GetComponentTypeVersion(GetStaticRTTI());
+  if (uiVersion >= 2 && m_RenderConfiguration.Deserialize(s, uiVersion >= 3).Failed())
     xiiLog::Error("Invalid render configuration in the scene. Using inherited defaults.");
 }
 

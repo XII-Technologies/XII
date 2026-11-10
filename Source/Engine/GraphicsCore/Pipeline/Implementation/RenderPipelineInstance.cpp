@@ -33,6 +33,9 @@ void xiiRenderPipelineInstance::Clear()
   m_Passes.Clear();
   m_Bindings.Clear();
   m_pPipeline = nullptr;
+  m_pBasePipeline      = nullptr;
+  m_GlobalIllumination = xiiRenderGlobalIllumination::PipelineDefault;
+  m_sConfigurationError.Clear();
   m_Parameters.Clear();
   m_Overrides.Clear();
   m_PassParameters.Clear();
@@ -46,22 +49,25 @@ xiiResult xiiRenderPipelineInstance::Initialize(xiiSharedPtr<const xiiRenderPipe
 {
   if (pipeline == m_pPipeline && pipeline)
     return XII_SUCCESS;
-  Clear();
   if (!pipeline)
-    return XII_FAILURE;
-  m_pPipeline = std::move(pipeline);
-  for (xiiUInt32 i = 0; i < m_pPipeline->m_Passes.GetCount(); ++i)
   {
-    xiiRenderPipelinePass* pass = m_pPipeline->m_Passes[i].m_pType->GetAllocator()->Allocate<xiiRenderPipelinePass>();
-    m_Passes.PushBack(pass);
-    auto properties = m_pPipeline->m_Descriptor.m_Passes[i].m_Properties;
-    properties.Remove("PinConfigurations"); // Authored pin objects are lowered into immutable compiled contracts.
-    if (pass->Configure(properties).Failed() || pass->InitializePinBindings(m_pPipeline->m_Passes[i].m_Pins).Failed())
-    {
-      Clear();
-      return XII_FAILURE;
-    }
+    Clear();
+    return XII_FAILURE;
   }
+  xiiDynamicArray<xiiRenderPipelinePass*> passes;
+  XII_SCOPE_EXIT(for (auto* pass : passes) pass->GetDynamicRTTI()->GetAllocator()->Deallocate(pass));
+  for (xiiUInt32 i = 0; i < pipeline->m_Passes.GetCount(); ++i)
+  {
+    xiiRenderPipelinePass* pass = pipeline->m_Passes[i].m_pType->GetAllocator()->Allocate<xiiRenderPipelinePass>();
+    passes.PushBack(pass);
+    auto properties = pipeline->m_Descriptor.m_Passes[i].m_Properties;
+    properties.Remove("PinConfigurations"); // Authored pin objects are lowered into immutable compiled contracts.
+    if (pass->Configure(properties).Failed() || pass->InitializePinBindings(pipeline->m_Passes[i].m_Pins).Failed())
+      return XII_FAILURE;
+  }
+  Clear();
+  m_pPipeline = std::move(pipeline);
+  m_Passes.Swap(passes);
   m_Bindings.SetCount(m_pPipeline->m_uiBindingCount);
   m_HistoryBindings.SetCount(m_pPipeline->m_uiBindingCount);
   m_Parameters     = m_pPipeline->m_Descriptor.m_Parameters;
@@ -83,7 +89,7 @@ xiiResult xiiRenderPipelineInstance::Initialize(xiiSharedPtr<const xiiRenderPipe
   }
   return XII_SUCCESS;
 }
-xiiResult xiiRenderPipelineInstance::Synchronize(const xiiRenderPipelineResourceHandle& resource, bool* out_changed)
+xiiResult xiiRenderPipelineInstance::Synchronize(const xiiRenderPipelineResourceHandle& resource, bool* out_changed, xiiRenderGlobalIllumination::Enum mode)
 {
   if (out_changed)
     *out_changed = false;
@@ -95,14 +101,63 @@ xiiResult xiiRenderPipelineInstance::Synchronize(const xiiRenderPipelineResource
     return XII_FAILURE;
   }
   xiiResourceLock<xiiRenderPipelineResource> acquired(resource, xiiResourceAcquireMode::AllowLoadingFallback_NeverFail);
-  auto                                       pipeline      = acquired.IsValid() ? acquired->GetPipeline() : xiiSharedPtr<const xiiRenderPipeline>();
+  auto                                       base          = acquired.IsValid() ? acquired->GetPipeline() : xiiSharedPtr<const xiiRenderPipeline>();
   const auto                                 acquireResult = acquired.GetAcquireResult();
-  if (acquireResult == xiiResourceAcquireResult::MissingFallback && (m_ResourceAcquireResult != acquireResult || pipeline != m_pPipeline))
+  if (acquireResult == xiiResourceAcquireResult::MissingFallback && (m_ResourceAcquireResult != acquireResult || base != m_pBasePipeline))
     xiiLog::Error("Render pipeline '{}' is missing or failed to compile. Rendering its missing-resource fallback.", resource.GetResourceID());
-  if (out_changed)
-    *out_changed = pipeline != m_pPipeline;
-  const auto result       = Initialize(std::move(pipeline));
+  const auto*      pPrevious = m_pPipeline.Borrow();
+  xiiStringBuilder error;
+  if (base && acquireResult == xiiResourceAcquireResult::Final && mode >= xiiRenderGlobalIllumination::Disabled)
+  {
+    xiiSharedPtr<const xiiRenderPipeline> variant;
+    auto                                  status = acquired->GetPipelineVariant(base, mode, variant, error);
+    if (status.Succeeded())
+    {
+      const auto pDevice = xiiGALDevice::HasDefaultDevice() ? xiiGALDevice::GetDefaultDevice() : xiiSharedPtr<xiiGALDevice>();
+      status             = variant->m_Descriptor.m_Settings.ValidateDevice(pDevice ? &pDevice->GetFeatures() : nullptr, &error);
+      if (status.Succeeded() && mode == xiiRenderGlobalIllumination::DDGI && (!pDevice || pDevice->GetFeatures().m_TextureUAVExtendedFormats != xiiGALDeviceFeatureState::Enabled))
+      {
+        error  = "DDGI requires extended typed texture UAV formats. Select Screen Space or Pipeline Default.";
+        status = XII_FAILURE;
+      }
+      if (status.Succeeded() && mode == xiiRenderGlobalIllumination::RayTraced &&
+          (!pDevice || pDevice->GetFeatures().m_RayTracing != xiiGALDeviceFeatureState::Enabled ||
+           !pDevice->GetGraphicsDeviceAdapterProperties().m_RayTracingProperties.m_CapabilityFlags.IsSet(xiiGALRayTracingCapabilityFlags::StandaloneShaders) ||
+           pDevice->GetFeatures().m_BindlessResources != xiiGALDeviceFeatureState::Enabled))
+      {
+        error  = "Ray-traced GI requires standalone ray shaders and bindless resources. Select DDGI, Screen Space, or Pipeline Default.";
+        status = XII_FAILURE;
+      }
+    }
+    if (status.Succeeded() && Initialize(variant).Succeeded())
+    {
+      m_GlobalIllumination    = mode;
+      m_pBasePipeline         = std::move(base);
+      m_ResourceAcquireResult = acquireResult;
+      m_sConfigurationError.Clear();
+      if (out_changed)
+        *out_changed = pPrevious != m_pPipeline.Borrow();
+      return XII_SUCCESS;
+    }
+    if (error.IsEmpty())
+      error = "The selected global illumination pipeline could not be initialized.";
+    if (m_sConfigurationError != error)
+      xiiLog::Warning("Render pipeline '{}': {}", resource.GetResourceID(), error);
+    if (m_pPipeline && m_pBasePipeline == base)
+    {
+      m_sConfigurationError = error;
+      return XII_SUCCESS;
+    }
+  }
+  const auto result = Initialize(base);
+  if (result.Failed())
+    Clear();
+  m_pBasePipeline         = std::move(base);
   m_ResourceAcquireResult = acquireResult;
+  m_GlobalIllumination    = xiiRenderGlobalIllumination::PipelineDefault;
+  m_sConfigurationError   = error;
+  if (out_changed)
+    *out_changed = pPrevious != m_pPipeline.Borrow();
   return result;
 }
 xiiResult xiiRenderPipelineInstance::BeginFrame(xiiView* view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard, const xiiVariantDictionary& overrides)

@@ -32,6 +32,7 @@ XII_CREATE_SIMPLE_TEST(Pipeline, ScopedRenderConfiguration)
   xiiRenderConfiguration project;
   project.m_fBloomStrength = 0.2f;
   project.m_fRenderScale   = 0.8f;
+  project.m_GlobalIllumination = xiiRenderGlobalIllumination::DDGI;
 
   xiiRenderConfiguration scene;
   scene.m_fBloomStrength = 0.5f;
@@ -39,6 +40,7 @@ XII_CREATE_SIMPLE_TEST(Pipeline, ScopedRenderConfiguration)
   camera.m_fRenderScale = 0.6f;
   xiiRenderConfiguration viewport;
   viewport.m_fBloomStrength = 0.0f;
+  viewport.m_GlobalIllumination = xiiRenderGlobalIllumination::Disabled;
 
   auto inherited = project;
   inherited.ApplyOverrides(scene);
@@ -48,15 +50,17 @@ XII_CREATE_SIMPLE_TEST(Pipeline, ScopedRenderConfiguration)
   XII_TEST_FLOAT(effective.m_fBloomStrength, 0.0f, 0.001f);
   XII_TEST_FLOAT(effective.m_fRenderScale, 0.6f, 0.001f);
   XII_TEST_FLOAT(inherited.m_fBloomStrength, 0.5f, 0.001f);
+  XII_TEST_BOOL(inherited.m_GlobalIllumination == xiiRenderGlobalIllumination::DDGI);
+  XII_TEST_BOOL(effective.m_GlobalIllumination == xiiRenderGlobalIllumination::Disabled);
 
   xiiContiguousMemoryStreamStorage storage;
   xiiMemoryStreamWriter            writer(&storage);
   XII_TEST_RESULT(effective.Serialize(writer));
   xiiMemoryStreamReader  reader(&storage);
   xiiRenderConfiguration restored;
-  XII_TEST_RESULT(restored.Deserialize(reader));
+  XII_TEST_RESULT(restored.Deserialize(reader, true));
   XII_TEST_BOOL(restored == effective);
-  XII_TEST_BOOL(restored.Deserialize(reader).Failed());
+  XII_TEST_BOOL(restored.Deserialize(reader, true).Failed());
   XII_TEST_BOOL(restored == effective);
   restored.m_fRenderScale = 0.05f;
   XII_TEST_BOOL(restored.Serialize(writer).Failed());
@@ -64,6 +68,37 @@ XII_CREATE_SIMPLE_TEST(Pipeline, ScopedRenderConfiguration)
   const auto* pType = xiiGetStaticRTTI<xiiRenderConfiguration>();
   XII_TEST_BOOL(pType->FindPropertyByName("BloomStrength") != nullptr);
   XII_TEST_BOOL(pType->FindPropertyByName("RenderScale") != nullptr);
+}
+
+XII_CREATE_SIMPLE_TEST(Pipeline, RenderConfigurationVariants)
+{
+  xiiRenderPipelineResourceDescriptor descriptor;
+  descriptor.AddPass("Shared", xiiGetStaticRTTI<xiiSettingsPipelinePass>());
+  const auto uiBranch = descriptor.AddPass("Probe update", xiiGetStaticRTTI<xiiSettingsPipelinePass>());
+  descriptor.m_Passes[uiBranch].m_Parameters.Insert("GlobalIlluminationBranches", xiiRenderGlobalIllumination::BranchBit(xiiRenderGlobalIllumination::DDGI));
+  const auto                                 resource = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("PipelineSettings/Variants", std::move(descriptor));
+  xiiResourceLock<xiiRenderPipelineResource> acquired(resource, xiiResourceAcquireMode::BlockTillLoaded);
+  const auto                                 base = acquired->GetPipeline();
+  XII_TEST_INT(base->GetExecutionOrder().GetCount(), 2);
+  xiiSharedPtr<const xiiRenderPipeline> disabled, reused;
+  xiiStringBuilder                      error;
+  XII_TEST_RESULT(acquired->GetPipelineVariant(base, xiiRenderGlobalIllumination::Disabled, disabled, error));
+  XII_TEST_RESULT(acquired->GetPipelineVariant(base, xiiRenderGlobalIllumination::Disabled, reused, error));
+  XII_TEST_BOOL(disabled == reused);
+  XII_TEST_INT(disabled->GetExecutionOrder().GetCount(), 1);
+  XII_TEST_BOOL(acquired->GetPipelineVariant(base, xiiRenderGlobalIllumination::ScreenSpace, reused, error).Failed());
+  XII_TEST_BOOL(error.FindSubString("does not author") != nullptr);
+  XII_TEST_BOOL(reused == disabled);
+
+  xiiRenderPipelineInstance first, second;
+  XII_TEST_RESULT(first.Synchronize(resource, nullptr, xiiRenderGlobalIllumination::Disabled));
+  XII_TEST_RESULT(second.Synchronize(resource));
+  XII_TEST_BOOL(first.GetPipeline() == disabled.Borrow());
+  XII_TEST_BOOL(second.GetPipeline() == base.Borrow());
+  XII_TEST_RESULT(first.Synchronize(resource, nullptr, xiiRenderGlobalIllumination::ScreenSpace));
+  XII_TEST_BOOL(first.GetPipeline() == disabled.Borrow());
+  XII_TEST_BOOL(first.GetGlobalIlluminationMode() == xiiRenderGlobalIllumination::Disabled);
+  XII_TEST_BOOL(!first.GetConfigurationError().IsEmpty());
 }
 
 XII_CREATE_SIMPLE_TEST(Pipeline, AssetSettings)

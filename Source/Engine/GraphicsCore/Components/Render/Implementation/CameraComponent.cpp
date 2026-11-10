@@ -151,7 +151,7 @@ void xiiCameraComponentManager::OnCameraConfigsChanged(void* dummy)
 //////////////////////////////////////////////////////////////////////////
 
 // clang-format off
-XII_BEGIN_COMPONENT_TYPE(xiiCameraComponent, 3, xiiComponentMode::Static)
+XII_BEGIN_COMPONENT_TYPE(xiiCameraComponent, 4, xiiComponentMode::Static)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -247,7 +247,7 @@ void xiiCameraComponent::DeserializeComponent(xiiWorldReader& inout_stream)
   const auto uiVersion = inout_stream.GetComponentTypeVersion(GetStaticRTTI());
   if (uiVersion >= 2)
     s >> m_bShowFrameStats;
-  if (uiVersion >= 3 && m_RenderConfiguration.Deserialize(s).Failed())
+  if (uiVersion >= 3 && m_RenderConfiguration.Deserialize(s, uiVersion >= 4).Failed())
     xiiLog::Error("Invalid render configuration in the camera. Using inherited defaults.");
 
   MarkAsModified();
