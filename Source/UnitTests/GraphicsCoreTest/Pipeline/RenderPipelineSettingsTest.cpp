@@ -82,6 +82,14 @@ XII_CREATE_SIMPLE_TEST(Pipeline, ScopedRenderConfiguration)
 
 XII_CREATE_SIMPLE_TEST(Pipeline, RenderConfigurationProfileMigration)
 {
+  xiiPlatformProfile platform;
+  platform.AddMissingConfigs();
+  const auto* pDefaults = platform.GetTypeConfig<xiiRenderPipelineProfileConfig>();
+  if (!XII_TEST_BOOL(pDefaults != nullptr))
+    return;
+  XII_TEST_BOOL(pDefaults->m_RenderConfiguration == xiiRenderConfiguration{});
+  XII_TEST_STRING(pDefaults->GetResourceReference(), xiiRenderPipelineProfileConfig::s_szScenePipeline);
+
   xiiRenderPipelineProfileConfig saved;
   saved.m_sMainRenderPipeline                              = "CustomPipeline";
   saved.m_RenderConfiguration.m_GlobalIllumination         = xiiRenderGlobalIllumination::DDGI;

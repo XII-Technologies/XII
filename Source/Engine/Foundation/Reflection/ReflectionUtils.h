@@ -166,7 +166,8 @@ public:
   static xiiVariant GetDefaultValue(const xiiAbstractProperty* pProperty, xiiVariant index = xiiVariant());
 
 
-  /// Sets all member properties in \a pObject of type \a pRtti to the value returned by xiiToolsReflectionUtils::GetDefaultValue()
+  /// Sets writable member properties to their reflected defaults where supported by SetMemberPropertyValue.
+  /// Embedded classes without a variant representation retain their existing state.
   static void SetAllMemberPropertiesToDefault(const xiiRTTI* pRtti, void* pObject);
 
   /// If pAttrib is valid and its min/max values are compatible, value will be clamped to them.

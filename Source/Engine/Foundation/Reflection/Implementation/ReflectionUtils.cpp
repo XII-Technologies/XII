@@ -1730,14 +1730,17 @@ void xiiReflectionUtils::SetAllMemberPropertiesToDefault(const xiiRTTI* pRtti, v
   xiiTemporaryHybridArray<const xiiAbstractProperty*, 32> properties;
   pRtti->GetAllProperties(properties);
 
-  for (auto pProp : properties)
+  for (const auto* pProp : properties)
   {
-    if (pProp->GetCategory() == xiiPropertyCategory::Member)
-    {
-      const xiiVariant defValue = xiiReflectionUtils::GetDefaultValue(pProp);
+    if (pProp->GetCategory() != xiiPropertyCategory::Member || pProp->GetFlags().IsSet(xiiPropertyFlags::ReadOnly))
+      continue;
 
-      xiiReflectionUtils::SetMemberPropertyValue(static_cast<const xiiAbstractMemberProperty*>(pProp), pObject, defValue);
-    }
+    // GetDefaultValue uses an object-graph UUID for embedded classes without a variant representation.
+    if (pProp->GetFlags().IsSet(xiiPropertyFlags::Class) && !pProp->GetFlags().IsSet(xiiPropertyFlags::Pointer) && !IsValueType(pProp))
+      continue;
+
+    const xiiVariant defValue = GetDefaultValue(pProp);
+    SetMemberPropertyValue(static_cast<const xiiAbstractMemberProperty*>(pProp), pObject, defValue);
   }
 }
 
