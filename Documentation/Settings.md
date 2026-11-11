@@ -93,9 +93,9 @@ No production CVar was proven unused across its supported development configurat
 | `App.ShowFrameStats` | Keep | `RenderFps()` overlay and input toggle; `false`, Save. Development diagnostics with a useful remembered preference. |
 | `Debug.TextScale` | Keep | Debug renderer glyph layout, upload and public text-scale API; `1`, Save. Runtime readability/calibration control, not a competing render-profile setting. |
 | `Streaming.TextureLoadDelay` | Improve | Real resource-loader fault injection; `0` seconds, now transient. Ignore non-finite/negative inputs and cap a single injected delay at 60 seconds. Saved artificial delays should not unexpectedly slow future sessions. Old keys remain harmless, ignored by normal save-flag-aware loading; explicit command-line/ignore-save loading still works. |
-| `Graphics.DynamicResolution.TargetFrameTimeMs` | Keep | GPU timestamp driven PID controller; `16` ms, transient. Target clamped at the use site; does not duplicate authored base render scale. |
-| `Graphics.DynamicResolution.MinimumRenderScale` | Keep | PID bound relative to authored scale; `1`, transient, native resolution until explicitly lowered. |
-| `Graphics.DynamicResolution.MaximumRenderScale` | Keep | PID upper bound; `1`, transient. Existing use-site bounds retained. |
+| `Graphics.DynamicResolution.TargetFrameTimeMs` | Migrated | `xiiDynamicResolutionSettings.TargetFrameTimeMs` drives the selected view’s PID controller. Default 16 ms. |
+| `Graphics.DynamicResolution.MinimumRenderScale` | Migrated | `xiiDynamicResolutionSettings.MinimumRenderScale` is resolved per view. Default 1. |
+| `Graphics.DynamicResolution.MaximumRenderScale` | Migrated | `xiiDynamicResolutionSettings.MaximumRenderScale` is resolved per view. Default 1. |
 | `Spatial.Queries.CachingThreshold` | Improve | Spatial query cache heuristic; `100`, transient, minimum `1` enforced at use site. Remove captured-this subscription when each spatial system dies, preventing a callback into a destroyed cache mutex. |
 | `Profiling.DiscardThresholdMS` | Keep | CPU/GPU profiling scope filtering and public threshold setter; `0.1` ms, transient. |
 | `DirectoryWatcher.ForceNonNTFS` | Keep | Windows directory watcher fallback-path testing; `false`, transient. Concrete platform-specific diagnostic. |
@@ -115,3 +115,5 @@ After existing CVar startup loading, `xiiGameApplication` loads `:appdata/Runtim
 ## Verification
 
 New tests cover reflected discovery before queries, explicit/constructor defaults, non-allocatable types, missing/removed DDL properties, invalid values and roots, transactional loads, change notification counts, plugin type load/unload, per-document instances, project isolation, settings UI search/reset/Apply/Cancel, context invalidation, saved CVar migration and reflected-file precedence. Core regressions cover script CVar lookup lifetime and spatial subscription teardown. Existing CVar persistence/restart tests and platform export failure tests remain applicable. Build and executed-test results are recorded in the pull request; do not infer platform coverage from compilation alone.
+
+See [Subsystem Render Settings](SubsystemRenderSettings.md) for the rendering ownership and migration inventory.
