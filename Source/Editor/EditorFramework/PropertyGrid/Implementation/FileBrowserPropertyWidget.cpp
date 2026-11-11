@@ -38,10 +38,11 @@ xiiQtFilePropertyWidget::xiiQtFilePropertyWidget() :
 
     pMenu->addAction(QIcon(QLatin1String(":/GuiFoundation/Icons/OpenFolder.svg")), QLatin1String("Open in Explorer"), this, SLOT(OnOpenExplorer()));
 
-    connect(pMenu, &QMenu::aboutToShow, pMenu, [=]() {
-      pActionOpenFile->setEnabled(!m_pWidget->text().isEmpty());
-      pActionOpenWith->setEnabled(!m_pWidget->text().isEmpty());
-      //
+    connect(pMenu, &QMenu::aboutToShow, pMenu, [this, pActionOpenFile, pActionOpenWith]() {
+      const bool bHasText = !m_pWidget->text().isEmpty();
+
+      pActionOpenFile->setEnabled(bHasText);
+      pActionOpenWith->setEnabled(bHasText);
     });
 
     m_pButton->setMenu(pMenu);
@@ -280,11 +281,13 @@ xiiQtExternalFilePropertyWidget::xiiQtExternalFilePropertyWidget() :
     QAction* pActionOpenWith = pMenu->addAction(QIcon(QLatin1String(":/GuiFoundation/Icons/Document.svg")), QLatin1String("Open With..."), this, SLOT(OnOpenFileWith()));
     pMenu->addAction(QIcon(QLatin1String(":/GuiFoundation/Icons/OpenFolder.svg")), QLatin1String("Open in Explorer"), this, SLOT(OnOpenExplorer()));
 
-    connect(pMenu, &QMenu::aboutToShow, pMenu, [=]() {
-      pActionOpenFile->setEnabled(!m_pWidget->text().isEmpty());
-      pActionOpenWith->setEnabled(!m_pWidget->text().isEmpty());
-      //
+    connect(pMenu, &QMenu::aboutToShow, pMenu, [this, pActionOpenFile, pActionOpenWith]() {
+      const bool bHasText = !m_pWidget->text().isEmpty();
+
+      pActionOpenFile->setEnabled(bHasText);
+      pActionOpenWith->setEnabled(bHasText);
     });
+
     m_pButton->setMenu(pMenu);
   }
 

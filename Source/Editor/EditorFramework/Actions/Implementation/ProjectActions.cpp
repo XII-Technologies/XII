@@ -406,6 +406,9 @@ xiiProjectAction::xiiProjectAction(const xiiActionContext& context, const char* 
     case xiiProjectAction::ButtonType::ReloadResources:
       SetIconPath(":/GuiFoundation/Icons/ReloadResources.svg");
       break;
+    case xiiProjectAction::ButtonType::PlayerSessions:
+      // TODO: SetIconPath(":/GuiFoundation/Icons/PlayerSessions.svg");
+      break;
     case xiiProjectAction::ButtonType::LaunchFileserve:
       SetIconPath(":/EditorFramework/Icons/Fileserve.svg");
       break;
@@ -483,6 +486,7 @@ xiiProjectAction::xiiProjectAction(const xiiActionContext& context, const char* 
       m_ButtonType == ButtonType::TagsDialog ||
       m_ButtonType == ButtonType::ReloadEngine ||
       m_ButtonType == ButtonType::ReloadResources ||
+      m_ButtonType == ButtonType::PlayerSessions ||
       m_ButtonType == ButtonType::LaunchFileserve ||
       m_ButtonType == ButtonType::LaunchTracy ||
       m_ButtonType == ButtonType::LaunchInspector ||
@@ -528,6 +532,7 @@ xiiProjectAction::~xiiProjectAction()
       m_ButtonType == ButtonType::SetupCppProject ||
       m_ButtonType == ButtonType::OpenCppProject ||
       m_ButtonType == ButtonType::CompileCppProject ||
+      m_ButtonType == ButtonType::PlayerSessions ||
       m_ButtonType == ButtonType::ExportProject ||
       m_ButtonType == ButtonType::ClearAssetCaches ||
       m_ButtonType == ButtonType::ProjectSettings)

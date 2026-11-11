@@ -16,7 +16,7 @@ namespace
     xiiBitflags<xiiDependencyFlags> flags;
     for (const auto* attribute : attributes)
     {
-      if (attribute->GetDynamicRTTI()->IsDerivedFrom<xiiTemporaryAttribute>())
+      if (attribute->GetDynamicRTTI()->template IsDerivedFrom<xiiTemporaryAttribute>())
         return {};
       if (const auto* asset = xiiDynamicCast<const xiiAssetBrowserAttribute*>(attribute))
         flags |= asset->GetDependencyFlags();

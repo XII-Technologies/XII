@@ -4,12 +4,12 @@
 
 ------------------
 
-[![GitHub release (latest by date)](https://img.shields.io/github/v/release/githubuser0xFFFF/Qt-Advanced-Docking-System?color=%23ff9833)](https://github.com/githubuser0xFFFF/Qt-Advanced-Docking-System/releases/latest)
+[![GitHub release (latest by date)](https://img.shields.io/github/v/release/githubuser0xFFFF/Qt-Advanced-Docking-System)](https://github.com/githubuser0xFFFF/Qt-Advanced-Docking-System/releases/latest)
 [![License: LGPL v2.1](https://img.shields.io/badge/License-LGPL%20v2.1-blue.svg)](gnu-lgpl-v2.1.md)
-[![Build status](https://github.com/githubuser0xFFFF/Qt-Advanced-Docking-System/workflows/linux-builds/badge.svg)](https://github.com/githubuser0xFFFF/Qt-Advanced-Docking-System/actions?query=workflow%3Alinux-builds)
-[![Build status](https://ci.appveyor.com/api/projects/status/qcfb3cy932jw9mpy/branch/master?svg=true)](https://ci.appveyor.com/project/githubuser0xFFFF/qt-advanced-docking-system/branch/master)
-[![windows-builds](https://github.com/githubuser0xFFFF/Qt-Advanced-Docking-System/actions/workflows/windows-cmake.yml/badge.svg?branch=master)](https://github.com/githubuser0xFFFF/Qt-Advanced-Docking-System/actions/workflows/windows-cmake.yml)
+[![Linux Builds](https://github.com/githubuser0xFFFF/Qt-Advanced-Docking-System/actions/workflows/linux-builds.yml/badge.svg)](https://github.com/githubuser0xFFFF/Qt-Advanced-Docking-System/actions/workflows/linux-builds.yml)
+[![Windows Builds](https://github.com/githubuser0xFFFF/Qt-Advanced-Docking-System/actions/workflows/windows-cmake.yml/badge.svg?branch=master)](https://github.com/githubuser0xFFFF/Qt-Advanced-Docking-System/actions/workflows/windows-cmake.yml)
 [![GitHub contributors](https://img.shields.io/github/contributors/githubuser0xFFFF/Qt-Advanced-Docking-System?color=ffdf00)](https://github.com/githubuser0xFFFF/Qt-Advanced-Docking-System/graphs/contributors)
+
 
 Qt Advanced Docking System lets you create customizable layouts using a full
 featured window docking system similar to what is found in many popular
@@ -21,7 +21,68 @@ integrated development environments (IDEs) such as Visual Studio.
 
 [![Video Advanced Docking](doc/advanced-docking_video.png)](https://www.youtube.com/watch?v=7pdNfafg3Qc)
 
+## Overview
+
+- [New and Noteworthy](#new-and-noteworthy)
+- [Features](#features)
+- [Python Bindings](#python-bindings)
+- [Tested Compatible Environments](#tested-compatible-environments)
+- [Build](#build)
+- [Getting Started / Example](#getting-started--example)
+- [License Information](#license-information)
+- [Donation](#donation)
+- [Showcase](#showcase)
+- [Alternative Docking System Implementations](#alternative-docking-system-implementations)
+
 ## New and Noteworthy
+
+### Release 5.0
+
+#### Full Dark Mode Support
+
+Thanks to the [contribution](https://github.com/githubuser0xFFFF/Qt-Advanced-Docking-System/pull/842) from [Vojtěch Miškovský](https://github.com/miskovoj), Qt ADS now provides full dark mode support with automatic theme switching. This includes:
+
+- New stylesheets and icons
+- Automatic detection of the current theme (light/dark)
+- Automatic palette update propagation to user widgets
+
+![Dark Mode](doc/DarkMode.png)
+
+[read more...](doc/user-guide.md#default-style-sheet)
+
+#### Native Wayland Support
+
+Thanks to the outstanding contributions of [Matt Liberty](https://github.com/githubuser0xFFFF/Qt-Advanced-Docking-System/pull/844),
+the creator of [Joulescope](#joulescope), and [Davide Faconti](https://github.com/githubuser0xFFFF/Qt-Advanced-Docking-System/pull/837), the creator of [PlotJuggler](#plot-juggler),  Qt ADS now provides native
+Wayland support, making Linux desktop environments such as GNOME and KDE first-class platforms for the Advanced Docking System.
+
+![Wayland Support](doc/Wayland_Logo.svg)
+
+Previous versions relied on mechanisms that are not supported by the Wayland protocol, resulting in
+incorrect drag previews and broken docking behavior. The new implementation adopts Wayland-native
+APIs while preserving the familiar Qt ADS user experience.
+
+Highlights include:
+
+- Full support for docking, undocking, and re-docking floating windows on Wayland
+- Accurate drag previews and correctly positioned docking overlays
+- Hybrid drag behavior: smooth in-window docking with seamless transition to native compositor-managed window dragging
+- Platform-specific implementation that affects only Wayland—Windows, macOS, and X11 continue to use the existing, proven code path
+- Improved compatibility with modern Linux desktop environments while maintaining the same intuitive docking workflow across all platforms
+
+With these changes, Qt ADS now offers a reliable and polished docking experience on native Wayland without sacrificing compatibility or behavior on other operating systems.
+
+### Release 4.5
+
+#### Tabs at Bottom
+
+A new global dock manager flag `TabsAtBottom` has been added to configuration flags. This flag allows to configure if the tabs of dock areas are shown at the top (default) or at the bottom of the respective container.
+
+If the flag is set, tabs will be shown at the bottom instead of in the title bar.
+
+![TabsAtBottom true](doc/cfg_flag_TabsAtBottom_true.png)
+
+### Release 4.1
 
 Release [4.1](https://github.com/githubuser0xFFFF/Qt-Advanced-Docking-System/releases/latest) significantly improves the Auto-Hide functionality and also brings improvements
 for Drag and Drop of dock widgets into dock area tabs. These are the highlights of the new version:
@@ -138,66 +199,6 @@ know it from Visual Studio.
  [learn more...](doc/user-guide.md#focushighlighting)
 
 ## Features
-
-### Overview
-
-- [New and Noteworthy](#new-and-noteworthy)
-    - [Drag \& Drop to Auto-Hide](#drag--drop-to-auto-hide)
-    - [Auto-Hide Tab Insertion Order](#auto-hide-tab-insertion-order)
-    - [Auto-Hide Tab Sorting](#auto-hide-tab-sorting)
-    - [Auto-Hide Drag to Float / Dock](#auto-hide-drag-to-float--dock)
-    - [Auto-Hide Context Menu](#auto-hide-context-menu)
-    - [Dock Area Tab Insert Order](#dock-area-tab-insert-order)
-- [Features](#features)
-  - [Overview](#overview)
-  - [Docking everywhere - no central widget](#docking-everywhere---no-central-widget)
-  - [Docking inside floating windows](#docking-inside-floating-windows)
-  - [Grouped dragging](#grouped-dragging)
-  - [Perspectives for fast switching of the complete main window layout](#perspectives-for-fast-switching-of-the-complete-main-window-layout)
-  - [Opaque and non-opaque splitter resizing](#opaque-and-non-opaque-splitter-resizing)
-  - [Cancelable docking process](#cancelable-docking-process)
-  - [Tab-menu for easy handling of many tabbed dock widgets](#tab-menu-for-easy-handling-of-many-tabbed-dock-widgets)
-  - [Many different ways to detach dock widgets](#many-different-ways-to-detach-dock-widgets)
-  - [Supports deletion of dynamically created dock widgets](#supports-deletion-of-dynamically-created-dock-widgets)
-  - [Auto-Hide Functionality](#auto-hide-functionality)
-- [Python Bindings](#python-bindings)
-  - [PySide6](#pyside6)
-  - [PyQt6](#pyqt6)
-  - [PyQt5](#pyqt5)
-- [Tested Compatible Environments](#tested-compatible-environments)
-  - [Supported Qt Versions](#supported-qt-versions)
-  - [Windows](#windows)
-  - [macOS](#macos)
-  - [Linux](#linux)
-- [Build](#build)
-  - [Qt5 on Ubuntu 18.04 or 20.04](#qt5-on-ubuntu-1804-or-2004)
-  - [Qt5 on Ubuntu 22.04](#qt5-on-ubuntu-2204)
-  - [Qt6 on Ubuntu 22.04](#qt6-on-ubuntu-2204)
-- [Getting started / Example](#getting-started--example)
-- [License information](#license-information)
-- [Donation](#donation)
-- [Showcase](#showcase)
-  - [Qt Creator IDE](#qt-creator-ide)
-  - [Qt Design Studio](#qt-design-studio)
-  - [CETONI Elements](#cetoni-elements)
-  - [ezEditor](#ezeditor)
-  - [D-Tect X](#d-tect-x)
-  - [HiveWE](#hivewe)
-  - [Ramses Composer](#ramses-composer)
-  - [Plot Juggler](#plot-juggler)
-  - [Notepad Next](#notepad-next)
-  - [MetGem](#metgem)
-  - [PRE Workbench](#pre-workbench)
-  - [RDE – Robox Development Environment](#rde--robox-development-environment)
-  - [ResInsight](#resinsight)
-  - [ADTF 3](#adtf-3)
-  - [DREAM3D-NX](#dream3d-nx)
-  - [LabPlot](#labplot)
-  - [Scrutiny Debugger](#scrutiny-debugger)
-- [Alternative Docking System Implementations](#alternative-docking-system-implementations)
-  - [KDDockWidgets](#kddockwidgets)
-  - [QtitanDocking](#qtitandocking)
-  - [DockingPanes](#dockingpanes)
 
 ### Docking everywhere - no central widget
 
@@ -372,7 +373,7 @@ The library supports **Qt5** and **Qt6**.
 
 ### Windows
 
-Windows 10 / 11 [![Build status](https://ci.appveyor.com/api/projects/status/qcfb3cy932jw9mpy/branch/master?svg=true)](https://ci.appveyor.com/project/githubuser0xFFFF/qt-advanced-docking-system/branch/master)
+Windows 10 / 11 
 [![windows-builds](https://github.com/githubuser0xFFFF/Qt-Advanced-Docking-System/actions/workflows/windows-cmake.yml/badge.svg?branch=master)](https://github.com/githubuser0xFFFF/Qt-Advanced-Docking-System/actions/workflows/windows-cmake.yml)
 
 The library was developed on and for Windows. It is used in a commercial Windows application and is therefore constantly tested.
@@ -393,18 +394,39 @@ the library switches to `QWidget` based title bars.
 
 - **Kubuntu 18.04 and 19.10** - uses KWin - no native title bars
 - **Ubuntu 18.04, 19.10 and 20.04** - native title bars are supported
-- **Ubuntu 22.04** - uses Wayland -> no native title bars
+- **Ubuntu 22.04 and later** - uses Wayland -> native title bars (see [Wayland](#wayland) below)
 
 There are some requirements for the Linux distribution that have to be met:
 
 - an X server that supports ARGB visuals and a compositing window manager. This is required to display the translucent dock overlays ([https://doc.qt.io/qt-5/qwidget.html#creating-translucent-windows](https://doc.qt.io/qt-5/qwidget.html#creating-translucent-windows)). If your Linux distribution does not support this, or if you disable this feature, you will very likely see issue [#95](https://github.com/githubuser0xFFFF/Qt-Advanced-Docking-System/issues/95).
-- Wayland is not properly supported by Qt yet. If you use Wayland, then you should set the session type to x11: `XDG_SESSION_TYPE=x11 ./AdvancedDockingSystemDemo`. You will find more details about this in issue [#288](https://github.com/githubuser0xFFFF/Qt-Advanced-Docking-System/issues/288).
+- On Wayland the dock overlays are rendered as child widgets and this requirement does not apply.
 
 Screenshot Kubuntu:
 ![Advanced Docking on Kubuntu Linux](doc/linux_kubuntu_1804.png)
 
 Screenshot Ubuntu:
 ![Advanced Docking on Ubuntu Linux](doc/linux_ubuntu_1910.png)
+
+#### Wayland
+
+Since Qt 6.6.3 docking is supported on Wayland. Earlier Qt versions do not implement the `xdg_toplevel_drag_v1` protocol that is required to drag a floating window with the cursor, so on those versions you should still set the session type to X11 (XWayland): `XDG_SESSION_TYPE=x11 ./AdvancedDockingSystemDemo`. You will find more details in issues [#288](https://github.com/githubuser0xFFFF/Qt-Advanced-Docking-System/issues/288) and [#714](https://github.com/githubuser0xFFFF/Qt-Advanced-Docking-System/issues/714).
+
+Wayland does not allow a client to move its own top level windows in screen coordinates or to query the global cursor position, so docking is implemented differently than on the other platforms. This results in a few behavioral differences on Wayland:
+
+- Floating dock containers always use native window decorations (the custom
+  `QWidget` title bar is not available), because the custom title bar cannot
+  move the window.
+- Undocking and re-docking use a compositor driven drag (the floating window
+  itself follows the cursor) instead of the translucent drag preview.
+- The compositor controls the window stacking, so floating windows are not
+  forced to stay on top of the main window.
+- Saved layouts restore the docked arrangement, the floating-window sizes and
+  their maximized/normal state, but **not** the on-screen position of floating
+  windows (the same applies to the application's own main window). Wayland does
+  not let a client position its top-level windows, so the compositor decides
+  where restored windows appear. Restoring positions requires compositor side
+  session management (the staging `xx-session-management-v1` protocol), which is
+  not yet available through Qt.
 
 ## Build
 
@@ -430,9 +452,6 @@ sudo apt install qtbase5-dev qtbase5-private-dev qtbase5-dev-tools libqt5svg5 li
 ```bash
 sudo apt install qt6-default qt6-base-dev qt6-base-private-dev qt6-tools-dev libqt6svg6 qt6-qtdeclarative
 ```
-
-Open the `ads.pro` file with QtCreator and start the build, that's it.
-You can run the demo project and test it yourself.
 
 ## Getting started / Example
 
@@ -686,6 +705,7 @@ says about the switch to Qt Advanced Docking:
 
 ![ADTF](doc/showcase_adtf.png)
 
+
 ### [DREAM3D-NX](https://www.dream3d.io)
 
 DREAM3D-NX *(Digital Representation Environment for Analysis of Materials in 3D)* is a cross-platform and modular, software suite that allows users to prepare, reconstruct, quantify, instantiate, and mesh, multidimensional, multimodal microstructural data, as well as many other applications.
@@ -694,9 +714,10 @@ DREAM3D-NX *(Digital Representation Environment for Analysis of Materials in 3D)
 taking advantage of the Advanced Docking System to present a highly customizable user interface
 for DREAM3D-NX Version 7.
 
+[read more...](http://www.dream3d.io/)
+
 ![DREAM.3D NX](doc/showcase_dream3d_nx.png)
 
-[read more...](http://www.dream3d.io/)
 
 ### [LabPlot](https://labplot.kde.org/)
 
@@ -704,30 +725,59 @@ KDE LabPlot is the ultimate free, open source and cross-platform tool for scient
 
 The LabPlot project recently switched to the Qt Advanced Docking System for their user interface. This switch represents a significant improvement to the LabPlot software, allowing users to create and manage complex data visualization layouts with ease.
 
+[read more...](https://labplot.kde.org/)
+
 ![LabPlot](doc/showcase_labplot.png)
 
-[read more...](https://labplot.kde.org/)
 
 ### [Scrutiny Debugger](https://scrutinydebugger.com/)
 
-Scrutiny is an [open source](https://github.com/scrutinydebugger/) non-intrusive, real-time debugger for embedded systems, built for fast introspection, memory access, and signal visualization-without stopping your application. It uses the Qt Advanced Docking System (ADS) to provide fully customizable dashboards for monitoring and control.
+Scrutiny is an [open source](https://github.com/scrutinydebugger/) non-intrusive, real-time debugger for embedded systems, built for fast introspection, memory access, and signal visualization—without stopping your application. It uses the Qt Advanced Docking System (ADS) to provide fully customizable dashboards for monitoring and control.
 
 Some of the highlights are:
 
-- **Debug without interfering** - Inspect C++ memory live without disrupting execution flow.
-- **HIL testing made easy** - Write to variables through the GUI or SDK to simulate conditions.
-- **Configure during production** - Access and tweak variables anytime via GUI or Python.
-- **Catch fast events** - Embedded graphs sample at task-level frequency, even with multithreading.
-- **Build your dashboard** - Use ADS to create and save custom layouts for your debug sessions.
-- **No JTAG needed** - Communicates over serial, CAN, or network interfaces.
-- **Compact C++11 library** - Lightweight and easy to integrate into your firmware.
-- **Live graphs and runtime values** - Visualize variables, RPVs, and aliases in real time.
+- **Debug without interfering** — Inspect C++ memory live without disrupting execution flow.
+- **HIL testing made easy** — Write to variables through the GUI or SDK to simulate conditions.
+- **Configure during production** — Access and tweak variables anytime via GUI or Python.
+- **Catch fast events** — Embedded graphs sample at task-level frequency, even with multithreading.
+- **Build your dashboard** — Use ADS to create and save custom layouts for your debug sessions.
+- **No JTAG needed** — Communicates over serial, CAN, or network interfaces.
+- **Compact C++11 library** — Lightweight and easy to integrate into your firmware.
+- **Live graphs and runtime values** — Visualize variables, RPVs, and aliases in real time.
 
-ADS powers Scrutiny’s flexible interface, letting users organize views and data panels to suit their workflow - ideal for real-time monitoring, testing, and debugging.
+ADS powers Scrutiny’s flexible interface, letting users organize views and data panels to suit their workflow — ideal for real-time monitoring, testing, and debugging.
 
 [read more...](https://scrutinydebugger.com/)
 
 [![Scrutiny Debugger UI](doc/showcase_scrutiny-dark.png)](https://www.youtube.com/watch?v=Dd3osxW-Clo)
+
+### [PiSoWorks](https://pypi.org/project/pisoworks/)
+
+PiSoWorks is a Python application for controlling the piezo amplifiers, such as the [NV200/D](https://www.piezosystem.com/product/nv-200-d-compact-amplifier/), from [piezosystem jena](https://www.piezosystem.com/) GmbH. Built with **PySide6**, it also serves as an excellent real-world example of how to use the [Qt ADS Python bindings](#python-bindings) to create sophisticated, dockable user interfaces for Python applications.
+
+[read more...](https://piezosystemjena.github.io/PiSoWorks/multiple_devices.html)
+
+![PiSoWorks](doc/showcase_pysoworks.png)
+
+### [Joulescope](https://www.joulescope.com/)
+
+**Joulescope** is a professional desktop application for precision current, voltage, power, and energy analysis, widely used by embedded systems engineers to optimize the energy consumption of their hardware and firmware. Its highly customizable, dockable user interface has been powered by Qt Advanced Docking System (Qt ADS) for many years, making it an excellent real-world validation of the library.
+
+Matt Liberty, the creator of Joulescope, made a [major contribution](https://github.com/githubuser0xFFFF/Qt-Advanced-Docking-System/pull/844) to Qt ADS by implementing native Wayland support. His work brings a reliable and polished docking experience to modern Linux desktop environments while preserving the existing behavior on Windows, macOS, and X11.
+
+[read more...](https://www.joulescope.com/)
+
+![Joulescope](doc/showcase_joulescope.jpg)
+
+### [Scribus](https://wiki.scribus.net/canvas/Scribus)
+
+**Scribus** is a free and open-source desktop publishing (DTP) application available for Linux, Windows, macOS, and other platforms.
+
+With the [Scribus 1.7.0 release](https://wiki.scribus.net/canvas/1.7.0_Release), Qt Advanced Docking System (QtADS) was introduced as the docking framework for the Scribus user interface. QtADS allows multiple panels and palettes to be docked side by side, rearranged using drag and drop, or detached into floating windows. Its auto-hide functionality provides additional flexibility for creating personalized workspace layouts tailored to different workflows.
+
+[read more...](https://wiki.scribus.net/canvas/Scribus)
+
+![Scribus](doc/showcase_scribus.png)
 
 ## Alternative Docking System Implementations
 

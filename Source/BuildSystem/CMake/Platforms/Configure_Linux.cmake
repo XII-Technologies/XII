@@ -8,21 +8,13 @@ set_property(GLOBAL PROPERTY XII_CMAKE_PLATFORM_LINUX ON)
 set_property(GLOBAL PROPERTY XII_CMAKE_PLATFORM_POSIX ON)
 set_property(GLOBAL PROPERTY XII_CMAKE_PLATFORM_SUPPORTS_VULKAN ON)
 set_property(GLOBAL PROPERTY XII_CMAKE_PLATFORM_SUPPORTS_D3D12 OFF)
+set_property(GLOBAL PROPERTY XII_CMAKE_PLATFORM_SUPPORTS_EDITOR ON)
 
 # #####################################
 # ## General settings
 # #####################################
 set(XII_COMPILE_ENGINE_AS_DLL ON CACHE BOOL "Whether to compile the code as a shared libraries (DLL).")
 mark_as_advanced(FORCE XII_COMPILE_ENGINE_AS_DLL)
-
-# #####################################
-# ## Experimental Editor support on Linux
-# #####################################
-set(XII_EXPERIMENTAL_EDITOR_ON_LINUX OFF CACHE BOOL "Wether or not to build the editor on linux")
-
-if (XII_EXPERIMENTAL_EDITOR_ON_LINUX)
-  set_property(GLOBAL PROPERTY XII_CMAKE_PLATFORM_SUPPORTS_EDITOR ON)
-endif()
 
 macro(xii_platform_pull_properties)
   get_property(XII_CMAKE_PLATFORM_LINUX GLOBAL PROPERTY XII_CMAKE_PLATFORM_LINUX)

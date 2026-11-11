@@ -30,6 +30,8 @@
 //============================================================================
 //                                   INCLUDES
 //============================================================================
+#include "ads_version.h"
+
 #include <QPair>
 #include <QtCore/QtGlobal>
 #include <QPixmap>
@@ -227,6 +229,15 @@ public:
  * Returns the insertion parameters for the given dock area
  */
 CDockInsertParam dockAreaInsertParameters(DockWidgetArea Area);
+
+
+/**
+ * Returns true, if the application runs on the Wayland display server
+ * protocol. Wayland does not allow clients to move top level windows in
+ * screen coordinates or to query the global cursor position, so docking
+ * requires a different implementation on Wayland.
+ */
+bool isWayland();
 
 
 /**
