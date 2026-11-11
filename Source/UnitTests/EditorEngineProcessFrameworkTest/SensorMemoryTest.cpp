@@ -120,16 +120,6 @@ namespace
 XII_CREATE_SIMPLE_TEST_GROUP(SensorMemory);
 XII_CREATE_SIMPLE_TEST(SensorMemory, ProfileSwitchingAndReadback)
 {
-  auto* minimumCVar = xiiCVar::FindCVarByName("Graphics.DynamicResolution.MinimumRenderScale");
-  auto* maximumCVar = xiiCVar::FindCVarByName("Graphics.DynamicResolution.MaximumRenderScale");
-  if (!XII_TEST_BOOL(minimumCVar != nullptr && maximumCVar != nullptr) || !XII_TEST_BOOL(minimumCVar->GetType() == xiiCVarType::Float && maximumCVar->GetType() == xiiCVarType::Float))
-    return;
-  auto&       minimum    = *static_cast<xiiCVarFloat*>(minimumCVar);
-  auto&       maximum    = *static_cast<xiiCVarFloat*>(maximumCVar);
-  const float oldMinimum = minimum.GetValue(), oldMaximum = maximum.GetValue();
-  minimum = 1.0f;
-  maximum = 1.0f;
-  XII_SCOPE_EXIT(minimum = oldMinimum; maximum = oldMaximum);
   xiiGPUTestingEnvironment environment;
   if (!XII_TEST_RESULT(environment.Initialize()))
     return;

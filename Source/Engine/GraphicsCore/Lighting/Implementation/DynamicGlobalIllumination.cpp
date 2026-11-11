@@ -2,6 +2,8 @@
 
 #include <GraphicsCore/GraphicsCorePCH.h>
 
+#include <GraphicsCore/Pipeline/RenderSettings.h>
+
 #include <Foundation/Algorithm/Sorting.h>
 #include <GraphicsCore/Lighting/DynamicGlobalIllumination.h>
 
@@ -43,13 +45,13 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiDDGISettings, xiiNoBase, 1, xiiRTTIDefaultAll
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_MEMBER_PROPERTY("ProbeCountX", m_uiProbeCountX)->AddAttributes(new xiiClampValueAttribute(1U, 256U)),
-    XII_MEMBER_PROPERTY("ProbeCountY", m_uiProbeCountY)->AddAttributes(new xiiClampValueAttribute(1U, 256U)),
-    XII_MEMBER_PROPERTY("ProbeCountZ", m_uiProbeCountZ)->AddAttributes(new xiiClampValueAttribute(1U, 256U)),
-    XII_MEMBER_PROPERTY("ProbeSpacing", m_fProbeSpacing)->AddAttributes(new xiiClampValueAttribute(0.1f, xiiVariant()), new xiiSuffixAttribute(" m")),
-    XII_MEMBER_PROPERTY("ProbeUpdateBudget", m_uiProbeUpdateBudget)->AddAttributes(new xiiClampValueAttribute(1U, 1048576U)),
-    XII_MEMBER_PROPERTY("TemporalHysteresis", m_fTemporalHysteresis)->AddAttributes(new xiiClampValueAttribute(0.0f, 0.9999f)),
-    XII_MEMBER_PROPERTY("MaximumRelocationDistance", m_fMaximumRelocationDistance)->AddAttributes(new xiiClampValueAttribute(0.0f, xiiVariant()), new xiiSuffixAttribute(" m")),
+    XII_MEMBER_PROPERTY("ProbeCountX", m_uiProbeCountX)->AddAttributes(new xiiRenderSettingsBindingAttribute("xiiDDGIProbeSchedulePass", "ProbeCountX", xiiRenderSettingsChange::History | xiiRenderSettingsChange::Resources), new xiiClampValueAttribute(1U, 256U)),
+    XII_MEMBER_PROPERTY("ProbeCountY", m_uiProbeCountY)->AddAttributes(new xiiRenderSettingsBindingAttribute("xiiDDGIProbeSchedulePass", "ProbeCountY", xiiRenderSettingsChange::History | xiiRenderSettingsChange::Resources), new xiiClampValueAttribute(1U, 256U)),
+    XII_MEMBER_PROPERTY("ProbeCountZ", m_uiProbeCountZ)->AddAttributes(new xiiRenderSettingsBindingAttribute("xiiDDGIProbeSchedulePass", "ProbeCountZ", xiiRenderSettingsChange::History | xiiRenderSettingsChange::Resources), new xiiClampValueAttribute(1U, 256U)),
+    XII_MEMBER_PROPERTY("ProbeSpacing", m_fProbeSpacing)->AddAttributes(new xiiRenderSettingsBindingAttribute("xiiDDGIProbeSchedulePass", "Spacing", xiiRenderSettingsChange::History | xiiRenderSettingsChange::Resources), new xiiClampValueAttribute(0.1f, xiiVariant()), new xiiSuffixAttribute(" m")),
+    XII_MEMBER_PROPERTY("ProbeUpdateBudget", m_uiProbeUpdateBudget)->AddAttributes(new xiiRenderSettingsBindingAttribute("xiiDDGIProbeSchedulePass", "UpdateBudget", 0), new xiiClampValueAttribute(1U, 1048576U)),
+    XII_MEMBER_PROPERTY("TemporalHysteresis", m_fTemporalHysteresis)->AddAttributes(new xiiRenderSettingsBindingAttribute("xiiDDGIProbeSchedulePass", "Hysteresis", 0), new xiiClampValueAttribute(0.0f, 0.9999f)),
+    XII_MEMBER_PROPERTY("MaximumRelocationDistance", m_fMaximumRelocationDistance)->AddAttributes(new xiiRenderSettingsBindingAttribute("xiiDDGIProbeSchedulePass", "MaximumRelocationDistance", xiiRenderSettingsChange::History | xiiRenderSettingsChange::Resources), new xiiClampValueAttribute(0.0f, xiiVariant()), new xiiSuffixAttribute(" m")),
   }
   XII_END_PROPERTIES;
 }

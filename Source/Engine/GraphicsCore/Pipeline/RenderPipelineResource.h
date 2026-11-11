@@ -118,6 +118,7 @@ public:
   static xiiResult                                Compile(const xiiRenderPipelineResourceDescriptor& descriptor, xiiGraphComposition::Resolver resolver, xiiSharedPtr<const xiiRenderPipeline>& out_pipeline, xiiStringBuilder* out_error = nullptr);
   /// Compile a structural configuration of an already resolved authored pipeline.
   static xiiResult                                CompileVariant(const xiiRenderPipelineResourceDescriptor& descriptor, const xiiRenderPipelineVariant& variant, xiiSharedPtr<const xiiRenderPipeline>& out_pipeline, xiiStringBuilder* out_error = nullptr);
+  const xiiRenderConfiguration&                   GetSubsystemDefaults() const { return m_SubsystemDefaults; }
   const xiiGraph&                                 GetTopology() const { return m_Topology; }
   const xiiRenderPipelineResourceDescriptor&      GetDescriptor() const { return m_Descriptor; }
   xiiArrayPtr<const xiiUInt32>                    GetExecutionOrder() const { return m_Order; }
@@ -143,6 +144,7 @@ private:
   xiiAllocatorWithPolicy<xiiAllocationPolicyProxy, xiiAllocatorTrackingMode::AllocationStats> m_TopologyAllocator;
   xiiGraph                                                                                    m_Topology;
   xiiRenderPipelineResourceDescriptor                                                         m_Descriptor;
+  xiiRenderConfiguration                                                                      m_SubsystemDefaults;
   xiiDynamicArray<Pass>                                                                       m_Passes;
   xiiDynamicArray<Connection>                                                                 m_Connections;
   xiiDynamicArray<Interface>                                                                  m_Interface;

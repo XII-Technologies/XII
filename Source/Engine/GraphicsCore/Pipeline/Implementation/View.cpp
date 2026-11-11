@@ -3,14 +3,17 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <Core/GameApplication/GameApplicationBase.h>
-#include <Foundation/Configuration/CVar.h>
 #include <Foundation/Math/Math.h>
+#include <Foundation/Reflection/ReflectionUtils.h>
 #include <Foundation/Time/Clock.h>
 #include <GraphicsCore/Components/Render/CameraComponent.h>
 #include <GraphicsCore/Components/Render/RenderWorldSettingsComponent.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
 #include <GraphicsCore/Pipeline/ExtractedRenderData.h>
 
+#include <GraphicsCore/Debug/DebugRenderSettings.h>
+#include <GraphicsCore/Lighting/PostProcessRenderSettings.h>
+#include <GraphicsCore/Pipeline/DynamicResolutionSettings.h>
 #include <GraphicsCore/Pipeline/Passes/Sensors/SensorCapture.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Pipeline/RenderPipelineProfileConfig.h>
@@ -20,9 +23,6 @@
 #include <GraphicsFoundation/Resources/Texture.h>
 #include <GraphicsFoundation/Resources/TextureView.h>
 
-xiiCVarFloat cvar_DynamicRenderingTargetMs("Graphics.DynamicResolution.TargetFrameTimeMs", 16.0f, xiiCVarFlags::Default, "Target GPU frame time in milliseconds. The CPU PID controller drives render scale to meet this.");
-xiiCVarFloat cvar_DynamicRenderingMinScale("Graphics.DynamicResolution.MinimumRenderScale", 1.0f, xiiCVarFlags::Default, "Minimum allowed render scale. Lower explicitly to enable dynamic resolution.");
-xiiCVarFloat cvar_DynamicRenderingMaxScale("Graphics.DynamicResolution.MaximumRenderScale", 1.0f, xiiCVarFlags::Default, "Maximum allowed render scale (1.0 = native resolution).");
 
 namespace
 {
@@ -31,15 +31,17 @@ namespace
     const xiiUInt32 uiScaled = static_cast<xiiUInt32>(xiiMath::Ceil(static_cast<float>(uiNativeDimension) * fScale));
     return xiiMath::Max(uiScaled, 1U);
   }
-  static void ComputeDynamicScaleBounds(float fRenderScale, float& out_fDynamicMin, float& out_fDynamicMax)
+  static void ComputeDynamicScaleBounds(const xiiDynamicResolutionSettings& settings, float fRenderScale, float& out_fDynamicMin, float& out_fDynamicMax)
   {
-    const float fFinalMinScale = xiiMath::Max(cvar_DynamicRenderingMinScale.GetValue(), 0.25f);
-    const float fFinalMaxScale = xiiMath::Min(cvar_DynamicRenderingMaxScale.GetValue(), 1.0f);
+    const float fFinalMinScale = xiiMath::Max(settings.m_fMinimumRenderScale, 0.25f);
+    const float fFinalMaxScale = xiiMath::Min(settings.m_fMaximumRenderScale, 1.0f);
     const float fBaseScale     = xiiMath::Clamp(fRenderScale, 0.1f, 1.0f);
 
     out_fDynamicMin = xiiMath::Clamp(fFinalMinScale / fBaseScale, 0.1f, 1.0f);
     out_fDynamicMax = xiiMath::Clamp(fFinalMaxScale / fBaseScale, 0.1f, 1.0f);
 
+    if (!settings.m_bEnabled)
+      out_fDynamicMin = out_fDynamicMax = 1.0f;
     if (out_fDynamicMin > out_fDynamicMax)
     {
       out_fDynamicMin = out_fDynamicMax;
@@ -115,8 +117,20 @@ xiiResult xiiView::SetDisplayOutputSettings(const xiiDisplayOutputSettings& sett
   if (!xiiDisplayOutputManager::IsValid(settings))
     return XII_FAILURE;
 
-  m_DisplayOutputSettings = settings;
-  ++m_uiDisplayOutputSettingsRevision;
+  auto  candidate = m_RenderConfiguration;
+  auto* post      = candidate.EditSubsystem<xiiPostProcessRenderSettings>();
+  post->m_Display = settings;
+  xiiDynamicArray<xiiRenderSettingProperty> properties;
+  post->GetProperties(properties);
+  for (const auto& property : properties)
+    if (!post->IsOverridden(property.m_sPath))
+      post->m_Overrides.PushBack(property.m_sPath);
+  XII_SUCCEED_OR_RETURN(SetRenderConfiguration(candidate));
+  if (!xiiReflectionUtils::IsEqual(&settings, &m_DisplayOutputSettings, xiiGetStaticRTTI<xiiDisplayOutputSettings>()))
+  {
+    m_DisplayOutputSettings = settings;
+    ++m_uiDisplayOutputSettingsRevision;
+  }
   return XII_SUCCESS;
 }
 
@@ -178,9 +192,9 @@ void xiiView::SetRenderScale(float fRenderScale)
 {
   if (!xiiMath::IsFinite(fRenderScale))
     return;
-  m_fDefaultRenderScale = xiiMath::Clamp(fRenderScale, 0.1f, 1.0f);
-  if (GetPipelineInstance()->GetRenderConfiguration().m_fRenderScale == xiiRenderConfiguration::s_fInheritRenderScale)
-    ApplyRenderScale(m_fDefaultRenderScale);
+  const float scale = xiiMath::Clamp(fRenderScale, 0.1f, 1.0f);
+  if (m_RenderConfiguration.SetOverride<xiiDynamicResolutionSettings>("RenderScale", scale).Succeeded())
+    ApplyRenderScale(scale);
 }
 
 void xiiView::ApplyRenderScale(float fRenderScale)
@@ -191,7 +205,7 @@ void xiiView::ApplyRenderScale(float fRenderScale)
 
   float fDynamicMin = 0.1f;
   float fDynamicMax = 1.0f;
-  ComputeDynamicScaleBounds(m_DynamicResolution.m_fRenderScale, fDynamicMin, fDynamicMax);
+  ComputeDynamicScaleBounds(GetDynamicResolutionSettings(), m_DynamicResolution.m_fRenderScale, fDynamicMin, fDynamicMax);
 
   m_DynamicResolution.m_fCurrentScale  = xiiMath::Clamp(m_DynamicResolution.m_fCurrentScale, fDynamicMin, fDynamicMax);
   m_DynamicResolution.m_fSmoothedScale = xiiMath::Clamp(m_DynamicResolution.m_fSmoothedScale, fDynamicMin, fDynamicMax);
@@ -308,7 +322,7 @@ void xiiView::UpdateRenderResolutionState() const
 
   float fDynamicMin = 0.1f;
   float fDynamicMax = 1.0f;
-  ComputeDynamicScaleBounds(fRenderScale, fDynamicMin, fDynamicMax);
+  ComputeDynamicScaleBounds(GetDynamicResolutionSettings(), fRenderScale, fDynamicMin, fDynamicMax);
 
   const float fDynamicScale = xiiMath::Clamp(m_DynamicResolution.m_fSmoothedScale, fDynamicMin, fDynamicMax);
 
@@ -334,6 +348,9 @@ void xiiView::UpdateRenderResolutionState() const
 
 void xiiView::RunDynamicResolutionPID()
 {
+  const auto& settings = GetDynamicResolutionSettings();
+  if (!settings.m_bEnabled)
+    return;
   // Unavailable GPU timing must not turn CPU loading stalls into a resolution change.
   float fGpuTimeMs = GetProfiler().GetGraphDurationMs(GetRenderGraph()->GetId().m_Data);
   if (fGpuTimeMs <= 0.0f)
@@ -346,25 +363,25 @@ void xiiView::RunDynamicResolutionPID()
   const float fRenderScale = xiiMath::Clamp(m_DynamicResolution.m_fRenderScale, 0.1f, 1.0f);
   float       fDynamicMin  = 0.1f;
   float       fDynamicMax  = 1.0f;
-  ComputeDynamicScaleBounds(fRenderScale, fDynamicMin, fDynamicMax);
+  ComputeDynamicScaleBounds(GetDynamicResolutionSettings(), fRenderScale, fDynamicMin, fDynamicMax);
 
-  const float fTarget    = xiiMath::Max(cvar_DynamicRenderingTargetMs.GetValue(), 0.1f);
+  const float fTarget    = xiiMath::Max(settings.m_fTargetFrameTimeMs, 0.1f);
   const float fDeltaTime = static_cast<float>(xiiClock::GetGlobalClock()->GetTimeDiff().GetSeconds()) * 1000.0f;
 
   const float fError = (fTarget - fGpuTimeMs) / fTarget;
 
   // Anti-windup clamp on integral.
-  m_DynamicResolution.m_fErrorIntegral = xiiMath::Clamp(m_DynamicResolution.m_fErrorIntegral + fError * fDeltaTime, -1.0f, 1.0f);
+  m_DynamicResolution.m_fErrorIntegral = xiiMath::Clamp(m_DynamicResolution.m_fErrorIntegral + fError * fDeltaTime, -settings.m_fIntegralLimit, settings.m_fIntegralLimit);
 
   const float fDerivative = (fError - m_DynamicResolution.m_fPreviousError) / xiiMath::Max(fDeltaTime, 0.001f);
-  const float fPID        = 0.35f * fError + 0.05f * m_DynamicResolution.m_fErrorIntegral + 0.15f * fDerivative;
+  const float fPID        = settings.m_fProportionalGain * fError + settings.m_fIntegralGain * m_DynamicResolution.m_fErrorIntegral + settings.m_fDerivativeGain * fDerivative;
 
   // Clamp per-frame delta to avoid oscillation.
   const float fDesired = xiiMath::Clamp(m_DynamicResolution.m_fCurrentScale + fPID, fDynamicMin, fDynamicMax);
-  const float fDelta   = xiiMath::Clamp(fDesired - m_DynamicResolution.m_fCurrentScale, -0.10f, 0.10f);
+  const float fDelta   = xiiMath::Clamp(fDesired - m_DynamicResolution.m_fCurrentScale, -settings.m_fMaximumScaleStep, settings.m_fMaximumScaleStep);
 
   m_DynamicResolution.m_fCurrentScale  = xiiMath::Clamp(m_DynamicResolution.m_fCurrentScale + fDelta, fDynamicMin, fDynamicMax);
-  m_DynamicResolution.m_fSmoothedScale = xiiMath::Clamp(xiiMath::Lerp(m_DynamicResolution.m_fSmoothedScale, m_DynamicResolution.m_fCurrentScale, 0.20f), fDynamicMin, fDynamicMax);
+  m_DynamicResolution.m_fSmoothedScale = xiiMath::Clamp(xiiMath::Lerp(m_DynamicResolution.m_fSmoothedScale, m_DynamicResolution.m_fCurrentScale, settings.m_fSmoothing), fDynamicMin, fDynamicMax);
   m_DynamicResolution.m_fPreviousError = fError;
 
   UpdateRenderResolutionState();
@@ -455,8 +472,13 @@ xiiResult xiiView::SynchronizeRenderPipeline()
     return XII_FAILURE;
   }
   m_bPipelineSynchronizationFailed = false;
-  const float fRenderScale         = runtime->GetRenderConfiguration().m_fRenderScale;
-  ApplyRenderScale(fRenderScale == xiiRenderConfiguration::s_fInheritRenderScale ? m_fDefaultRenderScale : fRenderScale);
+  ApplyRenderScale(GetDynamicResolutionSettings().m_fRenderScale);
+  if (const auto* post = runtime->GetRenderConfiguration().FindSubsystem<xiiPostProcessRenderSettings>())
+    if (!xiiReflectionUtils::IsEqual(&post->m_Display, &m_DisplayOutputSettings, xiiGetStaticRTTI<xiiDisplayOutputSettings>()))
+    {
+      m_DisplayOutputSettings = post->m_Display;
+      ++m_uiDisplayOutputSettingsRevision;
+    }
   if (changed)
   {
     InvalidateTemporalHistory();
@@ -474,6 +496,21 @@ xiiResult xiiView::SetRenderConfiguration(const xiiRenderConfiguration& configur
   return XII_SUCCESS;
 }
 
+const xiiRenderSubsystemSettings* xiiView::GetRenderSubsystemSettings(const xiiRTTI* type) const
+{
+  return GetPipelineInstance()->GetRenderConfiguration().FindSubsystem(type);
+}
+
+const xiiDynamicResolutionSettings& xiiView::GetDynamicResolutionSettings() const
+{
+  if (const auto* settings = GetRenderSettings<xiiDynamicResolutionSettings>())
+    return *settings;
+  if (const auto* settings = m_RenderConfiguration.FindSubsystem<xiiDynamicResolutionSettings>())
+    return *settings;
+  static const xiiDynamicResolutionSettings defaults;
+  return defaults;
+}
+
 xiiRenderConfiguration xiiView::GetEffectiveRenderConfiguration() const
 {
   return GetPipelineInstance()->GetRenderConfiguration();
@@ -482,17 +519,29 @@ xiiRenderConfiguration xiiView::GetEffectiveRenderConfiguration() const
 xiiRenderConfiguration xiiView::ResolveRenderConfiguration() const
 {
   xiiRenderConfiguration effective;
+  xiiSharedPtr<const xiiRenderPipeline> selected;
+  if (m_hRenderPipeline.IsValid())
+  {
+    xiiResourceLock<xiiRenderPipelineResource> resource(m_hRenderPipeline, xiiResourceAcquireMode::AllowLoadingFallback_NeverFail);
+    if (resource.IsValid())
+      selected = resource->GetPipeline();
+  }
+  if (selected)
+    effective = selected->GetSubsystemDefaults();
   if (const auto* pApplication = xiiGameApplicationBase::GetGameApplicationBaseInstance())
     if (const auto* pProfile = pApplication->GetPlatformProfile().GetTypeConfig<xiiRenderPipelineProfileConfig>())
       if (pProfile->m_RenderConfiguration.IsValid())
-        effective.ApplyOverrides(pProfile->m_RenderConfiguration);
+        effective.ApplyOverrides(pProfile->m_RenderConfiguration, xiiRenderSettingScope::Project);
+
+  if (selected)
+    effective.ApplyOverrides(selected->GetDescriptor().m_Settings.m_RenderDefaults, xiiRenderSettingScope::Pipeline);
 
   if (const auto* pWorld = GetWorld())
   {
     if (const auto* pManager = pWorld->GetComponentManager<xiiRenderWorldSettingsComponentManager>())
       if (const auto* pSettings = pManager->GetSingletonComponent())
         if (pSettings->m_RenderConfiguration.IsValid())
-          effective.ApplyOverrides(pSettings->m_RenderConfiguration);
+          effective.ApplyOverrides(pSettings->m_RenderConfiguration, xiiRenderSettingScope::Scene);
 
     const xiiCameraComponent* pCamera = nullptr;
     if (!m_hRenderConfigurationCamera.IsInvalidated())
@@ -506,7 +555,7 @@ xiiRenderConfiguration xiiView::ResolveRenderConfiguration() const
         pCamera = pManager->GetCameraByUsageHint(GetCameraUsageHint());
     }
     if (pCamera && pCamera->m_RenderConfiguration.IsValid())
-      effective.ApplyOverrides(pCamera->m_RenderConfiguration);
+      effective.ApplyOverrides(pCamera->m_RenderConfiguration, xiiRenderSettingScope::Camera);
   }
 
   effective.ApplyOverrides(m_RenderConfiguration);

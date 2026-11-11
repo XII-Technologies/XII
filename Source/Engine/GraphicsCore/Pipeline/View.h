@@ -212,6 +212,9 @@ public:
   xiiResult                     SetRenderConfiguration(const xiiRenderConfiguration& configuration);
   const xiiRenderConfiguration& GetRenderConfiguration() const { return m_RenderConfiguration; }
   xiiRenderConfiguration        GetEffectiveRenderConfiguration() const;
+  /// Borrowed from the validated per-view snapshot, valid until the next synchronization.
+  const xiiRenderSubsystemSettings* GetRenderSubsystemSettings(const xiiRTTI* type) const;
+  template <typename T> const T*    GetRenderSettings() const { return static_cast<const T*>(GetRenderSubsystemSettings(xiiGetStaticRTTI<T>())); }
 
   /// Binds a specific camera in this view's world (e.g. a preview or render target).
   /// An invalid handle restores ordinary camera selection by usage hint.
@@ -257,6 +260,7 @@ private:
   void UpdateFrameStats();
 
   xiiResult SynchronizeRenderPipeline();
+  const class xiiDynamicResolutionSettings& GetDynamicResolutionSettings() const;
   xiiRenderConfiguration ResolveRenderConfiguration() const;
   void      ApplyRenderScale(float fRenderScale);
 

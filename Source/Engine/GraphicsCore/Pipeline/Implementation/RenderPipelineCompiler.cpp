@@ -519,6 +519,11 @@ xiiResult xiiRenderPipeline::Compile(const xiiRenderPipelineResourceDescriptor& 
       ++offset;
     pass.m_uiConnectionCount = offset - pass.m_uiConnectionOffset;
   }
+  if (result->m_SubsystemDefaults.InitializeSubsystemDefaults(prototypes.GetArrayPtr()).Failed())
+  {
+    fail("A supported subsystem has invalid defaults or pass bindings.");
+    return XII_FAILURE;
+  }
   out_pipeline = result;
   return XII_SUCCESS;
 }

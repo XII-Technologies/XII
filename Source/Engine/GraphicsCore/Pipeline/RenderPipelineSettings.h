@@ -2,8 +2,10 @@
 
 #pragma once
 
-#include <Foundation/Reflection/Reflection.h>
 #include <GraphicsCore/GraphicsCoreDLL.h>
+
+#include <Foundation/Reflection/Reflection.h>
+#include <GraphicsCore/Pipeline/RenderConfiguration.h>
 #include <GraphicsFoundation/Declarations/GraphicsTypes.h>
 
 struct xiiRenderPipelineDeviceFeature
@@ -39,6 +41,7 @@ class XII_GRAPHICSCORE_DLL xiiRenderPipelineSettings : public xiiReflectedClass
   XII_ADD_DYNAMIC_REFLECTION(xiiRenderPipelineSettings, xiiReflectedClass);
 
 public:
+  xiiRenderConfiguration                      m_RenderDefaults;
   xiiBitflags<xiiRenderPipelineDeviceFeature> m_RequiredDeviceFeatures;
   xiiEnum<xiiGALResourceFormat>               m_OutputFormat    = xiiGALResourceFormat::Unknown;
   xiiUInt32                                   m_uiOutputSamples = 0; ///< Zero accepts the selected output's sample count.

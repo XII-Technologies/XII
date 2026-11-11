@@ -4,7 +4,11 @@
 
 #include <Foundation/IO/Stream.h>
 #include <Foundation/Math/Math.h>
+#include <Foundation/Serialization/ReflectionSerializer.h>
 #include <GraphicsCore/Lighting/DynamicGlobalIllumination.h>
+#include <GraphicsCore/Lighting/GlobalIlluminationRenderSettings.h>
+#include <GraphicsCore/Lighting/ReflectionRenderSettings.h>
+#include <GraphicsCore/Lighting/ShadowRenderSettings.h>
 #include <GraphicsCore/Pipeline/RenderConfiguration.h>
 
 #include <bit>
@@ -35,10 +39,11 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiDDGIProbeOverrides, xiiNoBase, 1, xiiRTTIDefa
 }
 XII_END_STATIC_REFLECTED_TYPE;
 
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderConfiguration, xiiNoBase, 4, xiiRTTIDefaultAllocator<xiiRenderConfiguration>)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRenderConfiguration, xiiNoBase, 5, xiiRTTIDefaultAllocator<xiiRenderConfiguration>)
 {
   XII_BEGIN_PROPERTIES
   {
+    XII_ARRAY_MEMBER_PROPERTY("Subsystems", m_Subsystems)->AddFlags(xiiPropertyFlags::PointerOwner),
     XII_MEMBER_PROPERTY("BloomStrength", m_fBloomStrength)->AddAttributes(new xiiDefaultValueAttribute(xiiRenderConfiguration::s_fInheritBloomStrength), new xiiClampValueAttribute(-1.0f, xiiVariant())),
     XII_MEMBER_PROPERTY("RenderScale", m_fRenderScale)->AddAttributes(new xiiDefaultValueAttribute(xiiRenderConfiguration::s_fInheritRenderScale), new xiiClampValueAttribute(0.0f, 1.0f)),
     XII_ENUM_MEMBER_PROPERTY("GlobalIllumination", xiiRenderGlobalIllumination, m_GlobalIllumination),
@@ -93,6 +98,15 @@ void xiiDDGIProbeOverrides::ApplyTo(xiiDDGISettings& settings) const
 
 bool xiiRenderConfiguration::IsValid() const
 {
+  for (xiiUInt32 i = 0; i < m_Subsystems.GetCount(); ++i)
+  {
+    const auto* subsystem = m_Subsystems[i];
+    if (!subsystem || subsystem->Validate().Failed())
+      return false;
+    for (xiiUInt32 j = 0; j < i; ++j)
+      if (m_Subsystems[j]->GetDynamicRTTI() == subsystem->GetDynamicRTTI())
+        return false;
+  }
   return xiiMath::IsFinite(m_fBloomStrength) && (m_fBloomStrength == s_fInheritBloomStrength || m_fBloomStrength >= 0.0f) &&
     (m_fRenderScale == s_fInheritRenderScale || (m_fRenderScale >= 0.1f && m_fRenderScale <= 1.0f)) &&
     m_GlobalIllumination.GetValue() < xiiRenderGlobalIllumination::ENUM_COUNT && m_DDGI.IsValid() &&
@@ -105,11 +119,18 @@ xiiRenderPipelineVariant xiiRenderConfiguration::GetPipelineVariant() const
   variant.m_GlobalIllumination = static_cast<xiiRenderGlobalIllumination::Enum>(m_GlobalIllumination.GetValue());
   variant.m_Disabled.AddOrRemove(xiiOptionalRenderFeature::Shadows, m_Shadows == xiiRenderFeaturePolicy::Disabled);
   variant.m_Disabled.AddOrRemove(xiiOptionalRenderFeature::ScreenSpaceReflections, m_ScreenSpaceReflections == xiiRenderFeaturePolicy::Disabled);
+  if (const auto* gi = FindSubsystem<xiiGlobalIlluminationRenderSettings>(); gi && gi->IsOverridden("Technique"))
+    variant.m_GlobalIllumination = gi->m_Technique;
+  if (const auto* shadows = FindSubsystem<xiiShadowRenderSettings>(); shadows && shadows->IsOverridden("Enabled"))
+    variant.m_Disabled.AddOrRemove(xiiOptionalRenderFeature::Shadows, !shadows->m_bEnabled);
+  if (const auto* reflections = FindSubsystem<xiiReflectionRenderSettings>(); reflections && reflections->IsOverridden("Enabled"))
+    variant.m_Disabled.AddOrRemove(xiiOptionalRenderFeature::ScreenSpaceReflections, !reflections->m_bEnabled);
   return variant;
 }
 
-void xiiRenderConfiguration::ApplyOverrides(const xiiRenderConfiguration& overrides)
+void xiiRenderConfiguration::ApplyOverrides(const xiiRenderConfiguration& overrides, xiiRenderSettingScope::Enum scope)
 {
+  ApplySubsystemOverrides(overrides, scope);
   if (overrides.m_fBloomStrength != s_fInheritBloomStrength)
     m_fBloomStrength = overrides.m_fBloomStrength;
   if (overrides.m_fRenderScale != s_fInheritRenderScale)
@@ -138,7 +159,15 @@ xiiResult xiiRenderConfiguration::Serialize(xiiStreamWriter& stream) const
   for (const auto& value : values)
     XII_SUCCEED_OR_RETURN(stream.WriteDWordValue(&value));
   const xiiUInt8 policies[] = {m_Shadows.GetValue(), m_ScreenSpaceReflections.GetValue()};
-  return stream.WriteBytes(policies, sizeof(policies));
+  XII_SUCCEED_OR_RETURN(stream.WriteBytes(policies, sizeof(policies)));
+  const xiiUInt32 count = m_Subsystems.GetCount();
+  XII_SUCCEED_OR_RETURN(stream.WriteDWordValue(&count));
+  for (const auto* subsystem : m_Subsystems)
+  {
+    XII_SUCCEED_OR_RETURN(stream.WriteString(subsystem->GetDynamicRTTI()->GetTypeName()));
+    xiiReflectionSerializer::WriteObjectToBinary(stream, subsystem->GetDynamicRTTI(), subsystem);
+  }
+  return XII_SUCCESS;
 }
 
 xiiResult xiiRenderConfiguration::Deserialize(xiiStreamReader& stream, xiiUInt32 uiVersion)
@@ -174,6 +203,31 @@ xiiResult xiiRenderConfiguration::Deserialize(xiiStreamReader& stream, xiiUInt32
       return XII_FAILURE;
     configuration.m_Shadows                = static_cast<xiiRenderFeaturePolicy::Enum>(policies[0]);
     configuration.m_ScreenSpaceReflections = static_cast<xiiRenderFeaturePolicy::Enum>(policies[1]);
+  }
+  if (uiVersion >= 5)
+  {
+    xiiUInt32 count = 0;
+    XII_SUCCEED_OR_RETURN(stream.ReadDWordValue(&count));
+    if (count > 256)
+      return XII_FAILURE;
+    for (xiiUInt32 i = 0; i < count; ++i)
+    {
+      xiiString name;
+      XII_SUCCEED_OR_RETURN(stream.ReadString(name));
+      const auto* expected = xiiRTTI::FindTypeByName(name);
+      if (!expected || !expected->IsDerivedFrom<xiiRenderSubsystemSettings>() || !expected->GetAllocator()->CanAllocate())
+        return XII_FAILURE;
+      const xiiRTTI* actual = nullptr;
+      void*          object = xiiReflectionSerializer::ReadObjectFromBinary(stream, actual);
+      if (!object)
+        return XII_FAILURE;
+      if (actual != expected)
+      {
+        actual->GetAllocator()->Deallocate(object);
+        return XII_FAILURE;
+      }
+      configuration.m_Subsystems.PushBack(static_cast<xiiRenderSubsystemSettings*>(object));
+    }
   }
   if (!configuration.IsValid())
     return XII_FAILURE;

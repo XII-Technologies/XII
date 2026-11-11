@@ -35,6 +35,8 @@ public:
   xiiResult Synchronize(const xiiRenderPipelineResourceHandle& resource, bool* out_changed = nullptr,
                         const xiiRenderConfiguration& configuration = {});
   xiiResult Initialize(xiiSharedPtr<const xiiRenderPipeline> pipeline);
+  /// Validates an effective snapshot before publishing it to directly constructed pipeline instances.
+  xiiResult Initialize(xiiSharedPtr<const xiiRenderPipeline> pipeline, const xiiRenderConfiguration& configuration, xiiStringBuilder& out_error);
   /// Publish explicit previous-frame resources before current-frame inputs are available.
   /// Repeated calls within one setup are idempotent; changes to context/configuration require a new setup.
   xiiResult                       BeginFrame(xiiView* view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard, const xiiVariantDictionary& overrides = {});
@@ -53,7 +55,6 @@ public:
   const xiiRenderPipelinePass* GetPass(xiiUInt32 index) const { return index < m_Passes.GetCount() ? m_Passes[index] : nullptr; }
 
 private:
-  xiiResult                                                       Initialize(xiiSharedPtr<const xiiRenderPipeline> pipeline, const xiiRenderConfiguration& configuration, xiiStringBuilder& out_error);
   xiiResourceAcquireResult                                        m_ResourceAcquireResult = xiiResourceAcquireResult::None;
   xiiUInt64                                                       m_uiInstanceScope       = 0; // Runtime namespace only, never a serialized graph/document identity.
   xiiString                                                       m_sScopeParent;

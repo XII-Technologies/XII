@@ -2,6 +2,8 @@
 
 #include <GraphicsCore/GraphicsCorePCH.h>
 
+#include <GraphicsCore/Pipeline/RenderSettings.h>
+
 #include <Core/Graphics/Camera.h>
 #include <Foundation/Utilities/GraphicsUtils.h>
 #include <GraphicsCore/Lighting/ShadowCascade.h>
@@ -11,15 +13,15 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiShadowCascadeSettings, xiiNoBase, 2, xiiRTTID
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_MEMBER_PROPERTY("CascadeCount", m_uiCascadeCount)->AddAttributes(new xiiClampValueAttribute(1U, 4U), new xiiDefaultValueAttribute(4U)),
-    XII_MEMBER_PROPERTY("SplitLambda", m_fSplitLambda)->AddAttributes(new xiiClampValueAttribute(0.0f, 1.0f), new xiiDefaultValueAttribute(0.65f)),
-    XII_MEMBER_PROPERTY("MaximumShadowDistance", m_fMaximumShadowDistance)->AddAttributes(new xiiDefaultValueAttribute(250.0f), new xiiClampValueAttribute(1.0f, xiiVariant()), new xiiSuffixAttribute(" m")),
-    XII_MEMBER_PROPERTY("DepthPadding", m_fDepthPadding)->AddAttributes(new xiiDefaultValueAttribute(50.0f), new xiiClampValueAttribute(0.0f, xiiVariant()), new xiiSuffixAttribute(" m")),
-    XII_MEMBER_PROPERTY("ShadowMapResolution", m_uiShadowMapResolution)->AddAttributes(new xiiClampValueAttribute(64U, 16384U), new xiiDefaultValueAttribute(4096U)),
-    XII_MEMBER_PROPERTY("CascadeBlendFraction", m_fCascadeBlendFraction)->AddAttributes(new xiiClampValueAttribute(0.0f, 0.5f), new xiiDefaultValueAttribute(0.1f)),
-    XII_MEMBER_PROPERTY("FilterRadius", m_fFilterRadius)->AddAttributes(new xiiClampValueAttribute(0.0f, 4.0f), new xiiDefaultValueAttribute(1.0f)),
-    XII_MEMBER_PROPERTY("SoftShadows", m_bSoftShadows)->AddAttributes(new xiiDefaultValueAttribute(false)),
-    XII_MEMBER_PROPERTY("MaximumPenumbraTexels", m_fMaximumPenumbraTexels)->AddAttributes(new xiiClampValueAttribute(4.0f, 64.0f), new xiiDefaultValueAttribute(16.0f)),
+    XII_MEMBER_PROPERTY("CascadeCount", m_uiCascadeCount)->AddAttributes(new xiiRenderSettingsBindingAttribute("xiiShadowCascadePass", "Settings/CascadeCount", xiiRenderSettingsChange::History | xiiRenderSettingsChange::Resources), new xiiClampValueAttribute(1U, 4U), new xiiDefaultValueAttribute(4U)),
+    XII_MEMBER_PROPERTY("SplitLambda", m_fSplitLambda)->AddAttributes(new xiiRenderSettingsBindingAttribute("xiiShadowCascadePass", "Settings/SplitLambda", xiiRenderSettingsChange::History | xiiRenderSettingsChange::Resources), new xiiClampValueAttribute(0.0f, 1.0f), new xiiDefaultValueAttribute(0.65f)),
+    XII_MEMBER_PROPERTY("MaximumShadowDistance", m_fMaximumShadowDistance)->AddAttributes(new xiiRenderSettingsBindingAttribute("xiiShadowCascadePass", "Settings/MaximumShadowDistance", xiiRenderSettingsChange::History | xiiRenderSettingsChange::Resources), new xiiDefaultValueAttribute(250.0f), new xiiClampValueAttribute(1.0f, xiiVariant()), new xiiSuffixAttribute(" m")),
+    XII_MEMBER_PROPERTY("DepthPadding", m_fDepthPadding)->AddAttributes(new xiiRenderSettingsBindingAttribute("xiiShadowCascadePass", "Settings/DepthPadding", xiiRenderSettingsChange::History | xiiRenderSettingsChange::Resources), new xiiDefaultValueAttribute(50.0f), new xiiClampValueAttribute(0.0f, xiiVariant()), new xiiSuffixAttribute(" m")),
+    XII_MEMBER_PROPERTY("ShadowMapResolution", m_uiShadowMapResolution)->AddAttributes(new xiiRenderSettingsBindingAttribute("xiiShadowCascadePass", "Settings/ShadowMapResolution", xiiRenderSettingsChange::History | xiiRenderSettingsChange::Resources), new xiiClampValueAttribute(64U, 16384U), new xiiDefaultValueAttribute(4096U)),
+    XII_MEMBER_PROPERTY("CascadeBlendFraction", m_fCascadeBlendFraction)->AddAttributes(new xiiRenderSettingsBindingAttribute("xiiShadowCascadePass", "Settings/CascadeBlendFraction", xiiRenderSettingsChange::History | xiiRenderSettingsChange::Resources), new xiiClampValueAttribute(0.0f, 0.5f), new xiiDefaultValueAttribute(0.1f)),
+    XII_MEMBER_PROPERTY("FilterRadius", m_fFilterRadius)->AddAttributes(new xiiRenderSettingsBindingAttribute("xiiShadowCascadePass", "Settings/FilterRadius", xiiRenderSettingsChange::History | xiiRenderSettingsChange::Resources), new xiiClampValueAttribute(0.0f, 4.0f), new xiiDefaultValueAttribute(1.0f)),
+    XII_MEMBER_PROPERTY("SoftShadows", m_bSoftShadows)->AddAttributes(new xiiRenderSettingsBindingAttribute("xiiShadowCascadePass", "Settings/SoftShadows", xiiRenderSettingsChange::History | xiiRenderSettingsChange::Resources), new xiiDefaultValueAttribute(false)),
+    XII_MEMBER_PROPERTY("MaximumPenumbraTexels", m_fMaximumPenumbraTexels)->AddAttributes(new xiiRenderSettingsBindingAttribute("xiiShadowCascadePass", "Settings/MaximumPenumbraTexels", xiiRenderSettingsChange::History | xiiRenderSettingsChange::Resources), new xiiClampValueAttribute(4.0f, 64.0f), new xiiDefaultValueAttribute(16.0f)),
   }
   XII_END_PROPERTIES;
 }

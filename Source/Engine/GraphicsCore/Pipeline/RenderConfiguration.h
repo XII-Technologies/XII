@@ -7,7 +7,9 @@
 #include <Foundation/Reflection/Reflection.h>
 #include <Foundation/Types/Bitflags.h>
 #include <Foundation/Types/Enum.h>
+#include <GraphicsCore/Pipeline/RenderSettings.h>
 
+class xiiRenderPipelinePass;
 class xiiStreamReader;
 class xiiStreamWriter;
 struct xiiDDGISettings;
@@ -94,10 +96,56 @@ struct XII_GRAPHICSCORE_DLL xiiDDGIProbeOverrides
 };
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiDDGIProbeOverrides);
 
+struct xiiRenderSettingScope
+{
+  enum Enum
+  {
+    SubsystemDefault,
+    Project,
+    Pipeline,
+    Scene,
+    Camera,
+    Viewport
+  };
+};
+
+struct XII_GRAPHICSCORE_DLL xiiRenderSettingSource
+{
+  const xiiRTTI*              m_pType = nullptr;
+  xiiString                   m_sPath;
+  xiiRenderSettingScope::Enum m_Scope = xiiRenderSettingScope::SubsystemDefault;
+};
+
 /// Sparse rendering policy. Each field can independently inherit the preceding scope.
 /// Pipeline and view defaults apply when no scope authors a value.
 struct XII_GRAPHICSCORE_DLL xiiRenderConfiguration
 {
+  xiiRenderConfiguration() = default;
+  xiiRenderConfiguration(const xiiRenderConfiguration& other);
+  xiiRenderConfiguration(xiiRenderConfiguration&& other) noexcept;
+  ~xiiRenderConfiguration();
+  xiiRenderConfiguration& operator=(const xiiRenderConfiguration& other);
+  xiiRenderConfiguration& operator=(xiiRenderConfiguration&& other) noexcept;
+
+  /// Owned reflected objects. RTTI serialization owns these pointers; access through the typed APIs.
+  xiiDynamicArray<xiiRenderSubsystemSettings*> m_Subsystems;
+
+  const xiiRenderSubsystemSettings*    FindSubsystem(const xiiRTTI* type) const;
+  template <typename T> const T*       FindSubsystem() const { return static_cast<const T*>(FindSubsystem(xiiGetStaticRTTI<T>())); }
+  xiiRenderSubsystemSettings*          EditSubsystem(const xiiRTTI* type);
+  template <typename T> T*             EditSubsystem() { return static_cast<T*>(EditSubsystem(xiiGetStaticRTTI<T>())); }
+  xiiResult                            SetOverride(const xiiRTTI* type, xiiStringView path, const xiiVariant& value);
+  template <typename T> xiiResult      SetOverride(xiiStringView path, const xiiVariant& value) { return SetOverride(xiiGetStaticRTTI<T>(), path, value); }
+  void                                 RemoveOverride(const xiiRTTI* type, xiiStringView path);
+  xiiRenderSettingScope::Enum          GetSource(const xiiRTTI* type, xiiStringView path) const;
+  xiiBitflags<xiiRenderSettingsChange> GetChanges(const xiiRenderConfiguration& previous) const;
+  /// Discovers concrete subsystem types supported by these compiled pass prototypes.
+  xiiResult InitializeSubsystemDefaults(xiiArrayPtr<xiiRenderPipelinePass* const> passes);
+  /// Applies explicit bindings only. The caller validates a temporary pass before publishing values.
+  xiiResult ApplyToPass(xiiRenderPipelinePass& pass, xiiBitflags<xiiRenderSettingsChange>& out_changes) const;
+  xiiResult CommitPassSettings(const xiiRenderPipelinePass& source, xiiRenderPipelinePass& target, xiiBitflags<xiiRenderSettingsChange>& out_changes) const;
+  void      ApplySubsystemOverrides(const xiiRenderConfiguration& overrides, xiiRenderSettingScope::Enum scope);
+
   static constexpr float s_fInheritBloomStrength = -1.0f;
   static constexpr float s_fInheritRenderScale   = 0.0f;
 
@@ -108,19 +156,23 @@ struct XII_GRAPHICSCORE_DLL xiiRenderConfiguration
   xiiEnum<xiiRenderFeaturePolicy>      m_Shadows;
   xiiEnum<xiiRenderFeaturePolicy>      m_ScreenSpaceReflections;
 
-  static constexpr xiiUInt32 s_uiSerializationVersion = 4;
+  static constexpr xiiUInt32 s_uiSerializationVersion = 5;
 
-  bool operator==(const xiiRenderConfiguration&) const = default;
+  bool operator==(const xiiRenderConfiguration& other) const;
 
   bool IsValid() const;
   xiiRenderPipelineVariant GetPipelineVariant() const;
 
   /// Applies the authored fields of a validated, higher-priority scope.
-  void ApplyOverrides(const xiiRenderConfiguration& overrides);
+  void ApplyOverrides(const xiiRenderConfiguration& overrides, xiiRenderSettingScope::Enum scope = xiiRenderSettingScope::Viewport);
 
   /// The enclosing asset or component owns the format version.
   xiiResult Serialize(xiiStreamWriter& stream) const;
   xiiResult Deserialize(xiiStreamReader& stream, xiiUInt32 uiVersion);
+
+private:
+  void                                    ClearSubsystems();
+  xiiDynamicArray<xiiRenderSettingSource> m_Sources;
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderConfiguration);

@@ -57,13 +57,32 @@ xiiResult xiiRenderPipelineInstance::Initialize(xiiSharedPtr<const xiiRenderPipe
   {
     if (configuration == m_RenderConfiguration)
       return XII_SUCCESS;
-    for (const auto* pPass : m_Passes)
-      XII_SUCCEED_OR_RETURN(pPass->ValidateRenderConfiguration(configuration, out_error));
-    const auto& before = m_RenderConfiguration.m_DDGI;
-    const auto& after  = configuration.m_DDGI;
-    if (before.m_uiProbeCountX != after.m_uiProbeCountX || before.m_uiProbeCountY != after.m_uiProbeCountY || before.m_uiProbeCountZ != after.m_uiProbeCountZ ||
-        before.m_fProbeSpacing != after.m_fProbeSpacing || before.m_fMaximumRelocationDistance != after.m_fMaximumRelocationDistance)
-      InvalidateTemporalHistory();
+    // Validate every affected pass before publishing any values. Configure may reset private
+    // implementation state, so it is invoked only on temporary candidates, never live passes.
+    xiiDynamicArray<xiiRenderPipelinePass*> candidates;
+    XII_SCOPE_EXIT(for (auto* pass : candidates) pass->GetDynamicRTTI()->GetAllocator()->Deallocate(pass));
+    for (xiiUInt32 i = 0; i < m_Passes.GetCount(); ++i)
+    {
+      xiiRenderPipelinePass* candidate = pipeline->m_Passes[i].m_pType->GetAllocator()->Allocate<xiiRenderPipelinePass>();
+      candidates.PushBack(candidate);
+      auto authored = pipeline->m_Descriptor.m_Passes[i].m_Properties;
+      authored.Remove("PinConfigurations");
+      XII_SUCCEED_OR_RETURN(candidate->Configure(authored));
+      xiiBitflags<xiiRenderSettingsChange> changes;
+      XII_SUCCEED_OR_RETURN(configuration.ApplyToPass(*candidate, changes));
+      xiiVariantDictionary configured;
+      XII_SUCCEED_OR_RETURN(candidate->GetProperties(configured));
+      configured.Remove("PinConfigurations");
+      XII_SUCCEED_OR_RETURN(candidate->Configure(configured));
+      XII_SUCCEED_OR_RETURN(candidate->ValidateRenderConfiguration(configuration, out_error));
+    }
+    for (xiiUInt32 i = 0; i < m_Passes.GetCount(); ++i)
+    {
+      xiiBitflags<xiiRenderSettingsChange> changes;
+      XII_SUCCEED_OR_RETURN(configuration.CommitPassSettings(*candidates[i], *m_Passes[i], changes));
+      if (changes.IsAnySet(xiiRenderSettingsChange::History | xiiRenderSettingsChange::Resources))
+        m_Passes[i]->InvalidateTemporalHistory();
+    }
     m_RenderConfiguration = configuration;
     return XII_SUCCESS;
   }
@@ -80,7 +99,13 @@ xiiResult xiiRenderPipelineInstance::Initialize(xiiSharedPtr<const xiiRenderPipe
     passes.PushBack(pass);
     auto properties = pipeline->m_Descriptor.m_Passes[i].m_Properties;
     properties.Remove("PinConfigurations"); // Authored pin objects are lowered into immutable compiled contracts.
-    if (pass->Configure(properties).Failed() || pass->InitializePinBindings(pipeline->m_Passes[i].m_Pins).Failed())
+    XII_SUCCEED_OR_RETURN(pass->Configure(properties));
+    xiiBitflags<xiiRenderSettingsChange> changes;
+    XII_SUCCEED_OR_RETURN(configuration.ApplyToPass(*pass, changes));
+    xiiVariantDictionary configured;
+    XII_SUCCEED_OR_RETURN(pass->GetProperties(configured));
+    configured.Remove("PinConfigurations");
+    if (pass->Configure(configured).Failed() || pass->InitializePinBindings(pipeline->m_Passes[i].m_Pins).Failed())
       return XII_FAILURE;
     XII_SUCCEED_OR_RETURN(pass->ValidateRenderConfiguration(configuration, out_error));
   }
