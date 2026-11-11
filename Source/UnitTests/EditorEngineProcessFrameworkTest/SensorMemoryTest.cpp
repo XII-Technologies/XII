@@ -9,7 +9,7 @@
 #include <Foundation/Configuration/CVar.h>
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Types/ScopeExit.h>
-#include <GraphicsCore/Geometry/GeometryResidency.h>
+#include <GraphicsCore/Streaming/GpuResidencyManager.h>
 #include <GraphicsCore/Lighting/SensorRendering.h>
 #include <GraphicsCore/Material/MaterialManager.h>
 #include <GraphicsCore/Pipeline/FrameConstants.h>
@@ -144,7 +144,7 @@ XII_CREATE_SIMPLE_TEST(SensorMemory, ProfileSwitchingAndReadback)
   environment.GetDevice()->WaitIdle();
   XII_TEST_BOOL(world.GetModule<xiiRenderWorldModule>()->GetExtractionRequirements().IsNoFlagSet());
   XII_TEST_BOOL(views[0]->GetGpuInstanceData() == nullptr && views[1]->GetGpuInstanceData() == nullptr);
-  XII_TEST_BOOL(!xiiGeometryResidencyManager::IsInitialized() && !xiiMaterialManager::IsInitialized());
+  XII_TEST_BOOL(!xiiGpuResidencyManager::IsInitialized() && !xiiMaterialManager::IsInitialized());
   auto       original    = views[0]->GetSensorOutputTexture();
   const auto independent = views[1]->GetSensorOutputTexture();
   if (!XII_TEST_BOOL(original != nullptr && independent != nullptr && original != independent))

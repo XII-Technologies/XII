@@ -7,6 +7,7 @@
 #include <Foundation/Threading/Lock.h>
 #include <Foundation/Threading/Mutex.h>
 #include <GraphicsCore/Lighting/DisplayOutput.h>
+#include <GraphicsCore/Pipeline/RenderSettings.h>
 
 class xiiDisplayOutputManager::State
 {
@@ -51,16 +52,16 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiExposureSettings, xiiNoBase, 1, xiiRTTIDefaul
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_ENUM_MEMBER_PROPERTY("Mode", xiiExposureMode, m_Mode),
-    XII_MEMBER_PROPERTY("MinimumEV100", m_fMinimumEV100)->AddAttributes(new xiiDefaultValueAttribute(-8.0f)),
-    XII_MEMBER_PROPERTY("MaximumEV100", m_fMaximumEV100)->AddAttributes(new xiiDefaultValueAttribute(16.0f)),
-    XII_MEMBER_PROPERTY("ExposureCompensation", m_fExposureCompensation)->AddAttributes(new xiiDefaultValueAttribute(0.0f), new xiiClampValueAttribute(-16.0f, 16.0f), new xiiSuffixAttribute(" EV")),
-    XII_MEMBER_PROPERTY("LowPercentile", m_fLowPercentile)->AddAttributes(new xiiDefaultValueAttribute(0.005f), new xiiClampValueAttribute(0.0f, 1.0f)),
-    XII_MEMBER_PROPERTY("HighPercentile", m_fHighPercentile)->AddAttributes(new xiiDefaultValueAttribute(0.98f), new xiiClampValueAttribute(0.0f, 1.0f)),
-    XII_MEMBER_PROPERTY("AdaptationSpeedBright", m_fAdaptationSpeedBright)->AddAttributes(new xiiDefaultValueAttribute(3.0f), new xiiClampValueAttribute(0.0f, xiiVariant())),
-    XII_MEMBER_PROPERTY("AdaptationSpeedDark", m_fAdaptationSpeedDark)->AddAttributes(new xiiDefaultValueAttribute(1.0f), new xiiClampValueAttribute(0.0f, xiiVariant())),
-    XII_MEMBER_PROPERTY("MinimumLogLuminance", m_fMinimumLogLuminance)->AddAttributes(new xiiDefaultValueAttribute(-12.0f)),
-    XII_MEMBER_PROPERTY("MaximumLogLuminance", m_fMaximumLogLuminance)->AddAttributes(new xiiDefaultValueAttribute(20.0f)),
+    XII_ENUM_MEMBER_PROPERTY("Mode", xiiExposureMode, m_Mode)->AddAttributes(new xiiRenderSettingsBindingAttribute("xiiAutoExposurePass", "Settings/Mode", 0)),
+    XII_MEMBER_PROPERTY("MinimumEV100", m_fMinimumEV100)->AddAttributes(new xiiRenderSettingsBindingAttribute("xiiAutoExposurePass", "Settings/MinimumEV100", 0), new xiiDefaultValueAttribute(-8.0f)),
+    XII_MEMBER_PROPERTY("MaximumEV100", m_fMaximumEV100)->AddAttributes(new xiiRenderSettingsBindingAttribute("xiiAutoExposurePass", "Settings/MaximumEV100", 0), new xiiDefaultValueAttribute(16.0f)),
+    XII_MEMBER_PROPERTY("ExposureCompensation", m_fExposureCompensation)->AddAttributes(new xiiRenderSettingsBindingAttribute("xiiAutoExposurePass", "Settings/ExposureCompensation", 0), new xiiDefaultValueAttribute(0.0f), new xiiClampValueAttribute(-20.0f, 20.0f), new xiiSuffixAttribute(" EV")),
+    XII_MEMBER_PROPERTY("LowPercentile", m_fLowPercentile)->AddAttributes(new xiiRenderSettingsBindingAttribute("xiiAutoExposurePass", "Settings/LowPercentile", 0), new xiiDefaultValueAttribute(0.005f), new xiiClampValueAttribute(0.0f, 1.0f)),
+    XII_MEMBER_PROPERTY("HighPercentile", m_fHighPercentile)->AddAttributes(new xiiRenderSettingsBindingAttribute("xiiAutoExposurePass", "Settings/HighPercentile", 0), new xiiDefaultValueAttribute(0.98f), new xiiClampValueAttribute(0.0f, 1.0f)),
+    XII_MEMBER_PROPERTY("AdaptationSpeedBright", m_fAdaptationSpeedBright)->AddAttributes(new xiiRenderSettingsBindingAttribute("xiiAutoExposurePass", "Settings/AdaptationSpeedBright", 0), new xiiDefaultValueAttribute(3.0f), new xiiClampValueAttribute(0.0f, xiiVariant())),
+    XII_MEMBER_PROPERTY("AdaptationSpeedDark", m_fAdaptationSpeedDark)->AddAttributes(new xiiRenderSettingsBindingAttribute("xiiAutoExposurePass", "Settings/AdaptationSpeedDark", 0), new xiiDefaultValueAttribute(1.0f), new xiiClampValueAttribute(0.0f, xiiVariant())),
+    XII_MEMBER_PROPERTY("MinimumLogLuminance", m_fMinimumLogLuminance)->AddAttributes(new xiiRenderSettingsBindingAttribute("xiiAutoExposurePass", "Settings/MinimumLogLuminance", 0), new xiiRenderSettingsBindingAttribute("xiiLuminanceHistogramPass", "MinimumLogLuminance", 0), new xiiDefaultValueAttribute(-12.0f)),
+    XII_MEMBER_PROPERTY("MaximumLogLuminance", m_fMaximumLogLuminance)->AddAttributes(new xiiRenderSettingsBindingAttribute("xiiAutoExposurePass", "Settings/MaximumLogLuminance", 0), new xiiRenderSettingsBindingAttribute("xiiLuminanceHistogramPass", "MaximumLogLuminance", 0), new xiiDefaultValueAttribute(20.0f)),
   }
   XII_END_PROPERTIES;
 }
@@ -70,11 +71,11 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiColorGradingSettings, xiiNoBase, 1, xiiRTTIDe
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_MEMBER_PROPERTY("Saturation", m_fSaturation)->AddAttributes(new xiiDefaultValueAttribute(1.0f), new xiiClampValueAttribute(0.0f, 4.0f)),
-    XII_MEMBER_PROPERTY("Contrast", m_fContrast)->AddAttributes(new xiiDefaultValueAttribute(1.0f), new xiiClampValueAttribute(0.0f, 4.0f)),
-    XII_MEMBER_PROPERTY("VignetteStrength", m_fVignetteStrength)->AddAttributes(new xiiDefaultValueAttribute(0.0f), new xiiClampValueAttribute(0.0f, 1.0f)),
-    XII_MEMBER_PROPERTY("VignetteRoundness", m_fVignetteRoundness)->AddAttributes(new xiiDefaultValueAttribute(1.0f), new xiiClampValueAttribute(0.25f, 4.0f)),
-    XII_MEMBER_PROPERTY("FilmGrainStrength", m_fFilmGrainStrength)->AddAttributes(new xiiDefaultValueAttribute(0.0f), new xiiClampValueAttribute(0.0f, 1.0f)),
+    XII_MEMBER_PROPERTY("Saturation", m_fSaturation)->AddAttributes(new xiiRenderSettingsBindingAttribute("xiiColorGradingPass", "Settings/Saturation", 0), new xiiDefaultValueAttribute(1.0f), new xiiClampValueAttribute(0.0f, 4.0f)),
+    XII_MEMBER_PROPERTY("Contrast", m_fContrast)->AddAttributes(new xiiRenderSettingsBindingAttribute("xiiColorGradingPass", "Settings/Contrast", 0), new xiiDefaultValueAttribute(1.0f), new xiiClampValueAttribute(0.0f, 4.0f)),
+    XII_MEMBER_PROPERTY("VignetteStrength", m_fVignetteStrength)->AddAttributes(new xiiRenderSettingsBindingAttribute("xiiColorGradingPass", "Settings/VignetteStrength", 0), new xiiDefaultValueAttribute(0.0f), new xiiClampValueAttribute(0.0f, 1.0f)),
+    XII_MEMBER_PROPERTY("VignetteRoundness", m_fVignetteRoundness)->AddAttributes(new xiiRenderSettingsBindingAttribute("xiiColorGradingPass", "Settings/VignetteRoundness", 0), new xiiDefaultValueAttribute(1.0f), new xiiClampValueAttribute(0.25f, 4.0f)),
+    XII_MEMBER_PROPERTY("FilmGrainStrength", m_fFilmGrainStrength)->AddAttributes(new xiiRenderSettingsBindingAttribute("xiiColorGradingPass", "Settings/FilmGrainStrength", 0), new xiiDefaultValueAttribute(0.0f), new xiiClampValueAttribute(0.0f, 1.0f)),
   }
   XII_END_PROPERTIES;
 }
@@ -86,14 +87,14 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiDisplayOutputSettings, xiiNoBase, 2, xiiRTTID
   {
     XII_MEMBER_PROPERTY("Exposure", m_Exposure),
     XII_MEMBER_PROPERTY("ColorGrading", m_ColorGrading),
-    XII_ENUM_MEMBER_PROPERTY("ToneMappingOperator", xiiToneMappingOperator, m_ToneMappingOperator),
-    XII_ENUM_MEMBER_PROPERTY("OutputMode", xiiDisplayOutputMode, m_OutputMode),
-    XII_MEMBER_PROPERTY("BloomStrength", m_fBloomStrength)->AddAttributes(new xiiDefaultValueAttribute(0.05f), new xiiClampValueAttribute(0.0f, xiiVariant())),
-    XII_MEMBER_PROPERTY("BloomThreshold", m_fBloomThreshold)->AddAttributes(new xiiDefaultValueAttribute(1.0f), new xiiClampValueAttribute(0.0f, xiiVariant())),
-    XII_MEMBER_PROPERTY("BloomKnee", m_fBloomKnee)->AddAttributes(new xiiDefaultValueAttribute(0.5f), new xiiClampValueAttribute(0.0f, xiiVariant())),
-    XII_MEMBER_PROPERTY("BloomRadius", m_fBloomRadius)->AddAttributes(new xiiDefaultValueAttribute(1.0f), new xiiClampValueAttribute(0.0f, 8.0f), new xiiSuffixAttribute(" px")),
-    XII_MEMBER_PROPERTY("PaperWhiteNits", m_fPaperWhiteNits)->AddAttributes(new xiiDefaultValueAttribute(203.0f), new xiiClampValueAttribute(1.0f, xiiVariant()), new xiiSuffixAttribute(" nit")),
-    XII_MEMBER_PROPERTY("MaximumDisplayNits", m_fMaximumDisplayNits)->AddAttributes(new xiiDefaultValueAttribute(1000.0f), new xiiClampValueAttribute(1.0f, xiiVariant()), new xiiSuffixAttribute(" nit")),
+    XII_ENUM_MEMBER_PROPERTY("ToneMappingOperator", xiiToneMappingOperator, m_ToneMappingOperator)->AddAttributes(new xiiRenderSettingsBindingAttribute("xiiToneMappingPass", "Operator", 0)),
+    XII_ENUM_MEMBER_PROPERTY("OutputMode", xiiDisplayOutputMode, m_OutputMode)->AddAttributes(new xiiRenderSettingsBindingAttribute("xiiPresentPass", "OutputMode", xiiRenderSettingsChange::Output), new xiiRenderSettingsBindingAttribute("xiiToneMappingPass", "OutputMode", xiiRenderSettingsChange::Output)),
+    XII_MEMBER_PROPERTY("BloomStrength", m_fBloomStrength)->AddAttributes(new xiiRenderSettingsBindingAttribute("xiiToneMappingPass", "BloomStrength", 0), new xiiRenderSettingsBindingAttribute("xiiBloomPass", "Strength", 0), new xiiDefaultValueAttribute(0.05f), new xiiClampValueAttribute(0.0f, xiiVariant())),
+    XII_MEMBER_PROPERTY("BloomThreshold", m_fBloomThreshold)->AddAttributes(new xiiRenderSettingsBindingAttribute("xiiBloomPass", "Threshold", 0), new xiiDefaultValueAttribute(1.0f), new xiiClampValueAttribute(0.0f, xiiVariant())),
+    XII_MEMBER_PROPERTY("BloomKnee", m_fBloomKnee)->AddAttributes(new xiiRenderSettingsBindingAttribute("xiiBloomPass", "Knee", 0), new xiiDefaultValueAttribute(0.5f), new xiiClampValueAttribute(0.0f, xiiVariant())),
+    XII_MEMBER_PROPERTY("BloomRadius", m_fBloomRadius)->AddAttributes(new xiiRenderSettingsBindingAttribute("xiiBloomPass", "Radius", 0), new xiiDefaultValueAttribute(1.0f), new xiiClampValueAttribute(0.0f, 8.0f), new xiiSuffixAttribute(" px")),
+    XII_MEMBER_PROPERTY("PaperWhiteNits", m_fPaperWhiteNits)->AddAttributes(new xiiRenderSettingsBindingAttribute("xiiPresentPass", "PaperWhiteNits", 0), new xiiRenderSettingsBindingAttribute("xiiToneMappingPass", "PaperWhiteNits", 0), new xiiDefaultValueAttribute(203.0f), new xiiClampValueAttribute(1.0f, xiiVariant()), new xiiSuffixAttribute(" nit")),
+    XII_MEMBER_PROPERTY("MaximumDisplayNits", m_fMaximumDisplayNits)->AddAttributes(new xiiRenderSettingsBindingAttribute("xiiPresentPass", "MaximumDisplayNits", 0), new xiiRenderSettingsBindingAttribute("xiiToneMappingPass", "MaximumDisplayNits", 0), new xiiDefaultValueAttribute(1000.0f), new xiiClampValueAttribute(1.0f, xiiVariant()), new xiiSuffixAttribute(" nit")),
   }
   XII_END_PROPERTIES;
 }

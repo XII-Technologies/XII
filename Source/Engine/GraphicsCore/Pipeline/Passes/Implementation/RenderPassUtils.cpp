@@ -75,22 +75,13 @@ xiiResult xiiRenderPassUtils::OutputSize(const xiiRenderPipelinePassContext& con
 
 xiiResult xiiRenderPassUtils::DisplayConfiguration::Resolve(const xiiRenderPipelinePassContext& context, const xiiDisplayOutputSettings& authored, bool useViewDefaults)
 {
-  const auto*      override = context.m_Parameters.GetValue("DisplayOutput");
-  const xiiVariant value    = override ? *override : xiiVariant();
-  const xiiUInt64  revision = context.m_pView && useViewDefaults ? context.m_pView->GetDisplayOutputSettingsRevision() : 0;
-  const float      fBloomStrength = context.m_pRenderConfiguration ? context.m_pRenderConfiguration->m_fBloomStrength : xiiRenderConfiguration::s_fInheritBloomStrength;
-  if (m_bValid && context.m_pView == m_pView && revision == m_uiViewRevision && value == m_Override && fBloomStrength == m_fBloomStrength)
+  const auto settings = context.m_pView && useViewDefaults ? context.m_pView->GetDisplayOutputSettings() : authored;
+  if (!xiiDisplayOutputManager::IsValid(settings))
+    return context.ReportFailure("Invalid display and exposure settings.");
+  if (m_bValid && m_Settings == settings)
     return XII_SUCCESS;
-  auto settings = context.m_pView && useViewDefaults ? context.m_pView->GetDisplayOutputSettings() : authored;
-  XII_SUCCEED_OR_RETURN(xiiResolvePipelineDisplaySettings(context.m_Parameters, settings));
-  if (fBloomStrength != xiiRenderConfiguration::s_fInheritBloomStrength)
-    settings.m_fBloomStrength = fBloomStrength;
-  m_Settings       = settings;
-  m_Override       = value;
-  m_pView          = context.m_pView;
-  m_uiViewRevision = revision;
-  m_fBloomStrength = fBloomStrength;
-  m_bValid         = true;
+  m_Settings = settings;
+  m_bValid   = true;
   return XII_SUCCESS;
 }
 

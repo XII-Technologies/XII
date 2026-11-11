@@ -16,6 +16,7 @@ public:
   xiiBloomPass();
   ~xiiBloomPass();
   bool  m_bUseViewDefaults = false;
+  float m_fStrength        = 0.05f;
   float m_fThreshold       = 1.0f;
   float m_fKnee            = 0.5f;
   float m_fRadius          = 1.0f;

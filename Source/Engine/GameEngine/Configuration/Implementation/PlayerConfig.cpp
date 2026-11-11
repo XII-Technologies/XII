@@ -129,12 +129,6 @@ xiiStatus xiiPlayerLaunchConfig::ValidateRuntimeArguments(xiiArrayPtr<const xiiS
       minimum = 1;
       maximum = 1000;
     }
-    else if (arg.IsEqual_NoCase("-render-scale"))
-    {
-      minimum = 0.1;
-      maximum = 1.0;
-      integer = false;
-    }
     else if (arg.IsEqual_NoCase("-volume"))
     {
       minimum = 0;

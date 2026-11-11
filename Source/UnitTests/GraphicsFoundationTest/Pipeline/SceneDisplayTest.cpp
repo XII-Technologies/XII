@@ -400,15 +400,7 @@ XII_CREATE_SIMPLE_TEST(SceneDisplay, BloomAndMeteredExposureAffectProductionOutp
     settings.m_Exposure.m_fAdaptationSpeedBright = settings.m_Exposure.m_fAdaptationSpeedDark = 0;
     settings.m_Exposure.m_fExposureCompensation                                               = phase == 2 ? -1.0f : 1.0f;
     if (phase == 2)
-    {
-      settings.m_Exposure.m_Mode = xiiExposureMode::Automatic;
-      xiiVariantDictionary displayOverride, exposureOverride;
-      exposureOverride.Insert("Mode", static_cast<xiiInt64>(xiiExposureMode::Manual));
-      displayOverride.Insert("Exposure", exposureOverride);
-      views[1]->SetPipelineParameter("DisplayOutput", displayOverride);
-    }
-    else
-      views[1]->RemovePipelineParameter("DisplayOutput");
+      settings.m_Exposure.m_Mode = xiiExposureMode::Manual;
     XII_TEST_RESULT(views[1]->SetDisplayOutputSettings(settings));
     xiiStringBuilder name;
     name.SetFormat("Display.ModeTransition.{}", phase);

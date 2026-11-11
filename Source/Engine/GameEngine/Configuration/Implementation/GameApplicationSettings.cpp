@@ -22,7 +22,6 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGameApplicationSettings, 1, xiiRTTIDefaultAl
     XII_MEMBER_PROPERTY("VSync", m_bVSync)->AddAttributes(new xiiDefaultValueAttribute(true)),
     XII_MEMBER_PROPERTY("FrameLimit", m_uiFrameLimit)->AddAttributes(new xiiDefaultValueAttribute(0), new xiiClampValueAttribute(0, 1000)),
     XII_MEMBER_PROPERTY("BackgroundFrameLimit", m_uiBackgroundFrameLimit)->AddAttributes(new xiiDefaultValueAttribute(30), new xiiClampValueAttribute(1, 1000)),
-    XII_MEMBER_PROPERTY("RenderScale", m_fRenderScale)->AddAttributes(new xiiDefaultValueAttribute(1.0f), new xiiClampValueAttribute(0.1f, 1.0f)),
     XII_MEMBER_PROPERTY("ShowFrameStats", m_bShowFrameStats)->AddAttributes(new xiiDefaultValueAttribute(false)),
     XII_MEMBER_PROPERTY("MasterVolume", m_fMasterVolume)->AddAttributes(new xiiDefaultValueAttribute(1.0f), new xiiClampValueAttribute(0.0f, 1.0f)),
     XII_MEMBER_PROPERTY("MuteInBackground", m_bMuteInBackground)->AddAttributes(new xiiDefaultValueAttribute(true)),

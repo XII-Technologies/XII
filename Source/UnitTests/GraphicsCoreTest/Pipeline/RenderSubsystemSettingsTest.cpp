@@ -2,11 +2,15 @@
 
 #include <GraphicsCoreTest/GraphicsCoreTestPCH.h>
 
+#include <Foundation/IO/ChunkStream.h>
 #include <Foundation/IO/MemoryStream.h>
+#include <Foundation/Serialization/DdlSerializer.h>
+#include <Foundation/Serialization/RttiConverter.h>
 #include <GraphicsCore/Lighting/DDGIRenderSettings.h>
 #include <GraphicsCore/Lighting/PostProcessRenderSettings.h>
 #include <GraphicsCore/Pipeline/DynamicResolutionSettings.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
+#include <GraphicsCore/Streaming/RenderDeviceProfileConfig.h>
 
 class xiiContributedRenderSettings final : public xiiRenderSubsystemSettings
 {
@@ -144,4 +148,65 @@ XII_CREATE_SIMPLE_TEST(Pipeline, ContributedSubsystemPublication)
   effective.RemoveOverride(xiiGetStaticRTTI<xiiContributedRenderSettings>(), "Lower");
   XII_TEST_RESULT(instance.Initialize(pipeline, effective, error));
   XII_TEST_FLOAT(original->m_fLower, 0.3f, 0.001f);
+}
+
+
+XII_CREATE_SIMPLE_TEST(Pipeline, SubsystemSettingsGraphMigration)
+{
+  xiiAbstractObjectGraph legacy;
+  auto*                  root   = legacy.AddNode(xiiUuid::MakeUuid(), "xiiRenderConfiguration", 4, "root");
+  auto*                  probes = legacy.AddNode(xiiUuid::MakeUuid(), "xiiDDGIProbeOverrides", 1);
+  root->AddProperty("GlobalIllumination", "xiiRenderGlobalIllumination::DDGI");
+  root->AddProperty("DDGI", probes->GetGuid());
+  root->AddProperty("BloomStrength", 0.0f);
+  root->AddProperty("RenderScale", 0.0f);
+  probes->AddProperty("ProbeUpdateBudget", 48U);
+
+  xiiContiguousMemoryStreamStorage storage;
+  xiiMemoryStreamWriter            writer(&storage);
+  xiiAbstractGraphDdlSerializer::Write(writer, &legacy);
+  xiiMemoryStreamReader  reader(&storage);
+  xiiAbstractObjectGraph migrated;
+  XII_TEST_RESULT(xiiAbstractGraphDdlSerializer::Read(reader, &migrated));
+
+  xiiRenderConfiguration  configuration;
+  xiiRttiConverterContext context;
+  xiiRttiConverterReader  converter(&migrated, &context);
+  converter.ApplyPropertiesToObject(migrated.GetNodeByName("root"), xiiGetStaticRTTI<xiiRenderConfiguration>(), &configuration);
+  XII_TEST_BOOL(configuration.IsValid());
+  const auto* settings = configuration.FindSubsystem<xiiDDGIRenderSettings>();
+  if (!XII_TEST_BOOL(settings != nullptr))
+    return;
+  XII_TEST_INT(settings->m_Probes.m_uiProbeUpdateBudget, 48);
+  XII_TEST_BOOL(settings->IsOverridden("Probes/ProbeUpdateBudget"));
+  XII_TEST_BOOL(!settings->IsOverridden("Probes/ProbeSpacing"));
+  XII_TEST_BOOL(configuration.GetPipelineVariant().m_GlobalIllumination == xiiRenderGlobalIllumination::DDGI);
+  XII_TEST_BOOL(configuration.FindSubsystem<xiiDynamicResolutionSettings>() == nullptr);
+}
+
+XII_CREATE_SIMPLE_TEST(Pipeline, DeviceStreamingProfile)
+{
+  xiiRenderDeviceProfileConfig authored;
+  authored.m_Memory.m_bUseNativeBudget                 = false;
+  authored.m_Memory.m_uiBudgetMiB                      = 768;
+  authored.m_Residency.m_Streaming.m_iTextureUploadMiB = 12;
+  authored.m_Residency.m_Streaming.m_fTextureMipBias   = 1.25f;
+  XII_TEST_RESULT(authored.Validate());
+
+  xiiContiguousMemoryStreamStorage storage;
+  xiiMemoryStreamWriter            writer(&storage);
+  xiiChunkStreamWriter             chunks(writer);
+  chunks.BeginStream(1);
+  authored.SaveRuntimeData(chunks);
+  chunks.EndStream();
+  xiiMemoryStreamReader reader(&storage);
+  xiiChunkStreamReader  stream(reader);
+  stream.BeginStream();
+  xiiRenderDeviceProfileConfig restored;
+  restored.LoadRuntimeData(stream);
+  XII_TEST_BOOL(restored.m_Memory == authored.m_Memory);
+  XII_TEST_BOOL(restored.m_Residency == authored.m_Residency);
+
+  authored.m_Memory.m_uiPressureLowPercent = authored.m_Memory.m_uiPressureHighPercent;
+  XII_TEST_BOOL(authored.Validate().Failed());
 }

@@ -78,24 +78,6 @@ struct xiiRenderPipelineVariant
   }
 };
 
-/// Sparse overrides of the scheduling properties authored on a DDGI pass.
-struct XII_GRAPHICSCORE_DLL xiiDDGIProbeOverrides
-{
-  xiiUInt32 m_uiProbeCountX              = 0;
-  xiiUInt32 m_uiProbeCountY              = 0;
-  xiiUInt32 m_uiProbeCountZ              = 0;
-  xiiUInt32 m_uiProbeUpdateBudget        = 0;
-  float     m_fProbeSpacing              = 0.0f;
-  float     m_fTemporalHysteresis        = -1.0f;
-  float     m_fMaximumRelocationDistance = -1.0f;
-
-  bool operator==(const xiiDDGIProbeOverrides&) const = default;
-  bool IsValid() const;
-  void ApplyOverrides(const xiiDDGIProbeOverrides& overrides);
-  void ApplyTo(xiiDDGISettings& settings) const;
-};
-XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiDDGIProbeOverrides);
-
 struct xiiRenderSettingScope
 {
   enum Enum
@@ -111,13 +93,16 @@ struct xiiRenderSettingScope
 
 struct XII_GRAPHICSCORE_DLL xiiRenderSettingSource
 {
-  const xiiRTTI*              m_pType = nullptr;
+  bool                        operator==(const xiiRenderSettingSource&) const = default;
+  xiiString                   m_sType;
   xiiString                   m_sPath;
-  xiiRenderSettingScope::Enum m_Scope = xiiRenderSettingScope::SubsystemDefault;
+  xiiUInt8                    m_uiScope = xiiRenderSettingScope::SubsystemDefault;
 };
 
-/// Sparse rendering policy. Each field can independently inherit the preceding scope.
-/// Pipeline and view defaults apply when no scope authors a value.
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderSettingSource);
+
+/// Owned collection of typed subsystem settings. Override masks express inheritance independently
+/// for every property. Resolved snapshots are published at a CPU frame boundary.
 struct XII_GRAPHICSCORE_DLL xiiRenderConfiguration
 {
   xiiRenderConfiguration() = default;
@@ -138,25 +123,19 @@ struct XII_GRAPHICSCORE_DLL xiiRenderConfiguration
   template <typename T> xiiResult      SetOverride(xiiStringView path, const xiiVariant& value) { return SetOverride(xiiGetStaticRTTI<T>(), path, value); }
   void                                 RemoveOverride(const xiiRTTI* type, xiiStringView path);
   xiiRenderSettingScope::Enum          GetSource(const xiiRTTI* type, xiiStringView path) const;
+  void                                 ApplySnapshot(const xiiRenderConfiguration& snapshot);
+  bool                                 HasSameSources(const xiiRenderConfiguration& other) const { return m_Sources == other.m_Sources; }
+  void                                 CopySourcesFrom(const xiiRenderConfiguration& snapshot);
   xiiBitflags<xiiRenderSettingsChange> GetChanges(const xiiRenderConfiguration& previous) const;
   /// Discovers concrete subsystem types supported by these compiled pass prototypes.
   xiiResult InitializeSubsystemDefaults(xiiArrayPtr<xiiRenderPipelinePass* const> passes);
   /// Applies explicit bindings only. The caller validates a temporary pass before publishing values.
+  bool      HasPassOverrides(const xiiRTTI* type) const;
   xiiResult ApplyToPass(xiiRenderPipelinePass& pass, xiiBitflags<xiiRenderSettingsChange>& out_changes) const;
   xiiResult CommitPassSettings(const xiiRenderPipelinePass& source, xiiRenderPipelinePass& target, xiiBitflags<xiiRenderSettingsChange>& out_changes) const;
   void      ApplySubsystemOverrides(const xiiRenderConfiguration& overrides, xiiRenderSettingScope::Enum scope);
 
-  static constexpr float s_fInheritBloomStrength = -1.0f;
-  static constexpr float s_fInheritRenderScale   = 0.0f;
-
-  float m_fBloomStrength = s_fInheritBloomStrength; ///< Zero disables bloom in normal views.
-  float m_fRenderScale   = s_fInheritRenderScale;   ///< An explicit scale is in [0.1, 1].
-  xiiEnum<xiiRenderGlobalIllumination> m_GlobalIllumination;
-  xiiDDGIProbeOverrides                m_DDGI;
-  xiiEnum<xiiRenderFeaturePolicy>      m_Shadows;
-  xiiEnum<xiiRenderFeaturePolicy>      m_ScreenSpaceReflections;
-
-  static constexpr xiiUInt32 s_uiSerializationVersion = 5;
+  static constexpr xiiUInt32 s_uiSerializationVersion = 6;
 
   bool operator==(const xiiRenderConfiguration& other) const;
 
@@ -171,6 +150,7 @@ struct XII_GRAPHICSCORE_DLL xiiRenderConfiguration
   xiiResult Deserialize(xiiStreamReader& stream, xiiUInt32 uiVersion);
 
 private:
+  XII_ALLOW_PRIVATE_PROPERTIES(xiiRenderConfiguration);
   void                                    ClearSubsystems();
   xiiDynamicArray<xiiRenderSettingSource> m_Sources;
 };

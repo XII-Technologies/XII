@@ -298,7 +298,6 @@ class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiViewRedrawMsgToEngine : public xii
 
 public:
   bool      m_bShowFrameStats   = false;
-  float     m_fRenderScale      = 1.0f;
   xiiRenderConfiguration m_RenderConfiguration;
   bool      m_bUseSharedTexture = false;
   xiiUInt16 m_uiWindowWidth;

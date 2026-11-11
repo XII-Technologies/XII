@@ -34,7 +34,6 @@ struct XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiEngineViewConfig
   bool                          m_bUseCameraTransformOnDevice = true;
 
   bool  m_bShowFrameStats = false;
-  float m_fRenderScale    = 1.0f;
   xiiRenderConfiguration m_RenderConfiguration;
   bool  m_bVSync          = true; ///< Presentation preference for this viewport window/swapchain.
 

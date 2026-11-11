@@ -283,8 +283,6 @@ void xiiGameApplication::Init_ConfigureCVars()
     m_Settings.m_uiFrameLimit = xiiMath::Clamp(command->GetIntOption("-App.FrameLimit", m_Settings.m_uiFrameLimit), 0, 1000);
   if (command->HasOption("-background-fps"))
     m_Settings.m_uiBackgroundFrameLimit = xiiMath::Clamp(command->GetIntOption("-background-fps", 30), 1, 1000);
-  if (command->HasOption("-render-scale"))
-    m_Settings.m_fRenderScale = xiiMath::Clamp(static_cast<float>(command->GetFloatOption("-render-scale", 1.0)), 0.1f, 1.0f);
   if (command->HasOption("-show-fps"))
     m_Settings.m_bShowFrameStats = command->GetBoolOption("-show-fps", false);
   if (command->HasOption("-volume"))
@@ -717,14 +715,12 @@ void xiiGameApplication::ApplyViewSettings()
   XII_LOCK(state->GetMainWorld()->GetWriteMarker());
   if (auto* view = state->GetMainView())
   {
-    view->SetRenderScale(GetSettings().m_fRenderScale);
     view->SetShowFrameStats(GetSettings().m_bShowFrameStats);
   }
   if (auto* cameras = state->GetMainWorld()->GetComponentManager<xiiCameraComponentManager>())
     for (auto camera = cameras->GetComponents(); camera.IsValid(); ++camera)
       if (camera->IsActive() && camera->GetUsageHint() == xiiCameraUsageHint::MainView)
       {
-        camera->SetRenderScale(GetSettings().m_fRenderScale);
         camera->SetShowFrameStats(GetSettings().m_bShowFrameStats);
       }
 }

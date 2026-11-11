@@ -20,6 +20,7 @@
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsFoundation/Device/Device.h>
+#include <GraphicsFoundation/Device/SwapChain.h>
 #include <GraphicsFoundation/Resources/Texture.h>
 #include <GraphicsFoundation/Resources/TextureView.h>
 
@@ -55,7 +56,6 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiView, 4, xiiRTTINoAllocator)
     {
       XII_ACCESSOR_PROPERTY("ShowFPS", GetShowFrameStats, SetShowFrameStats)->AddAttributes(new xiiDefaultValueAttribute(false)),
       XII_ENUM_ACCESSOR_PROPERTY("RenderPath", xiiRenderPath, GetRenderPath, SetRenderPath),
-      XII_ACCESSOR_PROPERTY("RenderScale", GetRenderScale, SetRenderScale)->AddAttributes(new xiiDefaultValueAttribute(1.0f), new xiiClampValueAttribute(0.1f, 1.0f)),
     } XII_END_PROPERTIES;
   }
 XII_END_DYNAMIC_REFLECTED_TYPE;
@@ -454,9 +454,14 @@ xiiResult xiiView::SynchronizeRenderPipeline()
     m_RuntimeFeatures                = m_CustomRuntimeFeatures;
     return XII_SUCCESS;
   }
-  const auto configuration = ResolveRenderConfiguration();
+  const auto& configuration = ResolveRenderConfiguration();
   bool changed = false;
-  if (runtime->Synchronize(m_hRenderPipeline, &changed, configuration).Failed())
+  auto        outputFormat  = xiiGALResourceFormat::Unknown;
+  if (m_pRenderTargetView)
+    outputFormat = static_cast<xiiGALResourceFormat::Enum>(m_pRenderTargetView->GetDescription().m_Format.GetValue());
+  else if (m_pSwapChain)
+    outputFormat = static_cast<xiiGALResourceFormat::Enum>(m_pSwapChain->GetDescription().m_ColorBufferFormat.GetValue());
+  if (runtime->Synchronize(m_hRenderPipeline, &changed, configuration, outputFormat).Failed())
   {
     if (!m_bPipelineSynchronizationFailed)
     {
@@ -474,7 +479,7 @@ xiiResult xiiView::SynchronizeRenderPipeline()
   m_bPipelineSynchronizationFailed = false;
   ApplyRenderScale(GetDynamicResolutionSettings().m_fRenderScale);
   if (const auto* post = runtime->GetRenderConfiguration().FindSubsystem<xiiPostProcessRenderSettings>())
-    if (!xiiReflectionUtils::IsEqual(&post->m_Display, &m_DisplayOutputSettings, xiiGetStaticRTTI<xiiDisplayOutputSettings>()))
+    if (post->m_Display != m_DisplayOutputSettings)
     {
       m_DisplayOutputSettings = post->m_Display;
       ++m_uiDisplayOutputSettingsRevision;
@@ -483,6 +488,13 @@ xiiResult xiiView::SynchronizeRenderPipeline()
   {
     InvalidateTemporalHistory();
   }
+  if (const auto* debug = runtime->GetRenderConfiguration().FindSubsystem<xiiDebugRenderSettings>())
+  {
+    if (debug->IsOverridden("Visualization"))
+      SetViewRenderMode(debug->m_Visualization);
+    if (debug->IsOverridden("FrameStatistics"))
+      SetShowFrameStats(debug->m_bFrameStatistics);
+  }
   m_ExtractionRequirements = runtime->GetPipeline()->GetExtractionRequirements();
   m_RuntimeFeatures        = runtime->GetPipeline()->GetRuntimeFeatures();
   return XII_SUCCESS;
@@ -490,6 +502,8 @@ xiiResult xiiView::SynchronizeRenderPipeline()
 
 xiiResult xiiView::SetRenderConfiguration(const xiiRenderConfiguration& configuration)
 {
+  if (m_RenderConfiguration == configuration)
+    return XII_SUCCESS;
   if (!configuration.IsValid())
     return XII_FAILURE;
   m_RenderConfiguration = configuration;
@@ -516,9 +530,10 @@ xiiRenderConfiguration xiiView::GetEffectiveRenderConfiguration() const
   return GetPipelineInstance()->GetRenderConfiguration();
 }
 
-xiiRenderConfiguration xiiView::ResolveRenderConfiguration() const
+const xiiRenderConfiguration& xiiView::ResolveRenderConfiguration()
 {
-  xiiRenderConfiguration effective;
+  const xiiRenderConfiguration          empty;
+  const xiiRenderConfiguration*         scopes[] = {&empty, &empty, &empty, &m_RenderConfiguration};
   xiiSharedPtr<const xiiRenderPipeline> selected;
   if (m_hRenderPipeline.IsValid())
   {
@@ -526,22 +541,16 @@ xiiRenderConfiguration xiiView::ResolveRenderConfiguration() const
     if (resource.IsValid())
       selected = resource->GetPipeline();
   }
-  if (selected)
-    effective = selected->GetSubsystemDefaults();
   if (const auto* pApplication = xiiGameApplicationBase::GetGameApplicationBaseInstance())
     if (const auto* pProfile = pApplication->GetPlatformProfile().GetTypeConfig<xiiRenderPipelineProfileConfig>())
-      if (pProfile->m_RenderConfiguration.IsValid())
-        effective.ApplyOverrides(pProfile->m_RenderConfiguration, xiiRenderSettingScope::Project);
+      scopes[0] = &pProfile->m_RenderConfiguration;
 
-  if (selected)
-    effective.ApplyOverrides(selected->GetDescriptor().m_Settings.m_RenderDefaults, xiiRenderSettingScope::Pipeline);
 
   if (const auto* pWorld = GetWorld())
   {
     if (const auto* pManager = pWorld->GetComponentManager<xiiRenderWorldSettingsComponentManager>())
       if (const auto* pSettings = pManager->GetSingletonComponent())
-        if (pSettings->m_RenderConfiguration.IsValid())
-          effective.ApplyOverrides(pSettings->m_RenderConfiguration, xiiRenderSettingScope::Scene);
+        scopes[1] = &pSettings->m_RenderConfiguration;
 
     const xiiCameraComponent* pCamera = nullptr;
     if (!m_hRenderConfigurationCamera.IsInvalidated())
@@ -554,12 +563,29 @@ xiiRenderConfiguration xiiView::ResolveRenderConfiguration() const
       if (const auto* pManager = pWorld->GetComponentManager<xiiCameraComponentManager>())
         pCamera = pManager->GetCameraByUsageHint(GetCameraUsageHint());
     }
-    if (pCamera && pCamera->m_RenderConfiguration.IsValid())
-      effective.ApplyOverrides(pCamera->m_RenderConfiguration, xiiRenderSettingScope::Camera);
+    if (pCamera)
+      scopes[2] = &pCamera->m_RenderConfiguration;
   }
 
-  effective.ApplyOverrides(m_RenderConfiguration);
-  return effective;
+  bool changed = !m_bRenderConfigurationResolved || selected != m_pResolvedRenderPipeline;
+  for (xiiUInt32 i = 0; !changed && i < XII_ARRAY_SIZE(scopes); ++i)
+    changed = *scopes[i] != m_ResolvedScopeInputs[i];
+  if (!changed)
+    return m_ResolvedRenderConfiguration;
+
+  for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(scopes); ++i)
+    m_ResolvedScopeInputs[i] = *scopes[i];
+  m_pResolvedRenderPipeline = selected;
+  auto effective            = selected ? selected->GetSubsystemDefaults() : xiiRenderConfiguration{};
+  effective.ApplyOverrides(*scopes[0], xiiRenderSettingScope::Project);
+  if (selected)
+    effective.ApplyOverrides(selected->GetDescriptor().m_Settings.m_RenderDefaults, xiiRenderSettingScope::Pipeline);
+  effective.ApplyOverrides(*scopes[1], xiiRenderSettingScope::Scene);
+  effective.ApplyOverrides(*scopes[2], xiiRenderSettingScope::Camera);
+  effective.ApplyOverrides(*scopes[3], xiiRenderSettingScope::Viewport);
+  m_ResolvedRenderConfiguration  = std::move(effective);
+  m_bRenderConfigurationResolved = true;
+  return m_ResolvedRenderConfiguration;
 }
 
 xiiResult xiiView::BuildRenderPipeline(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)

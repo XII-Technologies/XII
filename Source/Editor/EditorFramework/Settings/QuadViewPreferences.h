@@ -15,7 +15,7 @@ struct XII_EDITORFRAMEWORK_DLL xiiEngineViewPreferences
   xiiSceneViewPerspective::Enum m_PerspectiveMode = xiiSceneViewPerspective::Perspective;
   xiiViewRenderMode::Enum       m_RenderMode      = xiiViewRenderMode::Default;
   float                         m_fFov            = 70.0f;
-  float                         m_fRenderScale    = 1.0f;
+  xiiRenderConfiguration        m_RenderConfiguration;
   bool                          m_bShowFrameStats = false;
   bool                          m_bVSync          = true;
 };

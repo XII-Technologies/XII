@@ -15,6 +15,7 @@ class XII_GRAPHICSCORE_DLL xiiDDGIRenderSettings final : public xiiRenderSubsyst
 public:
   xiiDDGISettings m_Probes            = {};
   bool            m_bDirectionalAtlas = false;
+  float           m_fTraceDistanceInProbeSpacings = 4.0f;
   float           m_fForwardOffset    = 0.0f;
   float           m_fIntensity        = 1.0f;
   xiiResult       Validate() const override;

@@ -14,6 +14,11 @@
 #include <GraphicsCore/Components/Lights/DirectionalLightComponent.h>
 #include <GraphicsCore/Components/Lights/SkyAtmosphereComponent.h>
 #include <GraphicsCore/Components/Lights/SpotLightComponent.h>
+#include <GraphicsCore/Lighting/DDGIRenderSettings.h>
+#include <GraphicsCore/Lighting/GlobalIlluminationRenderSettings.h>
+#include <GraphicsCore/Lighting/PostProcessRenderSettings.h>
+#include <GraphicsCore/Lighting/ReflectionRenderSettings.h>
+#include <GraphicsCore/Lighting/ShadowRenderSettings.h>
 #include <GraphicsCore/Material/MaterialResource.h>
 #include <GraphicsCore/Meshes/MeshComponent.h>
 #include <GraphicsCore/Meshes/MeshResource.h>
@@ -79,15 +84,15 @@ XII_CREATE_SIMPLE_TEST(CanonicalRenderer, ViewRenderConfiguration)
   };
 
   xiiRenderConfiguration configuration;
-  configuration.m_GlobalIllumination = xiiRenderGlobalIllumination::Disabled;
-  configuration.m_fBloomStrength     = 0.0f;
+  XII_TEST_RESULT(configuration.SetOverride<xiiGlobalIlluminationRenderSettings>("Technique", xiiInt64(xiiRenderGlobalIllumination::Disabled)));
+  XII_TEST_RESULT(configuration.SetOverride<xiiPostProcessRenderSettings>("Display/BloomStrength", 0.0f));
   XII_TEST_RESULT(views[0]->SetRenderConfiguration(configuration));
   if (!render())
     return;
   const auto* pDisabled    = views[0]->GetRenderPipelineInstance().GetPipeline();
   const auto* pIndependent = views[1]->GetRenderPipelineInstance().GetPipeline();
   XII_TEST_BOOL(pDisabled != pIndependent);
-  configuration.m_GlobalIllumination = xiiRenderGlobalIllumination::ScreenSpace;
+  XII_TEST_RESULT(configuration.SetOverride<xiiGlobalIlluminationRenderSettings>("Technique", xiiInt64(xiiRenderGlobalIllumination::ScreenSpace)));
   XII_TEST_RESULT(views[0]->SetRenderConfiguration(configuration));
   if (!render())
     return;
@@ -99,15 +104,16 @@ XII_CREATE_SIMPLE_TEST(CanonicalRenderer, ViewRenderConfiguration)
     xiiTestFramework::Output(xiiTestOutput::Details, "DDGI execution requires extended typed texture UAV formats on the test device.");
     return;
   }
-  configuration.m_GlobalIllumination   = xiiRenderGlobalIllumination::DDGI;
-  configuration.m_DDGI.m_uiProbeCountX = configuration.m_DDGI.m_uiProbeCountY = configuration.m_DDGI.m_uiProbeCountZ = 4;
-  configuration.m_DDGI.m_uiProbeUpdateBudget                                                                         = 8;
+  XII_TEST_RESULT(configuration.SetOverride<xiiGlobalIlluminationRenderSettings>("Technique", xiiInt64(xiiRenderGlobalIllumination::DDGI)));
+  for (const auto path : {"Probes/ProbeCountX", "Probes/ProbeCountY", "Probes/ProbeCountZ"})
+    XII_TEST_RESULT(configuration.SetOverride<xiiDDGIRenderSettings>(path, 4U));
+  XII_TEST_RESULT(configuration.SetOverride<xiiDDGIRenderSettings>("Probes/ProbeUpdateBudget", 8U));
   XII_TEST_RESULT(views[0]->SetRenderConfiguration(configuration));
   if (!render())
     return;
   const auto& instance = views[0]->GetRenderPipelineInstance();
   const auto* pDDGI    = instance.GetPipeline();
-  XII_TEST_BOOL(views[0]->GetEffectiveRenderConfiguration() == configuration);
+  XII_TEST_BOOL(views[0]->GetEffectiveRenderConfiguration().GetPipelineVariant().GetCacheKey() == configuration.GetPipelineVariant().GetCacheKey());
   xiiUInt32 uiSchedule = xiiInvalidIndex;
   for (xiiUInt32 i = 0; i < pDDGI->GetDescriptor().m_Passes.GetCount(); ++i)
     if (pDDGI->GetDescriptor().m_Passes[i].m_pType->GetTypeName() == "xiiDDGIProbeSchedulePass")
@@ -120,7 +126,7 @@ XII_CREATE_SIMPLE_TEST(CanonicalRenderer, ViewRenderConfiguration)
   const auto snapshot = pBinding->m_pFrameData.Downcast<const xiiDDGIProbeFrameData>();
   XII_TEST_INT(snapshot->m_Constants.ProbeCountsAndUpdateCount.x, 4);
   XII_TEST_INT(snapshot->m_Constants.ProbeCountsAndUpdateCount.w, 8);
-  configuration.m_DDGI.m_uiProbeUpdateBudget = 4;
+  XII_TEST_RESULT(configuration.SetOverride<xiiDDGIRenderSettings>("Probes/ProbeUpdateBudget", 4U));
   XII_TEST_RESULT(views[0]->SetRenderConfiguration(configuration));
   if (!render())
     return;
@@ -130,7 +136,7 @@ XII_CREATE_SIMPLE_TEST(CanonicalRenderer, ViewRenderConfiguration)
     return;
   const auto reduced = pBinding->m_pFrameData.Downcast<const xiiDDGIProbeFrameData>();
   XII_TEST_INT(reduced->m_Constants.ProbeCountsAndUpdateCount.w, 4);
-  configuration.m_DDGI.m_uiProbeCountX = 8;
+  XII_TEST_RESULT(configuration.SetOverride<xiiDDGIRenderSettings>("Probes/ProbeCountX", 8U));
   XII_TEST_RESULT(views[0]->SetRenderConfiguration(configuration));
   if (!render())
     return;
@@ -142,17 +148,17 @@ XII_CREATE_SIMPLE_TEST(CanonicalRenderer, ViewRenderConfiguration)
   XII_TEST_INT(resized->m_Constants.ProbeCountsAndUpdateCount.x, 8);
   XII_TEST_BOOL(resized->m_AtlasSize != reduced->m_AtlasSize);
   xiiTestFramework::Output(xiiTestOutput::Details, "DDGI rendered with live budget and probe-volume changes.");
-  configuration.m_GlobalIllumination = xiiRenderGlobalIllumination::Disabled;
+  XII_TEST_RESULT(configuration.SetOverride<xiiGlobalIlluminationRenderSettings>("Technique", xiiInt64(xiiRenderGlobalIllumination::Disabled)));
   XII_TEST_RESULT(views[0]->SetRenderConfiguration(configuration));
   if (render())
     XII_TEST_BOOL(instance.GetPipeline() == pDisabled);
-  configuration.m_Shadows                = xiiRenderFeaturePolicy::Disabled;
-  configuration.m_ScreenSpaceReflections = xiiRenderFeaturePolicy::Disabled;
+  XII_TEST_RESULT(configuration.SetOverride<xiiShadowRenderSettings>("Enabled", false));
+  XII_TEST_RESULT(configuration.SetOverride<xiiReflectionRenderSettings>("Enabled", false));
   XII_TEST_RESULT(views[0]->SetRenderConfiguration(configuration));
   if (render())
   {
     XII_TEST_BOOL(instance.GetPipeline() != pDisabled);
-    XII_TEST_BOOL(views[0]->GetEffectiveRenderConfiguration() == configuration);
+    XII_TEST_BOOL(views[0]->GetEffectiveRenderConfiguration().GetPipelineVariant().GetCacheKey() == configuration.GetPipelineVariant().GetCacheKey());
     XII_TEST_BOOL(views[1]->GetRenderPipelineInstance().GetPipeline() == pIndependent);
   }
 }

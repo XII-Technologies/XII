@@ -33,7 +33,7 @@ public:
   xiiRenderPipelineInstance();
   ~xiiRenderPipelineInstance();
   xiiResult Synchronize(const xiiRenderPipelineResourceHandle& resource, bool* out_changed = nullptr,
-                        const xiiRenderConfiguration& configuration = {});
+                        const xiiRenderConfiguration& configuration = {}, xiiGALResourceFormat::Enum outputFormat = xiiGALResourceFormat::Unknown);
   xiiResult Initialize(xiiSharedPtr<const xiiRenderPipeline> pipeline);
   /// Validates an effective snapshot before publishing it to directly constructed pipeline instances.
   xiiResult Initialize(xiiSharedPtr<const xiiRenderPipeline> pipeline, const xiiRenderConfiguration& configuration, xiiStringBuilder& out_error);
@@ -68,6 +68,9 @@ private:
   xiiSharedPtr<const xiiRenderPipeline>                           m_pPipeline;
   xiiSharedPtr<const xiiRenderPipeline>                           m_pBasePipeline;
   xiiRenderConfiguration                                          m_RenderConfiguration;
+  xiiRenderConfiguration                                          m_RequestedRenderConfiguration;
+  xiiGALResourceFormat::Enum                                      m_RequestedOutputFormat      = xiiGALResourceFormat::Unknown;
+  bool                                                            m_bConfigurationSynchronized = false;
   xiiString                                                       m_sConfigurationError;
   xiiDynamicArray<xiiRenderPipelinePass*>                         m_Passes;
   xiiDynamicArray<xiiRenderPipelineBinding>                       m_Bindings;

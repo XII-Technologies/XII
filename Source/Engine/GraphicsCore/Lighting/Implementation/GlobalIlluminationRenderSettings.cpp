@@ -38,4 +38,10 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGlobalIlluminationRenderSettings, 1, xiiRTTI
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
+xiiResult xiiGlobalIlluminationRenderSettings::Validate() const
+{
+  XII_SUCCEED_OR_RETURN(SUPER::Validate());
+  return m_Technique >= xiiRenderGlobalIllumination::PipelineDefault && m_Technique < xiiRenderGlobalIllumination::ENUM_COUNT ? XII_SUCCESS : XII_FAILURE;
+}
+
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Lighting_Implementation_GlobalIlluminationRenderSettings);

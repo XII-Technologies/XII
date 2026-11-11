@@ -13,6 +13,7 @@ class XII_GRAPHICSCORE_DLL xiiGlobalIlluminationRenderSettings final : public xi
   XII_ADD_DYNAMIC_REFLECTION(xiiGlobalIlluminationRenderSettings, xiiRenderSubsystemSettings);
 
 public:
+  xiiResult                            Validate() const override;
   xiiEnum<xiiRenderGlobalIllumination> m_Technique                 = xiiRenderGlobalIllumination::PipelineDefault;
   float                                m_fScreenRayLength          = 2.0f;
   float                                m_fScreenThickness          = 0.15f;

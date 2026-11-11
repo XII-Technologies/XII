@@ -11,6 +11,8 @@ class XII_EDITORFRAMEWORK_DLL xiiViewActions
 {
 public:
   static void RegisterActions();
+  static void RegisterRenderSettingsWidget();
+  static void UnregisterRenderSettingsWidget();
   static void UnregisterActions();
 
   enum Flags

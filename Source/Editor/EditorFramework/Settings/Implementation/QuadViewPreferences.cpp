@@ -6,7 +6,7 @@
 #include <Foundation/Serialization/GraphPatch.h>
 
 // clang-format off
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiEngineViewPreferences, xiiNoBase, 4, xiiRTTIDefaultAllocator<xiiEngineViewPreferences>)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiEngineViewPreferences, xiiNoBase, 5, xiiRTTIDefaultAllocator<xiiEngineViewPreferences>)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -16,7 +16,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiEngineViewPreferences, xiiNoBase, 4, xiiRTTID
     XII_ENUM_MEMBER_PROPERTY("Perspective", xiiSceneViewPerspective, m_PerspectiveMode),
     XII_ENUM_MEMBER_PROPERTY("RenderMode", xiiViewRenderMode, m_RenderMode),
     XII_MEMBER_PROPERTY("FOV", m_fFov),
-    XII_MEMBER_PROPERTY("RenderScale", m_fRenderScale)->AddAttributes(new xiiDefaultValueAttribute(1.0f), new xiiClampValueAttribute(0.1f, 1.0f)),
+    XII_MEMBER_PROPERTY("RenderConfiguration", m_RenderConfiguration),
     XII_MEMBER_PROPERTY("ShowFrameStats", m_bShowFrameStats)->AddAttributes(new xiiDefaultValueAttribute(false)),
     XII_MEMBER_PROPERTY("VSync", m_bVSync)->AddAttributes(new xiiDefaultValueAttribute(true)),
   }

@@ -9,7 +9,7 @@
 #include <Foundation/IO/ChunkStream.h>
 #include <GraphicsCore/Pipeline/RenderPipelineProfileConfig.h>
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineProfileConfig, 7, xiiRTTIDefaultAllocator<xiiRenderPipelineProfileConfig>)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineProfileConfig, 9, xiiRTTIDefaultAllocator<xiiRenderPipelineProfileConfig>)
   {
     XII_BEGIN_PROPERTIES
     {
@@ -18,6 +18,12 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineProfileConfig, 7, xiiRTTIDefau
     } XII_END_PROPERTIES;
   }
 XII_END_DYNAMIC_REFLECTED_TYPE;
+
+xiiResult xiiRenderPipelineProfileConfig::Validate() const
+{
+  XII_SUCCEED_OR_RETURN(SUPER::Validate());
+  return m_RenderConfiguration.IsValid() ? XII_SUCCESS : XII_FAILURE;
+}
 
 void xiiRenderPipelineProfileConfig::SaveRuntimeData(xiiChunkStreamWriter& stream) const
 {

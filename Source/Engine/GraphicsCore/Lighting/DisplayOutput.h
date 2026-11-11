@@ -67,6 +67,7 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiDisplayOutputMode);
 /// Per-view exposure controls expressed in EV100 and physical-camera units.
 struct XII_GRAPHICSCORE_DLL xiiExposureSettings
 {
+  bool                     operator==(const xiiExposureSettings&) const = default;
   xiiEnum<xiiExposureMode> m_Mode;
 
   float m_fMinimumEV100          = -8.0f;
@@ -85,6 +86,7 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiExposureSettings);
 /// Optional artistic display-linear grading. Identity defaults preserve calibrated simulation output.
 struct XII_GRAPHICSCORE_DLL xiiColorGradingSettings
 {
+  bool  operator==(const xiiColorGradingSettings&) const = default;
   float m_fSaturation        = 1.0f;
   float m_fContrast          = 1.0f;
   float m_fVignetteStrength  = 0.0f;
@@ -100,6 +102,7 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiColorGradingSettings);
 /// the transfer function required by the swapchain: sRGB, ST.2084/PQ, or scRGB.
 struct XII_GRAPHICSCORE_DLL xiiDisplayOutputSettings
 {
+  bool                            operator==(const xiiDisplayOutputSettings&) const = default;
   xiiExposureSettings             m_Exposure;
   xiiColorGradingSettings         m_ColorGrading;
   xiiEnum<xiiToneMappingOperator> m_ToneMappingOperator;

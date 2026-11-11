@@ -35,12 +35,6 @@ xiiRenderConfiguration& xiiRenderConfiguration::operator=(const xiiRenderConfigu
   if (this == &other)
     return *this;
   ClearSubsystems();
-  m_fBloomStrength         = other.m_fBloomStrength;
-  m_fRenderScale           = other.m_fRenderScale;
-  m_GlobalIllumination     = other.m_GlobalIllumination;
-  m_DDGI                   = other.m_DDGI;
-  m_Shadows                = other.m_Shadows;
-  m_ScreenSpaceReflections = other.m_ScreenSpaceReflections;
   for (const auto* subsystem : other.m_Subsystems)
     m_Subsystems.PushBack(subsystem ? static_cast<xiiRenderSubsystemSettings*>(xiiReflectionSerializer::Clone(subsystem, subsystem->GetDynamicRTTI())) : nullptr);
   m_Sources = other.m_Sources;
@@ -52,12 +46,6 @@ xiiRenderConfiguration& xiiRenderConfiguration::operator=(xiiRenderConfiguration
   if (this == &other)
     return *this;
   ClearSubsystems();
-  m_fBloomStrength         = other.m_fBloomStrength;
-  m_fRenderScale           = other.m_fRenderScale;
-  m_GlobalIllumination     = other.m_GlobalIllumination;
-  m_DDGI                   = other.m_DDGI;
-  m_Shadows                = other.m_Shadows;
-  m_ScreenSpaceReflections = other.m_ScreenSpaceReflections;
   m_Subsystems.Swap(other.m_Subsystems);
   m_Sources.Swap(other.m_Sources);
   return *this;
@@ -65,9 +53,7 @@ xiiRenderConfiguration& xiiRenderConfiguration::operator=(xiiRenderConfiguration
 
 bool xiiRenderConfiguration::operator==(const xiiRenderConfiguration& other) const
 {
-  if (m_fBloomStrength != other.m_fBloomStrength || m_fRenderScale != other.m_fRenderScale || m_GlobalIllumination != other.m_GlobalIllumination ||
-      m_DDGI != other.m_DDGI || m_Shadows != other.m_Shadows || m_ScreenSpaceReflections != other.m_ScreenSpaceReflections ||
-      m_Subsystems.GetCount() != other.m_Subsystems.GetCount())
+  if (m_Subsystems.GetCount() != other.m_Subsystems.GetCount())
     return false;
   for (const auto* subsystem : m_Subsystems)
   {
@@ -109,6 +95,7 @@ xiiResult xiiRenderConfiguration::SetOverride(const xiiRTTI* type, xiiStringView
   XII_SUCCEED_OR_RETURN(subsystem->SetOverride(path, value));
   if (!candidate.IsValid())
     return XII_FAILURE;
+  candidate.m_Sources.Clear();
   *this = std::move(candidate);
   return XII_SUCCESS;
 }
@@ -122,8 +109,8 @@ void xiiRenderConfiguration::RemoveOverride(const xiiRTTI* type, xiiStringView p
 xiiRenderSettingScope::Enum xiiRenderConfiguration::GetSource(const xiiRTTI* type, xiiStringView path) const
 {
   for (const auto& source : m_Sources)
-    if (source.m_pType == type && source.m_sPath == path)
-      return source.m_Scope;
+    if (source.m_sType == type->GetTypeName() && source.m_sPath == path)
+      return static_cast<xiiRenderSettingScope::Enum>(source.m_uiScope);
   return xiiRenderSettingScope::SubsystemDefault;
 }
 
@@ -147,17 +134,40 @@ void xiiRenderConfiguration::ApplySubsystemOverrides(const xiiRenderConfiguratio
         target->m_Overrides.PushBack(path);
       bool found = false;
       for (auto& origin : m_Sources)
-        if (origin.m_pType == source->GetDynamicRTTI() && origin.m_sPath == path)
+        if (origin.m_sType == source->GetDynamicRTTI()->GetTypeName() && origin.m_sPath == path)
         {
-          origin.m_Scope = scope;
+          origin.m_uiScope = scope;
           found          = true;
           break;
         }
       if (!found)
-        m_Sources.PushBack({source->GetDynamicRTTI(), path, scope});
+        m_Sources.PushBack({xiiString(source->GetDynamicRTTI()->GetTypeName()), path, static_cast<xiiUInt8>(scope)});
     }
     target->m_Overrides.Sort();
   }
+}
+
+void xiiRenderConfiguration::CopySourcesFrom(const xiiRenderConfiguration& snapshot)
+{
+  for (const auto& source : snapshot.m_Sources)
+  {
+    bool found = false;
+    for (auto& target : m_Sources)
+      if (target.m_sType == source.m_sType && target.m_sPath == source.m_sPath)
+      {
+        target.m_uiScope = source.m_uiScope;
+        found            = true;
+        break;
+      }
+    if (!found)
+      m_Sources.PushBack(source);
+  }
+}
+
+void xiiRenderConfiguration::ApplySnapshot(const xiiRenderConfiguration& snapshot)
+{
+  ApplyOverrides(snapshot);
+  CopySourcesFrom(snapshot);
 }
 
 xiiBitflags<xiiRenderSettingsChange> xiiRenderConfiguration::GetChanges(const xiiRenderConfiguration& previous) const
@@ -175,7 +185,7 @@ xiiBitflags<xiiRenderSettingsChange> xiiRenderConfiguration::GetChanges(const xi
       xiiVariant value, oldValue;
       if (xiiRenderSubsystemSettings::ReadProperty(*subsystem, property.m_sPath, value).Failed())
         continue;
-      if (before && xiiRenderSubsystemSettings::ReadProperty(*before, property.m_sPath, oldValue).Succeeded() && value == oldValue)
+      if (before && xiiRenderSubsystemSettings::ReadProperty(*before, property.m_sPath, oldValue).Succeeded() && value == oldValue && subsystem->IsOverridden(property.m_sPath) == before->IsOverridden(property.m_sPath))
         continue;
       for (const auto* attribute : property.m_pProperty->GetAttributes())
         if (attribute->GetDynamicRTTI()->IsDerivedFrom<xiiRenderSettingsBindingAttribute>())
@@ -259,6 +269,27 @@ xiiResult xiiRenderConfiguration::InitializeSubsystemDefaults(xiiArrayPtr<xiiRen
   },
                                                           xiiRTTI::ForEachOptions::ExcludeNotConcrete);
   return status;
+}
+
+bool xiiRenderConfiguration::HasPassOverrides(const xiiRTTI* type) const
+{
+  for (const auto* settings : m_Subsystems)
+  {
+    if (settings->m_Overrides.IsEmpty())
+      continue;
+    xiiDynamicArray<xiiRenderSettingProperty> properties;
+    settings->GetProperties(properties);
+    for (const auto& property : properties)
+    {
+      if (!settings->IsOverridden(property.m_sPath))
+        continue;
+      for (const auto* attribute : property.m_pProperty->GetAttributes())
+        if (const auto* binding = xiiDynamicCast<const xiiRenderSettingsBindingAttribute*>(attribute);
+            binding && type->GetTypeName() == binding->GetPass() && !xiiStringUtils::IsNullOrEmpty(binding->GetProperty()))
+          return true;
+    }
+  }
+  return false;
 }
 
 xiiResult xiiRenderConfiguration::ApplyToPass(xiiRenderPipelinePass& pass, xiiBitflags<xiiRenderSettingsChange>& out_changes) const
