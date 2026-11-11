@@ -6,6 +6,7 @@
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Containers/DynamicArray.h>
 #include <Foundation/Containers/IdTable.h>
+#include <Foundation/Profiling/Profiling.h>
 #include <Foundation/Threading/Mutex.h>
 #include <GraphicsCore/Lighting/RayTracingResources.h>
 #include <GraphicsCore/Lighting/VirtualShadowMap.h>
@@ -117,6 +118,8 @@ xiiRenderGraphFrame::~xiiRenderGraphFrame()
 
 xiiResult xiiRenderGraphFrame::Begin(xiiUInt32 uiFramesInFlight)
 {
+  XII_PROFILE_SCOPE("xiiRenderGraphFrame::Begin");
+
   return xiiRenderGraphManager::BeginFrame(*this, uiFramesInFlight);
 }
 
@@ -169,6 +172,8 @@ xiiResult xiiRenderGraphManager::DestroyGraph(xiiRenderGraphHandle hGraph)
 
 xiiResult xiiRenderGraphManager::ExecuteGraph(const xiiRenderGraphFrame& frame, xiiRenderGraphHandle hGraph, const xiiView* pView, const xiiRenderGraphCompileSettings& settings, xiiStringBuilder* out_pError)
 {
+  XII_PROFILE_SCOPE("xiiRenderGraphManager::ExecuteGraph");
+
   if (s_pState == nullptr || hGraph.IsInvalidated() || !frame.IsActive())
     return XII_FAILURE;
 
@@ -185,16 +190,20 @@ xiiResult xiiRenderGraphManager::ExecuteGraph(const xiiRenderGraphFrame& frame, 
   if (pDevice == nullptr || s_pState->m_pResourceCache == nullptr)
     return XII_FAILURE;
 
-  pEntry->m_Blackboard.ClearFrame();
-  pEntry->m_pGraph->BeginSetup(frame.GetFrameIndex());
-  pEntry->m_pGraph->SetSetupBlackboard(&pEntry->m_Blackboard);
-  const xiiResult buildResult = pEntry->m_BuildDelegate(*pEntry->m_pGraph, pEntry->m_Blackboard, pView);
-  pEntry->m_pGraph->EndSetup();
-  if (buildResult.Failed())
   {
-    if (out_pError)
-      *out_pError = "The graph build delegate failed; see the preceding operation diagnostics.";
-    return XII_FAILURE;
+    XII_PROFILE_SCOPE("Render Graph: Build");
+
+    pEntry->m_Blackboard.ClearFrame();
+    pEntry->m_pGraph->BeginSetup(frame.GetFrameIndex());
+    pEntry->m_pGraph->SetSetupBlackboard(&pEntry->m_Blackboard);
+    const xiiResult buildResult = pEntry->m_BuildDelegate(*pEntry->m_pGraph, pEntry->m_Blackboard, pView);
+    pEntry->m_pGraph->EndSetup();
+    if (buildResult.Failed())
+    {
+      if (out_pError)
+        *out_pError = "The graph build delegate failed; see the preceding operation diagnostics.";
+      return XII_FAILURE;
+    }
   }
 
   if (pEntry->m_pGraph->Compile(settings, out_pError).Failed())
@@ -262,7 +271,10 @@ xiiResult xiiRenderGraphManager::BeginFrame(xiiRenderGraphFrame& frame, xiiUInt3
   if (s_pState == nullptr || frame.IsActive() || uiFramesInFlight == 0U)
     return XII_FAILURE;
 
-  s_pState->m_FrameMutex.Lock();
+  {
+    XII_PROFILE_SCOPE("Render Graph: Acquire Frame Mutex");
+    s_pState->m_FrameMutex.Lock();
+  }
 
   // Foundation mutexes are recursive; reject nested frames while other threads wait for End.
   if (s_pState->m_bFrameActive || s_pState->m_uiFrameIndex == xiiMath::MaxValue<xiiUInt64>() || s_pState->m_pResourceCache == nullptr)
@@ -301,31 +313,43 @@ xiiResult xiiRenderGraphManager::BeginFrame(xiiRenderGraphFrame& frame, xiiUInt3
 
   if (uiFrameIndex > uiFramesInFlight)
   {
+    XII_PROFILE_SCOPE("Render Graph: Wait for GPU Frame");
     s_pState->m_FrameCompletionTracker.WaitForFrame(uiFrameIndex - uiFramesInFlight);
   }
 
-  const xiiUInt64 uiCompletedFrame = s_pState->m_FrameCompletionTracker.PollCompletedFrames();
+  xiiUInt64 uiCompletedFrame;
+  {
+    XII_PROFILE_SCOPE("Render Graph: Poll GPU Frame Completion");
+    uiCompletedFrame = s_pState->m_FrameCompletionTracker.PollCompletedFrames();
+  }
   if (xiiGALBindlessResourceTable::IsInitialized())
   {
+    XII_PROFILE_SCOPE("Render Graph: Collect Bindless Resources");
     xiiGALBindlessResourceTable::Collect(uiCompletedFrame);
   }
   if (xiiMaterialManager::IsInitialized())
   {
+    XII_PROFILE_SCOPE("Render Graph: Begin Material Frame");
     xiiMaterialManager::BeginFrame(uiFrameIndex, uiCompletedFrame);
   }
   if (xiiVirtualShadowMapManager::IsInitialized())
   {
+    XII_PROFILE_SCOPE("Render Graph: Begin Virtual Shadow Map Frame");
     xiiVirtualShadowMapManager::BeginFrame(uiFrameIndex, uiCompletedFrame);
   }
   if (xiiGpuResidencyManager::IsInitialized())
   {
+    XII_PROFILE_SCOPE("Render Graph: Process GPU Streaming");
     const xiiGpuResidencyDescription& geometryDescription = xiiGpuResidencyManager::GetConfiguration();
 
     xiiGpuResidencyManager::ProcessStreaming(uiFrameIndex, uiCompletedFrame, geometryDescription.m_uiUploadBudgetPerFrameBytes);
   }
 
   // Resource-cache frame scope matches the shared GPU frame, not an individual view or graph.
-  s_pState->m_pResourceCache->BeginFrame(uiFrameIndex, uiCompletedFrame);
+  {
+    XII_PROFILE_SCOPE("Render Graph: Begin Resource Cache Frame");
+    s_pState->m_pResourceCache->BeginFrame(uiFrameIndex, uiCompletedFrame);
+  }
 
   frame.m_uiFrameIndex     = uiFrameIndex;
   frame.m_uiCompletedFrame = uiCompletedFrame;
