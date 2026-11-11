@@ -33,7 +33,6 @@ xiiCommandLineOptionString opt_WindowMode("_Player", "-window-mode", "window, bo
 xiiCommandLineOptionInt    opt_Width("_Player", "-width", "Window width in pixels.", 1280, 320, 16384);
 xiiCommandLineOptionInt    opt_Height("_Player", "-height", "Window height in pixels.", 720, 200, 16384);
 xiiCommandLineOptionInt    opt_Display("_Player", "-display", "Display index (-1 selects the primary display).", -1, -1, 127);
-xiiCommandLineOptionFloat  opt_RenderScale("_Player", "-render-scale", "Main view render scale (0.1-1).", 1.0f, 0.1f, 1.0f);
 xiiCommandLineOptionInt    opt_BackgroundFPS("_Player", "-background-fps", "Inactive instance frame cap.", 30, 1, 1000);
 xiiCommandLineOptionBool   opt_ShowFPS("_Player", "-show-fps", "Main-view FPS and frame-time overlay.", false);
 xiiCommandLineOptionFloat  opt_Volume("_Player", "-volume", "Master volume when a sound implementation is present.", 1.0f, 0.0f, 1.0f);
@@ -358,9 +357,7 @@ xiiResult xiiPlayerApplication::ResolveLaunchConfiguration()
   if (!mode.IsEmpty() && mode != "window" && mode != "borderless" && mode != "fullscreen")
     return XII_FAILURE;
   if (command->GetIntOption("-width", 1280) < 320 || command->GetIntOption("-width", 1280) > 16384 ||
-      command->GetIntOption("-height", 720) < 200 || command->GetIntOption("-height", 720) > 16384 ||
-      !xiiMath::IsFinite(command->GetFloatOption("-render-scale", 1.0)) ||
-      command->GetFloatOption("-render-scale", 1.0) < 0.1 || command->GetFloatOption("-render-scale", 1.0) > 1.0)
+      command->GetIntOption("-height", 720) < 200 || command->GetIntOption("-height", 720) > 16384)
     return XII_FAILURE;
   return XII_SUCCESS;
 }
@@ -505,7 +502,7 @@ void xiiPlayerApplication::UpdateRuntimeSettings()
       return;
     }
   }
-  const xiiUInt32 count = 12;
+  const xiiUInt32 count = 11;
   if (!m_bDisplayPreview)
   {
     if (pressed(xiiInputSlot_KeyDown))
@@ -544,18 +541,15 @@ void xiiPlayerApplication::UpdateRuntimeSettings()
           m_PendingSettings.m_uiBackgroundFrameLimit = xiiMath::Clamp(static_cast<int>(m_PendingSettings.m_uiBackgroundFrameLimit) + direction * 5, 1, 1000);
           break;
         case 7:
-          m_PendingSettings.m_fRenderScale = xiiMath::Clamp(m_PendingSettings.m_fRenderScale + direction * 0.05f, 0.1f, 1.0f);
-          break;
-        case 8:
           m_PendingSettings.m_bShowFrameStats = !m_PendingSettings.m_bShowFrameStats;
           break;
-        case 9:
+        case 8:
           m_PendingSettings.m_fMasterVolume = xiiMath::Clamp(m_PendingSettings.m_fMasterVolume + direction * 0.05f, 0.0f, 1.0f);
           break;
-        case 10:
+        case 9:
           m_PendingSettings.m_bMuteInBackground = !m_PendingSettings.m_bMuteInBackground;
           break;
-        case 11:
+        case 10:
           m_PendingWindow.m_bClipMouseCursor = !m_PendingWindow.m_bClipMouseCursor;
           break;
       }
@@ -596,7 +590,7 @@ void xiiPlayerApplication::UpdateRuntimeSettings()
   }
   xiiStringBuilder text("PLAYER SETTINGS  [F2]\n\n");
   const char*      modes[]  = {"Fixed window", "Resizable window", "Borderless fullscreen", "Exclusive fullscreen"};
-  const xiiString  labels[] = {"Window mode", "Width", "Height", "Display", "VSync", "Frame limit (0 = unlimited)", "Background FPS", "Render scale", "FPS / frame time", "Master volume", "Mute in background", "Capture cursor"};
+  const xiiString  labels[] = {"Window mode", "Width", "Height", "Display", "VSync", "Frame limit (0 = unlimited)", "Background FPS", "FPS / frame time", "Master volume", "Mute in background", "Capture cursor"};
   xiiStringBuilder values[count];
   values[0] = modes[m_PendingWindow.m_WindowMode.GetValue()];
   values[1].SetFormat("{}", m_PendingWindow.m_Resolution.width);
@@ -605,11 +599,10 @@ void xiiPlayerApplication::UpdateRuntimeSettings()
   values[4] = m_PendingSettings.m_bVSync ? "On" : "Off";
   values[5].SetFormat("{}", m_PendingSettings.m_uiFrameLimit);
   values[6].SetFormat("{}", m_PendingSettings.m_uiBackgroundFrameLimit);
-  values[7].SetFormat("{}%%", xiiMath::RoundToInt(m_PendingSettings.m_fRenderScale * 100));
-  values[8] = m_PendingSettings.m_bShowFrameStats ? "On" : "Off";
-  values[9].SetFormat("{}%%", xiiMath::RoundToInt(m_PendingSettings.m_fMasterVolume * 100));
-  values[10]                  = m_PendingSettings.m_bMuteInBackground ? "On" : "Off";
-  values[11]                  = m_PendingWindow.m_bClipMouseCursor ? "On" : "Off";
+  values[7] = m_PendingSettings.m_bShowFrameStats ? "On" : "Off";
+  values[8].SetFormat("{}%%", xiiMath::RoundToInt(m_PendingSettings.m_fMasterVolume * 100));
+  values[9]                   = m_PendingSettings.m_bMuteInBackground ? "On" : "Off";
+  values[10]                  = m_PendingWindow.m_bClipMouseCursor ? "On" : "Off";
   const auto*     view        = state->GetMainView();
   const float     height      = view ? view->GetViewport().height : static_cast<float>(window->GetClientAreaSize().height);
   const xiiUInt32 visibleRows = xiiMath::Clamp(static_cast<xiiInt32>((height - 190) / 18), 1, static_cast<xiiInt32>(count));

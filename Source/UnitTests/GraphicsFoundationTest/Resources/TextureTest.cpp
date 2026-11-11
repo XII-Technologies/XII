@@ -35,13 +35,9 @@ XII_CREATE_SIMPLE_TEST(TextureResidency, DeviceBudget)
   if (pDevice->GetGraphicsDeviceType() != xiiGALGraphicsDeviceType::Vulkan)
     return;
 
-  auto* pBudget = static_cast<xiiCVarInt*>(xiiCVar::FindCVarByName("Streaming.GpuBudgetMiB"));
-  auto* pUpload = static_cast<xiiCVarInt*>(xiiCVar::FindCVarByName("Streaming.TextureUploadMiB"));
-  if (!XII_TEST_BOOL(pBudget != nullptr && pUpload != nullptr))
-    return;
-  const xiiInt32 iPreviousBudget = pBudget->GetValue();
-  const xiiInt32 iPreviousUpload = pUpload->GetValue();
-  XII_SCOPE_EXIT(*pBudget = iPreviousBudget; *pUpload = iPreviousUpload);
+  auto       policy         = pDevice->GetStreamingMemorySettings();
+  const auto originalPolicy = policy;
+  XII_SCOPE_EXIT(pDevice->SetStreamingMemorySettings(originalPolicy).IgnoreResult());
 
   xiiGALBufferCreationDescription bufferDescription;
   bufferDescription.m_BindFlags = xiiGALBindFlags::VertexBuffer;
@@ -63,7 +59,9 @@ XII_CREATE_SIMPLE_TEST(TextureResidency, DeviceBudget)
   xiiGALTextureData textureData(xiiMakeArrayPtr(&subResource, 1U));
   textureData.m_bStreamingRefinement = true;
 
-  *pBudget = 1;
+  policy.m_bUseNativeBudget = false;
+  policy.m_uiBudgetMiB      = 1;
+  XII_TEST_RESULT(pDevice->SetStreamingMemorySettings(policy));
   pDevice->BeginFrame();
   XII_TEST_BOOL(pDevice->IsStreamingMemoryPressured());
   XII_TEST_BOOL(pDevice->CreateTexture(textureDescription, &textureData) == nullptr);
@@ -83,16 +81,15 @@ XII_CREATE_SIMPLE_TEST(TextureResidency, DeviceBudget)
   cache.EndFrame();
   pDevice->EndFrame();
 
-  *pBudget = 0;
-  *pUpload = 0;
+  policy.m_bUseNativeBudget = true;
+  XII_TEST_RESULT(pDevice->SetStreamingMemorySettings(policy));
   pDevice->BeginFrame();
   XII_TEST_BOOL(!pDevice->IsStreamingMemoryPressured());
-  XII_TEST_BOOL(pDevice->CreateTexture(textureDescription, &textureData) == nullptr);
+  XII_TEST_BOOL(pDevice->CreateTexture(textureDescription, &textureData) != nullptr);
   textureData.m_bStreamingRefinement = false;
   XII_TEST_BOOL(pDevice->CreateTexture(textureDescription, &textureData) != nullptr);
   pDevice->EndFrame();
 
-  *pUpload                           = 1;
   textureData.m_bStreamingRefinement = true;
   pDevice->BeginFrame();
   XII_TEST_BOOL(pDevice->CreateTexture(textureDescription, &textureData) != nullptr);

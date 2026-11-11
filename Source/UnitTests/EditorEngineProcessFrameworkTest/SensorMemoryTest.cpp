@@ -9,7 +9,7 @@
 #include <Foundation/Configuration/CVar.h>
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Types/ScopeExit.h>
-#include <GraphicsCore/Geometry/GeometryResidency.h>
+#include <GraphicsCore/Streaming/GpuResidencyManager.h>
 #include <GraphicsCore/Lighting/SensorRendering.h>
 #include <GraphicsCore/Material/MaterialManager.h>
 #include <GraphicsCore/Pipeline/FrameConstants.h>
@@ -120,16 +120,6 @@ namespace
 XII_CREATE_SIMPLE_TEST_GROUP(SensorMemory);
 XII_CREATE_SIMPLE_TEST(SensorMemory, ProfileSwitchingAndReadback)
 {
-  auto* minimumCVar = xiiCVar::FindCVarByName("Graphics.DynamicResolution.MinimumRenderScale");
-  auto* maximumCVar = xiiCVar::FindCVarByName("Graphics.DynamicResolution.MaximumRenderScale");
-  if (!XII_TEST_BOOL(minimumCVar != nullptr && maximumCVar != nullptr) || !XII_TEST_BOOL(minimumCVar->GetType() == xiiCVarType::Float && maximumCVar->GetType() == xiiCVarType::Float))
-    return;
-  auto&       minimum    = *static_cast<xiiCVarFloat*>(minimumCVar);
-  auto&       maximum    = *static_cast<xiiCVarFloat*>(maximumCVar);
-  const float oldMinimum = minimum.GetValue(), oldMaximum = maximum.GetValue();
-  minimum = 1.0f;
-  maximum = 1.0f;
-  XII_SCOPE_EXIT(minimum = oldMinimum; maximum = oldMaximum);
   xiiGPUTestingEnvironment environment;
   if (!XII_TEST_RESULT(environment.Initialize()))
     return;
@@ -154,7 +144,7 @@ XII_CREATE_SIMPLE_TEST(SensorMemory, ProfileSwitchingAndReadback)
   environment.GetDevice()->WaitIdle();
   XII_TEST_BOOL(world.GetModule<xiiRenderWorldModule>()->GetExtractionRequirements().IsNoFlagSet());
   XII_TEST_BOOL(views[0]->GetGpuInstanceData() == nullptr && views[1]->GetGpuInstanceData() == nullptr);
-  XII_TEST_BOOL(!xiiGeometryResidencyManager::IsInitialized() && !xiiMaterialManager::IsInitialized());
+  XII_TEST_BOOL(!xiiGpuResidencyManager::IsInitialized() && !xiiMaterialManager::IsInitialized());
   auto       original    = views[0]->GetSensorOutputTexture();
   const auto independent = views[1]->GetSensorOutputTexture();
   if (!XII_TEST_BOOL(original != nullptr && independent != nullptr && original != independent))

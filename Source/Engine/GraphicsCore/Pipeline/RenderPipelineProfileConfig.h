@@ -21,6 +21,7 @@ public:
   xiiString m_sMainRenderPipeline = s_szScenePipeline;
   xiiRenderConfiguration m_RenderConfiguration;
 
+  xiiResult     Validate() const override;
   void          SaveRuntimeData(xiiChunkStreamWriter& stream) const override;
   void          LoadRuntimeData(xiiChunkStreamReader& stream) override;
   bool          IsRuntimeDataValid() const { return m_bRuntimeDataValid; }

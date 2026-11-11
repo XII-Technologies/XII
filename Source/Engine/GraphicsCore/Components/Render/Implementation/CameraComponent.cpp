@@ -151,7 +151,7 @@ void xiiCameraComponentManager::OnCameraConfigsChanged(void* dummy)
 //////////////////////////////////////////////////////////////////////////
 
 // clang-format off
-XII_BEGIN_COMPONENT_TYPE(xiiCameraComponent, 6, xiiComponentMode::Static)
+XII_BEGIN_COMPONENT_TYPE(xiiCameraComponent, 9, xiiComponentMode::Static)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -164,7 +164,6 @@ XII_BEGIN_COMPONENT_TYPE(xiiCameraComponent, 6, xiiComponentMode::Static)
     XII_ACCESSOR_PROPERTY("FarPlane", GetFarPlane, SetFarPlane)->AddAttributes(new xiiDefaultValueAttribute(1000.0f), new xiiClampValueAttribute(5.0, 10000.0f)),
     XII_ACCESSOR_PROPERTY("FOV", GetFieldOfView, SetFieldOfView)->AddAttributes(new xiiDefaultValueAttribute(60.0f), new xiiClampValueAttribute(1.0f, 170.0f)),
     XII_ACCESSOR_PROPERTY("Dimensions", GetOrthoDimension, SetOrthoDimension)->AddAttributes(new xiiDefaultValueAttribute(10.0f), new xiiClampValueAttribute(0.01f, 10000.0f)),
-    XII_ACCESSOR_PROPERTY("RenderScale", GetRenderScale, SetRenderScale)->AddAttributes(new xiiDefaultValueAttribute(1.0f), new xiiClampValueAttribute(0.1f, 1.0f)),
     XII_MEMBER_PROPERTY("RenderConfiguration", m_RenderConfiguration),
     XII_SET_MEMBER_PROPERTY("IncludeTags", m_IncludeTags)->AddAttributes(new xiiTagSetWidgetAttribute("Default")),
     XII_SET_MEMBER_PROPERTY("ExcludeTags", m_ExcludeTags)->AddAttributes(new xiiTagSetWidgetAttribute("Default")),
@@ -205,7 +204,6 @@ void xiiCameraComponent::SerializeComponent(xiiWorldWriter& inout_stream) const
   s << static_cast<float>(m_ShutterTime.GetSeconds());
   s << m_fISO;
   s << m_fExposureCompensation;
-  s << m_fRenderScale;
 
   m_IncludeTags.Save(s);
   m_ExcludeTags.Save(s);
@@ -236,7 +234,12 @@ void xiiCameraComponent::DeserializeComponent(xiiWorldReader& inout_stream)
   s >> m_ShutterTime;
   s >> m_fISO;
   s >> m_fExposureCompensation;
-  s >> m_fRenderScale;
+  const auto uiVersion = inout_stream.GetComponentTypeVersion(GetStaticRTTI());
+  if (uiVersion < 9)
+  {
+    float retiredRenderScale = 0.0f;
+    s >> retiredRenderScale;
+  }
 
   m_IncludeTags.Load(s, xiiTagRegistry::GetGlobalRegistry());
   m_ExcludeTags.Load(s, xiiTagRegistry::GetGlobalRegistry());
@@ -244,10 +247,9 @@ void xiiCameraComponent::DeserializeComponent(xiiWorldReader& inout_stream)
   s >> m_vRenderTargetRectOffset;
   s >> m_vRenderTargetRectSize;
   s >> m_bShowStats;
-  const auto uiVersion = inout_stream.GetComponentTypeVersion(GetStaticRTTI());
   if (uiVersion >= 2)
     s >> m_bShowFrameStats;
-  if (uiVersion >= 3 && m_RenderConfiguration.Deserialize(s, uiVersion - 2).Failed())
+  if (uiVersion >= 3 && m_RenderConfiguration.Deserialize(s, xiiMath::Min(uiVersion - 2, xiiRenderConfiguration::s_uiSerializationVersion)).Failed())
     xiiLog::Error("Invalid render configuration in the camera. Using inherited defaults.");
 
   MarkAsModified();
@@ -381,19 +383,6 @@ void xiiCameraComponent::SetShowFrameStats(bool bShow)
   MarkAsModified();
 }
 
-void xiiCameraComponent::SetRenderScale(float fVal)
-{
-  if (!xiiMath::IsFinite(fVal))
-    return;
-  const float fClamped = xiiMath::Clamp(fVal, 0.1f, 1.0f);
-  if (fClamped == m_fRenderScale)
-    return;
-
-  m_fRenderScale = fClamped;
-
-  MarkAsModified();
-}
-
 xiiViewHandle xiiCameraComponent::GetRenderTargetView() const
 {
   return m_hRenderTargetView;
@@ -481,7 +470,6 @@ void xiiCameraComponent::ApplySettingsToView(xiiView* pView) const
 
   pView->m_IncludeTags = m_IncludeTags;
   pView->m_ExcludeTags = m_ExcludeTags;
-  pView->SetRenderScale(m_fRenderScale);
   if (GetUsageHint() == xiiCameraUsageHint::RenderTarget && pView->GetWorld() == GetWorld())
     pView->SetRenderConfigurationCamera(GetHandle());
   pView->SetShowFrameStats(m_bShowFrameStats);

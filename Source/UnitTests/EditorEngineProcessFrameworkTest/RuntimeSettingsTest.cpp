@@ -39,27 +39,23 @@ XII_CREATE_SIMPLE_TEST(Player, RuntimeSettings)
     xiiGameApplicationSettings project;
     project.m_bVSync       = false;
     project.m_uiFrameLimit = 45;
-    project.m_fRenderScale = 0.8f;
     XII_TEST_RESULT(project.Save(":project/RuntimeConfigs/Presentation.ddl"));
     xiiGameApplicationSettings user;
     user.m_bVSync       = true;
     user.m_uiFrameLimit = 90;
-    user.m_fRenderScale = 0.7f;
     XII_TEST_RESULT(user.Save(":appdata/RuntimeConfigs/Presentation.ddl"));
     XII_TEST_RESULT(user.Save(":other-user/RuntimeConfigs/Presentation.ddl"));
     xiiDynamicArray<xiiString> arguments;
-    for (const char* argument : {"SettingsTest", "-App.VSync", "false", "-App.FrameLimit", "144", "-render-scale", "0.6"})
+    for (const char* argument : {"SettingsTest", "-App.VSync", "false", "-App.FrameLimit", "144"})
       arguments.PushBack(argument);
     xiiCommandLineUtils::GetGlobalInstance()->SetCommandLine(arguments);
     SettingsApplication application;
     application.Init_ConfigureCVars();
     XII_TEST_BOOL(!application.GetSettings().m_bVSync);
     XII_TEST_INT(application.GetSettings().m_uiFrameLimit, 144);
-    XII_TEST_FLOAT(application.GetSettings().m_fRenderScale, 0.6f, 0.001f);
     xiiGameApplicationSettings unchanged;
     XII_TEST_RESULT(unchanged.Load(":appdata/RuntimeConfigs/Presentation.ddl", false));
     XII_TEST_INT(unchanged.m_uiFrameLimit, 90);
-    XII_TEST_FLOAT(unchanged.m_fRenderScale, 0.7f, 0.001f);
     xiiGameApplicationSettings changed;
     changed.Apply(application.GetSettings()).IgnoreResult();
     changed.m_uiFrameLimit = 30;

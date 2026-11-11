@@ -12,10 +12,11 @@ XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiRenderPipelineDeviceFeature, 1)
   XII_BITFLAGS_CONSTANTS(xiiRenderPipelineDeviceFeature::None, xiiRenderPipelineDeviceFeature::Compute, xiiRenderPipelineDeviceFeature::MeshShaders, xiiRenderPipelineDeviceFeature::RayTracing, xiiRenderPipelineDeviceFeature::BindlessResources)
 XII_END_STATIC_REFLECTED_BITFLAGS;
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineSettings, 1, xiiRTTIDefaultAllocator<xiiRenderPipelineSettings>)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineSettings, 2, xiiRTTIDefaultAllocator<xiiRenderPipelineSettings>)
 {
   XII_BEGIN_PROPERTIES
   {
+    XII_MEMBER_PROPERTY("RenderDefaults", m_RenderDefaults),
     XII_BITFLAGS_MEMBER_PROPERTY("RequiredDeviceFeatures", xiiRenderPipelineDeviceFeature, m_RequiredDeviceFeatures),
     XII_ENUM_MEMBER_PROPERTY("OutputFormat", xiiGALResourceFormat, m_OutputFormat),
     XII_MEMBER_PROPERTY("OutputSamples", m_uiOutputSamples)->AddAttributes(new xiiClampValueAttribute(0U, 64U)),
@@ -37,6 +38,8 @@ namespace
 
 xiiResult xiiRenderPipelineSettings::Validate(xiiStringBuilder* out_error) const
 {
+  if (!m_RenderDefaults.IsValid())
+    return Fail(out_error, "Pipeline rendering defaults are invalid.");
   if (xiiReflectionUtils::MakeEnumerationValid(xiiGetStaticRTTI<xiiRenderPipelineDeviceFeature>(), m_RequiredDeviceFeatures.GetValue()) != m_RequiredDeviceFeatures.GetValue())
     return Fail(out_error, "Pipeline RequiredDeviceFeatures contains unknown flags.");
   if (m_OutputFormat.GetValue() >= xiiGALResourceFormat::ENUM_COUNT)

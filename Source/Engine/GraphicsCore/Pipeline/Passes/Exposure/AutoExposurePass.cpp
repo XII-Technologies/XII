@@ -89,11 +89,10 @@ xiiResult xiiAutoExposurePass::Build(xiiRenderPipelinePassContext& context)
     m_pState = XII_DEFAULT_NEW(State);
   xiiDisplayOutputSettings authored;
   authored.m_Exposure         = m_Settings;
-  const auto previousRevision = m_pState->m_Display.m_uiViewRevision;
-  const auto previousOverride = m_pState->m_Display.m_Override;
+  const auto previousSettings = m_pState->m_Display.m_Settings.m_Exposure;
   const bool wasValid         = m_pState->m_Display.m_bValid;
   XII_SUCCEED_OR_RETURN(m_pState->m_Display.Resolve(context, authored, m_bUseViewDefaults));
-  if (!wasValid || previousRevision != m_pState->m_Display.m_uiViewRevision || previousOverride != m_pState->m_Display.m_Override)
+  if (!wasValid || previousSettings != m_pState->m_Display.m_Settings.m_Exposure)
     InvalidateTemporalHistory();
   const auto& settings = m_pState->m_Display.m_Settings.m_Exposure;
   if (settings.m_Mode == xiiExposureMode::Manual)

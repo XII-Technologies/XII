@@ -107,7 +107,6 @@ void xiiQtEngineViewWidget::SyncToEngine()
        !xiiEditorEngineProcessConnection::GetSingleton()->IsProcessCrashed() && !xiiEditorEngineProcessConnection::GetSingleton()->SupportsRayTracingModes()))
     m_pViewConfig->m_RenderMode = xiiViewRenderMode::Default;
   cam.m_bShowFrameStats = m_pViewConfig->m_bShowFrameStats;
-  cam.m_fRenderScale    = m_pViewConfig->m_fRenderScale;
   cam.m_RenderConfiguration = m_pViewConfig->m_RenderConfiguration;
   static_cast<xiiQtSharedTextureWidget*>(m_pViewportWidget)->SetVSyncEnabled(m_pViewConfig->m_bVSync);
   cam.m_RenderMode           = m_pViewConfig->m_RenderMode;

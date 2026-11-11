@@ -2,6 +2,8 @@
 
 #include <EditorEngineProcessFrameworkTest/EditorEngineProcessFrameworkTestPCH.h>
 
+#include <GraphicsCore/Pipeline/DynamicResolutionSettings.h>
+
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Core/World/World.h>
 #include <Core/World/WorldDesc.h>
@@ -93,7 +95,7 @@ XII_CREATE_SIMPLE_TEST(EditorViews, SceneCameraPreview)
   firstCamera->SetFieldOfView(75);
   secondCamera->SetCameraMode(xiiCameraMode::OrthoFixedHeight);
   secondCamera->SetOrthoDimension(24);
-  secondCamera->SetRenderScale(0.5f);
+  XII_TEST_RESULT(secondCamera->m_RenderConfiguration.SetOverride<xiiDynamicResolutionSettings>("RenderScale", 0.5f));
   const auto& include = xiiTagRegistry::GetGlobalRegistry().RegisterTag("PreviewIncluded");
   const auto& exclude = xiiTagRegistry::GetGlobalRegistry().RegisterTag("PreviewExcluded");
   firstCamera->m_IncludeTags.Set(include);

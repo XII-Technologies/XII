@@ -7,6 +7,7 @@
 #include <Foundation/Threading/AtomicInteger.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <Foundation/Utilities/ConversionUtils.h>
+#include <GraphicsCore/Lighting/PostProcessRenderSettings.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsFoundation/Device/Device.h>
@@ -35,6 +36,8 @@ void xiiRenderPipelineInstance::Clear()
   m_pPipeline = nullptr;
   m_pBasePipeline      = nullptr;
   m_RenderConfiguration = {};
+  m_RequestedRenderConfiguration = {};
+  m_bConfigurationSynchronized   = false;
   m_sConfigurationError.Clear();
   m_Parameters.Clear();
   m_Overrides.Clear();
@@ -53,17 +56,77 @@ xiiResult xiiRenderPipelineInstance::Initialize(xiiSharedPtr<const xiiRenderPipe
 
 xiiResult xiiRenderPipelineInstance::Initialize(xiiSharedPtr<const xiiRenderPipeline> pipeline, const xiiRenderConfiguration& configuration, xiiStringBuilder& out_error)
 {
+  m_bConfigurationSynchronized = false;
+  if (!configuration.IsValid())
+  {
+    out_error = "Invalid effective render configuration.";
+    return XII_FAILURE;
+  }
+  const auto configure = [&](xiiRenderPipelinePass& pass, xiiUInt32 index) -> xiiResult {
+    auto authored = pipeline->m_Descriptor.m_Passes[index].m_Properties;
+    authored.Remove("PinConfigurations");
+    if (pass.Configure(authored).Failed())
+    {
+      out_error.SetFormat("Could not configure authored pass '{}'.", pipeline->m_Descriptor.m_Passes[index].m_sName);
+      return XII_FAILURE;
+    }
+    if (configuration.HasPassOverrides(pass.GetDynamicRTTI()))
+    {
+      xiiBitflags<xiiRenderSettingsChange> changes;
+      xiiVariantDictionary                 configured;
+      if (configuration.ApplyToPass(pass, changes).Failed() || pass.GetProperties(configured).Failed())
+      {
+        out_error.SetFormat("Could not bind subsystem settings to pass '{}'.", pipeline->m_Descriptor.m_Passes[index].m_sName);
+        return XII_FAILURE;
+      }
+      configured.Remove("PinConfigurations");
+      if (pass.Configure(configured).Failed())
+      {
+        out_error.SetFormat("Pass '{}' rejected the combined subsystem settings.", pipeline->m_Descriptor.m_Passes[index].m_sName);
+        return XII_FAILURE;
+      }
+      auto additionalFeatures = pass.GetRequiredDeviceFeatures();
+      additionalFeatures.Remove(pipeline->m_Descriptor.m_Settings.m_RequiredDeviceFeatures);
+      if (additionalFeatures.IsAnyFlagSet())
+      {
+        xiiRenderPipelineSettings settings;
+        settings.m_RequiredDeviceFeatures = additionalFeatures;
+        const auto device                 = xiiGALDevice::HasDefaultDevice() ? xiiGALDevice::GetDefaultDevice() : xiiSharedPtr<xiiGALDevice>();
+        XII_SUCCEED_OR_RETURN(settings.ValidateDevice(device ? &device->GetFeatures() : nullptr, &out_error));
+      }
+    }
+    return pass.ValidateRenderConfiguration(configuration, out_error);
+  };
   if (pipeline == m_pPipeline && pipeline)
   {
     if (configuration == m_RenderConfiguration)
+    {
+      m_RenderConfiguration.CopySourcesFrom(configuration);
       return XII_SUCCESS;
-    for (const auto* pPass : m_Passes)
-      XII_SUCCEED_OR_RETURN(pPass->ValidateRenderConfiguration(configuration, out_error));
-    const auto& before = m_RenderConfiguration.m_DDGI;
-    const auto& after  = configuration.m_DDGI;
-    if (before.m_uiProbeCountX != after.m_uiProbeCountX || before.m_uiProbeCountY != after.m_uiProbeCountY || before.m_uiProbeCountZ != after.m_uiProbeCountZ ||
-        before.m_fProbeSpacing != after.m_fProbeSpacing || before.m_fMaximumRelocationDistance != after.m_fMaximumRelocationDistance)
-      InvalidateTemporalHistory();
+    }
+    // Validate every affected pass before publishing any values. Configure may reset private
+    // implementation state, so it is invoked only on temporary candidates, never live passes.
+    xiiDynamicArray<xiiRenderPipelinePass*> candidates;
+    candidates.SetCount(m_Passes.GetCount(), nullptr);
+    XII_SCOPE_EXIT(for (auto* pass : candidates) if (pass) pass->GetDynamicRTTI()->GetAllocator()->Deallocate(pass));
+    for (xiiUInt32 i = 0; i < m_Passes.GetCount(); ++i)
+    {
+      const auto* type = pipeline->m_Passes[i].m_pType;
+      if (!configuration.HasPassOverrides(type) && !m_RenderConfiguration.HasPassOverrides(type))
+        continue;
+      candidates[i] = type->GetAllocator()->Allocate<xiiRenderPipelinePass>();
+      XII_SUCCEED_OR_RETURN(configure(*candidates[i], i));
+    }
+    for (xiiUInt32 i = 0; i < m_Passes.GetCount(); ++i)
+    {
+      if (!candidates[i])
+        continue;
+      xiiBitflags<xiiRenderSettingsChange> changes;
+      XII_SUCCEED_OR_RETURN(configuration.CommitPassSettings(*candidates[i], *m_Passes[i], changes));
+      XII_SUCCEED_OR_RETURN(m_RenderConfiguration.CommitPassSettings(*candidates[i], *m_Passes[i], changes));
+      if (changes.IsAnySet(xiiRenderSettingsChange::History | xiiRenderSettingsChange::Resources))
+        m_Passes[i]->InvalidateTemporalHistory();
+    }
     m_RenderConfiguration = configuration;
     return XII_SUCCESS;
   }
@@ -78,11 +141,8 @@ xiiResult xiiRenderPipelineInstance::Initialize(xiiSharedPtr<const xiiRenderPipe
   {
     xiiRenderPipelinePass* pass = pipeline->m_Passes[i].m_pType->GetAllocator()->Allocate<xiiRenderPipelinePass>();
     passes.PushBack(pass);
-    auto properties = pipeline->m_Descriptor.m_Passes[i].m_Properties;
-    properties.Remove("PinConfigurations"); // Authored pin objects are lowered into immutable compiled contracts.
-    if (pass->Configure(properties).Failed() || pass->InitializePinBindings(pipeline->m_Passes[i].m_Pins).Failed())
-      return XII_FAILURE;
-    XII_SUCCEED_OR_RETURN(pass->ValidateRenderConfiguration(configuration, out_error));
+    XII_SUCCEED_OR_RETURN(configure(*pass, i));
+    XII_SUCCEED_OR_RETURN(pass->InitializePinBindings(pipeline->m_Passes[i].m_Pins));
   }
   Clear();
   m_pPipeline = std::move(pipeline);
@@ -109,7 +169,7 @@ xiiResult xiiRenderPipelineInstance::Initialize(xiiSharedPtr<const xiiRenderPipe
   }
   return XII_SUCCESS;
 }
-xiiResult xiiRenderPipelineInstance::Synchronize(const xiiRenderPipelineResourceHandle& resource, bool* out_changed, const xiiRenderConfiguration& configuration)
+xiiResult xiiRenderPipelineInstance::Synchronize(const xiiRenderPipelineResourceHandle& resource, bool* out_changed, const xiiRenderConfiguration& configuration, xiiGALResourceFormat::Enum outputFormat)
 {
   if (out_changed)
     *out_changed = false;
@@ -126,9 +186,24 @@ xiiResult xiiRenderPipelineInstance::Synchronize(const xiiRenderPipelineResource
   if (acquireResult == xiiResourceAcquireResult::MissingFallback && (m_ResourceAcquireResult != acquireResult || base != m_pBasePipeline))
     xiiLog::Error("Render pipeline '{}' is missing or failed to compile. Rendering its missing-resource fallback.", resource.GetResourceID());
 
+  if (m_bConfigurationSynchronized && m_pPipeline && base == m_pBasePipeline && acquireResult == m_ResourceAcquireResult &&
+      outputFormat == m_RequestedOutputFormat && configuration == m_RequestedRenderConfiguration && configuration.HasSameSources(m_RequestedRenderConfiguration))
+    return XII_SUCCESS;
+  const auto recordRequest = [&] {
+    m_RequestedRenderConfiguration = configuration;
+    m_RequestedOutputFormat        = outputFormat;
+    m_bConfigurationSynchronized   = true;
+  };
   const auto*      pPrevious = m_pPipeline.Borrow();
   auto             pipeline  = base;
-  const auto       requested = acquireResult == xiiResourceAcquireResult::Final ? configuration : xiiRenderConfiguration{};
+  xiiRenderConfiguration requested;
+  if (base)
+  {
+    requested = base->GetSubsystemDefaults();
+    requested.ApplyOverrides(base->GetDescriptor().m_Settings.m_RenderDefaults, xiiRenderSettingScope::Pipeline);
+  }
+  if (acquireResult == xiiResourceAcquireResult::Final)
+    requested.ApplySnapshot(configuration);
   const auto       selection = requested.GetPipelineVariant();
   const auto       mode      = selection.m_GlobalIllumination;
   xiiStringBuilder error;
@@ -161,6 +236,20 @@ xiiResult xiiRenderPipelineInstance::Synchronize(const xiiRenderPipelineResource
     }
   }
 
+  if (status.Succeeded() && outputFormat != xiiGALResourceFormat::Unknown)
+  {
+    if (const auto* post = requested.FindSubsystem<xiiPostProcessRenderSettings>(); post && post->IsOverridden("Display/OutputMode"))
+    {
+      const auto output = post->m_Display.m_OutputMode.GetValue();
+      const bool hdr10  = output == xiiDisplayOutputMode::HDR10PQ && outputFormat != xiiGALResourceFormat::RGB10A2UNormalized;
+      const bool scrgb  = output == xiiDisplayOutputMode::scRGB && outputFormat != xiiGALResourceFormat::RGBA16Float;
+      if (hdr10 || scrgb)
+      {
+        error  = "The selected HDR output mode requires a compatible presentation target. Use SDR or configure the output format.";
+        status = XII_FAILURE;
+      }
+    }
+  }
   if (status.Succeeded())
     status = Initialize(pipeline, requested, error);
   if (status.Failed() && base)
@@ -172,16 +261,19 @@ xiiResult xiiRenderPipelineInstance::Synchronize(const xiiRenderPipelineResource
     if (m_pPipeline && m_pBasePipeline == base)
     {
       m_sConfigurationError = error;
+      recordRequest();
       return XII_SUCCESS;
     }
     xiiStringBuilder fallbackError;
-    status = Initialize(base, {}, fallbackError);
+    status = Initialize(base, base->GetSubsystemDefaults(), fallbackError);
   }
   if (status.Failed())
     Clear();
   m_pBasePipeline         = std::move(base);
   m_ResourceAcquireResult = acquireResult;
   m_sConfigurationError   = error;
+  if (status.Succeeded())
+    recordRequest();
   if (out_changed)
     *out_changed = pPrevious != m_pPipeline.Borrow();
   return status;

@@ -49,6 +49,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDDGIProbeSchedulePass,1,xiiRTTIDefaultAlloca
     XII_MEMBER_PROPERTY("Spacing",m_fSpacing)->AddAttributes(new xiiDefaultValueAttribute(4.0f),new xiiClampValueAttribute(0.001f,xiiVariant()),new xiiSuffixAttribute(" m")),
     XII_MEMBER_PROPERTY("Hysteresis",m_fHysteresis)->AddAttributes(new xiiDefaultValueAttribute(0.97f),new xiiClampValueAttribute(0.0f,0.9999f)),
     XII_MEMBER_PROPERTY("MaximumRelocationDistance",m_fRelocation)->AddAttributes(new xiiDefaultValueAttribute(1.8f),new xiiClampValueAttribute(0.0f,xiiVariant())),
+    XII_MEMBER_PROPERTY("TraceDistanceInProbeSpacings", m_fTraceDistanceInProbeSpacings)->AddAttributes(new xiiClampValueAttribute(0.1f, 64.0f)),
     XII_MEMBER_PROPERTY("DirectionalAtlas", m_bDirectional)->AddAttributes(new xiiDefaultValueAttribute(false)),
     XII_MEMBER_PROPERTY("UseViewCamera",m_bUseViewCamera)->AddAttributes(new xiiDefaultValueAttribute(true)),
     XII_MEMBER_PROPERTY("CameraPosition",m_CameraPosition),
@@ -70,7 +71,7 @@ xiiResult xiiDDGIProbeSchedulePass::Configure(const xiiVariantDictionary& proper
   return result;
 }
 
-xiiDDGISettings xiiDDGIProbeSchedulePass::GetProbeSettings(const xiiRenderConfiguration* pConfiguration) const
+xiiDDGISettings xiiDDGIProbeSchedulePass::GetProbeSettings() const
 {
   xiiDDGISettings settings;
   settings.m_uiProbeCountX              = m_CountX;
@@ -80,21 +81,19 @@ xiiDDGISettings xiiDDGIProbeSchedulePass::GetProbeSettings(const xiiRenderConfig
   settings.m_fProbeSpacing              = m_fSpacing;
   settings.m_fTemporalHysteresis        = m_fHysteresis;
   settings.m_fMaximumRelocationDistance = m_fRelocation;
-  if (pConfiguration)
-    pConfiguration->m_DDGI.ApplyTo(settings);
   return settings;
 }
 
 xiiResult xiiDDGIProbeSchedulePass::ValidateRenderConfiguration(const xiiRenderConfiguration& configuration, xiiStringBuilder& out_error) const
 {
-  const auto settings = GetProbeSettings(&configuration);
+  const auto settings = GetProbeSettings();
   const auto uiCount  = xiiUInt64(settings.m_uiProbeCountX) * settings.m_uiProbeCountY * settings.m_uiProbeCountZ;
   if (uiCount > 1048576)
   {
     out_error = "The combined DDGI probe dimensions exceed 1,048,576 probes.";
     return XII_FAILURE;
   }
-  if (!xiiMath::IsFinite(settings.m_fProbeSpacing * settings.m_fProbeSpacing * 16.0f))
+  if (!xiiMath::IsFinite(xiiMath::Square(settings.m_fProbeSpacing * m_fTraceDistanceInProbeSpacings)))
   {
     out_error = "DDGI probe spacing exceeds the supported world-space distance.";
     return XII_FAILURE;
@@ -127,7 +126,7 @@ xiiResult xiiDDGIProbeSchedulePass::Build(xiiRenderPipelinePassContext& context)
     camera = context.m_pView->GetCamera()->GetPosition() + context.m_pView->GetCamera()->GetCenterDirForwards() * m_fForwardOffset;
   }
   XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::ReadParameter(context, "DDGICameraPosition", camera));
-  const auto settings   = GetProbeSettings(context.m_pRenderConfiguration);
+  const auto settings   = GetProbeSettings();
   bool       bNewVolume = !m_State;
   if (m_State)
   {
@@ -165,7 +164,7 @@ xiiResult xiiDDGIProbeSchedulePass::Build(xiiRenderPipelinePassContext& context)
   const auto minimum                              = m_State->m_Context.GetMinimumCell();
   snapshot->m_Constants.MinimumCellAndAtlasWidth  = xiiVec4I32(minimum.x, minimum.y, minimum.z, xiiInt32(width));
   snapshot->m_Constants.ProbeCountsAndUpdateCount = xiiVec4U32(settings.m_uiProbeCountX, settings.m_uiProbeCountY, settings.m_uiProbeCountZ, m_State->m_Context.GetScheduledUpdates().GetCount());
-  snapshot->m_Constants.SpacingHysteresisDistance = xiiVec4(settings.m_fProbeSpacing, settings.m_fTemporalHysteresis, settings.m_fProbeSpacing * 4, float(m_State->m_Frame));
+  snapshot->m_Constants.SpacingHysteresisDistance = xiiVec4(settings.m_fProbeSpacing, settings.m_fTemporalHysteresis, settings.m_fProbeSpacing * m_fTraceDistanceInProbeSpacings, float(m_State->m_Frame));
   for (const auto& probe : m_State->m_Context.GetProbes())
   {
     auto& record                    = snapshot->m_Probes.ExpandAndGetRef();

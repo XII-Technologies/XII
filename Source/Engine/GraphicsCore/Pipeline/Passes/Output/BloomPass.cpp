@@ -45,6 +45,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiBloomPass, 2, xiiRTTIDefaultAllocator<xiiBlo
     XII_MEMBER_PROPERTY("UpscaledColor", m_InputUpscaledColor)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("BloomTexture", m_OutputBloomTexture)->AddFlags(xiiPropertyFlags::ReadOnly)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("UseViewDefaults", m_bUseViewDefaults)->AddAttributes(new xiiDefaultValueAttribute(false)),
+    XII_MEMBER_PROPERTY("Strength", m_fStrength)->AddAttributes(new xiiDefaultValueAttribute(0.05f), new xiiClampValueAttribute(0.0f, xiiVariant())),
     XII_MEMBER_PROPERTY("Threshold", m_fThreshold)->AddAttributes(new xiiDefaultValueAttribute(1.0f)),
     XII_MEMBER_PROPERTY("Knee", m_fKnee)->AddAttributes(new xiiDefaultValueAttribute(0.5f)),
     XII_MEMBER_PROPERTY("Radius", m_fRadius)->AddAttributes(new xiiDefaultValueAttribute(1.0f)),
@@ -64,6 +65,7 @@ xiiResult xiiBloomPass::Configure(const xiiVariantDictionary& properties)
 {
   XII_SUCCEED_OR_RETURN(xiiRenderPipelinePass::Configure(properties));
   xiiDisplayOutputSettings settings;
+  settings.m_fBloomStrength  = m_fStrength;
   settings.m_fBloomThreshold = m_fThreshold;
   settings.m_fBloomKnee      = m_fKnee;
   settings.m_fBloomRadius    = m_fRadius;
@@ -79,6 +81,7 @@ xiiResult xiiBloomPass::Build(xiiRenderPipelinePassContext& context)
   if (!m_pState)
     m_pState = XII_DEFAULT_NEW(State);
   xiiDisplayOutputSettings settings;
+  settings.m_fBloomStrength  = m_fStrength;
   settings.m_fBloomThreshold = m_fThreshold;
   settings.m_fBloomKnee      = m_fKnee;
   settings.m_fBloomRadius    = m_fRadius;

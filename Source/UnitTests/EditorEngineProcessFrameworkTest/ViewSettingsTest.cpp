@@ -2,6 +2,8 @@
 
 #include <EditorEngineProcessFrameworkTest/EditorEngineProcessFrameworkTestPCH.h>
 
+#include <GraphicsCore/Pipeline/DynamicResolutionSettings.h>
+
 #include <Core/World/World.h>
 #include <Core/World/WorldDesc.h>
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessMessages.h>
@@ -35,7 +37,7 @@ XII_CREATE_SIMPLE_TEST(EditorViews, Settings)
     message.m_CameraMode             = xiiCameraMode::OrthoFixedHeight;
     message.m_RenderMode             = xiiViewRenderMode::Wireframe;
     message.m_bShowFrameStats        = true;
-    message.m_fRenderScale           = 0.65f;
+    XII_TEST_RESULT(message.m_RenderConfiguration.SetOverride<xiiDynamicResolutionSettings>("RenderScale", 0.65f));
     message.m_fFovOrDim              = 42.0f;
     message.m_fNearPlane             = -1000.0f;
     message.m_fFarPlane              = 1000.0f;
@@ -60,7 +62,7 @@ XII_CREATE_SIMPLE_TEST(EditorViews, Settings)
     XII_TEST_BOOL(copy.m_RenderMode == message.m_RenderMode);
     XII_TEST_FLOAT(copy.m_fFovOrDim, 42.0f, 0.0f);
     XII_TEST_BOOL(copy.m_bShowFrameStats);
-    XII_TEST_FLOAT(copy.m_fRenderScale, 0.65f, 0.0f);
+    XII_TEST_BOOL(copy.m_RenderConfiguration == message.m_RenderConfiguration);
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Shared frame metadata and acknowledgements survive IPC serialization")

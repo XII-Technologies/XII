@@ -2,6 +2,8 @@
 
 #include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
 
+#include <GraphicsCore/Lighting/PostProcessRenderSettings.h>
+
 #include <Core/Graphics/Camera.h>
 
 #include <Core/ResourceManager/ResourceManager.h>
@@ -406,18 +408,18 @@ XII_CREATE_SIMPLE_TEST(PipelineScheduling, OffscreenRendering)
     xiiVariantDictionary display;
     display.Insert("PaperWhiteNits", 203.0f);
     definition.m_Parameters.Insert("DisplayOutput", display);
-    const auto originalPaperWhite = view->GetDisplayOutputSettings().m_fPaperWhiteNits;
     view->SetRenderPipelineResource(xiiResourceManager::CreateResource<xiiRenderPipelineResource>("Explicit native view pipeline", std::move(definition)));
     xiiGALTextureReadback readback(environment.GetDevice());
     for (xiiUInt32 frame = 0; frame < 2; ++frame)
     {
       if (frame == 1)
       {
-        display.Insert("PaperWhiteNits", 300.0f);
-        view->SetPipelineParameter("DisplayOutput", display);
+        xiiRenderConfiguration override;
+        XII_TEST_RESULT(override.SetOverride<xiiPostProcessRenderSettings>("Display/PaperWhiteNits", 300.0f));
+        XII_TEST_RESULT(view->SetRenderConfiguration(override));
       }
       world.Update();
-      XII_TEST_FLOAT(view->GetDisplayOutputSettings().m_fPaperWhiteNits, originalPaperWhite, 0.0001f);
+      XII_TEST_FLOAT(view->GetDisplayOutputSettings().m_fPaperWhiteNits, frame == 0 ? 203.0f : 300.0f, 0.0001f);
       environment.GetDevice()->WaitIdle();
       XII_TEST_INT(view->GetRenderGraph()->GetStatistics().m_uiCompiledPassCount, 2);
       XII_TEST_INT(view->GetRenderGraph()->GetStatistics().m_uiQueueSubmissionCount, 1);

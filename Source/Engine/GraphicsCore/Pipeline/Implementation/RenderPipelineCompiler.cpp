@@ -5,7 +5,9 @@
 #include <Core/Graph/GraphAlgorithms.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <Foundation/Utilities/ConversionUtils.h>
+#include <GraphicsCore/Lighting/PostProcessRenderSettings.h>
 #include <GraphicsCore/Pipeline/RenderPipelineComposition.h>
+#include <GraphicsCore/Pipeline/RenderPipelineConfiguration.h>
 #include <GraphicsCore/Pipeline/RenderPipelineResource.h>
 
 #include <algorithm>
@@ -518,6 +520,38 @@ xiiResult xiiRenderPipeline::Compile(const xiiRenderPipelineResourceDescriptor& 
     while (offset < result->m_Connections.GetCount() && result->m_Connections[offset].m_uiTargetBinding < pass.m_uiBindingOffset + pass.m_Pins.GetCount())
       ++offset;
     pass.m_uiConnectionCount = offset - pass.m_uiConnectionOffset;
+  }
+  if (result->m_SubsystemDefaults.InitializeSubsystemDefaults(prototypes.GetArrayPtr()).Failed())
+  {
+    fail("A supported subsystem has invalid defaults or pass bindings.");
+    return XII_FAILURE;
+  }
+  // Lift the legacy root display parameters into the same scope as typed authored defaults.
+  if (const auto* display = authored.m_Parameters.GetValue("DisplayOutput"))
+  {
+    xiiRenderConfiguration migrated;
+    auto*                  settings = migrated.EditSubsystem<xiiPostProcessRenderSettings>();
+    if (const auto* defaults = result->m_SubsystemDefaults.FindSubsystem<xiiPostProcessRenderSettings>())
+      settings->m_Display = defaults->m_Display;
+    if (xiiResolvePipelineDisplaySettings(authored.m_Parameters, settings->m_Display).Failed())
+      return fail("Invalid legacy DisplayOutput parameters.");
+    const auto&                               fields = display->Get<xiiVariantDictionary>();
+    xiiDynamicArray<xiiRenderSettingProperty> properties;
+    settings->GetProperties(properties);
+    for (const auto& property : properties)
+    {
+      auto path = property.m_sPath.GetView();
+      path.Shrink(8, 0); // Display/
+      if (const auto* slash = path.FindSubString("/"))
+      {
+        if (const auto* nested = fields.GetValue(xiiStringView(path.GetStartPointer(), slash)); nested && nested->IsA<xiiVariantDictionary>() && nested->Get<xiiVariantDictionary>().Contains(slash + 1))
+          settings->m_Overrides.PushBack(property.m_sPath);
+      }
+      else if (fields.Contains(path))
+        settings->m_Overrides.PushBack(property.m_sPath);
+    }
+    migrated.ApplyOverrides(authored.m_Settings.m_RenderDefaults, xiiRenderSettingScope::Pipeline);
+    result->m_Descriptor.m_Settings.m_RenderDefaults = std::move(migrated);
   }
   out_pipeline = result;
   return XII_SUCCESS;

@@ -212,6 +212,9 @@ public:
   xiiResult                     SetRenderConfiguration(const xiiRenderConfiguration& configuration);
   const xiiRenderConfiguration& GetRenderConfiguration() const { return m_RenderConfiguration; }
   xiiRenderConfiguration        GetEffectiveRenderConfiguration() const;
+  /// Borrowed from the validated per-view snapshot, valid until the next synchronization.
+  const xiiRenderSubsystemSettings* GetRenderSubsystemSettings(const xiiRTTI* type) const;
+  template <typename T> const T*    GetRenderSettings() const { return static_cast<const T*>(GetRenderSubsystemSettings(xiiGetStaticRTTI<T>())); }
 
   /// Binds a specific camera in this view's world (e.g. a preview or render target).
   /// An invalid handle restores ordinary camera selection by usage hint.
@@ -257,7 +260,8 @@ private:
   void UpdateFrameStats();
 
   xiiResult SynchronizeRenderPipeline();
-  xiiRenderConfiguration ResolveRenderConfiguration() const;
+  const class xiiDynamicResolutionSettings& GetDynamicResolutionSettings() const;
+  const xiiRenderConfiguration&             ResolveRenderConfiguration();
   void      ApplyRenderScale(float fRenderScale);
 
   /// Instantiates the selected resource and emits its frame-specific render graph.
@@ -323,8 +327,11 @@ private:
   xiiResult                                m_LastRenderResult               = XII_FAILURE;
   xiiVariantDictionary                     m_PipelineParameters;
   xiiRenderConfiguration                   m_RenderConfiguration;
+  xiiRenderConfiguration                   m_ResolvedRenderConfiguration;
+  xiiRenderConfiguration                   m_ResolvedScopeInputs[4];
+  xiiSharedPtr<const xiiRenderPipeline>    m_pResolvedRenderPipeline;
+  bool                                     m_bRenderConfigurationResolved = false;
   xiiComponentHandle                       m_hRenderConfigurationCamera;
-  float                                    m_fDefaultRenderScale = 1.0f;
   xiiBitflags<xiiRenderExtractionCategory> m_ExtractionRequirements;
   xiiBitflags<xiiRenderExtractionCategory> m_CustomExtractionRequirements = xiiRenderExtractionCategory::All;
   xiiRenderExtractionStatistics            m_ExtractionStatistics;

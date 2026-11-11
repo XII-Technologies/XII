@@ -2,6 +2,9 @@
 
 #include <EditorEngineProcessFramework/EditorEngineProcessFrameworkPCH.h>
 
+#include <GraphicsCore/Lighting/PostProcessRenderSettings.h>
+
+
 #include <Core/GameApplication/GameApplicationBase.h>
 
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessApp.h>
@@ -108,18 +111,17 @@ void xiiEngineProcessViewContext::HandleViewMessage(const xiiEditorEngineViewMsg
     m_bNavigationHovered          = pViewRedrawMsg->m_bNavigationHovered;
     m_iNavigationHoveredAxis      = pViewRedrawMsg->m_iNavigationHoveredAxis;
     m_fNavigationDevicePixelRatio = xiiMath::IsFinite(pViewRedrawMsg->m_fDevicePixelRatio) ? xiiMath::Max(0.5f, pViewRedrawMsg->m_fDevicePixelRatio) : 1.0f;
-    // The first redraw creates the view; apply the message camera to that new view as well.
-    SetCamera(pViewRedrawMsg);
     if (auto* world = GetDocumentContext()->GetWorld())
     {
       XII_LOCK(world->GetWriteMarker());
       if (auto* view = GetView())
       {
         view->SetShowFrameStats(pViewRedrawMsg->m_bShowFrameStats);
-        view->SetRenderScale(pViewRedrawMsg->m_fRenderScale);
         view->SetRenderConfiguration(pViewRedrawMsg->m_RenderConfiguration).IgnoreResult();
       }
     }
+    // Preview cameras may add render overrides for their own view.
+    SetCamera(pViewRedrawMsg);
     if (ready)
       Redraw(true);
   }
@@ -302,12 +304,9 @@ void xiiEngineProcessViewContext::SetupRenderTarget(xiiSharedPtr<xiiGALSwapChain
     {
       // A short thumbnail capture cannot adapt exposure reliably against its
       // mostly black background. Use stable studio exposure for asset inspection.
-      xiiVariantDictionary exposure;
-      exposure.Insert("Mode", static_cast<xiiInt32>(xiiExposureMode::Manual));
-      exposure.Insert("ExposureCompensation", 0.0f);
-      xiiVariantDictionary display;
-      display.Insert("Exposure", exposure);
-      view->SetPipelineParameter("DisplayOutput", display);
+      auto configuration = view->GetRenderConfiguration();
+      if (configuration.SetOverride<xiiPostProcessRenderSettings>("Display/Exposure/Mode", xiiInt64(xiiExposureMode::Manual)).Succeeded())
+        view->SetRenderConfiguration(configuration).IgnoreResult();
     }
     view->SetSwapChain(pSwapChain.Borrow());
     view->SetRenderTargetView(pRenderTargetView);

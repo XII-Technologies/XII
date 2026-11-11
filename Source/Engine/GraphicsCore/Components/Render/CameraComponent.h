@@ -97,8 +97,6 @@ public:
   void SetShowFrameStats(bool bShow);
 
   /// Per-camera render scale baseline (1.0 = native resolution).
-  float GetRenderScale() const { return m_fRenderScale; } // [ property ]
-  void  SetRenderScale(float fVal);                       // [ property ]
   xiiRenderConfiguration m_RenderConfiguration;
 
   xiiViewHandle GetRenderTargetView() const;
@@ -136,7 +134,6 @@ private:
   float                       m_fPerspectiveFieldOfView = 60.0f;
   float                       m_fOrthoDimension         = 10.0f;
   bool                        m_bShowFrameStats         = false;
-  float                       m_fRenderScale            = 1.0f;
 
   float   m_fAperture             = 1.0f;
   xiiTime m_ShutterTime           = xiiTime::MakeFromSeconds(1.0f);

@@ -1,6 +1,8 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #include <EditorFramework/EditorFrameworkPCH.h>
+
+#include <EditorFramework/Actions/ViewActions.h>
 #include <EditorFramework/Project/PlayerSession.h>
 
 #include <EditorFramework/Actions/AssetActions.h>
@@ -150,6 +152,7 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(EditorFramework, EditorFrameworkMain)
     xiiActionMapManager::RegisterActionMap("AssetBrowserToolBar");
     xiiAssetActions::MapToolBarActions("AssetBrowserToolBar", false);
 
+    xiiViewActions::RegisterRenderSettingsWidget();
     xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiFileBrowserAttribute>(), [](const xiiRTTI* pRtti)->xiiQtPropertyWidget* { return new xiiQtFilePropertyWidget(); });
     xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiExternalFileBrowserAttribute>(), [](const xiiRTTI* pRtti)->xiiQtPropertyWidget* { return new xiiQtExternalFilePropertyWidget(); });
     xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiAssetBrowserAttribute>(), [](const xiiRTTI* pRtti)->xiiQtPropertyWidget* { return new xiiQtAssetPropertyWidget(); });
@@ -201,6 +204,7 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(EditorFramework, EditorFrameworkMain)
     xiiTranslateGizmoAction::UnregisterActions();
     xiiCommonAssetActions::UnregisterActions();
 
+    xiiViewActions::UnregisterRenderSettingsWidget();
     xiiQtPropertyGridWidget::GetFactory().UnregisterCreator(xiiGetStaticRTTI<xiiFileBrowserAttribute>());
     xiiQtPropertyGridWidget::GetFactory().UnregisterCreator(xiiGetStaticRTTI<xiiExternalFileBrowserAttribute>());
     xiiQtPropertyGridWidget::GetFactory().UnregisterCreator(xiiGetStaticRTTI<xiiAssetBrowserAttribute>());

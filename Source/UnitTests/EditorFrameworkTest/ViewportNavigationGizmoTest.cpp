@@ -1,7 +1,9 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #include <EditorFrameworkTest/EditorFrameworkTestPCH.h>
+
 #include <EditorFrameworkTest/RenderPipelineSettingsEditorTest.h>
+#include <GraphicsCore/Pipeline/DynamicResolutionSettings.h>
 
 #include <Core/Console/LuaInterpreter.h>
 #include <EditorFramework/Actions/ViewActions.h>
@@ -206,8 +208,8 @@ static void TestViewportInput(bool bRenderingControlsOnly)
       xiiCommandInterpreterState state;
       state.m_sInput.SetFormat("View_RenderScale({}, 0.65)", view->GetViewID());
       interpreter.Interpret(state);
-      XII_TEST_FLOAT(config.m_fRenderScale, 0.65f, 0.0f);
-      XII_TEST_FLOAT(otherConfig.m_fRenderScale, 1.0f, 0.0f);
+      XII_TEST_FLOAT(config.m_RenderConfiguration.FindSubsystem<xiiDynamicResolutionSettings>()->m_fRenderScale, 0.65f, 0.0f);
+      XII_TEST_BOOL(otherConfig.m_RenderConfiguration.FindSubsystem<xiiDynamicResolutionSettings>() == nullptr);
       state.m_sInput.SetFormat("View_ShowFPS({}, false)", view->GetViewID());
       interpreter.Interpret(state);
       action.GetEntries(entries);
@@ -217,16 +219,16 @@ static void TestViewportInput(bool bRenderingControlsOnly)
       xiiLogSystemScope   scope(&log);
       log.ExpectMessage("Render scale must be finite", xiiLogMsgType::ErrorMsg);
       interpreter.Interpret(state);
-      XII_TEST_FLOAT(config.m_fRenderScale, 0.65f, 0.0f);
+      XII_TEST_FLOAT(config.m_RenderConfiguration.FindSubsystem<xiiDynamicResolutionSettings>()->m_fRenderScale, 0.65f, 0.0f);
 #endif
       auto* preferences                           = xiiEditorSettings::QuerySettings<xiiQuadViewPreferencesUser>(scene);
-      preferences->m_ViewSingle.m_fRenderScale    = config.m_fRenderScale;
+      preferences->m_ViewSingle.m_RenderConfiguration = config.m_RenderConfiguration;
       preferences->m_ViewSingle.m_bShowFrameStats = true;
       preferences->m_ViewSingle.m_bVSync          = false;
       XII_TEST_RESULT(xiiEditorSettings::SaveSettings(preferences));
       xiiEditorSettings::ClearDocumentSettings(scene);
       const auto* restored = xiiEditorSettings::QuerySettings<xiiQuadViewPreferencesUser>(scene);
-      XII_TEST_FLOAT(restored->m_ViewSingle.m_fRenderScale, config.m_fRenderScale, 0.0f);
+      XII_TEST_BOOL(restored->m_ViewSingle.m_RenderConfiguration == config.m_RenderConfiguration);
       XII_TEST_BOOL(restored->m_ViewSingle.m_bShowFrameStats && !restored->m_ViewSingle.m_bVSync);
     }
     TestRenderPipelineSettingsWindow(*editor, path.GetFileDirectory());

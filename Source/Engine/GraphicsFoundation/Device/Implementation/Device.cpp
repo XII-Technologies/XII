@@ -171,6 +171,20 @@ xiiResult xiiGALDevice::PostInitialize()
   return PostInitializePlatform();
 }
 
+xiiResult xiiGALDevice::SetStreamingMemorySettings(const xiiGALStreamingMemorySettings& settings)
+{
+  XII_SUCCEED_OR_RETURN(settings.Validate());
+  XII_LOCK(m_Mutex);
+  m_PendingStreamingMemorySettings = settings;
+  return XII_SUCCESS;
+}
+
+xiiGALStreamingMemorySettings xiiGALDevice::GetStreamingMemorySettings() const
+{
+  XII_LOCK(m_Mutex);
+  return m_StreamingMemorySettings;
+}
+
 void xiiGALDevice::BeginFrame()
 {
   {
@@ -187,6 +201,7 @@ void xiiGALDevice::BeginFrame()
 
     XII_ASSERT_DEV(!m_bBeginFrameCalled, "You must call xiiGALDevice::EndFrame before you can call xiiGALDevice::BeginFrame again");
 
+    m_StreamingMemorySettings = m_PendingStreamingMemorySettings;
     m_bBeginFrameCalled = true;
 
     BeginFramePlatform();

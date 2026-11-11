@@ -98,7 +98,6 @@ xiiResult xiiSceneCameraPreview::Update(const xiiView& editorView, const xiiCame
   view->m_ExcludeTags = camera.m_ExcludeTags;
   view->m_ExcludeTags.SetByName("Editor");
   view->m_ExcludeTags.SetByName("EditorHidden");
-  view->SetRenderScale(camera.GetRenderScale());
   view->SetRenderConfigurationCamera(camera.GetHandle());
   view->SetRenderPipelineResource(editorView.GetRenderPipelineResource());
   view->SetRenderEnabled(true);

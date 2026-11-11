@@ -8,6 +8,7 @@
 #include <GraphicsCore/Components/Lights/DirectionalLightComponent.h>
 #include <GraphicsCore/Components/Lights/SkyAtmosphereComponent.h>
 #include <GraphicsCore/Lighting/DisplayOutput.h>
+#include <GraphicsCore/Lighting/PostProcessRenderSettings.h>
 #include <GraphicsCore/Pipeline/View.h>
 
 namespace
@@ -139,12 +140,15 @@ xiiResult xiiPreviewLightingSettings::ApplyToView(xiiView& view, xiiCamera& came
 {
   if (!IsValid())
     return XII_FAILURE;
-  xiiVariantDictionary exposure;
-  exposure.Insert("Mode", static_cast<xiiInt32>(m_bAutomaticExposure ? xiiExposureMode::Automatic : xiiExposureMode::Manual));
-  exposure.Insert("ExposureCompensation", m_fExposureCompensation);
-  xiiVariantDictionary display;
-  display.Insert("Exposure", exposure);
-  view.SetPipelineParameter("DisplayOutput", display);
+  auto        configuration        = view.GetRenderConfiguration();
+  const auto* post                 = configuration.FindSubsystem<xiiPostProcessRenderSettings>();
+  const bool  overrideMode         = post && post->IsOverridden("Display/Exposure/Mode");
+  const bool  overrideCompensation = post && post->IsOverridden("Display/Exposure/ExposureCompensation");
+  if (!overrideMode)
+    XII_SUCCEED_OR_RETURN(configuration.SetOverride<xiiPostProcessRenderSettings>("Display/Exposure/Mode", xiiInt64(m_bAutomaticExposure ? xiiExposureMode::Automatic : xiiExposureMode::Manual)));
+  if (!overrideCompensation)
+    XII_SUCCEED_OR_RETURN(configuration.SetOverride<xiiPostProcessRenderSettings>("Display/Exposure/ExposureCompensation", m_fExposureCompensation));
+  XII_SUCCEED_OR_RETURN(view.SetRenderConfiguration(configuration));
   view.SetPipelineParameter("EnvironmentAmbientRadiance", xiiVec3(m_fAmbientRadiance));
   camera.SetExposure(m_fExposure);
   return XII_SUCCESS;
