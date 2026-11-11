@@ -193,8 +193,11 @@ xiiResult xiiRenderGraphManager::ExecuteGraph(const xiiRenderGraphFrame& frame, 
   {
     XII_PROFILE_SCOPE("Render Graph: Build");
 
-    pEntry->m_Blackboard.ClearFrame();
-    pEntry->m_pGraph->BeginSetup(frame.GetFrameIndex());
+    {
+      XII_PROFILE_SCOPE("Render Graph: Reset Build State");
+      pEntry->m_Blackboard.ClearFrame();
+      pEntry->m_pGraph->BeginSetup(frame.GetFrameIndex());
+    }
     pEntry->m_pGraph->SetSetupBlackboard(&pEntry->m_Blackboard);
     const xiiResult buildResult = pEntry->m_BuildDelegate(*pEntry->m_pGraph, pEntry->m_Blackboard, pView);
     pEntry->m_pGraph->EndSetup();

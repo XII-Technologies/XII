@@ -1863,7 +1863,8 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
       if (compiledPass.m_bIsCulled)
         continue;
 
-      XII_PROFILE_SCOPE(compiledPass.m_sName.GetView());
+      // Composed passes prefix their name with instance paths that can fill the CPU scope label.
+      XII_PROFILE_SCOPE(compiledPass.m_sName.GetView().GetFileNameAndExtension());
 
       // Acquire transient resources whose lifetime starts at this pass.
       for (xiiUInt32 uiResourceIndex : compiledPass.m_AcquireResourceIndices)
