@@ -48,5 +48,5 @@ if(XII_CMAKE_COMPILER_MSVC)
 endif()
 
 if(XII_CMAKE_PLATFORM_LINUX)
-  target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::GuiPrivate)
+  target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::GuiPrivate xcb)
 endif()
