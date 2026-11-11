@@ -1,8 +1,9 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <Foundation/Basics.h>
+
 #include <Core/Input/InputManager.h>
 #include <Foundation/Application/Application.h>
-#include <Foundation/Basics.h>
 #include <Foundation/Communication/GlobalEvent.h>
 #include <Foundation/Communication/Telemetry.h>
 #include <Foundation/Configuration/CVar.h>
