@@ -127,7 +127,6 @@
     "description": "Build configuration, generation, dependency setup and validation utilities.",
     "paths": [
       "Source/BuildSystem/**",
-      "Source/BuildTools/**",
       "Utilities/CI/**",
       "**/CMakeLists.txt",
       "**/init.cmake",
@@ -162,7 +161,6 @@
     "description": "Standalone engine tools, shared tool libraries and developer utilities.",
     "paths": [
       "Source/Tools/**",
-      "Source/BuildTools/**",
       "Utilities/**",
       "Data/Tools/**"
     ]

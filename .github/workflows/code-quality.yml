@@ -38,18 +38,3 @@ jobs:
           python3 Utilities/CI/check_repository.py
           python3 Utilities/CI/manage_labels.py check
           python3 -m unittest discover -s Utilities/CI/tests -v
-      - name: Check changed source formatting and copyright
-        if: github.event_name == 'pull_request'
-        env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-        run: |
-          git submodule update --init Data/Tools/Precompiled
-          chmod +x Data/Tools/Precompiled/clang-format/clang-format_linux_21.0.0
-          python3 Utilities/CI/check_changed_source.py --base "$BASE_SHA" --formatter Data/Tools/Precompiled/clang-format/clang-format_linux_21.0.0
-      - name: Preserve suggested formatting
-        if: failure()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: source-style-patch
-          path: Workspace/Quality/*.patch
-          retention-days: 7

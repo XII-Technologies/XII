@@ -12,6 +12,9 @@ on:
       configuration:
         type: string
         required: true
+      source-style-artifact:
+        type: string
+        default: ''
       analysis:
         type: boolean
         default: false
@@ -39,6 +42,15 @@ jobs:
           persist-credentials: false
           # The CPU preset disables SDL and does not execute precompiled tools.
           submodules: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        if: inputs.source-style-artifact != ''
+        with:
+          artifact-ids: ${{ inputs.source-style-artifact }}
+          path: ${{ runner.temp }}/source-style
+          merge-multiple: true
+      - name: Apply source fixes to the PR merge checkout
+        if: inputs.source-style-artifact != ''
+        run: git apply --index "$env:RUNNER_TEMP/source-style/merge-style.patch"
       - name: Install Linux CPU build dependencies
         if: runner.os == 'Linux'
         shell: bash
