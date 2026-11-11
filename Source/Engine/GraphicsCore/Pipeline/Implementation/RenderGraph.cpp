@@ -940,7 +940,7 @@ void xiiRenderGraph::PhaseB_TopologicalSortAndCull(const xiiRenderGraphCompileSe
 
 void xiiRenderGraph::PhaseC_LifetimeAnalysis(const xiiDynamicArray<xiiUInt32>& sortedIndices)
 {
-  XII_PROFILE_SCOPE("Render Graph: Analyze Resource Lifetimes");
+  XII_PROFILE_SCOPE("Render Graph: Analyze Lifetimes");
 
   for (ResourceEntry& resource : m_Resources)
   {
@@ -1422,7 +1422,7 @@ void xiiRenderGraph::PhaseE_MultiQueueScheduling(const xiiDynamicArray<xiiUInt32
 
 void xiiRenderGraph::PhaseF_RenderPassMerging(xiiGALDevice* pDevice)
 {
-  XII_PROFILE_SCOPE("xiiRenderGraph::PhaseF_RenderPassMerging");
+  XII_PROFILE_SCOPE("Render Graph: Build Render Pass Groups");
 
   XII_ASSERT_DEV(pDevice != nullptr, "Device must not be null for render pass merging.");
   XII_IGNORE_UNUSED(pDevice);
@@ -1500,7 +1500,7 @@ void xiiRenderGraph::PhaseF_RenderPassMerging(xiiGALDevice* pDevice)
 
 xiiResult xiiRenderGraph::MaterializeRenderPassGroup(xiiUInt32 uiGroupIndex, xiiGALDevice* pDevice, xiiArrayPtr<xiiSharedPtr<xiiGALTexture>> resolvedTextures, xiiStringBuilder* out_pError)
 {
-  XII_PROFILE_SCOPE("xiiRenderGraph::MaterializeRenderPassGroup");
+  XII_PROFILE_SCOPE("Render Graph: Materialize Pass Group");
 
   XII_ASSERT_DEV(uiGroupIndex < m_MergeGroups.GetCount(), "Render pass group index is out of range.");
   XII_ASSERT_DEV(pDevice != nullptr, "Device must not be null when materializing a render pass.");
@@ -1708,7 +1708,7 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
         xiiSharedPtr<xiiGALTexture>* pPersistent = m_PersistentTextures.GetValue(resourceEntry.m_sName);
         if (pPersistent == nullptr || (*pPersistent)->GetDescription().CalculateHash() != resourceEntry.m_TextureDescription.CalculateHash())
         {
-          XII_PROFILE_SCOPE("Render Graph: Allocate Persistent Texture");
+          XII_PROFILE_SCOPE("Render Graph: Create Persistent Texture");
           xiiSharedPtr<xiiGALTexture> pTexture = pDevice->CreateTexture(resourceEntry.m_TextureDescription);
           if (pTexture == nullptr)
           {
@@ -1727,7 +1727,7 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
         xiiSharedPtr<xiiGALBuffer>* pPersistent = m_PersistentBuffers.GetValue(resourceEntry.m_sName);
         if (pPersistent == nullptr || (*pPersistent)->GetDescription().CalculateHash() != resourceEntry.m_BufferDescription.CalculateHash())
         {
-          XII_PROFILE_SCOPE("Render Graph: Allocate Persistent Buffer");
+          XII_PROFILE_SCOPE("Render Graph: Create Persistent Buffer");
           xiiSharedPtr<xiiGALBuffer> pBuffer = pDevice->CreateBuffer(resourceEntry.m_BufferDescription);
           if (pBuffer == nullptr)
           {

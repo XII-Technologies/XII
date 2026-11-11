@@ -324,7 +324,7 @@ xiiResult xiiRenderGraphManager::BeginFrame(xiiRenderGraphFrame& frame, xiiUInt3
   }
   if (xiiGALBindlessResourceTable::IsInitialized())
   {
-    XII_PROFILE_SCOPE("Render Graph: Collect Bindless Resources");
+    XII_PROFILE_SCOPE("Render Graph: Collect Bindless");
     xiiGALBindlessResourceTable::Collect(uiCompletedFrame);
   }
   if (xiiMaterialManager::IsInitialized())
@@ -334,7 +334,7 @@ xiiResult xiiRenderGraphManager::BeginFrame(xiiRenderGraphFrame& frame, xiiUInt3
   }
   if (xiiVirtualShadowMapManager::IsInitialized())
   {
-    XII_PROFILE_SCOPE("Render Graph: Begin Virtual Shadow Map Frame");
+    XII_PROFILE_SCOPE("Render Graph: Begin Virtual Shadow Map");
     xiiVirtualShadowMapManager::BeginFrame(uiFrameIndex, uiCompletedFrame);
   }
   if (xiiGpuResidencyManager::IsInitialized())
@@ -347,7 +347,7 @@ xiiResult xiiRenderGraphManager::BeginFrame(xiiRenderGraphFrame& frame, xiiUInt3
 
   // Resource-cache frame scope matches the shared GPU frame, not an individual view or graph.
   {
-    XII_PROFILE_SCOPE("Render Graph: Begin Resource Cache Frame");
+    XII_PROFILE_SCOPE("Render Graph: Begin Resource Cache");
     s_pState->m_pResourceCache->BeginFrame(uiFrameIndex, uiCompletedFrame);
   }
 
