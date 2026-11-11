@@ -258,13 +258,15 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, SharedTopologyRetirement)
   pressureDescription.m_uiSize    = 2U * 1024U * 1024U;
   pressureDescription.m_BindFlags = xiiGALBindFlags::VertexBuffer;
   auto  pPressureBuffer           = pDevice->CreateBuffer(pressureDescription);
-  auto* pBudget                   = static_cast<xiiCVarInt*>(xiiCVar::FindCVarByName("Streaming.GpuBudgetMiB"));
-  if (!XII_TEST_BOOL(pPressureBuffer && pBudget != nullptr))
+  if (!XII_TEST_BOOL(pPressureBuffer != nullptr))
     return;
-  const xiiInt32 iPreviousBudget = pBudget->GetValue();
-  *pBudget                       = 1;
+  auto       policy         = pDevice->GetStreamingMemorySettings();
+  const auto originalPolicy = policy;
+  policy.m_bUseNativeBudget = false;
+  policy.m_uiBudgetMiB      = 1;
+  XII_TEST_RESULT(pDevice->SetStreamingMemorySettings(policy));
   pDevice->BeginFrame();
-  XII_SCOPE_EXIT(pDevice->EndFrame(); *pBudget = iPreviousBudget);
+  XII_SCOPE_EXIT(pDevice->EndFrame(); pDevice->SetStreamingMemorySettings(originalPolicy).IgnoreResult());
   XII_TEST_BOOL(pDevice->IsStreamingMemoryPressured());
 
   xiiGeometryResidencyManager::ProcessStreaming(128U, 4U, configuration.m_uiUploadBudgetPerFrameBytes);
@@ -367,15 +369,15 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, IndependentLodTopology)
     XII_TEST_INT(uploaded.m_uiFirstPrimitive, uiFinePrimitiveCount);
   }
 
-  auto*                           pBudget = static_cast<xiiCVarInt*>(xiiCVar::FindCVarByName("Streaming.GpuBudgetMiB"));
   xiiGALBufferCreationDescription pressure;
   pressure.m_uiSize    = 2U * 1024U * 1024U;
   pressure.m_BindFlags = xiiGALBindFlags::VertexBuffer;
   auto pPressure       = pDevice->CreateBuffer(pressure);
-  if (!XII_TEST_BOOL(pBudget != nullptr && pPressure != nullptr))
+  if (!XII_TEST_BOOL(pPressure != nullptr))
     return;
-  const xiiInt32 iPreviousBudget = pBudget->GetValue();
-  XII_SCOPE_EXIT(*pBudget = iPreviousBudget);
+  auto       policy         = pDevice->GetStreamingMemorySettings();
+  const auto originalPolicy = policy;
+  XII_SCOPE_EXIT(pDevice->SetStreamingMemorySettings(originalPolicy).IgnoreResult());
 
   // A required allocation after BeginFrame can consume headroom before the next pressure sample.
   xiiHybridArray<xiiGALMemoryHeapStatistics, 8> heaps;
@@ -386,7 +388,9 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, IndependentLodTopology)
       primary = heap;
   constexpr xiiUInt64 uiMiB   = 1024U * 1024U;
   const xiiUInt64     uiUsage = xiiMath::Max(primary.m_uiUsageBytes, primary.m_uiCommittedBytes) - primary.m_uiCommittedBytes + primary.m_uiAllocatedBytes;
-  *pBudget                    = static_cast<xiiInt32>(uiUsage / uiMiB) + 16;
+  policy.m_bUseNativeBudget   = false;
+  policy.m_uiBudgetMiB        = static_cast<xiiUInt32>(uiUsage / uiMiB) + 16;
+  XII_TEST_RESULT(pDevice->SetStreamingMemorySettings(policy));
   pDevice->BeginFrame();
   XII_TEST_BOOL(!pDevice->IsStreamingMemoryPressured());
   auto lateRequiredDescription     = pressure;
@@ -406,7 +410,9 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, IndependentLodTopology)
   pDevice->EndFrame();
   pDevice->WaitIdle();
 
-  *pBudget = 1;
+  policy.m_bUseNativeBudget = false;
+  policy.m_uiBudgetMiB      = 1;
+  XII_TEST_RESULT(pDevice->SetStreamingMemorySettings(policy));
   pDevice->BeginFrame();
   XII_TEST_BOOL(pDevice->IsStreamingMemoryPressured());
   xiiGeometryResidencyManager::ProcessStreaming(3U, 2U, configuration.m_uiUploadBudgetPerFrameBytes);
@@ -415,7 +421,8 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, IndependentLodTopology)
   XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiTopologyUploadBytes, 0U);
   pDevice->EndFrame();
 
-  *pBudget = 0;
+  policy.m_bUseNativeBudget = true;
+  XII_TEST_RESULT(pDevice->SetStreamingMemorySettings(policy));
   pDevice->BeginFrame();
   xiiGeometryResidencyManager::ProcessStreaming(4U, 3U, configuration.m_uiUploadBudgetPerFrameBytes);
   pDevice->EndFrame();
@@ -429,7 +436,9 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, IndependentLodTopology)
   const xiiUInt64 uiBefore      = GetOccupiedGpuBytes(*pDevice);
   const xiiUInt64 uiArenaBefore = xiiGeometryResidencyManager::GetStats().m_uiResidentBytes;
   const xiiUInt32 uiGeneration  = pRecord->m_uiGeneration;
-  *pBudget                      = 1;
+  policy.m_bUseNativeBudget     = false;
+  policy.m_uiBudgetMiB          = 1;
+  XII_TEST_RESULT(pDevice->SetStreamingMemorySettings(policy));
   pDevice->BeginFrame();
   XII_SCOPE_EXIT(pDevice->EndFrame());
   XII_TEST_BOOL(pDevice->IsStreamingMemoryPressured());

@@ -4,6 +4,8 @@
 
 #include <GraphicsCore/GraphicsCoreDLL.h>
 
+#include <GraphicsCore/Streaming/ResourceStreamingSettings.h>
+
 #include <Foundation/Configuration/StaticSubSystem.h>
 #include <Foundation/Containers/HybridArray.h>
 #include <Foundation/Types/Id.h>
@@ -149,6 +151,8 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGpuResidencyStats);
 /// Startup configuration for the default device residency service.
 struct XII_GRAPHICSCORE_DLL xiiGpuResidencyDescription
 {
+  bool                         operator==(const xiiGpuResidencyDescription&) const = default;
+  xiiResourceStreamingSettings m_Streaming;
   xiiUInt32 m_uiMaxGeometries             = 65536U;
   xiiUInt32 m_uiFramesInFlight            = 3U;
   xiiUInt64 m_uiBudgetBytes               = 512ULL * 1024ULL * 1024ULL; ///< Soft limit for occupied meshlet metadata.

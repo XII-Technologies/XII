@@ -1749,10 +1749,6 @@ void xiiGALDeviceVulkan::SetVulkanAllocationDebugName(xiiVulkanAllocation alloca
 namespace
 {
   xiiCVarBool cvar_DumpGpuAllocations("Streaming.DumpGpuAllocations", false, xiiCVarFlags::None, "Dump outstanding native allocation owners once, including retiring allocations.");
-  xiiCVarInt  cvar_GpuStreamingBudget("Streaming.GpuBudgetMiB", 0, xiiCVarFlags::Save, "Device-local streaming admission cap in MiB (0 uses the native budget).");
-  xiiCVarInt  cvar_GpuStreamingHeadroom("Streaming.GpuHeadroomMiB", 256, xiiCVarFlags::Save, "Space held below the native device-local budget for required GPU allocations.");
-  xiiCVarInt  cvar_GpuStreamingPressureHigh("Streaming.GpuPressureHighPercent", 95, xiiCVarFlags::Save, "Enter streaming memory pressure at this percentage of the usable budget.");
-  xiiCVarInt  cvar_GpuStreamingPressureLow("Streaming.GpuPressureLowPercent", 85, xiiCVarFlags::Save, "Resume optional streaming below this percentage of the usable budget.");
 
   constexpr xiiUInt64 s_uiBytesPerMiB = 1024ULL * 1024ULL;
 
@@ -1802,19 +1798,19 @@ void xiiGALDeviceVulkan::UpdateStreamingMemoryBudget()
   GetMemoryHeapStatistics(heaps);
   const auto primary = GetPrimaryDeviceLocalHeap(heaps);
 
+  const auto settings          = GetStreamingMemorySettings();
   xiiUInt64 uiAdmissionLimit  = 0U;
   xiiUInt64 uiMemoryDeferrals = 0U;
   xiiUInt64 uiPendingBytes    = 0U;
   {
     XII_LOCK(m_StreamingBudgetMutex);
-    const xiiInt32 iBudgetMiB = cvar_GpuStreamingBudget.GetValue();
-    m_uiStreamingBudgetCap    = iBudgetMiB > 0 ? xiiUInt64(iBudgetMiB) * s_uiBytesPerMiB : xiiMath::MaxValue<xiiUInt64>();
-    m_uiStreamingHeadroom     = xiiUInt64(xiiMath::Max(cvar_GpuStreamingHeadroom.GetValue(), 0)) * s_uiBytesPerMiB;
+    m_uiStreamingBudgetCap = settings.m_bUseNativeBudget ? xiiMath::MaxValue<xiiUInt64>() : xiiUInt64(settings.m_uiBudgetMiB) * s_uiBytesPerMiB;
+    m_uiStreamingHeadroom  = xiiUInt64(settings.m_uiHeadroomMiB) * s_uiBytesPerMiB;
 
     const xiiUInt64 uiNativeLimit = primary.m_uiBudgetBytes - xiiMath::Min(primary.m_uiBudgetBytes, m_uiStreamingHeadroom);
     uiAdmissionLimit              = xiiMath::Min(m_uiStreamingBudgetCap, uiNativeLimit);
-    const xiiUInt64 uiHigh        = xiiMath::Clamp(cvar_GpuStreamingPressureHigh.GetValue(), 2, 100);
-    const xiiUInt64 uiLow         = xiiMath::Clamp(cvar_GpuStreamingPressureLow.GetValue(), 1, static_cast<xiiInt32>(uiHigh) - 1);
+    const xiiUInt64 uiHigh        = settings.m_uiPressureHighPercent;
+    const xiiUInt64 uiLow         = settings.m_uiPressureLowPercent;
     const xiiUInt64 uiThreshold   = m_bStreamingMemoryPressured ? uiLow : uiHigh;
     m_bStreamingMemoryPressured   = primary.m_uiCapacityBytes != 0U &&
       (GetAdmissionUsage(primary) >= uiAdmissionLimit * uiThreshold / 100U ||

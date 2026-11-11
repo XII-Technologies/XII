@@ -3,7 +3,7 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <Core/ResourceManager/ResourceManager.h>
-#include <Foundation/Configuration/CVar.h>
+#include <Foundation/Configuration/Settings.h>
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Containers/Deque.h>
 #include <Foundation/Containers/IdTable.h>
@@ -363,15 +363,7 @@ xiiSharedPtr<xiiGpuResidencyManager::State> xiiGpuResidencyManager::s_pState;
 
 namespace
 {
-  xiiCVarInt          cvar_TextureStreamingUploadBudget("Streaming.TextureUploadMiB", 64, xiiCVarFlags::Save, "Per-device-frame virtual texture upload allowance in MiB (0 pauses optional tiles).");
-  xiiCVarFloat        cvar_TextureMipBias("Streaming.TextureMipBias", 0.0f, xiiCVarFlags::Save, "Bias applied to virtual texture sampling and demand. Positive values select coarser mips.");
-  xiiCVarInt          cvar_TextureMinimumMip("Streaming.TextureMinimumMip", 0, xiiCVarFlags::Save, "Finest mip allowed for virtual texture sampling and demand (0 permits full detail).");
-  xiiCVarInt          cvar_TextureCacheMiB("Streaming.TextureCacheMiB", 512, xiiCVarFlags::Save, "Physical virtual texture tile cache in MiB. Required coarse pages retain priority.");
-  xiiCVarInt          cvar_GeometryCacheMiB("Streaming.GeometryCacheMiB", 256, xiiCVarFlags::Save, "Maximum physical geometry page payload in MiB. Required fallback pages retain priority.");
   constexpr float     s_fLodReferenceViewportHeight = 1080.0f;
-  constexpr xiiUInt64 s_uiPressureTrimInterval      = 8U;
-  constexpr xiiUInt64 s_uiPressureMinimumIdleFrames = 120U;
-  constexpr xiiUInt32 s_uiPressureMaxEvictions      = 4U;
 
   void RetireBufferBinding(xiiGALBindlessResourceHandle handle, xiiUInt64 uiLastUseFrame)
   {
@@ -585,15 +577,16 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGpuResidencyStats, xiiNoBase, 1, xiiRTTIDefau
   }
 XII_END_STATIC_REFLECTED_TYPE;
 
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGpuResidencyDescription, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiGpuResidencyDescription>)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGpuResidencyDescription, xiiNoBase, 2, xiiRTTIDefaultAllocator<xiiGpuResidencyDescription>)
   {
     XII_BEGIN_PROPERTIES
     {
-      XII_MEMBER_PROPERTY("MaxGeometries", m_uiMaxGeometries)->AddAttributes(new xiiDefaultValueAttribute(65536U), new xiiClampValueAttribute(1U, 1048576U)),
-      XII_MEMBER_PROPERTY("FramesInFlight", m_uiFramesInFlight)->AddAttributes(new xiiDefaultValueAttribute(3U), new xiiClampValueAttribute(1U, 64U)),
-      XII_MEMBER_PROPERTY("BudgetBytes", m_uiBudgetBytes)->AddAttributes(new xiiDefaultValueAttribute(512ULL * 1024ULL * 1024ULL)),
+      XII_MEMBER_PROPERTY("Streaming", m_Streaming),
+      XII_MEMBER_PROPERTY("MaxGeometries", m_uiMaxGeometries)->AddAttributes(new xiiSettingsRestartAttribute(), new xiiDefaultValueAttribute(65536U), new xiiClampValueAttribute(1U, 1048576U)),
+      XII_MEMBER_PROPERTY("FramesInFlight", m_uiFramesInFlight)->AddAttributes(new xiiSettingsRestartAttribute(), new xiiDefaultValueAttribute(3U), new xiiClampValueAttribute(1U, 64U)),
+      XII_MEMBER_PROPERTY("BudgetBytes", m_uiBudgetBytes)->AddAttributes(new xiiSettingsRestartAttribute(), new xiiDefaultValueAttribute(512ULL * 1024ULL * 1024ULL)),
       XII_MEMBER_PROPERTY("UploadBudgetPerFrameBytes", m_uiUploadBudgetPerFrameBytes)->AddAttributes(new xiiDefaultValueAttribute(32ULL * 1024ULL * 1024ULL)),
-      XII_MEMBER_PROPERTY("MaxMeshlets", m_uiMaxMeshlets)->AddAttributes(new xiiDefaultValueAttribute(1024U * 1024U), new xiiClampValueAttribute(1U, 64U * 1024U * 1024U)),
+      XII_MEMBER_PROPERTY("MaxMeshlets", m_uiMaxMeshlets)->AddAttributes(new xiiSettingsRestartAttribute(), new xiiDefaultValueAttribute(1024U * 1024U), new xiiClampValueAttribute(1U, 64U * 1024U * 1024U)),
     } XII_END_PROPERTIES;
   }
 XII_END_STATIC_REFLECTED_TYPE;
@@ -610,6 +603,7 @@ xiiResult xiiGpuResidencyManager::Configure(const xiiGpuResidencyDescription& de
   if (s_pState == nullptr || description.m_uiMaxGeometries == 0U || description.m_uiFramesInFlight == 0U || description.m_uiFramesInFlight > 64U || description.m_uiMaxMeshlets == 0U)
     return XII_FAILURE;
 
+  XII_SUCCEED_OR_RETURN(description.m_Streaming.Validate());
   XII_LOCK(s_pState->m_InitializationMutex);
   const bool bSameConfiguration =
     s_pState->m_Configuration.m_uiMaxGeometries == description.m_uiMaxGeometries &&
@@ -618,11 +612,15 @@ xiiResult xiiGpuResidencyManager::Configure(const xiiGpuResidencyDescription& de
     s_pState->m_Configuration.m_uiUploadBudgetPerFrameBytes == description.m_uiUploadBudgetPerFrameBytes &&
     s_pState->m_Configuration.m_uiMaxMeshlets == description.m_uiMaxMeshlets;
   if (bSameConfiguration && s_pState->m_bInitialized)
+  {
+    s_pState->m_Configuration.m_Streaming = description.m_Streaming;
     return XII_SUCCESS;
+  }
 
   if (s_pState->m_bInitialized && (GetStats().m_uiGeometryCount != 0U || !s_pState->m_Textures.IsEmpty()))
   {
-    XII_ASSERT_DEV(false, "GPU residency cannot be reconfigured while geometry or virtual textures are active.");
+    // Preserve live allocations while accepting independent streaming controls.
+    s_pState->m_Configuration.m_Streaming = description.m_Streaming;
     return XII_FAILURE;
   }
 
@@ -1387,8 +1385,8 @@ void xiiGpuResidencyManager::State::CollectPhysicalPages(xiiUInt64 frame, xiiUIn
       ++m_uiPhysicalRetireCursor;
   }
   const bool      pressure   = m_pMetadataBuffer->GetDevice()->IsStreamingMemoryPressured();
-  const xiiUInt64 limits[]   = {xiiUInt64(xiiMath::Max(0, cvar_GeometryCacheMiB.GetValue())) * 1024U * 1024U,
-                                xiiUInt64(xiiMath::Max(0, cvar_TextureCacheMiB.GetValue())) * 1024U * 1024U};
+  const xiiUInt64 limits[]   = {xiiUInt64(xiiMath::Max(0, xiiGpuResidencyManager::GetConfiguration().m_Streaming.m_iGeometryCacheMiB)) * 1024U * 1024U,
+                                xiiUInt64(xiiMath::Max(0, xiiGpuResidencyManager::GetConfiguration().m_Streaming.m_iTextureCacheMiB)) * 1024U * 1024U};
   const auto      chunkCount = m_GeometryChunks.GetCount();
   for (xiiUInt32 n = 0U; n < xiiMath::Min(32U, chunkCount); ++n)
   {
@@ -1479,7 +1477,7 @@ xiiGpuResidencyManager::AdmissionResult xiiGpuResidencyManager::State::UploadTex
   const auto&                    compiled = source.m_Data;
   const xiiUInt32                bucket   = compiled->m_Description.m_Format == xiiGALResourceFormat::RGBA8UNormalizedSRGB ? 7U : 6U;
   auto&                          free     = m_FreePhysicalPages[bucket];
-  const auto                     limit    = xiiUInt64(xiiMath::Max(0, cvar_TextureCacheMiB.GetValue())) * 1024U * 1024U;
+  const auto                     limit    = xiiUInt64(xiiMath::Max(0, xiiGpuResidencyManager::GetConfiguration().m_Streaming.m_iTextureCacheMiB)) * 1024U * 1024U;
   auto*                          device   = m_pMetadataBuffer->GetDevice().Borrow();
   xiiGALMemoryCategoryStatistics ownership;
   const auto                     allocated = device->GetMemoryCategoryStatistics(xiiGALMemoryCategory::TexturePages, ownership) ? ownership.m_uiAllocatedBytes : m_uiPoolBytes[1];
@@ -1591,9 +1589,9 @@ xiiGpuResidencyManager::AdmissionResult xiiGpuResidencyManager::State::UploadTex
 
 bool xiiGpuResidencyManager::State::PublishTexture(TextureSource& source)
 {
-  const float     bias       = cvar_TextureMipBias.GetValue();
+  const float     bias       = xiiGpuResidencyManager::GetConfiguration().m_Streaming.m_fTextureMipBias;
   const xiiUInt32 biasBits   = std::bit_cast<xiiUInt32>(xiiMath::IsFinite(bias) ? xiiMath::Clamp(bias, -8.0f, 8.0f) : 0.0f);
-  const xiiUInt32 minimumMip = xiiMath::Clamp(cvar_TextureMinimumMip.GetValue(), 0, 31);
+  const xiiUInt32 minimumMip = xiiMath::Clamp(xiiGpuResidencyManager::GetConfiguration().m_Streaming.m_iTextureMinimumMip, 0, 31);
   // Header, one offset per mip, then physical descriptor/request pairs.
   xiiDynamicArray<xiiUInt32> table;
   table.SetCount(104U + source.m_Pages.GetCount() * 2U, 0U);
@@ -1707,7 +1705,7 @@ xiiUInt32 xiiGpuResidencyManager::ResolveVirtualTexture(xiiSharedPtr<xiiVirtualT
   {
     s_pState->m_uiStreamingFrame      = frame;
     s_pState->m_uiInitialUploadBudget = s_pState->m_uiRemainingUploadBudget = s_pState->m_Configuration.m_uiUploadBudgetPerFrameBytes;
-    s_pState->m_uiRemainingTextureUploadBytes                               = xiiUInt64(xiiMath::Max(0, cvar_TextureStreamingUploadBudget.GetValue())) * 1024U * 1024U;
+    s_pState->m_uiRemainingTextureUploadBytes                               = xiiUInt64(xiiMath::Max(0, xiiGpuResidencyManager::GetConfiguration().m_Streaming.m_iTextureUploadMiB)) * 1024U * 1024U;
   }
   auto* source = s_pState->m_Textures.GetValue(data.Borrow());
   if (!source)
@@ -1883,8 +1881,8 @@ void xiiGpuResidencyManager::State::SchedulePages(xiiUInt64 frame)
 void xiiGpuResidencyManager::State::TrimPages(xiiUInt64 frame, xiiUInt64 completed)
 {
   const bool pressure      = m_pMetadataBuffer->GetDevice()->IsStreamingMemoryPressured();
-  const auto geometryLimit = xiiUInt64(xiiMath::Max(0, cvar_GeometryCacheMiB.GetValue())) * 1024U * 1024U;
-  const auto textureLimit  = xiiUInt64(xiiMath::Max(0, cvar_TextureCacheMiB.GetValue())) * 1024U * 1024U;
+  const auto geometryLimit = xiiUInt64(xiiMath::Max(0, xiiGpuResidencyManager::GetConfiguration().m_Streaming.m_iGeometryCacheMiB)) * 1024U * 1024U;
+  const auto textureLimit  = xiiUInt64(xiiMath::Max(0, xiiGpuResidencyManager::GetConfiguration().m_Streaming.m_iTextureCacheMiB)) * 1024U * 1024U;
   const auto examined      = xiiMath::Min(512U, m_ResidentPages.GetCount());
   for (xiiUInt32 n = 0U; n < examined && !m_ResidentPages.IsEmpty(); ++n)
   {
@@ -1977,9 +1975,9 @@ void xiiGpuResidencyManager::State::ProcessTextures(xiiUInt64 frame, xiiUInt64 c
   m_uiReusableRequestFrame = frame;
   for (xiiUInt32 slot = 0U; slot < m_uiFramesInFlight; ++slot)
     m_uiReusableRequestFrame = xiiMath::Min(m_uiReusableRequestFrame, m_TextureCaptures[slot].m_uiConsumedFrame);
-  const float     bias       = cvar_TextureMipBias.GetValue();
+  const float     bias       = xiiGpuResidencyManager::GetConfiguration().m_Streaming.m_fTextureMipBias;
   const xiiUInt32 biasBits   = std::bit_cast<xiiUInt32>(xiiMath::IsFinite(bias) ? xiiMath::Clamp(bias, -8.0f, 8.0f) : 0.0f);
-  const xiiUInt32 minimumMip = xiiMath::Clamp(cvar_TextureMinimumMip.GetValue(), 0, 31);
+  const xiiUInt32 minimumMip = xiiMath::Clamp(xiiGpuResidencyManager::GetConfiguration().m_Streaming.m_iTextureMinimumMip, 0, 31);
   for (auto it = m_Textures.GetIterator(); it.IsValid();)
   {
     auto& source = it.Value();
@@ -2114,7 +2112,7 @@ xiiGpuResidencyManager::AdmissionResult xiiGpuResidencyManager::State::UploadPag
     capacity *= 2U;
   }
   auto&                          free   = m_FreePhysicalPages[bucket];
-  const auto                     limit  = xiiUInt64(xiiMath::Max(0, cvar_GeometryCacheMiB.GetValue())) * 1024U * 1024U;
+  const auto                     limit  = xiiUInt64(xiiMath::Max(0, xiiGpuResidencyManager::GetConfiguration().m_Streaming.m_iGeometryCacheMiB)) * 1024U * 1024U;
   auto*                          device = m_pMetadataBuffer->GetDevice().Borrow();
   xiiGALMemoryCategoryStatistics ownership;
   const auto                     allocated = device->GetMemoryCategoryStatistics(xiiGALMemoryCategory::GeometryPages, ownership) ? ownership.m_uiAllocatedBytes : m_uiPoolBytes[0];
@@ -2701,7 +2699,7 @@ void xiiGpuResidencyManager::ProcessStreaming(xiiUInt64 uiFrameIndex, xiiUInt64 
   {
     s_pState->m_uiStreamingFrame      = uiFrameIndex;
     s_pState->m_uiInitialUploadBudget = s_pState->m_uiRemainingUploadBudget = uiUploadBudgetBytes;
-    s_pState->m_uiRemainingTextureUploadBytes                               = xiiUInt64(xiiMath::Max(0, cvar_TextureStreamingUploadBudget.GetValue())) * 1024U * 1024U;
+    s_pState->m_uiRemainingTextureUploadBytes                               = xiiUInt64(xiiMath::Max(0, xiiGpuResidencyManager::GetConfiguration().m_Streaming.m_iTextureUploadMiB)) * 1024U * 1024U;
     s_pState->CollectPhysicalPages(uiFrameIndex, uiCompletedFrame);
     s_pState->m_StreamingStats = {};
   }
@@ -2727,11 +2725,11 @@ void xiiGpuResidencyManager::ProcessStreaming(xiiUInt64 uiFrameIndex, xiiUInt64 
       s_pState->m_Slots[s_pState->m_ActiveSlots[slot.m_uiActiveIndex]].m_uiActiveIndex = slot.m_uiActiveIndex;
     s_pState->m_RetireQueue.RemoveAtAndSwap(n);
   }
-  if (bNewFrame && uiFrameIndex % s_uiPressureTrimInterval == 0U && s_pState->m_uiResidentTopologyBytes != 0U &&
+  if (bNewFrame && uiFrameIndex % xiiGpuResidencyManager::GetConfiguration().m_Streaming.m_uiPressureTrimInterval == 0U && s_pState->m_uiResidentTopologyBytes != 0U &&
       s_pState->m_pMetadataBuffer->GetDevice()->IsStreamingMemoryPressured())
   {
-    xiiUInt32 uiRemaining = s_uiPressureMaxEvictions;
-    for (; uiRemaining != 0U && EvictOne(uiCompletedFrame, s_uiPressureMinimumIdleFrames); --uiRemaining)
+    xiiUInt32 uiRemaining = xiiGpuResidencyManager::GetConfiguration().m_Streaming.m_uiPressureMaxEvictions;
+    for (; uiRemaining != 0U && EvictOne(uiCompletedFrame, xiiGpuResidencyManager::GetConfiguration().m_Streaming.m_uiPressureMinimumIdleFrames); --uiRemaining)
       ++s_pState->m_StreamingStats.m_uiPressureEvictions;
   }
   if (bNewFrame)

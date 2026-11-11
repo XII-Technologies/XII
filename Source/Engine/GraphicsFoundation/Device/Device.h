@@ -13,6 +13,7 @@
 #include <GraphicsFoundation/Declarations/Descriptors.h>
 #include <GraphicsFoundation/Declarations/Object.h>
 #include <GraphicsFoundation/Device/MemoryStatistics.h>
+#include <GraphicsFoundation/Device/StreamingMemorySettings.h>
 
 /// A snapshot of one graphics memory heap. Keep heap budgets separate when testing whether an allocation fits.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALMemoryHeapStatistics
@@ -36,6 +37,10 @@ class XII_GRAPHICSFOUNDATION_DLL xiiGALDevice : public xiiGALObject
   XII_MAKE_SUBSYSTEM_STARTUP_FRIEND(GraphicsFoundation, DeviceRegistry);
 
 public:
+  /// Stages a validated device-wide policy; BeginFrame publishes it before backend work.
+  xiiResult                     SetStreamingMemorySettings(const xiiGALStreamingMemorySettings& settings);
+  xiiGALStreamingMemorySettings GetStreamingMemorySettings() const;
+
   /// Initialize device.
   xiiResult Initialize();
 
@@ -368,6 +373,8 @@ private:
 private:
   xiiMap<xiiUInt32, xiiHybridArray<xiiGALSampler*, 1>> m_SamplerCache;
 
+  xiiGALStreamingMemorySettings m_StreamingMemorySettings;
+  xiiGALStreamingMemorySettings m_PendingStreamingMemorySettings;
   bool m_bBeginFrameCalled = false;
 };
 
