@@ -12,6 +12,7 @@
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <SharedPluginScene/Scene/SceneMeshPickingPass.h>
+#include <SharedPluginScene/Scene/SceneMeshPlaceholder.h>
 #include <SharedPluginScene/Scene/SceneShapeIconPass.h>
 
 namespace
@@ -120,7 +121,15 @@ void xiiSceneViewContext::PickObjectAt(xiiUInt16 x, xiiUInt16 y, xiiUInt64 uiReq
   }
   xiiSceneMeshPickingPass::PickingResult meshHit;
   const auto*                            meshes        = FindScenePass<xiiSceneMeshPickingPass>(*view);
-  const bool                             meshAvailable = meshes && meshes->Pick(*view, x, y, meshHit).Succeeded();
+  bool                                   meshAvailable = meshes && meshes->Pick(*view, x, y, meshHit).Succeeded();
+  xiiSceneMeshPickingPass::PickingResult placeholder;
+  if (xiiSceneMeshPlaceholder::Pick(*view, u, v, placeholder).Succeeded() &&
+      (!meshAvailable || meshHit.m_Source.m_hOwnerObject.IsInvalidated() ||
+       (placeholder.m_vWorldPosition - placeholder.m_vRayStart).GetLengthSquared() < (meshHit.m_vWorldPosition - placeholder.m_vRayStart).GetLengthSquared()))
+  {
+    meshHit       = placeholder;
+    meshAvailable = true;
+  }
   // Ordinary handles obey scene depth. Overlay handles above remain usable during asynchronous
   // capture warm-up; an unavailable mesh image cannot prove that a depth-tested handle is visible.
   if (hasGizmo && meshAvailable && (meshHit.m_Source.m_hOwnerObject.IsInvalidated() || gizmo.m_fRayTime <= (meshHit.m_vWorldPosition - gizmo.m_vRayStartPosition).GetLength()))
@@ -165,13 +174,13 @@ void xiiSceneViewContext::MarqueePickObjects(const xiiViewMarqueePickingMsgToEng
   if (!view || !view->IsValid())
     return;
   const auto* meshes = FindScenePass<xiiSceneMeshPickingPass>(*view);
-  if (!meshes)
-    return;
   const xiiUInt32                      left = xiiMath::Min(message->m_uiPickPosX0, message->m_uiPickPosX1);
   const xiiUInt32                      top  = xiiMath::Min(message->m_uiPickPosY0, message->m_uiPickPosY1);
   const xiiRectU32                     rectangle(left, top, xiiMath::Max(message->m_uiPickPosX0, message->m_uiPickPosX1) - left + 1, xiiMath::Max(message->m_uiPickPosY0, message->m_uiPickPosY1) - top + 1);
   xiiDynamicArray<xiiGameObjectHandle> objects;
-  if (meshes->PickObjectsInRect(*view, rectangle, objects).Failed())
+  const bool                           captured = meshes && meshes->PickObjectsInRect(*view, rectangle, objects).Succeeded();
+  xiiSceneMeshPlaceholder::PickObjectsInRect(*view, rectangle, objects);
+  if (!captured && objects.IsEmpty())
     return;
   if (const auto* icons = FindScenePass<xiiSceneShapeIconPass>(*view))
   {
