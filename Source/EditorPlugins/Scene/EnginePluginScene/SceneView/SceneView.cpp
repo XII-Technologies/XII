@@ -8,6 +8,7 @@
 #include <GraphicsCore/Components/Render/CameraComponent.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <SharedPluginScene/Scene/SceneCameraSettings.h>
+#include <SharedPluginScene/Scene/SceneMeshPlaceholder.h>
 
 xiiSceneViewContext::xiiSceneViewContext(xiiSceneContext* pSceneContext) :
   xiiEngineProcessViewContext(pSceneContext), m_CameraPreview(*pSceneContext->GetWorld())
@@ -126,6 +127,8 @@ void xiiSceneViewContext::Redraw(bool bRenderEditorGizmos)
     {
       pView->m_ExcludeTags.Remove(tagNoOrtho);
     }
+    if (bRenderEditorGizmos)
+      xiiSceneMeshPlaceholder::Draw(*pView);
   }
 
   xiiEngineProcessViewContext::Redraw(bRenderEditorGizmos);

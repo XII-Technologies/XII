@@ -5,6 +5,7 @@
 #include <Core/World/WorldModule.h>
 #include <Foundation/Configuration/StaticSubSystem.h>
 #include <Foundation/Containers/HashTable.h>
+#include <Foundation/Strings/StringBuilder.h>
 #include <Foundation/Threading/AtomicInteger.h>
 #include <Foundation/Types/UniquePtr.h>
 #include <GraphicsCore/Declarations.h>
@@ -96,8 +97,8 @@ public:
   const xiiGpuInstanceData*                GetGpuInstanceData() const { return m_pGpuInstances.Borrow(); }
   /// Publishes derived mesh draw data at the CPU extraction boundary. Tools that build graphs
   /// explicitly use this same path; inputs must carry live handles in this world.
-  xiiResult                            UpdateGpuInstances(xiiArrayPtr<xiiRenderData* const> packets, xiiUInt64 frame);
-  xiiResult                            UpdateGpuInstances(const xiiExtractedRenderData& packets, xiiUInt64 frame);
+  xiiResult                            UpdateGpuInstances(xiiArrayPtr<xiiRenderData* const> packets, xiiUInt64 frame, xiiStringBuilder* out_error = nullptr);
+  xiiResult                            UpdateGpuInstances(const xiiExtractedRenderData& packets, xiiUInt64 frame, xiiStringBuilder* out_error = nullptr);
   xiiRayTracingResources::BuildHandles AddRayTracingBuildPass(xiiRenderGraph& graph, xiiUInt64 frame, xiiRayTracingFrameResources* viewResources = nullptr, const xiiArrayPtr<const xiiUInt32>* selection = nullptr) const;
 
   xiiResult                UpdateWorldLights(xiiArrayPtr<xiiRenderData* const> packets);
@@ -227,6 +228,7 @@ private:
   xiiBitflags<xiiRenderExtractionCategory>          m_ExtractionRequirements;
   xiiBitflags<xiiRenderPipelineFeature>             m_RuntimeFeatures;
   xiiUniquePtr<xiiGpuInstanceData>                  m_pGpuInstances;
+  xiiString                                         m_sLastGpuExtractionError;
   xiiUniquePtr<xiiWorldLightData>                   m_pWorldLights;
   mutable xiiUniquePtr<xiiRayTracingFrameResources> m_pRayTracingResources;
 

@@ -172,8 +172,10 @@ xiiResult xiiMeshComponentBase::GetLocalBounds(xiiBoundingBoxSphere& ref_bounds,
   if (!m_hMesh.IsValid())
     return XII_FAILURE;
 
-  xiiResourceLock<xiiMeshResource> pMesh(m_hMesh, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
-  if (!pMesh)
+  xiiResourceLock<xiiMeshResource> pMesh(m_hMesh, xiiResourceAcquireMode::PointerOnly);
+  if (pMesh->GetLoadingState() == xiiResourceState::Unloaded)
+    xiiResourceManager::PreloadResource(m_hMesh);
+  if (pMesh->GetLoadingState() != xiiResourceState::Loaded)
     return XII_FAILURE;
 
   ref_bounds = pMesh->GetBounds();
@@ -335,9 +337,19 @@ void xiiMeshComponentBase::OnMsgExtractRenderData(xiiMsgExtractRenderData& ref_m
   if (!m_hMesh.IsValid())
     return;
 
-  xiiResourceLock<xiiMeshResource> pMesh(m_hMesh, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
-  if (!pMesh)
+  xiiResourceLock<xiiMeshResource> pMesh(m_hMesh, xiiResourceAcquireMode::PointerOnly);
+  if (pMesh->GetLoadingState() == xiiResourceState::Unloaded)
+    xiiResourceManager::PreloadResource(m_hMesh);
+  if (!pMesh->IsReadyForRendering())
+  {
+    if (pMesh->GetLoadingState() == xiiResourceState::Loaded && pMesh->GetMeshBuffer().IsValid())
+    {
+      xiiResourceLock<xiiMeshBufferResource> buffer(pMesh->GetMeshBuffer(), xiiResourceAcquireMode::PointerOnly);
+      if (buffer->GetLoadingState() == xiiResourceState::Unloaded)
+        xiiResourceManager::PreloadResource(pMesh->GetMeshBuffer());
+    }
     return;
+  }
 
   const xiiRenderWorldModule* pWorldModule = GetWorld()->GetModule<xiiRenderWorldModule>();
   if (pWorldModule == nullptr)
@@ -641,7 +653,9 @@ void xiiSkinnedMeshComponent::FillRenderData(xiiMeshRenderData& ref_renderData, 
 xiiResult xiiSkinnedMeshComponent::GetLocalBounds(xiiBoundingBoxSphere& ref_bounds, bool& ref_bAlwaysVisible, xiiMsgUpdateLocalBounds& ref_msg)
 {
   XII_SUCCEED_OR_RETURN(SUPER::GetLocalBounds(ref_bounds, ref_bAlwaysVisible, ref_msg));
-  xiiResourceLock<xiiMeshResource> mesh(m_hMesh, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+  xiiResourceLock<xiiMeshResource> mesh(m_hMesh, xiiResourceAcquireMode::PointerOnly);
+  if (mesh->GetLoadingState() != xiiResourceState::Loaded)
+    return XII_FAILURE;
   XII_SUCCEED_OR_RETURN(xiiComputeMorphedMeshBounds(*mesh.GetPointer(), m_MorphWeights, ref_bounds));
   return xiiMeshSkinning::ComputeBounds(ref_bounds, m_SkinningMatrices, ref_bounds);
 }

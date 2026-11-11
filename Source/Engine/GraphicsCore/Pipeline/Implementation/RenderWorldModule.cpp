@@ -202,9 +202,9 @@ xiiResult xiiRenderWorldModule::UpdateWorldLights(xiiArrayPtr<xiiRenderData* con
   return m_pWorldLights->UpdateFromExtraction(packets);
 }
 
-xiiResult xiiRenderWorldModule::UpdateGpuInstances(const xiiExtractedRenderData& packets, xiiUInt64 frame)
+xiiResult xiiRenderWorldModule::UpdateGpuInstances(const xiiExtractedRenderData& packets, xiiUInt64 frame, xiiStringBuilder* out_error)
 {
-  return UpdateGpuInstances(packets.GetAllRenderData(), frame);
+  return UpdateGpuInstances(packets.GetAllRenderData(), frame, out_error);
 }
 
 xiiRayTracingResources::BuildHandles xiiRenderWorldModule::AddRayTracingBuildPass(xiiRenderGraph& graph, xiiUInt64 frame, xiiRayTracingFrameResources* viewResources, const xiiArrayPtr<const xiiUInt32>* selection) const
@@ -216,11 +216,11 @@ xiiRayTracingResources::BuildHandles xiiRenderWorldModule::AddRayTracingBuildPas
   return xiiRayTracingResources::AddBuildPass(graph, frame, viewResources ? *viewResources : *m_pRayTracingResources, *m_pGpuInstances, selection, m_pRayTracingResources.Borrow());
 }
 
-xiiResult xiiRenderWorldModule::UpdateGpuInstances(xiiArrayPtr<xiiRenderData* const> packets, xiiUInt64 frame)
+xiiResult xiiRenderWorldModule::UpdateGpuInstances(xiiArrayPtr<xiiRenderData* const> packets, xiiUInt64 frame, xiiStringBuilder* out_error)
 {
   if (!m_pGpuInstances)
     m_pGpuInstances = XII_DEFAULT_NEW(xiiGpuInstanceData, *GetWorld());
-  return m_pGpuInstances->UpdateFromExtraction(packets, frame);
+  return m_pGpuInstances->UpdateFromExtraction(packets, frame, out_error);
 }
 
 xiiViewHandle xiiRenderWorldModule::CreateView(xiiStringView sName, xiiView*& out_pView)
@@ -633,7 +633,12 @@ void xiiRenderWorldModule::PrepareExtraction(const xiiWorldModule::UpdateContext
     it.Value().m_pExtractedData->Clear();
   m_SharedFramePackets.Clear();
   if (m_bGeometryCacheDirty.Set(false))
+  {
     DeleteAllCachedRenderData();
+    // Bounds and static packets must both recover when asynchronously loaded geometry arrives.
+    for (auto object = GetWorld()->GetObjects(); object.IsValid(); ++object)
+      object->UpdateLocalBounds();
+  }
   m_RetiredPackets.Clear();
   m_ExtractionRequirements = {};
   m_RuntimeFeatures        = {};
@@ -860,11 +865,15 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
     for (auto it = m_ViewIdTable.GetIterator(); it.IsValid(); ++it)
       if (it.Value().m_bPrepared && it.Value().m_pView->IsRenderEnabled())
         packets.PushBackRange(it.Value().m_pExtractedData->GetAllRenderData());
-    if (UpdateGpuInstances(packets, uiFrameIndex).Failed())
+    xiiStringBuilder error;
+    if (UpdateGpuInstances(packets, uiFrameIndex, &error).Failed())
     {
-      xiiLog::Error("Failed to extract world GPU instances.");
+      if (m_sLastGpuExtractionError != error)
+        xiiLog::Error("GPU instance extraction failed: {}", error);
+      m_sLastGpuExtractionError = error;
       return;
     }
+    m_sLastGpuExtractionError.Clear();
     for (auto it = m_ViewIdTable.GetIterator(); it.IsValid(); ++it)
       m_pGpuInstances->SelectInstances(it.Value().m_pExtractedData->GetAllRenderData(), it.Value().m_pView->m_GpuInstanceSelection);
   }

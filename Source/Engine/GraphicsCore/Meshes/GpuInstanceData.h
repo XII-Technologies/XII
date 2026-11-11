@@ -4,6 +4,7 @@
 #include <GraphicsCore/GraphicsCoreDLL.h>
 
 #include <Foundation/Containers/DynamicArray.h>
+#include <Foundation/Strings/StringBuilder.h>
 #include <Foundation/Types/UniquePtr.h>
 #include <GraphicsCore/Declarations.h>
 #include <GraphicsCore/Material/MaterialTypes.h>
@@ -35,8 +36,8 @@ public:
   explicit xiiGpuInstanceData(const xiiWorld& world);
   ~xiiGpuInstanceData();
 
-  xiiResult                                    UpdateFromExtraction(xiiArrayPtr<xiiRenderData* const> packets, xiiUInt64 frame);
-  xiiResult                                    UpdateFromExtraction(const xiiExtractedRenderData& packets, xiiUInt64 frame);
+  xiiResult                                    UpdateFromExtraction(xiiArrayPtr<xiiRenderData* const> packets, xiiUInt64 frame, xiiStringBuilder* out_error = nullptr);
+  xiiResult                                    UpdateFromExtraction(const xiiExtractedRenderData& packets, xiiUInt64 frame, xiiStringBuilder* out_error = nullptr);
   xiiArrayPtr<const xiiGpuSceneInstance>       GetInstances() const { return m_Instances; }
   xiiArrayPtr<const xiiMat4>                   GetSkinningMatrices() const { return m_SkinningMatrices; }
   xiiArrayPtr<const xiiGpuInstanceUploadRange> GetUploadRanges() const { return m_UploadRanges; }

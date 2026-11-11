@@ -171,19 +171,31 @@ xiiGpuInstanceData::~xiiGpuInstanceData()
     m_pState->Release(entry);
 }
 
-xiiResult xiiGpuInstanceData::UpdateFromExtraction(const xiiExtractedRenderData& packets, xiiUInt64 frame)
+xiiResult xiiGpuInstanceData::UpdateFromExtraction(const xiiExtractedRenderData& packets, xiiUInt64 frame, xiiStringBuilder* out_error)
 {
-  return UpdateFromExtraction(packets.GetAllRenderData(), frame);
+  return UpdateFromExtraction(packets.GetAllRenderData(), frame, out_error);
 }
 
-xiiResult xiiGpuInstanceData::UpdateFromExtraction(xiiArrayPtr<xiiRenderData* const> packets, xiiUInt64 frame)
+xiiResult xiiGpuInstanceData::UpdateFromExtraction(xiiArrayPtr<xiiRenderData* const> packets, xiiUInt64 frame, xiiStringBuilder* out_error)
 {
   XII_PROFILE_SCOPE("GPU scene synchronization");
+  if (out_error)
+    out_error->Clear();
+  const auto fail = [&](xiiStringView reason, xiiStringView resource = {}) {
+    if (out_error)
+    {
+      if (resource.IsEmpty())
+        *out_error = reason;
+      else
+        out_error->SetFormat("{} Mesh: '{}'.", reason, resource);
+    }
+    return XII_FAILURE;
+  };
 #if XII_ENABLED(XII_USE_PROFILING)
   const auto syncStart = xiiTime::Now();
 #endif
   if (xiiGpuResidencyManager::EnsureInitialized().Failed())
-    return XII_FAILURE;
+    return fail("Could not initialize GPU geometry residency.");
   auto&      state           = *m_pState;
   const auto previousVersion = state.m_Version, previousPoseVersion = state.m_PoseVersion;
   const auto previousCount = m_Instances.GetCount();
@@ -191,21 +203,23 @@ xiiResult xiiGpuInstanceData::UpdateFromExtraction(xiiArrayPtr<xiiRenderData* co
   for (const auto* data : packets)
     if (const auto* mesh = xiiDynamicCast<const xiiMeshRenderData*>(data); mesh && mesh->m_hMesh.IsValid())
     {
+      xiiResourceLock<xiiMeshResource> resource(mesh->m_hMesh, xiiResourceAcquireMode::PointerOnly);
+      if (!resource->IsReadyForRendering())
+        continue;
       if (!xiiMath::IsFinite(mesh->m_fLodBias) || (mesh->m_Flags.IsSet(xiiMeshRenderDataFlags::ForceLOD) && mesh->m_uiLODIndex >= 8) || mesh->m_RangeMode > xiiMeshRenderData::RangeMode::WholeMesh)
-        return XII_FAILURE;
+        return fail("Invalid LOD or primitive range selection. Check the mesh render data.", resource->GetResourceID());
       if (mesh->m_Flags.IsSet(xiiMeshRenderDataFlags::Instanced))
       {
         if (mesh->m_uiInstanceCount != mesh->m_InstanceTransforms.GetCount())
-          return XII_FAILURE;
+          return fail("Instance count does not match its transforms.", resource->GetResourceID());
         for (const auto& transform : mesh->m_InstanceTransforms)
           if (!transform.IsValid())
-            return XII_FAILURE;
+            return fail("Invalid instance transform.", resource->GetResourceID());
       }
-      xiiResourceLock<xiiMeshResource> resource(mesh->m_hMesh, xiiResourceAcquireMode::PointerOnly);
-      if (resource.GetAcquireResult() == xiiResourceAcquireResult::Final)
       {
         xiiExtractedMeshSkinning skinning;
-        XII_SUCCEED_OR_RETURN(xiiPrepareExtractedMeshSkinning(*resource.GetPointer(), *mesh, skinning));
+        if (xiiPrepareExtractedMeshSkinning(*resource.GetPointer(), *mesh, skinning).Failed())
+          return fail("Invalid mesh bounds, skinning or morph data. Check the mesh and animation inputs.", resource->GetResourceID());
       }
     }
   state.m_SetupUploads.Clear();
@@ -238,7 +252,7 @@ xiiResult xiiGpuInstanceData::UpdateFromExtraction(xiiArrayPtr<xiiRenderData* co
       if (identity <= 0 || identity > xiiMath::MaxValue<xiiUInt32>())
       {
         xiiGpuResidencyManager::ReleaseMeshGeometry(geometry, frame);
-        return XII_FAILURE; // Exhaustion is fail-closed; an old GPU identity is never recycled.
+        return fail("GPU instance identities exhausted.", mesh.GetResourceID()); // An old GPU identity is never recycled.
       }
       index               = state.m_Entries.GetCount();
       auto& entry         = state.m_Entries.ExpandAndGetRef();
@@ -337,7 +351,8 @@ xiiResult xiiGpuInstanceData::UpdateFromExtraction(xiiArrayPtr<xiiRenderData* co
     if (coverageChanged)
     {
       xiiUInt32 counts[xiiGpuGeometryRecord::s_uiMaxLods] = {};
-      XII_SUCCEED_OR_RETURN(xiiGpuResidencyManager::GetPrimitiveRangeMeshletCounts(geometry, first, count, xiiMakeArrayPtr(counts), &entry.m_RootMeshlets));
+      if (xiiGpuResidencyManager::GetPrimitiveRangeMeshletCounts(geometry, first, count, xiiMakeArrayPtr(counts), &entry.m_RootMeshlets).Failed())
+        return fail("Invalid primitive range for GPU geometry. Retransform the mesh and check section ranges.", mesh.GetResourceID());
       entry.m_MaximumMeshlets = 0;
       for (xiiUInt32 lod = 0; lod < xiiGpuGeometryRecord::s_uiMaxLods; ++lod)
         if (key.m_Lod == xiiInvalidIndex || key.m_Lod == lod)
@@ -360,12 +375,13 @@ xiiResult xiiGpuInstanceData::UpdateFromExtraction(xiiArrayPtr<xiiRenderData* co
     if (packet->m_RangeMode == xiiMeshRenderData::RangeMode::WholeMesh)
       key.m_Section = xiiInvalidIndex;
     xiiResourceLock<xiiMeshResource> mesh(packet->m_hMesh, xiiResourceAcquireMode::PointerOnly);
-    if (mesh.GetAcquireResult() != xiiResourceAcquireResult::Final)
+    if (!mesh->IsReadyForRendering())
       continue;
     xiiExtractedMeshSkinning skinning;
-    XII_SUCCEED_OR_RETURN(xiiPrepareExtractedMeshSkinning(*mesh.GetPointer(), *packet, skinning));
+    if (xiiPrepareExtractedMeshSkinning(*mesh.GetPointer(), *packet, skinning).Failed())
+      return fail("Invalid mesh bounds, skinning or morph data. Check the mesh and animation inputs.", mesh->GetResourceID());
     xiiResourceLock<xiiMeshBufferResource> sourceBuffer(mesh->GetMeshBuffer(), xiiResourceAcquireMode::PointerOnly);
-    if (sourceBuffer.GetAcquireResult() != xiiResourceAcquireResult::Final)
+    if (sourceBuffer->GetLoadingState() != xiiResourceState::Loaded)
       continue;
     const auto bufferRevision = sourceBuffer->GetCurrentResourceChangeCounter();
     const bool bHierarchy     = sourceBuffer->HasGeometryPages();

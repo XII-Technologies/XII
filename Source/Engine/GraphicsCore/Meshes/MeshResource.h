@@ -262,6 +262,9 @@ public:
   /// Returns a handle to the mesh buffer resource associated with this mesh, used to access the vertex/index/meshlet data for rendering.
   const xiiMeshBufferResourceHandle& GetMeshBuffer() const;
 
+  /// Returns whether this mesh and its buffer are loaded. Does not block or substitute fallback resources.
+  bool IsReadyForRendering() const;
+
   /// Returns a reference to the material resource handle for the material slot at the given index, used to access the material for rendering.
   ///
   /// \param uiMaterialIndex Index of the material slot to retrieve, must be less than the number of material slots in this mesh.
