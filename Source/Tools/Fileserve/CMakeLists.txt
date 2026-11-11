@@ -4,7 +4,7 @@ xii_cmake_init()
 
 xii_requires_qt()
 
-xii_requires_desktop()
+xii_requires(XII_CMAKE_PLATFORM_WINDOWS_DESKTOP)
 
 xii_requires(XII_3RDPARTY_ENET_SUPPORT)
 
@@ -21,12 +21,10 @@ target_link_libraries(${PROJECT_NAME}
   PUBLIC
   Foundation
   FileservePlugin
+
+  PRIVATE
+  EditorPluginFileserve
+  GraphicsFoundation
 )
 
 xii_link_target_qt(TARGET ${PROJECT_NAME} COMPONENTS Core Gui Widgets Network)
-
-target_link_libraries(${PROJECT_NAME}
-  PRIVATE
-  EditorPluginFileserve
-  GraphicsCore
-)
