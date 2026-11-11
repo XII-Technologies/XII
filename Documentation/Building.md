@@ -131,21 +131,20 @@ evidence that every optional device feature executed.
 python3 Utilities/CI/check_repository.py
 yamllint .github
 actionlint
-python3 Utilities/CI/check_changed_source.py --base <full-base-commit-sha> --formatter <clang-format-21-executable>
+python3 Utilities/CI/format_changed_source.py --base <full-base-commit-sha> --formatter clang-format-22
 ```
 
-Use the formatter in the pinned PrecompiledTools submodule: Linux
-`clang-format/clang-format_linux_21.0.0`, Windows
-`clang-format/clang-format_21.0.0.exe`. The check uses the existing
-`Utilities/ClangFormatDiff.py` and root style on changed lines only. Apply a suggested
-patch with `git apply Workspace/Quality/clang-format.patch`, then rebuild.
+Run the source formatter from a clean checkout of the contribution branch.
+It repairs copyright notices in changed C/C++ and CMake files, then runs
+ClangFormat 22 on changed C/C++ lines using the repository style. It leaves the
+fixes in the worktree and writes `Workspace/Quality/source-style.patch` when
+there are changes. Download the `source-style-patch-*` artifact from Build and
+Test to apply the same fixes to a local PR head with `git apply source-style.patch`.
 Actionlint 1.7.12 is checksum verified in CI. YAML lint uses `.yamllint.yml`.
 
 MSVC `/analyze` is available through `XII_ENABLE_COMPILER_STATIC_ANALYSIS=ON` and
-runs in extended validation. `Utilities/RunClangTidy.ps1` remains available for
-specialist local use with its custom naming check, dependency analyzer, and compile
-database; it is not a reliable stock-LLVM hosted gate. CodeQL covers first-party C++
-and workflow source without requiring the full editor build.
+runs in extended validation. CodeQL covers first-party C++ and workflow source
+without requiring the full editor build.
 
 ## Troubleshooting
 

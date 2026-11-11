@@ -96,7 +96,6 @@
   - changed-files:
       - any-glob-to-any-file:
           - "Source/BuildSystem/**"
-          - "Source/BuildTools/**"
           - "Utilities/CI/**"
           - "**/CMakeLists.txt"
           - "**/init.cmake"
@@ -125,7 +124,6 @@
   - changed-files:
       - any-glob-to-any-file:
           - "Source/Tools/**"
-          - "Source/BuildTools/**"
           - "Utilities/**"
           - "Data/Tools/**"
 

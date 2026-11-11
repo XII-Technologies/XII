@@ -14,7 +14,101 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  source-style:
+    name: Prepare changed sources
+    runs-on: ubuntu-26.04
+    timeout-minutes: 15
+    outputs:
+      patch: ${{ steps.upload.outputs.artifact-id }}
+      head-changed: ${{ steps.format.outputs.head-changed }}
+      merge-changed: ${{ steps.format.outputs.merge-changed }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: github.event_name == 'pull_request'
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Repair copyright and format changed lines
+        id: format
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          patch_dir="$RUNNER_TEMP/source-style"
+          git worktree add --detach "$RUNNER_TEMP/pr-head" "$HEAD_SHA"
+          (
+            cd "$RUNNER_TEMP/pr-head"
+            python3 "$GITHUB_WORKSPACE/Utilities/CI/format_changed_source.py" --base "$BASE_SHA" --formatter clang-format-22 \
+              --patch "$patch_dir/source-style.patch"
+          )
+          if [[ -f "$patch_dir/source-style.patch" ]]; then
+            echo "head-changed=true" >> "$GITHUB_OUTPUT"
+          fi
+          # Format the actual integration tree, where the base may have edited
+          # lines adjacent to the PR changes.
+          python3 Utilities/CI/format_changed_source.py --base "$BASE_SHA" --formatter clang-format-22 \
+            --patch "$patch_dir/merge-style.patch"
+          if [[ -f "$patch_dir/merge-style.patch" ]]; then
+            echo "merge-changed=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Preserve source fixes
+        if: github.event_name == 'pull_request'
+        id: upload
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: source-style-patch-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/source-style/*.patch
+          if-no-files-found: ignore
+          retention-days: 7
+
+  publish-source-style:
+    name: Publish source fixes
+    needs: source-style
+    if: >-
+      needs.source-style.outputs.head-changed == 'true' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref != github.event.repository.default_branch
+    runs-on: ubuntu-26.04
+    timeout-minutes: 10
+    steps:
+      - id: credentials
+        name: Check whether branch publishing is configured
+        env:
+          API_TOKEN_GITHUB: ${{ secrets.API_TOKEN_GITHUB }}
+        run: |
+          if [[ -n "$API_TOKEN_GITHUB" ]]; then
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          else
+            echo '::notice::API_TOKEN_GITHUB is unset. Source fixes will be applied to the build checkout and are available as a patch.'
+          fi
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.credentials.outputs.configured == 'true'
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          token: ${{ secrets.API_TOKEN_GITHUB }}
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        if: steps.credentials.outputs.configured == 'true'
+        with:
+          artifact-ids: ${{ needs.source-style.outputs.patch }}
+          path: ${{ runner.temp }}/source-style
+          merge-multiple: true
+      - name: Commit and push to the original PR branch
+        if: steps.credentials.outputs.configured == 'true'
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        run: |
+          git apply --index "$RUNNER_TEMP/source-style/source-style.patch"
+          git -c core.hooksPath=/dev/null -c user.name="XII Automation" \
+            -c user.email=automation@xiitechnologies.com commit -m "Source: Apply copyright and formatting fixes."
+          git push --force-with-lease="refs/heads/$HEAD_REF:$HEAD_SHA" origin "HEAD:refs/heads/$HEAD_REF"
+
   build:
+    needs: [source-style, publish-source-style]
+    if: >-
+      !cancelled() && needs.source-style.result == 'success' &&
+      (needs.publish-source-style.result == 'success' || needs.publish-source-style.result == 'skipped')
     name: ${{ matrix.toolchain.name }} / ${{ matrix.configuration }}
     strategy:
       fail-fast: false
@@ -39,6 +133,7 @@ jobs:
       os: ${{ matrix.toolchain.os }}
       preset: ${{ matrix.toolchain.preset }}
       configuration: ${{ matrix.configuration }}
+      source-style-artifact: ${{ needs.source-style.outputs.merge-changed == 'true' && needs.source-style.outputs.patch || '' }}
 
   required:
     name: Build and Test required

@@ -91,9 +91,24 @@ path labels as files change, preserving unrelated labels. Catalog/workflow chang
 take effect for PR automation once merged into the base branch. No PR code is
 checked out or executed by this privileged workflow.
 
+## Pull request source formatting
+
+Build and Test repairs copyright notices and formats changed C/C++ lines on the
+event's PR head and merge snapshot before starting the native matrix. The workflow
+uploads `source-style.patch` for the PR branch and `merge-style.patch` for the
+integration tree when either needs fixes. Each matrix job applies the integration
+patch to the same merge snapshot before CMake configuration.
+
+Configure `API_TOKEN_GITHUB` with repository Contents write access for the
+automation identity to commit fixes to same-repository PR branches. Use a token
+that triggers normal pull request workflows on push so checks run against the
+updated PR. The publisher uses `automation@xiitechnologies.com` and requires the
+branch tip to match the original PR head. Fork PRs and repositories without the
+token receive the patch and build with the fixes in CI.
+
 ## API documentation publication
 
-Only `update-api-docs.yml` pushes Git commits, to the existing APIDocumentation
+`update-api-docs.yml` pushes generated documentation to the existing APIDocumentation
 repository. Publication remains opt-in from `Development` behind the documentation
 environment. The publisher checks out the trusted source revision separately
 from the disposable destination checkout and downloads only this run's HTML.
