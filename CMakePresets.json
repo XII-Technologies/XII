@@ -40,7 +40,6 @@
         "generator": "Ninja",
         "binaryDir": "${sourceDir}/Workspace/${presetName}",
         "cacheVariables": {
-          "XII_EXPERIMENTAL_EDITOR_ON_LINUX": "ON",
           "XII_BUILD_VULKAN": "ON",
           "XII_BUILD_D3D12": "OFF",
           "XII_ENABLE_FOLDER_UNITY_FILES" : "ON",

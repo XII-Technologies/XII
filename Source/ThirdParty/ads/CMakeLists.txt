@@ -46,3 +46,7 @@ xii_qt_wrap_target_moc_files(${PROJECT_NAME} "${MOC_FILES}")
 if(XII_CMAKE_COMPILER_MSVC)
   target_compile_options(${PROJECT_NAME} PRIVATE /wd4458 /wd4456 /wd4702)
 endif()
+
+if(XII_CMAKE_PLATFORM_LINUX)
+  target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::GuiPrivate)
+endif()
