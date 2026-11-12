@@ -12,6 +12,6 @@ if (XII_COMPILE_ENGINE_AS_DLL)
   target_compile_definitions(${PROJECT_NAME} PRIVATE JPH_BUILD_SHARED_LIBRARY)
 endif()
 
-target_compile_definitions(${PROJECT_NAME} PUBLIC BUILDSYSTEM_ENABLE_JOLT_SUPPORT JPH_DEBUG_RENDERER)
+target_compile_definitions(${PROJECT_NAME} PUBLIC JPH_DEBUG_RENDERER)
 
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_LIST_DIR})
