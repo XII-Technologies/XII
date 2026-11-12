@@ -9,6 +9,6 @@ PluginInfo
   string %RuntimePlugins{"xiiMujocoPlugin"}
   string %PackageDependencies{"Mujoco.dll"}
   string %RequiredPlugins{}
-  string %ExclusiveFeatures{"physics"}
+  string %ExclusiveFeatures{}
   string %EnabledInTemplates{"General3D"}
 }

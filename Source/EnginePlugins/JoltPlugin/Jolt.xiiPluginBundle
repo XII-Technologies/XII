@@ -9,6 +9,6 @@ PluginInfo
   string %RuntimePlugins{"xiiJoltPlugin"}
   string %PackageDependencies{"Jolt.dll"}
   string %RequiredPlugins{}
-  string %ExclusiveFeatures{"physics"}
+  string %ExclusiveFeatures{}
   string %EnabledInTemplates{"General3D"}
 }
