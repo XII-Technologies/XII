@@ -681,6 +681,20 @@ void xiiGALCommandListVulkan::BeginPlatform()
 
   VK_ASSERT_DEV(m_vkCommandBuffer.begin(&vkCommandBufferBeginInfo, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 
+  if (m_pRenderPass != nullptr)
+  {
+    m_CommandListState.m_vkRenderPass  = vkCommandBufferInheritanceInfo.renderPass;
+    m_CommandListState.m_vkFramebuffer = vkCommandBufferInheritanceInfo.framebuffer;
+    m_CommandListData.m_uiSubpassIndex = m_Description.m_uiSubPassIndex;
+    if (m_pFramebuffer != nullptr)
+    {
+      const auto& framebuffer                       = m_pFramebuffer->GetDescription();
+      m_CommandListState.m_uiFramebufferWidth       = framebuffer.m_FramebufferSize.width;
+      m_CommandListState.m_uiFramebufferHeight      = framebuffer.m_FramebufferSize.height;
+      m_CommandListState.m_uiFramebufferArraySlices = framebuffer.m_uiArraySliceCount;
+      UpdateAttachmentBindings();
+    }
+  }
 
   m_RecordingState = RecordingState::Recording;
 }
@@ -733,6 +747,8 @@ void xiiGALCommandListVulkan::EndPlatform()
 
   VK_ASSERT_DEV(m_vkCommandBuffer.end(pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 
+  m_CommandListState.m_vkRenderPass  = VK_NULL_HANDLE;
+  m_CommandListState.m_vkFramebuffer = VK_NULL_HANDLE;
   m_RecordingState = RecordingState::Ended;
 }
 
@@ -769,6 +785,17 @@ void xiiGALCommandListVulkan::SubmitPlatform(xiiGALCommandList* pSecondaryComman
   vk::CommandBuffer vkCommandBuffer = pCommandListVulkan->GetVulkanCommandBuffer();
 
   m_vkCommandBuffer.executeCommands(1U, &vkCommandBuffer, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+
+  // Vulkan invalidates the primary's bound state, but its render pass and queued work remain active.
+  InvalidateBindings();
+  m_CommandListState.m_vkGraphicsPipeline    = VK_NULL_HANDLE;
+  m_CommandListState.m_vkComputePipeline     = VK_NULL_HANDLE;
+  m_CommandListState.m_vkRayTracingPipeline  = VK_NULL_HANDLE;
+  m_CommandListState.m_vkIndexBuffer         = VK_NULL_HANDLE;
+  m_CommandListState.m_bIsShadingRateSet     = false;
+  m_CommandListFlags                         = {};
+  m_CommandListData.m_bPipelineStateModified = true;
+  m_CommandListData.m_bDescriptorsModified   = true;
 }
 
 void xiiGALCommandListVulkan::SetPipelineStatePlatform(xiiGALPipelineState* pPipelineState)
@@ -1843,8 +1870,8 @@ void xiiGALCommandListVulkan::BeginRenderPassPlatform(xiiGALRenderPass* pRenderP
                                                                                 // or if the attachment has a depth/stencil format and uses a stencilLoadOp value of VK_ATTACHMENT_LOAD_OP_CLEAR. The array is indexed by attachment number. Only elements
                                                                                 // corresponding to cleared attachments are used. Other elements of pClearValues are  ignored (7.4)
 
-    // The contents of the subpass will be recorded inline in the primary command buffer, and secondary command buffers must not be executed within the subpass.
-    m_vkCommandBuffer.beginRenderPass(&vkRenderPassBeginInfo, vk::SubpassContents::eInline, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+    const auto contents = m_bSecondaryRenderPass ? vk::SubpassContents::eSecondaryCommandBuffers : vk::SubpassContents::eInline;
+    m_vkCommandBuffer.beginRenderPass(&vkRenderPassBeginInfo, contents, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
 
     m_CommandListState.m_vkRenderPass             = pRenderPassVulkan->GetVulkanRenderPass();
     m_CommandListState.m_vkFramebuffer            = pFramebufferVulkan->GetVulkanFramebuffer();

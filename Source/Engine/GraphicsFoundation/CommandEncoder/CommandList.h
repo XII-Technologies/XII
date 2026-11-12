@@ -1224,6 +1224,9 @@ public:
   /// \param beginRenderPass - The description of the render pass. See xiiGALBeginRenderPassDescription for more information.
   void BeginRenderPass(const xiiGALBeginRenderPassDescription& beginRenderPass);
 
+  /// Begins a single Vulkan subpass whose commands are recorded in inherited secondary lists.
+  void BeginRenderPassWithSecondaryCommands(const xiiGALBeginRenderPassDescription& beginRenderPass);
+
   /// This transitions to the next subpass of the begun render pass.
   void NextSubpass();
 
@@ -1693,11 +1696,14 @@ protected:
   /// \endcond
 
 protected:
+  void InvalidateBindings();
+
   static constexpr xiiUInt32 s_uiDrawMeshIndirectCommandStride = sizeof(xiiUInt32) * 3; // Vulkan: 8 bytes (task count, first task), D3D12: 12 bytes (x, y, z dimension).
 
   xiiGALCommandListCreationDescription m_Description;
 
   RecordingState m_RecordingState = RecordingState::Reset;
+  bool           m_bSecondaryRenderPass = false;
   const bool     m_bNativeMultiDrawSupported;
 
   xiiGALPipelineState*             m_pPipelineState             = nullptr;
@@ -1719,6 +1725,8 @@ protected:
   xiiHybridArray<xiiRectU32, 2U>     m_ScissorRects;
 
 private:
+  void BeginRenderPassInternal(const xiiGALBeginRenderPassDescription& beginRenderPass, bool bSecondaryCommands);
+
   xiiGALCommandListStatistics m_CommandListStatistics;
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
