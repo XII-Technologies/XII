@@ -363,10 +363,15 @@ endfunction()
 # ## xii_set_clib_build_flags(<target>)
 # #####################################
 function(xii_set_clib_build_flags TARGET_NAME)
-  # Since Clang does not support the C++23 flag on C libraries, ensure to remove the flag (compilation will fail otherwise).
+  set_target_properties(${TARGET_NAME} PROPERTIES C_STANDARD 11 C_STANDARD_REQUIRED ON C_EXTENSIONS OFF)
+
   if(XII_CMAKE_COMPILER_CLANG)
-    get_target_property(TARGET_COMPILE_OPTS ${PROJECT_NAME} COMPILE_OPTIONS)
-    list(REMOVE_ITEM TARGET_COMPILE_OPTS -std=c++23)
-    set_target_properties(${TARGET_NAME} PROPERTIES COMPILE_OPTIONS "${TARGET_COMPILE_OPTS}")
+    get_target_property(TARGET_COMPILE_OPTS ${TARGET_NAME} COMPILE_OPTIONS)
+
+    if(TARGET_COMPILE_OPTS)
+      list(REMOVE_ITEM TARGET_COMPILE_OPTS -std=c++23)
+
+      set_target_properties(${TARGET_NAME} PROPERTIES COMPILE_OPTIONS "${TARGET_COMPILE_OPTS}")
+    endif()
   endif()
 endfunction()
