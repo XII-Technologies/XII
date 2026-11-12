@@ -12,7 +12,9 @@ ALL
 
 #include <Shaders/Common/Common.h>
 #include <Shaders/Pipeline/Passes/Output/AgXToneMapping.h>
+#include <Shaders/Pipeline/Passes/Output/KhronosToneMapping.h>
 #include <Shaders/Pipeline/Passes/Output/ToneMappingConstants.h>
+#include <Shaders/Pipeline/Passes/Output/ToneMappingOperators.h>
 
 Texture2D<float4>          g_HDRInput;
 Texture2D<float4>          g_BloomTex;
@@ -52,6 +54,9 @@ float3 ToneMapSDR(float3 color)
     if (op == 3u) return AgX(color);
     if (op == 4u) return AgXPunchy(color);
     if (op == 5u) return AgXGolden(color);
+    if (op == 6u) return KhronosPBRNeutral(color);
+    if (op == 7u) return ACESFitted(color);
+    if (op == 8u) return Filmic(color);
     return ACES_Narkowicz(color);
 }
 

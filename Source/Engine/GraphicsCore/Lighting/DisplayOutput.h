@@ -39,6 +39,9 @@ struct XII_GRAPHICSCORE_DLL xiiToneMappingOperator
     AgX,
     AgXPunchy,
     AgXGolden,
+    KhronosPBRNeutral,
+    ACESFitted,
+    Filmic,
 
     ENUM_COUNT,
 
