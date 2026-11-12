@@ -202,9 +202,10 @@ xiiResult xiiDepthRasterPass::Build(xiiRenderPipelinePassContext& context)
       data.m_Pipeline.m_GraphicsPipeline.m_pRasterizerState = shader->GetRasterizerState();
       data.m_Pipeline.m_GraphicsPipeline.m_pDepthStencilState = shader->GetDepthStencilState();
       data.m_Pipeline.m_GraphicsPipeline.m_PrimitiveTopology = xiiGALPrimitiveTopology::TriangleList;
-      builder.SetPassRenderPassManaged(); }, [](const Data& data, xiiRenderGraphPassContext& execute) {
+      builder.SetPassRenderPassManaged();
+      builder.SetPassRecordingItemCount(xiiMath::Max(1U, data.m_Batches.GetCount())); }, [](const Data& data, xiiRenderGraphPassContext& execute) {
       auto& commands = execute.GetCommandList();
-      for (xiiUInt32 bin = 0; bin < xiiMath::Max(1u, data.m_Batches.GetCount()); ++bin)
+      for (xiiUInt32 bin = execute.GetRecordingStart(); bin < execute.GetRecordingEnd(); ++bin)
       {
       auto pipeline = data.m_Pipeline;
       pipeline.m_GraphicsPipeline.m_pRenderPass = execute.GetRenderPass();

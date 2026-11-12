@@ -7,6 +7,7 @@
 #include <Foundation/Algorithm/HashingUtils.h>
 #include <Foundation/Containers/Deque.h>
 #include <Foundation/Profiling/Profiling.h>
+#include <Foundation/Threading/TaskSystem.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
 #include <GraphicsCore/Pipeline/RenderGraphDebug.h>
@@ -509,6 +510,12 @@ void xiiRenderGraphBuilder::SetPassAllowMerge(bool bAllowMerge)
 void xiiRenderGraphBuilder::SetPassRenderPassManaged(bool bManaged)
 {
   m_Graph.m_Passes[m_uiPassIndex].m_bManagedRenderPass = bManaged;
+}
+
+void xiiRenderGraphBuilder::SetPassRecordingItemCount(xiiUInt32 uiCount)
+{
+  XII_ASSERT_DEV(uiCount > 0U && m_Graph.m_Passes[m_uiPassIndex].m_bManagedRenderPass, "Recording ranges require a managed render pass and at least one work item.");
+  m_Graph.m_Passes[m_uiPassIndex].m_uiRecordingItemCount = uiCount;
 }
 
 void xiiRenderGraphBuilder::SetPassPreparation(xiiDelegate<void(xiiRenderGraphPassContext&)> preparation)
@@ -1753,6 +1760,7 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
   }
 
   const bool bEnableGpuProfiling = (pProfiler != nullptr) && m_LastCompileSettings.m_bEnableGPUProfiling;
+  const bool bSupportsParallelRecording = pDevice->GetGraphicsDeviceType() == xiiGALGraphicsDeviceType::Vulkan && pDevice->GetFeatures().m_MultithreadedResourceCreation == xiiGALDeviceFeatureState::Enabled;
   if (bEnableGpuProfiling)
   {
     XII_PROFILE_SCOPE("Render Graph: Begin GPU Profiling");
@@ -1959,13 +1967,16 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
       }
 
       xiiStringBuilder executionError;
+      const PassEntry& passEntry            = m_Passes[compiledPass.m_uiPassIndex];
+      const xiiUInt32  uiRecordingItemCount = passEntry.m_uiRecordingItemCount;
+      const bool       bParallelRecording   = bSupportsParallelRecording && uiRecordingItemCount >= 16U && compiledPass.m_uiMergeGroupIndex != xiiInvalidIndex;
       // Preparation is deliberately outside the native render-pass scope: Vulkan buffer
       // uploads and their transfer barriers cannot be recorded inside a render pass.
       if (compiledPass.m_PrepareDelegate.IsValid())
       {
         xiiRenderGraphPassContext preparationContext;
         preparationContext.m_pCommandList     = pCommandList.Borrow();
-        preparationContext.m_pBlackboard      = m_Passes[compiledPass.m_uiPassIndex].m_pBlackboard ? m_Passes[compiledPass.m_uiPassIndex].m_pBlackboard : pBlackboard;
+        preparationContext.m_pBlackboard      = passEntry.m_pBlackboard ? passEntry.m_pBlackboard : pBlackboard;
         preparationContext.m_pResourceCache   = pResourceCache;
         preparationContext.m_pView            = pView;
         preparationContext.m_uiFrameIndex     = m_uiFrameIndex;
@@ -2001,8 +2012,12 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
           xiiGALBeginRenderPassDescription renderPassDescription;
           renderPassDescription.m_pRenderPass  = mergeGroup.m_pNativeRenderPass;
           renderPassDescription.m_pFramebuffer = mergeGroup.m_pFramebuffer;
-
-          pCommandList->BeginRenderPass(renderPassDescription);
+          if (bParallelRecording && bEnableGpuProfiling)
+            pProfiler->OnPassBegin(*pCommandList, compiledPass.m_sName, compiledPass.m_uiPassIndex);
+          if (bParallelRecording)
+            pCommandList->BeginRenderPassWithSecondaryCommands(renderPassDescription);
+          else
+            pCommandList->BeginRenderPass(renderPassDescription);
 
           bInsideRenderPass = true;
         }
@@ -2018,32 +2033,92 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
       }
 
       // Profiler begin.
-      if (bEnableGpuProfiling)
+      if (bEnableGpuProfiling && !bParallelRecording)
       {
         pProfiler->OnPassBegin(*pCommandList, compiledPass.m_sName, compiledPass.m_uiPassIndex);
       }
 
-      // Execute pass.
-      xiiRenderGraphPassContext context;
-      context.m_pCommandList = pCommandList.Borrow();
-      if (compiledPass.m_uiMergeGroupIndex != xiiInvalidIndex)
-      {
-        context.m_pRenderPass    = m_MergeGroups[compiledPass.m_uiMergeGroupIndex].m_pNativeRenderPass;
-        context.m_uiSubpassIndex = 0U;
-      }
-      context.m_pBlackboard      = m_Passes[compiledPass.m_uiPassIndex].m_pBlackboard ? m_Passes[compiledPass.m_uiPassIndex].m_pBlackboard : pBlackboard;
-      context.m_pResourceCache   = pResourceCache;
-      context.m_pView            = pView;
-      context.m_uiFrameIndex     = m_uiFrameIndex;
-      context.m_sPassName        = compiledPass.m_sName;
-      context.m_pGraph           = this;
-      context.m_ResolvedTextures = resolvedTextures;
-      context.m_ResolvedBuffers  = resolvedBuffers;
-      context.m_pExecutionError  = &executionError;
+      auto recordRange = [&](xiiGALCommandList* pList, xiiUInt32 uiStart, xiiUInt32 uiEnd, xiiStringBuilder& ref_error) {
+        xiiRenderGraphPassContext context;
+        context.m_pCommandList = pList;
+        if (compiledPass.m_uiMergeGroupIndex != xiiInvalidIndex)
+          context.m_pRenderPass = m_MergeGroups[compiledPass.m_uiMergeGroupIndex].m_pNativeRenderPass;
+        context.m_pBlackboard      = passEntry.m_pBlackboard ? passEntry.m_pBlackboard : pBlackboard;
+        context.m_pResourceCache   = pResourceCache;
+        context.m_pView            = pView;
+        context.m_uiFrameIndex     = m_uiFrameIndex;
+        context.m_uiRecordingStart = uiStart;
+        context.m_uiRecordingEnd   = uiEnd;
+        context.m_sPassName        = compiledPass.m_sName;
+        context.m_pGraph           = this;
+        context.m_ResolvedTextures = resolvedTextures;
+        context.m_ResolvedBuffers  = resolvedBuffers;
+        context.m_pExecutionError  = &ref_error;
+        compiledPass.m_ExecuteDelegate(context);
+      };
 
       {
         XII_PROFILE_SCOPE("Render Graph: Record Pass Commands");
-        compiledPass.m_ExecuteDelegate(context);
+        if (bParallelRecording)
+        {
+          const auto&                          group = m_MergeGroups[compiledPass.m_uiMergeGroupIndex];
+          xiiGALCommandListCreationDescription description;
+          description.m_QueueFlags   = actualQueueFlags;
+          description.m_Flags        = xiiGALCommandListFlags::Secondary;
+          description.m_pRenderPass  = group.m_pNativeRenderPass.Borrow();
+          description.m_pFramebuffer = group.m_pFramebuffer.Borrow();
+
+          struct RecordingRange
+          {
+            xiiSharedPtr<xiiGALCommandList> m_pList;
+            xiiStringBuilder                m_Error;
+          };
+
+          // Bound the number of Vulkan command buffers while leaving enough work per range
+          // to amortize command buffer setup and descriptor pool allocations.
+          xiiHybridArray<RecordingRange, 4U> ranges;
+          ranges.SetCount(xiiMath::Min(4U, uiRecordingItemCount / 8U));
+          const xiiUInt32      uiRangeCount    = ranges.GetCount();
+          const xiiUInt32      uiItemsPerRange = uiRecordingItemCount / uiRangeCount;
+          const xiiUInt32      uiExtraItems    = uiRecordingItemCount % uiRangeCount;
+          xiiParallelForParams params;
+          params.m_NestingMode = xiiTaskNesting::Maybe;
+          xiiTaskSystem::ParallelForSingleIndex(ranges.GetArrayPtr(), [&](xiiUInt32 uiRange, RecordingRange& ref_range) {
+            ref_range.m_pList = pDevice->CreateCommandList(description);
+            if (!ref_range.m_pList)
+            {
+              ref_range.m_Error = "Failed to allocate a secondary render graph command list.";
+              return;
+            }
+
+            const xiiUInt32 uiStart = uiRange * uiItemsPerRange + xiiMath::Min(uiRange, uiExtraItems);
+            const xiiUInt32 uiEnd = uiStart + uiItemsPerRange + (uiRange < uiExtraItems ? 1U : 0U);
+            ref_range.m_pList->Begin();
+            recordRange(ref_range.m_pList.Borrow(), uiStart, uiEnd, ref_range.m_Error);
+            ref_range.m_pList->End(); }, "Render Graph: Record Raster Range", params);
+
+          for (const auto& range : ranges)
+          {
+            if (!range.m_Error.IsEmpty())
+            {
+              executionError = range.m_Error;
+              break;
+            }
+          }
+          if (executionError.IsEmpty())
+          {
+            for (const auto& range : ranges)
+              pCommandList->Submit(range.m_pList.Borrow());
+          }
+
+          pCommandList->EndRenderPass();
+          bInsideRenderPass   = false;
+          uiCurrentMergeGroup = xiiInvalidIndex;
+        }
+        else
+        {
+          recordRange(pCommandList.Borrow(), 0U, uiRecordingItemCount, executionError);
+        }
       }
 
       // Profiler end.

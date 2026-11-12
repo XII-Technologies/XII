@@ -294,6 +294,10 @@ public:
   /// Returns the subpass index within GetRenderPass(). Graph-managed standalone passes use subpass zero.
   [[nodiscard]] xiiUInt32 GetSubpassIndex() const;
 
+  /// The half-open range assigned to this recording callback, in the original submission order.
+  [[nodiscard]] xiiUInt32 GetRecordingStart() const { return m_uiRecordingStart; }
+  [[nodiscard]] xiiUInt32 GetRecordingEnd() const { return m_uiRecordingEnd; }
+
   /// Resolves a virtual texture handle to its actual GPU texture for this frame.
   [[nodiscard]] xiiGALTexture* GetTexture(xiiRenderGraphTextureHandle hTexture) const;
 
@@ -338,6 +342,8 @@ private:
   // Resource resolution tables is owned by the graph, borrowed for pass duration.
   xiiArrayPtr<xiiSharedPtr<xiiGALTexture>> m_ResolvedTextures;
   xiiArrayPtr<xiiSharedPtr<xiiGALBuffer>>  m_ResolvedBuffers;
+  xiiUInt32                                m_uiRecordingStart = 0U;
+  xiiUInt32                                m_uiRecordingEnd   = 1U;
 };
 
 /// Declarative API used inside a pass's setup callback to declare resource usage.
@@ -430,6 +436,12 @@ public:
   /// RenderTarget / DepthRead / DepthWrite texture writes. The default is false so existing passes
   /// that call BeginRenderPass themselves remain source compatible.
   void SetPassRenderPassManaged(bool bManaged = true);
+
+  /// Opts a managed raster pass into range recording. The callback may run concurrently for
+  /// disjoint ranges and must bind its own state. Record only draws and attachment clears using
+  /// declared resources. Clear once in the range starting at zero. Resource transitions,
+  /// uploads, and shared CPU mutations belong in preparation.
+  void SetPassRecordingItemCount(xiiUInt32 uiCount);
 
   /// Records resource uploads before a managed native render pass begins. Uses this pass's
   /// declared resources; must restore their declared states before returning.
@@ -677,6 +689,7 @@ private:
     bool                                 m_bHasSideEffects    = false;
     bool                                 m_bAllowMerge        = true;
     bool                                 m_bManagedRenderPass = false;
+    xiiUInt32                            m_uiRecordingItemCount = 1U;
     xiiHybridArray<ResourceUsage, 8U>    m_Reads;
     xiiHybridArray<ResourceUsage, 8U>    m_Writes;
 
