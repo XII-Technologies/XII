@@ -223,21 +223,26 @@ void xiiGALCommandList::Begin()
 {
   XII_ASSERT_DEV(m_RecordingState == RecordingState::Reset, "The command list has not been reset.");
 
+  if (m_Description.m_Flags.IsSet(xiiGALCommandListFlags::Secondary))
+  {
+    m_pRenderPass  = m_Description.m_pRenderPass;
+    m_pFramebuffer = m_Description.m_pFramebuffer;
+  }
   BeginPlatform();
 }
 
 void xiiGALCommandList::End()
 {
-  XII_ASSERT_DEV(m_pRenderPass == nullptr, "The current active render pass has not been ended.");
+  XII_ASSERT_DEV(m_pRenderPass == nullptr || (m_Description.m_Flags.IsSet(xiiGALCommandListFlags::Secondary) && m_pRenderPass == m_Description.m_pRenderPass), "The current active render pass has not been ended.");
   XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "The command list has not begun.");
 
   EndPlatform();
+  m_pRenderPass  = nullptr;
+  m_pFramebuffer = nullptr;
 }
 
 void xiiGALCommandList::Reset()
 {
-  XII_ASSERT_DEV(m_pRenderPass == nullptr, "The current active render pass has not been ended.");
-
   if (m_RecordingState == RecordingState::Recording)
   {
     End();
@@ -264,12 +269,12 @@ void xiiGALCommandList::Submit(xiiGALCommandList* pSecondaryCommandList)
 
   const xiiGALCommandListCreationDescription& description  = pSecondaryCommandList->GetDescription();
   const bool                                  bIsSecondary = description.m_Flags.IsSet(xiiGALCommandListFlags::Secondary);
-  const bool                                  bIsPrimary   = m_Description.m_Flags.IsSet(xiiGALCommandListFlags::Secondary);
 
   XII_ASSERT_DEV(bIsSecondary, "Submit(): provided list must be flagged Secondary (got Flags={0}).", xiiArgEnum(description.m_Flags));
-  XII_ASSERT_DEV(!bIsPrimary, "Submit(): cannot inject a secondary into another secondary; primary required.");
+  XII_ASSERT_DEV(!m_Description.m_Flags.IsSet(xiiGALCommandListFlags::Secondary), "Submit(): cannot inject a secondary into another secondary; primary required.");
   XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "Submit(): primary command list must be Recording (current state={0}).", szRecordingEnumToString[static_cast<xiiUInt8>(m_RecordingState)]);
   XII_ASSERT_DEV(pSecondaryCommandList->GetRecordingState() == xiiGALCommandList::RecordingState::Ended, "Submit(): secondary command list must have been Ended before submission (current state={0}).", szRecordingEnumToString[static_cast<xiiUInt8>(pSecondaryCommandList->GetRecordingState())]);
+  XII_ASSERT_DEV(m_pRenderPass == nullptr ? description.m_pRenderPass == nullptr : m_bSecondaryRenderPass && description.m_pRenderPass == m_pRenderPass && description.m_pFramebuffer == m_pFramebuffer && description.m_uiSubPassIndex == 0U, "Submit(): secondary render pass inheritance must match the active primary render pass.");
 #endif
 
   ++m_CommandListStatistics.m_CommandListCounters.m_uiSubmit;
@@ -331,9 +336,10 @@ void xiiGALCommandList::SetStencilRef(xiiUInt32 uiStencilRef)
   XII_ASSERT_DEV(m_Description.m_QueueFlags.AreAllSet(xiiGALCommandQueueFlags::Graphics), "SetStencilRef arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics flag.");
   XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "SetStencilRef must be called while recording.");
 
-  if (m_uiStencilRef != uiStencilRef)
+  if (!m_bStencilRefValid || m_uiStencilRef != uiStencilRef)
   {
     m_uiStencilRef = uiStencilRef;
+    m_bStencilRefValid = true;
 
     ++m_CommandListStatistics.m_CommandListCounters.m_uiSetStencilRef;
 
@@ -346,9 +352,10 @@ void xiiGALCommandList::SetBlendFactor(const xiiColor& blendFactor)
   XII_ASSERT_DEV(m_Description.m_QueueFlags.AreAllSet(xiiGALCommandQueueFlags::Graphics), "SetBlendFactor arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics flag.");
   XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "SetBlendFactor must be called while recording.");
 
-  if (blendFactor != m_BlendFactors)
+  if (!m_bBlendFactorsValid || blendFactor != m_BlendFactors)
   {
     m_BlendFactors = blendFactor;
+    m_bBlendFactorsValid = true;
 
     ++m_CommandListStatistics.m_CommandListCounters.m_uiSetBlendFactors;
 
@@ -942,7 +949,18 @@ void xiiGALCommandList::ClearDepthStencilView(xiiGALTextureView* pDepthStencilVi
 
 void xiiGALCommandList::BeginRenderPass(const xiiGALBeginRenderPassDescription& beginRenderPass)
 {
+  BeginRenderPassInternal(beginRenderPass, false);
+}
+
+void xiiGALCommandList::BeginRenderPassWithSecondaryCommands(const xiiGALBeginRenderPassDescription& beginRenderPass)
+{
+  BeginRenderPassInternal(beginRenderPass, true);
+}
+
+void xiiGALCommandList::BeginRenderPassInternal(const xiiGALBeginRenderPassDescription& beginRenderPass, bool bSecondaryCommands)
+{
   XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "BeginRenderPass must be called while recording.");
+  XII_ASSERT_DEV(!m_Description.m_Flags.IsSet(xiiGALCommandListFlags::Secondary), "A secondary list inherits its render pass.");
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   XII_ASSERT_DEV(m_Description.m_QueueFlags.AreAllSet(xiiGALCommandQueueFlags::Graphics), "BeginRenderPass arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics flag.");
@@ -950,6 +968,7 @@ void xiiGALCommandList::BeginRenderPass(const xiiGALBeginRenderPassDescription& 
   XII_ASSERT_DEV(beginRenderPass.m_pFramebuffer != nullptr, "BeginRenderPass: Framebuffer handle is invalid.");
 
   const xiiGALRenderPassCreationDescription& renderPassDescription = beginRenderPass.m_pRenderPass->GetDescription();
+  XII_ASSERT_DEV(!bSecondaryCommands || (m_pDevice->GetGraphicsDeviceType() == xiiGALGraphicsDeviceType::Vulkan && renderPassDescription.m_SubPasses.GetCount() == 1U), "Secondary render pass contents require a single Vulkan subpass.");
 
   xiiUInt32 uiRequiredClearValueCount = 0;
   for (xiiUInt32 i = 0; i < renderPassDescription.m_Attachments.GetCount(); ++i)
@@ -976,6 +995,7 @@ void xiiGALCommandList::BeginRenderPass(const xiiGALBeginRenderPassDescription& 
 
   m_pRenderPass  = beginRenderPass.m_pRenderPass;
   m_pFramebuffer = beginRenderPass.m_pFramebuffer;
+  m_bSecondaryRenderPass = bSecondaryCommands;
 
   ++m_CommandListStatistics.m_CommandListCounters.m_uiBeginRenderPass;
 
@@ -984,6 +1004,7 @@ void xiiGALCommandList::BeginRenderPass(const xiiGALBeginRenderPassDescription& 
 
 void xiiGALCommandList::NextSubpass()
 {
+  XII_ASSERT_DEV(!m_bSecondaryRenderPass && !m_Description.m_Flags.IsSet(xiiGALCommandListFlags::Secondary), "Cannot advance a secondary command list subpass.");
   XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "NextSubpass must be called while recording.");
   XII_ASSERT_DEV(m_Description.m_QueueFlags.AreAllSet(xiiGALCommandQueueFlags::Graphics), "BeginRenderPass arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics flag.");
   XII_ASSERT_DEV(m_pRenderPass != nullptr, "NextSubpass: Render pass handle is invalid.");
@@ -996,6 +1017,7 @@ void xiiGALCommandList::NextSubpass()
 
 void xiiGALCommandList::EndRenderPass()
 {
+  XII_ASSERT_DEV(!m_Description.m_Flags.IsSet(xiiGALCommandListFlags::Secondary), "A secondary list cannot end its inherited render pass.");
   XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "EndRenderPass must be called while recording.");
   XII_ASSERT_DEV(m_Description.m_QueueFlags.AreAllSet(xiiGALCommandQueueFlags::Graphics), "BeginRenderPass arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics flag.");
   XII_ASSERT_DEV(m_pRenderPass != nullptr, "NextSubpass: Render pass handle is invalid.");
@@ -1005,6 +1027,7 @@ void xiiGALCommandList::EndRenderPass()
 
   m_pRenderPass  = nullptr;
   m_pFramebuffer = nullptr;
+  m_bSecondaryRenderPass = false;
 }
 
 void xiiGALCommandList::Draw(const xiiGALDrawDescription& description)
@@ -2448,6 +2471,17 @@ void xiiGALCommandList::InvalidateState()
 {
   XII_ASSERT_DEV(m_pRenderPass == nullptr, "Invalidating the command list is disallowed while a render pass is active. Call EndRenderPass to finish the pass.");
 
+  InvalidateBindings();
+
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  XII_ASSERT_DEV(m_MappedBuffers.IsEmpty(), "Mapped buffers have not yet been released.");
+#endif
+
+  InvalidateStatePlatform();
+}
+
+void xiiGALCommandList::InvalidateBindings()
+{
   m_pPipelineState             = nullptr;
   m_pPipelineResourceSignature = nullptr;
 
@@ -2456,20 +2490,13 @@ void xiiGALCommandList::InvalidateState()
   m_pIndexBuffer      = nullptr;
   m_uiIndexDataOffset = 0;
 
-  m_pRenderPass  = nullptr;
-  m_pFramebuffer = nullptr;
-
   m_BlendFactors = xiiColor::Black;
   m_uiStencilRef = 0;
+  m_bBlendFactorsValid = false;
+  m_bStencilRefValid   = false;
 
   m_Viewports.Clear();
   m_ScissorRects.Clear();
-
-#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-  XII_ASSERT_DEV(m_MappedBuffers.IsEmpty(), "Mapped buffers have not yet been released.");
-#endif
-
-  InvalidateStatePlatform();
 }
 
 bool xiiGALCommandList::VerifyResourceState(xiiBitflags<xiiGALResourceStateFlags> stateFlags, xiiBitflags<xiiGALCommandQueueFlags> queueFlags, const char* szParameterName) const

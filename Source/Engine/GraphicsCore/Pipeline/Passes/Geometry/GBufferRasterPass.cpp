@@ -178,22 +178,26 @@ xiiResult xiiGBufferRasterPass::Build(xiiRenderPipelinePassContext& context)
       data.m_ObjectId = builder.WriteTexture("Object Identity", target, xiiGALResourceStateFlags::RenderTarget);
       data.m_Shader = m_hShader; data.m_Sampler = m_Sampler;
       data.m_uiWidth = width; data.m_uiHeight = height; data.m_uiCapacity = static_cast<xiiUInt32>(capacity); data.m_bMesh = useMesh; data.m_Rasterizer = m_Rasterizer;
-      builder.SetPassRenderPassManaged(); }, [](const Data& data, xiiRenderGraphPassContext& execute) {
+      builder.SetPassRenderPassManaged();
+      builder.SetPassRecordingItemCount(xiiMath::Max(1U, data.m_Batches.GetCount())); }, [](const Data& data, xiiRenderGraphPassContext& execute) {
       auto& commands = execute.GetCommandList();
-      xiiRenderPassUtils::ClearRenderTargetPreservingState(commands, execute.GetTexture(data.m_Albedo)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor(0, 0, 0, 1));
-      xiiRenderPassUtils::ClearRenderTargetPreservingState(commands, execute.GetTexture(data.m_Normal)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor(0.5f, 0.5f, 0, 0));
-      xiiRenderPassUtils::ClearRenderTargetPreservingState(commands, execute.GetTexture(data.m_Material)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor(0.5f, 0, 1, 0));
-      xiiRenderPassUtils::ClearRenderTargetPreservingState(commands, execute.GetTexture(data.m_Emissive)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::MakeZero());
-      xiiRenderPassUtils::ClearRenderTargetPreservingState(commands, execute.GetTexture(data.m_NormalRoughness)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor(0.5f, 0.5f, 0.5f, 1));
-      xiiRenderPassUtils::ClearRenderTargetPreservingState(commands, execute.GetTexture(data.m_Velocity)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::MakeZero());
-      xiiRenderPassUtils::ClearRenderTargetPreservingState(commands, execute.GetTexture(data.m_ObjectId)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::MakeZero());
+      if (execute.GetRecordingStart() == 0U)
+      {
+        xiiRenderPassUtils::ClearRenderTargetPreservingState(commands, execute.GetTexture(data.m_Albedo)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor(0, 0, 0, 1));
+        xiiRenderPassUtils::ClearRenderTargetPreservingState(commands, execute.GetTexture(data.m_Normal)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor(0.5f, 0.5f, 0, 0));
+        xiiRenderPassUtils::ClearRenderTargetPreservingState(commands, execute.GetTexture(data.m_Material)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor(0.5f, 0, 1, 0));
+        xiiRenderPassUtils::ClearRenderTargetPreservingState(commands, execute.GetTexture(data.m_Emissive)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::MakeZero());
+        xiiRenderPassUtils::ClearRenderTargetPreservingState(commands, execute.GetTexture(data.m_NormalRoughness)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor(0.5f, 0.5f, 0.5f, 1));
+        xiiRenderPassUtils::ClearRenderTargetPreservingState(commands, execute.GetTexture(data.m_Velocity)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::MakeZero());
+        xiiRenderPassUtils::ClearRenderTargetPreservingState(commands, execute.GetTexture(data.m_ObjectId)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::MakeZero());
+      }
       xiiResourceLock<xiiShaderPermutationResource> shader(data.m_Shader, xiiResourceAcquireMode::BlockTillLoaded);
       if (!shader.IsValid() || !shader->IsShaderValid())
       {
         execute.ReportFailure("G-buffer raster shader became unavailable.");
         return;
       }
-      for (xiiUInt32 bin = 0; bin < xiiMath::Max(1u, data.m_Batches.GetCount()); ++bin)
+      for (xiiUInt32 bin = execute.GetRecordingStart(); bin < execute.GetRecordingEnd(); ++bin)
       {
       xiiGALGraphicsPipelineStateCreationDescription pipeline;
       pipeline.m_PipelineType = data.m_bMesh ? xiiGALPipelineType::Mesh : xiiGALPipelineType::Graphics;

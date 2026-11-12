@@ -5,6 +5,8 @@
 #include <GraphicsCore/GraphicsCoreDLL.h>
 
 #include <Foundation/Containers/DynamicArray.h>
+#include <Foundation/Containers/HashTable.h>
+#include <Foundation/Containers/HybridArray.h>
 #include <Foundation/Math/Math.h>
 #include <Foundation/Threading/Mutex.h>
 #include <GraphicsCore/Debug/DebugRendererContext.h>
@@ -118,10 +120,16 @@ public:
   XII_ALWAYS_INLINE xiiArrayPtr<xiiRenderData* const> GetAllRenderData() const { return m_SortedAllRenderData; }
 
   /// Returns extracted render data marked static during extraction, sorted by sorting key.
-  XII_ALWAYS_INLINE xiiArrayPtr<xiiRenderData* const> GetStaticRenderData() const { return m_SortedStaticRenderData; }
+  XII_ALWAYS_INLINE xiiArrayPtr<xiiRenderData* const> GetStaticRenderData() const { return {m_StaticRenderData.GetData(), m_uiPublishedStaticCount}; }
 
   /// Returns extracted render data marked dynamic during extraction, sorted by sorting key.
-  XII_ALWAYS_INLINE xiiArrayPtr<xiiRenderData* const> GetDynamicRenderData() const { return m_SortedDynamicRenderData; }
+  XII_ALWAYS_INLINE xiiArrayPtr<xiiRenderData* const> GetDynamicRenderData() const { return {m_DynamicRenderData.GetData(), m_uiPublishedDynamicCount}; }
+
+  using RenderDataRange = xiiArrayPtr<xiiRenderData* const>;
+
+  /// Returns sorted runs of packets derived from pType. The runs borrow the finalized frame's
+  /// packet order and are valid until Clear() or SortAndBatches().
+  [[nodiscard]] xiiArrayPtr<const RenderDataRange> GetRenderDataRanges(const xiiRTTI* pType) const;
 
   /// Returns a debug context that can be used for rendering debug visualization related to the world in which the data was extracted. The geometry rendered in this context is rendered in all views for that scene.
   XII_ALWAYS_INLINE const xiiDebugRendererContext& GetWorldDebugContext() const { return m_WorldDebugContext; }
@@ -159,14 +167,15 @@ private:
 
   xiiMutex m_Mutex;
 
-  // Render data submitted concurrently in the current extraction.
-  xiiDynamicArray<xiiRenderData*> m_SubmittedStaticRenderData;
-  xiiDynamicArray<xiiRenderData*> m_SubmittedDynamicRenderData;
+  // Extraction appends to these partitions. Finalization sorts them in place and publishes their prefixes.
+  xiiDynamicArray<xiiRenderData*> m_StaticRenderData;
+  xiiDynamicArray<xiiRenderData*> m_DynamicRenderData;
+  xiiUInt32                       m_uiPublishedStaticCount  = 0U;
+  xiiUInt32                       m_uiPublishedDynamicCount = 0U;
 
-  // Flattened and sorted arrays built during SortAndBatches.
-  xiiDynamicArray<xiiRenderData*> m_SortedStaticRenderData;
-  xiiDynamicArray<xiiRenderData*> m_SortedDynamicRenderData;
+  // Runs borrow from the merged order, so type queries never copy packet pointers.
   xiiDynamicArray<xiiRenderData*> m_SortedAllRenderData;
+  xiiHashTable<const xiiRTTI*, xiiHybridArray<RenderDataRange, 1U>> m_RenderDataRanges;
 
   xiiDebugRendererContext m_WorldDebugContext;
   xiiDebugRendererContext m_ViewDebugContext;

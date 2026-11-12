@@ -10,11 +10,13 @@
 #include <Foundation/Communication/GlobalEvent.h>
 #include <Foundation/Configuration/CVar.h>
 #include <Foundation/Configuration/Startup.h>
+#include <GraphicsCore/Components/Lights/LightComponent.h>
 #include <GraphicsCore/Components/Render/RenderComponent.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
 #include <GraphicsCore/Lighting/WorldLightData.h>
 #include <GraphicsCore/Material/MaterialManager.h>
 #include <GraphicsCore/Meshes/GpuInstanceData.h>
+#include <GraphicsCore/Meshes/MeshComponent.h>
 #include <GraphicsCore/Meshes/MeshResource.h>
 #include <GraphicsCore/Pipeline/MsgExtractRenderData.h>
 #include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
@@ -864,7 +866,8 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
     xiiDynamicArray<xiiRenderData*> packets;
     for (auto it = m_ViewIdTable.GetIterator(); it.IsValid(); ++it)
       if (it.Value().m_bPrepared && it.Value().m_pView->IsRenderEnabled())
-        packets.PushBackRange(it.Value().m_pExtractedData->GetAllRenderData());
+        for (auto range : it.Value().m_pExtractedData->GetRenderDataRanges(xiiGetStaticRTTI<xiiMeshRenderData>()))
+          packets.PushBackRange(range);
     xiiStringBuilder error;
     if (UpdateGpuInstances(packets, uiFrameIndex, &error).Failed())
     {
@@ -885,7 +888,8 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
     xiiDynamicArray<xiiRenderData*> packets;
     for (auto it = m_ViewIdTable.GetIterator(); it.IsValid(); ++it)
       if (it.Value().m_bPrepared && it.Value().m_pView->IsRenderEnabled() && it.Value().m_pView->GetRuntimeFeatures().IsSet(xiiRenderPipelineFeature::Lighting))
-        packets.PushBackRange(it.Value().m_pExtractedData->GetAllRenderData());
+        for (auto range : it.Value().m_pExtractedData->GetRenderDataRanges(xiiGetStaticRTTI<xiiLightRenderData>()))
+          packets.PushBackRange(range);
     if (UpdateWorldLights(packets).Failed())
     {
       xiiLog::Error("Could not update world light records or their IES resources.");

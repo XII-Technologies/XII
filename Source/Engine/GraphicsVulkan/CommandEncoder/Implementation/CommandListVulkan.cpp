@@ -74,6 +74,35 @@ namespace
     }
   }
 
+  [[nodiscard]] xiiUInt32 GetDescriptorBindingExtent(const xiiGALPipelineResourceDescriptionVulkan& layout, const xiiGALCommandListDataVulkan::ResourceSetBindings& resources)
+  {
+    const auto extent = [&](const auto& bindings) {
+      return layout.m_uiBindingIndex < bindings.GetCount() ? xiiMath::Max(1U, bindings[layout.m_uiBindingIndex].GetCount()) : 1U;
+    };
+
+    switch (layout.m_DescriptorType)
+    {
+      case xiiGALDescriporTypeVulkan::UniformTexelBuffer:
+      case xiiGALDescriporTypeVulkan::StorageTexelBufferReadOnly:
+      case xiiGALDescriporTypeVulkan::StorageBufferReadOnly:
+      case xiiGALDescriporTypeVulkan::StorageBufferDynamicReadOnly:
+        return extent(resources.m_pBoundBufferResourceViewArrays);
+      case xiiGALDescriporTypeVulkan::StorageTexelBuffer:
+      case xiiGALDescriporTypeVulkan::StorageBuffer:
+      case xiiGALDescriporTypeVulkan::StorageBufferDynamic:
+        return extent(resources.m_pBoundUnorderedAccessBufferResourceViewArrays);
+      case xiiGALDescriporTypeVulkan::CombinedImageSampler:
+      case xiiGALDescriporTypeVulkan::SeparateImage:
+        return extent(resources.m_pBoundTextureResourceViewArrays);
+      case xiiGALDescriporTypeVulkan::StorageImage:
+        return extent(resources.m_pBoundUnorderedAccessTextureResourceViewArrays);
+      case xiiGALDescriporTypeVulkan::Sampler:
+        return extent(resources.m_pBoundSamplerStateArrays);
+      default:
+        return 1U;
+    }
+  }
+
   [[nodiscard]] XII_FORCE_INLINE vk::QueryPool CreateCompactedSizeQueryPool(const xiiGALDeviceVulkan* pDeviceVulkan)
   {
     vk::QueryPoolCreateInfo vkQueryPoolCreateInfo = {};
@@ -681,6 +710,20 @@ void xiiGALCommandListVulkan::BeginPlatform()
 
   VK_ASSERT_DEV(m_vkCommandBuffer.begin(&vkCommandBufferBeginInfo, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 
+  if (m_pRenderPass != nullptr)
+  {
+    m_CommandListState.m_vkRenderPass  = vkCommandBufferInheritanceInfo.renderPass;
+    m_CommandListState.m_vkFramebuffer = vkCommandBufferInheritanceInfo.framebuffer;
+    m_CommandListData.m_uiSubpassIndex = m_Description.m_uiSubPassIndex;
+    if (m_pFramebuffer != nullptr)
+    {
+      const auto& framebuffer                       = m_pFramebuffer->GetDescription();
+      m_CommandListState.m_uiFramebufferWidth       = framebuffer.m_FramebufferSize.width;
+      m_CommandListState.m_uiFramebufferHeight      = framebuffer.m_FramebufferSize.height;
+      m_CommandListState.m_uiFramebufferArraySlices = framebuffer.m_uiArraySliceCount;
+      UpdateAttachmentBindings();
+    }
+  }
 
   m_RecordingState = RecordingState::Recording;
 }
@@ -733,6 +776,8 @@ void xiiGALCommandListVulkan::EndPlatform()
 
   VK_ASSERT_DEV(m_vkCommandBuffer.end(pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 
+  m_CommandListState.m_vkRenderPass  = VK_NULL_HANDLE;
+  m_CommandListState.m_vkFramebuffer = VK_NULL_HANDLE;
   m_RecordingState = RecordingState::Ended;
 }
 
@@ -769,6 +814,18 @@ void xiiGALCommandListVulkan::SubmitPlatform(xiiGALCommandList* pSecondaryComman
   vk::CommandBuffer vkCommandBuffer = pCommandListVulkan->GetVulkanCommandBuffer();
 
   m_vkCommandBuffer.executeCommands(1U, &vkCommandBuffer, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+
+  // Vulkan invalidates the primary's bound state, but its render pass and queued work remain active.
+  InvalidateBindings();
+  m_CommandListData.Invalidate();
+  if (m_pRenderPass != nullptr && m_pFramebuffer != nullptr)
+    UpdateAttachmentBindings();
+  m_CommandListState.m_vkGraphicsPipeline   = VK_NULL_HANDLE;
+  m_CommandListState.m_vkComputePipeline    = VK_NULL_HANDLE;
+  m_CommandListState.m_vkRayTracingPipeline = VK_NULL_HANDLE;
+  m_CommandListState.m_vkIndexBuffer        = VK_NULL_HANDLE;
+  m_CommandListState.m_bIsShadingRateSet    = false;
+  m_CommandListFlags                        = {};
 }
 
 void xiiGALCommandListVulkan::SetPipelineStatePlatform(xiiGALPipelineState* pPipelineState)
@@ -1196,6 +1253,18 @@ xiiResult xiiGALCommandListVulkan::CommitShaderResourcesPlatform(xiiEnum<xiiGALS
       xiiGALPipelineResourceSignatureVulkan* pResourceSignatureVulkan = xiiDynamicCast<xiiGALPipelineResourceSignatureVulkan*>(m_pPipelineResourceSignature);
 
       m_CommandListData.m_DescriptorSets.SetCountUninitialized(pResourceSignatureVulkan->GetVulkanDescriptorSetLayoutCount());
+
+      struct AccelerationDescriptor
+      {
+        vk::AccelerationStructureKHR                   m_Handle;
+        vk::WriteDescriptorSetAccelerationStructureKHR m_Info;
+      };
+      xiiTemporaryHybridArray<vk::WriteDescriptorSet, 32U> writes;
+      // Descriptor writes borrow their payloads until the batched Vulkan update below.
+      xiiDeque<vk::DescriptorImageInfo>  imageInfos;
+      xiiDeque<vk::DescriptorBufferInfo> bufferInfos;
+      xiiDeque<vk::BufferView>           bufferViews;
+      xiiDeque<AccelerationDescriptor>   accelerationInfos;
       m_CommandListData.m_ResourceSets.EnsureCount(pResourceSignatureVulkan->GetVulkanDescriptorSetLayoutCount());
 
       for (xiiUInt32 uiSet = 0; uiSet < m_CommandListData.m_DescriptorSets.GetCount(); ++uiSet)
@@ -1208,8 +1277,10 @@ xiiResult xiiGALCommandListVulkan::CommitShaderResourcesPlatform(xiiEnum<xiiGALS
         for (xiiUInt32 i = 0; i < pPipelineResourceLayout.GetCount(); ++i)
         {
           const xiiGALPipelineResourceDescriptionVulkan& resourceLayout = pPipelineResourceLayout[i];
+          const bool                                     bRuntimeArray  = resourceLayout.m_PipelineResourceFlags.IsSet(xiiGALPipelineResourceFlags::RuntimeArray);
+          const xiiUInt32                                uiElementCount = bRuntimeArray ? xiiMath::Min(resourceLayout.m_uiArraySize, GetDescriptorBindingExtent(resourceLayout, resources)) : resourceLayout.m_uiArraySize;
 
-          for (xiiUInt32 uiArrayElement = 0U; uiArrayElement < resourceLayout.m_uiArraySize; ++uiArrayElement)
+          for (xiiUInt32 uiArrayElement = 0U; uiArrayElement < uiElementCount; ++uiArrayElement)
           {
             // Immutable standalone samplers are populated by the descriptor-set layout and must
             // not be written or supplied dynamically when committing the descriptor set.
@@ -1217,7 +1288,7 @@ xiiResult xiiGALCommandListVulkan::CommitShaderResourcesPlatform(xiiEnum<xiiGALS
               continue;
 
             // Runtime tables are sparse: descriptors without a live resource remain unbound.
-            if (resourceLayout.m_PipelineResourceFlags.IsSet(xiiGALPipelineResourceFlags::RuntimeArray) && !IsDescriptorElementBound(resourceLayout, resources, uiArrayElement))
+            if (bRuntimeArray && !IsDescriptorElementBound(resourceLayout, resources, uiArrayElement))
               continue;
 
             vk::WriteDescriptorSet vkWriteDescriptorSet = {};
@@ -1236,7 +1307,6 @@ xiiResult xiiGALCommandListVulkan::CommitShaderResourcesPlatform(xiiEnum<xiiGALS
             vk::DescriptorImageInfo                        vkDescriptorImageInfo;
             vk::DescriptorBufferInfo                       vkDescriptorBufferInfo;
             vk::BufferView                                 vkDescriptorBufferView;
-            vk::WriteDescriptorSetAccelerationStructureKHR vkDescriptorAccelStructInfo;
 
             switch (resourceLayout.m_DescriptorType)
             {
@@ -1576,12 +1646,12 @@ xiiResult xiiGALCommandListVulkan::CommitShaderResourcesPlatform(xiiEnum<xiiGALS
                     return XII_FAILURE;
                   }
 
-                  vkDescriptorAccelStructInfo                            = vk::WriteDescriptorSetAccelerationStructureKHR{};
-                  vkDescriptorAccelStructInfo.pNext                      = nullptr;
-                  vkDescriptorAccelStructInfo.accelerationStructureCount = 1U;
-                  vkDescriptorAccelStructInfo.pAccelerationStructures    = &vkAccelerationStructure;
-
-                  vkWriteDescriptorSet.pNext = &vkDescriptorAccelStructInfo;
+                  auto& acceleration                             = accelerationInfos.ExpandAndGetRef();
+                  acceleration.m_Handle                          = vkAccelerationStructure;
+                  acceleration.m_Info                            = vk::WriteDescriptorSetAccelerationStructureKHR{};
+                  acceleration.m_Info.accelerationStructureCount = 1U;
+                  acceleration.m_Info.pAccelerationStructures    = &acceleration.m_Handle;
+                  vkWriteDescriptorSet.pNext                     = &acceleration.m_Info;
 
                   TransitionOrVerifyAccelerationStructureState(pTopLevelASVulkan, mode, xiiGALResourceStateFlags::RayTracing, "Binding TLAS as a shader resource");
                   FlushBarriers();
@@ -1597,10 +1667,28 @@ xiiResult xiiGALCommandListVulkan::CommitShaderResourcesPlatform(xiiEnum<xiiGALS
                 XII_DEFAULT_CASE_NOT_IMPLEMENTED;
             }
 
-            vkLogicalDevice.updateDescriptorSets(1U, &vkWriteDescriptorSet, 0, nullptr, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+            if (vkWriteDescriptorSet.pImageInfo != nullptr)
+            {
+              imageInfos.PushBack(*vkWriteDescriptorSet.pImageInfo);
+              vkWriteDescriptorSet.pImageInfo = &imageInfos.PeekBack();
+            }
+            if (vkWriteDescriptorSet.pBufferInfo != nullptr)
+            {
+              bufferInfos.PushBack(*vkWriteDescriptorSet.pBufferInfo);
+              vkWriteDescriptorSet.pBufferInfo = &bufferInfos.PeekBack();
+            }
+            if (vkWriteDescriptorSet.pTexelBufferView != nullptr)
+            {
+              bufferViews.PushBack(*vkWriteDescriptorSet.pTexelBufferView);
+              vkWriteDescriptorSet.pTexelBufferView = &bufferViews.PeekBack();
+            }
+            writes.PushBack(vkWriteDescriptorSet);
           }
         }
       }
+
+      if (!writes.IsEmpty())
+        vkLogicalDevice.updateDescriptorSets(writes.GetCount(), writes.GetData(), 0U, nullptr, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
 
       if (!m_CommandListData.m_DescriptorSets.IsEmpty())
       {
@@ -1843,8 +1931,8 @@ void xiiGALCommandListVulkan::BeginRenderPassPlatform(xiiGALRenderPass* pRenderP
                                                                                 // or if the attachment has a depth/stencil format and uses a stencilLoadOp value of VK_ATTACHMENT_LOAD_OP_CLEAR. The array is indexed by attachment number. Only elements
                                                                                 // corresponding to cleared attachments are used. Other elements of pClearValues are  ignored (7.4)
 
-    // The contents of the subpass will be recorded inline in the primary command buffer, and secondary command buffers must not be executed within the subpass.
-    m_vkCommandBuffer.beginRenderPass(&vkRenderPassBeginInfo, vk::SubpassContents::eInline, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+    const auto contents = m_bSecondaryRenderPass ? vk::SubpassContents::eSecondaryCommandBuffers : vk::SubpassContents::eInline;
+    m_vkCommandBuffer.beginRenderPass(&vkRenderPassBeginInfo, contents, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
 
     m_CommandListState.m_vkRenderPass             = pRenderPassVulkan->GetVulkanRenderPass();
     m_CommandListState.m_vkFramebuffer            = pFramebufferVulkan->GetVulkanFramebuffer();

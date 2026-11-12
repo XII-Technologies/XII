@@ -222,18 +222,22 @@ xiiResult xiiSurfaceQueryPass::Build(xiiRenderPipelinePassContext& context)
         data.m_Depth = builder.WriteTexture("Surface Query Depth", target, xiiGALResourceStateFlags::DepthWrite);
       data.m_Shader = m_hShader; data.m_Sampler = m_Sampler;
       data.m_uiWidth = width; data.m_uiHeight = height; data.m_uiCapacity = static_cast<xiiUInt32>(capacity); data.m_bMesh = useMesh;
-      builder.SetPassRenderPassManaged(); }, [](const Data& data, xiiRenderGraphPassContext& execute) {
+      builder.SetPassRenderPassManaged();
+      builder.SetPassRecordingItemCount(xiiMath::Max(1U, data.m_Batches.GetCount())); }, [](const Data& data, xiiRenderGraphPassContext& execute) {
       auto& commands = execute.GetCommandList();
-      xiiRenderPassUtils::ClearRenderTargetPreservingState(commands, execute.GetTexture(data.m_Surface)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::MakeZero());
-      if (data.m_Depth.IsValid())
-        xiiRenderPassUtils::ClearDepthPreservingState(commands, execute.GetTexture(data.m_Depth)->GetDefaultView(xiiGALTextureViewType::DepthStencil), true, false, 0, 0);
+      if (execute.GetRecordingStart() == 0U)
+      {
+        xiiRenderPassUtils::ClearRenderTargetPreservingState(commands, execute.GetTexture(data.m_Surface)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::MakeZero());
+        if (data.m_Depth.IsValid())
+          xiiRenderPassUtils::ClearDepthPreservingState(commands, execute.GetTexture(data.m_Depth)->GetDefaultView(xiiGALTextureViewType::DepthStencil), true, false, 0, 0);
+      }
       xiiResourceLock<xiiShaderPermutationResource> shader(data.m_Shader, xiiResourceAcquireMode::BlockTillLoaded);
       if (!shader.IsValid() || !shader->IsShaderValid())
       {
         execute.ReportFailure("Surface query shader became unavailable.");
         return;
       }
-      for (xiiUInt32 bin = 0; bin < xiiMath::Max(1u, data.m_Batches.GetCount()); ++bin)
+      for (xiiUInt32 bin = execute.GetRecordingStart(); bin < execute.GetRecordingEnd(); ++bin)
       {
       xiiGALGraphicsPipelineStateCreationDescription pipeline;
       pipeline.m_PipelineType = data.m_bMesh ? xiiGALPipelineType::Mesh : xiiGALPipelineType::Graphics;
