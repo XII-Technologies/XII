@@ -2,6 +2,7 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <Core/World/World.h>
+#include <Foundation/Profiling/Profiling.h>
 #include <Foundation/Time/Clock.h>
 #include <GraphicsCore/Material/MaterialManager.h>
 #include <GraphicsCore/Meshes/MeshBufferResource.h>
@@ -20,6 +21,7 @@ xiiResult xiiMaterialRasterBatches::Build(xiiRenderPipelinePassContext& context,
                                           xiiDynamicArray<xiiMaterialRasterBatch>& batches, xiiRenderGraphBufferHandle& sortedVisible, xiiRenderGraphBufferHandle& draws, Pass pass,
                                           const xiiHashTable<xiiHashedString, xiiHashedString>* pViewPermutations)
 {
+  XII_PROFILE_SCOPE("Material Raster: Build Batches");
   const bool bDepth       = pass == Pass::Depth;
   const bool bTransparent = pass == Pass::Transparent;
   const bool bPicking     = pass == Pass::Picking || pass == Pass::Wireframe;
@@ -43,6 +45,8 @@ xiiResult xiiMaterialRasterBatches::Build(xiiRenderPipelinePassContext& context,
       bins[index] = found.Value();
       continue;
     }
+    // Default-bin materials also need a per-build entry so each material is classified once.
+    materialBins.Insert(key, 0U);
     const auto instance = xiiMaterialManager::GetGpuStorage().GetMaterial(handle);
     if (!instance)
       continue;
@@ -108,7 +112,7 @@ xiiResult xiiMaterialRasterBatches::Build(xiiRenderPipelinePassContext& context,
     bins[index] = bin;
   }
   for (auto it = m_Bindings.GetIterator(); it.IsValid();)
-    if (!materialBins.Contains(it.Key()))
+    if (const auto bin = materialBins.Find(it.Key()); !bin.IsValid() || bin.Value() == 0U)
       it = m_Bindings.Remove(it);
     else
       ++it;
