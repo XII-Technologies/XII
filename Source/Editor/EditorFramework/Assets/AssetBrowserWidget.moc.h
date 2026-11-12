@@ -6,18 +6,39 @@
 
 #include <EditorFramework/Assets/AssetBrowserFilter.moc.h>
 #include <EditorFramework/ui_AssetBrowserWidget.h>
+#include <Foundation/Communication/Event.h>
 #include <ToolsFoundation/FileSystem/FileSystemModel.h>
 #include <ToolsFoundation/Project/ToolsProject.h>
 
 class xiiQtAssetBrowserModel;
+class xiiQtAssetBrowserInspector;
 class QAbstractItemView;
 class QLabel;
 class QAction;
 class QListWidget;
 class QMenu;
 class QResizeEvent;
+class QThreadPool;
 class QTimer;
 struct xiiAssetCuratorEvent;
+
+/// Synchronous GUI-thread request. Providers may fill m_pPreview when they support this asset.
+/// The returned widget belongs to m_pParent and must be safe to destroy on selection or project change.
+struct xiiAssetBrowserPreviewRequest
+{
+  xiiUuid   m_Guid;
+  xiiString m_sAssetType;
+  QWidget*  m_pParent       = nullptr;
+  bool      m_bQuickPreview = false;
+  QWidget*  m_pPreview      = nullptr;
+};
+
+/// Contributes actions for selected asset identities. The menu and GUID view are borrowed for the callback.
+struct xiiAssetBrowserContextMenu
+{
+  QMenu*                     m_pMenu = nullptr;
+  xiiArrayPtr<const xiiUuid> m_Selection;
+};
 
 class XII_EDITORFRAMEWORK_DLL xiiQtAssetBrowserWidget : public QWidget, public Ui_AssetBrowserWidget
 {
@@ -25,6 +46,9 @@ class XII_EDITORFRAMEWORK_DLL xiiQtAssetBrowserWidget : public QWidget, public U
 public:
   xiiQtAssetBrowserWidget(QWidget* pParent);
   ~xiiQtAssetBrowserWidget();
+
+  static xiiEvent<xiiAssetBrowserPreviewRequest&>    s_PreviewRequests;
+  static xiiEvent<const xiiAssetBrowserContextMenu&> s_ContextMenuActions;
 
   enum class Mode
   {
@@ -40,8 +64,9 @@ public:
   void UseFileExtensionFilters(xiiStringView sFileExtensions);
   void SetRequiredTag(xiiStringView sRequiredTag);
 
-  void SaveState(const char* szSettingsName);
-  void RestoreState(const char* szSettingsName);
+  void  SaveState(const char* szSettingsName);
+  void  RestoreState(const char* szSettingsName);
+  QSize minimumSizeHint() const override;
 
   void dragEnterEvent(QDragEnterEvent* pEvent) override;
   void dragMoveEvent(QDragMoveEvent* pEvent) override;
@@ -90,7 +115,6 @@ private Q_SLOTS:
   void OnListFindAllReferences(bool transitive);
   void OnSelectionTimer();
   void OnAssetSelectionChanged(const QItemSelection& selected, const QItemSelection& deselected);
-  void OnAssetSelectionCurrentChanged(const QModelIndex& current, const QModelIndex& previous);
   void OnModelReset();
   void NewAsset();
   void OnFileEditingFinished(const QString& sAbsPath, const QString& sNewName, bool bIsAsset);
@@ -107,6 +131,8 @@ private:
   void         resizeEvent(QResizeEvent* pEvent) override;
 
 private:
+  friend class xiiQtAssetBrowserInspector;
+
   void               AssetCuratorEventHandler(const xiiAssetCuratorEvent& e);
   void               UpdateAssetTypes();
   void               ProjectEventHandler(const xiiToolsProjectEvent& e);
@@ -116,6 +142,7 @@ private:
   void               NavigateHistory(int iDirection);
   QAbstractItemView* ActiveView() const;
   QModelIndex        CurrentAssetIndex() const;
+  QModelIndexList    SelectedAssets() const;
   void               SetDisplayMode(int iMode);
   void               UpdateWorkspace();
   void               ImportFiles();
@@ -126,6 +153,12 @@ private:
   void               RestoreProjectNavigation();
   void               ToggleFavorite(xiiUuid guid);
   void               ApplyStatusFilter(xiiQtAssetBrowserFilter::Status status, bool bGlobal);
+  void               UpdatePanelVisibility();
+  void               NavigateToAsset(xiiUuid guid);
+  void               NavigateToFile(const QString& sPath);
+  void               TransformSelection(bool bForce);
+  void               DuplicateAsset(const QModelIndex& index);
+  void               ShowInspectorTab(int iTab);
 
   struct NavigationLocation
   {
@@ -141,23 +174,31 @@ private:
   xiiQtAssetBrowserFilter*               m_pFilter = nullptr;
 
   /// After creating a new asset and renaming it, we want to open it as well.
-  bool                      m_bOpenAfterRename   = false;
-  QList<NavigationLocation> m_PathHistory        = {NavigationLocation{}};
-  xiiInt32                  m_iPathHistory       = 0;
-  bool                      m_bHistoryNavigation = false;
-  QAction*                  m_pBack              = nullptr;
-  QAction*                  m_pForward           = nullptr;
-  QAction*                  m_pUp                = nullptr;
-  QToolButton*              m_pBreadcrumb        = nullptr;
-  QMenu*                    m_pBreadcrumbMenu    = nullptr;
-  QLabel*                   m_pVisibleCount      = nullptr;
-  QLabel*                   m_pIndexStatus       = nullptr;
-  QToolButton*              m_pPendingCount      = nullptr;
-  QToolButton*              m_pErrorCount        = nullptr;
-  QListWidget*              m_pScopes            = nullptr;
-  QTimer*                   m_pSearchTimer       = nullptr;
-  QTimer*                   m_pReferenceTimer    = nullptr;
-  QTimer*                   m_pFolderCountTimer  = nullptr;
-  QString                   m_sProjectSettings;
-  int                       m_iDisplayMode = 0;
+  bool                        m_bOpenAfterRename   = false;
+  QList<NavigationLocation>   m_PathHistory        = {NavigationLocation{}};
+  xiiInt32                    m_iPathHistory       = 0;
+  bool                        m_bHistoryNavigation = false;
+  QAction*                    m_pBack              = nullptr;
+  QAction*                    m_pForward           = nullptr;
+  QAction*                    m_pUp                = nullptr;
+  QLabel*                     m_pBreadcrumb        = nullptr;
+  QMenu*                      m_pBreadcrumbMenu    = nullptr;
+  QLabel*                     m_pVisibleCount      = nullptr;
+  QLabel*                     m_pIndexStatus       = nullptr;
+  QToolButton*                m_pPendingCount      = nullptr;
+  QToolButton*                m_pErrorCount        = nullptr;
+  QListWidget*                m_pScopes            = nullptr;
+  QTimer*                     m_pSearchTimer       = nullptr;
+  QTimer*                     m_pReferenceTimer    = nullptr;
+  QTimer*                     m_pFolderCountTimer  = nullptr;
+  QString                     m_sProjectSettings;
+  int                         m_iDisplayMode     = 0;
+  xiiQtAssetBrowserInspector* m_pInspector       = nullptr;
+  QAction*                    m_pInspectorAction = nullptr;
+  bool                        m_bShowSidebar     = true;
+  bool                        m_bShowInspector   = true;
+  bool                        m_bForceInspector  = false;
+  QWidget*                    m_pStatusChips     = nullptr;
+  QThreadPool*                m_pImportPool      = nullptr;
+  bool                        m_bCopyingImport   = false;
 };

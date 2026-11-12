@@ -138,7 +138,7 @@ struct xiiAssetCuratorEvent
   };
 
   xiiUuid            m_AssetGuid;
-  const xiiSubAsset* m_pInfo;
+  const xiiSubAsset* m_pInfo = nullptr;
   Type               m_Type;
 };
 

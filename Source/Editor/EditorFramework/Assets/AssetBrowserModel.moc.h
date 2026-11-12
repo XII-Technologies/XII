@@ -10,12 +10,14 @@
 #include <ToolsFoundation/FileSystem/FileSystemModel.h>
 
 #include <QAbstractItemModel>
-#include <QFileIconProvider>
+#include <QSet>
 
 struct xiiAssetInfo;
 struct xiiAssetCuratorEvent;
 struct xiiSubAsset;
 class xiiQtAssetFilter;
+template <typename T>
+class QFutureWatcher;
 
 /// Interface class of the asset filter used to decide which items are shown in the asset browser.
 class XII_EDITORFRAMEWORK_DLL xiiQtAssetFilter : public QObject
@@ -28,6 +30,7 @@ public:
 
 Q_SIGNALS:
   void FilterChanged();
+  void FilterNarrowed();
 };
 
 /// Each item in the asset browser can be multiple things at the same time as described by these flags.
@@ -73,6 +76,7 @@ public:
     Importable,                      // bool
     ItemFlags,                       // xiiAssetBrowserItemFlags as int
     Thumbnail,                       // QPixmap from the asynchronous image cache
+    FileSize,                        // qint64, available after the background file query
   };
 
   enum Column
@@ -80,6 +84,7 @@ public:
     NameColumn,
     TypeColumn,
     StatusColumn,
+    SizeColumn,
     ModifiedColumn,
     PathColumn,
     ColumnCount,
@@ -139,6 +144,7 @@ private:
     xiiUuid                               m_Guid;
     xiiBitflags<xiiAssetBrowserItemFlags> m_Flags;
     xiiTimestamp                          m_LastModified;
+    mutable qint64                        m_iFileSize     = -2;
     mutable xiiUInt32                     m_uiThumbnailID = 0;
   };
 
@@ -155,6 +161,10 @@ private:
   void FileSystemFolderEventHandler(const xiiFolderChangedEvent& e);
   void HandleFile(const xiiFileChangedEvent& e);
   void HandleFolder(const xiiFolderChangedEvent& e);
+  void NarrowFilter();
+  void QueueFileSize(const QModelIndex& index) const;
+  void StartFileSizeQueries();
+  void FinishFileSizeQueries();
 
 private:
   xiiQtAssetFilter* m_pFilter     = nullptr;
@@ -172,5 +182,13 @@ private:
   xiiDynamicArray<VisibleEntry> m_EntriesToDisplay;
   xiiSet<xiiUuid>               m_DisplayedEntries;
 
-  QFileIconProvider m_IconProvider;
+  struct FileSizeRequest
+  {
+    QPersistentModelIndex m_Index;
+    QString               m_sPath;
+    QVariant              m_Modified;
+  };
+  mutable QSet<QPersistentModelIndex> m_FileSizePending;
+  QList<FileSizeRequest>              m_FileSizeBatch;
+  QFutureWatcher<QList<qint64>>*      m_pFileSizes = nullptr;
 };

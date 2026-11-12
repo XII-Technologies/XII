@@ -115,101 +115,28 @@ void xiiQtAssetBrowserView::dragLeaveEvent(QDragLeaveEvent* pEvent)
   pEvent->accept();
 }
 
-static void NotifyFileChanges(xiiArrayPtr<xiiString> files)
-{
-  for (const auto& file : files)
-  {
-    xiiFileSystemModel::GetSingleton()->NotifyOfChange(file);
-  }
-}
-
 void xiiQtAssetBrowserView::dropEvent(QDropEvent* pEvent)
 {
-  if (!pEvent->mimeData()->hasUrls())
-    return;
-
-  QList<QUrl>     paths           = pEvent->mimeData()->urls();
-  const xiiString targetDirectory = indexAt(pEvent->position().toPoint()).data(xiiQtAssetBrowserModel::UserRoles::AbsolutePath).toString().toUtf8().data();
-  if (targetDirectory.IsEmpty())
+  const auto                                  index = indexAt(pEvent->position().toPoint());
+  const xiiBitflags<xiiAssetBrowserItemFlags> flags = static_cast<xiiAssetBrowserItemFlags::Enum>(index.data(xiiQtAssetBrowserModel::ItemFlags).toInt());
+  if (m_bDialogMode || !pEvent->mimeData()->hasFormat("application/xiiEditor.files") ||
+      !flags.IsAnySet(xiiAssetBrowserItemFlags::Folder | xiiAssetBrowserItemFlags::DataDirectory))
   {
+    pEvent->ignore();
     return;
   }
 
-  xiiHybridArray<xiiString, 32> touchedFiles;
-  // make sure to notify the filesystem of files and folders that were touched
-  XII_SCOPE_EXIT(NotifyFileChanges(touchedFiles));
-
-  for (auto it = paths.begin(); it != paths.end(); it++)
+  xiiHybridArray<xiiString, 16> files;
+  for (const QUrl& url : pEvent->mimeData()->urls())
   {
-    xiiStringBuilder src = it->path().toUtf8().constData();
-    src.TrimWordStart("/"); // remove '/' at start
-    src.MakeCleanPath();
-
-    xiiStringBuilder dst = targetDirectory;
-    dst.MakeCleanPath();
-
-    // prevent moving stuff into itself
-    if (src == dst)
-      continue;
-
-    // don't allow dropping anything onto an existing file
-    if (xiiOSFile::ExistsFile(dst))
-      continue;
-
-    dst.AppendPath(qtToXIIString(it->fileName()));
-
-    if (xiiOSFile::ExistsDirectory(src))
-    {
-      if (xiiOSFile::ExistsDirectory(dst)) // ask to overwrite if target already exists
-      {
-        const int res = xiiQtUiServices::MessageBoxQuestion(xiiFmt("Directory already exists:\n\n'{}'\n\nOverwrite files inside directory?", dst), QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel, QMessageBox::Cancel);
-
-        if (res == QMessageBox::Cancel)
-          return;
-
-        if (res == QMessageBox::No)
-          continue;
-      }
-
-      if (xiiOSFile::CopyFolder(src, dst, &touchedFiles).Failed())
-      {
-        xiiQtUiServices::MessageBoxWarning(xiiFmt("Failed to copy folder:\n\n'{}'\n\nto\n\n'{}'\n\nAborting operation.", src, dst));
-        return;
-      }
-
-      touchedFiles.PushBack(dst);
-
-      if (xiiOSFile::DeleteFolder(src).Failed())
-      {
-        xiiQtUiServices::MessageBoxWarning(xiiFmt("Failed to remove folder:\n\n'{}'\n\nAborting operation.", src));
-        return;
-      }
-    }
-    else if (xiiOSFile::ExistsFile(src))
-    {
-      if (xiiOSFile::ExistsFile(dst)) // ask to overwrite if target already exists
-      {
-        const int res = xiiQtUiServices::MessageBoxQuestion(xiiFmt("The file already exists:\n\n'{}'\n\nOverwrite file?", dst), QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel, QMessageBox::Cancel);
-
-        if (res == QMessageBox::Cancel)
-          return;
-
-        if (res == QMessageBox::No)
-          continue;
-
-        xiiOSFile::DeleteFile(dst).IgnoreResult();
-      }
-
-      touchedFiles.PushBack(src);
-      touchedFiles.PushBack(dst);
-
-      if (xiiOSFile::MoveFileOrDirectory(src, dst).Failed())
-      {
-        xiiQtUiServices::MessageBoxWarning(xiiFmt("Failed to move file:\n\n'{}'\n\nto\n\n'{}'\n\nAborting operation.", src, dst));
-        return;
-      }
-    }
+    if (url.isLocalFile())
+      files.PushBack(qtToXIIString(url.toLocalFile()));
   }
+  const auto sTarget = qtToXIIString(index.data(xiiQtAssetBrowserModel::AbsolutePath).toString());
+  if (eqQtAssetBrowserFolderView::MoveContentPaths(files, sTarget))
+    pEvent->acceptProposedAction();
+  else
+    pEvent->ignore();
 }
 
 void xiiQtAssetBrowserView::wheelEvent(QWheelEvent* pEvent)
@@ -276,11 +203,12 @@ void xiiQtIconViewDelegate::SetIconScale(xiiInt32 iIconSizePercentage)
 bool xiiQtIconViewDelegate::mousePressEvent(QMouseEvent* pEvent, const QStyleOptionViewItem& opt, const QModelIndex& index)
 {
   const xiiBitflags<xiiAssetBrowserItemFlags> itemType = (xiiAssetBrowserItemFlags::Enum)index.data(xiiQtAssetBrowserModel::UserRoles::ItemFlags).toInt();
-  if (!itemType.IsSet(xiiAssetBrowserItemFlags::Asset))
+  if (!m_bDrawTransformState || !IsInIconMode() || !itemType.IsSet(xiiAssetBrowserItemFlags::Asset))
     return false;
 
   const xiiUInt32 uiThumbnailSize = ThumbnailSize();
-  QRect           thumbnailRect   = opt.rect.adjusted(ItemSideMargin + uiThumbnailSize - 16 + 2, ItemSideMargin + uiThumbnailSize - 16 + 2, 0, 0);
+  const int       iLeftInset      = (opt.rect.width() - static_cast<int>(uiThumbnailSize)) / 2;
+  QRect           thumbnailRect   = opt.rect.adjusted(iLeftInset + uiThumbnailSize - 16 + 2, ItemSideMargin + uiThumbnailSize - 16 + 2, 0, 0);
   thumbnailRect.setSize(QSize(16, 16));
   if (thumbnailRect.contains(pEvent->position().toPoint()))
   {
@@ -297,7 +225,8 @@ bool xiiQtIconViewDelegate::mouseReleaseEvent(QMouseEvent* pEvent, const QStyleO
     return false;
 
   const xiiUInt32 uiThumbnailSize = ThumbnailSize();
-  QRect           thumbnailRect   = opt.rect.adjusted(ItemSideMargin + uiThumbnailSize - 16 + 2, ItemSideMargin + uiThumbnailSize - 16 + 2, 0, 0);
+  const int       iLeftInset      = (opt.rect.width() - static_cast<int>(uiThumbnailSize)) / 2;
+  QRect           thumbnailRect   = opt.rect.adjusted(iLeftInset + uiThumbnailSize - 16 + 2, ItemSideMargin + uiThumbnailSize - 16 + 2, 0, 0);
   thumbnailRect.setSize(QSize(16, 16));
   if (thumbnailRect.contains(pEvent->position().toPoint()))
   {
@@ -347,13 +276,25 @@ void xiiQtIconViewDelegate::paint(QPainter* pPainter, const QStyleOptionViewItem
 {
   if (!IsInIconMode())
   {
-    xiiQtItemDelegate::paint(pPainter, opt, index);
+    auto       option = opt;
+    const auto state  = index.data(xiiQtAssetBrowserModel::TransformState);
+    if (m_bDrawTransformState && state.isValid())
+    {
+      const auto icon = xiiQtAssetBrowserModel::TransformStateIcon(state.toInt());
+      if (!icon.isNull())
+      {
+        option.rect.adjust(0, 0, -20, 0);
+        icon.paint(pPainter, QRect(opt.rect.right() - 17, opt.rect.center().y() - 7, 14, 14));
+      }
+    }
+    xiiQtItemDelegate::paint(pPainter, option, index);
     return;
   }
 
   const xiiUInt32                             uiThumbnailSize = ThumbnailSize();
   const xiiBitflags<xiiAssetBrowserItemFlags> itemType        = (xiiAssetBrowserItemFlags::Enum)index.data(xiiQtAssetBrowserModel::UserRoles::ItemFlags).toInt();
 
+  const int iLeftInset = (opt.rect.width() - static_cast<int>(uiThumbnailSize)) / 2;
   // Prepare painter.
   {
     pPainter->save();
@@ -377,7 +318,7 @@ void xiiQtIconViewDelegate::paint(QPainter* pPainter, const QStyleOptionViewItem
 
   // Draw highlight background (copy of QItemDelegate::drawBackground)
   {
-    QRect highlightRect = opt.rect.adjusted(ItemSideMargin - HighlightBorderWidth, ItemSideMargin - HighlightBorderWidth, 0, 0);
+    QRect highlightRect = opt.rect.adjusted(iLeftInset - HighlightBorderWidth, ItemSideMargin - HighlightBorderWidth, 0, 0);
     highlightRect.setHeight(uiThumbnailSize + 2 * HighlightBorderWidth);
     highlightRect.setWidth(uiThumbnailSize + 2 * HighlightBorderWidth);
 
@@ -406,7 +347,7 @@ void xiiQtIconViewDelegate::paint(QPainter* pPainter, const QStyleOptionViewItem
   {
     // Draw thumbnail.
     {
-      QRect thumbnailRect = opt.rect.adjusted(ItemSideMargin, ItemSideMargin, 0, 0);
+      QRect thumbnailRect = opt.rect.adjusted(iLeftInset, ItemSideMargin, 0, 0);
       thumbnailRect.setSize(QSize(uiThumbnailSize, uiThumbnailSize));
       QIcon icon = qvariant_cast<QIcon>(index.data(Qt::DecorationRole));
       icon.paint(pPainter, thumbnailRect);
@@ -414,7 +355,7 @@ void xiiQtIconViewDelegate::paint(QPainter* pPainter, const QStyleOptionViewItem
 
     // Draw icon.
     {
-      QRect thumbnailRect = opt.rect.adjusted(ItemSideMargin - 2, ItemSideMargin + uiThumbnailSize - 16 + 2, 0, 0);
+      QRect thumbnailRect = opt.rect.adjusted(iLeftInset - 2, ItemSideMargin + uiThumbnailSize - 16 + 2, 0, 0);
       thumbnailRect.setSize(QSize(16, 16));
       QIcon icon = qvariant_cast<QIcon>(index.data(xiiQtAssetBrowserModel::UserRoles::AssetIcon));
       icon.paint(pPainter, thumbnailRect);
@@ -424,7 +365,7 @@ void xiiQtIconViewDelegate::paint(QPainter* pPainter, const QStyleOptionViewItem
   {
     // Draw icon.
     {
-      QRect thumbnailRect = opt.rect.adjusted(ItemSideMargin, ItemSideMargin, 0, 0);
+      QRect thumbnailRect = opt.rect.adjusted(iLeftInset, ItemSideMargin, 0, 0);
       thumbnailRect.setSize(QSize(uiThumbnailSize, uiThumbnailSize));
       QIcon icon = qvariant_cast<QIcon>(index.data(xiiQtAssetBrowserModel::UserRoles::AssetIcon));
       icon.paint(pPainter, thumbnailRect);
@@ -434,7 +375,7 @@ void xiiQtIconViewDelegate::paint(QPainter* pPainter, const QStyleOptionViewItem
   {
     // Draw thumbnail.
     {
-      QRect thumbnailRect = opt.rect.adjusted(ItemSideMargin, ItemSideMargin, 0, 0);
+      QRect thumbnailRect = opt.rect.adjusted(iLeftInset, ItemSideMargin, 0, 0);
       thumbnailRect.setSize(QSize(uiThumbnailSize, uiThumbnailSize));
       QPixmap pixmap = qvariant_cast<QPixmap>(index.data(Qt::DecorationRole));
       pPainter->drawPixmap(thumbnailRect, pixmap);
@@ -442,7 +383,7 @@ void xiiQtIconViewDelegate::paint(QPainter* pPainter, const QStyleOptionViewItem
 
     // Draw icon.
     {
-      QRect thumbnailRect = opt.rect.adjusted(ItemSideMargin - 2, ItemSideMargin + uiThumbnailSize - 16 + 2, 0, 0);
+      QRect thumbnailRect = opt.rect.adjusted(iLeftInset - 2, ItemSideMargin + uiThumbnailSize - 16 + 2, 0, 0);
       thumbnailRect.setSize(QSize(16, 16));
       QIcon icon = qvariant_cast<QIcon>(index.data(xiiQtAssetBrowserModel::UserRoles::AssetIcon));
       icon.paint(pPainter, thumbnailRect);
@@ -451,7 +392,7 @@ void xiiQtIconViewDelegate::paint(QPainter* pPainter, const QStyleOptionViewItem
     // Draw Transform State Icon
     if (m_bDrawTransformState)
     {
-      QRect thumbnailRect = opt.rect.adjusted(ItemSideMargin + uiThumbnailSize - 16 + 2, ItemSideMargin + uiThumbnailSize - 16 + 2, 0, 0);
+      QRect thumbnailRect = opt.rect.adjusted(iLeftInset + uiThumbnailSize - 16 + 2, ItemSideMargin + uiThumbnailSize - 16 + 2, 0, 0);
       thumbnailRect.setSize(QSize(16, 16));
 
       xiiAssetInfo::TransformState state = (xiiAssetInfo::TransformState)index.data(xiiQtAssetBrowserModel::UserRoles::TransformState).toInt();
@@ -491,7 +432,7 @@ QSize xiiQtIconViewDelegate::ItemSize() const
   QFontMetrics fm(font);
 
   xiiUInt32       iThumbnail  = ThumbnailSize();
-  const xiiUInt32 iItemWidth  = iThumbnail + 2 * ItemSideMargin;
+  const xiiUInt32 iItemWidth  = xiiMath::Max(66U, iThumbnail + 2 * ItemSideMargin);
   const xiiUInt32 iItemHeight = iThumbnail + 2 * ItemSideMargin + fm.height() + 2 * TextSpacing;
 
   return QSize(iItemWidth, iItemHeight);

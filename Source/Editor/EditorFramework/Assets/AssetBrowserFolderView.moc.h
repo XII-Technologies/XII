@@ -57,7 +57,9 @@ public:
   /// Required to be set right after the ctor. This class will call xiiQtAssetBrowserFilter::SetPathFilter whenever the current selected item changes.
   void SetFilter(xiiQtAssetBrowserFilter* pFilter);
   /// In dialog mode, any modifications (folder movement, creation and deletion) are disabled.
-  void SetDialogMode(bool bDialogMode);
+  void        SetDialogMode(bool bDialogMode);
+  static bool MoveContentPaths(xiiArrayPtr<const xiiString> paths, xiiStringView sTargetFolder);
+  static void DeleteContentPaths(const QStringList& paths);
 
   virtual void mouseDoubleClickEvent(QMouseEvent* e) override;
   virtual void mousePressEvent(QMouseEvent* e) override;

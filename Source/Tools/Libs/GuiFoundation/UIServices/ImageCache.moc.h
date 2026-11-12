@@ -63,6 +63,9 @@ public:
   /// Returns a pixmap or nullptr that was registered with RegisterTypeImage()
   const QPixmap* QueryTypeImage(xiiStringView sType) const;
 
+  /// True for the cached missing-image placeholder, including copies of the pixmap.
+  bool IsUnavailablePixmap(const QPixmap& pixmap) const;
+
 Q_SIGNALS:
   void ImageLoaded(QString sPath, QModelIndex index, QVariant userData1, QVariant userData2);
   void ImageInvalidated(QString sPath, unsigned int uiImageID);

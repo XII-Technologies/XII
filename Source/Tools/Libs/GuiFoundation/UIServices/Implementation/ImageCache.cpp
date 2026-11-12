@@ -223,6 +223,11 @@ void xiiQtImageCache::RegisterTypeImage(xiiStringView sType, QPixmap pixmap)
   m_TypeImages[xiiMakeQString(sType)] = pixmap;
 }
 
+bool xiiQtImageCache::IsUnavailablePixmap(const QPixmap& pixmap) const
+{
+  return m_pImageUnavailable && pixmap.cacheKey() == m_pImageUnavailable->cacheKey();
+}
+
 const QPixmap* xiiQtImageCache::QueryTypeImage(xiiStringView sType) const
 {
   auto it = m_TypeImages.Find(xiiMakeQString(sType));

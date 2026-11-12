@@ -158,7 +158,8 @@ void xiiQtAssetBrowserFilter::SetTextFilter(const char* szText)
   if (m_sQuery == szText)
     return;
 
-  m_sQuery = szText;
+  const QString sPrevious = xiiMakeQString(m_sQuery);
+  m_sQuery                = szText;
   m_sTemporaryPinnedItem.Clear();
   m_QueryTerms.clear();
   m_References.Clear();
@@ -248,7 +249,12 @@ void xiiQtAssetBrowserFilter::SetTextFilter(const char* szText)
   if (m_sQueryError.isEmpty())
     UpdateReferenceMatches(false);
 
-  Q_EMIT FilterChanged();
+  // A longer positive plain-text query can only eliminate existing matches.
+  static const QRegularExpression plainText(QStringLiteral("^[a-zA-Z0-9_ ]+$"));
+  if (!sPrevious.trimmed().isEmpty() && sQuery.startsWith(sPrevious, Qt::CaseInsensitive) && plainText.match(sQuery).hasMatch())
+    Q_EMIT FilterNarrowed();
+  else
+    Q_EMIT FilterChanged();
   Q_EMIT TextFilterChanged();
 }
 
