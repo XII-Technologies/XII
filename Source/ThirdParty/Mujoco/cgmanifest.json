@@ -1,0 +1,14 @@
+{
+  "Registrations": [
+    {
+      "component": {
+        "type": "git",
+        "git": {
+          "Name": "Mujoco",
+          "repositoryUrl": "https://github.com/google-deepmind/mujoco",
+          "commitHash": "71bc51ce2194ddcdf876de5ecd05bdf57a75e93b"
+        }
+      }
+    }
+  ]
+}
