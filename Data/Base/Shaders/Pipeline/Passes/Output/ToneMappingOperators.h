@@ -1,4 +1,5 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 //
 // Reference implementations adapted from Baking Lab and shaders-tone-map:
 // https://github.com/TheRealMJP/BakingLab/blob/master/BakingLab/ACES.hlsl

@@ -1,4 +1,5 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 //
 // Copyright 2024 The Khronos Group, Inc.
 // SPDX-License-Identifier: Apache-2.0
