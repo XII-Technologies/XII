@@ -4,18 +4,19 @@
 
 #include <EditorFramework/EditorFrameworkDLL.h>
 
+#include <EditorFramework/Assets/AssetBrowserFilter.moc.h>
 #include <EditorFramework/ui_AssetBrowserWidget.h>
-#include <QStringList>
 #include <ToolsFoundation/FileSystem/FileSystemModel.h>
 #include <ToolsFoundation/Project/ToolsProject.h>
 
-class xiiQtAssetBrowserFilter;
 class xiiQtAssetBrowserModel;
 class QAbstractItemView;
 class QLabel;
 class QAction;
+class QListWidget;
 class QMenu;
 class QResizeEvent;
+class QTimer;
 struct xiiAssetCuratorEvent;
 
 class XII_EDITORFRAMEWORK_DLL xiiQtAssetBrowserWidget : public QWidget, public Ui_AssetBrowserWidget
@@ -119,6 +120,20 @@ private:
   void               UpdateWorkspace();
   void               ImportFiles();
   void               ImportUrls(const QList<QUrl>& urls);
+  void               UpdateIndexStatus();
+  void               UpdateFolderCounts();
+  void               SaveProjectNavigation() const;
+  void               RestoreProjectNavigation();
+  void               ToggleFavorite(xiiUuid guid);
+  void               ApplyStatusFilter(xiiQtAssetBrowserFilter::Status status, bool bGlobal);
+
+  struct NavigationLocation
+  {
+    QString                        m_sPath;
+    xiiQtAssetBrowserFilter::Scope m_Scope = xiiQtAssetBrowserFilter::Scope::Content;
+
+    bool operator==(const NavigationLocation& rhs) const = default;
+  };
 
   Mode                                   m_Mode = Mode::Browser;
   xiiString                              m_sAllTypesFilter;
@@ -126,15 +141,23 @@ private:
   xiiQtAssetBrowserFilter*               m_pFilter = nullptr;
 
   /// After creating a new asset and renaming it, we want to open it as well.
-  bool         m_bOpenAfterRename   = false;
-  QStringList  m_PathHistory        = {QString()};
-  xiiInt32     m_iPathHistory       = 0;
-  bool         m_bHistoryNavigation = false;
-  QAction*     m_pBack              = nullptr;
-  QAction*     m_pForward           = nullptr;
-  QAction*     m_pUp                = nullptr;
-  QToolButton* m_pBreadcrumb        = nullptr;
-  QMenu*       m_pBreadcrumbMenu    = nullptr;
-  QLabel*      m_pVisibleCount      = nullptr;
-  int          m_iDisplayMode       = 0;
+  bool                      m_bOpenAfterRename   = false;
+  QList<NavigationLocation> m_PathHistory        = {NavigationLocation{}};
+  xiiInt32                  m_iPathHistory       = 0;
+  bool                      m_bHistoryNavigation = false;
+  QAction*                  m_pBack              = nullptr;
+  QAction*                  m_pForward           = nullptr;
+  QAction*                  m_pUp                = nullptr;
+  QToolButton*              m_pBreadcrumb        = nullptr;
+  QMenu*                    m_pBreadcrumbMenu    = nullptr;
+  QLabel*                   m_pVisibleCount      = nullptr;
+  QLabel*                   m_pIndexStatus       = nullptr;
+  QToolButton*              m_pPendingCount      = nullptr;
+  QToolButton*              m_pErrorCount        = nullptr;
+  QListWidget*              m_pScopes            = nullptr;
+  QTimer*                   m_pSearchTimer       = nullptr;
+  QTimer*                   m_pReferenceTimer    = nullptr;
+  QTimer*                   m_pFolderCountTimer  = nullptr;
+  QString                   m_sProjectSettings;
+  int                       m_iDisplayMode = 0;
 };

@@ -19,19 +19,25 @@
 #include <QDir>
 #include <QFile>
 #include <QFileDialog>
+#include <QHash>
 #include <QHeaderView>
 #include <QLabel>
 #include <QLineEdit>
+#include <QListWidget>
 #include <QMenu>
 #include <QResizeEvent>
 #include <QShortcut>
 #include <QStyle>
 #include <QStyledItemDelegate>
 #include <QToolButton>
+#include <QTreeWidgetItemIterator>
 #include <QUrl>
 
 namespace
 {
+  using BrowserScope  = xiiQtAssetBrowserFilter::Scope;
+  using BrowserStatus = xiiQtAssetBrowserFilter::Status;
+
   class AssetDetailsDelegate final : public QStyledItemDelegate
   {
   public:
@@ -158,6 +164,20 @@ xiiQtAssetBrowserWidget::xiiQtAssetBrowserWidget(QWidget* pParent) :
   auto* pHidden = pFilters->addAction(tr("Show hidden folders"), this, &xiiQtAssetBrowserWidget::OnShowHiddenFolderItemsToggled);
   pHidden->setCheckable(true);
   connect(pFilters, &QMenu::aboutToShow, this, [this, pHidden]() { pHidden->setChecked(m_pFilter->GetShowItemsInHiddenFolders()); });
+  auto*             pStates      = pFilters->addMenu(tr("Processing status"));
+  auto*             pStatusGroup = new QActionGroup(pStates);
+  const QStringList statusNames  = {tr("Any status"), tr("Ready"), tr("Needs attention"), tr("Pending work"), tr("Errors")};
+  for (int i = 0; i < statusNames.size(); ++i)
+  {
+    const auto status  = static_cast<BrowserStatus>(i);
+    auto*      pAction = pStates->addAction(statusNames[i], this, [this, status]() { ApplyStatusFilter(status, false); });
+    pAction->setCheckable(true);
+    pStatusGroup->addAction(pAction);
+  }
+  connect(pStates, &QMenu::aboutToShow, this, [this, pStatusGroup]() {
+    pStatusGroup->actions()[static_cast<int>(m_pFilter->GetStatusFilter())]->setChecked(true);
+  });
+
   auto* pSort = pFilters->addMenu(tr("Sort by"));
   pSort->addAction(tr("Name"), this, [this]() { m_pModel->sort(xiiQtAssetBrowserModel::NameColumn); });
   pSort->addAction(tr("Type"), this, [this]() { m_pModel->sort(xiiQtAssetBrowserModel::TypeColumn); });
@@ -192,7 +212,75 @@ xiiQtAssetBrowserWidget::xiiQtAssetBrowserWidget(QWidget* pParent) :
 
   m_pVisibleCount = new QLabel(StatusBar);
   StatusLayout->addWidget(m_pVisibleCount);
-  StatusLayout->addStretch();
+  m_pPendingCount = new QToolButton(StatusBar);
+  m_pErrorCount   = new QToolButton(StatusBar);
+  m_pIndexStatus  = new QLabel(StatusBar);
+  m_pIndexStatus->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
+  for (auto* pButton : {m_pPendingCount, m_pErrorCount})
+  {
+    pButton->setAutoRaise(true);
+    pButton->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+    pButton->setIconSize(QSize(12, 12));
+    StatusLayout->addWidget(pButton);
+  }
+  m_pPendingCount->setIcon(xiiQtAssetBrowserModel::TransformStateIcon(xiiAssetInfo::NeedsTransform));
+  m_pErrorCount->setIcon(xiiQtAssetBrowserModel::TransformStateIcon(xiiAssetInfo::TransformError));
+  m_pPendingCount->setToolTip(tr("Show assets awaiting processing across all content roots"));
+  m_pErrorCount->setToolTip(tr("Show assets with processing errors across all content roots"));
+  connect(m_pPendingCount, &QToolButton::clicked, this, [this]() { ApplyStatusFilter(BrowserStatus::Pending, true); });
+  connect(m_pErrorCount, &QToolButton::clicked, this, [this]() { ApplyStatusFilter(BrowserStatus::Errors, true); });
+  StatusLayout->addWidget(m_pIndexStatus, 1);
+
+  m_pScopes = new QListWidget(Sidebar);
+  m_pScopes->setFrameShape(QFrame::NoFrame);
+  m_pScopes->setUniformItemSizes(true);
+  m_pScopes->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+  m_pScopes->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+  m_pScopes->setAccessibleName(tr("Asset scopes"));
+  m_pScopes->setStyleSheet(QStringLiteral("QListView::item { min-height: 22px; padding-left: 4px; }"));
+  auto addScope = [this](const QIcon& icon, const QString& sName) {
+    auto* pItem = new QListWidgetItem(icon, sName, m_pScopes);
+    pItem->setData(Qt::UserRole, sName);
+  };
+  addScope(QIcon(":/AssetIcons/Icons/AllAssets.svg"), tr("All Assets"));
+  addScope(style()->standardIcon(QStyle::SP_BrowserReload), tr("Recently Used"));
+  addScope(QIcon::fromTheme(QStringLiteral("starred"), style()->standardIcon(QStyle::SP_DialogYesButton)), tr("Favorites"));
+  addScope(xiiQtAssetBrowserModel::TransformStateIcon(xiiAssetInfo::NeedsTransform), tr("Needs Attention"));
+  m_pScopes->setFixedHeight(m_pScopes->count() * m_pScopes->sizeHintForRow(0));
+  SidebarLayout->insertWidget(0, m_pScopes);
+  connect(m_pScopes, &QListWidget::currentRowChanged, this, [this](int iRow) {
+    if (iRow < 0)
+      return;
+
+    m_pFilter->SetScope(static_cast<BrowserScope>(iRow));
+  });
+
+  m_pSearchTimer = new QTimer(this);
+  m_pSearchTimer->setSingleShot(true);
+  m_pSearchTimer->setInterval(125);
+  connect(m_pSearchTimer, &QTimer::timeout, this, [this]() {
+    m_pFilter->SetTextFilter(SearchWidget->text().toUtf8().constData());
+  });
+  connect(SearchWidget, &xiiQtSearchWidget::enterPressed, this, [this]() {
+    m_pSearchTimer->stop();
+    m_pFilter->SetTextFilter(SearchWidget->text().toUtf8().constData());
+    if (m_pModel->rowCount() > 0)
+      ActiveView()->setFocus();
+  });
+  m_pReferenceTimer = new QTimer(this);
+  m_pReferenceTimer->setSingleShot(true);
+  m_pReferenceTimer->setInterval(200);
+  connect(m_pReferenceTimer, &QTimer::timeout, m_pFilter, &xiiQtAssetBrowserFilter::RefreshReferences);
+  m_pFolderCountTimer = new QTimer(this);
+  m_pFolderCountTimer->setSingleShot(true);
+  m_pFolderCountTimer->setInterval(300);
+  connect(m_pFolderCountTimer, &QTimer::timeout, this, &xiiQtAssetBrowserWidget::UpdateFolderCounts);
+  connect(TreeFolderFilter->model(), &QAbstractItemModel::rowsInserted, this, [this]() { m_pFolderCountTimer->start(); });
+
+  auto* pStatusTimer = new QTimer(this);
+  pStatusTimer->setInterval(500);
+  connect(pStatusTimer, &QTimer::timeout, this, &xiiQtAssetBrowserWidget::UpdateIndexStatus);
+  pStatusTimer->start();
   EmptyView->setText(tr("No matching items"));
   EmptyView->setWordWrap(true);
   EmptyView->setMinimumWidth(0);
@@ -201,6 +289,11 @@ xiiQtAssetBrowserWidget::xiiQtAssetBrowserWidget(QWidget* pParent) :
   titleFont.setBold(true);
   WorkspaceTitle->setFont(titleFont);
   TreeFolderFilter->setIndentation(14);
+  TreeFolderFilter->setColumnCount(2);
+  TreeFolderFilter->header()->setStretchLastSection(false);
+  TreeFolderFilter->header()->setSectionResizeMode(0, QHeaderView::Stretch);
+  TreeFolderFilter->header()->setSectionResizeMode(1, QHeaderView::Fixed);
+  TreeFolderFilter->setColumnWidth(1, 42);
   TreeFolderFilter->setFrameShape(QFrame::NoFrame);
   TreeFolderFilter->setStyleSheet(QStringLiteral("QTreeView::item { min-height: 22px; }"));
   ListAssets->setFrameShape(QFrame::NoFrame);
@@ -292,6 +385,7 @@ xiiQtAssetBrowserWidget::xiiQtAssetBrowserWidget(QWidget* pParent) :
 
   XII_VERIFY(connect(ListAssets->selectionModel(), SIGNAL(selectionChanged(const QItemSelection&, const QItemSelection&)), this, SLOT(OnAssetSelectionChanged(const QItemSelection&, const QItemSelection&))) != nullptr, "signal/slot connection failed");
   XII_VERIFY(connect(ListAssets->selectionModel(), SIGNAL(currentChanged(const QModelIndex&, const QModelIndex&)), this, SLOT(OnAssetSelectionCurrentChanged(const QModelIndex&, const QModelIndex&))) != nullptr, "signal/slot connection failed");
+  connect(m_pFilter, &xiiQtAssetBrowserFilter::ScopeChanged, this, &xiiQtAssetBrowserWidget::OnPathFilterChanged);
   connect(SearchWidget, &xiiQtSearchWidget::textChanged, this, &xiiQtAssetBrowserWidget::OnSearchWidgetTextChanged);
 
   m_pFilter->SetShowFiles(false);
@@ -302,10 +396,13 @@ xiiQtAssetBrowserWidget::xiiQtAssetBrowserWidget(QWidget* pParent) :
 
   setAcceptDrops(true);
   OnPathFilterChanged();
+  RestoreProjectNavigation();
+  UpdateIndexStatus();
 }
 
 xiiQtAssetBrowserWidget::~xiiQtAssetBrowserWidget()
 {
+  SaveProjectNavigation();
   xiiToolsProject::s_Events.RemoveEventHandler(xiiMakeDelegate(&xiiQtAssetBrowserWidget::ProjectEventHandler, this));
   xiiAssetCurator::GetSingleton()->m_Events.RemoveEventHandler(xiiMakeDelegate(&xiiQtAssetBrowserWidget::AssetCuratorEventHandler, this));
 
@@ -498,6 +595,11 @@ void xiiQtAssetBrowserWidget::SetMode(Mode mode)
   DetailsAssets->setDragDropMode(bBrowser ? QAbstractItemView::DragOnly : QAbstractItemView::NoDragDrop);
   ButtonNew->setVisible(bBrowser);
   ButtonImport->setVisible(bBrowser);
+  m_pScopes->setVisible(bBrowser);
+  m_pPendingCount->setVisible(bBrowser);
+  m_pErrorCount->setVisible(bBrowser);
+  m_pIndexStatus->setVisible(bBrowser);
+  TreeFolderFilter->setColumnHidden(1, !bBrowser);
   TypeFilter->setVisible(mode != Mode::FilePicker && width() >= 640);
 
   if (mode == Mode::AssetPicker)
@@ -547,12 +649,22 @@ void xiiQtAssetBrowserWidget::ProjectEventHandler(const xiiToolsProjectEvent& e)
     {
       // this is necessary to detect new asset types when a plugin has been loaded (on project load)
       UpdateAssetTypes();
+      RestoreProjectNavigation();
+      m_pFolderCountTimer->start();
+      UpdateIndexStatus();
     }
     break;
+    case xiiToolsProjectEvent::Type::ProjectClosing:
+      SaveProjectNavigation();
+      m_sProjectSettings.clear();
+      m_pSearchTimer->stop();
+      m_pReferenceTimer->stop();
+      break;
     case xiiToolsProjectEvent::Type::ProjectClosed:
     {
       m_pFilter->Reset();
-      m_PathHistory  = {QString()};
+      m_pFilter->SetFavorites({});
+      m_PathHistory  = {NavigationLocation{}};
       m_iPathHistory = 0;
       OnPathFilterChanged();
     }
@@ -740,6 +852,170 @@ void xiiQtAssetBrowserWidget::UpdateWorkspace()
   AssetViews->setCurrentWidget(iVisible ? static_cast<QWidget*>(ActiveView()) : EmptyView);
 }
 
+void xiiQtAssetBrowserWidget::UpdateIndexStatus()
+{
+  if (m_Mode != Mode::Browser)
+    return;
+
+  auto*                                          pCurator  = xiiAssetCurator::GetSingleton();
+  const bool                                     bReady    = pCurator->IsReady();
+  const bool                                     bScanning = pCurator->IsCheckingFileSystem();
+  xiiUInt32                                      uiTotal   = 0;
+  xiiHybridArray<xiiUInt32, xiiAssetInfo::COUNT> counts;
+  pCurator->GetAssetTransformStats(uiTotal, counts);
+  xiiUInt32 uiPending = 0;
+  xiiUInt32 uiErrors  = 0;
+  for (int i = 0; i < xiiAssetInfo::COUNT; ++i)
+  {
+    if (i == xiiAssetInfo::UpToDate)
+      continue;
+    if (i < xiiAssetInfo::TransformError)
+      uiPending += counts[i];
+    else
+      uiErrors += counts[i];
+  }
+  m_pPendingCount->setText(tr("%n pending", nullptr, uiPending));
+  m_pPendingCount->setEnabled(uiPending > 0);
+  m_pErrorCount->setText(tr("%n errors", nullptr, uiErrors));
+  m_pErrorCount->setEnabled(uiErrors > 0);
+
+  QString sIndex = tr("No asset index");
+  if (bScanning)
+    sIndex = tr("Indexing…");
+  else if (bReady)
+    sIndex = tr("%n indexed", nullptr, uiTotal);
+
+  if (bReady)
+  {
+    if (const auto* pProfile = pCurator->GetActiveAssetProfile())
+      sIndex += tr(" · %1").arg(xiiMakeQString(pProfile->GetConfigName()));
+    const auto progress = xiiAssetProcessor::GetSingleton()->GetTransformProgress();
+    if (progress.m_bActive)
+      sIndex += tr(" · Processing %1/%2").arg(progress.m_uiCompleted).arg(progress.m_uiTotal);
+    else if (xiiAssetProcessor::GetSingleton()->GetProcessTaskState() == xiiAssetProcessor::ProcessTaskState::Running)
+      sIndex += tr(" · Background processing enabled");
+  }
+  m_pIndexStatus->setText(sIndex);
+  m_pIndexStatus->setToolTip(sIndex);
+
+  for (const auto& entry : {qMakePair(BrowserScope::Content, uiTotal), qMakePair(BrowserScope::Attention, uiPending + uiErrors)})
+  {
+    auto* pItem = m_pScopes->item(static_cast<int>(entry.first));
+    pItem->setText(tr("%1  (%2)").arg(pItem->data(Qt::UserRole).toString()).arg(entry.second));
+  }
+}
+
+void xiiQtAssetBrowserWidget::ApplyStatusFilter(BrowserStatus status, bool bGlobal)
+{
+  if (bGlobal)
+  {
+    SearchWidget->setText({});
+    m_pFilter->SetScope(BrowserScope::Content);
+    if (m_Mode == Mode::Browser)
+      TypeFilter->setCurrentIndex(2);
+  }
+
+  m_pFilter->SetStatusFilter(status);
+}
+
+void xiiQtAssetBrowserWidget::UpdateFolderCounts()
+{
+  if (m_Mode != Mode::Browser)
+    return;
+
+  QHash<QString, xiiUInt32> counts;
+  {
+    const auto assets = xiiAssetCurator::GetSingleton()->GetKnownAssets();
+    for (const auto& asset : *assets)
+    {
+      QString   sPath  = xiiMakeQString(asset.Value()->m_Path.GetDataDirParentRelativePath());
+      qsizetype iSlash = sPath.lastIndexOf(QLatin1Char('/'));
+      while (iSlash >= 0)
+      {
+        sPath.truncate(iSlash);
+        ++counts[sPath];
+        iSlash = sPath.lastIndexOf(QLatin1Char('/'));
+      }
+    }
+    counts[QString()] = assets->GetCount();
+  }
+  for (QTreeWidgetItemIterator it(TreeFolderFilter); *it; ++it)
+  {
+    const auto sPath = (*it)->data(0, xiiQtAssetBrowserModel::RelativePath).toString();
+    const auto count = counts.value(sPath);
+    (*it)->setText(1, count > 0 ? QString::number(count) : QString());
+    (*it)->setTextAlignment(1, Qt::AlignRight | Qt::AlignVCenter);
+  }
+}
+
+void xiiQtAssetBrowserWidget::SaveProjectNavigation() const
+{
+  if (m_sProjectSettings.isEmpty())
+    return;
+
+  QSettings settings;
+  settings.beginGroup(m_sProjectSettings);
+  settings.setValue("Folder", xiiMakeQString(m_pFilter->GetPathFilter()));
+  settings.setValue("Scope", static_cast<int>(m_pFilter->GetScope()));
+  QStringList expanded;
+  for (QTreeWidgetItemIterator it(TreeFolderFilter); *it; ++it)
+  {
+    if ((*it)->isExpanded())
+      expanded.push_back((*it)->data(0, xiiQtAssetBrowserModel::RelativePath).toString());
+  }
+  settings.setValue("Expanded", expanded);
+}
+
+void xiiQtAssetBrowserWidget::RestoreProjectNavigation()
+{
+  if (m_Mode != Mode::Browser || !xiiToolsProject::IsProjectOpen())
+    return;
+
+  const auto& sProject = xiiToolsProject::GetSingleton()->GetProjectFile();
+  m_sProjectSettings   = QStringLiteral("AssetBrowser/Projects/%1").arg(xiiHashingUtils::StringHash(sProject.GetView()), 0, 16);
+  QSettings settings;
+  settings.beginGroup(m_sProjectSettings);
+  xiiSet<xiiUuid> favorites;
+  for (const auto& sEntry : settings.value("Favorites").toStringList())
+  {
+    const xiiString sGuid = qtToXIIString(sEntry);
+    if (xiiConversionUtils::IsStringUuid(sGuid))
+      favorites.Insert(xiiConversionUtils::ConvertStringToUuid(sGuid));
+  }
+  m_pFilter->SetFavorites(favorites);
+
+  const auto          paths = settings.value("Expanded").toStringList();
+  const QSet<QString> expanded(paths.begin(), paths.end());
+  const auto          sFolder       = settings.value("Folder").toString();
+  bool                bFolderExists = sFolder.isEmpty();
+  for (QTreeWidgetItemIterator it(TreeFolderFilter); *it; ++it)
+  {
+    const auto sPath = (*it)->data(0, xiiQtAssetBrowserModel::RelativePath).toString();
+    if (sPath == sFolder)
+      bFolderExists = true;
+    if (settings.contains("Expanded"))
+      (*it)->setExpanded(sPath.isEmpty() || expanded.contains(sPath));
+  }
+  const auto scope = static_cast<BrowserScope>(qBound(0, settings.value("Scope").toInt(), static_cast<int>(BrowserScope::Attention)));
+  m_pFilter->SetLocation(bFolderExists ? sFolder.toUtf8().constData() : "", scope);
+}
+
+void xiiQtAssetBrowserWidget::ToggleFavorite(xiiUuid guid)
+{
+  if (m_sProjectSettings.isEmpty() || !guid.IsValid())
+    return;
+
+  m_pFilter->SetFavorite(guid, !m_pFilter->GetFavorites().Contains(guid));
+  QStringList      favorites;
+  xiiStringBuilder sGuid;
+  for (const auto& id : m_pFilter->GetFavorites())
+    favorites.push_back(xiiMakeQString(xiiConversionUtils::ToString(id, sGuid)));
+
+  QSettings settings;
+  settings.beginGroup(m_sProjectSettings);
+  settings.setValue("Favorites", favorites);
+}
+
 void xiiQtAssetBrowserWidget::resizeEvent(QResizeEvent* pEvent)
 {
   QWidget::resizeEvent(pEvent);
@@ -752,6 +1028,8 @@ void xiiQtAssetBrowserWidget::resizeEvent(QResizeEvent* pEvent)
     ToolBarLayout->itemAt(i)->widget()->setVisible(bNavigation);
   TypeFilter->setVisible(bWide && m_Mode != Mode::FilePicker);
   m_pBreadcrumb->setVisible(bWide);
+  m_pPendingCount->setVisible(bNavigation && m_Mode == Mode::Browser);
+  m_pErrorCount->setVisible(bNavigation && m_Mode == Mode::Browser);
   ButtonIconMode->setVisible(bWide);
   ButtonListMode->setVisible(bWide);
   ButtonDetailsMode->setVisible(bWide);
@@ -789,6 +1067,10 @@ void xiiQtAssetBrowserWidget::OnTextFilterChanged()
 {
   OnFilterChanged();
 
+  m_pSearchTimer->stop();
+  const QString sError = m_pFilter->GetQueryError();
+  SearchWidget->setToolTip(sError.isEmpty() ? tr("Use type:, name:, path:, status:, tag:, meta.<property>:, ref: or ref-all:.") : sError);
+  EmptyView->setText(sError.isEmpty() ? tr("No matching items") : sError);
   const QString sText = xiiMakeQString(m_pFilter->GetTextFilter());
   if (SearchWidget->text() != sText)
   {
@@ -799,10 +1081,11 @@ void xiiQtAssetBrowserWidget::OnTextFilterChanged()
 
 void xiiQtAssetBrowserWidget::OnFilterChanged()
 {
-  const QString sText = xiiMakeQString(m_pFilter->GetTextFilter());
-  ButtonShowItemsSubFolders->setEnabled(sText.isEmpty());
+  const QString sText      = xiiMakeQString(m_pFilter->GetTextFilter());
+  const bool    bAvailable = sText.isEmpty() && m_pFilter->GetScope() == BrowserScope::Content && m_pFilter->GetStatusFilter() == BrowserStatus::Any;
+  ButtonShowItemsSubFolders->setEnabled(bAvailable);
   ButtonShowItemsSubFolders->blockSignals(true);
-  ButtonShowItemsSubFolders->setChecked(!sText.isEmpty() || m_pFilter->GetShowItemsInSubFolders());
+  ButtonShowItemsSubFolders->setChecked(!bAvailable || m_pFilter->GetShowItemsInSubFolders());
   ButtonShowItemsSubFolders->blockSignals(false);
 }
 
@@ -834,11 +1117,13 @@ void xiiQtAssetBrowserWidget::OnTypeFilterChanged()
 
 void xiiQtAssetBrowserWidget::OnPathFilterChanged()
 {
-  const QString sPath = xiiMakeQString(m_pFilter->GetPathFilter());
-  if (!m_bHistoryNavigation && m_PathHistory[m_iPathHistory] != sPath)
+  const QString            sPath = xiiMakeQString(m_pFilter->GetPathFilter());
+  const auto               scope = m_pFilter->GetScope();
+  const NavigationLocation current{sPath, scope};
+  if (!m_bHistoryNavigation && m_PathHistory[m_iPathHistory] != current)
   {
     m_PathHistory = m_PathHistory.mid(0, m_iPathHistory + 1);
-    m_PathHistory.push_back(sPath);
+    m_PathHistory.push_back(current);
     if (m_PathHistory.size() > 64)
       m_PathHistory.removeFirst();
     m_iPathHistory = m_PathHistory.size() - 1;
@@ -847,10 +1132,18 @@ void xiiQtAssetBrowserWidget::OnPathFilterChanged()
   m_pForward->setEnabled(m_iPathHistory + 1 < m_PathHistory.size());
   m_pUp->setEnabled(!sPath.isEmpty());
   const auto parts   = sPath.split(QLatin1Char('/'), Qt::SkipEmptyParts);
-  const auto sFolder = parts.isEmpty() ? tr("All Assets") : parts.constLast();
+  const int  iScope  = static_cast<int>(scope);
+  const auto sFolder = parts.isEmpty() ? m_pScopes->item(iScope)->data(Qt::UserRole).toString() : parts.constLast();
+  {
+    const QSignalBlocker blockScopes(m_pScopes);
+    const QSignalBlocker blockTree(TreeFolderFilter);
+    m_pScopes->setCurrentRow(sPath.isEmpty() ? iScope : -1);
+    if (sPath.isEmpty())
+      TreeFolderFilter->clearSelection();
+  }
   WorkspaceTitle->setText(sFolder);
   WorkspaceTitle->setToolTip(sPath);
-  m_pBreadcrumb->setText(fontMetrics().elidedText(parts.isEmpty() ? tr("Content") : parts.join(QStringLiteral(" › ")), Qt::ElideLeft, 155));
+  m_pBreadcrumb->setText(fontMetrics().elidedText(parts.isEmpty() ? sFolder : parts.join(QStringLiteral(" › ")), Qt::ElideLeft, 155));
   m_pBreadcrumb->setToolTip(sPath);
   m_pBreadcrumbMenu->setTitle(tr("Content path"));
   m_pBreadcrumbMenu->clear();
@@ -870,13 +1163,20 @@ void xiiQtAssetBrowserWidget::NavigateHistory(int iDirection)
     return;
   m_iPathHistory       = iNext;
   m_bHistoryNavigation = true;
-  m_pFilter->SetPathFilter(m_PathHistory[m_iPathHistory].toUtf8().constData());
+  const auto location  = m_PathHistory[m_iPathHistory];
+  m_pFilter->SetLocation(location.m_sPath.toUtf8().constData(), location.m_Scope);
   m_bHistoryNavigation = false;
 }
 
 void xiiQtAssetBrowserWidget::OnSearchWidgetTextChanged(const QString& text)
 {
-  m_pFilter->SetTextFilter(text.toUtf8().data());
+  if (text.isEmpty())
+  {
+    m_pSearchTimer->stop();
+    m_pFilter->SetTextFilter("");
+  }
+  else
+    m_pSearchTimer->start();
 }
 
 void xiiQtAssetBrowserWidget::keyPressEvent(QKeyEvent* e)
@@ -1049,14 +1349,15 @@ done:
 
 void xiiQtAssetBrowserWidget::AssetCuratorEventHandler(const xiiAssetCuratorEvent& e)
 {
-  switch (e.m_Type)
-  {
-    case xiiAssetCuratorEvent::Type::AssetListReset:
-      UpdateAssetTypes();
-      break;
-    default:
-      break;
-  }
+  if (e.m_Type == xiiAssetCuratorEvent::Type::AssetListReset)
+    UpdateAssetTypes();
+
+  if (e.m_Type == xiiAssetCuratorEvent::Type::AssetListReset || e.m_Type == xiiAssetCuratorEvent::Type::AssetAdded ||
+      e.m_Type == xiiAssetCuratorEvent::Type::AssetRemoved || e.m_Type == xiiAssetCuratorEvent::Type::AssetMoved)
+    m_pFolderCountTimer->start();
+
+  if (m_pFilter->HasReferenceQuery() && !m_pReferenceTimer->isActive())
+    m_pReferenceTimer->start();
 }
 
 void xiiQtAssetBrowserWidget::on_TreeFolderFilter_customContextMenuRequested(const QPoint& pt)
@@ -1219,6 +1520,8 @@ void xiiQtAssetBrowserWidget::on_ListAssets_customContextMenuRequested(const QPo
     if (bShowDocumentActions)
     {
       m.addAction(QIcon(QLatin1String(":/EditorFramework/Icons/TransformAsset.svg")), QLatin1String("Transform"), this, SLOT(OnTransform()));
+      const auto guid = CurrentAssetIndex().data(xiiQtAssetBrowserModel::SubAssetGuid).value<xiiUuid>();
+      m.addAction(m_pFilter->GetFavorites().Contains(guid) ? tr("Remove from Favorites") : tr("Add to Favorites"), this, [this, guid]() { ToggleFavorite(guid); });
       m.addAction(QIcon(QLatin1String(":/GuiFoundation/Icons/Guid.svg")), QLatin1String("Copy Asset Guid"), this, SLOT(OnListCopyAssetGuid()));
 
       m.addAction(QIcon(QLatin1String(":/GuiFoundation/Icons/Search.svg")), QLatin1String("Find all direct references to this asset"), this, [&]() { OnListFindAllReferences(false); });

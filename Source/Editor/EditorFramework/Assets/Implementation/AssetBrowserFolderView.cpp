@@ -525,7 +525,7 @@ void eqQtAssetBrowserFolderView::UpdateDirectoryTree()
   if (topLevelItemCount() == 0)
   {
     QTreeWidgetItem* pNewParent = new QTreeWidgetItem();
-    pNewParent->setText(0, QLatin1String("<root>"));
+    pNewParent->setText(0, tr("Content roots"));
 
     addTopLevelItem(pNewParent);
 

@@ -3,6 +3,31 @@
 #include <EditorFramework/EditorFrameworkPCH.h>
 
 #include <EditorFramework/Assets/AssetDocumentInfo.h>
+#include <Foundation/Reflection/ReflectionUtils.h>
+
+void xiiAssetDocumentInfo::VisitMetadataProperties(xiiStringView sProperty, xiiDelegate<bool(xiiStringView, xiiStringView)> visitor) const
+{
+  xiiHybridArray<const xiiAbstractProperty*, 16> properties;
+  for (const xiiReflectedClass* pMetadata : m_MetaInfo)
+  {
+    if (pMetadata == nullptr)
+      continue;
+
+    properties.Clear();
+    pMetadata->GetDynamicRTTI()->GetAllProperties(properties);
+    for (const auto* pProperty : properties)
+    {
+      const xiiStringView sName = pProperty->GetPropertyName();
+      if ((!sProperty.IsEmpty() && !sProperty.IsEqual_NoCase(sName)) || pProperty->GetCategory() != xiiPropertyCategory::Member ||
+          !pProperty->GetFlags().IsSet(xiiPropertyFlags::StandardType) || pProperty->GetFlags().IsSet(xiiPropertyFlags::Pointer))
+        continue;
+
+      const auto value = xiiReflectionUtils::GetMemberPropertyValue(static_cast<const xiiAbstractMemberProperty*>(pProperty), pMetadata);
+      if (value.CanConvertTo<xiiString>() && !visitor(sName, value.ConvertTo<xiiString>()))
+        return;
+    }
+  }
+}
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAssetDocumentInfo, 2, xiiRTTIDefaultAllocator<xiiAssetDocumentInfo>)
