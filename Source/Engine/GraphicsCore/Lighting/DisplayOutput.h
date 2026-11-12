@@ -37,10 +37,21 @@ struct XII_GRAPHICSCORE_DLL xiiToneMappingOperator
     Reinhard,
     Uncharted2,
     AgX,
+    AgXPunchy,
+    AgXGolden,
+    KhronosPBRNeutral,
+    ACESFitted,
+    Filmic,
+    Lottes,
+    Uchimura,
+    ReinhardExtended,
+    ReinhardLuminance,
+    Exponential,
+    LinearClamp,
 
     ENUM_COUNT,
 
-    Default = AgX
+    Default = AgXPunchy
   };
 };
 
