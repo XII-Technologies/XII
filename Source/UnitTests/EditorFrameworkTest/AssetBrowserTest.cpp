@@ -19,6 +19,9 @@
 #include <QLabel>
 #include <QTabWidget>
 #include <QTreeWidget>
+#include <ads/DockManager.h>
+#include <ads/DockWidget.h>
+#include <ads/FloatingDockContainer.h>
 
 XII_CREATE_SIMPLE_TEST_GROUP(AssetBrowser);
 
@@ -197,5 +200,78 @@ XII_CREATE_SIMPLE_TEST(AssetBrowser, IndexedWorkspaceAndPickers)
     xiiSet<xiiUuid> references;
     pCurator->FindAllUses(source, references, false);
     XII_TEST_BOOL(references.Contains(consumer));
+  }
+
+  auto checkDockLayout = [](ads::DockWidgetArea area) {
+    ads::CDockManager manager;
+    auto*             pCenter = new ads::CDockWidget(&manager, QStringLiteral("Center"));
+    pCenter->setWidget(new QWidget);
+    manager.addDockWidget(ads::CenterDockWidgetArea, pCenter);
+
+    auto* pDock    = new ads::CDockWidget(&manager, QStringLiteral("Asset Browser"));
+    auto* pBrowser = new xiiQtAssetBrowserWidget(nullptr);
+    pDock->setWidget(pBrowser, ads::CDockWidget::ForceScrollArea);
+    manager.resize(1300, 620);
+    manager.show();
+
+    QWidget* pResizeTarget = &manager;
+    if (area == ads::NoDockWidgetArea)
+    {
+      auto* pFloating = manager.addDockWidgetFloating(pDock);
+      pFloating->resize(1080, 510);
+      pFloating->show();
+      pResizeTarget = pFloating;
+    }
+    else
+    {
+      auto* pArea = manager.addDockWidget(area, pDock);
+      manager.setSplitterSizes(pArea, area == ads::BottomDockWidgetArea ? QList<int>{210, 380} : QList<int>{950, 320});
+    }
+    QApplication::processEvents();
+
+    const auto checkGeometry = [pBrowser]() {
+      auto* pToolbar   = pBrowser->Toolbar;
+      auto* pWorkspace = pBrowser->splitter;
+      auto* pStatus    = pBrowser->StatusBar;
+      auto* pInspector = pBrowser->findChild<QWidget*>(QStringLiteral("AssetInspector"));
+      XII_TEST_BOOL(pBrowser->isVisible());
+      XII_TEST_INT(pToolbar->y(), 0);
+      XII_TEST_INT(pToolbar->height(), pToolbar->sizeHint().height());
+      XII_TEST_INT(pWorkspace->y(), pToolbar->geometry().bottom() + 1);
+      XII_TEST_INT(pStatus->y(), pWorkspace->geometry().bottom() + 1);
+      XII_TEST_INT(pStatus->height(), pStatus->sizeHint().height());
+      XII_TEST_INT(pStatus->geometry().bottom() + 1, pBrowser->height());
+      XII_TEST_INT(pBrowser->WorkspaceHeader->height(), pBrowser->WorkspaceHeader->sizeHint().height());
+      XII_TEST_INT(pBrowser->AssetViews->geometry().bottom() + 1, pBrowser->Workspace->height());
+      for (auto* pPane : {pBrowser->Sidebar, pBrowser->Workspace, pInspector})
+      {
+        if (pPane && pPane->isVisible())
+        {
+          XII_TEST_INT(pPane->y(), 0);
+          XII_TEST_INT(pPane->height(), pWorkspace->height());
+        }
+      }
+    };
+    checkGeometry();
+    const int iInitialHeight          = pBrowser->height();
+    const int iInitialWorkspaceHeight = pBrowser->splitter->height();
+    pResizeTarget->resize(pResizeTarget->width(), pResizeTarget->height() + 190);
+    QApplication::processEvents();
+    checkGeometry();
+    XII_TEST_BOOL(pBrowser->height() > iInitialHeight);
+    XII_TEST_INT(pBrowser->splitter->height() - iInitialWorkspaceHeight, pBrowser->height() - iInitialHeight);
+  };
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Bottom dock height")
+  {
+    checkDockLayout(ads::BottomDockWidgetArea);
+  }
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Side dock height")
+  {
+    checkDockLayout(ads::LeftDockWidgetArea);
+  }
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Floating dock height")
+  {
+    checkDockLayout(ads::NoDockWidgetArea);
   }
 }
