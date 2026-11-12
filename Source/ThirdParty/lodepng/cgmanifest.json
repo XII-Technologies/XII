@@ -1,0 +1,14 @@
+{
+  "Registrations": [
+    {
+      "component": {
+        "type": "git",
+        "git": {
+          "Name": "lodepng",
+          "repositoryUrl": "https://github.com/lvandeve/lodepng",
+          "commitHash": "7b2893e35891c0c85bee5595caafaf3c2044b409"
+        }
+      }
+    }
+  ]
+}
