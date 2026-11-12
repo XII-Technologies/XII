@@ -1,4 +1,5 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 //
 // AgX analytical approximation adapted from Benjamin Wrensch's minimal implementation:
 // https://iolite-engine.com/blog_posts/minimal_agx_implementation
