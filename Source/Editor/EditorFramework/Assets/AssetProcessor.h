@@ -37,7 +37,6 @@ struct xiiAssetTransformProgress
   xiiUInt32 m_uiCanceled          = 0;
   bool      m_bActive             = false;
   bool      m_bCancelRequested    = false;
-  bool      m_bAllAssets          = false;
   xiiTime   m_Duration;
 };
 
