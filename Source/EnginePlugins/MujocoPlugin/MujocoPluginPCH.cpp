@@ -6,4 +6,6 @@ XII_STATICLINK_LIBRARY(MujocoPlugin)
 {
   if (bReturn)
     return;
+
+  XII_STATICLINK_REFERENCE(MujocoPlugin_Startup);
 }
