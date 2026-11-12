@@ -161,8 +161,6 @@ struct XII_EDITORFRAMEWORK_DLL xiiCppProject : public xiiEditorSettings
 
   static xiiResult EnsureCppPluginReady();
 
-  static bool IsBuildRequired();
-
   /// Fired when a notable change has been made.
   static xiiEvent<const xiiCppSettings&> s_ChangeEvents;
 

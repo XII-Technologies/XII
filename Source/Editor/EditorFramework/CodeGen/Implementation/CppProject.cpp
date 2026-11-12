@@ -1006,30 +1006,6 @@ xiiResult xiiCppProject::EnsureCppPluginReady()
   return XII_SUCCESS;
 }
 
-bool xiiCppProject::IsBuildRequired()
-{
-  if (!ExistsProjectCMakeListsTxt())
-    return false;
-
-  xiiCppSettings cfg;
-  if (cfg.Load().Failed())
-    return true;
-
-  if (!xiiCppProject::ExistsSolution(cfg))
-    return true;
-
-  if (xiiCppProject::CheckCMakeCache(cfg).Failed())
-    return true;
-
-  if (CheckCMakeUserPresets(cfg, false) != ModifyResult::NOT_MODIFIED)
-    return true;
-
-  if (!xiiPlugin::ExistsPluginFile(xiiStringBuilder(cfg.m_sPluginName, "Plugin"), GetPluginOutputDir()))
-    return true;
-
-  return false;
-}
-
 namespace
 {
   template <typename T>

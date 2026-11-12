@@ -447,16 +447,6 @@ void xiiQtEditorApp::ProjectEventHandler(const xiiToolsProjectEvent& r)
               The compiler set in the preferences does not appear to work, as a result the plugin cannot be compiled <br><br><b>Error:</b> {}</html>",
                                                       compilerStatus.GetMessageString().GetView()));
           }
-          else if (xiiCppProject::IsBuildRequired())
-          {
-            const auto clicked = xiiQtUiServices::MessageBoxQuestion("<html>Compile this project's C++ plugin?<br><br>\
-Explanation: This project has <a href='https://xiiengine.net/pages/docs/custom-code/cpp/cpp-project-generation.html'>a dedicated C++ plugin</a> with custom code. The plugin is currently not compiled and therefore the project won't fully work and certain assets will fail to transform.<br><br>\
-It is advised to compile the plugin now, but you can also do so later.</html>",
-                                                                     QMessageBox::StandardButton::Apply | QMessageBox::StandardButton::Ignore, QMessageBox::StandardButton::Apply);
-
-            if (clicked == QMessageBox::StandardButton::Apply && xiiCppProject::EnsureCppPluginReady().Failed())
-              xiiLog::Error("Project C++ plugin build failed. Rebuild it from the Project menu and retry failed asset transformations.");
-          }
         }
 
 
