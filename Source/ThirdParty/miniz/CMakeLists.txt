@@ -10,3 +10,10 @@ xii_create_target(STATIC_LIBRARY ${PROJECT_NAME} NO_XII_PREFIX NO_WARNINGS_AS_ER
 xii_set_clib_build_flags(${PROJECT_NAME})
 
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_LIST_DIR})
+
+if(XII_CMAKE_COMPILER_MSVC)
+  target_compile_options(${PROJECT_NAME} PRIVATE
+    /wd4267  # size_t conversion
+    /wd4996  # Deprecated function
+  )
+endif()

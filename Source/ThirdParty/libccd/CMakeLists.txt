@@ -12,3 +12,10 @@ xii_set_clib_build_flags(${PROJECT_NAME})
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_LIST_DIR}/src)
 
 target_compile_definitions(${PROJECT_NAME} PUBLIC CCD_STATIC_DEFINE)
+
+if(XII_CMAKE_COMPILER_MSVC)
+  target_compile_options(${PROJECT_NAME} PRIVATE
+    /wd4267  # size_t conversion
+    /wd4996  # Deprecated function
+  )
+endif()

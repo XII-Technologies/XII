@@ -35,3 +35,14 @@ target_include_directories(${PROJECT_NAME}
   ${CMAKE_CURRENT_LIST_DIR}/src
   ${CMAKE_CURRENT_LIST_DIR}/src/xml
 )
+
+if(XII_CMAKE_COMPILER_MSVC)
+  target_compile_options(${PROJECT_NAME} PRIVATE
+    /wd4018  # Signed/unsigned comparison
+    /wd4146  # Unary minus on unsigned type
+    /wd4244  # Numeric conversion
+    /wd4267  # size_t conversion
+    /wd4305  # Floating-point truncation
+    /wd4101  # Unreferenced local variable
+  )
+endif()
