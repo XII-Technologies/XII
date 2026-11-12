@@ -308,7 +308,10 @@ private:
     if (pCommandQueueVulkan == nullptr)
       return 0ULL;
 
-    return pCommandQueueVulkan->GetNextFenceValue();
+    // Deletion depends only on work already submitted. Waiting for the next value
+    // would retain every entry indefinitely when any queue stops receiving work.
+    const xiiUInt64 uiNextFenceValue = pCommandQueueVulkan->GetNextFenceValue();
+    return uiNextFenceValue > 0ULL ? uiNextFenceValue - 1ULL : 0ULL;
   }
 
   [[nodiscard]] static xiiUInt64 GetCompletedFenceValue(xiiGALCommandQueueVulkan* pCommandQueueVulkan)
