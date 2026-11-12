@@ -1,0 +1,14 @@
+// Reference: Source/EditorPlugins/Assets/EditorPluginAssets/Assets.xiiPluginBundle
+
+PluginInfo
+{
+  string %DisplayName{"Mujoco Physics"}
+  string %Description{"Provides advanced physical simulation using MuJoCo, specializing in articulated-body dynamics, robotics, actuators, sensors, contact modeling, and physics-based control systems."}
+  string %EditorPlugins{"xiiEditorPluginMujoco"}
+  string %EditorEnginePlugins{"xiiEnginePluginMujoco"}
+  string %RuntimePlugins{"xiiMujocoPlugin"}
+  string %PackageDependencies{"Mujoco.dll"}
+  string %RequiredPlugins{}
+  string %ExclusiveFeatures{"physics"}
+  string %EnabledInTemplates{"General3D"}
+}
