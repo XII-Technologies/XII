@@ -3,6 +3,7 @@
 #include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
 
 #include <Foundation/Utilities/CommandLineUtils.h>
+#include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 #include <GraphicsFoundation/Device/DeviceFactory.h>
 #include <GraphicsFoundationTest/TestingEnvironment/TestingEnvironment.h>
@@ -73,6 +74,64 @@ XII_CREATE_SIMPLE_TEST(Device, MemoryHeapStatistics)
     pDevice->EndFrame();
     pDevice->WaitIdle();
     XII_TEST_BOOL(getAllocatedBytes() == uiBaseline);
+  }
+}
+
+XII_CREATE_SIMPLE_TEST(Device, DeferredDestructionWithoutFutureSubmissions)
+{
+  xiiGPUTestingEnvironment environment;
+  if (!XII_TEST_RESULT(environment.Initialize()))
+    return;
+
+  auto* pDevice = environment.GetDevice();
+  if (pDevice->GetGraphicsDeviceType() != xiiGALGraphicsDeviceType::Vulkan)
+    return;
+
+  xiiGALMemoryCategoryStatistics baseline;
+  if (!XII_TEST_BOOL(pDevice->GetMemoryCategoryStatistics(xiiGALMemoryCategory::Readback, baseline)))
+    return;
+
+  // First retire an unused allocation without submitting to any queue. Then exercise
+  // completed graphics work while the compute and transfer queues remain unused.
+  for (xiiUInt32 uiFrame = 0U; uiFrame < 8U; ++uiFrame)
+  {
+    pDevice->BeginFrame();
+    xiiGALBufferCreationDescription description;
+    description.m_uiSize         = 1024U * 1024U;
+    description.m_BindFlags      = xiiGALBindFlags::VertexBuffer;
+    description.m_MemoryCategory = xiiGALMemoryCategory::Readback;
+    auto pBuffer                 = pDevice->CreateBuffer(description);
+    XII_TEST_BOOL(pBuffer != nullptr);
+
+    if (pBuffer && uiFrame != 0U)
+    {
+      auto pCommands = pDevice->CreateCommandList({.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
+      pCommands->Begin();
+      xiiGALStateTransitionDescription transition;
+      transition.m_pResource       = pBuffer;
+      transition.m_NewState        = xiiGALResourceStateFlags::VertexBuffer;
+      transition.m_TransitionFlags = xiiGALStateTransitionFlags::UpdateState;
+      pCommands->TransitionResourceStates(xiiMakeArrayPtr(&transition, 1U));
+      pCommands->End();
+      auto* pQueue = pDevice->GetCommandQueue();
+      pQueue->WaitForFenceValue(pQueue->Submit(pCommands));
+    }
+
+    xiiGALMemoryCategoryStatistics allocated;
+    XII_TEST_BOOL(pDevice->GetMemoryCategoryStatistics(xiiGALMemoryCategory::Readback, allocated));
+    pBuffer.Clear();
+    xiiGALMemoryCategoryStatistics retiring;
+    XII_TEST_BOOL(pDevice->GetMemoryCategoryStatistics(xiiGALMemoryCategory::Readback, retiring));
+    XII_TEST_BOOL(retiring.m_uiAllocatedBytes == allocated.m_uiAllocatedBytes);
+    XII_TEST_BOOL(retiring.m_uiRetiringBytes >= baseline.m_uiRetiringBytes + description.m_uiSize);
+
+    // Reclamation must not require another submission or a device-wide idle wait.
+    pDevice->EndFrame();
+    xiiGALMemoryCategoryStatistics reclaimed;
+    XII_TEST_BOOL(pDevice->GetMemoryCategoryStatistics(xiiGALMemoryCategory::Readback, reclaimed));
+    XII_TEST_BOOL(reclaimed.m_uiAllocatedBytes == baseline.m_uiAllocatedBytes);
+    XII_TEST_BOOL(reclaimed.m_uiRetiringBytes == baseline.m_uiRetiringBytes);
+    XII_TEST_INT(reclaimed.m_uiAllocationCount, baseline.m_uiAllocationCount);
   }
 }
 
