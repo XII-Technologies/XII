@@ -1759,8 +1759,209 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
     }
   }
 
-  const bool bEnableGpuProfiling = (pProfiler != nullptr) && m_LastCompileSettings.m_bEnableGPUProfiling;
+
+  auto acquireResource = [&](xiiUInt32 uiResourceIndex, bool bPublish) -> xiiResult {
+    const ResourceEntry& resource = m_Resources[uiResourceIndex];
+    XII_ASSERT_DEV(resource.m_bIsTransient && resource.m_uiAliasGroup != xiiInvalidIndex, "Only used transient resources have alias allocations.");
+
+    if (resource.m_bIsTexture)
+    {
+      auto& pTexture = aliasTextures[resource.m_uiAliasGroup];
+      if (!pTexture)
+      {
+        XII_PROFILE_SCOPE("Render Graph: Acquire Transient Texture");
+        pTexture = resource.m_ExportFinalState != xiiGALResourceStateFlags::Unknown ? pDevice->CreateTexture(resource.m_TextureDescription) : pResourceCache->AcquireTexture(resource.m_TextureDescription);
+      }
+      if (!pTexture)
+      {
+        const auto& description = resource.m_TextureDescription;
+        if (out_pError != nullptr)
+          out_pError->SetFormat("Failed to allocate texture '{}' ({} x {}, {} slices, {} mips, {} samples, format {}).", resource.m_sName, description.m_Size.width, description.m_Size.height, description.m_uiArraySizeOrDepth, description.m_uiMipLevels, description.m_uiSampleCount, description.m_Format.GetValue());
+        return XII_FAILURE;
+      }
+
+      resolvedTextures[uiResourceIndex] = pTexture;
+      if (bPublish)
+      {
+        if (resource.m_ExportFinalState != xiiGALResourceStateFlags::Unknown)
+          m_ExportedTextures.Insert(resource.m_Id.m_Data, pTexture);
+        pTexture->SetDebugName(resource.m_sName);
+      }
+    }
+    else
+    {
+      auto& pBuffer = aliasBuffers[resource.m_uiAliasGroup];
+      if (!pBuffer)
+      {
+        XII_PROFILE_SCOPE("Render Graph: Acquire Transient Buffer");
+        pBuffer = resource.m_ExportFinalState != xiiGALResourceStateFlags::Unknown ? pDevice->CreateBuffer(resource.m_BufferDescription) : pResourceCache->AcquireBuffer(resource.m_BufferDescription);
+      }
+      if (!pBuffer)
+      {
+        if (out_pError != nullptr)
+          out_pError->SetFormat("Failed to allocate buffer '{}' ({} bytes).", resource.m_sName, resource.m_BufferDescription.m_uiSize);
+        return XII_FAILURE;
+      }
+
+      resolvedBuffers[uiResourceIndex] = pBuffer;
+      if (bPublish)
+      {
+        if (resource.m_ExportFinalState != xiiGALResourceStateFlags::Unknown)
+          m_ExportedBuffers.Insert(resource.m_Id.m_Data, pBuffer);
+        pBuffer->SetDebugName(resource.m_sName);
+      }
+    }
+    return XII_SUCCESS;
+  };
+
+  auto recordRange = [&](const xiiRenderGraphCompiledPass& pass, xiiGALCommandList* pList, xiiUInt32 uiStart, xiiUInt32 uiEnd, xiiStringBuilder& ref_error) {
+    xiiRenderGraphPassContext context;
+    context.m_pCommandList = pList;
+    if (pass.m_uiMergeGroupIndex != xiiInvalidIndex)
+      context.m_pRenderPass = m_MergeGroups[pass.m_uiMergeGroupIndex].m_pNativeRenderPass;
+    if (!pList->GetDescription().m_Flags.IsSet(xiiGALCommandListFlags::Secondary))
+    {
+      auto* pPassBlackboard    = m_Passes[pass.m_uiPassIndex].m_pBlackboard;
+      context.m_pBlackboard    = pPassBlackboard ? pPassBlackboard : pBlackboard;
+      context.m_pResourceCache = pResourceCache;
+    }
+    context.m_pView            = pView;
+    context.m_uiFrameIndex     = m_uiFrameIndex;
+    context.m_uiRecordingStart = uiStart;
+    context.m_uiRecordingEnd   = uiEnd;
+    context.m_sPassName        = pass.m_sName;
+    context.m_pGraph           = this;
+    context.m_ResolvedTextures = resolvedTextures;
+    context.m_ResolvedBuffers  = resolvedBuffers;
+    context.m_pExecutionError  = &ref_error;
+    pass.m_ExecuteDelegate(context);
+  };
+
+  struct RasterJob
+  {
+    xiiUInt32                       m_uiPass;
+    xiiUInt32                       m_uiStart;
+    xiiUInt32                       m_uiEnd;
+    xiiSharedPtr<xiiGALCommandList> m_pList;
+    xiiStringBuilder                m_Error;
+  };
+  struct PassJobs
+  {
+    xiiUInt32 m_uiFirst = 0U;
+    xiiUInt32 m_uiCount = 0U;
+  };
+  xiiDynamicArray<RasterJob> rasterJobs;
+  xiiDynamicArray<PassJobs>  passJobs;
+
   const bool bSupportsParallelRecording = pDevice->GetGraphicsDeviceType() == xiiGALGraphicsDeviceType::Vulkan && pDevice->GetFeatures().m_MultithreadedResourceCreation == xiiGALDeviceFeatureState::Enabled;
+  if (bSupportsParallelRecording)
+  {
+    passJobs.SetCount(m_CompiledPasses.GetCount());
+    for (xiiUInt32 uiPass = 0U; uiPass < m_CompiledPasses.GetCount(); ++uiPass)
+    {
+      const auto&     pass    = m_CompiledPasses[uiPass];
+      const xiiUInt32 uiItems = m_Passes[pass.m_uiPassIndex].m_uiRecordingItemCount;
+      if (uiItems == 0U || pass.m_bIsCulled || pass.m_PrepareDelegate.IsValid() || pass.m_uiMergeGroupIndex == xiiInvalidIndex)
+        continue;
+      if (m_MergeGroups[pass.m_uiMergeGroupIndex].m_PassIndices.GetCount() != 1U)
+        continue;
+
+      // Independent passes can share the worker group even when each contains a single draw.
+      const xiiUInt32 uiJobCount    = xiiMath::Clamp(uiItems / 8U, 1U, 4U);
+      const xiiUInt32 uiItemsPerJob = uiItems / uiJobCount;
+      const xiiUInt32 uiExtraItems  = uiItems % uiJobCount;
+      passJobs[uiPass]              = {rasterJobs.GetCount(), uiJobCount};
+      for (xiiUInt32 uiJob = 0U, uiStart = 0U; uiJob < uiJobCount; ++uiJob)
+      {
+        const xiiUInt32 uiEnd = uiStart + uiItemsPerJob + (uiJob < uiExtraItems ? 1U : 0U);
+        auto&           job   = rasterJobs.ExpandAndGetRef();
+        job.m_uiPass          = uiPass;
+        job.m_uiStart         = uiStart;
+        job.m_uiEnd           = uiEnd;
+        uiStart               = uiEnd;
+      }
+    }
+
+    if (rasterJobs.GetCount() < 2U)
+    {
+      rasterJobs.Clear();
+      passJobs.Clear();
+    }
+  }
+
+  if (!rasterJobs.IsEmpty())
+  {
+    XII_PROFILE_SCOPE("Render Graph: Record Raster Passes");
+
+    // Resolve the workers' resource bindings before recording. The alias allocations are reused
+    // by the serial graph walk. Workers never advance the tracked GPU states or graph lifetimes.
+    for (xiiUInt32 uiPass = 0U; uiPass < passJobs.GetCount(); ++uiPass)
+    {
+      if (passJobs[uiPass].m_uiCount == 0U)
+        continue;
+
+      const auto& compiled = m_CompiledPasses[uiPass];
+      const auto& pass     = m_Passes[compiled.m_uiPassIndex];
+      for (const auto usages : {pass.m_Reads.GetArrayPtr(), pass.m_Writes.GetArrayPtr()})
+      {
+        for (const auto& usage : usages)
+        {
+          const xiiUInt32 uiResource = usage.m_uiResourceIndex;
+          const auto&     resource   = m_Resources[uiResource];
+          if (resource.m_bIsTransient && (resource.m_bIsTexture ? !resolvedTextures[uiResource] : !resolvedBuffers[uiResource]))
+            XII_SUCCEED_OR_RETURN(acquireResource(uiResource, false));
+        }
+      }
+
+      XII_SUCCEED_OR_RETURN(MaterializeRenderPassGroup(compiled.m_uiMergeGroupIndex, pDevice, resolvedTextures, out_pError));
+    }
+
+    const auto           graphicsQueueFlags = pDevice->GetCommandQueue(xiiGALCommandQueueFlags::Graphics)->GetDescription().m_QueueFlags;
+    xiiParallelForParams params;
+    params.m_NestingMode = xiiTaskNesting::Maybe;
+    xiiTaskSystem::ParallelForSingle(rasterJobs.GetArrayPtr(), [&](RasterJob& ref_job) {
+      const auto& pass = m_CompiledPasses[ref_job.m_uiPass];
+      const auto& group = m_MergeGroups[pass.m_uiMergeGroupIndex];
+      XII_PROFILE_SCOPE(pass.m_sName.GetView().GetFileNameAndExtension());
+
+      xiiGALCommandListCreationDescription description;
+      description.m_QueueFlags = graphicsQueueFlags;
+      description.m_Flags = xiiGALCommandListFlags::Secondary;
+      description.m_pRenderPass = group.m_pNativeRenderPass.Borrow();
+      description.m_pFramebuffer = group.m_pFramebuffer.Borrow();
+      ref_job.m_pList = pDevice->CreateCommandList(description);
+      if (!ref_job.m_pList)
+      {
+        ref_job.m_Error = "Failed to allocate a secondary render graph command list.";
+        return;
+      }
+
+      ref_job.m_pList->Begin();
+      recordRange(pass, ref_job.m_pList.Borrow(), ref_job.m_uiStart, ref_job.m_uiEnd, ref_job.m_Error);
+      ref_job.m_pList->End(); }, "Render Graph: Record Raster Range", params);
+
+    for (const auto& job : rasterJobs)
+    {
+      if (!job.m_Error.IsEmpty())
+      {
+        if (out_pError != nullptr)
+          *out_pError = job.m_Error;
+        return XII_FAILURE;
+      }
+    }
+
+    // Restore the serial walk's visibility rules. Physical allocations remain in their alias slots.
+    for (xiiUInt32 uiResource = 0U; uiResource < uiResourceCount; ++uiResource)
+    {
+      if (m_Resources[uiResource].m_bIsTransient)
+      {
+        resolvedTextures[uiResource] = nullptr;
+        resolvedBuffers[uiResource]  = nullptr;
+      }
+    }
+  }
+
+  const bool bEnableGpuProfiling = (pProfiler != nullptr) && m_LastCompileSettings.m_bEnableGPUProfiling;
   if (bEnableGpuProfiling)
   {
     XII_PROFILE_SCOPE("Render Graph: Begin GPU Profiling");
@@ -1874,64 +2075,11 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
       // Composed passes prefix their name with instance paths that can fill the CPU scope label.
       XII_PROFILE_SCOPE(compiledPass.m_sName.GetView().GetFileNameAndExtension());
 
-      // Acquire transient resources whose lifetime starts at this pass.
+      // Publish resources at the start of their original serial lifetimes.
       for (xiiUInt32 uiResourceIndex : compiledPass.m_AcquireResourceIndices)
       {
-        ResourceEntry& resourceEntry = m_Resources[uiResourceIndex];
-
-        if (resourceEntry.m_bIsTexture)
-        {
-          xiiSharedPtr<xiiGALTexture>& pAliasTexture = aliasTextures[resourceEntry.m_uiAliasGroup];
-          if (pAliasTexture == nullptr)
-          {
-            XII_PROFILE_SCOPE("Render Graph: Acquire Transient Texture");
-            if (resourceEntry.m_ExportFinalState != xiiGALResourceStateFlags::Unknown)
-              pAliasTexture = pDevice->CreateTexture(resourceEntry.m_TextureDescription);
-            else
-              pAliasTexture = pResourceCache->AcquireTexture(resourceEntry.m_TextureDescription);
-          }
-          if (pAliasTexture == nullptr)
-          {
-            const auto& description = resourceEntry.m_TextureDescription;
-            if (out_pError != nullptr)
-              out_pError->SetFormat("Failed to allocate texture '{}' ({} x {}, {} slices, {} mips, {} samples, format {}).", resourceEntry.m_sName, description.m_Size.width, description.m_Size.height, description.m_uiArraySizeOrDepth, description.m_uiMipLevels, description.m_uiSampleCount, description.m_Format.GetValue());
-            return abortSubmission();
-          }
-          resolvedTextures[uiResourceIndex] = pAliasTexture;
-          if (resourceEntry.m_ExportFinalState != xiiGALResourceStateFlags::Unknown)
-            m_ExportedTextures.Insert(resourceEntry.m_Id.m_Data, pAliasTexture);
-
-          if (resolvedTextures[uiResourceIndex])
-          {
-            resolvedTextures[uiResourceIndex]->SetDebugName(resourceEntry.m_sName);
-          }
-        }
-        else
-        {
-          xiiSharedPtr<xiiGALBuffer>& pAliasBuffer = aliasBuffers[resourceEntry.m_uiAliasGroup];
-          if (pAliasBuffer == nullptr)
-          {
-            XII_PROFILE_SCOPE("Render Graph: Acquire Transient Buffer");
-            if (resourceEntry.m_ExportFinalState != xiiGALResourceStateFlags::Unknown)
-              pAliasBuffer = pDevice->CreateBuffer(resourceEntry.m_BufferDescription);
-            else
-              pAliasBuffer = pResourceCache->AcquireBuffer(resourceEntry.m_BufferDescription);
-          }
-          if (pAliasBuffer == nullptr)
-          {
-            if (out_pError != nullptr)
-              out_pError->SetFormat("Failed to allocate buffer '{}' ({} bytes).", resourceEntry.m_sName, resourceEntry.m_BufferDescription.m_uiSize);
-            return abortSubmission();
-          }
-          resolvedBuffers[uiResourceIndex] = pAliasBuffer;
-          if (resourceEntry.m_ExportFinalState != xiiGALResourceStateFlags::Unknown)
-            m_ExportedBuffers.Insert(resourceEntry.m_Id.m_Data, pAliasBuffer);
-
-          if (resolvedBuffers[uiResourceIndex])
-          {
-            resolvedBuffers[uiResourceIndex]->SetDebugName(resourceEntry.m_sName);
-          }
-        }
+        if (acquireResource(uiResourceIndex, true).Failed())
+          return abortSubmission();
       }
 
       // Emit pre-barriers (split-bar ends + immediate barriers).
@@ -1967,9 +2115,8 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
       }
 
       xiiStringBuilder executionError;
-      const PassEntry& passEntry            = m_Passes[compiledPass.m_uiPassIndex];
-      const xiiUInt32  uiRecordingItemCount = passEntry.m_uiRecordingItemCount;
-      const bool       bParallelRecording   = bSupportsParallelRecording && uiRecordingItemCount >= 16U && compiledPass.m_uiMergeGroupIndex != xiiInvalidIndex;
+      const PassEntry& passEntry          = m_Passes[compiledPass.m_uiPassIndex];
+      const bool       bParallelRecording = !passJobs.IsEmpty() && passJobs[uiSortedIndex].m_uiCount > 0U;
       // Preparation is deliberately outside the native render-pass scope: Vulkan buffer
       // uploads and their transfer barriers cannot be recorded inside a render pass.
       if (compiledPass.m_PrepareDelegate.IsValid())
@@ -2038,78 +2185,13 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
         pProfiler->OnPassBegin(*pCommandList, compiledPass.m_sName, compiledPass.m_uiPassIndex);
       }
 
-      auto recordRange = [&](xiiGALCommandList* pList, xiiUInt32 uiStart, xiiUInt32 uiEnd, xiiStringBuilder& ref_error) {
-        xiiRenderGraphPassContext context;
-        context.m_pCommandList = pList;
-        if (compiledPass.m_uiMergeGroupIndex != xiiInvalidIndex)
-          context.m_pRenderPass = m_MergeGroups[compiledPass.m_uiMergeGroupIndex].m_pNativeRenderPass;
-        context.m_pBlackboard      = passEntry.m_pBlackboard ? passEntry.m_pBlackboard : pBlackboard;
-        context.m_pResourceCache   = pResourceCache;
-        context.m_pView            = pView;
-        context.m_uiFrameIndex     = m_uiFrameIndex;
-        context.m_uiRecordingStart = uiStart;
-        context.m_uiRecordingEnd   = uiEnd;
-        context.m_sPassName        = compiledPass.m_sName;
-        context.m_pGraph           = this;
-        context.m_ResolvedTextures = resolvedTextures;
-        context.m_ResolvedBuffers  = resolvedBuffers;
-        context.m_pExecutionError  = &ref_error;
-        compiledPass.m_ExecuteDelegate(context);
-      };
-
       {
         XII_PROFILE_SCOPE("Render Graph: Record Pass Commands");
         if (bParallelRecording)
         {
-          const auto&                          group = m_MergeGroups[compiledPass.m_uiMergeGroupIndex];
-          xiiGALCommandListCreationDescription description;
-          description.m_QueueFlags   = actualQueueFlags;
-          description.m_Flags        = xiiGALCommandListFlags::Secondary;
-          description.m_pRenderPass  = group.m_pNativeRenderPass.Borrow();
-          description.m_pFramebuffer = group.m_pFramebuffer.Borrow();
-
-          struct RecordingRange
-          {
-            xiiSharedPtr<xiiGALCommandList> m_pList;
-            xiiStringBuilder                m_Error;
-          };
-
-          // Bound the number of Vulkan command buffers while leaving enough work per range
-          // to amortize command buffer setup and descriptor pool allocations.
-          xiiHybridArray<RecordingRange, 4U> ranges;
-          ranges.SetCount(xiiMath::Min(4U, uiRecordingItemCount / 8U));
-          const xiiUInt32      uiRangeCount    = ranges.GetCount();
-          const xiiUInt32      uiItemsPerRange = uiRecordingItemCount / uiRangeCount;
-          const xiiUInt32      uiExtraItems    = uiRecordingItemCount % uiRangeCount;
-          xiiParallelForParams params;
-          params.m_NestingMode = xiiTaskNesting::Maybe;
-          xiiTaskSystem::ParallelForSingleIndex(ranges.GetArrayPtr(), [&](xiiUInt32 uiRange, RecordingRange& ref_range) {
-            ref_range.m_pList = pDevice->CreateCommandList(description);
-            if (!ref_range.m_pList)
-            {
-              ref_range.m_Error = "Failed to allocate a secondary render graph command list.";
-              return;
-            }
-
-            const xiiUInt32 uiStart = uiRange * uiItemsPerRange + xiiMath::Min(uiRange, uiExtraItems);
-            const xiiUInt32 uiEnd = uiStart + uiItemsPerRange + (uiRange < uiExtraItems ? 1U : 0U);
-            ref_range.m_pList->Begin();
-            recordRange(ref_range.m_pList.Borrow(), uiStart, uiEnd, ref_range.m_Error);
-            ref_range.m_pList->End(); }, "Render Graph: Record Raster Range", params);
-
-          for (const auto& range : ranges)
-          {
-            if (!range.m_Error.IsEmpty())
-            {
-              executionError = range.m_Error;
-              break;
-            }
-          }
-          if (executionError.IsEmpty())
-          {
-            for (const auto& range : ranges)
-              pCommandList->Submit(range.m_pList.Borrow());
-          }
+          const auto& jobs = passJobs[uiSortedIndex];
+          for (const auto& job : rasterJobs.GetArrayPtr().GetSubArray(jobs.m_uiFirst, jobs.m_uiCount))
+            pCommandList->Submit(job.m_pList.Borrow());
 
           pCommandList->EndRenderPass();
           bInsideRenderPass   = false;
@@ -2117,7 +2199,7 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
         }
         else
         {
-          recordRange(pCommandList.Borrow(), 0U, uiRecordingItemCount, executionError);
+          recordRange(compiledPass, pCommandList.Borrow(), 0U, xiiMath::Max(1U, passEntry.m_uiRecordingItemCount), executionError);
         }
       }
 

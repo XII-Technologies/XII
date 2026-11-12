@@ -438,9 +438,10 @@ public:
   void SetPassRenderPassManaged(bool bManaged = true);
 
   /// Opts a managed raster pass into range recording. The callback may run concurrently for
-  /// disjoint ranges and must bind its own state. Record only draws and attachment clears using
-  /// declared resources. Clear once in the range starting at zero. Resource transitions,
-  /// uploads, and shared CPU mutations belong in preparation.
+  /// disjoint ranges and before any graph commands are submitted. Bind independent command
+  /// state and use declared resources for draws and attachment clears only. Clear once in the
+  /// range starting at zero. The blackboard and resource cache are unavailable in worker callbacks.
+  /// Passes with a preparation callback record inline.
   void SetPassRecordingItemCount(xiiUInt32 uiCount);
 
   /// Records resource uploads before a managed native render pass begins. Uses this pass's
@@ -689,7 +690,7 @@ private:
     bool                                 m_bHasSideEffects    = false;
     bool                                 m_bAllowMerge        = true;
     bool                                 m_bManagedRenderPass = false;
-    xiiUInt32                            m_uiRecordingItemCount = 1U;
+    xiiUInt32                            m_uiRecordingItemCount = 0U;
     xiiHybridArray<ResourceUsage, 8U>    m_Reads;
     xiiHybridArray<ResourceUsage, 8U>    m_Writes;
 
