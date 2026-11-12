@@ -144,10 +144,16 @@ private:
     const bool      bFitsIntoCurrentBucket = !m_Buckets.IsEmpty() && m_uiCurrentBucketOffset + uiRequestedSize <= uiMaxAllocSize;
     if (!bFitsIntoCurrentBucket)
     {
-      m_uiCurrentBucketIndex = static_cast<xiiUInt16>(m_Buckets.GetCount());
+      // Deallocation can rewind to an earlier bucket. Reuse its successor before
+      // growing the backing storage so repeated temporary work reaches a plateau.
+      if (!m_Buckets.IsEmpty())
+        ++m_uiCurrentBucketIndex;
 
-      auto newBucket = xiiMakeArrayPtr(static_cast<xiiUInt8*>(m_pParent->Allocate(uiMaxAllocSize, Alignment)), uiMaxAllocSize);
-      m_Buckets.PushBack(newBucket);
+      if (m_uiCurrentBucketIndex == m_Buckets.GetCount())
+      {
+        auto newBucket = xiiMakeArrayPtr(static_cast<xiiUInt8*>(m_pParent->Allocate(uiMaxAllocSize, Alignment)), uiMaxAllocSize);
+        m_Buckets.PushBack(newBucket);
+      }
 
       m_uiCurrentBucketOffset = 0;
     }
