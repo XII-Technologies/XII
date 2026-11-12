@@ -534,8 +534,7 @@ static void RunStartupVisibility(bool bOpenMissingProject, bool bOpenProject = f
   }
   XII_TEST_INT(observer.m_uiContainerShows, 1);
   XII_TEST_INT(observer.m_uiFloatingShows, 1);
-  if (!bInteractive)
-    XII_TEST_INT(observer.m_uiDiagnosticShows, bOpenMissingProject ? 1 : 0);
+  XII_TEST_INT(observer.m_uiDiagnosticShows, bOpenMissingProject ? 1 : 0);
   QApplication::processEvents();
   XII_TEST_INT(observer.m_uiContainerShows, 1);
   pWindow->SaveWindowLayout();
