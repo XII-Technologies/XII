@@ -1211,6 +1211,8 @@ xiiResult xiiGALCommandListVulkan::CommitShaderResourcesPlatform(xiiEnum<xiiGALS
   {
     if (m_pPipelineState != nullptr)
     {
+      // The pipeline owns its signature, immutable samplers, shaders, and layout.
+      m_CommandListData.RetainResource(m_pPipelineState);
       const xiiGALPipelineStateCreationDescription& pipelineDescription = m_pPipelineState->GetDescription();
 
       if (pipelineDescription.IsAnyGraphicsPipeline())
@@ -1315,6 +1317,7 @@ xiiResult xiiGALCommandListVulkan::CommitShaderResourcesPlatform(xiiEnum<xiiGALS
               {
                 if (xiiGALBufferVulkan* pBufferVulkan = (resourceLayout.m_uiBindingIndex < resources.m_pBoundConstantBuffers.GetCount() ? resources.m_pBoundConstantBuffers[resourceLayout.m_uiBindingIndex] : nullptr))
                 {
+                  m_CommandListData.RetainResource(pBufferVulkan);
                   vkDescriptorBufferInfo        = vk::DescriptorBufferInfo{};
                   vkDescriptorBufferInfo.buffer = pBufferVulkan->GetVulkanBuffer();
                   vkDescriptorBufferInfo.offset = 0;
@@ -1351,8 +1354,9 @@ xiiResult xiiGALCommandListVulkan::CommitShaderResourcesPlatform(xiiEnum<xiiGALS
               case xiiGALDescriporTypeVulkan::UniformTexelBuffer:
               case xiiGALDescriporTypeVulkan::StorageTexelBufferReadOnly:
               {
-                if (const xiiGALBufferViewVulkan* pBufferViewVulkan = GetDescriptorElement(resources.m_pBoundBufferResourceViews, resources.m_pBoundBufferResourceViewArrays, resourceLayout.m_uiBindingIndex, uiArrayElement))
+                if (xiiGALBufferViewVulkan* pBufferViewVulkan = GetDescriptorElement(resources.m_pBoundBufferResourceViews, resources.m_pBoundBufferResourceViewArrays, resourceLayout.m_uiBindingIndex, uiArrayElement))
                 {
+                  m_CommandListData.RetainResource(pBufferViewVulkan);
                   xiiGALBufferVulkan* pBufferVulkan = pBufferViewVulkan->GetBuffer().Downcast<xiiGALBufferVulkan>();
 
                   vkDescriptorBufferView                = pBufferViewVulkan->GetVulkanBufferView();
@@ -1374,8 +1378,9 @@ xiiResult xiiGALCommandListVulkan::CommitShaderResourcesPlatform(xiiEnum<xiiGALS
               break;
               case xiiGALDescriporTypeVulkan::StorageTexelBuffer:
               {
-                if (const xiiGALBufferViewVulkan* pBufferViewVulkan = GetDescriptorElement(resources.m_pBoundUnorderedAccessBufferResourceViews, resources.m_pBoundUnorderedAccessBufferResourceViewArrays, resourceLayout.m_uiBindingIndex, uiArrayElement))
+                if (xiiGALBufferViewVulkan* pBufferViewVulkan = GetDescriptorElement(resources.m_pBoundUnorderedAccessBufferResourceViews, resources.m_pBoundUnorderedAccessBufferResourceViewArrays, resourceLayout.m_uiBindingIndex, uiArrayElement))
                 {
+                  m_CommandListData.RetainResource(pBufferViewVulkan);
                   xiiGALBufferVulkan* pBufferVulkan = pBufferViewVulkan->GetBuffer().Downcast<xiiGALBufferVulkan>();
 
                   vkDescriptorBufferView                = pBufferViewVulkan->GetVulkanBufferView();
@@ -1398,8 +1403,9 @@ xiiResult xiiGALCommandListVulkan::CommitShaderResourcesPlatform(xiiEnum<xiiGALS
               case xiiGALDescriporTypeVulkan::StorageBufferReadOnly:
               case xiiGALDescriporTypeVulkan::StorageBufferDynamicReadOnly:
               {
-                if (const xiiGALBufferViewVulkan* pBufferViewVulkan = GetDescriptorElement(resources.m_pBoundBufferResourceViews, resources.m_pBoundBufferResourceViewArrays, resourceLayout.m_uiBindingIndex, uiArrayElement))
+                if (xiiGALBufferViewVulkan* pBufferViewVulkan = GetDescriptorElement(resources.m_pBoundBufferResourceViews, resources.m_pBoundBufferResourceViewArrays, resourceLayout.m_uiBindingIndex, uiArrayElement))
                 {
+                  m_CommandListData.RetainResource(pBufferViewVulkan);
                   xiiGALBufferVulkan* pBufferVulkan = pBufferViewVulkan->GetBuffer().Downcast<xiiGALBufferVulkan>();
 
                   vkDescriptorBufferInfo        = vk::DescriptorBufferInfo{};
@@ -1438,8 +1444,9 @@ xiiResult xiiGALCommandListVulkan::CommitShaderResourcesPlatform(xiiEnum<xiiGALS
               case xiiGALDescriporTypeVulkan::StorageBuffer:
               case xiiGALDescriporTypeVulkan::StorageBufferDynamic:
               {
-                if (const xiiGALBufferViewVulkan* pBufferViewVulkan = GetDescriptorElement(resources.m_pBoundUnorderedAccessBufferResourceViews, resources.m_pBoundUnorderedAccessBufferResourceViewArrays, resourceLayout.m_uiBindingIndex, uiArrayElement))
+                if (xiiGALBufferViewVulkan* pBufferViewVulkan = GetDescriptorElement(resources.m_pBoundUnorderedAccessBufferResourceViews, resources.m_pBoundUnorderedAccessBufferResourceViewArrays, resourceLayout.m_uiBindingIndex, uiArrayElement))
                 {
+                  m_CommandListData.RetainResource(pBufferViewVulkan);
                   xiiGALBufferVulkan* pBufferVulkan = pBufferViewVulkan->GetBuffer().Downcast<xiiGALBufferVulkan>();
 
                   vkDescriptorBufferInfo        = vk::DescriptorBufferInfo{};
@@ -1477,8 +1484,9 @@ xiiResult xiiGALCommandListVulkan::CommitShaderResourcesPlatform(xiiEnum<xiiGALS
               break;
               case xiiGALDescriporTypeVulkan::CombinedImageSampler:
               {
-                if (const xiiGALTextureViewVulkan* pTextureViewVulkan = GetDescriptorElement(resources.m_pBoundTextureResourceViews, resources.m_pBoundTextureResourceViewArrays, resourceLayout.m_uiBindingIndex, uiArrayElement))
+                if (xiiGALTextureViewVulkan* pTextureViewVulkan = GetDescriptorElement(resources.m_pBoundTextureResourceViews, resources.m_pBoundTextureResourceViewArrays, resourceLayout.m_uiBindingIndex, uiArrayElement))
                 {
+                  m_CommandListData.RetainResource(pTextureViewVulkan);
                   xiiGALTextureVulkan* pTextureVulkan = pTextureViewVulkan->GetTexture().Downcast<xiiGALTextureVulkan>();
 
                   vkDescriptorImageInfo           = vk::DescriptorImageInfo{};
@@ -1517,8 +1525,9 @@ xiiResult xiiGALCommandListVulkan::CommitShaderResourcesPlatform(xiiEnum<xiiGALS
 
                   if (!resourceLayout.m_bHasImmutableSampler)
                   {
-                    if (const xiiGALSamplerVulkan* pSamplerVulkan = GetDescriptorElement(resources.m_pBoundSamplerStates, resources.m_pBoundSamplerStateArrays, resourceLayout.m_uiSamplerIndex, uiArrayElement))
+                    if (xiiGALSamplerVulkan* pSamplerVulkan = GetDescriptorElement(resources.m_pBoundSamplerStates, resources.m_pBoundSamplerStateArrays, resourceLayout.m_uiSamplerIndex, uiArrayElement))
                     {
+                      m_CommandListData.RetainResource(pSamplerVulkan);
                       vkDescriptorImageInfo.sampler = pSamplerVulkan->GetVulkanSampler();
                     }
                     else
@@ -1539,8 +1548,9 @@ xiiResult xiiGALCommandListVulkan::CommitShaderResourcesPlatform(xiiEnum<xiiGALS
               break;
               case xiiGALDescriporTypeVulkan::SeparateImage:
               {
-                if (const xiiGALTextureViewVulkan* pTextureViewVulkan = GetDescriptorElement(resources.m_pBoundTextureResourceViews, resources.m_pBoundTextureResourceViewArrays, resourceLayout.m_uiBindingIndex, uiArrayElement))
+                if (xiiGALTextureViewVulkan* pTextureViewVulkan = GetDescriptorElement(resources.m_pBoundTextureResourceViews, resources.m_pBoundTextureResourceViewArrays, resourceLayout.m_uiBindingIndex, uiArrayElement))
                 {
+                  m_CommandListData.RetainResource(pTextureViewVulkan);
                   xiiGALTextureVulkan* pTextureVulkan = pTextureViewVulkan->GetTexture().Downcast<xiiGALTextureVulkan>();
 
                   vkDescriptorImageInfo           = vk::DescriptorImageInfo{};
@@ -1588,8 +1598,9 @@ xiiResult xiiGALCommandListVulkan::CommitShaderResourcesPlatform(xiiEnum<xiiGALS
               break;
               case xiiGALDescriporTypeVulkan::StorageImage:
               {
-                if (const xiiGALTextureViewVulkan* pTextureViewVulkan = GetDescriptorElement(resources.m_pBoundUnorderedAccessTextureResourceViews, resources.m_pBoundUnorderedAccessTextureResourceViewArrays, resourceLayout.m_uiBindingIndex, uiArrayElement))
+                if (xiiGALTextureViewVulkan* pTextureViewVulkan = GetDescriptorElement(resources.m_pBoundUnorderedAccessTextureResourceViews, resources.m_pBoundUnorderedAccessTextureResourceViewArrays, resourceLayout.m_uiBindingIndex, uiArrayElement))
                 {
+                  m_CommandListData.RetainResource(pTextureViewVulkan);
                   xiiGALTextureVulkan* pTextureVulkan = pTextureViewVulkan->GetTexture().Downcast<xiiGALTextureVulkan>();
 
                   vkDescriptorImageInfo             = vk::DescriptorImageInfo{};
@@ -1616,8 +1627,9 @@ xiiResult xiiGALCommandListVulkan::CommitShaderResourcesPlatform(xiiEnum<xiiGALS
               break;
               case xiiGALDescriporTypeVulkan::Sampler:
               {
-                if (const xiiGALSamplerVulkan* pSamplerVulkan = GetDescriptorElement(resources.m_pBoundSamplerStates, resources.m_pBoundSamplerStateArrays, resourceLayout.m_uiBindingIndex, uiArrayElement))
+                if (xiiGALSamplerVulkan* pSamplerVulkan = GetDescriptorElement(resources.m_pBoundSamplerStates, resources.m_pBoundSamplerStateArrays, resourceLayout.m_uiBindingIndex, uiArrayElement))
                 {
+                  m_CommandListData.RetainResource(pSamplerVulkan);
                   vkDescriptorImageInfo         = vk::DescriptorImageInfo{};
                   vkDescriptorImageInfo.sampler = pSamplerVulkan->GetVulkanSampler();
 
@@ -1634,6 +1646,7 @@ xiiResult xiiGALCommandListVulkan::CommitShaderResourcesPlatform(xiiEnum<xiiGALS
               {
                 if (xiiGALTopLevelASVulkan* pTopLevelASVulkan = (resourceLayout.m_uiBindingIndex < resources.m_pBoundAccelerationStructures.GetCount() ? resources.m_pBoundAccelerationStructures[resourceLayout.m_uiBindingIndex] : nullptr))
                 {
+                  m_CommandListData.RetainResource(pTopLevelASVulkan);
                   if (!pTopLevelASVulkan->IsBuilt())
                   {
                     xiiLog::Error("Acceleration structure '{}' must be built before it is bound for shader access.", pTopLevelASVulkan->GetDebugName());

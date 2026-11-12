@@ -5,7 +5,9 @@
 #include <GraphicsVulkan/GraphicsVulkanDLL.h>
 #include <GraphicsVulkan/Pools/QueryPoolVulkan.h>
 
+#include <Foundation/Containers/HashTable.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
+#include <GraphicsFoundation/Declarations/DeviceObject.h>
 #include <GraphicsVulkan/Pools/DescriptorSetPoolVulkan.h>
 #include <GraphicsVulkan/Pools/DynamicBufferPoolVulkan.h>
 #include <GraphicsVulkan/Pools/StagingBufferPoolVulkan.h>
@@ -75,6 +77,7 @@ struct XII_GRAPHICSVULKAN_DLL xiiGALCommandListDataVulkan
     m_AttachmentClearValues       = std::move(other.m_AttachmentClearValues);
     m_bPipelineStateModified      = other.m_bPipelineStateModified;
     m_ResourceSets                = std::move(other.m_ResourceSets);
+    m_RecordedResources           = std::move(other.m_RecordedResources);
     m_DescriptorSets              = std::move(other.m_DescriptorSets);
     m_DynamicUniformBuffers       = std::move(other.m_DynamicUniformBuffers);
     m_DynamicUniformBufferOffsets = std::move(other.m_DynamicUniformBufferOffsets);
@@ -98,6 +101,7 @@ struct XII_GRAPHICSVULKAN_DLL xiiGALCommandListDataVulkan
     m_AttachmentClearValues       = std::move(other.m_AttachmentClearValues);
     m_bPipelineStateModified      = other.m_bPipelineStateModified;
     m_ResourceSets                = std::move(other.m_ResourceSets);
+    m_RecordedResources           = std::move(other.m_RecordedResources);
     m_DescriptorSets              = std::move(other.m_DescriptorSets);
     m_DynamicUniformBuffers       = std::move(other.m_DynamicUniformBuffers);
     m_DynamicUniformBufferOffsets = std::move(other.m_DynamicUniformBufferOffsets);
@@ -112,6 +116,14 @@ struct XII_GRAPHICSVULKAN_DLL xiiGALCommandListDataVulkan
     m_uiActiveQueriesCounter      = other.m_uiActiveQueriesCounter;
 
     return *this;
+  }
+
+  /// Bindings can change while earlier commands still reference their descriptor resources.
+  /// Keep one owning reference per object until this recording is reset or its GPU fence retires.
+  void RetainResource(xiiGALDeviceObject* pResource)
+  {
+    if (!m_RecordedResources.Contains(pResource))
+      m_RecordedResources.Insert(pResource, xiiSharedPtr<xiiGALDeviceObject>(pResource, pResource->GetDevice()->GetAllocator()));
   }
 
   XII_ALWAYS_INLINE void Invalidate()
@@ -169,6 +181,8 @@ struct XII_GRAPHICSVULKAN_DLL xiiGALCommandListDataVulkan
 
   bool m_bPipelineStateModified = false;
 
+  // Declared before descriptor storage so native descriptor pools are destroyed before their resources.
+  xiiHashTable<xiiGALDeviceObject*, xiiSharedPtr<xiiGALDeviceObject>> m_RecordedResources;
   xiiHybridArray<ResourceSetBindings, 1U> m_ResourceSets;
   xiiHybridArray<vk::DescriptorSet, 4U>   m_DescriptorSets;
   xiiDeque<vk::DescriptorBufferInfo>      m_DynamicUniformBuffers;
