@@ -10,6 +10,7 @@
 #include <EditorEngineProcessFramework/Rendering/InfiniteGridPass.h>
 #include <Foundation/Memory/FrameAllocator.h>
 #include <Foundation/Reflection/ReflectionUtils.h>
+#include <Foundation/Threading/AtomicInteger.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <GraphicsCore/Components/Lights/DirectionalLightComponent.h>
 #include <GraphicsCore/Components/Lights/SkyAtmosphereComponent.h>
@@ -23,20 +24,137 @@
 #include <GraphicsCore/Meshes/MeshComponent.h>
 #include <GraphicsCore/Meshes/MeshResource.h>
 #include <GraphicsCore/Particles/ParticleSystem.h>
+#include <GraphicsCore/Pipeline/ExtractedRenderData.h>
 #include <GraphicsCore/Pipeline/Passes/AmbientOcclusion/AmbientOcclusionPass.h>
 #include <GraphicsCore/Pipeline/Passes/GlobalIllumination/DDGIProbeFrameData.h>
+#include <GraphicsCore/Pipeline/RenderGraphManager.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
 #include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
+#include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/Resources/Texture.h>
+#include <GraphicsFoundationTest/TestingEnvironment/RenderGraphTestContext.h>
 #include <GraphicsFoundationTest/TestingEnvironment/TestingEnvironment.h>
 #include <GraphicsFoundationTest/TestingEnvironment/TextureReadback.h>
 #include <SharedPluginScene/Scene/SceneMeshPickingPass.h>
 #include <SharedPluginScene/Scene/SceneShapeIconPass.h>
 
 XII_CREATE_SIMPLE_TEST_GROUP(CanonicalRenderer);
+
+XII_CREATE_SIMPLE_TEST(CanonicalRenderer, TypedExtractionOrder)
+{
+  xiiMeshRenderData             staticMesh;
+  xiiMeshRenderData             dynamicMesh;
+  xiiDirectionalLightRenderData light;
+  staticMesh.m_uiSortingKey  = 2U;
+  dynamicMesh.m_uiSortingKey = 2U;
+  light.m_uiSortingKey       = 1U;
+
+  xiiExtractedRenderData extracted;
+  extracted.AddRenderData(&dynamicMesh);
+  extracted.AddRenderData(&light);
+  extracted.AddRenderData(&staticMesh, xiiRenderData::Caching::IfStatic);
+  extracted.SortAndBatches();
+
+  const auto all = extracted.GetAllRenderData();
+  if (XII_TEST_INT(all.GetCount(), 3))
+  {
+    XII_TEST_BOOL(all[0] == &light);
+    XII_TEST_BOOL(all[1] == &staticMesh);
+    XII_TEST_BOOL(all[2] == &dynamicMesh);
+  }
+  XII_TEST_INT(extracted.GetStaticRenderData().GetCount(), 1);
+  XII_TEST_INT(extracted.GetDynamicRenderData().GetCount(), 2);
+
+  const auto meshRanges = extracted.GetRenderDataRanges(xiiGetStaticRTTI<xiiMeshRenderData>());
+  if (XII_TEST_INT(meshRanges.GetCount(), 1) && XII_TEST_INT(meshRanges[0].GetCount(), 2))
+  {
+    XII_TEST_BOOL(meshRanges[0][0] == &staticMesh);
+    XII_TEST_BOOL(meshRanges[0][1] == &dynamicMesh);
+  }
+  const auto lightRanges = extracted.GetRenderDataRanges(xiiGetStaticRTTI<xiiLightRenderData>());
+  if (XII_TEST_INT(lightRanges.GetCount(), 1) && XII_TEST_INT(lightRanges[0].GetCount(), 1))
+    XII_TEST_BOOL(lightRanges[0][0] == &light);
+
+  extracted.Clear();
+  XII_TEST_BOOL(extracted.GetAllRenderData().IsEmpty());
+  XII_TEST_BOOL(extracted.GetRenderDataRanges(xiiGetStaticRTTI<xiiMeshRenderData>()).IsEmpty());
+}
+
+XII_CREATE_SIMPLE_TEST(CanonicalRenderer, RasterRecordingRanges)
+{
+  xiiGPUTestingEnvironment environment;
+  if (!XII_TEST_RESULT(environment.Initialize()))
+    return;
+  xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
+  xiiStartup::StartupHighLevelSystems();
+  XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiFrameAllocator::Reset(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
+
+  xiiRenderGraphTestContext context;
+  if (!XII_TEST_RESULT(context.Initialize("Raster ranges")))
+    return;
+  xiiRenderGraphFrame frame;
+  if (!XII_TEST_RESULT(frame.Begin()))
+    return;
+
+  auto& graph = context.GetGraph();
+  auto& cache = context.GetResourceCache();
+  cache.BeginFrame(frame.GetFrameIndex(), frame.GetCompletedFrame());
+  XII_SCOPE_EXIT(cache.EndFrame());
+
+  struct Data
+  {
+    xiiRenderGraphTextureHandle m_Target;
+  };
+
+  constexpr xiiUInt32 uiItems = 17U;
+  xiiAtomicInteger32  visits[uiItems];
+  xiiAtomicInteger32  secondaryRanges;
+  graph.BeginSetup(frame.GetFrameIndex());
+  const auto pass      = graph.AddPass<Data>("Raster ranges", xiiGALCommandQueueFlags::Graphics, [](Data& data, xiiRenderGraphBuilder& builder) {
+    xiiGALTextureCreationDescription description;
+    description.m_Type = xiiGALResourceDimension::Texture2D;
+    description.m_Size = {16U, 16U};
+    description.m_Format = xiiGALResourceFormat::RGBA8UNormalized;
+    description.m_BindFlags = xiiGALBindFlags::RenderTarget;
+    data.m_Target = builder.WriteTexture("Range target", description, xiiGALResourceStateFlags::RenderTarget);
+    builder.SetPassRenderPassManaged();
+    builder.SetPassRecordingItemCount(uiItems); }, [&](const Data& data, xiiRenderGraphPassContext& execute) {
+    auto& commands = execute.GetCommandList();
+    if (commands.GetDescription().m_Flags.IsSet(xiiGALCommandListFlags::Secondary))
+      secondaryRanges.Increment();
+    if (execute.GetRecordingStart() == 0U)
+      commands.ClearRenderTargetView(execute.GetTexture(data.m_Target)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor(1, 0, 0, 1));
+    for (xiiUInt32 uiItem = execute.GetRecordingStart(); uiItem < execute.GetRecordingEnd(); ++uiItem)
+      visits[uiItem].Increment(); });
+  const auto overwrite = graph.AddPass<Data>("Raster range order", xiiGALCommandQueueFlags::Graphics, [&](Data& data, xiiRenderGraphBuilder& builder) {
+    data.m_Target = builder.ReadWriteTexture(pass.first->m_Target, xiiGALResourceStateFlags::RenderTarget);
+    builder.ExportTexture(data.m_Target, xiiGALResourceStateFlags::CopySource);
+    builder.SetPassRenderPassManaged();
+    builder.SetPassRecordingItemCount(1U); }, [&](const Data& data, xiiRenderGraphPassContext& execute) {
+    auto& commands = execute.GetCommandList();
+    if (commands.GetDescription().m_Flags.IsSet(xiiGALCommandListFlags::Secondary))
+      secondaryRanges.Increment();
+    commands.ClearRenderTargetView(execute.GetTexture(data.m_Target)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor(0, 1, 0, 1)); });
+  graph.EndSetup();
+
+  xiiStringBuilder error;
+  if (!XII_TEST_RESULT_MSG(graph.Compile({.m_bEnableGPUProfiling = true}, &error), "%s", error.GetData()) ||
+      !XII_TEST_RESULT_MSG(graph.Execute(environment.GetDevice(), nullptr, &context.GetBlackboard(), &cache, &context.GetProfiler(), &error), "%s", error.GetData()))
+    return;
+
+  const bool bVulkanSecondary = environment.GetDevice()->GetGraphicsDeviceType() == xiiGALGraphicsDeviceType::Vulkan && environment.GetDevice()->GetFeatures().m_MultithreadedResourceCreation == xiiGALDeviceFeatureState::Enabled;
+  XII_TEST_INT(secondaryRanges, bVulkanSecondary ? 3 : 0);
+  for (const auto& visit : visits)
+    XII_TEST_INT(visit, 1);
+
+  xiiColorLinearUB pixel;
+  if (xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), graph.GetExportedTexture(overwrite.first->m_Target).Borrow(), 8U, 8U, pixel))
+    XII_TEST_BOOL(pixel.r == 0U && pixel.g == 255U && pixel.b == 0U);
+}
+
 XII_CREATE_SIMPLE_TEST(CanonicalRenderer, ViewRenderConfiguration)
 {
   xiiGPUTestingEnvironment environment;
