@@ -16,7 +16,7 @@ target_link_libraries(${PROJECT_NAME}
   GraphicsFoundation
 
   PRIVATE
-  Vulkan-Headers
+  VulkanHeaders
   VulkanMemoryAllocator
 )
 

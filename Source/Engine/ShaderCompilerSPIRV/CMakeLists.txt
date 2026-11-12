@@ -17,7 +17,7 @@ target_link_libraries(${PROJECT_NAME}
 
   PRIVATE
   DirectXShaderCompiler
-  SPIRV-Reflect
+  SPIRVReflect
 )
 
 if(XII_CMAKE_COMPILER_CLANG)
