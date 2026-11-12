@@ -20,7 +20,6 @@
 #include <Foundation/Threading/LockedObject.h>
 #include <Foundation/Threading/Mutex.h>
 #include <Foundation/Threading/TaskSystem.h>
-#include <Foundation/Time/Timestamp.h>
 #include <ToolsFoundation/Document/DocumentManager.h>
 #include <ToolsFoundation/FileSystem/DataDirPath.h>
 #include <ToolsFoundation/FileSystem/Declarations.h>
@@ -239,9 +238,6 @@ private:
   ///@{
 
 public:
-  xiiDateTime GetLastFullTransformDate() const;
-  void        StoreFullTransformDate();
-
   /// Transforms core collections after project readiness and before restoring user documents.
   xiiStatus TransformCoreAssets();
 

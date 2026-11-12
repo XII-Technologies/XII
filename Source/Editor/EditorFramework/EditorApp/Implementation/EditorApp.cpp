@@ -34,8 +34,6 @@ void xiiQtEditorApp::AssetProcessorEventHandler(const xiiAssetProcessorEvent& e)
       return;
     if (xiiAssetCurator::GetSingleton()->WriteAssetTables().Failed())
       xiiLog::Error("Failed to publish asset lookup tables after background transformation.");
-    if (progress.m_bAllAssets && !progress.m_bCancelRequested && progress.m_uiFailed == 0 && progress.m_uiNeedsImport == 0 && progress.m_uiCanceled == 0)
-      xiiAssetCurator::GetSingleton()->StoreFullTransformDate();
     xiiStringBuilder text;
     text.SetFormat("Asset transformation: {} processed, {} failed, {} need import, {} canceled. See Asset Curator for details.",
       progress.m_uiCompleted, progress.m_uiFailed, progress.m_uiNeedsImport, progress.m_uiCanceled);

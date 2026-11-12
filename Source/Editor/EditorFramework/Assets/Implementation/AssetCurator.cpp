@@ -16,7 +16,6 @@
 #include <Foundation/Time/Stopwatch.h>
 #include <Foundation/Utilities/CommandLineOptions.h>
 #include <QEventLoop>
-#include <ToolsFoundation/Application/ApplicationServices.h>
 #include <ToolsFoundation/FileSystem/FileSystemModel.h>
 
 #define XII_CURATOR_CACHE_VERSION      2 // Change this to delete and re-gen all asset caches.
@@ -423,34 +422,6 @@ void xiiAssetCurator::MainThreadTick(bool bTopLevel)
   bReentry = false;
 }
 
-xiiDateTime xiiAssetCurator::GetLastFullTransformDate() const
-{
-  xiiStringBuilder path = xiiApplicationServices::GetSingleton()->GetProjectPreferencesFolder();
-  path.AppendPath("LastFullTransform.date");
-
-  xiiFileStats stat;
-  if (xiiOSFile::GetFileStats(path, stat).Failed())
-    return {};
-
-  return xiiDateTime::MakeFromTimestamp(stat.m_LastModificationTime);
-}
-
-void xiiAssetCurator::StoreFullTransformDate()
-{
-  xiiStringBuilder path = xiiApplicationServices::GetSingleton()->GetProjectPreferencesFolder();
-  path.AppendPath("LastFullTransform.date");
-
-  xiiOSFile file;
-  if (file.Open(path, xiiFileOpenMode::Write).Succeeded())
-  {
-    xiiDateTime date;
-    date.SetFromTimestamp(xiiTimestamp::CurrentTimestamp()).AssertSuccess();
-
-    path.SetFormat("{}", date);
-    file.Write(path.GetData(), path.GetElementCount()).AssertSuccess();
-  }
-}
-
 ////////////////////////////////////////////////////////////////////////
 // xiiAssetCurator High Level Functions
 ////////////////////////////////////////////////////////////////////////
@@ -509,8 +480,6 @@ xiiStatus xiiAssetCurator::TransformAllAssets(xiiBitflags<xiiTransformFlags> tra
   range.BeginNextStep("Writing Lookup Tables");
 
   WriteAssetTables(pAssetProfile).IgnoreResult();
-
-  StoreFullTransformDate();
 
   if (uiNumFailedSteps > 0)
     return xiiStatus(xiiFmt("Transform all assets failed on {0} assets.", uiNumFailedSteps));

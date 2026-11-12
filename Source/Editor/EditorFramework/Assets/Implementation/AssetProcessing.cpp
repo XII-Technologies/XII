@@ -167,7 +167,6 @@ xiiStatus xiiAssetProcessor::QueueTransforms(xiiArrayPtr<const xiiUuid> assets, 
       m_TransformProgress.m_uiProjectGeneration = xiiToolsProject::GetProjectGeneration();
       m_TransformStart                          = xiiTime::Now();
     }
-    m_TransformProgress.m_bAllAssets |= bAllAssets;
     for (const auto& guid : assets)
     {
       auto* info = curator->GetAssetInfo(guid);

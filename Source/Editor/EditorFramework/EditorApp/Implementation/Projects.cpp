@@ -10,7 +10,6 @@
 #include <EditorFramework/Settings/EditorPreferences.h>
 #include <Foundation/IO/FileSystem/DeferredFileWriter.h>
 #include <Foundation/IO/MemoryStream.h>
-#include <Foundation/Time/Timestamp.h>
 #include <Foundation/Utilities/CommandLineUtils.h>
 #include <GameEngine/Configuration/InputConfig.h>
 #include <GraphicsCore/Pipeline/RenderPipelineProfileConfig.h>
@@ -459,26 +458,9 @@ It is advised to compile the plugin now, but you can also do so later.</html>",
           }
         }
 
-
-        xiiTimestamp lastTransform = xiiAssetCurator::GetSingleton()->GetLastFullTransformDate().GetTimestamp();
-
         if (pPreferences->m_bBackgroundAssetProcessing)
         {
           xiiAssetProcessor::GetSingleton()->StartProcessTask();
-        }
-        else if (!lastTransform.IsValid() || (xiiTimestamp::CurrentTimestamp() - lastTransform).GetHours() > 5 * 24)
-        {
-          const auto clicked = xiiQtUiServices::MessageBoxQuestion("<html>Apply asset transformation now?<br><br>\
-Explanation: For assets to work properly, they must be <a href='https://xiiengine.net/pages/docs/assets/assets-overview.html#asset-transform'>transformed</a>. Otherwise they don't function as they should or don't even show up.<br>You can manually run the asset transform from the <a href='https://xiiengine.net/pages/docs/assets/asset-browser.html#transform-assets'>asset browser</a> at any time.</html>",
-                                                                   QMessageBox::StandardButton::Apply | QMessageBox::StandardButton::Ignore, QMessageBox::StandardButton::Apply);
-
-          if (clicked == QMessageBox::StandardButton::Ignore)
-          {
-            break;
-          }
-
-          // check whether the project needs to be transformed
-          xiiAssetProcessor::GetSingleton()->QueueTransformAllAssets().LogFailure();
         }
       }
 
