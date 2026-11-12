@@ -87,6 +87,39 @@ void TestAlignmentHelper(size_t uiExpectedAlignment)
 
 XII_CREATE_SIMPLE_TEST_GROUP(Memory);
 
+XII_CREATE_SIMPLE_TEST(Memory, TemporaryAllocatorBucketReuse)
+{
+  xiiAlignedHeapAllocator                                parent("TemporaryBucketTestParent");
+  xiiAllocatorWithPolicy<xiiAllocationPolicyStack<true>> allocator("TemporaryBucketTest", &parent);
+
+  // Cross three buckets, including an exact fit and an allocation that skips the
+  // unused tail of a bucket. Every iteration must reuse the same backing storage.
+  const xiiUInt32 sizes[]                 = {512U * 1024U, 512U * 1024U, 512U * 1024U, 1024U * 1024U};
+  xiiUInt8*       expected[4]             = {};
+  xiiUInt64       uiWarmedAllocationCount = 0U;
+  for (xiiUInt32 uiIteration = 0U; uiIteration < 8U; ++uiIteration)
+  {
+    xiiUInt8* allocations[4];
+    for (xiiUInt32 i = 0U; i < XII_ARRAY_SIZE(allocations); ++i)
+    {
+      allocations[i] = XII_NEW_RAW_BUFFER(&allocator, xiiUInt8, sizes[i]);
+      if (uiIteration == 0U)
+        expected[i] = allocations[i];
+      else
+        XII_TEST_BOOL(allocations[i] == expected[i]);
+    }
+
+    // Mix out-of-order frees with stack unwinding across bucket boundaries.
+    for (xiiUInt32 i : {0U, 2U, 3U, 1U})
+      XII_DELETE_RAW_BUFFER(&allocator, allocations[i]);
+
+    if (uiIteration == 0U)
+      uiWarmedAllocationCount = parent.GetStats().m_uiAllocationCount;
+    else
+      XII_TEST_INT(parent.GetStats().m_uiAllocationCount, uiWarmedAllocationCount);
+  }
+}
+
 XII_CREATE_SIMPLE_TEST(Memory, Allocator)
 {
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Alignment")
