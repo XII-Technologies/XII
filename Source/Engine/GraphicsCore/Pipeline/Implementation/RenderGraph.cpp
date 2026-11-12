@@ -6,6 +6,7 @@
 
 #include <Foundation/Algorithm/HashingUtils.h>
 #include <Foundation/Containers/Deque.h>
+#include <Foundation/Profiling/Profiling.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
 #include <GraphicsCore/Pipeline/RenderGraphDebug.h>
@@ -586,6 +587,8 @@ void xiiRenderGraph::EndSetup()
 
 xiiResult xiiRenderGraph::Compile(const xiiRenderGraphCompileSettings& settings, xiiStringBuilder* out_pError)
 {
+  XII_PROFILE_SCOPE("xiiRenderGraph::Compile");
+
   m_bIsCompiled = false;
   XII_SCOPE_EXIT(if (!m_bIsCompiled) xiiRenderGraphDebug::s_ExecutionEvents.Broadcast({*this, nullptr, m_uiFrameIndex, false, out_pError ? out_pError->GetView() : xiiStringView{}}));
   XII_ASSERT_DEV(!m_bIsSetupOpen, "Cannot compile while setup is still open.");
@@ -607,11 +610,15 @@ xiiResult xiiRenderGraph::Compile(const xiiRenderGraphCompileSettings& settings,
 
   // Phase B: topological sort + culling.
   xiiDynamicArray<xiiUInt32> sortedIndices;
-  if (!RestoreTopologyCache(settings, sortedIndices))
   {
-    PhaseB_TopologicalSortAndCull(settings, sortedIndices);
-    if (settings.m_bEnableCompileCache && sortedIndices.GetCount() == m_Passes.GetCount())
-      StoreTopologyCache(settings, sortedIndices);
+    XII_PROFILE_SCOPE("Render Graph: Resolve Topology");
+
+    if (!RestoreTopologyCache(settings, sortedIndices))
+    {
+      PhaseB_TopologicalSortAndCull(settings, sortedIndices);
+      if (settings.m_bEnableCompileCache && sortedIndices.GetCount() == m_Passes.GetCount())
+        StoreTopologyCache(settings, sortedIndices);
+    }
   }
 
   if (sortedIndices.GetCount() != m_Passes.GetCount())
@@ -642,8 +649,7 @@ xiiResult xiiRenderGraph::Compile(const xiiRenderGraphCompileSettings& settings,
   // transfers and the scheduler can pair them with fence waits.
   PhaseD_BarrierSynthesis(sortedIndices, settings);
 
-  // Phase F: render-pass merging (device needed to create native render passes, deferred to Execute for the first frame, then cached).
-  // Merging is completed during Execute once a device is available.
+  // Phase F rebuilds managed render-pass groups during Execute, where the device and attachments are available.
 
   m_bIsCompiled                         = true;
   m_Statistics.m_uiCompiledPassCount    = m_CompiledPasses.GetCount() - m_Statistics.m_uiCulledPassCount;
@@ -713,6 +719,8 @@ xiiResult xiiRenderGraph::Compile(const xiiRenderGraphCompileSettings& settings,
 
 void xiiRenderGraph::PhaseB_TopologicalSortAndCull(const xiiRenderGraphCompileSettings& settings, xiiDynamicArray<xiiUInt32>& out_sortedIndices)
 {
+  XII_PROFILE_SCOPE("Render Graph: Sort and Cull Passes");
+
   const xiiUInt32 uiPassCount = m_Passes.GetCount();
   if (uiPassCount == 0U)
     return;
@@ -932,6 +940,8 @@ void xiiRenderGraph::PhaseB_TopologicalSortAndCull(const xiiRenderGraphCompileSe
 
 void xiiRenderGraph::PhaseC_LifetimeAnalysis(const xiiDynamicArray<xiiUInt32>& sortedIndices)
 {
+  XII_PROFILE_SCOPE("Render Graph: Analyze Lifetimes");
+
   for (ResourceEntry& resource : m_Resources)
   {
     resource.m_uiFirstUsePassIdx = xiiInvalidIndex;
@@ -1138,6 +1148,8 @@ void xiiRenderGraph::EmitBarrier(xiiUInt32 uiConsumerPassIdx, xiiUInt32 uiResour
 
 void xiiRenderGraph::PhaseD_BarrierSynthesis(const xiiDynamicArray<xiiUInt32>& sortedIndices, const xiiRenderGraphCompileSettings& settings)
 {
+  XII_PROFILE_SCOPE("Render Graph: Synthesize Barriers");
+
   struct StateAccess
   {
     xiiUInt32 m_uiEstablishingPass   = xiiInvalidIndex;
@@ -1291,6 +1303,8 @@ void xiiRenderGraph::PhaseD_BarrierSynthesis(const xiiDynamicArray<xiiUInt32>& s
 
 void xiiRenderGraph::PhaseE_MultiQueueScheduling(const xiiDynamicArray<xiiUInt32>& sortedIndices, xiiGALDevice* /*pDevice*/, const xiiRenderGraphCompileSettings& settings)
 {
+  XII_PROFILE_SCOPE("Render Graph: Schedule Queues");
+
   // Identify distinct queue flags in use.
   static constexpr xiiUInt32                                          s_uiMaxQueues = 3U;
   xiiStaticArray<xiiBitflags<xiiGALCommandQueueFlags>, s_uiMaxQueues> queueFlags;
@@ -1408,6 +1422,8 @@ void xiiRenderGraph::PhaseE_MultiQueueScheduling(const xiiDynamicArray<xiiUInt32
 
 void xiiRenderGraph::PhaseF_RenderPassMerging(xiiGALDevice* pDevice)
 {
+  XII_PROFILE_SCOPE("Render Graph: Build Render Pass Groups");
+
   XII_ASSERT_DEV(pDevice != nullptr, "Device must not be null for render pass merging.");
   XII_IGNORE_UNUSED(pDevice);
 
@@ -1484,6 +1500,8 @@ void xiiRenderGraph::PhaseF_RenderPassMerging(xiiGALDevice* pDevice)
 
 xiiResult xiiRenderGraph::MaterializeRenderPassGroup(xiiUInt32 uiGroupIndex, xiiGALDevice* pDevice, xiiArrayPtr<xiiSharedPtr<xiiGALTexture>> resolvedTextures, xiiStringBuilder* out_pError)
 {
+  XII_PROFILE_SCOPE("Render Graph: Materialize Pass Group");
+
   XII_ASSERT_DEV(uiGroupIndex < m_MergeGroups.GetCount(), "Render pass group index is out of range.");
   XII_ASSERT_DEV(pDevice != nullptr, "Device must not be null when materializing a render pass.");
 
@@ -1557,7 +1575,10 @@ xiiResult xiiRenderGraph::MaterializeRenderPassGroup(xiiUInt32 uiGroupIndex, xii
     }
   }
 
-  group.m_pNativeRenderPass = xiiGALRenderPassCache::GetRenderPass(renderPassDescription);
+  {
+    XII_PROFILE_SCOPE("Render Graph: Get Cached Render Pass");
+    group.m_pNativeRenderPass = xiiGALRenderPassCache::GetRenderPass(renderPassDescription);
+  }
   if (group.m_pNativeRenderPass == nullptr)
   {
     if (out_pError != nullptr)
@@ -1568,7 +1589,10 @@ xiiResult xiiRenderGraph::MaterializeRenderPassGroup(xiiUInt32 uiGroupIndex, xii
   framebufferDescription.m_pRenderPass       = group.m_pNativeRenderPass;
   framebufferDescription.m_FramebufferSize   = framebufferSize;
   framebufferDescription.m_uiArraySliceCount = uiArraySliceCount;
-  group.m_pFramebuffer                       = pDevice->CreateFramebuffer(framebufferDescription);
+  {
+    XII_PROFILE_SCOPE("Render Graph: Create Framebuffer");
+    group.m_pFramebuffer = pDevice->CreateFramebuffer(framebufferDescription);
+  }
   if (group.m_pFramebuffer == nullptr)
   {
     if (out_pError != nullptr)
@@ -1612,6 +1636,8 @@ xiiUInt64 xiiRenderGraph::ComputeSignature(const xiiDynamicArray<PassEntry>& pas
 
 void xiiRenderGraph::PhaseG_SignatureAndCache(const xiiRenderGraphCompileSettings& settings)
 {
+  XII_PROFILE_SCOPE("Render Graph: Compute Signature");
+
   const xiiUInt64 uiSignature       = ComputeSignature(m_Passes) ^ static_cast<xiiUInt64>(settings.m_uiCacheSalt);
   m_Statistics.m_uiGraphSignature   = uiSignature;
   m_uiLastSignature                 = uiSignature;
@@ -1627,6 +1653,8 @@ void xiiRenderGraphPassContext::ReportFailure(xiiStringView reason) const
 
 xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, xiiRenderGraphBlackboard* pBlackboard, xiiRenderGraphResourceCache* pResourceCache, xiiRenderGraphProfiler* pProfiler, xiiStringBuilder* out_pError)
 {
+  XII_PROFILE_SCOPE("xiiRenderGraph::Execute");
+
   XII_ASSERT_DEV(pDevice != nullptr, "Device must not be null.");
   XII_ASSERT_DEV(pBlackboard != nullptr, "Blackboard must not be null.");
   XII_ASSERT_DEV(pResourceCache != nullptr, "ResourceCache must not be null.");
@@ -1642,7 +1670,9 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
 
   // Run render-pass merging now that we have a live device.
   bool bExecutionSucceeded = false;
-  XII_SCOPE_EXIT(xiiRenderGraphDebug::s_ExecutionEvents.Broadcast({*this, m_LastCompileSettings.m_bEnableGPUProfiling ? pProfiler : nullptr, m_uiFrameIndex, bExecutionSucceeded, out_pError ? out_pError->GetView() : xiiStringView{}, pView ? pView->GetName() : xiiStringView{}}));
+  XII_SCOPE_EXIT(
+    XII_PROFILE_SCOPE("Render Graph: Publish Execution Event");
+    xiiRenderGraphDebug::s_ExecutionEvents.Broadcast({*this, m_LastCompileSettings.m_bEnableGPUProfiling ? pProfiler : nullptr, m_uiFrameIndex, bExecutionSucceeded, out_pError ? out_pError->GetView() : xiiStringView{}, pView ? pView->GetName() : xiiStringView{}}));
   PhaseF_RenderPassMerging(pDevice);
 
   // Resolve all transient and imported resources for this frame's execution.
@@ -1678,6 +1708,7 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
         xiiSharedPtr<xiiGALTexture>* pPersistent = m_PersistentTextures.GetValue(resourceEntry.m_sName);
         if (pPersistent == nullptr || (*pPersistent)->GetDescription().CalculateHash() != resourceEntry.m_TextureDescription.CalculateHash())
         {
+          XII_PROFILE_SCOPE("Render Graph: Create Persistent Texture");
           xiiSharedPtr<xiiGALTexture> pTexture = pDevice->CreateTexture(resourceEntry.m_TextureDescription);
           if (pTexture == nullptr)
           {
@@ -1696,6 +1727,7 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
         xiiSharedPtr<xiiGALBuffer>* pPersistent = m_PersistentBuffers.GetValue(resourceEntry.m_sName);
         if (pPersistent == nullptr || (*pPersistent)->GetDescription().CalculateHash() != resourceEntry.m_BufferDescription.CalculateHash())
         {
+          XII_PROFILE_SCOPE("Render Graph: Create Persistent Buffer");
           xiiSharedPtr<xiiGALBuffer> pBuffer = pDevice->CreateBuffer(resourceEntry.m_BufferDescription);
           if (pBuffer == nullptr)
           {
@@ -1723,6 +1755,7 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
   const bool bEnableGpuProfiling = (pProfiler != nullptr) && m_LastCompileSettings.m_bEnableGPUProfiling;
   if (bEnableGpuProfiling)
   {
+    XII_PROFILE_SCOPE("Render Graph: Begin GPU Profiling");
     pProfiler->OnFrameBegin(m_uiFrameIndex);
     pProfiler->SetGraphInstance(m_uiInstanceId);
   }
@@ -1738,7 +1771,10 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
     for (xiiUInt32 uiProducerSubmission : consumer.m_WaitSubmissionIndices)
     {
       if (submissionFences[uiProducerSubmission] == nullptr)
+      {
+        XII_PROFILE_SCOPE("Render Graph: Create Submission Fence");
         submissionFences[uiProducerSubmission] = pDevice->CreateFence(fenceDescription);
+      }
     }
   }
 
@@ -1761,7 +1797,11 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
     // Create a command list for this submission.
     xiiGALCommandListCreationDescription commandListDescription;
     commandListDescription.m_QueueFlags          = actualQueueFlags;
-    xiiSharedPtr<xiiGALCommandList> pCommandList = pDevice->CreateCommandList(commandListDescription);
+    xiiSharedPtr<xiiGALCommandList> pCommandList;
+    {
+      XII_PROFILE_SCOPE("Render Graph: Create Command List");
+      pCommandList = pDevice->CreateCommandList(commandListDescription);
+    }
     if (pCommandList == nullptr)
     {
       if (out_pError != nullptr)
@@ -1771,21 +1811,27 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
       return XII_FAILURE;
     }
 
-    pCommandList->Begin();
+    {
+      XII_PROFILE_SCOPE("Render Graph: Begin Command List");
+      pCommandList->Begin();
+    }
 
     if (bEnableGpuProfiling)
     {
       pProfiler->OnGraphBegin(*pCommandList, m_Id.m_Data, uiSubmissionIndex, uiActualQueueIndex);
     }
 
-    // Emit cross-queue waits.
-    for (xiiUInt32 uiWaitIndex = 0U; uiWaitIndex < submission.m_WaitFences.GetCount(); ++uiWaitIndex)
+    // Encode GPU queue dependencies. The frame-begin scope measures the CPU's GPU frame wait.
     {
-      pCommandList->DeviceWaitForFence(submission.m_WaitFences[uiWaitIndex].Borrow(), submission.m_WaitValues[uiWaitIndex]);
-    }
-    for (xiiUInt32 uiProducerSubmission : submission.m_WaitSubmissionIndices)
-    {
-      pCommandList->DeviceWaitForFence(submissionFences[uiProducerSubmission].Borrow(), 1ULL);
+      XII_PROFILE_SCOPE("Render Graph: Enqueue GPU Fence Waits");
+      for (xiiUInt32 uiWaitIndex = 0U; uiWaitIndex < submission.m_WaitFences.GetCount(); ++uiWaitIndex)
+      {
+        pCommandList->DeviceWaitForFence(submission.m_WaitFences[uiWaitIndex].Borrow(), submission.m_WaitValues[uiWaitIndex]);
+      }
+      for (xiiUInt32 uiProducerSubmission : submission.m_WaitSubmissionIndices)
+      {
+        pCommandList->DeviceWaitForFence(submissionFences[uiProducerSubmission].Borrow(), 1ULL);
+      }
     }
 
     xiiUInt32 uiCurrentMergeGroup = xiiInvalidIndex;
@@ -1798,8 +1844,14 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
         pCommandList->EndRenderPass();
       if (bEnableGpuProfiling)
         pProfiler->OnGraphEnd(*pCommandList, m_Id.m_Data, uiSubmissionIndex, uiActualQueueIndex);
-      pCommandList->End();
-      pQueue->Submit(pCommandList);
+      {
+        XII_PROFILE_SCOPE("Render Graph: End Command List");
+        pCommandList->End();
+      }
+      {
+        XII_PROFILE_SCOPE("Render Graph: Submit Commands");
+        pQueue->Submit(pCommandList);
+      }
       if (bEnableGpuProfiling)
         pProfiler->OnFrameAbort();
       return XII_FAILURE;
@@ -1811,6 +1863,9 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
       if (compiledPass.m_bIsCulled)
         continue;
 
+      // Composed passes prefix their name with instance paths that can fill the CPU scope label.
+      XII_PROFILE_SCOPE(compiledPass.m_sName.GetView().GetFileNameAndExtension());
+
       // Acquire transient resources whose lifetime starts at this pass.
       for (xiiUInt32 uiResourceIndex : compiledPass.m_AcquireResourceIndices)
       {
@@ -1821,6 +1876,7 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
           xiiSharedPtr<xiiGALTexture>& pAliasTexture = aliasTextures[resourceEntry.m_uiAliasGroup];
           if (pAliasTexture == nullptr)
           {
+            XII_PROFILE_SCOPE("Render Graph: Acquire Transient Texture");
             if (resourceEntry.m_ExportFinalState != xiiGALResourceStateFlags::Unknown)
               pAliasTexture = pDevice->CreateTexture(resourceEntry.m_TextureDescription);
             else
@@ -1847,6 +1903,7 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
           xiiSharedPtr<xiiGALBuffer>& pAliasBuffer = aliasBuffers[resourceEntry.m_uiAliasGroup];
           if (pAliasBuffer == nullptr)
           {
+            XII_PROFILE_SCOPE("Render Graph: Acquire Transient Buffer");
             if (resourceEntry.m_ExportFinalState != xiiGALResourceStateFlags::Unknown)
               pAliasBuffer = pDevice->CreateBuffer(resourceEntry.m_BufferDescription);
             else
@@ -1917,7 +1974,10 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
         preparationContext.m_ResolvedTextures = resolvedTextures;
         preparationContext.m_ResolvedBuffers  = resolvedBuffers;
         preparationContext.m_pExecutionError  = &executionError;
-        compiledPass.m_PrepareDelegate(preparationContext);
+        {
+          XII_PROFILE_SCOPE("Render Graph: Prepare Pass");
+          compiledPass.m_PrepareDelegate(preparationContext);
+        }
         if (!executionError.IsEmpty())
         {
           if (out_pError)
@@ -1981,7 +2041,10 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
       context.m_ResolvedBuffers  = resolvedBuffers;
       context.m_pExecutionError  = &executionError;
 
-      compiledPass.m_ExecuteDelegate(context);
+      {
+        XII_PROFILE_SCOPE("Render Graph: Record Pass Commands");
+        compiledPass.m_ExecuteDelegate(context);
+      }
 
       // Profiler end.
       if (bEnableGpuProfiling)
@@ -2098,9 +2161,14 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
       pProfiler->OnGraphEnd(*pCommandList, m_Id.m_Data, uiSubmissionIndex, uiActualQueueIndex);
     }
 
-    pCommandList->End();
-
-    pQueue->Submit(pCommandList);
+    {
+      XII_PROFILE_SCOPE("Render Graph: End Command List");
+      pCommandList->End();
+    }
+    {
+      XII_PROFILE_SCOPE("Render Graph: Submit Commands");
+      pQueue->Submit(pCommandList);
+    }
   } // per-submission loop
 
   // Notify profiler.
