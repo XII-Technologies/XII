@@ -48,16 +48,26 @@ float3 Uncharted2(float3 x)
 
 float3 ToneMapSDR(float3 color)
 {
-    uint op = Operator;
-    if (op == 1u) return Reinhard(color);
-    if (op == 2u) return Uncharted2(color);
-    if (op == 3u) return AgX(color);
-    if (op == 4u) return AgXPunchy(color);
-    if (op == 5u) return AgXGolden(color);
-    if (op == 6u) return KhronosPBRNeutral(color);
-    if (op == 7u) return ACESFitted(color);
-    if (op == 8u) return Filmic(color);
-    return ACES_Narkowicz(color);
+    // Values match the serialized xiiToneMappingOperator enum; append new operators there.
+    switch (Operator)
+    {
+        case 0u: return ACES_Narkowicz(color);
+        case 1u: return Reinhard(color);
+        case 2u: return Uncharted2(color);
+        case 3u: return AgX(color);
+        case 4u: return AgXPunchy(color);
+        case 5u: return AgXGolden(color);
+        case 6u: return KhronosPBRNeutral(color);
+        case 7u: return ACESFitted(color);
+        case 8u: return Filmic(color);
+        case 9u: return Lottes(color);
+        case 10u: return Uchimura(color);
+        case 11u: return ReinhardExtended(color);
+        case 12u: return ReinhardLuminance(color);
+        case 13u: return Exponential(color);
+        case 14u: return saturate(color);
+        default: return ACES_Narkowicz(color);
+    }
 }
 
 // Preserve highlight energy for HDR displays while asymptotically limiting the

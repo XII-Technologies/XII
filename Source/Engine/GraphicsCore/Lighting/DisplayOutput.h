@@ -42,10 +42,16 @@ struct XII_GRAPHICSCORE_DLL xiiToneMappingOperator
     KhronosPBRNeutral,
     ACESFitted,
     Filmic,
+    Lottes,
+    Uchimura,
+    ReinhardExtended,
+    ReinhardLuminance,
+    Exponential,
+    LinearClamp,
 
     ENUM_COUNT,
 
-    Default = AgX
+    Default = AgXPunchy
   };
 };
 
