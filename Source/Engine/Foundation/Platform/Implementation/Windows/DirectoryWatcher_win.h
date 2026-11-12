@@ -635,16 +635,21 @@ void xiiDirectoryWatcher::EnumerateChanges(EnumerateChangesFunction func, xiiTim
       m_pImpl->m_sReconciledRename.Clear();
     }
 
+    // ReFS can report the destination after the source was already removed from the mirror.
+    // Reconcile the destination through the add path, including enumeration for a new directory.
+    const bool  bUnpairedDestination = m_pImpl->m_bValidatePathCasing && info.m_uiAction == FILE_ACTION_RENAMED_NEW_NAME && lastMoveFrom.IsEmpty();
+    const DWORD uiAction             = bUnpairedDestination ? FILE_ACTION_ADDED : info.m_uiAction;
+
     if (info.m_bIsFile)
     {
-      switch (info.m_uiAction)
+      switch (uiAction)
       {
         case FILE_ACTION_ADDED:
         {
           DEBUG_LOG("FILE_ACTION_ADDED {} ({})", info.m_sEventFilePath, info.m_LastModificationTime.QuadPart);
 
-          action    = xiiDirectoryWatcherAction::Added;
-          fireEvent = whatToWatch.IsSet(xiiDirectoryWatcher::Watch::Creates);
+          action    = bUnpairedDestination ? xiiDirectoryWatcherAction::RenamedNewName : xiiDirectoryWatcherAction::Added;
+          fireEvent = whatToWatch.IsSet(Watch::Creates) || (bUnpairedDestination && whatToWatch.IsSet(Watch::Renames));
 
           if (pMirror)
           {
@@ -725,7 +730,7 @@ void xiiDirectoryWatcher::EnumerateChanges(EnumerateChangesFunction func, xiiTim
     }
     else
     {
-      switch (info.m_uiAction)
+      switch (uiAction)
       {
         case FILE_ACTION_ADDED:
         {
@@ -737,9 +742,9 @@ void xiiDirectoryWatcher::EnumerateChanges(EnumerateChangesFunction func, xiiTim
             pMirror->AddDirectory(info.m_sEventFilePath, &bIsDirectoryAlreadyKnown).AssertSuccess();
           }
 
-          if (whatToWatch.IsSet(Watch::Creates) && !bIsDirectoryAlreadyKnown)
+          if ((whatToWatch.IsSet(Watch::Creates) || (bUnpairedDestination && whatToWatch.IsSet(Watch::Renames))) && !bIsDirectoryAlreadyKnown)
           {
-            func(info.m_sEventFilePath, xiiDirectoryWatcherAction::Added, xiiDirectoryWatcherType::Directory);
+            func(info.m_sEventFilePath, bUnpairedDestination ? xiiDirectoryWatcherAction::RenamedNewName : xiiDirectoryWatcherAction::Added, xiiDirectoryWatcherType::Directory);
           }
 
           // Whenever we add a directory we might be "to late" to see changes inside it.
