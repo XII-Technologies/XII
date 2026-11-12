@@ -4,6 +4,7 @@
 
 #include <EditorFramework/EditorFrameworkDLL.h>
 
+#include <Foundation/Types/Delegate.h>
 #include <ToolsFoundation/Document/Document.h>
 
 class XII_EDITORFRAMEWORK_DLL xiiAssetDocumentInfo final : public xiiDocumentInfo
@@ -18,6 +19,10 @@ public:
   /// Creates a clone without meta data.
   void CreateShallowClone(xiiAssetDocumentInfo& out_docInfo) const;
   void ClearMetaData();
+
+  /// Visits readable scalar properties from the asset's reflected metadata. An empty property name
+  /// visits all supported properties. The visitor may return false to stop and must copy borrowed values it keeps.
+  void VisitMetadataProperties(xiiStringView sProperty, xiiDelegate<bool(xiiStringView, xiiStringView)> visitor) const;
 
   xiiUInt64 m_uiSettingsHash; ///< Current hash over all settings in the document, used to check resulting resource for being up-to-date in combination with dependency hashes.
 

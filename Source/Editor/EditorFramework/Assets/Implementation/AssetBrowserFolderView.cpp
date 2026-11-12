@@ -5,9 +5,11 @@
 #include <EditorFramework/Assets/AssetBrowserFilter.moc.h>
 #include <EditorFramework/Assets/AssetBrowserFolderView.moc.h>
 #include <EditorFramework/Assets/AssetBrowserModel.moc.h>
+#include <EditorFramework/Assets/AssetCurator.h>
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
 #include <Foundation/IO/FileSystem/FileSystem.h>
 #include <Foundation/IO/OSFile.h>
+#include <QFileInfo>
 #include <QToolTip>
 #include <ToolsFoundation/FileSystem/FileSystemModel.h>
 
@@ -296,22 +298,12 @@ void eqQtAssetBrowserFolderView::dropEvent(QDropEvent* e)
   if (canDrop(e, files, sTargetFolder).Failed())
     return;
 
-  QMessageBox::StandardButton choice = xiiQtUiServices::MessageBoxQuestion(xiiFmt("Move {} items into '{}'?", files.GetCount(), sTargetFolder), QMessageBox::StandardButton::Yes | QMessageBox::StandardButton::No, QMessageBox::StandardButton::No);
-  if (choice == QMessageBox::StandardButton::No)
+  if (!MoveContentPaths(files, sTargetFolder))
     return;
 
-  xiiStringBuilder sNewLocation;
-  for (const xiiString& sFile : files)
-  {
-    sNewLocation = sTargetFolder;
-    sNewLocation.AppendPath(xiiPathUtils::GetFileNameAndExtension(sFile));
-    if (xiiOSFile::MoveFileOrDirectory(sFile, sNewLocation).Failed())
-    {
-      xiiLog::Error("Failed to move '{}' to '{}'", sFile, sNewLocation);
-    }
-    xiiFileSystemModel::GetSingleton()->NotifyOfChange(sNewLocation);
-    xiiFileSystemModel::GetSingleton()->NotifyOfChange(sFile);
-  }
+  xiiStringBuilder sNewLocation = sTargetFolder;
+  if (files.GetCount() == 1)
+    sNewLocation.AppendPath(files[0].GetFileNameAndExtension());
   OnFlushFileSystemEvents();
 
   if (e->source() == this && files.GetCount() == 1)
@@ -330,6 +322,52 @@ void eqQtAssetBrowserFolderView::dropEvent(QDropEvent* e)
       }
     }
   }
+}
+
+bool eqQtAssetBrowserFolderView::MoveContentPaths(xiiArrayPtr<const xiiString> paths, xiiStringView sTargetFolder)
+{
+  if (paths.IsEmpty() || sTargetFolder.IsEmpty() || !xiiOSFile::ExistsDirectory(sTargetFolder))
+    return false;
+
+  xiiSet<xiiString>          targets;
+  xiiDynamicArray<xiiString> sourcesToMove;
+  xiiDynamicArray<xiiString> destinations;
+  for (const auto& sSource : paths)
+  {
+    xiiStringBuilder sDestination = sTargetFolder;
+    sDestination.AppendPath(sSource.GetFileNameAndExtension());
+    if (sSource == sDestination || sourcesToMove.Contains(sSource))
+      continue;
+
+    if (xiiPathUtils::IsSubPath(sSource, sTargetFolder) || targets.Contains(sDestination) ||
+        QFileInfo::exists(xiiMakeQString(sDestination)))
+    {
+      xiiQtUiServices::MessageBoxWarning(xiiFmt("Cannot move '{}' to '{}'. The destination must be outside the source and the name must be available.", sSource, sDestination));
+      return false;
+    }
+    targets.Insert(sDestination);
+    sourcesToMove.PushBack(sSource);
+    destinations.PushBack(sDestination);
+  }
+
+  if (sourcesToMove.IsEmpty() ||
+      xiiQtUiServices::MessageBoxQuestion(xiiFmt("Move {} item(s) into '{}'?", sourcesToMove.GetCount(), sTargetFolder), QMessageBox::Yes | QMessageBox::Cancel, QMessageBox::Cancel) != QMessageBox::Yes)
+    return false;
+
+  bool bMoved = false;
+  for (xiiUInt32 i = 0; i < sourcesToMove.GetCount(); ++i)
+  {
+    if (QFileInfo::exists(xiiMakeQString(destinations[i])) || xiiOSFile::MoveFileOrDirectory(sourcesToMove[i], destinations[i]).Failed())
+    {
+      xiiQtUiServices::MessageBoxWarning(xiiFmt("Could not move '{}' to '{}'. Check write permissions and whether the name is available.", sourcesToMove[i], destinations[i]));
+      break;
+    }
+
+    xiiFileSystemModel::GetSingleton()->NotifyOfChange(destinations[i]);
+    xiiFileSystemModel::GetSingleton()->NotifyOfChange(sourcesToMove[i]);
+    bMoved = true;
+  }
+  return bMoved;
 }
 
 QStringList eqQtAssetBrowserFolderView::mimeTypes() const
@@ -377,21 +415,109 @@ void eqQtAssetBrowserFolderView::keyPressEvent(QKeyEvent* e)
 
 void eqQtAssetBrowserFolderView::DeleteFolder()
 {
-  if (QTreeWidgetItem* pCurrentItem = currentItem())
-  {
-    QModelIndex                 id         = indexFromItem(pCurrentItem);
-    QString                     sQtAbsPath = id.data(xiiQtAssetBrowserModel::UserRoles::AbsolutePath).toString();
-    xiiString                   sAbsPath   = qtToXIIString(sQtAbsPath);
-    QMessageBox::StandardButton choice     = xiiQtUiServices::MessageBoxQuestion(xiiFmt("Do you want to delete the folder\n'{}'?", sAbsPath), QMessageBox::StandardButton::Cancel | QMessageBox::StandardButton::Yes, QMessageBox::StandardButton::Yes);
-    if (choice == QMessageBox::StandardButton::Cancel)
-      return;
+  auto* pItem = currentItem();
+  if (m_bDialogMode || !pItem || pItem == topLevelItem(0))
+    return;
 
-    if (!QFile::moveToTrash(sQtAbsPath))
-    {
-      xiiLog::Error("Failed to delete folder '{}'", sAbsPath);
-    }
-    xiiFileSystemModel::GetSingleton()->NotifyOfChange(sAbsPath);
+  const xiiBitflags<xiiAssetBrowserItemFlags> flags = static_cast<xiiAssetBrowserItemFlags::Enum>(pItem->data(0, xiiQtAssetBrowserModel::ItemFlags).toInt());
+  if (flags.IsSet(xiiAssetBrowserItemFlags::Folder))
+    DeleteContentPaths({pItem->data(0, xiiQtAssetBrowserModel::AbsolutePath).toString()});
+}
+
+void eqQtAssetBrowserFolderView::DeleteContentPaths(const QStringList& paths)
+{
+  if (paths.isEmpty())
+    return;
+
+  xiiHybridArray<xiiString, 8> folders;
+  xiiSet<xiiString>            files;
+  for (const auto& sPath : paths)
+  {
+    const xiiString sAbsolute = qtToXIIString(sPath);
+    if (xiiOSFile::ExistsDirectory(sAbsolute))
+      folders.PushBack(sAbsolute);
+    else
+      files.Insert(sAbsolute);
   }
+
+  if (!folders.IsEmpty())
+  {
+    const auto knownFiles = xiiFileSystemModel::GetSingleton()->GetFiles();
+    for (const auto& file : *knownFiles)
+    {
+      for (const auto& folder : folders)
+      {
+        if (xiiPathUtils::IsSubPath(folder, file.Key().GetAbsolutePath()))
+        {
+          files.Insert(file.Key().GetAbsolutePath());
+          break;
+        }
+      }
+    }
+  }
+
+  auto*           pCurator = xiiAssetCurator::GetSingleton();
+  xiiSet<xiiUuid> references;
+  for (auto* pManager : xiiDocumentManager::GetAllDocumentManagers())
+  {
+    for (const auto* pDocument : pManager->GetAllOpenDocuments())
+    {
+      if (pDocument->IsModified() && files.Contains(pDocument->GetDocumentPath()))
+      {
+        xiiQtUiServices::MessageBoxWarning(xiiFmt("Save or close '{}' before deleting it.", pDocument->GetDocumentPath()));
+        return;
+      }
+    }
+  }
+  for (const auto& file : files)
+    pCurator->FindAllUses(file, references);
+
+  QStringList referringAssets;
+  for (const auto& guid : references)
+  {
+    if (const auto asset = pCurator->GetSubAsset(guid))
+    {
+      if (!files.Contains(asset->m_pAssetInfo->m_Path.GetAbsolutePath()))
+        referringAssets.push_back(xiiMakeQString(asset->m_pAssetInfo->m_Path.GetDataDirParentRelativePath()));
+    }
+  }
+
+  QString sQuestion = tr("Move %n selected item(s) to the trash?", nullptr, paths.size());
+  if (!referringAssets.isEmpty())
+  {
+    sQuestion += tr("\n\n%n other asset(s) reference the selection. These references may break.", nullptr, referringAssets.size());
+    sQuestion += QStringLiteral("\n\n") + referringAssets.mid(0, 6).join(QLatin1Char('\n'));
+    if (referringAssets.size() > 6)
+      sQuestion += tr("\n…and %1 more").arg(referringAssets.size() - 6);
+  }
+
+  const xiiString sMessage = qtToXIIString(sQuestion);
+  if (xiiQtUiServices::MessageBoxQuestion(xiiFmt("{}", sMessage), QMessageBox::Yes | QMessageBox::Cancel, QMessageBox::Cancel) != QMessageBox::Yes)
+    return;
+
+  QStringList failed;
+  for (const auto& sPath : paths)
+  {
+    const auto sAbsolute        = qtToXIIString(sPath);
+    bool       bCoveredByFolder = false;
+    for (const auto& folder : folders)
+    {
+      if (sAbsolute != folder && xiiPathUtils::IsSubPath(folder, sAbsolute))
+      {
+        bCoveredByFolder = true;
+        break;
+      }
+    }
+    if (bCoveredByFolder)
+      continue;
+
+    if (QFile::moveToTrash(sPath))
+      xiiFileSystemModel::GetSingleton()->NotifyOfChange(sAbsolute);
+    else
+      failed.push_back(sPath);
+  }
+  if (!failed.isEmpty())
+    xiiQtUiServices::MessageBoxWarning(xiiFmt("Could not move these paths to the trash:\n{}", qtToXIIString(failed.join(QLatin1Char('\n')))));
 }
 
 void eqQtAssetBrowserFolderView::OnFlushFileSystemEvents()
@@ -525,7 +651,7 @@ void eqQtAssetBrowserFolderView::UpdateDirectoryTree()
   if (topLevelItemCount() == 0)
   {
     QTreeWidgetItem* pNewParent = new QTreeWidgetItem();
-    pNewParent->setText(0, QLatin1String("<root>"));
+    pNewParent->setText(0, tr("Content roots"));
 
     addTopLevelItem(pNewParent);
 

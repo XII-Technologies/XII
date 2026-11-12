@@ -10,12 +10,14 @@
 #include <ToolsFoundation/FileSystem/FileSystemModel.h>
 
 #include <QAbstractItemModel>
-#include <QFileIconProvider>
+#include <QSet>
 
 struct xiiAssetInfo;
 struct xiiAssetCuratorEvent;
 struct xiiSubAsset;
 class xiiQtAssetFilter;
+template <typename T>
+class QFutureWatcher;
 
 /// Interface class of the asset filter used to decide which items are shown in the asset browser.
 class XII_EDITORFRAMEWORK_DLL xiiQtAssetFilter : public QObject
@@ -28,6 +30,7 @@ public:
 
 Q_SIGNALS:
   void FilterChanged();
+  void FilterNarrowed();
 };
 
 /// Each item in the asset browser can be multiple things at the same time as described by these flags.
@@ -69,10 +72,26 @@ public:
     AbsolutePath,                    // QString
     RelativePath,                    // QString
     AssetIcon,                       // QIcon
-    TransformState,                  // QString
+    TransformState,                  // xiiAssetInfo::TransformState as int
     Importable,                      // bool
     ItemFlags,                       // xiiAssetBrowserItemFlags as int
+    Thumbnail,                       // QPixmap from the asynchronous image cache
+    FileSize,                        // qint64, available after the background file query
   };
+
+  enum Column
+  {
+    NameColumn,
+    TypeColumn,
+    StatusColumn,
+    SizeColumn,
+    ModifiedColumn,
+    PathColumn,
+    ColumnCount,
+  };
+
+  static QString TransformStateLabel(int iState);
+  static QIcon   TransformStateIcon(int iState);
 
   xiiQtAssetBrowserModel(QObject* pParent, xiiQtAssetFilter* pFilter);
   ~xiiQtAssetBrowserModel();
@@ -104,6 +123,7 @@ public: // QAbstractItemModel interface
   virtual QModelIndex     parent(const QModelIndex& index) const override;
   virtual int             rowCount(const QModelIndex& parent = QModelIndex()) const override;
   virtual int             columnCount(const QModelIndex& parent = QModelIndex()) const override;
+  void                    sort(int iColumn, Qt::SortOrder order = Qt::AscendingOrder) override;
   virtual QStringList     mimeTypes() const override;
   virtual QMimeData*      mimeData(const QModelIndexList& indexes) const override;
   virtual Qt::DropActions supportedDropActions() const override;
@@ -123,7 +143,9 @@ private:
     xiiDataDirPath                        m_sAbsFilePath;
     xiiUuid                               m_Guid;
     xiiBitflags<xiiAssetBrowserItemFlags> m_Flags;
-    mutable xiiUInt32                     m_uiThumbnailID;
+    xiiTimestamp                          m_LastModified;
+    mutable qint64                        m_iFileSize     = -2;
+    mutable xiiUInt32                     m_uiThumbnailID = 0;
   };
 
   struct FsEvent
@@ -139,10 +161,16 @@ private:
   void FileSystemFolderEventHandler(const xiiFolderChangedEvent& e);
   void HandleFile(const xiiFileChangedEvent& e);
   void HandleFolder(const xiiFolderChangedEvent& e);
+  void NarrowFilter();
+  void QueueFileSize(const QModelIndex& index) const;
+  void StartFileSizeQueries();
+  void FinishFileSizeQueries();
 
 private:
-  xiiQtAssetFilter* m_pFilter   = nullptr;
-  bool              m_bIconMode = true;
+  xiiQtAssetFilter* m_pFilter     = nullptr;
+  bool              m_bIconMode   = true;
+  int               m_iSortColumn = NameColumn;
+  Qt::SortOrder     m_SortOrder   = Qt::AscendingOrder;
   xiiSet<xiiString> m_ImportExtensions;
 
   xiiEventSubscriptionID m_FileChangedSubscription   = 0;
@@ -154,5 +182,13 @@ private:
   xiiDynamicArray<VisibleEntry> m_EntriesToDisplay;
   xiiSet<xiiUuid>               m_DisplayedEntries;
 
-  QFileIconProvider m_IconProvider;
+  struct FileSizeRequest
+  {
+    QPersistentModelIndex m_Index;
+    QString               m_sPath;
+    QVariant              m_Modified;
+  };
+  mutable QSet<QPersistentModelIndex> m_FileSizePending;
+  QList<FileSizeRequest>              m_FileSizeBatch;
+  QFutureWatcher<QList<qint64>>*      m_pFileSizes = nullptr;
 };

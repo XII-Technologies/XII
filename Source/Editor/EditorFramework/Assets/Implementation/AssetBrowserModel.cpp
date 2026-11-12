@@ -6,8 +6,17 @@
 #include <EditorFramework/Assets/AssetCurator.h>
 #include <EditorFramework/Assets/AssetDocumentGenerator.h>
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
+#include <Foundation/Strings/TranslationLookup.h>
 #include <GuiFoundation/UIServices/ImageCache.moc.h>
 #include <GuiFoundation/UIServices/UIServices.moc.h>
+
+#include <QDateTime>
+#include <QFileInfo>
+#include <QFutureWatcher>
+#include <QLocale>
+#include <QPromise>
+#include <QThreadPool>
+#include <QTimer>
 
 xiiQtAssetFilter::xiiQtAssetFilter(QObject* pParent) :
   QObject(pParent)
@@ -61,7 +70,30 @@ struct FileComparer
       sSortB = b.m_sAbsFilePath.GetAbsolutePath().GetFileNameAndExtension();
     }
 
-    if (m_bSortByRecentlyUsed)
+    xiiInt32 iColumnOrder = 0;
+    switch (m_pModel->m_iSortColumn)
+    {
+      case xiiQtAssetBrowserModel::TypeColumn:
+        iColumnOrder = (pInfoA ? xiiStringView(pInfoA->m_Data.m_sSubAssetsDocumentTypeName) : a.m_sAbsFilePath.GetAbsolutePath().GetFileExtension())
+                         .Compare_NoCase(pInfoB ? xiiStringView(pInfoB->m_Data.m_sSubAssetsDocumentTypeName) : b.m_sAbsFilePath.GetAbsolutePath().GetFileExtension());
+        break;
+      case xiiQtAssetBrowserModel::ModifiedColumn:
+        if (a.m_LastModified.IsValid() && b.m_LastModified.IsValid())
+        {
+          if (!a.m_LastModified.Compare(b.m_LastModified, xiiTimestamp::CompareMode::Identical))
+            iColumnOrder = a.m_LastModified.Compare(b.m_LastModified, xiiTimestamp::CompareMode::Newer) ? 1 : -1;
+        }
+        else
+          iColumnOrder = static_cast<int>(a.m_LastModified.IsValid()) - static_cast<int>(b.m_LastModified.IsValid());
+        break;
+      case xiiQtAssetBrowserModel::PathColumn:
+        iColumnOrder = a.m_sAbsFilePath.GetDataDirParentRelativePath().Compare_NoCase(b.m_sAbsFilePath.GetDataDirParentRelativePath());
+        break;
+    }
+    if (iColumnOrder != 0)
+      return m_pModel->m_SortOrder == Qt::AscendingOrder ? iColumnOrder < 0 : iColumnOrder > 0;
+
+    if (m_bSortByRecentlyUsed && m_pModel->m_iSortColumn == xiiQtAssetBrowserModel::NameColumn)
     {
       if (pInfoA && pInfoB)
       {
@@ -92,7 +124,7 @@ struct FileComparer
       else
         return pInfoA == nullptr;
     }
-    return iValue < 0;
+    return m_pModel->m_SortOrder == Qt::AscendingOrder ? iValue < 0 : iValue > 0;
   }
 
   XII_ALWAYS_INLINE bool operator()(const xiiQtAssetBrowserModel::VisibleEntry& a, const xiiQtAssetBrowserModel::VisibleEntry& b) const
@@ -120,7 +152,10 @@ xiiQtAssetBrowserModel::~xiiQtAssetBrowserModel()
 void xiiQtAssetBrowserModel::Initialize()
 {
   XII_ASSERT_DEBUG(m_pFilter != nullptr, "xiiQtAssetBrowserModel requires a valid filter.");
-  connect(m_pFilter, &xiiQtAssetFilter::FilterChanged, this, [this]() { resetModel(); });
+  connect(m_pFilter, &xiiQtAssetFilter::FilterChanged, this, &xiiQtAssetBrowserModel::resetModel);
+  connect(m_pFilter, &xiiQtAssetFilter::FilterNarrowed, this, &xiiQtAssetBrowserModel::NarrowFilter);
+  m_pFileSizes = new QFutureWatcher<QList<qint64>>(this);
+  connect(m_pFileSizes, &QFutureWatcher<QList<qint64>>::finished, this, &xiiQtAssetBrowserModel::FinishFileSizeQueries);
 
   xiiAssetCurator::GetSingleton()->m_Events.AddEventHandler(xiiMakeDelegate(&xiiQtAssetBrowserModel::AssetCuratorEventHandler, this));
 
@@ -148,30 +183,52 @@ void xiiQtAssetBrowserModel::Initialize()
 
 void xiiQtAssetBrowserModel::AssetCuratorEventHandler(const xiiAssetCuratorEvent& e)
 {
-  switch (e.m_Type)
+  if (e.m_Type == xiiAssetCuratorEvent::Type::AssetListReset)
   {
-    case xiiAssetCuratorEvent::Type::AssetUpdated:
-    {
-      VisibleEntry ve;
-      ve.m_Guid         = e.m_AssetGuid;
-      ve.m_sAbsFilePath = e.m_pInfo->m_pAssetInfo->m_Path;
-      ve.m_Flags        = xiiAssetBrowserItemFlags::File;
-      if (ve.m_Guid.IsValid())
-      {
-        ve.m_Flags |= xiiAssetBrowserItemFlags::Asset;
-      }
+    m_ImportExtensions.Clear();
+    xiiAssetDocumentGenerator::GetSupportsFileTypes(m_ImportExtensions);
+    return;
+  }
 
-      HandleEntry(ve, AssetOp::Updated);
-      break;
-    }
-    case xiiAssetCuratorEvent::Type::AssetListReset:
+  if ((e.m_Type != xiiAssetCuratorEvent::Type::AssetAdded &&
+       e.m_Type != xiiAssetCuratorEvent::Type::AssetMoved &&
+       e.m_Type != xiiAssetCuratorEvent::Type::AssetRemoved &&
+       e.m_Type != xiiAssetCuratorEvent::Type::AssetUpdated) ||
+      !e.m_pInfo)
+    return;
+
+  VisibleEntry entry;
+  entry.m_Guid         = e.m_AssetGuid;
+  entry.m_sAbsFilePath = e.m_pInfo->m_pAssetInfo->m_Path;
+  entry.m_Flags        = xiiAssetBrowserItemFlags::SubAsset;
+  if (e.m_pInfo->m_bMainAsset)
+    entry.m_Flags = xiiAssetBrowserItemFlags::File | xiiAssetBrowserItemFlags::Asset;
+  xiiFileStatus stat;
+  if (xiiFileSystemModel::GetSingleton()->FindFile(entry.m_sAbsFilePath.GetAbsolutePath(), stat).Succeeded())
+    entry.m_LastModified = stat.m_LastModified;
+
+  if (e.m_Type == xiiAssetCuratorEvent::Type::AssetRemoved)
+  {
+    HandleEntry(entry, AssetOp::Remove);
+    for (const auto& subAssetGuid : e.m_pInfo->m_pAssetInfo->m_SubAssets)
     {
-      m_ImportExtensions.Clear();
-      xiiAssetDocumentGenerator::GetSupportsFileTypes(m_ImportExtensions);
-      break;
+      entry.m_Guid  = subAssetGuid;
+      entry.m_Flags = xiiAssetBrowserItemFlags::SubAsset;
+      HandleEntry(entry, AssetOp::Remove);
     }
-    default:
-      break;
+  }
+  else
+  {
+    HandleEntry(entry, AssetOp::Updated);
+    if (e.m_pInfo->m_bMainAsset)
+    {
+      for (const auto& subAssetGuid : e.m_pInfo->m_pAssetInfo->m_SubAssets)
+      {
+        entry.m_Guid  = subAssetGuid;
+        entry.m_Flags = xiiAssetBrowserItemFlags::SubAsset;
+        HandleEntry(entry, AssetOp::Updated);
+      }
+    }
   }
 }
 
@@ -207,6 +264,7 @@ void xiiQtAssetBrowserModel::resetModel()
 {
   beginResetModel();
 
+  m_FileSizePending.clear();
   m_EntriesToDisplay.Clear();
   m_DisplayedEntries.Clear();
 
@@ -240,6 +298,7 @@ void xiiQtAssetBrowserModel::resetModel()
       {
         auto& entry          = m_EntriesToDisplay.ExpandAndGetRef();
         entry.m_sAbsFilePath = file.Key();
+        entry.m_LastModified = file.Value().m_LastModified;
         entry.m_Guid         = file.Value().m_DocumentID;
         entry.m_Flags        = xiiAssetBrowserItemFlags::File | xiiAssetBrowserItemFlags::Asset;
         m_DisplayedEntries.Insert(entry.m_Guid);
@@ -249,11 +308,12 @@ void xiiQtAssetBrowserModel::resetModel()
       {
         auto subAsset = xiiAssetCurator::GetSingleton()->GetSubAsset(subAssetGuid);
 
-        if (subAsset && m_pFilter->IsAssetFiltered(file.Key().GetDataDirParentRelativePath(), false, &(*subAsset)))
+        if (!subAsset || m_pFilter->IsAssetFiltered(file.Key().GetDataDirParentRelativePath(), false, &(*subAsset)))
           continue;
 
         auto& entry          = m_EntriesToDisplay.ExpandAndGetRef();
         entry.m_sAbsFilePath = file.Key();
+        entry.m_LastModified = file.Value().m_LastModified;
         entry.m_Guid         = subAssetGuid;
         entry.m_Flags |= xiiAssetBrowserItemFlags::SubAsset;
         m_DisplayedEntries.Insert(entry.m_Guid);
@@ -266,6 +326,7 @@ void xiiQtAssetBrowserModel::resetModel()
 
       auto& entry          = m_EntriesToDisplay.ExpandAndGetRef();
       entry.m_sAbsFilePath = file.Key();
+      entry.m_LastModified = file.Value().m_LastModified;
       entry.m_Flags        = xiiAssetBrowserItemFlags::File;
     }
   }
@@ -278,92 +339,203 @@ void xiiQtAssetBrowserModel::resetModel()
 
 void xiiQtAssetBrowserModel::HandleEntry(const VisibleEntry& entry, AssetOp op)
 {
-  auto subAsset = xiiAssetCurator::GetSingleton()->GetSubAsset(entry.m_Guid);
+  const auto         allAssets = xiiAssetCurator::GetSingleton()->GetKnownSubAssets();
+  const xiiSubAsset* pAsset    = nullptr;
+  allAssets->TryGetValue(entry.m_Guid, pAsset);
+  const bool bFolder = entry.m_Flags.IsAnySet(xiiAssetBrowserItemFlags::Folder | xiiAssetBrowserItemFlags::DataDirectory);
 
-  if (m_pFilter->IsAssetFiltered(entry.m_sAbsFilePath.GetDataDirParentRelativePath(), entry.m_Flags.IsAnySet(xiiAssetBrowserItemFlags::Folder | xiiAssetBrowserItemFlags::DataDirectory), subAsset.Borrow()))
-  {
-    if (!m_DisplayedEntries.Contains(entry.m_Guid))
-    {
-      return;
-    }
-
-    // Filtered but still exists, remove it.
+  if (op != AssetOp::Remove && m_pFilter->IsAssetFiltered(entry.m_sAbsFilePath.GetDataDirParentRelativePath(), bFolder, pAsset))
     op = AssetOp::Remove;
-  }
 
-  xiiAssetCurator::xiiLockedSubAssetTable   AllAssetsLocked = xiiAssetCurator::GetSingleton()->GetKnownSubAssets();
-  const xiiHashTable<xiiUuid, xiiSubAsset>& AllAssets       = *AllAssetsLocked.Borrow();
+  if (op == AssetOp::Remove && entry.m_Guid.IsValid() && !m_DisplayedEntries.Contains(entry.m_Guid))
+    return;
 
-  FileComparer  cmp(this, AllAssets);
-  VisibleEntry* pLB           = std::lower_bound(begin(m_EntriesToDisplay), end(m_EntriesToDisplay), entry, cmp);
-  xiiUInt32     uiInsertIndex = pLB - m_EntriesToDisplay.GetData();
-  // TODO: Due to sorting issues the above can fail (we need to add a sorting model on top of this as we use mutable data (name) for sorting.
-  if (uiInsertIndex >= m_EntriesToDisplay.GetCount())
+  const FileComparer comparer(this, *allAssets.Borrow());
+  const auto         findInsertion = [&]() {
+    if (m_EntriesToDisplay.IsEmpty())
+      return 0;
+    return static_cast<int>(std::lower_bound(begin(m_EntriesToDisplay), end(m_EntriesToDisplay), entry, comparer) - begin(m_EntriesToDisplay));
+  };
+  auto sameIdentity = [&entry](const VisibleEntry& existing) {
+    if (entry.m_Guid.IsValid())
+      return existing.m_Guid == entry.m_Guid;
+    return !existing.m_Guid.IsValid() && existing.m_sAbsFilePath.GetAbsolutePath() == entry.m_sAbsFilePath.GetAbsolutePath();
+  };
+
+  int iInsert   = findInsertion();
+  int iExisting = -1;
+  if (iInsert < rowCount() && sameIdentity(m_EntriesToDisplay[iInsert]))
+    iExisting = iInsert;
+  else if (entry.m_Guid.IsValid() && m_DisplayedEntries.Contains(entry.m_Guid))
+    iExisting = FindAssetIndex(entry.m_Guid);
+  else if (!entry.m_Guid.IsValid() && op != AssetOp::Add)
   {
-    for (xiiUInt32 i = 0; i < m_EntriesToDisplay.GetCount(); i++)
+    for (int i = 0; i < rowCount(); ++i)
     {
-      VisibleEntry& displayEntry = m_EntriesToDisplay[i];
-      if (!cmp.Less(displayEntry, entry) && !cmp.Less(entry, displayEntry))
+      if (sameIdentity(m_EntriesToDisplay[i]))
       {
-        uiInsertIndex = i;
-        pLB           = &displayEntry;
+        iExisting = i;
         break;
       }
     }
   }
 
-  if (op == AssetOp::Add)
+  if (op == AssetOp::Remove)
   {
-    // Equal?
-    if (uiInsertIndex < m_EntriesToDisplay.GetCount() && !cmp.Less(*pLB, entry) && !cmp.Less(entry, *pLB))
+    if (iExisting < 0)
+      return;
+    beginRemoveRows({}, iExisting, iExisting);
+    m_EntriesToDisplay.RemoveAtAndCopy(iExisting);
+    m_DisplayedEntries.Remove(entry.m_Guid);
+    endRemoveRows();
+    return;
+  }
+
+  if (iExisting >= 0)
+  {
+    if (op == AssetOp::Add)
       return;
 
-    beginInsertRows(QModelIndex(), uiInsertIndex, uiInsertIndex);
-    m_EntriesToDisplay.InsertAt(uiInsertIndex, entry);
-    if (entry.m_Guid.IsValid())
-      m_DisplayedEntries.Insert(entry.m_Guid);
-    endInsertRows();
-  }
-  else if (op == AssetOp::Remove)
-  {
-    // Equal?
-    if (uiInsertIndex < m_EntriesToDisplay.GetCount() && !cmp.Less(*pLB, entry) && !cmp.Less(entry, *pLB))
+    VisibleEntry updated    = entry;
+    const auto&  previous   = m_EntriesToDisplay[iExisting];
+    updated.m_uiThumbnailID = previous.m_uiThumbnailID;
+    if (updated.m_sAbsFilePath.GetAbsolutePath() == previous.m_sAbsFilePath.GetAbsolutePath() &&
+        updated.m_LastModified.Compare(previous.m_LastModified, xiiTimestamp::CompareMode::Identical))
+      updated.m_iFileSize = previous.m_iFileSize;
+    const bool bFitsBefore = iExisting == 0 || !comparer(updated, m_EntriesToDisplay[iExisting - 1]);
+    const bool bFitsAfter  = iExisting + 1 == rowCount() || !comparer(m_EntriesToDisplay[iExisting + 1], updated);
+    if (bFitsBefore && bFitsAfter)
     {
-      beginRemoveRows(QModelIndex(), uiInsertIndex, uiInsertIndex);
-      m_EntriesToDisplay.RemoveAtAndCopy(uiInsertIndex);
-      if (entry.m_Guid.IsValid())
-        m_DisplayedEntries.Remove(entry.m_Guid);
-      endRemoveRows();
+      m_EntriesToDisplay[iExisting] = updated;
+      Q_EMIT dataChanged(index(iExisting, NameColumn), index(iExisting, ColumnCount - 1));
+      return;
     }
-  }
-  else // Updated.
-  {
-    // Updated entries can cause the filter function `IsAssetFiltered` to change its result, e.g. the transform issues list in the curator panel shows assets that were updated from a healthy state to an error state.
-    // Thus, updated entries could be missing in the list at this point, so we need to first check if the item already exists:
-    if (uiInsertIndex < m_EntriesToDisplay.GetCount() && !cmp.Less(*pLB, entry) && !cmp.Less(entry, *pLB))
+
+    if (iInsert > iExisting)
+      --iInsert;
+    if (iInsert != iExisting)
     {
-      // Already exists.
-      QModelIndex idx = index(uiInsertIndex, 0);
-      Q_EMIT dataChanged(idx, idx);
+      beginMoveRows({}, iExisting, iExisting, {}, iInsert > iExisting ? iInsert + 1 : iInsert);
+      m_EntriesToDisplay.RemoveAtAndCopy(iExisting);
+      m_EntriesToDisplay.InsertAt(iInsert, updated);
+      endMoveRows();
     }
     else
     {
-      // Item not found. Do an exhaustive search in case the name was changed in which the order is no longer the same.
-      xiiInt32 oldIndex = FindAssetIndex(entry.m_Guid);
-      if (oldIndex != -1)
+      m_EntriesToDisplay[iExisting] = updated;
+    }
+    Q_EMIT dataChanged(index(iInsert, NameColumn), index(iInsert, ColumnCount - 1));
+    return;
+  }
+
+  beginInsertRows({}, iInsert, iInsert);
+  m_EntriesToDisplay.InsertAt(iInsert, entry);
+  if (entry.m_Guid.IsValid())
+    m_DisplayedEntries.Insert(entry.m_Guid);
+  endInsertRows();
+}
+
+
+void xiiQtAssetBrowserModel::NarrowFilter()
+{
+  const auto assets = xiiAssetCurator::GetSingleton()->GetKnownSubAssets();
+  int        iLast  = -1;
+  for (int i = rowCount() - 1; i >= -1; --i)
+  {
+    if (i >= 0)
+    {
+      const auto&        entry  = m_EntriesToDisplay[i];
+      const xiiSubAsset* pAsset = nullptr;
+      assets->TryGetValue(entry.m_Guid, pAsset);
+      const bool bFolder = entry.m_Flags.IsAnySet(xiiAssetBrowserItemFlags::Folder | xiiAssetBrowserItemFlags::DataDirectory);
+      if (m_pFilter->IsAssetFiltered(entry.m_sAbsFilePath.GetDataDirParentRelativePath(), bFolder, pAsset))
       {
-        // Order (most likely name) has changed, remove old entry and insert new one.
-        beginRemoveRows(QModelIndex(), oldIndex, oldIndex);
-        m_EntriesToDisplay.RemoveAtAndCopy(oldIndex);
-        m_DisplayedEntries.Remove(entry.m_Guid);
-        endRemoveRows();
+        if (iLast < 0)
+          iLast = i;
+        continue;
       }
-      // Reinsert the updated entry.
-      HandleEntry(entry, AssetOp::Add);
+    }
+    if (iLast >= 0)
+    {
+      beginRemoveRows({}, i + 1, iLast);
+      for (int iRemove = i + 1; iRemove <= iLast; ++iRemove)
+        m_DisplayedEntries.Remove(m_EntriesToDisplay[iRemove].m_Guid);
+      m_EntriesToDisplay.RemoveAtAndCopy(i + 1, iLast - i);
+      endRemoveRows();
+      iLast = -1;
     }
   }
 }
 
+void xiiQtAssetBrowserModel::QueueFileSize(const QModelIndex& index) const
+{
+  const bool bSchedule = m_FileSizePending.isEmpty();
+  m_FileSizePending.insert(index.siblingAtColumn(NameColumn));
+  if (bSchedule)
+  {
+    auto* pThis = const_cast<xiiQtAssetBrowserModel*>(this);
+    QTimer::singleShot(0, pThis, &xiiQtAssetBrowserModel::StartFileSizeQueries);
+  }
+}
+
+void xiiQtAssetBrowserModel::StartFileSizeQueries()
+{
+  if (!m_FileSizeBatch.isEmpty() || m_FileSizePending.isEmpty())
+    return;
+
+  QStringList paths;
+  for (const auto& index : std::exchange(m_FileSizePending, {}))
+  {
+    if (!index.isValid() || m_EntriesToDisplay[index.row()].m_iFileSize != -2)
+      continue;
+
+    const auto&    entry    = m_EntriesToDisplay[index.row()];
+    const auto     sPath    = xiiMakeQString(entry.m_sAbsFilePath.GetAbsolutePath());
+    const QVariant modified = entry.m_LastModified.IsValid() ? QVariant(entry.m_LastModified.GetInt64(xiiSIUnitOfTime::Microsecond)) : QVariant();
+    m_FileSizeBatch.push_back({index, sPath, modified});
+    paths.push_back(sPath);
+  }
+  if (paths.isEmpty())
+    return;
+
+  QPromise<QList<qint64>> results;
+  m_pFileSizes->setFuture(results.future());
+  QThreadPool::globalInstance()->start([paths = std::move(paths), results = std::move(results)]() mutable {
+    results.start();
+    QList<qint64> sizes;
+    sizes.reserve(paths.size());
+    for (const auto& sPath : paths)
+    {
+      const QFileInfo info(sPath);
+      sizes.push_back(info.isFile() ? info.size() : -1);
+    }
+    results.addResult(std::move(sizes));
+    results.finish();
+  });
+}
+
+void xiiQtAssetBrowserModel::FinishFileSizeQueries()
+{
+  const auto results = m_pFileSizes->result();
+  const auto batch   = std::exchange(m_FileSizeBatch, {});
+  for (qsizetype i = 0; i < batch.size(); ++i)
+  {
+    const auto& request = batch[i];
+    if (!request.m_Index.isValid())
+      continue;
+
+    auto&          entry    = m_EntriesToDisplay[request.m_Index.row()];
+    const QVariant modified = entry.m_LastModified.IsValid() ? QVariant(entry.m_LastModified.GetInt64(xiiSIUnitOfTime::Microsecond)) : QVariant();
+    if (modified != request.m_Modified || xiiMakeQString(entry.m_sAbsFilePath.GetAbsolutePath()) != request.m_sPath)
+      continue;
+
+    entry.m_iFileSize = results[i];
+    const auto size   = request.m_Index.sibling(request.m_Index.row(), SizeColumn);
+    Q_EMIT dataChanged(size, size, {Qt::DisplayRole, FileSize});
+  }
+
+  StartFileSizeQueries();
+}
 
 ////////////////////////////////////////////////////////////////////////
 // xiiQtAssetBrowserModel QAbstractItemModel functions
@@ -373,14 +545,16 @@ void xiiQtAssetBrowserModel::ThumbnailLoaded(QString sPath, QModelIndex index, Q
 {
   const xiiUuid guid(userData1.toULongLong(), userData2.toULongLong());
 
-  for (xiiUInt32 i = 0; i < m_EntriesToDisplay.GetCount(); ++i)
+  if (!m_DisplayedEntries.Contains(guid))
+    return;
+
+  int iRow = index.model() == this ? index.row() : -1;
+  if (iRow < 0 || iRow >= rowCount() || m_EntriesToDisplay[iRow].m_Guid != guid)
+    iRow = FindAssetIndex(guid);
+  if (iRow >= 0)
   {
-    if (m_EntriesToDisplay[i].m_Guid == guid)
-    {
-      QModelIndex idx = createIndex(i, 0);
-      Q_EMIT dataChanged(idx, idx);
-      return;
-    }
+    const auto item = createIndex(iRow, NameColumn);
+    Q_EMIT dataChanged(item, item, {Qt::DecorationRole, Thumbnail});
   }
 }
 
@@ -391,7 +565,7 @@ void xiiQtAssetBrowserModel::ThumbnailInvalidated(QString sPath, xiiUInt32 uiIma
     if (m_EntriesToDisplay[i].m_uiThumbnailID == uiImageID)
     {
       QModelIndex idx = createIndex(i, 0);
-      Q_EMIT dataChanged(idx, idx);
+      Q_EMIT dataChanged(idx, idx, {Qt::DecorationRole, Thumbnail});
       return;
     }
   }
@@ -424,9 +598,46 @@ void xiiQtAssetBrowserModel::OnFileSystemUpdate()
   }
 }
 
+namespace
+{
+  struct TransformStateDisplay
+  {
+    const char* m_szLabel;
+    const char* m_szIcon;
+  };
+
+  constexpr TransformStateDisplay s_TransformStates[] = {
+    {QT_TRANSLATE_NOOP("AssetBrowser", "Pending"), ""},
+    {QT_TRANSLATE_NOOP("AssetBrowser", "Up to date"), ":/EditorFramework/Icons/AssetOk.svg"},
+    {QT_TRANSLATE_NOOP("AssetBrowser", "Needs import"), ":/EditorFramework/Icons/AssetNeedsImport.svg"},
+    {QT_TRANSLATE_NOOP("AssetBrowser", "Needs transform"), ":/EditorFramework/Icons/AssetNeedsTransform.svg"},
+    {QT_TRANSLATE_NOOP("AssetBrowser", "Needs thumbnail"), ":/EditorFramework/Icons/AssetNeedsThumbnail.svg"},
+    {QT_TRANSLATE_NOOP("AssetBrowser", "Transform failed"), ":/EditorFramework/Icons/AssetFailedTransform.svg"},
+    {QT_TRANSLATE_NOOP("AssetBrowser", "Missing transform dependency"), ":/EditorFramework/Icons/AssetMissingDependency.svg"},
+    {QT_TRANSLATE_NOOP("AssetBrowser", "Missing thumbnail dependency"), ":/EditorFramework/Icons/AssetMissingReference.svg"},
+    {QT_TRANSLATE_NOOP("AssetBrowser", "Missing package dependency"), ":/EditorFramework/Icons/AssetMissingDependency.svg"},
+    {QT_TRANSLATE_NOOP("AssetBrowser", "Circular dependency"), ":/EditorFramework/Icons/AssetFailedTransform.svg"},
+    {QT_TRANSLATE_NOOP("AssetBrowser", "Processing"), ":/EditorFramework/Icons/TransformAsset.svg"},
+  };
+  static_assert(std::size(s_TransformStates) == xiiAssetInfo::COUNT + 1);
+} // namespace
+
+QString xiiQtAssetBrowserModel::TransformStateLabel(int iState)
+{
+  return iState >= 0 && iState <= xiiAssetInfo::COUNT ? QCoreApplication::translate("AssetBrowser", s_TransformStates[iState].m_szLabel) : QString();
+}
+
+QIcon xiiQtAssetBrowserModel::TransformStateIcon(int iState)
+{
+  if (iState >= 0 && iState <= xiiAssetInfo::COUNT && s_TransformStates[iState].m_szIcon[0] != '\0')
+    return xiiQtUiServices::GetCachedIconResource(s_TransformStates[iState].m_szIcon);
+
+  return {};
+}
+
 QVariant xiiQtAssetBrowserModel::data(const QModelIndex& index, int iRole) const
 {
-  if (!index.isValid() || index.column() != 0)
+  if (!index.isValid())
     return QVariant();
 
   const xiiInt32 iRow = index.row();
@@ -435,9 +646,47 @@ QVariant xiiQtAssetBrowserModel::data(const QModelIndex& index, int iRole) const
 
   const VisibleEntry& entry = m_EntriesToDisplay[iRow];
 
+  if (index.column() != NameColumn && (iRole == Qt::DisplayRole || iRole == Qt::DecorationRole))
+  {
+    const auto name = index.siblingAtColumn(NameColumn);
+    if (iRole == Qt::DecorationRole)
+      return index.column() == StatusColumn && entry.m_Guid.IsValid() ? QVariant(TransformStateIcon(data(name, TransformState).toInt())) : QVariant();
+
+    switch (index.column())
+    {
+      case TypeColumn:
+        if (const auto pSubAsset = xiiAssetCurator::GetSingleton()->GetSubAsset(entry.m_Guid))
+          return xiiMakeQString(xiiTranslate(pSubAsset->m_Data.m_sSubAssetsDocumentTypeName));
+        return xiiMakeQString(entry.m_sAbsFilePath.GetAbsolutePath().GetFileExtension());
+      case StatusColumn:
+        return entry.m_Guid.IsValid() ? TransformStateLabel(data(name, TransformState).toInt()) : QString();
+      case SizeColumn:
+      {
+        const auto bytes = data(name, FileSize);
+        return bytes.isValid() && bytes.toLongLong() >= 0 ? QLocale().formattedDataSize(bytes.toLongLong()) : QString();
+      }
+      case ModifiedColumn:
+        if (entry.m_LastModified.IsValid())
+          return QLocale().toString(QDateTime::fromMSecsSinceEpoch(entry.m_LastModified.GetInt64(xiiSIUnitOfTime::Millisecond)), QLocale::ShortFormat);
+        return {};
+      case PathColumn:
+        return data(name, RelativePath);
+    }
+    return {};
+  }
+
   // Common properties shared among all item types.
   switch (iRole)
   {
+    case FileSize:
+      if (!entry.m_Flags.IsAnySet(xiiAssetBrowserItemFlags::File | xiiAssetBrowserItemFlags::SubAsset))
+        return {};
+      if (entry.m_iFileSize == -2)
+      {
+        QueueFileSize(index);
+        return {};
+      }
+      return entry.m_iFileSize;
     case xiiQtAssetBrowserModel::UserRoles::ItemFlags:
       return (int)entry.m_Flags.GetValue();
     case xiiQtAssetBrowserModel::UserRoles::Importable:
@@ -514,19 +763,16 @@ QVariant xiiQtAssetBrowserModel::data(const QModelIndex& index, int iRole) const
         xiiStringBuilder sExt = entry.m_sAbsFilePath.GetAbsolutePath().GetFileExtension();
         sExt.ToLower();
         const bool bImportable   = m_ImportExtensions.Contains(sExt);
-        const bool bIsReferenced = xiiAssetCurator::GetSingleton()->IsReferenced(entry.m_sAbsFilePath.GetAbsolutePath());
         if (bImportable)
         {
+          const bool bIsReferenced = xiiAssetCurator::GetSingleton()->IsReferenced(entry.m_sAbsFilePath.GetAbsolutePath());
           return xiiQtUiServices::GetCachedIconResource(bIsReferenced ? ":/EditorFramework/Icons/ImportedFile.svg" : ":/EditorFramework/Icons/ImportableFile.svg");
         }
         return xiiQtUiServices::GetCachedIconResource(":/GuiFoundation/Icons/Document.svg");
       }
 
       case Qt::DecorationRole:
-      {
-        QFileInfo fi(xiiMakeQString(entry.m_sAbsFilePath));
-        return m_IconProvider.icon(fi);
-      }
+        return data(index, AssetIcon);
     }
   }
   else if (entry.m_Guid.IsValid()) // Asset or sub-asset
@@ -562,61 +808,21 @@ QVariant xiiQtAssetBrowserModel::data(const QModelIndex& index, int iRole) const
       {
         xiiStringBuilder sToolTip = pSubAsset->GetName();
         sToolTip.Append("\n", pSubAsset->m_pAssetInfo->m_Path.GetDataDirParentRelativePath());
-        sToolTip.Append("\nTransform State: ");
-        switch (pSubAsset->m_pAssetInfo->m_TransformState)
-        {
-          case xiiAssetInfo::Unknown:
-            sToolTip.Append("Unknown");
-            break;
-          case xiiAssetInfo::UpToDate:
-            sToolTip.Append("Up To Date");
-            break;
-          case xiiAssetInfo::NeedsTransform:
-            sToolTip.Append("Needs Transform");
-            break;
-          case xiiAssetInfo::NeedsThumbnail:
-            sToolTip.Append("Needs Thumbnail");
-            break;
-          case xiiAssetInfo::TransformError:
-            sToolTip.Append("Transform Error");
-            break;
-          case xiiAssetInfo::MissingTransformDependency:
-            sToolTip.Append("Missing Transform Dependency");
-            break;
-          case xiiAssetInfo::MissingPackageDependency:
-            sToolTip.Append("Missing Package Dependency");
-            break;
-          case xiiAssetInfo::MissingThumbnailDependency:
-            sToolTip.Append("Missing Thumbnail Dependency");
-            break;
-          case xiiAssetInfo::CircularDependency:
-            sToolTip.Append("Circular Dependency");
-            break;
-          default:
-            break;
-        }
-
-        return QString::fromUtf8(sToolTip, sToolTip.GetElementCount());
+        return xiiMakeQString(sToolTip) + QLatin1Char('\n') + TransformStateLabel(pSubAsset->m_pAssetInfo->m_TransformState);
       }
       case Qt::DecorationRole:
+        return data(index, m_bIconMode ? Thumbnail : AssetIcon);
+      case UserRoles::Thumbnail:
       {
-        if (m_bIconMode)
-        {
-          xiiString sThumbnailPath = pSubAsset->m_pAssetInfo->GetManager()->GenerateResourceThumbnailPath(pSubAsset->m_pAssetInfo->m_Path, pSubAsset->m_Data.m_sName);
-
-          xiiUInt64 uiUserData1, uiUserData2;
-          AssetGuid.GetValues(uiUserData1, uiUserData2);
-
-          const QPixmap* pThumbnailPixmap = xiiQtImageCache::GetSingleton()->QueryPixmapForType(pSubAsset->m_Data.m_sSubAssetsDocumentTypeName, sThumbnailPath, index, QVariant(uiUserData1), QVariant(uiUserData2), &entry.m_uiThumbnailID);
-
-          return *pThumbnailPixmap;
-        }
-        else
-        {
-          return xiiQtUiServices::GetCachedIconResource(pSubAsset->m_pAssetInfo->m_pDocumentTypeDescriptor->m_sIcon, xiiColorScheme::GetCategoryColor(pSubAsset->m_pAssetInfo->m_pDocumentTypeDescriptor->m_sAssetCategory, xiiColorScheme::CategoryColorUsage::OverlayIcon));
-        }
+        xiiString sThumbnailPath = pSubAsset->m_pAssetInfo->GetManager()->GenerateResourceThumbnailPath(pSubAsset->m_pAssetInfo->m_Path, pSubAsset->m_Data.m_sName);
+        xiiUInt64 uiUserData1, uiUserData2;
+        AssetGuid.GetValues(uiUserData1, uiUserData2);
+        auto*         pCache = xiiQtImageCache::GetSingleton();
+        const QPixmap pixmap = *pCache->QueryPixmapForType(pSubAsset->m_Data.m_sSubAssetsDocumentTypeName, sThumbnailPath, index, QVariant(uiUserData1), QVariant(uiUserData2), &entry.m_uiThumbnailID);
+        if (pCache->IsUnavailablePixmap(pixmap))
+          return data(index, AssetIcon).value<QIcon>().pixmap(96);
+        return pixmap;
       }
-      break;
 
       case UserRoles::SubAssetGuid:
         return QVariant::fromValue(pSubAsset->m_Data.m_Guid);
@@ -625,7 +831,9 @@ QVariant xiiQtAssetBrowserModel::data(const QModelIndex& index, int iRole) const
       case UserRoles::AssetIcon:
         return xiiQtUiServices::GetCachedIconResource(pSubAsset->m_pAssetInfo->m_pDocumentTypeDescriptor->m_sIcon, xiiColorScheme::GetCategoryColor(pSubAsset->m_pAssetInfo->m_pDocumentTypeDescriptor->m_sAssetCategory, xiiColorScheme::CategoryColorUsage::OverlayIcon));
       case UserRoles::TransformState:
-        return (int)pSubAsset->m_pAssetInfo->m_TransformState;
+        if (xiiAssetCurator::GetSingleton()->IsAssetBeingTransformed(pSubAsset->m_pAssetInfo->m_Info->m_DocumentID))
+          return static_cast<int>(xiiAssetInfo::COUNT);
+        return static_cast<int>(pSubAsset->m_pAssetInfo->m_TransformState);
     }
   }
   else
@@ -640,7 +848,7 @@ bool xiiQtAssetBrowserModel::setData(const QModelIndex& index, const QVariant& v
   if (!index.isValid())
     return false;
 
-  if (iRole != Qt::EditRole)
+  if (iRole != Qt::EditRole || index.column() != NameColumn)
     return false;
 
   const xiiInt32 iRow = index.row();
@@ -675,7 +883,9 @@ Qt::ItemFlags xiiQtAssetBrowserModel::flags(const QModelIndex& index) const
 
   if (entry.m_Flags.IsAnySet(xiiAssetBrowserItemFlags::File | xiiAssetBrowserItemFlags::Folder | xiiAssetBrowserItemFlags::Asset))
   {
-    flags |= Qt::ItemIsDragEnabled | Qt::ItemIsEditable;
+    flags |= Qt::ItemIsDragEnabled;
+    if (index.column() == NameColumn)
+      flags |= Qt::ItemIsEditable;
   }
 
   if (entry.m_Flags.IsAnySet(xiiAssetBrowserItemFlags::SubAsset))
@@ -692,8 +902,18 @@ QVariant xiiQtAssetBrowserModel::headerData(int iSection, Qt::Orientation orient
   {
     switch (iSection)
     {
-      case 0:
-        return QString("Files");
+      case NameColumn:
+        return tr("Name");
+      case TypeColumn:
+        return tr("Type");
+      case StatusColumn:
+        return tr("Status");
+      case SizeColumn:
+        return tr("Size");
+      case ModifiedColumn:
+        return tr("Modified");
+      case PathColumn:
+        return tr("Path");
     }
   }
   return QVariant();
@@ -701,7 +921,7 @@ QVariant xiiQtAssetBrowserModel::headerData(int iSection, Qt::Orientation orient
 
 QModelIndex xiiQtAssetBrowserModel::index(int iRow, int iColumn, const QModelIndex& parent) const
 {
-  if (parent.isValid() || iColumn != 0)
+  if (!hasIndex(iRow, iColumn, parent))
     return QModelIndex();
 
   return createIndex(iRow, iColumn);
@@ -722,7 +942,48 @@ int xiiQtAssetBrowserModel::rowCount(const QModelIndex& parent) const
 
 int xiiQtAssetBrowserModel::columnCount(const QModelIndex& parent) const
 {
-  return 1;
+  return parent.isValid() ? 0 : ColumnCount;
+}
+
+void xiiQtAssetBrowserModel::sort(int iColumn, Qt::SortOrder order)
+{
+  if (iColumn < NameColumn || iColumn >= ColumnCount || iColumn == StatusColumn || iColumn == SizeColumn ||
+      (m_iSortColumn == iColumn && m_SortOrder == order))
+    return;
+
+  m_iSortColumn = iColumn;
+  m_SortOrder   = order;
+
+  xiiDynamicArray<xiiUInt32> rows;
+  rows.SetCountUninitialized(m_EntriesToDisplay.GetCount());
+  for (xiiUInt32 i = 0; i < rows.GetCount(); ++i)
+    rows[i] = i;
+  {
+    const auto         assets = xiiAssetCurator::GetSingleton()->GetKnownSubAssets();
+    const FileComparer comparer(this, *assets.Borrow());
+    rows.Sort([&](xiiUInt32 a, xiiUInt32 b) { return comparer(m_EntriesToDisplay[a], m_EntriesToDisplay[b]); });
+  }
+
+  Q_EMIT layoutAboutToBeChanged({}, QAbstractItemModel::VerticalSortHint);
+  const auto                 oldIndexes = persistentIndexList();
+  xiiDynamicArray<xiiUInt32> newRows;
+  newRows.SetCountUninitialized(rows.GetCount());
+  xiiDynamicArray<VisibleEntry> sorted;
+  sorted.Reserve(rows.GetCount());
+  for (xiiUInt32 i = 0; i < rows.GetCount(); ++i)
+  {
+    newRows[rows[i]] = i;
+    sorted.PushBack(std::move(m_EntriesToDisplay[rows[i]]));
+  }
+  m_EntriesToDisplay.Swap(sorted);
+
+  QModelIndexList newIndexes;
+  newIndexes.reserve(oldIndexes.size());
+  for (const auto& item : oldIndexes)
+    newIndexes.push_back(index(newRows[item.row()], item.column()));
+
+  changePersistentIndexList(oldIndexes, newIndexes);
+  Q_EMIT layoutChanged({}, QAbstractItemModel::VerticalSortHint);
 }
 
 QStringList xiiQtAssetBrowserModel::mimeTypes() const
@@ -744,16 +1005,23 @@ QMimeData* xiiQtAssetBrowserModel::mimeData(const QModelIndexList& indexes) cons
 
   for (xiiUInt32 i = 0; i < (xiiUInt32)indexes.size(); ++i)
   {
+    if (indexes[i].column() != NameColumn)
+      continue;
+
     QString sGuid(xiiConversionUtils::ToString(data(indexes[i], UserRoles::SubAssetGuid).value<xiiUuid>(), tmp).GetData());
     QString sPath = data(indexes[i], UserRoles::AbsolutePath).toString();
     guids.PushBack(sGuid);
-    if (i == 0)
+    if (sGuids.isEmpty())
       sGuids += sPath;
     else
       sGuids += "\n" + sPath;
 
-    files.PushBack(sPath);
-    urls.push_back(QUrl::fromLocalFile(sPath));
+    const xiiBitflags<xiiAssetBrowserItemFlags> itemFlags = static_cast<xiiAssetBrowserItemFlags::Enum>(data(indexes[i], ItemFlags).toInt());
+    if (!itemFlags.IsAnySet(xiiAssetBrowserItemFlags::SubAsset | xiiAssetBrowserItemFlags::DataDirectory) && !files.Contains(sPath))
+    {
+      files.PushBack(sPath);
+      urls.push_back(QUrl::fromLocalFile(sPath));
+    }
   }
 
   QByteArray  encodedData;
@@ -766,7 +1034,8 @@ QMimeData* xiiQtAssetBrowserModel::mimeData(const QModelIndexList& indexes) cons
 
   QMimeData* mimeData = new QMimeData();
   mimeData->setData("application/xiiEditor.AssetGuid", encodedData);
-  mimeData->setData("application/xiiEditor.files", encodedData2);
+  if (!files.IsEmpty())
+    mimeData->setData("application/xiiEditor.files", encodedData2);
   mimeData->setText(sGuids);
   mimeData->setUrls(urls);
   return mimeData;
@@ -819,6 +1088,7 @@ void xiiQtAssetBrowserModel::HandleFile(const xiiFileChangedEvent& e)
 {
   VisibleEntry ve;
   ve.m_Guid         = e.m_Status.m_DocumentID;
+  ve.m_LastModified = e.m_Status.m_LastModified;
   ve.m_sAbsFilePath = e.m_Path;
   ve.m_Flags        = xiiAssetBrowserItemFlags::File;
   if (ve.m_Guid.IsValid())
@@ -837,9 +1107,11 @@ void xiiQtAssetBrowserModel::HandleFile(const xiiFileChangedEvent& e)
       return;
     case xiiFileChangedEvent::Type::DocumentLinked:
     {
-      ve.m_Guid = xiiUuid::MakeInvalid();
+      ve.m_Guid  = xiiUuid::MakeInvalid();
+      ve.m_Flags = xiiAssetBrowserItemFlags::File;
       HandleEntry(ve, AssetOp::Remove);
-      ve.m_Guid = e.m_Status.m_DocumentID;
+      ve.m_Guid  = e.m_Status.m_DocumentID;
+      ve.m_Flags = xiiAssetBrowserItemFlags::File | xiiAssetBrowserItemFlags::Asset;
       HandleEntry(ve, AssetOp::Add);
       return;
     }
@@ -847,10 +1119,14 @@ void xiiQtAssetBrowserModel::HandleFile(const xiiFileChangedEvent& e)
     {
       ve.m_Guid = e.m_Status.m_DocumentID;
       HandleEntry(ve, AssetOp::Remove);
-      ve.m_Guid = xiiUuid::MakeInvalid();
+      ve.m_Guid  = xiiUuid::MakeInvalid();
+      ve.m_Flags = xiiAssetBrowserItemFlags::File;
       HandleEntry(ve, AssetOp::Add);
       return;
     }
+    case xiiFileChangedEvent::Type::FileChanged:
+      HandleEntry(ve, AssetOp::Updated);
+      return;
     case xiiFileChangedEvent::Type::FileRemoved:
       HandleEntry(ve, AssetOp::Remove);
       return;
@@ -862,7 +1138,7 @@ void xiiQtAssetBrowserModel::HandleFile(const xiiFileChangedEvent& e)
 void xiiQtAssetBrowserModel::HandleFolder(const xiiFolderChangedEvent& e)
 {
   VisibleEntry ve;
-  ve.m_Flags        = xiiAssetBrowserItemFlags::Folder;
+  ve.m_Flags        = e.m_Path.GetDataDirRelativePath().IsEmpty() ? xiiAssetBrowserItemFlags::DataDirectory : xiiAssetBrowserItemFlags::Folder;
   ve.m_sAbsFilePath = e.m_Path;
 
   switch (e.m_Type)

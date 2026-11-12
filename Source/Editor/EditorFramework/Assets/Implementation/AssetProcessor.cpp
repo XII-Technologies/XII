@@ -418,6 +418,7 @@ bool xiiProcessTask::GetNextAssetToProcess(xiiAssetInfo* pInfo, xiiUuid& out_gui
   if (bComplete && !xiiAssetCurator::GetSingleton()->m_Updating.Contains(pInfo->m_Info->m_DocumentID) && !xiiAssetCurator::GetSingleton()->m_TransformStateStale.Contains(pInfo->m_Info->m_DocumentID))
   {
     xiiAssetCurator::GetSingleton()->m_Updating.Insert(pInfo->m_Info->m_DocumentID);
+    xiiAssetCurator::GetSingleton()->m_SubAssetChanged.Insert(pInfo->m_Info->m_DocumentID);
     out_guid = pInfo->m_Info->m_DocumentID;
     out_path = pInfo->m_Path;
     return true;
@@ -472,7 +473,10 @@ bool xiiProcessTask::GetNextAssetToProcess(xiiUuid& out_guid, xiiDataDirPath& ou
     processor->m_TransformRequests.RemoveAtAndCopy(i);
     m_ReservedAssets = std::move(reserved);
     for (const auto& guid : m_ReservedAssets)
+    {
       curator->m_Updating.Insert(guid);
+      curator->m_SubAssetChanged.Insert(guid);
+    }
     m_bRequested = true;
     out_guid     = m_Request.m_AssetGuid;
     out_path     = curator->GetAssetInfo(out_guid) ? curator->GetAssetInfo(out_guid)->m_Path : xiiDataDirPath();
@@ -688,9 +692,11 @@ bool xiiProcessTask::Tick(bool bStartNewWork)
         {
           XII_LOCK(xiiAssetCurator::GetSingleton()->m_CuratorMutex);
           xiiAssetCurator::GetSingleton()->m_Updating.Remove(m_AssetGuid);
+          xiiAssetCurator::GetSingleton()->m_SubAssetChanged.Insert(m_AssetGuid);
           for (const auto& guid : m_ReservedAssets)
           {
             xiiAssetCurator::GetSingleton()->m_Updating.Remove(guid);
+            xiiAssetCurator::GetSingleton()->m_SubAssetChanged.Insert(guid);
             if (guid != m_AssetGuid)
               xiiAssetCurator::GetSingleton()->NotifyOfAssetChange(guid);
           }

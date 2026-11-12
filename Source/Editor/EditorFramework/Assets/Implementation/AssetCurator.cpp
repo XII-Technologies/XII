@@ -1079,12 +1079,14 @@ void xiiAssetCurator::NotifyOfAssetChange(const xiiUuid& assetGuid)
 
 void xiiAssetCurator::UpdateAssetLastAccessTime(const xiiUuid& assetGuid)
 {
+  XII_LOCK(m_CuratorMutex);
   auto it = m_KnownSubAssets.Find(assetGuid);
 
   if (!it.IsValid())
     return;
 
   it.Value().m_LastAccess = xiiTime::Now();
+  m_SubAssetChanged.Insert(assetGuid);
 }
 
 void xiiAssetCurator::CheckFileSystem()
