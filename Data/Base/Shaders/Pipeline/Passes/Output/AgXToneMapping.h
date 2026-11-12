@@ -29,6 +29,8 @@
 
 #pragma once
 
+#include <Shaders/Common/Common.h>
+
 float3 AgXDefaultContrastApprox(float3 x)
 {
   const float3 x2 = x * x;
@@ -36,27 +38,51 @@ float3 AgXDefaultContrastApprox(float3 x)
   return 15.5f * x4 * x2 - 40.14f * x4 * x + 31.96f * x4 - 6.868f * x2 * x + 0.4298f * x2 + 0.1191f * x - 0.00232f;
 }
 
-// Exposed scene-linear BT.709/sRGB input to display-linear BT.709 output.
-float3 AgX(float3 color)
+// Exposed scene-linear BT.709/sRGB input to AgX's encoded contrast space.
+float3 AgXEncode(float3 color)
 {
   // Rows are output channels; use matrix-vector multiplication for both transforms.
   const float3x3 inset = float3x3(
     0.842479062253094f, 0.0784335999999992f, 0.0792237451477643f,
     0.0423282422610123f, 0.878468636469772f, 0.0791661274605434f,
     0.0423756549057051f, 0.0784336f, 0.879142973793104f);
-  const float3x3 outset = float3x3(
-    1.19687900512017f, -0.0980208811401368f, -0.0990297440797205f,
-    -0.0528968517574562f, 1.15190312990417f, -0.0989611768448433f,
-    -0.0529716355144438f, -0.0980434501171241f, 1.15107367264116f);
   const float minEV = -12.47393f;
   const float maxEV = 4.026069f;
 
   color = mul(inset, max(color, 0.0f));
   // The log floor lies below the encoded exposure range and keeps black finite.
   color = saturate((log2(max(color, 1.0e-6f)) - minEV) / (maxEV - minEV));
-  color = AgXDefaultContrastApprox(color);
+  return AgXDefaultContrastApprox(color);
+}
+
+float3 AgXDecode(float3 color)
+{
+  const float3x3 outset = float3x3(
+    1.19687900512017f, -0.0980208811401368f, -0.0990297440797205f,
+    -0.0528968517574562f, 1.15190312990417f, -0.0989611768448433f,
+    -0.0529716355144438f, -0.0980434501171241f, 1.15107367264116f);
   color = mul(outset, color);
 
   // AgX's 2.2 EOTF restores linear light; presentation applies the display transfer.
   return pow(saturate(color), 2.2f);
+}
+
+float3 AgX(float3 color)
+{
+  return AgXDecode(AgXEncode(color));
+}
+
+// ASC CDL looks from the AgX OCIO configuration, applied before the outset/EOTF.
+float3 AgXPunchy(float3 color)
+{
+  color = pow(max(AgXEncode(color), 0.0f), 1.35f);
+  color = lerp(GetLuminance(color).xxx, color, 1.4f);
+  return AgXDecode(color);
+}
+
+float3 AgXGolden(float3 color)
+{
+  color = pow(max(AgXEncode(color) * float3(1.0f, 0.9f, 0.5f), 0.0f), 0.8f);
+  color = lerp(GetLuminance(color).xxx, color, 1.3f);
+  return AgXDecode(color);
 }

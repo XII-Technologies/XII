@@ -37,6 +37,8 @@ struct XII_GRAPHICSCORE_DLL xiiToneMappingOperator
     Reinhard,
     Uncharted2,
     AgX,
+    AgXPunchy,
+    AgXGolden,
 
     ENUM_COUNT,
 

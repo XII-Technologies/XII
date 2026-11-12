@@ -50,6 +50,8 @@ float3 ToneMapSDR(float3 color)
     if (op == 1u) return Reinhard(color);
     if (op == 2u) return Uncharted2(color);
     if (op == 3u) return AgX(color);
+    if (op == 4u) return AgXPunchy(color);
+    if (op == 5u) return AgXGolden(color);
     return ACES_Narkowicz(color);
 }
 
