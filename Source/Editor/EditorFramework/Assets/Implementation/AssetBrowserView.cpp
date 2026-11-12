@@ -20,6 +20,9 @@ xiiQtAssetBrowserView::xiiQtAssetBrowserView(QWidget* pParent) :
   setSelectionBehavior(QAbstractItemView::SelectionBehavior::SelectItems);
   setViewMode(QListView::ViewMode::IconMode);
   setUniformItemSizes(true);
+  setLayoutMode(QListView::Batched);
+  setBatchSize(256);
+  setTextElideMode(Qt::ElideRight);
   setResizeMode(QListView::ResizeMode::Adjust);
 
   setItemDelegate(m_pDelegate);
@@ -228,7 +231,7 @@ void xiiQtAssetBrowserView::wheelEvent(QWheelEvent* pEvent)
 
 void xiiQtAssetBrowserView::mouseDoubleClickEvent(QMouseEvent* pEvent)
 {
-  if (pEvent->button() == Qt::MouseButton::BackButton)
+  if (pEvent->button() == Qt::MouseButton::BackButton || pEvent->button() == Qt::MouseButton::ForwardButton)
   {
     pEvent->ignore();
     return;
@@ -328,6 +331,12 @@ void xiiQtIconViewDelegate::updateEditorGeometry(QWidget* pEditor, const QStyleO
 {
   if (!pEditor)
     return;
+
+  if (!IsInIconMode())
+  {
+    xiiQtItemDelegate::updateEditorGeometry(pEditor, option, index);
+    return;
+  }
 
   const xiiUInt32 uiThumbnailSize = ThumbnailSize();
   const QRect     textRect        = option.rect.adjusted(ItemSideMargin, ItemSideMargin + uiThumbnailSize + TextSpacing, -ItemSideMargin, -ItemSideMargin - TextSpacing);
@@ -447,41 +456,7 @@ void xiiQtIconViewDelegate::paint(QPainter* pPainter, const QStyleOptionViewItem
 
       xiiAssetInfo::TransformState state = (xiiAssetInfo::TransformState)index.data(xiiQtAssetBrowserModel::UserRoles::TransformState).toInt();
 
-      switch (state)
-      {
-        case xiiAssetInfo::TransformState::Unknown:
-          xiiQtUiServices::GetSingleton()->GetCachedIconResource(":/EditorFramework/Icons/AssetUnknown.svg").paint(pPainter, thumbnailRect);
-          break;
-        case xiiAssetInfo::TransformState::NeedsThumbnail:
-          xiiQtUiServices::GetSingleton()->GetCachedIconResource(":/EditorFramework/Icons/AssetNeedsThumbnail.svg").paint(pPainter, thumbnailRect);
-          break;
-        case xiiAssetInfo::TransformState::NeedsTransform:
-          xiiQtUiServices::GetSingleton()->GetCachedIconResource(":/EditorFramework/Icons/AssetNeedsTransform.svg").paint(pPainter, thumbnailRect);
-          break;
-        case xiiAssetInfo::TransformState::UpToDate:
-          xiiQtUiServices::GetSingleton()->GetCachedIconResource(":/EditorFramework/Icons/AssetOk.svg").paint(pPainter, thumbnailRect);
-          break;
-        case xiiAssetInfo::TransformState::MissingTransformDependency:
-          xiiQtUiServices::GetSingleton()->GetCachedIconResource(":/EditorFramework/Icons/AssetMissingDependency.svg").paint(pPainter, thumbnailRect);
-          break;
-        case xiiAssetInfo::TransformState::MissingPackageDependency:
-          xiiQtUiServices::GetSingleton()->GetCachedIconResource(":/EditorFramework/Icons/AssetMissingDependency.svg").paint(pPainter, thumbnailRect);
-          break;
-        case xiiAssetInfo::TransformState::MissingThumbnailDependency:
-          xiiQtUiServices::GetSingleton()->GetCachedIconResource(":/EditorFramework/Icons/AssetMissingReference.svg").paint(pPainter, thumbnailRect);
-          break;
-        case xiiAssetInfo::TransformState::CircularDependency:
-          xiiQtUiServices::GetSingleton()->GetCachedIconResource(":/EditorFramework/Icons/AssetFailedTransform.svg").paint(pPainter, thumbnailRect);
-          break;
-        case xiiAssetInfo::TransformState::TransformError:
-          xiiQtUiServices::GetSingleton()->GetCachedIconResource(":/EditorFramework/Icons/AssetFailedTransform.svg").paint(pPainter, thumbnailRect);
-          break;
-        case xiiAssetInfo::TransformState::NeedsImport:
-          xiiQtUiServices::GetSingleton()->GetCachedIconResource(":/EditorFramework/Icons/AssetNeedsImport.svg").paint(pPainter, thumbnailRect);
-          break;
-        case xiiAssetInfo::TransformState::COUNT:
-          break;
-      }
+      xiiQtAssetBrowserModel::TransformStateIcon(index.data(xiiQtAssetBrowserModel::TransformState).toInt()).paint(pPainter, thumbnailRect);
     }
   }
 
@@ -491,7 +466,7 @@ void xiiQtIconViewDelegate::paint(QPainter* pPainter, const QStyleOptionViewItem
     QRect textRect = opt.rect.adjusted(ItemSideMargin, ItemSideMargin + uiThumbnailSize + TextSpacing, -ItemSideMargin, -ItemSideMargin - TextSpacing);
 
     QString caption = qvariant_cast<QString>(index.data(Qt::DisplayRole));
-    pPainter->drawText(textRect, Qt::AlignHCenter | Qt::AlignTop | Qt::TextWrapAnywhere, caption);
+    pPainter->drawText(textRect, Qt::AlignHCenter | Qt::AlignVCenter, pPainter->fontMetrics().elidedText(caption, Qt::ElideRight, textRect.width()));
   }
 
 
@@ -517,7 +492,7 @@ QSize xiiQtIconViewDelegate::ItemSize() const
 
   xiiUInt32       iThumbnail  = ThumbnailSize();
   const xiiUInt32 iItemWidth  = iThumbnail + 2 * ItemSideMargin;
-  const xiiUInt32 iItemHeight = iThumbnail + 2 * (ItemSideMargin + fm.height() + TextSpacing);
+  const xiiUInt32 iItemHeight = iThumbnail + 2 * ItemSideMargin + fm.height() + 2 * TextSpacing;
 
   return QSize(iItemWidth, iItemHeight);
 }

@@ -69,10 +69,24 @@ public:
     AbsolutePath,                    // QString
     RelativePath,                    // QString
     AssetIcon,                       // QIcon
-    TransformState,                  // QString
+    TransformState,                  // xiiAssetInfo::TransformState as int
     Importable,                      // bool
     ItemFlags,                       // xiiAssetBrowserItemFlags as int
+    Thumbnail,                       // QPixmap from the asynchronous image cache
   };
+
+  enum Column
+  {
+    NameColumn,
+    TypeColumn,
+    StatusColumn,
+    ModifiedColumn,
+    PathColumn,
+    ColumnCount,
+  };
+
+  static QString TransformStateLabel(int iState);
+  static QIcon   TransformStateIcon(int iState);
 
   xiiQtAssetBrowserModel(QObject* pParent, xiiQtAssetFilter* pFilter);
   ~xiiQtAssetBrowserModel();
@@ -104,6 +118,7 @@ public: // QAbstractItemModel interface
   virtual QModelIndex     parent(const QModelIndex& index) const override;
   virtual int             rowCount(const QModelIndex& parent = QModelIndex()) const override;
   virtual int             columnCount(const QModelIndex& parent = QModelIndex()) const override;
+  void                    sort(int iColumn, Qt::SortOrder order = Qt::AscendingOrder) override;
   virtual QStringList     mimeTypes() const override;
   virtual QMimeData*      mimeData(const QModelIndexList& indexes) const override;
   virtual Qt::DropActions supportedDropActions() const override;
@@ -123,7 +138,8 @@ private:
     xiiDataDirPath                        m_sAbsFilePath;
     xiiUuid                               m_Guid;
     xiiBitflags<xiiAssetBrowserItemFlags> m_Flags;
-    mutable xiiUInt32                     m_uiThumbnailID;
+    xiiTimestamp                          m_LastModified;
+    mutable xiiUInt32                     m_uiThumbnailID = 0;
   };
 
   struct FsEvent
@@ -141,8 +157,10 @@ private:
   void HandleFolder(const xiiFolderChangedEvent& e);
 
 private:
-  xiiQtAssetFilter* m_pFilter   = nullptr;
-  bool              m_bIconMode = true;
+  xiiQtAssetFilter* m_pFilter     = nullptr;
+  bool              m_bIconMode   = true;
+  int               m_iSortColumn = NameColumn;
+  Qt::SortOrder     m_SortOrder   = Qt::AscendingOrder;
   xiiSet<xiiString> m_ImportExtensions;
 
   xiiEventSubscriptionID m_FileChangedSubscription   = 0;

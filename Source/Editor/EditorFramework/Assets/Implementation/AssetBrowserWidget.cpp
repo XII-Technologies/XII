@@ -12,15 +12,40 @@
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
 #include <EditorFramework/Settings/EditorPreferences.h>
 #include <Foundation/Strings/TranslationLookup.h>
-#include <GuiFoundation/ActionViews/ToolBarActionMapView.moc.h>
 #include <ToolsFoundation/FileSystem/FileSystemModel.h>
 
 #include <GuiFoundation/GuiFoundationDLL.h>
+#include <QActionGroup>
+#include <QDir>
 #include <QFile>
+#include <QFileDialog>
+#include <QHeaderView>
 #include <QLabel>
+#include <QLineEdit>
+#include <QMenu>
+#include <QResizeEvent>
 #include <QShortcut>
 #include <QStyle>
-#include <QToolBar>
+#include <QStyledItemDelegate>
+#include <QToolButton>
+#include <QUrl>
+
+namespace
+{
+  class AssetDetailsDelegate final : public QStyledItemDelegate
+  {
+  public:
+    using QStyledItemDelegate::QStyledItemDelegate;
+
+    QWidget* createEditor(QWidget* pParent, const QStyleOptionViewItem&, const QModelIndex& index) const override
+    {
+      const xiiStringBuilder sPath   = qtToXIIString(index.data(xiiQtAssetBrowserModel::AbsolutePath).toString());
+      auto*                  pEditor = new QLineEdit(pParent);
+      pEditor->setValidator(new xiiFileNameValidator(pEditor, sPath.GetFileDirectory(), sPath.GetFileNameAndExtension()));
+      return pEditor;
+    }
+  };
+} // namespace
 
 xiiQtAssetBrowserWidget::xiiQtAssetBrowserWidget(QWidget* pParent) :
   QWidget(pParent)
@@ -29,50 +54,157 @@ xiiQtAssetBrowserWidget::xiiQtAssetBrowserWidget(QWidget* pParent) :
 
   xiiEditorPreferencesUser* pPreferences = xiiEditorSettings::QuerySettings<xiiEditorPreferencesUser>();
 
-  ButtonListMode->setVisible(true);
-  ButtonIconMode->setVisible(true);
   ButtonListMode->setAccessibleName(tr("List view"));
-  ButtonIconMode->setAccessibleName(tr("Thumbnail view"));
+  ButtonIconMode->setAccessibleName(tr("Grid view"));
+  ButtonShowItemsSubFolders->setAccessibleName(tr("Include subfolders"));
   IconSizeSlider->setAccessibleName(tr("Thumbnail size"));
-  IconSizeSlider->setMaximumWidth(120);
-  ResetTypeFilter->setEnabled(false);
+  IconSizeSlider->setToolTip(tr("Thumbnail size (Ctrl+mouse wheel)"));
+  IconSizeSlider->setMaximumWidth(82);
+  TypeFilter->setAccessibleName(tr("Asset type"));
+  TypeFilter->setSizeAdjustPolicy(QComboBox::AdjustToMinimumContentsLengthWithIcon);
+  TypeFilter->setMinimumContentsLength(12);
+  SearchWidget->setMinimumWidth(75);
+  ToolBarLayout->setStretchFactor(SearchWidget, 1);
+  setMinimumWidth(0);
+  for (auto* pButton : {ButtonIconMode, ButtonListMode, ButtonDetailsMode, ButtonShowItemsSubFolders, ButtonFilters, ButtonOptions, ButtonImport, ButtonNew})
+  {
+    pButton->setAutoRaise(true);
+    pButton->setIconSize(QSize(16, 16));
+  }
 
   m_pFilter = new xiiQtAssetBrowserFilter(this);
   m_pFilter->SetShowItemsInSubFolders(pPreferences->m_bAssetBrowserShowItemsInSubFolders);
 
-  auto* pNavigation = new QToolBar(tr("Content navigation"), this);
-  pNavigation->setObjectName(QStringLiteral("ContentNavigation"));
-  pNavigation->setMovable(false);
-  pNavigation->setIconSize(QSize(16, 16));
-  m_pBack    = pNavigation->addAction(style()->standardIcon(QStyle::SP_ArrowBack), tr("Back"));
-  m_pForward = pNavigation->addAction(style()->standardIcon(QStyle::SP_ArrowForward), tr("Forward"));
-  m_pUp      = pNavigation->addAction(style()->standardIcon(QStyle::SP_ArrowUp), tr("Parent folder"));
+  auto* pOptions = new QMenu(ButtonOptions);
+  ButtonOptions->setText(QStringLiteral("…"));
+  ButtonOptions->setToolTip(tr("Browser options"));
+  ButtonOptions->setAccessibleName(tr("Browser options"));
+  ButtonOptions->setPopupMode(QToolButton::InstantPopup);
+  ButtonOptions->setMenu(pOptions);
+
+  auto addNavigation = [this, pOptions](QStyle::StandardPixmap icon, const QString& sText, int iPosition) {
+    auto* pAction = pOptions->addAction(style()->standardIcon(icon), sText);
+    auto* pButton = new QToolButton(Toolbar);
+    pButton->setAutoRaise(true);
+    pButton->setIconSize(QSize(16, 16));
+    pButton->setDefaultAction(pAction);
+    ToolBarLayout->insertWidget(iPosition, pButton);
+    return pAction;
+  };
+
+  m_pBack        = addNavigation(QStyle::SP_ArrowBack, tr("Back"), 0);
+  m_pForward     = addNavigation(QStyle::SP_ArrowForward, tr("Forward"), 1);
+  m_pUp          = addNavigation(QStyle::SP_ArrowUp, tr("Parent folder"), 2);
+  auto* pRefresh = addNavigation(QStyle::SP_BrowserReload, tr("Refresh asset index"), 3);
   connect(m_pBack, &QAction::triggered, this, [this]() { NavigateHistory(-1); });
   connect(m_pForward, &QAction::triggered, this, [this]() { NavigateHistory(1); });
   connect(m_pUp, &QAction::triggered, this, [this]() {
-    QString    sPath  = xiiMakeQString(m_pFilter->GetPathFilter());
-    const auto iSlash = sPath.lastIndexOf(QLatin1Char('/'));
+    const QString sPath  = xiiMakeQString(m_pFilter->GetPathFilter());
+    const auto    iSlash = sPath.lastIndexOf(QLatin1Char('/'));
     m_pFilter->SetPathFilter((iSlash >= 0 ? sPath.left(iSlash) : QString()).toUtf8().constData());
   });
-  m_pBreadcrumb = new QLabel(this);
-  m_pBreadcrumb->setTextFormat(Qt::RichText);
-  m_pBreadcrumb->setTextInteractionFlags(Qt::LinksAccessibleByMouse | Qt::LinksAccessibleByKeyboard);
-  m_pBreadcrumb->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-  m_pBreadcrumb->setMinimumWidth(80);
+  connect(pRefresh, &QAction::triggered, this, []() { xiiAssetCurator::GetSingleton()->QueueCheckFileSystem(); });
+
+  m_pBreadcrumb = new QToolButton(Toolbar);
+  m_pBreadcrumb->setAutoRaise(true);
+  m_pBreadcrumb->setPopupMode(QToolButton::InstantPopup);
   m_pBreadcrumb->setAccessibleName(tr("Current content folder"));
-  pNavigation->addWidget(m_pBreadcrumb);
-  connect(m_pBreadcrumb, &QLabel::linkActivated, this, [this](const QString& sLink) {
-    bool       bValid = false;
-    const int  iParts = sLink.toInt(&bValid);
-    const auto parts  = xiiMakeQString(m_pFilter->GetPathFilter()).split(QLatin1Char('/'), Qt::SkipEmptyParts);
-    if (bValid && iParts >= 0 && iParts <= parts.size())
-      m_pFilter->SetPathFilter(parts.mid(0, iParts).join(QLatin1Char('/')).toUtf8().constData());
+  m_pBreadcrumbMenu = new QMenu(m_pBreadcrumb);
+  m_pBreadcrumb->setMenu(m_pBreadcrumbMenu);
+  ToolBarLayout->insertWidget(4, m_pBreadcrumb);
+  ToolBarLayout->removeWidget(TypeFilter);
+  ToolBarLayout->insertWidget(5, TypeFilter);
+  pOptions->addMenu(m_pBreadcrumbMenu);
+  auto* pTypes = pOptions->addMenu(tr("Asset type"));
+  connect(pTypes, &QMenu::aboutToShow, this, [this, pTypes]() {
+    pTypes->clear();
+    for (int i = 0; i < TypeFilter->count(); ++i)
+    {
+      auto* pAction = pTypes->addAction(TypeFilter->itemIcon(i), TypeFilter->itemText(i), this, [this, i]() { TypeFilter->setCurrentIndex(i); });
+      pAction->setCheckable(true);
+      pAction->setChecked(i == TypeFilter->currentIndex());
+    }
   });
-  SearchWidget->setMinimumWidth(140);
-  pNavigation->addWidget(SearchWidget);
-  ButtonShowItemsSubFolders->setText(tr("Subfolders"));
-  pNavigation->addWidget(ButtonShowItemsSubFolders);
-  RootLayout->insertWidget(0, pNavigation);
+  connect(pOptions, &QMenu::aboutToShow, this, [this, pTypes]() { pTypes->menuAction()->setVisible(m_Mode != Mode::FilePicker); });
+  pOptions->addSeparator();
+  auto* pSubfolders = pOptions->addAction(tr("Include subfolders"));
+  pSubfolders->setCheckable(true);
+  connect(pSubfolders, &QAction::triggered, ButtonShowItemsSubFolders, &QToolButton::click);
+  connect(pOptions, &QMenu::aboutToShow, this, [this, pSubfolders]() {
+    pSubfolders->setChecked(ButtonShowItemsSubFolders->isChecked());
+    pSubfolders->setEnabled(ButtonShowItemsSubFolders->isEnabled());
+  });
+  auto*             pViews     = pOptions->addMenu(tr("View"));
+  auto*             pViewGroup = new QActionGroup(pViews);
+  const QStringList viewNames  = {tr("Grid"), tr("List"), tr("Details")};
+  for (int i = 0; i < viewNames.size(); ++i)
+  {
+    auto* pView = pViews->addAction(viewNames[i], this, [this, i]() { SetDisplayMode(i); });
+    pView->setCheckable(true);
+    pViewGroup->addAction(pView);
+  }
+  connect(pViews, &QMenu::aboutToShow, this, [this, pViewGroup]() { pViewGroup->actions()[m_iDisplayMode]->setChecked(true); });
+  auto* pSidebar = pOptions->addAction(tr("Show sidebar"));
+  pSidebar->setCheckable(true);
+  pSidebar->setChecked(true);
+  connect(pSidebar, &QAction::toggled, Sidebar, &QWidget::setVisible);
+  connect(pOptions, &QMenu::aboutToShow, this, [this, pSidebar]() { pSidebar->setChecked(!Sidebar->isHidden()); });
+
+  auto* pFilters = new QMenu(ButtonFilters);
+  ButtonFilters->setText(tr("Filters"));
+  ButtonFilters->setPopupMode(QToolButton::InstantPopup);
+  ButtonFilters->setMenu(pFilters);
+  pOptions->addMenu(pFilters)->setText(tr("Filters"));
+  auto* pHidden = pFilters->addAction(tr("Show hidden folders"), this, &xiiQtAssetBrowserWidget::OnShowHiddenFolderItemsToggled);
+  pHidden->setCheckable(true);
+  connect(pFilters, &QMenu::aboutToShow, this, [this, pHidden]() { pHidden->setChecked(m_pFilter->GetShowItemsInHiddenFolders()); });
+  auto* pSort = pFilters->addMenu(tr("Sort by"));
+  pSort->addAction(tr("Name"), this, [this]() { m_pModel->sort(xiiQtAssetBrowserModel::NameColumn); });
+  pSort->addAction(tr("Type"), this, [this]() { m_pModel->sort(xiiQtAssetBrowserModel::TypeColumn); });
+  pSort->addAction(tr("Last modified"), this, [this]() { m_pModel->sort(xiiQtAssetBrowserModel::ModifiedColumn, Qt::DescendingOrder); });
+
+  ButtonDetailsMode->setIcon(style()->standardIcon(QStyle::SP_FileDialogDetailedView));
+  ButtonDetailsMode->setToolTip(tr("Details view"));
+  ButtonDetailsMode->setAccessibleName(tr("Details view"));
+  ButtonImport->setText(tr("Import"));
+  ButtonImport->setIcon(QIcon(":/GuiFoundation/Icons/Import.svg"));
+  ButtonImport->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+  connect(ButtonImport, &QToolButton::clicked, this, &xiiQtAssetBrowserWidget::ImportFiles);
+  ButtonNew->setText(tr("New Asset"));
+  ButtonNew->setIcon(QIcon(":/GuiFoundation/Icons/DocumentAdd.svg"));
+  ButtonNew->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+  ButtonNew->setPopupMode(QToolButton::InstantPopup);
+  auto* pNew = new QMenu(ButtonNew);
+  ButtonNew->setMenu(pNew);
+  connect(pNew, &QMenu::aboutToShow, this, [this, pNew]() {
+    pNew->clear();
+    AddAssetCreatorMenu(pNew, false, false);
+  });
+  auto* pCreate = pOptions->addMenu(pNew);
+  pCreate->setText(tr("New Asset"));
+  auto* pTransformAll = pOptions->addAction(tr("Transform all assets"), this, []() { xiiAssetProcessor::GetSingleton()->QueueTransformAllAssets().LogFailure(); });
+  auto* pImport       = pOptions->addAction(tr("Import files…"), this, &xiiQtAssetBrowserWidget::ImportFiles);
+  connect(pOptions, &QMenu::aboutToShow, this, [this, pTransformAll, pImport, pCreate]() {
+    pCreate->setVisible(m_Mode == Mode::Browser);
+    pTransformAll->setVisible(m_Mode == Mode::Browser);
+    pImport->setVisible(m_Mode == Mode::Browser);
+  });
+
+  m_pVisibleCount = new QLabel(StatusBar);
+  StatusLayout->addWidget(m_pVisibleCount);
+  StatusLayout->addStretch();
+  EmptyView->setText(tr("No matching items"));
+  EmptyView->setWordWrap(true);
+  EmptyView->setMinimumWidth(0);
+  WorkspaceTitle->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
+  QFont titleFont = WorkspaceTitle->font();
+  titleFont.setBold(true);
+  WorkspaceTitle->setFont(titleFont);
+  TreeFolderFilter->setIndentation(14);
+  TreeFolderFilter->setFrameShape(QFrame::NoFrame);
+  TreeFolderFilter->setStyleSheet(QStringLiteral("QTreeView::item { min-height: 22px; }"));
+  ListAssets->setFrameShape(QFrame::NoFrame);
+
   for (const auto& entry : {qMakePair(QKeySequence(Qt::ALT | Qt::Key_Left), -1), qMakePair(QKeySequence(Qt::ALT | Qt::Key_Right), 1)})
   {
     auto* pShortcut = new QShortcut(entry.first, this);
@@ -87,7 +219,7 @@ xiiQtAssetBrowserWidget::xiiQtAssetBrowserWidget(QWidget* pParent) :
 
   m_pModel = QSharedPointer<xiiQtAssetBrowserModel>(new xiiQtAssetBrowserModel(this, m_pFilter));
   m_pModel->Initialize();
-  SearchWidget->setPlaceholderText("Search Assets");
+  SearchWidget->setPlaceholderText(tr("Search assets"));
   SearchWidget->SetCaptureTabKey(false);
 
   IconSizeSlider->setValue(50);
@@ -100,19 +232,52 @@ xiiQtAssetBrowserWidget::xiiQtAssetBrowserWidget(QWidget* pParent) :
   ListAssets->setDropIndicatorShown(true);
   on_ButtonIconMode_clicked();
 
+  splitter->setSizes({170, 650});
   splitter->setStretchFactor(0, 0);
   splitter->setStretchFactor(1, 1);
 
-  // Tool Bar
-  {
-    m_pToolbar = new xiiQtToolBarActionMapView("Toolbar", this);
-    xiiActionContext context;
-    context.m_sMapping  = "AssetBrowserToolBar";
-    context.m_pDocument = nullptr;
-    m_pToolbar->SetActionContext(context);
-    m_pToolbar->setObjectName("AssetBrowserToolBar");
-    ToolBarLayout->insertWidget(0, m_pToolbar);
-  }
+  DetailsAssets->setModel(m_pModel.data());
+  DetailsAssets->setSelectionModel(ListAssets->selectionModel());
+  DetailsAssets->setRootIsDecorated(false);
+  DetailsAssets->setItemsExpandable(false);
+  DetailsAssets->setUniformRowHeights(true);
+  DetailsAssets->setAlternatingRowColors(true);
+  DetailsAssets->setFrameShape(QFrame::NoFrame);
+  DetailsAssets->setIconSize(QSize(16, 16));
+  DetailsAssets->setSelectionMode(QAbstractItemView::ExtendedSelection);
+  DetailsAssets->setSelectionBehavior(QAbstractItemView::SelectRows);
+  DetailsAssets->setDragDropMode(QAbstractItemView::DragOnly);
+  DetailsAssets->setDefaultDropAction(Qt::MoveAction);
+  DetailsAssets->setEditTriggers(QAbstractItemView::NoEditTriggers);
+  DetailsAssets->setItemDelegateForColumn(xiiQtAssetBrowserModel::NameColumn, new AssetDetailsDelegate(DetailsAssets));
+  DetailsAssets->setContextMenuPolicy(Qt::CustomContextMenu);
+  DetailsAssets->header()->setSectionsClickable(true);
+  DetailsAssets->header()->setSortIndicator(xiiQtAssetBrowserModel::NameColumn, Qt::AscendingOrder);
+  DetailsAssets->header()->setSortIndicatorShown(true);
+  DetailsAssets->setColumnWidth(xiiQtAssetBrowserModel::NameColumn, 175);
+  DetailsAssets->setColumnWidth(xiiQtAssetBrowserModel::TypeColumn, 110);
+  DetailsAssets->setColumnWidth(xiiQtAssetBrowserModel::StatusColumn, 145);
+  DetailsAssets->setColumnWidth(xiiQtAssetBrowserModel::ModifiedColumn, 145);
+  connect(DetailsAssets->header(), &QHeaderView::sectionClicked, this, [this](int iColumn) {
+    auto* pHeader = DetailsAssets->header();
+    if (iColumn == xiiQtAssetBrowserModel::StatusColumn)
+      return;
+    const auto order = pHeader->sortIndicatorSection() == iColumn && pHeader->sortIndicatorOrder() == Qt::AscendingOrder ? Qt::DescendingOrder : Qt::AscendingOrder;
+    pHeader->setSortIndicator(iColumn, order);
+    m_pModel->sort(iColumn, order);
+  });
+  connect(DetailsAssets, &QTreeView::doubleClicked, this, &xiiQtAssetBrowserWidget::on_ListAssets_doubleClicked);
+  connect(DetailsAssets, &QTreeView::customContextMenuRequested, this, &xiiQtAssetBrowserWidget::on_ListAssets_customContextMenuRequested);
+  auto* pRename = new QShortcut(QKeySequence(Qt::Key_F2), DetailsAssets);
+  connect(pRename, &QShortcut::activated, this, [this]() {
+    if (m_Mode == Mode::Browser)
+      RenameCurrent();
+  });
+
+  connect(m_pModel.data(), &QAbstractItemModel::rowsInserted, this, &xiiQtAssetBrowserWidget::UpdateWorkspace);
+  connect(m_pModel.data(), &QAbstractItemModel::rowsRemoved, this, &xiiQtAssetBrowserWidget::UpdateWorkspace);
+  connect(m_pModel.data(), &QAbstractItemModel::modelReset, this, &xiiQtAssetBrowserWidget::UpdateWorkspace);
+  SetDisplayMode(0);
 
   ButtonShowItemsSubFolders->setEnabled(true);
   ButtonShowItemsSubFolders->setChecked(m_pFilter->GetShowItemsInSubFolders());
@@ -129,6 +294,7 @@ xiiQtAssetBrowserWidget::xiiQtAssetBrowserWidget(QWidget* pParent) :
   XII_VERIFY(connect(ListAssets->selectionModel(), SIGNAL(currentChanged(const QModelIndex&, const QModelIndex&)), this, SLOT(OnAssetSelectionCurrentChanged(const QModelIndex&, const QModelIndex&))) != nullptr, "signal/slot connection failed");
   connect(SearchWidget, &xiiQtSearchWidget::textChanged, this, &xiiQtAssetBrowserWidget::OnSearchWidgetTextChanged);
 
+  m_pFilter->SetShowFiles(false);
   UpdateAssetTypes();
 
   xiiAssetCurator::GetSingleton()->m_Events.AddEventHandler(xiiMakeDelegate(&xiiQtAssetBrowserWidget::AssetCuratorEventHandler, this));
@@ -143,12 +309,13 @@ xiiQtAssetBrowserWidget::~xiiQtAssetBrowserWidget()
   xiiToolsProject::s_Events.RemoveEventHandler(xiiMakeDelegate(&xiiQtAssetBrowserWidget::ProjectEventHandler, this));
   xiiAssetCurator::GetSingleton()->m_Events.RemoveEventHandler(xiiMakeDelegate(&xiiQtAssetBrowserWidget::AssetCuratorEventHandler, this));
 
+  DetailsAssets->setModel(nullptr);
   ListAssets->setModel(nullptr);
 }
 
 void xiiQtAssetBrowserWidget::dragEnterEvent(QDragEnterEvent* pEvent)
 {
-  if (!pEvent->source())
+  if (m_Mode == Mode::Browser && !pEvent->source() && pEvent->mimeData()->hasUrls())
     pEvent->acceptProposedAction();
 }
 
@@ -173,14 +340,29 @@ static void CleanUpFiles(xiiArrayPtr<xiiString> files)
 
 void xiiQtAssetBrowserWidget::dropEvent(QDropEvent* pEvent)
 {
-  const QMimeData* mime = pEvent->mimeData();
-  if (!mime->hasUrls())
+  if (m_Mode != Mode::Browser || !pEvent->mimeData()->hasUrls())
   {
     pEvent->ignore();
+    return;
   }
 
   pEvent->acceptProposedAction();
+  ImportUrls(pEvent->mimeData()->urls());
+}
 
+void xiiQtAssetBrowserWidget::ImportFiles()
+{
+  const QStringList paths = QFileDialog::getOpenFileNames(this, tr("Import source files"));
+  QList<QUrl>       urls;
+  for (const QString& sPath : paths)
+    urls.push_back(QUrl::fromLocalFile(sPath));
+
+  if (!urls.isEmpty())
+    ImportUrls(urls);
+}
+
+void xiiQtAssetBrowserWidget::ImportUrls(const QList<QUrl>& urls)
+{
   xiiStringBuilder sTargetDir;
 
   if (TreeFolderFilter->currentItem() != nullptr)
@@ -194,98 +376,66 @@ void xiiQtAssetBrowserWidget::dropEvent(QDropEvent* pEvent)
     return;
   }
 
-  QList<QUrl>                   urlList = mime->urls();
   xiiHybridArray<xiiString, 16> assetsToImport;
+  xiiHybridArray<xiiString, 16> copiedFiles;
 
-  // if we leave this function prematurely, delete all these temp files
-  XII_SCOPE_EXIT(CleanUpFiles(assetsToImport));
+  // Roll back newly copied files if any copy fails.
+  XII_SCOPE_EXIT(CleanUpFiles(copiedFiles));
 
-  bool overWriteAll = false;
-  for (qsizetype i = 0, count = qMin(urlList.size(), qsizetype(32)); i < count; ++i)
+  for (const QUrl& url : urls)
   {
-    QUrl      url = urlList.at(i);
-    QFileInfo fileinfo(url.toLocalFile());
-
-    if (!fileinfo.exists())
+    const QFileInfo source(url.toLocalFile());
+    if (!source.exists())
       continue;
 
-    // build source and destination paths info
-    xiiStringBuilder srcPath = urlList.at(i).path().toUtf8().constData();
-    srcPath.TrimWordStart("/"); // remove the "/" at the beginning of the source path
+    xiiStringBuilder sSource = qtToXIIString(source.absoluteFilePath());
+    xiiStringBuilder sTarget = sTargetDir;
+    sTarget.AppendPath(qtToXIIString(source.fileName()));
+    sSource.MakeCleanPath();
 
-    xiiStringBuilder dstPath = sTargetDir;
-    dstPath.AppendPath(fileinfo.fileName().toUtf8().constData());
-
-    // Move the file/folder
-    if (fileinfo.isDir())
+    if (sSource == sTarget && source.isFile())
     {
-      if (!overWriteAll && xiiOSFile::ExistsDirectory(dstPath))
+      assetsToImport.PushBack(sSource);
+      continue;
+    }
+
+    if (QFileInfo::exists(xiiMakeQString(sTarget)) || (source.isDir() && sTarget.IsPathBelowFolder(sSource)))
+    {
+      xiiQtUiServices::MessageBoxWarning(xiiFmt("Cannot import '{}' into '{}'. Choose a destination that does not already contain this name and is outside the source folder.", sSource, sTargetDir));
+      return;
+    }
+
+    if (source.isDir())
+    {
+      if (xiiOSFile::CopyFolder(sSource, sTarget, &copiedFiles).Failed())
       {
-        const auto res = xiiQtUiServices::MessageBoxQuestion(xiiFmt("This folder already exists:\n'{}'\n\nOverwrite existing files inside it?", dstPath), QMessageBox::Yes | QMessageBox::YesToAll | QMessageBox::Cancel, QMessageBox::Cancel);
-
-        switch (res)
-        {
-          case QMessageBox::Yes:
-            break;
-
-          case QMessageBox::YesToAll:
-            overWriteAll = true;
-            break;
-
-          case QMessageBox::Cancel:
-          default:
-            return;
-        }
-      }
-
-      if (xiiOSFile::CopyFolder(srcPath, dstPath, &assetsToImport) != XII_SUCCESS)
-      {
-        xiiQtUiServices::MessageBoxWarning(xiiFmt("Failed to copy\n\n'{}'\n\nto\n\n'{}'\n\nAborting operation.", srcPath, dstPath));
+        xiiQtUiServices::MessageBoxWarning(xiiFmt("Failed to copy '{}' to '{}'.", sSource, sTarget));
         return;
       }
     }
-    else if (fileinfo.isFile())
+    else if (source.isFile())
     {
-      if (!overWriteAll && xiiOSFile::ExistsFile(dstPath))
+      if (!QFile::copy(xiiMakeQString(sSource), xiiMakeQString(sTarget)))
       {
-        const auto res = xiiQtUiServices::MessageBoxQuestion(xiiFmt("This file already exists:\n'{}'\n\nOverwrite it?", dstPath), QMessageBox::Yes | QMessageBox::YesToAll | QMessageBox::Cancel, QMessageBox::Cancel);
-
-        switch (res)
-        {
-          case QMessageBox::Yes:
-            break;
-          case QMessageBox::YesToAll:
-            overWriteAll = true;
-            break;
-          case QMessageBox::Cancel:
-          default:
-            return;
-        }
-      }
-
-      if (xiiOSFile::CopyFile(srcPath, dstPath) != XII_SUCCESS)
-      {
-        xiiQtUiServices::MessageBoxWarning(xiiFmt("Failed to copy\n\n'{}'\n\nto\n\n'{}'\n\nAborting operation.", srcPath, dstPath));
+        xiiQtUiServices::MessageBoxWarning(xiiFmt("Failed to copy '{}' to '{}'.", sSource, sTarget));
         return;
       }
-
-      assetsToImport.PushBack(dstPath);
+      copiedFiles.PushBack(sTarget);
     }
   }
 
-  for (const auto& file : assetsToImport)
+  for (const auto& file : copiedFiles)
   {
     xiiFileSystemModel::GetSingleton()->NotifyOfChange(file);
+    assetsToImport.PushBack(file);
   }
+  copiedFiles.Clear();
 
-  QTimer::singleShot(1, this, [=]() {
-    // return to the OS and import with a slight delay, otherwise the drop operation blocks the OS
-    xiiAssetDocumentGenerator::ImportAssets(assetsToImport);
-    //
+  const xiiString sProject = xiiToolsProject::GetSingleton()->GetProjectFile();
+  QTimer::singleShot(0, this, [sProject, assetsToImport = std::move(assetsToImport)]() {
+    if (xiiToolsProject::IsProjectOpen() && xiiToolsProject::GetSingleton()->GetProjectFile() == sProject)
+      xiiAssetDocumentGenerator::ImportAssets(assetsToImport);
   });
-
-  // now that we've successfully imported the assets, clear this list so that the files don't get deleted
-  assetsToImport.Clear();
 }
 
 void xiiQtAssetBrowserWidget::UpdateAssetTypes()
@@ -341,24 +491,22 @@ void xiiQtAssetBrowserWidget::SetMode(Mode mode)
 
   m_Mode = mode;
 
-  switch (m_Mode)
-  {
-    case Mode::Browser:
-      m_pToolbar->show();
-      TreeFolderFilter->SetDialogMode(false);
-      ListAssets->SetDialogMode(false);
-      break;
-    case Mode::FilePicker:
-      TypeFilter->setVisible(false);
-      ResetTypeFilter->setVisible(false);
-      [[fallthrough]];
-    case Mode::AssetPicker:
-      m_pToolbar->hide();
-      TreeFolderFilter->SetDialogMode(true);
-      ListAssets->SetDialogMode(true);
-      break;
-  }
+  const bool bBrowser = mode == Mode::Browser;
+  TreeFolderFilter->SetDialogMode(!bBrowser);
+  ListAssets->SetDialogMode(!bBrowser);
+  DetailsAssets->setSelectionMode(bBrowser ? QAbstractItemView::ExtendedSelection : QAbstractItemView::SingleSelection);
+  DetailsAssets->setDragDropMode(bBrowser ? QAbstractItemView::DragOnly : QAbstractItemView::NoDragDrop);
+  ButtonNew->setVisible(bBrowser);
+  ButtonImport->setVisible(bBrowser);
+  TypeFilter->setVisible(mode != Mode::FilePicker && width() >= 640);
 
+  if (mode == Mode::AssetPicker)
+    m_pFilter->SetShowFiles(false);
+  else
+  {
+    m_pFilter->SetShowFiles(true);
+    m_pFilter->SetShowNonImportableFiles(true);
+  }
   UpdateAssetTypes();
 }
 
@@ -370,7 +518,8 @@ void xiiQtAssetBrowserWidget::SaveState(const char* szSettingsName)
     Settings.setValue("SplitterGeometry", splitter->saveGeometry());
     Settings.setValue("SplitterState", splitter->saveState());
     Settings.setValue("IconSize", IconSizeSlider->value());
-    Settings.setValue("IconMode", ListAssets->viewMode() == QListView::ViewMode::IconMode);
+    Settings.setValue("DisplayMode", m_iDisplayMode);
+    Settings.setValue("SidebarVisible", !Sidebar->isHidden());
   }
   Settings.endGroup();
 }
@@ -384,10 +533,8 @@ void xiiQtAssetBrowserWidget::RestoreState(const char* szSettingsName)
     splitter->restoreState(Settings.value("SplitterState", splitter->saveState()).toByteArray());
     IconSizeSlider->setValue(Settings.value("IconSize", IconSizeSlider->value()).toInt());
 
-    if (Settings.value("IconMode", ListAssets->viewMode() == QListView::ViewMode::IconMode).toBool())
-      on_ButtonIconMode_clicked();
-    else
-      on_ButtonListMode_clicked();
+    SetDisplayMode(qBound(0, Settings.value("DisplayMode", Settings.value("IconMode", true).toBool() ? 0 : 1).toInt(), 2));
+    Sidebar->setVisible(Settings.value("SidebarVisible", true).toBool());
   }
   Settings.endGroup();
 }
@@ -415,7 +562,7 @@ void xiiQtAssetBrowserWidget::ProjectEventHandler(const xiiToolsProjectEvent& e)
   }
 }
 
-void xiiQtAssetBrowserWidget::AddAssetCreatorMenu(QMenu* pMenu, bool useSelectedAsset)
+void xiiQtAssetBrowserWidget::AddAssetCreatorMenu(QMenu* pMenu, bool useSelectedAsset, bool bCreateSubmenu)
 {
   if (m_Mode != Mode::Browser)
     return;
@@ -424,9 +571,7 @@ void xiiQtAssetBrowserWidget::AddAssetCreatorMenu(QMenu* pMenu, bool useSelected
 
   xiiDynamicArray<const xiiDocumentTypeDescriptor*> documentTypes;
 
-  QMenu* pSubMenu = pMenu->addMenu(QIcon(":/GuiFoundation/Icons/DocumentAdd.svg"), "New");
-
-  xiiStringBuilder sTypeFilter = m_pFilter->GetTypeFilter();
+  QMenu* pSubMenu = bCreateSubmenu ? pMenu->addMenu(QIcon(":/GuiFoundation/Icons/DocumentAdd.svg"), tr("New")) : pMenu;
 
   for (xiiDocumentManager* pMan : managers)
   {
@@ -462,7 +607,7 @@ void xiiQtAssetBrowserWidget::AddAssetCreatorMenu(QMenu* pMenu, bool useSelected
 
 void xiiQtAssetBrowserWidget::AddImportedViaMenu(QMenu* pMenu)
 {
-  QModelIndexList selection = ListAssets->selectionModel()->selectedIndexes();
+  QModelIndexList selection = ListAssets->selectionModel()->selectedRows();
 
   // Find all uses
   xiiSet<xiiUuid> importedVia;
@@ -514,7 +659,7 @@ void xiiQtAssetBrowserWidget::GetSelectedImportableFiles(xiiDynamicArray<xiiStri
 {
   out_Files.Clear();
 
-  QModelIndexList selection = ListAssets->selectionModel()->selectedIndexes();
+  QModelIndexList selection = ListAssets->selectionModel()->selectedRows();
   for (const QModelIndex& id : selection)
   {
     const bool bImportable = id.data(xiiQtAssetBrowserModel::UserRoles::Importable).toBool();
@@ -539,8 +684,9 @@ void xiiQtAssetBrowserWidget::on_ListAssets_activated(const QModelIndex& index)
   Q_EMIT ItemSelected(m_pModel->data(index, xiiQtAssetBrowserModel::UserRoles::SubAssetGuid).value<xiiUuid>(), m_pModel->data(index, xiiQtAssetBrowserModel::UserRoles::RelativePath).toString(), m_pModel->data(index, xiiQtAssetBrowserModel::UserRoles::AbsolutePath).toString(), itemType.GetValue());
 }
 
-void xiiQtAssetBrowserWidget::on_ListAssets_doubleClicked(const QModelIndex& index)
+void xiiQtAssetBrowserWidget::on_ListAssets_doubleClicked(const QModelIndex& clicked)
 {
+  const QModelIndex                           index    = clicked.siblingAtColumn(xiiQtAssetBrowserModel::NameColumn);
   const xiiBitflags<xiiAssetBrowserItemFlags> itemType = (xiiAssetBrowserItemFlags::Enum)index.data(xiiQtAssetBrowserModel::UserRoles::ItemFlags).toInt();
   const xiiUuid                               guid     = m_pModel->data(index, xiiQtAssetBrowserModel::UserRoles::SubAssetGuid).value<xiiUuid>();
 
@@ -562,32 +708,70 @@ void xiiQtAssetBrowserWidget::on_ListAssets_doubleClicked(const QModelIndex& ind
   }
 }
 
+QAbstractItemView* xiiQtAssetBrowserWidget::ActiveView() const
+{
+  return m_iDisplayMode == 2 ? static_cast<QAbstractItemView*>(DetailsAssets) : ListAssets;
+}
+
+QModelIndex xiiQtAssetBrowserWidget::CurrentAssetIndex() const
+{
+  return ActiveView()->currentIndex().siblingAtColumn(xiiQtAssetBrowserModel::NameColumn);
+}
+
+void xiiQtAssetBrowserWidget::SetDisplayMode(int iMode)
+{
+  m_iDisplayMode = iMode;
+  m_pModel->SetIconMode(iMode == 0);
+  ListAssets->SetIconMode(iMode == 0);
+  ButtonIconMode->setChecked(iMode == 0);
+  ButtonListMode->setChecked(iMode == 1);
+  ButtonDetailsMode->setChecked(iMode == 2);
+  IconSizeSlider->setVisible(iMode == 0);
+  UpdateWorkspace();
+  if (CurrentAssetIndex().isValid())
+    ActiveView()->scrollTo(CurrentAssetIndex());
+}
+
+void xiiQtAssetBrowserWidget::UpdateWorkspace()
+{
+  const int iVisible  = m_pModel->rowCount();
+  const int iSelected = ListAssets->selectionModel()->selectedRows().size();
+  m_pVisibleCount->setText(tr("%1 visible · %2 selected").arg(iVisible).arg(iSelected));
+  AssetViews->setCurrentWidget(iVisible ? static_cast<QWidget*>(ActiveView()) : EmptyView);
+}
+
+void xiiQtAssetBrowserWidget::resizeEvent(QResizeEvent* pEvent)
+{
+  QWidget::resizeEvent(pEvent);
+  if (!m_pBreadcrumb)
+    return;
+
+  const bool bWide       = pEvent->size().width() >= 640;
+  const bool bNavigation = pEvent->size().width() >= 245;
+  for (int i = 0; i < 4; ++i)
+    ToolBarLayout->itemAt(i)->widget()->setVisible(bNavigation);
+  TypeFilter->setVisible(bWide && m_Mode != Mode::FilePicker);
+  m_pBreadcrumb->setVisible(bWide);
+  ButtonIconMode->setVisible(bWide);
+  ButtonListMode->setVisible(bWide);
+  ButtonDetailsMode->setVisible(bWide);
+  ButtonShowItemsSubFolders->setVisible(bWide);
+  ButtonFilters->setVisible(bWide);
+}
+
 void xiiQtAssetBrowserWidget::on_ButtonListMode_clicked()
 {
-  m_pModel->SetIconMode(false);
-  ListAssets->SetIconMode(false);
-
-  QModelIndexList selection = ListAssets->selectionModel()->selectedIndexes();
-
-  if (!selection.isEmpty())
-    ListAssets->scrollTo(selection[0]);
-
-  ButtonListMode->setChecked(true);
-  ButtonIconMode->setChecked(false);
+  SetDisplayMode(1);
 }
 
 void xiiQtAssetBrowserWidget::on_ButtonIconMode_clicked()
 {
-  m_pModel->SetIconMode(true);
-  ListAssets->SetIconMode(true);
+  SetDisplayMode(0);
+}
 
-  QModelIndexList selection = ListAssets->selectionModel()->selectedIndexes();
-
-  if (!selection.isEmpty())
-    ListAssets->scrollTo(selection[0]);
-
-  ButtonListMode->setChecked(false);
-  ButtonIconMode->setChecked(true);
+void xiiQtAssetBrowserWidget::on_ButtonDetailsMode_clicked()
+{
+  SetDisplayMode(2);
 }
 
 void xiiQtAssetBrowserWidget::on_IconSizeSlider_valueChanged(int iValue)
@@ -599,20 +783,6 @@ void xiiQtAssetBrowserWidget::on_ListAssets_ViewZoomed(xiiInt32 iIconSizePercent
 {
   xiiQtScopedBlockSignals block(IconSizeSlider);
   IconSizeSlider->setValue(iIconSizePercentage);
-}
-
-void xiiQtAssetBrowserWidget::on_ResetTypeFilter_clicked()
-{
-  switch (m_Mode)
-  {
-    case Mode::Browser:
-      TypeFilter->setCurrentIndex(2);
-      break;
-    case Mode::AssetPicker:
-    case Mode::FilePicker:
-      TypeFilter->setCurrentIndex(0);
-      break;
-  }
 }
 
 void xiiQtAssetBrowserWidget::OnTextFilterChanged()
@@ -638,49 +808,26 @@ void xiiQtAssetBrowserWidget::OnFilterChanged()
 
 void xiiQtAssetBrowserWidget::OnTypeFilterChanged()
 {
-  xiiStringBuilder       sTemp;
-  const xiiStringBuilder sFilter(";", m_pFilter->GetTypeFilter(), ";");
-
+  const int           iAllAssets = m_Mode == Mode::Browser ? 2 : 0;
+  const xiiStringView sFilter    = m_pFilter->GetTypeFilter();
+  int                 iType      = iAllAssets;
+  if (sFilter == m_sAllTypesFilter && m_Mode == Mode::Browser && m_pFilter->GetShowFiles())
+    iType = m_pFilter->GetShowNonImportableFiles() ? 0 : 1;
+  else if (sFilter != m_sAllTypesFilter)
   {
-    xiiQtScopedBlockSignals _(TypeFilter);
-
-    xiiInt32 iCheckedFilter = 0;
-    xiiInt32 iNumChecked    = 0;
-
-    for (xiiInt32 i = 1; i < TypeFilter->count(); ++i)
+    for (int i = iAllAssets + 1; i < TypeFilter->count(); ++i)
     {
-      sTemp.Set(";", TypeFilter->itemData(i, Qt::UserRole).toString().toUtf8().data(), ";");
-
-      if (sFilter.FindSubString(sTemp) != nullptr)
+      const xiiStringBuilder sType(";", qtToXIIString(TypeFilter->itemData(i).toString()), ";");
+      if (sType == sFilter)
       {
-        ++iNumChecked;
-        iCheckedFilter = i;
+        iType = i;
+        break;
       }
     }
-
-    if (iNumChecked == ((m_Mode != Mode::Browser) ? 1 : 3))
-      TypeFilter->setCurrentIndex(iCheckedFilter);
-    else
-      TypeFilter->setCurrentIndex((m_Mode != Mode::Browser) ? 0 : 2); // "<All Assets>"
-
-    int index = TypeFilter->currentIndex();
-
-    switch (m_Mode)
-    {
-      case Mode::Browser:
-        m_pFilter->SetShowNonImportableFiles(index == 0);
-        m_pFilter->SetShowFiles(index == 0 || index == 1);
-        break;
-      case Mode::AssetPicker:
-        m_pFilter->SetShowNonImportableFiles(false);
-        m_pFilter->SetShowFiles(false);
-        break;
-      case Mode::FilePicker:
-        m_pFilter->SetShowNonImportableFiles(true);
-        m_pFilter->SetShowFiles(true);
-        break;
-    }
   }
+
+  const QSignalBlocker block(TypeFilter);
+  TypeFilter->setCurrentIndex(iType);
 
   QTimer::singleShot(0, this, SLOT(OnSelectionTimer()));
 }
@@ -699,12 +846,20 @@ void xiiQtAssetBrowserWidget::OnPathFilterChanged()
   m_pBack->setEnabled(m_iPathHistory > 0);
   m_pForward->setEnabled(m_iPathHistory + 1 < m_PathHistory.size());
   m_pUp->setEnabled(!sPath.isEmpty());
-  QString    sBreadcrumb = QStringLiteral("<a href=\"0\">Content</a>");
-  const auto parts       = sPath.split(QLatin1Char('/'), Qt::SkipEmptyParts);
-  for (qsizetype i = 0; i < parts.size(); ++i)
-    sBreadcrumb += QStringLiteral(" / <a href=\"%1\">%2</a>").arg(i + 1).arg(parts[i].toHtmlEscaped());
-  m_pBreadcrumb->setText(sBreadcrumb);
+  const auto parts   = sPath.split(QLatin1Char('/'), Qt::SkipEmptyParts);
+  const auto sFolder = parts.isEmpty() ? tr("All Assets") : parts.constLast();
+  WorkspaceTitle->setText(sFolder);
+  WorkspaceTitle->setToolTip(sPath);
+  m_pBreadcrumb->setText(fontMetrics().elidedText(parts.isEmpty() ? tr("Content") : parts.join(QStringLiteral(" › ")), Qt::ElideLeft, 155));
   m_pBreadcrumb->setToolTip(sPath);
+  m_pBreadcrumbMenu->setTitle(tr("Content path"));
+  m_pBreadcrumbMenu->clear();
+  m_pBreadcrumbMenu->addAction(tr("Content"), this, [this]() { m_pFilter->SetPathFilter(""); });
+  for (qsizetype i = 0; i < parts.size(); ++i)
+  {
+    const auto sAncestor = parts.mid(0, i + 1).join(QLatin1Char('/'));
+    m_pBreadcrumbMenu->addAction(sAncestor, this, [this, sAncestor]() { m_pFilter->SetPathFilter(sAncestor.toUtf8().constData()); });
+  }
   QTimer::singleShot(0, this, SLOT(OnSelectionTimer()));
 }
 
@@ -745,16 +900,10 @@ void xiiQtAssetBrowserWidget::keyPressEvent(QKeyEvent* e)
 
 void xiiQtAssetBrowserWidget::mousePressEvent(QMouseEvent* e)
 {
-  if (e->button() == Qt::MouseButton::BackButton)
+  if (e->button() == Qt::MouseButton::BackButton || e->button() == Qt::MouseButton::ForwardButton)
   {
+    NavigateHistory(e->button() == Qt::MouseButton::BackButton ? -1 : 1);
     e->accept();
-    xiiStringBuilder sPath = m_pFilter->GetPathFilter();
-    if (sPath.IsEmpty())
-      return;
-    sPath.PathParentDirectory();
-    sPath.Trim("/");
-
-    m_pFilter->SetPathFilter(sPath);
     return;
   }
 
@@ -765,15 +914,15 @@ void xiiQtAssetBrowserWidget::RenameCurrent()
 {
   m_bOpenAfterRename = false;
 
-  if (ListAssets->currentIndex().isValid())
+  if (CurrentAssetIndex().isValid())
   {
-    ListAssets->edit(ListAssets->currentIndex());
+    ActiveView()->edit(CurrentAssetIndex());
   }
 }
 
 void xiiQtAssetBrowserWidget::DeleteSelection()
 {
-  QModelIndexList selection = ListAssets->selectionModel()->selectedIndexes();
+  QModelIndexList selection = ListAssets->selectionModel()->selectedRows();
   for (const QModelIndex& id : selection)
   {
     const xiiBitflags<xiiAssetBrowserItemFlags> itemType = (xiiAssetBrowserItemFlags::Enum)id.data(xiiQtAssetBrowserModel::UserRoles::ItemFlags).toInt();
@@ -969,35 +1118,22 @@ void xiiQtAssetBrowserWidget::on_TypeFilter_currentIndexChanged(int index)
     case Mode::Browser:
       m_pFilter->SetShowNonImportableFiles(index == 0);
       m_pFilter->SetShowFiles(index == 0 || index == 1);
-      ResetTypeFilter->setEnabled(index != 2);
       break;
     case Mode::AssetPicker:
       m_pFilter->SetShowNonImportableFiles(false);
       m_pFilter->SetShowFiles(false);
-      ResetTypeFilter->setEnabled(index != 0);
       break;
     case Mode::FilePicker:
       m_pFilter->SetShowNonImportableFiles(true);
       m_pFilter->SetShowFiles(true);
-      ResetTypeFilter->setEnabled(false);
       break;
   }
 
 
-  switch (index)
-  {
-    case 0:
-    case 1:
-    case 2:
-      // all filters enabled
-      // might be different for dialogs
-      sFilter = m_sAllTypesFilter;
-      break;
-
-    default:
-      sFilter.Set(";", TypeFilter->itemData(index, Qt::UserRole).toString().toUtf8().data(), ";");
-      break;
-  }
+  if (index <= (m_Mode == Mode::Browser ? 2 : 0))
+    sFilter = m_sAllTypesFilter;
+  else
+    sFilter.Set(";", qtToXIIString(TypeFilter->itemData(index).toString()), ";");
 
   m_pFilter->SetTypeFilter(sFilter);
 }
@@ -1028,6 +1164,11 @@ void xiiQtAssetBrowserWidget::OnResaveAssets()
 
 void xiiQtAssetBrowserWidget::on_ListAssets_customContextMenuRequested(const QPoint& pt)
 {
+  auto*             pView   = ActiveView();
+  const QModelIndex clicked = pView->indexAt(pt).siblingAtColumn(xiiQtAssetBrowserModel::NameColumn);
+  if (clicked.isValid() && !pView->selectionModel()->isSelected(clicked))
+    pView->selectionModel()->setCurrentIndex(clicked, QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
+
   QMenu m;
   m.setToolTipsVisible(true);
 
@@ -1042,9 +1183,9 @@ void xiiQtAssetBrowserWidget::on_ListAssets_customContextMenuRequested(const QPo
 
       bool bShowOpenWith = false;
 
-      if (ListAssets->selectionModel()->selectedIndexes().count() == 1)
+      if (ListAssets->selectionModel()->selectedRows().count() == 1)
       {
-        const QModelIndex                           firstItem = ListAssets->selectionModel()->selectedIndexes()[0];
+        const QModelIndex                           firstItem = ListAssets->selectionModel()->selectedRows()[0];
         const xiiBitflags<xiiAssetBrowserItemFlags> itemType  = (xiiAssetBrowserItemFlags::Enum)firstItem.data(xiiQtAssetBrowserModel::UserRoles::ItemFlags).toInt();
         if (itemType.IsAnySet(xiiAssetBrowserItemFlags::Asset | xiiAssetBrowserItemFlags::SubAsset))
         {
@@ -1088,7 +1229,7 @@ void xiiQtAssetBrowserWidget::on_ListAssets_customContextMenuRequested(const QPo
 
   if (m_Mode == Mode::Browser && ListAssets->selectionModel()->hasSelection())
   {
-    QModelIndexList selection   = ListAssets->selectionModel()->selectedIndexes();
+    QModelIndexList selection   = ListAssets->selectionModel()->selectedRows();
     bool            bImportable = false;
     bool            bAllFiles   = true;
     for (const QModelIndex& id : selection)
@@ -1106,7 +1247,7 @@ void xiiQtAssetBrowserWidget::on_ListAssets_customContextMenuRequested(const QPo
     {
       bool bCanRename = true;
 
-      QModelIndex id = ListAssets->currentIndex();
+      QModelIndex id = CurrentAssetIndex();
 
       const xiiBitflags<xiiAssetBrowserItemFlags> itemType = (xiiAssetBrowserItemFlags::Enum)id.data(xiiQtAssetBrowserModel::UserRoles::ItemFlags).toInt();
       if (itemType.IsAnySet(xiiAssetBrowserItemFlags::SubAsset | xiiAssetBrowserItemFlags::DataDirectory))
@@ -1154,7 +1295,7 @@ void xiiQtAssetBrowserWidget::on_ListAssets_customContextMenuRequested(const QPo
   m.addSeparator();
   AddAssetCreatorMenu(&m, true);
 
-  m.exec(ListAssets->viewport()->mapToGlobal(pt));
+  m.exec(ActiveView()->viewport()->mapToGlobal(pt));
 }
 
 void xiiQtAssetBrowserWidget::OnListOpenAssetDocument()
@@ -1176,10 +1317,10 @@ void xiiQtAssetBrowserWidget::OnListOpenAssetDocument()
 
 void xiiQtAssetBrowserWidget::OnListOpenFileWith()
 {
-  if (!ListAssets->currentIndex().isValid())
+  if (!CurrentAssetIndex().isValid())
     return;
 
-  xiiString sPath = m_pModel->data(ListAssets->currentIndex(), xiiQtAssetBrowserModel::UserRoles::AbsolutePath).toString().toUtf8().data();
+  xiiString sPath = m_pModel->data(CurrentAssetIndex(), xiiQtAssetBrowserModel::UserRoles::AbsolutePath).toString().toUtf8().data();
 
   xiiQtUiServices::OpenWith(sPath);
 }
@@ -1203,7 +1344,7 @@ void xiiQtAssetBrowserWidget::OnListOpenExplorer()
   if (!ListAssets->selectionModel()->hasSelection())
     return;
 
-  xiiString sPath = m_pModel->data(ListAssets->currentIndex(), xiiQtAssetBrowserModel::UserRoles::AbsolutePath).toString().toUtf8().data();
+  xiiString sPath = m_pModel->data(CurrentAssetIndex(), xiiQtAssetBrowserModel::UserRoles::AbsolutePath).toString().toUtf8().data();
 
   xiiQtUiServices::OpenInExplorer(sPath, true);
 }
@@ -1214,7 +1355,7 @@ void xiiQtAssetBrowserWidget::OnListCopyAssetGuid()
     return;
 
   xiiStringBuilder tmp;
-  xiiUuid          guid = m_pModel->data(ListAssets->currentIndex(), xiiQtAssetBrowserModel::UserRoles::SubAssetGuid).value<xiiUuid>();
+  xiiUuid          guid = m_pModel->data(CurrentAssetIndex(), xiiQtAssetBrowserModel::UserRoles::SubAssetGuid).value<xiiUuid>();
 
   QClipboard* clipboard = QApplication::clipboard();
   QMimeData*  mimeData  = new QMimeData();
@@ -1229,7 +1370,7 @@ void xiiQtAssetBrowserWidget::OnFilterToThisPath()
   if (!ListAssets->selectionModel()->hasSelection())
     return;
 
-  xiiStringBuilder sPath = m_pModel->data(ListAssets->currentIndex(), xiiQtAssetBrowserModel::UserRoles::RelativePath).toString().toUtf8().data();
+  xiiStringBuilder sPath = m_pModel->data(CurrentAssetIndex(), xiiQtAssetBrowserModel::UserRoles::RelativePath).toString().toUtf8().data();
   sPath.PathParentDirectory();
   sPath.Trim("/");
 
@@ -1241,7 +1382,7 @@ void xiiQtAssetBrowserWidget::OnListFindAllReferences(bool transitive)
   if (!ListAssets->selectionModel()->hasSelection())
     return;
 
-  xiiUuid          guid = m_pModel->data(ListAssets->currentIndex(), xiiQtAssetBrowserModel::UserRoles::SubAssetGuid).value<xiiUuid>();
+  xiiUuid          guid = m_pModel->data(CurrentAssetIndex(), xiiQtAssetBrowserModel::UserRoles::SubAssetGuid).value<xiiUuid>();
   xiiStringBuilder sAssetGuid;
   xiiConversionUtils::ToString(guid, sAssetGuid);
 
@@ -1257,19 +1398,20 @@ void xiiQtAssetBrowserWidget::OnSelectionTimer()
   {
     auto index = m_pModel->index(0, 0);
 
-    ListAssets->selectionModel()->select(index, QItemSelectionModel::SelectionFlag::ClearAndSelect);
+    ListAssets->selectionModel()->setCurrentIndex(index, QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
   }
 }
 
 void xiiQtAssetBrowserWidget::OnAssetSelectionChanged(const QItemSelection& selected, const QItemSelection& deselected)
 {
+  UpdateWorkspace();
   if (!ListAssets->selectionModel()->hasSelection())
   {
     Q_EMIT ItemCleared();
   }
-  else if (ListAssets->selectionModel()->selectedIndexes().size() == 1)
+  else if (ListAssets->selectionModel()->selectedRows().size() == 1)
   {
-    QModelIndex index = ListAssets->selectionModel()->selectedIndexes()[0];
+    QModelIndex index = ListAssets->selectionModel()->selectedRows()[0];
 
     const xiiBitflags<xiiAssetBrowserItemFlags> itemType = (xiiAssetBrowserItemFlags::Enum)index.data(xiiQtAssetBrowserModel::UserRoles::ItemFlags).toInt();
 
@@ -1284,9 +1426,9 @@ void xiiQtAssetBrowserWidget::OnAssetSelectionCurrentChanged(const QModelIndex& 
   {
     Q_EMIT ItemCleared();
   }
-  else if (ListAssets->selectionModel()->selectedIndexes().size() == 1)
+  else if (ListAssets->selectionModel()->selectedRows().size() == 1)
   {
-    QModelIndex index = ListAssets->selectionModel()->selectedIndexes()[0];
+    QModelIndex index = ListAssets->selectionModel()->selectedRows()[0];
 
     const xiiBitflags<xiiAssetBrowserItemFlags> itemType = (xiiAssetBrowserItemFlags::Enum)index.data(xiiQtAssetBrowserModel::UserRoles::ItemFlags).toInt();
 
@@ -1323,7 +1465,7 @@ void xiiQtAssetBrowserWidget::NewAsset()
     // this will take precedence
     if (useSelection && ListAssets->selectionModel()->hasSelection())
     {
-      xiiString sPath = m_pModel->data(ListAssets->currentIndex(), xiiQtAssetBrowserModel::UserRoles::AbsolutePath).toString().toUtf8().data();
+      xiiString sPath = m_pModel->data(CurrentAssetIndex(), xiiQtAssetBrowserModel::UserRoles::AbsolutePath).toString().toUtf8().data();
 
       if (!sPath.IsEmpty())
       {
@@ -1378,10 +1520,10 @@ void xiiQtAssetBrowserWidget::NewAsset()
   {
     m_bOpenAfterRename = true;
     QModelIndex idx    = m_pModel->index(iNewIndex, 0);
-    ListAssets->selectionModel()->select(idx, QItemSelectionModel::SelectionFlag::ClearAndSelect);
-    ListAssets->selectionModel()->setCurrentIndex(idx, QItemSelectionModel::SelectionFlag::ClearAndSelect);
-    ListAssets->scrollTo(idx, QAbstractItemView::ScrollHint::EnsureVisible);
-    ListAssets->edit(idx);
+    ListAssets->selectionModel()->select(idx, QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
+    ListAssets->selectionModel()->setCurrentIndex(idx, QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
+    ActiveView()->scrollTo(idx, QAbstractItemView::ScrollHint::EnsureVisible);
+    ActiveView()->edit(idx);
   }
 }
 
@@ -1425,9 +1567,9 @@ void xiiQtAssetBrowserWidget::OnFileEditingFinished(const QString& sAbsPath, con
     if (iNewIndex != -1)
     {
       QModelIndex idx = m_pModel->index(iNewIndex, 0);
-      ListAssets->selectionModel()->select(idx, QItemSelectionModel::SelectionFlag::ClearAndSelect);
-      ListAssets->selectionModel()->setCurrentIndex(idx, QItemSelectionModel::SelectionFlag::ClearAndSelect);
-      ListAssets->scrollTo(idx, QAbstractItemView::ScrollHint::EnsureVisible);
+      ListAssets->selectionModel()->select(idx, QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
+      ListAssets->selectionModel()->setCurrentIndex(idx, QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
+      ActiveView()->scrollTo(idx, QAbstractItemView::ScrollHint::EnsureVisible);
     }
   }
 
@@ -1454,7 +1596,7 @@ void xiiQtAssetBrowserWidget::ImportSelection()
 
   xiiAssetDocumentGenerator::ImportAssets(filesToImport);
 
-  QModelIndexList selection = ListAssets->selectionModel()->selectedIndexes();
+  QModelIndexList selection = ListAssets->selectionModel()->selectedRows();
   for (const QModelIndex& id : selection)
   {
     Q_EMIT m_pModel->dataChanged(id, id);
@@ -1513,9 +1655,9 @@ void xiiQtAssetBrowserWidget::OnScrollToItem(xiiUuid preselectedAsset)
     QModelIndex idx = m_pModel->index(i, 0);
     if (m_pModel->data(idx, xiiQtAssetBrowserModel::UserRoles::SubAssetGuid).value<xiiUuid>() == preselectedAsset)
     {
-      ListAssets->selectionModel()->select(idx, QItemSelectionModel::SelectionFlag::ClearAndSelect);
-      ListAssets->selectionModel()->setCurrentIndex(idx, QItemSelectionModel::SelectionFlag::ClearAndSelect);
-      ListAssets->scrollTo(idx, QAbstractItemView::ScrollHint::EnsureVisible);
+      ListAssets->selectionModel()->select(idx, QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
+      ListAssets->selectionModel()->setCurrentIndex(idx, QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
+      ActiveView()->scrollTo(idx, QAbstractItemView::ScrollHint::EnsureVisible);
       return;
     }
   }
@@ -1539,9 +1681,9 @@ void xiiQtAssetBrowserWidget::OnScrollToFile(QString sPreselectedFile)
 
     if (m_pModel->data(idx, xiiQtAssetBrowserModel::UserRoles::AbsolutePath).value<QString>() == sPreselectedFile)
     {
-      ListAssets->selectionModel()->select(idx, QItemSelectionModel::SelectionFlag::ClearAndSelect);
-      ListAssets->selectionModel()->setCurrentIndex(idx, QItemSelectionModel::SelectionFlag::ClearAndSelect);
-      ListAssets->scrollTo(idx, QAbstractItemView::ScrollHint::EnsureVisible);
+      ListAssets->selectionModel()->select(idx, QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
+      ListAssets->selectionModel()->setCurrentIndex(idx, QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
+      ActiveView()->scrollTo(idx, QAbstractItemView::ScrollHint::EnsureVisible);
       return;
     }
   }

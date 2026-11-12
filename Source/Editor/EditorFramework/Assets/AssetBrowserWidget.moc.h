@@ -9,13 +9,14 @@
 #include <ToolsFoundation/FileSystem/FileSystemModel.h>
 #include <ToolsFoundation/Project/ToolsProject.h>
 
-class xiiQtToolBarActionMapView;
 class xiiQtAssetBrowserFilter;
 class xiiQtAssetBrowserModel;
+class QAbstractItemView;
 class QLabel;
 class QAction;
+class QMenu;
+class QResizeEvent;
 struct xiiAssetCuratorEvent;
-class xiiQtAssetBrowserModel;
 
 class XII_EDITORFRAMEWORK_DLL xiiQtAssetBrowserWidget : public QWidget, public Ui_AssetBrowserWidget
 {
@@ -66,9 +67,9 @@ private Q_SLOTS:
   void on_ListAssets_clicked(const QModelIndex& index);
   void on_ButtonListMode_clicked();
   void on_ButtonIconMode_clicked();
+  void on_ButtonDetailsMode_clicked();
   void on_IconSizeSlider_valueChanged(int iValue);
   void on_ListAssets_ViewZoomed(xiiInt32 iIconSizePercentage);
-  void on_ResetTypeFilter_clicked();
   void OnSearchWidgetTextChanged(const QString& text);
   void on_TreeFolderFilter_customContextMenuRequested(const QPoint& pt);
   void on_TypeFilter_currentIndexChanged(int index);
@@ -102,29 +103,38 @@ private Q_SLOTS:
 private:
   virtual void keyPressEvent(QKeyEvent* e) override;
   virtual void mousePressEvent(QMouseEvent* e) override;
+  void         resizeEvent(QResizeEvent* pEvent) override;
 
 private:
-  void AssetCuratorEventHandler(const xiiAssetCuratorEvent& e);
-  void UpdateAssetTypes();
-  void ProjectEventHandler(const xiiToolsProjectEvent& e);
-  void AddAssetCreatorMenu(QMenu* pMenu, bool useSelectedAsset);
-  void AddImportedViaMenu(QMenu* pMenu);
-  void GetSelectedImportableFiles(xiiDynamicArray<xiiString>& out_Files) const;
-  void NavigateHistory(int iDirection);
+  void               AssetCuratorEventHandler(const xiiAssetCuratorEvent& e);
+  void               UpdateAssetTypes();
+  void               ProjectEventHandler(const xiiToolsProjectEvent& e);
+  void               AddAssetCreatorMenu(QMenu* pMenu, bool useSelectedAsset, bool bCreateSubmenu = true);
+  void               AddImportedViaMenu(QMenu* pMenu);
+  void               GetSelectedImportableFiles(xiiDynamicArray<xiiString>& out_Files) const;
+  void               NavigateHistory(int iDirection);
+  QAbstractItemView* ActiveView() const;
+  QModelIndex        CurrentAssetIndex() const;
+  void               SetDisplayMode(int iMode);
+  void               UpdateWorkspace();
+  void               ImportFiles();
+  void               ImportUrls(const QList<QUrl>& urls);
 
-  Mode                                   m_Mode     = Mode::Browser;
-  xiiQtToolBarActionMapView*             m_pToolbar = nullptr;
+  Mode                                   m_Mode = Mode::Browser;
   xiiString                              m_sAllTypesFilter;
   QSharedPointer<xiiQtAssetBrowserModel> m_pModel  = nullptr;
   xiiQtAssetBrowserFilter*               m_pFilter = nullptr;
 
   /// After creating a new asset and renaming it, we want to open it as well.
-  bool        m_bOpenAfterRename   = false;
-  QStringList m_PathHistory        = {QString()};
-  xiiInt32    m_iPathHistory       = 0;
-  bool        m_bHistoryNavigation = false;
-  QAction*    m_pBack              = nullptr;
-  QAction*    m_pForward           = nullptr;
-  QAction*    m_pUp                = nullptr;
-  QLabel*     m_pBreadcrumb        = nullptr;
+  bool         m_bOpenAfterRename   = false;
+  QStringList  m_PathHistory        = {QString()};
+  xiiInt32     m_iPathHistory       = 0;
+  bool         m_bHistoryNavigation = false;
+  QAction*     m_pBack              = nullptr;
+  QAction*     m_pForward           = nullptr;
+  QAction*     m_pUp                = nullptr;
+  QToolButton* m_pBreadcrumb        = nullptr;
+  QMenu*       m_pBreadcrumbMenu    = nullptr;
+  QLabel*      m_pVisibleCount      = nullptr;
+  int          m_iDisplayMode       = 0;
 };

@@ -18,7 +18,7 @@ class xiiQtAssetBrowserView : public xiiQtItemView<QListView>
   Q_OBJECT
 
 public:
-  xiiQtAssetBrowserView(QWidget* pParent);
+  explicit xiiQtAssetBrowserView(QWidget* pParent = nullptr);
   void SetDialogMode(bool bDialogMode);
 
   void     SetIconMode(bool bIconMode);
