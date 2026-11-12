@@ -138,6 +138,16 @@ XII_CREATE_SIMPLE_TEST(CanonicalRenderer, RasterRecordingRanges)
     if (commands.GetDescription().m_Flags.IsSet(xiiGALCommandListFlags::Secondary))
       secondaryRanges.Increment();
     commands.ClearRenderTargetView(execute.GetTexture(data.m_Target)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor(0, 1, 0, 1)); });
+  graph.AddPass<xiiUInt32>("Primary state after secondary", xiiGALCommandQueueFlags::Graphics, [](auto&, auto&) {}, [](const auto&, xiiRenderGraphPassContext& execute) {
+    auto& commands = execute.GetCommandList();
+    const auto before = commands.GetStatistics().m_CommandListCounters;
+    commands.SetStencilRef(0U);
+    commands.SetBlendFactor(xiiColor::Black);
+    commands.SetStencilRef(0U);
+    commands.SetBlendFactor(xiiColor::Black);
+    const auto& after = commands.GetStatistics().m_CommandListCounters;
+    if (after.m_uiSetStencilRef != before.m_uiSetStencilRef + 1U || after.m_uiSetBlendFactors != before.m_uiSetBlendFactors + 1U)
+      execute.ReportFailure("The primary command list retained invalid dynamic state after secondary execution."); }, true);
   graph.EndSetup();
 
   xiiStringBuilder error;

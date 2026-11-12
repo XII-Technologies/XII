@@ -1720,6 +1720,8 @@ protected:
 
   xiiColor  m_BlendFactors = xiiColor::Black;
   xiiUInt32 m_uiStencilRef = 0U;
+  bool      m_bBlendFactorsValid = false;
+  bool      m_bStencilRefValid   = false;
 
   xiiHybridArray<xiiGALViewport, 2U> m_Viewports;
   xiiHybridArray<xiiRectU32, 2U>     m_ScissorRects;

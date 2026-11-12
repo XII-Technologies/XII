@@ -336,9 +336,10 @@ void xiiGALCommandList::SetStencilRef(xiiUInt32 uiStencilRef)
   XII_ASSERT_DEV(m_Description.m_QueueFlags.AreAllSet(xiiGALCommandQueueFlags::Graphics), "SetStencilRef arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics flag.");
   XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "SetStencilRef must be called while recording.");
 
-  if (m_uiStencilRef != uiStencilRef)
+  if (!m_bStencilRefValid || m_uiStencilRef != uiStencilRef)
   {
     m_uiStencilRef = uiStencilRef;
+    m_bStencilRefValid = true;
 
     ++m_CommandListStatistics.m_CommandListCounters.m_uiSetStencilRef;
 
@@ -351,9 +352,10 @@ void xiiGALCommandList::SetBlendFactor(const xiiColor& blendFactor)
   XII_ASSERT_DEV(m_Description.m_QueueFlags.AreAllSet(xiiGALCommandQueueFlags::Graphics), "SetBlendFactor arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics flag.");
   XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "SetBlendFactor must be called while recording.");
 
-  if (blendFactor != m_BlendFactors)
+  if (!m_bBlendFactorsValid || blendFactor != m_BlendFactors)
   {
     m_BlendFactors = blendFactor;
+    m_bBlendFactorsValid = true;
 
     ++m_CommandListStatistics.m_CommandListCounters.m_uiSetBlendFactors;
 
@@ -2490,6 +2492,8 @@ void xiiGALCommandList::InvalidateBindings()
 
   m_BlendFactors = xiiColor::Black;
   m_uiStencilRef = 0;
+  m_bBlendFactorsValid = false;
+  m_bStencilRefValid   = false;
 
   m_Viewports.Clear();
   m_ScissorRects.Clear();

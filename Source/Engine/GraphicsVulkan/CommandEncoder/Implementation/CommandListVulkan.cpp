@@ -817,14 +817,15 @@ void xiiGALCommandListVulkan::SubmitPlatform(xiiGALCommandList* pSecondaryComman
 
   // Vulkan invalidates the primary's bound state, but its render pass and queued work remain active.
   InvalidateBindings();
-  m_CommandListState.m_vkGraphicsPipeline    = VK_NULL_HANDLE;
-  m_CommandListState.m_vkComputePipeline     = VK_NULL_HANDLE;
-  m_CommandListState.m_vkRayTracingPipeline  = VK_NULL_HANDLE;
-  m_CommandListState.m_vkIndexBuffer         = VK_NULL_HANDLE;
-  m_CommandListState.m_bIsShadingRateSet     = false;
-  m_CommandListFlags                         = {};
-  m_CommandListData.m_bPipelineStateModified = true;
-  m_CommandListData.m_bDescriptorsModified   = true;
+  m_CommandListData.Invalidate();
+  if (m_pRenderPass != nullptr && m_pFramebuffer != nullptr)
+    UpdateAttachmentBindings();
+  m_CommandListState.m_vkGraphicsPipeline   = VK_NULL_HANDLE;
+  m_CommandListState.m_vkComputePipeline    = VK_NULL_HANDLE;
+  m_CommandListState.m_vkRayTracingPipeline = VK_NULL_HANDLE;
+  m_CommandListState.m_vkIndexBuffer        = VK_NULL_HANDLE;
+  m_CommandListState.m_bIsShadingRateSet    = false;
+  m_CommandListFlags                        = {};
 }
 
 void xiiGALCommandListVulkan::SetPipelineStatePlatform(xiiGALPipelineState* pPipelineState)
