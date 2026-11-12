@@ -36,10 +36,11 @@ struct XII_GRAPHICSCORE_DLL xiiToneMappingOperator
     ACES,
     Reinhard,
     Uncharted2,
+    AgX,
 
     ENUM_COUNT,
 
-    Default = ACES
+    Default = AgX
   };
 };
 

@@ -41,7 +41,7 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiExposureMode, 1)
 XII_END_STATIC_REFLECTED_ENUM;
 
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiToneMappingOperator, 1)
-  XII_ENUM_CONSTANTS(xiiToneMappingOperator::ACES, xiiToneMappingOperator::Reinhard, xiiToneMappingOperator::Uncharted2)
+  XII_ENUM_CONSTANTS(xiiToneMappingOperator::ACES, xiiToneMappingOperator::Reinhard, xiiToneMappingOperator::Uncharted2, xiiToneMappingOperator::AgX)
 XII_END_STATIC_REFLECTED_ENUM;
 
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiDisplayOutputMode, 1)

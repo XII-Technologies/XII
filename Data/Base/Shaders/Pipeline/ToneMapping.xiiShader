@@ -11,6 +11,7 @@ ALL
 // Dispatch: ceil(W/8) x ceil(H/8) x 1.
 
 #include <Shaders/Common/Common.h>
+#include <Shaders/Pipeline/Passes/Output/AgXToneMapping.h>
 #include <Shaders/Pipeline/Passes/Output/ToneMappingConstants.h>
 
 Texture2D<float4>          g_HDRInput;
@@ -48,6 +49,7 @@ float3 ToneMapSDR(float3 color)
     uint op = Operator;
     if (op == 1u) return Reinhard(color);
     if (op == 2u) return Uncharted2(color);
+    if (op == 3u) return AgX(color);
     return ACES_Narkowicz(color);
 }
 
