@@ -180,4 +180,22 @@ XII_CREATE_SIMPLE_TEST(AssetBrowser, IndexedWorkspaceAndPickers)
   QApplication::processEvents();
   XII_TEST_BOOL(filePicker.ListAssets->selectionModel()->currentIndex().data(Model::AbsolutePath).toString() == xiiMakeQString(sFile));
   XII_TEST_BOOL(filePicker.GetAssetBrowserModel()->FindAssetIndex(source) < 0);
+
+  pFilter->SetPathFilter(sRelativeFolder);
+  const auto iSourceRow = pModel->FindAssetIndex(source);
+  if (!XII_TEST_BOOL(iSourceRow >= 0))
+    return;
+  const auto sourceIndex = pModel->index(iSourceRow, Model::NameColumn);
+  XII_TEST_BOOL(pModel->setData(sourceIndex, QStringLiteral("Renamed Source"), Qt::EditRole));
+  QApplication::processEvents();
+  const auto iRenamedRow = pModel->FindAssetIndex(source);
+  if (XII_TEST_BOOL(iRenamedRow >= 0))
+  {
+    xiiStringBuilder sRenamed(sFolder, "/Renamed Source.xiiResaveTest");
+    XII_TEST_BOOL(pModel->index(iRenamedRow, Model::NameColumn).data(Model::AbsolutePath).toString() == xiiMakeQString(sRenamed));
+    XII_TEST_BOOL(xiiOSFile::ExistsFile(sRenamed) && !xiiOSFile::ExistsFile(sSource));
+    xiiSet<xiiUuid> references;
+    pCurator->FindAllUses(source, references, false);
+    XII_TEST_BOOL(references.Contains(consumer));
+  }
 }

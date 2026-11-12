@@ -60,7 +60,6 @@ xiiQtAssetBrowserInspector::xiiQtAssetBrowserInspector(xiiQtAssetBrowserWidget* 
 
   m_pSummary = new QLabel(this);
   m_pSummary->setWordWrap(true);
-  m_pSummary->setMaximumHeight(32);
   m_pSummary->setTextFormat(Qt::PlainText);
   m_pSummary->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
   pLayout->addWidget(m_pSummary);
@@ -183,11 +182,16 @@ void xiiQtAssetBrowserInspector::SetSelection(const QModelIndexList& selection)
   }
   if (m_Selected.isValid())
   {
+    m_pSummary->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
+    m_pSummary->setMaximumHeight(32);
     m_pTabs->show();
     RefreshAsset();
   }
   else
   {
+    m_pSummary->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Expanding);
+    m_pSummary->setMaximumHeight(QWIDGETSIZE_MAX);
+    m_pSummary->setAlignment(Qt::AlignTop);
     m_pSummary->setText(selection.isEmpty() ? tr("Select an item to inspect it.") : tr("%n items selected", nullptr, selection.size()));
     m_pTabs->hide();
     m_pDetails->clear();

@@ -966,6 +966,14 @@ QModelIndexList xiiQtAssetBrowserWidget::SelectedAssets() const
 void xiiQtAssetBrowserWidget::SetDisplayMode(int iMode)
 {
   m_iDisplayMode = iMode;
+  if (iMode == 2)
+  {
+    QItemSelection rows;
+    for (const auto& item : SelectedAssets())
+      rows.select(item, item);
+    if (!rows.isEmpty())
+      ListAssets->selectionModel()->select(rows, QItemSelectionModel::Select | QItemSelectionModel::Rows);
+  }
   m_pModel->SetIconMode(iMode == 0);
   ListAssets->SetIconMode(iMode == 0);
   ButtonIconMode->setChecked(iMode == 0);
@@ -2108,7 +2116,8 @@ void xiiQtAssetBrowserWidget::OnFileEditingFinished(const QString& sAbsPath, con
 
   if (sOldPath != sNewPath)
   {
-    if (xiiOSFile::MoveFileOrDirectory(sOldPath, sNewPath).Failed())
+    if ((QFileInfo::exists(xiiMakeQString(sNewPath)) && !xiiFileSystemModel::IsSameFile(sOldPath, sNewPath)) ||
+        xiiOSFile::MoveFileOrDirectory(sOldPath, sNewPath).Failed())
     {
       xiiQtUiServices::MessageBoxWarning(xiiFmt("Failed to rename '{}' to '{}'. Check that the destination is writable and the name is available.", sOldPath, sNewPath));
       return;
