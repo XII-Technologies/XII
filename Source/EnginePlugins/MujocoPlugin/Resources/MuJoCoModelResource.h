@@ -5,6 +5,7 @@
 #include <MujocoPlugin/MujocoPluginDLL.h>
 
 #include <Core/ResourceManager/Resource.h>
+#include <Foundation/Containers/DynamicArray.h>
 #include <Foundation/Threading/AtomicInteger.h>
 #include <Foundation/Threading/Mutex.h>
 #include <Foundation/Types/SharedPtr.h>
@@ -12,8 +13,18 @@
 class xiiMuJoCoCompiledModel;
 using xiiMuJoCoModelResourceHandle = xiiTypedResourceHandle<class xiiMuJoCoModelResource>;
 
-/// A compiled MuJoCo model. The default resource loader reads a loose MJB file.
-/// Custom streams use the same format: the loader's source-path string followed by MJB bytes.
+/// Versioned MJB payload used after the standard XII asset header.
+struct XII_MUJOCOPLUGIN_DLL xiiMuJoCoModelResourceDescriptor
+{
+  xiiDynamicArray<xiiUInt8> m_ModelData;
+
+  [[nodiscard]] xiiResult Save(xiiStreamWriter& stream) const;
+  [[nodiscard]] xiiResult Load(xiiStreamReader& stream);
+  static xiiUInt64        GetCompilerVersion();
+};
+
+/// Immutable compiled model storage shared with independent, per-world mjData instances.
+/// Accepts transformed XII model assets and, for compatibility, loose native MJB files.
 class XII_MUJOCOPLUGIN_DLL xiiMuJoCoModelResource final : public xiiResource
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiMuJoCoModelResource, xiiResource);

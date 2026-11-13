@@ -13,7 +13,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiMuJoCoModelComponent, 1, xiiComponentMode::Static)
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_RESOURCE_ACCESSOR_PROPERTY("Model", GetModel, SetModel)->AddAttributes(new xiiFileBrowserAttribute("Select MuJoCo Model", "*.mjb", {}, {}, xiiDependencyFlags::Package)),
+    XII_RESOURCE_ACCESSOR_PROPERTY("Model", GetModel, SetModel)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_MuJoCoModel", xiiDependencyFlags::Package)),
   }
   XII_END_PROPERTIES;
   XII_BEGIN_ATTRIBUTES

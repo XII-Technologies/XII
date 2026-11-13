@@ -2,9 +2,11 @@
 
 #include <MujocoPlugin/MujocoPluginPCH.h>
 
+#include <Foundation/Algorithm/HashingUtils.h>
 #include <Foundation/IO/MemoryStream.h>
 #include <Foundation/Math/Math.h>
 #include <Foundation/Threading/Lock.h>
+#include <Foundation/Utilities/AssetFileHeader.h>
 #include <MujocoPlugin/Resources/Implementation/MuJoCoCompiledModel.h>
 #include <MujocoPlugin/Resources/MuJoCoModelResource.h>
 
@@ -12,6 +14,49 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMuJoCoModelResource, 1, xiiRTTIDefaultAlloca
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 XII_RESOURCE_IMPLEMENT_COMMON_CODE(xiiMuJoCoModelResource);
+
+namespace
+{
+  constexpr xiiUInt32 ModelMagic    = 0x4D4A4958; // XIJM
+  constexpr xiiUInt32 MaxModelBytes = 512 * 1024 * 1024;
+} // namespace
+
+xiiUInt64 xiiMuJoCoModelResourceDescriptor::GetCompilerVersion()
+{
+  // Native payloads depend on the exact MuJoCo version, scalar sizes, ABI, and byte order.
+  const xiiUInt64 version[] = {mjVERSION_HEADER, sizeof(mjtNum), sizeof(mjtSize), sizeof(void*), sizeof(mjModel), sizeof(mjOption), sizeof(mjVisual), 1};
+  return xiiHashingUtils::xxHash64(version, sizeof(version));
+}
+
+xiiResult xiiMuJoCoModelResourceDescriptor::Save(xiiStreamWriter& stream) const
+{
+  if (m_ModelData.IsEmpty() || m_ModelData.GetCount() > MaxModelBytes || mj_version() != mjVERSION_HEADER)
+    return XII_FAILURE;
+  stream << ModelMagic << xiiUInt8{1} << GetCompilerVersion() << m_ModelData.GetCount();
+  stream << xiiHashingUtils::xxHash64(m_ModelData.GetData(), m_ModelData.GetCount());
+  return stream.WriteBytes(m_ModelData.GetData(), m_ModelData.GetCount());
+}
+
+xiiResult xiiMuJoCoModelResourceDescriptor::Load(xiiStreamReader& stream)
+{
+  xiiUInt32 magic = 0, size = 0;
+  xiiUInt8  version  = 0;
+  xiiUInt64 compiler = 0, checksum = 0;
+  XII_SUCCEED_OR_RETURN(stream.ReadDWordValue(&magic));
+  if (stream.ReadBytes(&version, sizeof(version)) != sizeof(version))
+    return XII_FAILURE;
+  XII_SUCCEED_OR_RETURN(stream.ReadQWordValue(&compiler));
+  XII_SUCCEED_OR_RETURN(stream.ReadDWordValue(&size));
+  XII_SUCCEED_OR_RETURN(stream.ReadQWordValue(&checksum));
+  if (magic != ModelMagic || version != 1 || compiler != GetCompilerVersion() || mj_version() != mjVERSION_HEADER || size == 0 || size > MaxModelBytes)
+    return XII_FAILURE;
+  xiiDynamicArray<xiiUInt8> bytes;
+  bytes.SetCountUninitialized(size);
+  if (stream.ReadBytes(bytes.GetData(), size) != size || xiiHashingUtils::xxHash64(bytes.GetData(), size) != checksum)
+    return XII_FAILURE;
+  m_ModelData = std::move(bytes);
+  return XII_SUCCESS;
+}
 
 xiiSharedPtr<xiiMuJoCoCompiledModel> xiiMuJoCoCompiledModel::LoadBinary(xiiArrayPtr<const xiiUInt8> bytes, xiiStringView sSource)
 {
@@ -65,9 +110,26 @@ xiiResourceLoadDescription xiiMuJoCoModelResource::UpdateContent(xiiStreamReader
     if (pStream->ReadDWordValue(&uiPathBytes).Succeeded() && pStream->SkipBytes(uiPathBytes) == uiPathBytes)
     {
       xiiContiguousMemoryStreamStorage bytes;
-      bytes.ReadAll(*pStream, xiiMath::MaxValue<xiiInt32>());
-      if (bytes.GetStorageSize64() < xiiMath::MaxValue<xiiInt32>())
-        pModel = xiiMuJoCoCompiledModel::LoadBinary(bytes.GetContiguousMemoryRange(0), GetResourceID());
+      bytes.ReadAll(*pStream, MaxModelBytes + 1);
+      if (bytes.GetStorageSize64() <= MaxModelBytes)
+      {
+        const auto payload     = bytes.GetContiguousMemoryRange(0);
+        int        nativeMagic = 0;
+        if (payload.GetCount() >= sizeof(nativeMagic))
+          xiiMemoryUtils::Copy(reinterpret_cast<xiiUInt8*>(&nativeMagic), payload.GetPtr(), sizeof(nativeMagic));
+        if (nativeMagic == 54321)
+          pModel = xiiMuJoCoCompiledModel::LoadBinary(payload, GetResourceID());
+        else
+        {
+          xiiRawMemoryStreamReader         reader(payload.GetPtr(), payload.GetCount());
+          xiiAssetFileHeader               header;
+          xiiMuJoCoModelResourceDescriptor descriptor;
+          if (header.Read(reader).Succeeded() && descriptor.Load(reader).Succeeded())
+            pModel = xiiMuJoCoCompiledModel::LoadBinary(descriptor.m_ModelData, GetResourceID());
+          else
+            xiiLog::Error("MuJoCo model resource '{}' is invalid or incompatible. Transform it again with the current MuJoCo build.", GetResourceID());
+        }
+      }
       else
         xiiLog::Error("MuJoCo model resource '{}' exceeds the supported MJB stream size.", GetResourceID());
     }
