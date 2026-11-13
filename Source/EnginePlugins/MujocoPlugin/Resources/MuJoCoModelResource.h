@@ -13,10 +13,18 @@
 class xiiMuJoCoCompiledModel;
 using xiiMuJoCoModelResourceHandle = xiiTypedResourceHandle<class xiiMuJoCoModelResource>;
 
-/// Versioned MJB payload used after the standard XII asset header.
+/// Versioned MJB and optional source snapshot used after the standard XII asset header.
 struct XII_MUJOCOPLUGIN_DLL xiiMuJoCoModelResourceDescriptor
 {
+  struct SourceFile
+  {
+    xiiString                 m_sPath;
+    xiiDynamicArray<xiiUInt8> m_Data;
+  };
+
   xiiDynamicArray<xiiUInt8> m_ModelData;
+  /// The first file is the root document. Paths are keys in an in-memory filesystem.
+  xiiDynamicArray<SourceFile> m_SourceFiles;
 
   [[nodiscard]] xiiResult Save(xiiStreamWriter& stream) const;
   [[nodiscard]] xiiResult Load(xiiStreamReader& stream);

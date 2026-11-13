@@ -58,6 +58,7 @@ namespace
       if (!path.HasExtension("xml") && !path.HasExtension("mjcf") && !path.HasExtension("urdf"))
         return xiiStatus("MuJoCo sources must be MJCF (.xml/.mjcf) or MuJoCo-compatible URDF (.urdf).");
       path.MakeCleanPath();
+      m_sRootPath      = path;
       char error[4096] = {};
       out_spec.reset(mj_parseXML(path.GetData(), &m_Vfs, error, sizeof(error)));
       if (!out_spec)
@@ -118,6 +119,26 @@ namespace
       for (const auto& path : unique)
         dependencies.PushBack(path);
       return dependencies;
+    }
+
+    xiiResult StoreSources(xiiMuJoCoModelResourceDescriptor& out_descriptor)
+    {
+      XII_LOCK(m_Mutex);
+      const auto root = m_Files.Find(m_sRootPath);
+      if (!root.IsValid())
+        return XII_FAILURE;
+      auto& files = out_descriptor.m_SourceFiles;
+      files.Reserve(m_Files.GetCount());
+      const auto store = [&files](const xiiString& path, Input& input) {
+        auto& file   = files.ExpandAndGetRef();
+        file.m_sPath = path;
+        file.m_Data  = std::move(input.m_Bytes);
+      };
+      store(m_sRootPath, *root.Value());
+      for (auto& entry : m_Files)
+        if (entry.Key() != m_sRootPath)
+          store(entry.Key(), *entry.Value());
+      return XII_SUCCESS;
     }
 
     mjVFS m_Vfs{};
@@ -201,6 +222,7 @@ namespace
     mjpResourceProvider                    m_Provider{};
     mutable xiiMutex                       m_Mutex;
     xiiMap<xiiString, xiiUniquePtr<Input>> m_Files;
+    xiiString                              m_sRootPath;
     bool                                   m_bMounted   = false;
     bool                                   m_bStripPath = false;
   };
@@ -218,7 +240,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMuJoCoModelAssetProperties, 1, xiiRTTIDefaul
   XII_END_PROPERTIES;
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMuJoCoModelAssetDocument, 1, xiiRTTINoAllocator)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMuJoCoModelAssetDocument, 2, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMuJoCoModelAssetDocumentManager, 1, xiiRTTIDefaultAllocator<xiiMuJoCoModelAssetDocumentManager>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
@@ -284,6 +306,8 @@ xiiTransformStatus xiiMuJoCoModelAssetDocument::InternalTransformAsset(xiiStream
   xiiMuJoCoModelResourceDescriptor descriptor;
   descriptor.m_ModelData.SetCountUninitialized(static_cast<xiiUInt32>(size));
   mj_saveModel(model.get(), nullptr, descriptor.m_ModelData.GetData(), size);
+  if (inputs.StoreSources(descriptor).Failed())
+    return xiiStatus("Could not capture the MuJoCo model's source snapshot.");
   if (descriptor.Save(stream).Failed())
     return xiiStatus("Could not serialize the compiled MuJoCo model resource.");
   return XII_SUCCESS;

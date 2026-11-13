@@ -4,8 +4,8 @@
 
 #include <MujocoPlugin/MujocoPluginDLL.h>
 
-#include <Foundation/Types/ArrayPtr.h>
 #include <Foundation/Types/SharedPtr.h>
+#include <MujocoPlugin/Resources/MuJoCoModelResource.h>
 
 #include <mujoco/mujoco.h>
 
@@ -22,11 +22,14 @@ public:
   {
   }
 
-  static xiiSharedPtr<xiiMuJoCoCompiledModel> LoadBinary(xiiArrayPtr<const xiiUInt8> bytes, xiiStringView sSource);
+  using SourceFile = xiiMuJoCoModelResourceDescriptor::SourceFile;
+  static xiiSharedPtr<xiiMuJoCoCompiledModel> LoadBinary(xiiArrayPtr<const xiiUInt8> bytes, xiiStringView sSource, xiiDynamicArray<SourceFile> sourceFiles = {});
   static xiiSharedPtr<xiiMuJoCoCompiledModel> Adopt(ModelPtr pModel, xiiStringView sSource);
 
-  const mjModel* GetModel() const { return m_pModel.get(); }
+  const mjModel*                GetModel() const { return m_pModel.get(); }
+  xiiArrayPtr<const SourceFile> GetSourceFiles() const { return m_SourceFiles; }
 
 private:
-  ModelPtr m_pModel;
+  ModelPtr                    m_pModel;
+  xiiDynamicArray<SourceFile> m_SourceFiles;
 };
