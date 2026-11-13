@@ -6,4 +6,6 @@ XII_STATICLINK_LIBRARY(EditorPluginJolt)
 {
   if (bReturn)
     return;
+
+  XII_STATICLINK_REFERENCE(EditorPluginJolt_CollisionMeshAsset_Implementation_JoltCollisionMeshAsset);
 }

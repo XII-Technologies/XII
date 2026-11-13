@@ -132,8 +132,6 @@ xiiResult xiiJoltCollisionMeshResource::Cook(xiiJoltCollisionGeometryType::Enum 
     xiiLog::Error("Jolt collision cooking requires initialized Jolt, valid geometry, and supported surface slots.");
     return XII_FAILURE;
   }
-  JPH::VertexList nativeVertices;
-  nativeVertices.reserve(vertices.GetCount());
   for (const auto& vertex : vertices)
   {
     if (!vertex.IsValid())
@@ -141,7 +139,6 @@ xiiResult xiiJoltCollisionMeshResource::Cook(xiiJoltCollisionGeometryType::Enum 
       xiiLog::Error("Jolt collision geometry contains a non-finite vertex.");
       return XII_FAILURE;
     }
-    nativeVertices.emplace_back(vertex.x, vertex.y, vertex.z);
   }
   JPH::Shape::ShapeResult result;
   if (type == xiiJoltCollisionGeometryType::ConvexHull)
@@ -162,7 +159,14 @@ xiiResult xiiJoltCollisionMeshResource::Cook(xiiJoltCollisionGeometryType::Enum 
   {
     if (indices.IsEmpty() || indices.GetCount() % 3 != 0 || indices.GetCount() > 6000000 ||
         (!triangleSurfaces.IsEmpty() && triangleSurfaces.GetCount() != indices.GetCount() / 3))
+    {
+      xiiLog::Error("Jolt triangle cooking requires triangle-list indices and one optional surface slot per triangle.");
       return XII_FAILURE;
+    }
+    JPH::VertexList nativeVertices;
+    nativeVertices.reserve(vertices.GetCount());
+    for (const auto& vertex : vertices)
+      nativeVertices.emplace_back(vertex.x, vertex.y, vertex.z);
     JPH::IndexedTriangleList triangles;
     triangles.reserve(indices.GetCount() / 3);
     for (xiiUInt32 i = 0; i < indices.GetCount(); i += 3)
@@ -296,7 +300,12 @@ xiiResourceLoadDescription xiiJoltCollisionMeshResource::UpdateContent(xiiStream
     valid = header.Read(*pStream).Succeeded() && descriptor.Load(*pStream).Succeeded();
   }
   if (valid)
-    return CreateResource(std::move(descriptor));
+  {
+    auto description = CreateResource(std::move(descriptor));
+    if (description.m_State != xiiResourceState::Loaded)
+      UnloadData(Unload::AllQualityLevels);
+    return description;
+  }
   xiiLog::Error("Jolt collision resource '{}' is missing, invalid, or requires recooking for this Jolt build.", GetResourceID());
   UnloadData(Unload::AllQualityLevels);
   xiiResourceLoadDescription result;

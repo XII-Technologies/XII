@@ -2,6 +2,7 @@
 
 #include <JoltPlugin/JoltPluginPCH.h>
 
+#include <Core/ResourceManager/ResourceManager.h>
 #include <Core/World/World.h>
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Strings/StringBuilder.h>
@@ -89,6 +90,8 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(Jolt, JoltPlugin)
     }
 
     xiiJoltCollisionMeshResource::CleanupDynamicPluginReferences();
+    // Release cached native shapes while Jolt's allocator, material, and registered types are still available.
+    xiiResourceManager::FreeAllUnusedResources();
     JPH::UnregisterTypes();
     delete JPH::Factory::sInstance;
     JPH::Factory::sInstance = nullptr;

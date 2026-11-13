@@ -158,8 +158,12 @@ namespace
         if (xiiMath::IsFinite(pCylinder->GetRadius()) && xiiMath::IsFinite(pCylinder->GetHeight()) && pCylinder->GetRadius() > 0 && pCylinder->GetHeight() > 0)
           result = JPH::CylinderShapeSettings(pCylinder->GetHeight() * 0.5f, pCylinder->GetRadius(), xiiMath::Min(JPH::cDefaultConvexRadius, 0.25f * xiiMath::Min(pCylinder->GetRadius(), pCylinder->GetHeight()))).Create();
       }
-      if (!result.IsEmpty() && !result.HasError())
+      if (!result.IsEmpty())
+      {
+        if (result.HasError())
+          return result;
         return JPH::RotatedTranslatedShapeSettings(JPH::Vec3::sZero(), JPH::Quat::sRotation(JPH::Vec3::sAxisX(), JPH::JPH_PI * 0.5f), result.Get()).Create();
+      }
     }
     JPH::Shape::ShapeResult error;
     error.SetError("Collision dimensions must be finite and positive.");
