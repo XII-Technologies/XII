@@ -9,6 +9,8 @@
 #include <Foundation/Profiling/Profiling.h>
 #include <Foundation/Strings/PathUtils.h>
 #include <Foundation/Strings/StringBuilder.h>
+#include <MujocoPlugin/Components/MuJoCoBodyComponent.h>
+#include <MujocoPlugin/Resources/Implementation/MuJoCoCompiledModel.h>
 #include <MujocoPlugin/System/MuJoCoPhysicsWorldModule.h>
 
 #include <mujoco/mujoco.h>
@@ -53,8 +55,8 @@ namespace
 struct xiiMuJoCoPhysicsWorldModule::NativeSimulation
 {
   // Members are destroyed in reverse order so mjData is released first.
-  std::unique_ptr<mjModel, decltype(&mj_deleteModel)> m_pModel{nullptr, mj_deleteModel};
-  std::unique_ptr<mjData, decltype(&mj_deleteData)>   m_pData{nullptr, mj_deleteData};
+  xiiSharedPtr<xiiMuJoCoCompiledModel>              m_pModel;
+  std::unique_ptr<mjData, decltype(&mj_deleteData)> m_pData{nullptr, mj_deleteData};
 };
 
 xiiMuJoCoPhysicsWorldModule::xiiMuJoCoPhysicsWorldModule(xiiWorld* pWorld) :
@@ -66,6 +68,12 @@ xiiMuJoCoPhysicsWorldModule::~xiiMuJoCoPhysicsWorldModule() = default;
 
 xiiResult xiiMuJoCoPhysicsWorldModule::LoadModel(xiiStringView sPath)
 {
+  if (!m_hModelOwner.IsInvalidated())
+  {
+    xiiLog::Error("A MuJoCo model component already controls world '{}'.", GetWorld()->GetName());
+    return XII_FAILURE;
+  }
+
   if (sPath.IsEmpty())
   {
     xiiLog::Error("A MuJoCo model path is required.");
@@ -97,20 +105,15 @@ xiiResult xiiMuJoCoPhysicsWorldModule::LoadModel(xiiStringView sPath)
     return XII_FAILURE;
   }
 
-  xiiUniquePtr<NativeSimulation> pSimulation = XII_NEW(GetAllocator(), NativeSimulation);
+  xiiMuJoCoCompiledModel::ModelPtr pModel(nullptr, mj_deleteModel);
   if (sNativePath.HasExtension("mjb"))
   {
-    pSimulation->m_pModel.reset(mj_loadModel(sNativePath.GetData(), nullptr));
-    if (!pSimulation->m_pModel)
-    {
-      xiiLog::Error("MuJoCo could not load binary model '{}'.", sNativePath);
-      return XII_FAILURE;
-    }
+    pModel.reset(mj_loadModel(sNativePath.GetData(), nullptr));
   }
   else if (sNativePath.HasExtension("xml") || sNativePath.HasExtension("mjcf"))
   {
-    pSimulation->m_pModel.reset(CompileMjcf(sNativePath.GetData()));
-    if (!pSimulation->m_pModel)
+    pModel.reset(CompileMjcf(sNativePath.GetData()));
+    if (!pModel)
       return XII_FAILURE;
   }
   else
@@ -119,38 +122,29 @@ xiiResult xiiMuJoCoPhysicsWorldModule::LoadModel(xiiStringView sPath)
     return XII_FAILURE;
   }
 
-  return InstallModel(std::move(pSimulation), sNativePath);
+  return InstallModel(xiiMuJoCoCompiledModel::Adopt(std::move(pModel), sNativePath), sNativePath);
 }
 
 xiiResult xiiMuJoCoPhysicsWorldModule::LoadModelFromBuffer(xiiArrayPtr<const xiiUInt8> modelBytes)
 {
-  if (modelBytes.IsEmpty())
+  if (!m_hModelOwner.IsInvalidated())
   {
-    xiiLog::Error("The MuJoCo binary model buffer is empty.");
+    xiiLog::Error("A MuJoCo model component already controls world '{}'.", GetWorld()->GetName());
     return XII_FAILURE;
   }
 
-  xiiUniquePtr<NativeSimulation> pSimulation = XII_NEW(GetAllocator(), NativeSimulation);
-  pSimulation->m_pModel.reset(mj_loadModelBuffer(modelBytes.GetPtr(), modelBytes.GetCount()));
-  if (!pSimulation->m_pModel)
-  {
-    xiiLog::Error("MuJoCo could not load the binary model buffer.");
-    return XII_FAILURE;
-  }
-
-  return InstallModel(std::move(pSimulation), "MJB buffer");
+  return InstallModel(xiiMuJoCoCompiledModel::LoadBinary(modelBytes, "MJB buffer"), "MJB buffer");
 }
 
-xiiResult xiiMuJoCoPhysicsWorldModule::InstallModel(xiiUniquePtr<NativeSimulation> pSimulation, xiiStringView sSource)
+xiiResult xiiMuJoCoPhysicsWorldModule::InstallModel(xiiSharedPtr<xiiMuJoCoCompiledModel> pModel, xiiStringView sSource)
 {
-  const double fStepSeconds = pSimulation->m_pModel->opt.timestep;
-  if (!xiiMath::IsFinite(fStepSeconds) || fStepSeconds <= 0.0)
-  {
-    xiiLog::Error("MuJoCo model '{}' has an invalid timestep.", sSource);
+  if (!pModel)
     return XII_FAILURE;
-  }
 
-  pSimulation->m_pData.reset(mj_makeData(pSimulation->m_pModel.get()));
+  xiiUniquePtr<NativeSimulation> pSimulation = XII_NEW(GetAllocator(), NativeSimulation);
+  pSimulation->m_pModel                      = std::move(pModel);
+  const mjModel* pNativeModel                = pSimulation->m_pModel->GetModel();
+  pSimulation->m_pData.reset(mj_makeData(pNativeModel));
   if (!pSimulation->m_pData)
   {
     xiiLog::Error("MuJoCo could not create simulation data for '{}'.", sSource);
@@ -158,9 +152,12 @@ xiiResult xiiMuJoCoPhysicsWorldModule::InstallModel(xiiUniquePtr<NativeSimulatio
   }
 
   // mj_makeData resets to the model's initial state. Evaluate it before publishing the pair.
-  mj_forward(pSimulation->m_pModel.get(), pSimulation->m_pData.get());
+  mj_forward(pNativeModel, pSimulation->m_pData.get());
   m_pSimulation     = std::move(pSimulation);
   m_AccumulatedTime = xiiTime::MakeZero();
+  for (auto& binding : m_BodyBindings)
+    ResolveBody(binding);
+  m_bSyncBodies = true;
   return XII_SUCCESS;
 }
 
@@ -169,10 +166,11 @@ void xiiMuJoCoPhysicsWorldModule::ResetSimulation()
   m_AccumulatedTime = xiiTime::MakeZero();
   if (m_pSimulation)
   {
-    const mjModel* pModel = m_pSimulation->m_pModel.get();
+    const mjModel* pModel = m_pSimulation->m_pModel->GetModel();
     mjData*        pData  = m_pSimulation->m_pData.get();
     mj_resetData(pModel, pData);
     mj_forward(pModel, pData);
+    m_bSyncBodies = true;
   }
 }
 
@@ -183,6 +181,169 @@ xiiResult xiiMuJoCoPhysicsWorldModule::SetMaxCatchUpSteps(xiiUInt32 uiMaxCatchUp
 
   m_uiMaxCatchUpSteps = uiMaxCatchUpSteps;
   return XII_SUCCESS;
+}
+
+void xiiMuJoCoPhysicsWorldModule::RequestModel(xiiComponentHandle hOwner, const xiiMuJoCoModelResourceHandle& hModel)
+{
+  if (m_hModelOwner != hOwner && (!m_hModelOwner.IsInvalidated() || m_pSimulation))
+  {
+    xiiLog::Error("World '{}' already has a MuJoCo model. Only one model may control a world.", GetWorld()->GetName());
+    return;
+  }
+
+  m_hModelOwner     = hOwner;
+  m_hRequestedModel = hModel;
+  const xiiResourceLock<xiiMuJoCoModelResource> resource(m_hRequestedModel, xiiResourceAcquireMode::PointerOnly);
+  m_pRequestedResource = resource.GetPointer();
+  m_bAttemptedRequest  = false;
+
+  if (resource->GetLoadingState() == xiiResourceState::Unloaded)
+    xiiResourceManager::PreloadResource(m_hRequestedModel);
+}
+
+void xiiMuJoCoPhysicsWorldModule::ReleaseModel(xiiComponentHandle hOwner)
+{
+  if (m_hModelOwner != hOwner)
+    return;
+
+  m_pRequestedResource = nullptr;
+  m_hRequestedModel.Invalidate();
+  m_hModelOwner.Invalidate();
+  m_bAttemptedRequest = false;
+  ClearSimulation();
+}
+
+void xiiMuJoCoPhysicsWorldModule::UpdateRequestedModel()
+{
+  if (m_pRequestedResource == nullptr)
+    return;
+
+  const xiiUInt32 uiRevision = m_pRequestedResource->m_uiRevision;
+  if (m_bAttemptedRequest && uiRevision == m_uiAttemptedRevision)
+    return;
+
+  const auto state = m_pRequestedResource->GetLoadingState();
+  if (state == xiiResourceState::Unloaded)
+    return;
+
+  auto pModel = m_pRequestedResource->GetModel(m_uiAttemptedRevision);
+  // Reload may have removed the content since the state read. A successful or failed load publishes a new revision.
+  if (!pModel && m_pRequestedResource->GetLoadingState() != xiiResourceState::LoadedResourceMissing)
+    return;
+
+  m_bAttemptedRequest = true;
+  if (pModel)
+    InstallModel(std::move(pModel), m_hRequestedModel.GetResourceID()).IgnoreResult();
+}
+
+void xiiMuJoCoPhysicsWorldModule::ClearSimulation()
+{
+  m_pSimulation.Clear();
+  m_AccumulatedTime = xiiTime::MakeZero();
+  m_bSyncBodies     = false;
+  for (auto& binding : m_BodyBindings)
+    binding.m_iBodyId = -1;
+}
+
+void xiiMuJoCoPhysicsWorldModule::RegisterBody(xiiComponentHandle hComponent, const xiiString& sBodyName)
+{
+  UnregisterBody(hComponent);
+  if (sBodyName.IsEmpty())
+    return;
+
+  xiiMuJoCoBodyComponent* pComponent = nullptr;
+  if (!GetWorld()->TryGetComponent(hComponent, pComponent))
+    return;
+
+  const auto hObject = pComponent->GetOwner()->GetHandle();
+  for (const auto& binding : m_BodyBindings)
+  {
+    if (binding.m_hObject == hObject)
+    {
+      xiiLog::Warning("Object '{}' already has a MuJoCo body binding.", pComponent->GetOwner()->GetName());
+      return;
+    }
+  }
+
+  auto& binding        = m_BodyBindings.ExpandAndGetRef();
+  binding.m_hComponent = hComponent;
+  binding.m_hObject    = hObject;
+  binding.m_sBodyName  = sBodyName;
+  ResolveBody(binding);
+  m_bSyncBodies = true;
+}
+
+void xiiMuJoCoPhysicsWorldModule::UnregisterBody(xiiComponentHandle hComponent)
+{
+  for (xiiUInt32 i = 0; i < m_BodyBindings.GetCount(); ++i)
+  {
+    if (m_BodyBindings[i].m_hComponent == hComponent)
+    {
+      m_BodyBindings.RemoveAtAndSwap(i);
+      return;
+    }
+  }
+}
+
+void xiiMuJoCoPhysicsWorldModule::ResolveBody(BodyBinding& ref_binding) const
+{
+  ref_binding.m_iBodyId = -1;
+  if (m_pSimulation)
+  {
+    ref_binding.m_iBodyId = mj_name2id(m_pSimulation->m_pModel->GetModel(), mjOBJ_BODY, ref_binding.m_sBodyName.GetData());
+    if (ref_binding.m_iBodyId < 0)
+      xiiLog::Warning("MuJoCo body '{}' was not found in the model for world '{}'.", ref_binding.m_sBodyName, GetWorld()->GetName());
+  }
+}
+
+void xiiMuJoCoPhysicsWorldModule::SynchronizeBodies()
+{
+  if (!m_bSyncBodies || !m_pSimulation)
+    return;
+
+  m_bSyncBodies = false;
+  for (auto& binding : m_BodyBindings)
+  {
+    binding.m_uiDepth = 0;
+    if (binding.m_iBodyId < 0)
+      continue;
+
+    const xiiGameObject* pObject = nullptr;
+    if (GetWorld()->TryGetObject(binding.m_hObject, pObject))
+    {
+      for (auto* pParent = pObject->GetParent(); pParent != nullptr; pParent = pParent->GetParent())
+        ++binding.m_uiDepth;
+    }
+  }
+
+  // SetGlobalTransform computes local space using the current parent pose.
+  m_BodyBindings.Sort([](const BodyBinding& a, const BodyBinding& b) { return a.m_uiDepth < b.m_uiDepth; });
+  const auto& data = *m_pSimulation->m_pData;
+  for (const auto& binding : m_BodyBindings)
+  {
+    xiiGameObject* pObject = nullptr;
+    if (binding.m_iBodyId < 0 || !GetWorld()->TryGetObject(binding.m_hObject, pObject))
+      continue;
+
+    const auto    uiBody    = static_cast<size_t>(binding.m_iBodyId);
+    const mjtNum* pPosition = data.xpos + 3 * uiBody;
+    const mjtNum* pRotation = data.xquat + 4 * uiBody;
+    // Both use right-handed Z-up world coordinates. MuJoCo stores quaternion W first.
+    const xiiVec3 vPosition(static_cast<float>(pPosition[0]), static_cast<float>(pPosition[1]), static_cast<float>(pPosition[2]));
+    const xiiQuat qRotation(static_cast<float>(pRotation[1]), static_cast<float>(pRotation[2]), static_cast<float>(pRotation[3]), static_cast<float>(pRotation[0]));
+    if (!vPosition.IsValid() || !qRotation.IsValid())
+      continue;
+
+    pObject->UpdateGlobalTransform();
+    auto          transform = pObject->GetGlobalTransform();
+    const xiiQuat qOpposite(-qRotation.x, -qRotation.y, -qRotation.z, -qRotation.w);
+    if (transform.m_vPosition == vPosition && (transform.m_qRotation == qRotation || transform.m_qRotation == qOpposite))
+      continue;
+
+    transform.m_vPosition = vPosition;
+    transform.m_qRotation = qRotation;
+    pObject->SetGlobalTransform(transform);
+  }
 }
 
 void xiiMuJoCoPhysicsWorldModule::Initialize()
@@ -209,21 +370,27 @@ void xiiMuJoCoPhysicsWorldModule::OnSimulationStarted()
 
 void xiiMuJoCoPhysicsWorldModule::WorldClear()
 {
-  m_pSimulation.Clear();
-  m_AccumulatedTime = xiiTime::MakeZero();
+  m_BodyBindings.Clear();
+  m_pRequestedResource = nullptr;
+  m_hRequestedModel.Invalidate();
+  m_hModelOwner.Invalidate();
+  m_bAttemptedRequest = false;
+  ClearSimulation();
 }
 
 void xiiMuJoCoPhysicsWorldModule::Simulate(const UpdateContext&)
 {
+  UpdateRequestedModel();
   if (!m_pSimulation)
     return;
 
+  XII_SCOPE_EXIT(SynchronizeBodies());
   const xiiClock& clock         = GetWorld()->GetClock();
   const double    fDeltaSeconds = clock.GetTimeDiff().GetSeconds();
   if (clock.GetPaused() || !xiiMath::IsFinite(fDeltaSeconds) || fDeltaSeconds <= 0.0)
     return;
 
-  const mjModel* pModel          = m_pSimulation->m_pModel.get();
+  const mjModel* pModel          = m_pSimulation->m_pModel->GetModel();
   const double   fStepSeconds    = pModel->opt.timestep;
   const double   fElapsedSeconds = m_AccumulatedTime.GetSeconds() + fDeltaSeconds;
   m_AccumulatedTime              = xiiTime::MakeFromSeconds(fElapsedSeconds);
@@ -241,6 +408,13 @@ void xiiMuJoCoPhysicsWorldModule::Simulate(const UpdateContext&)
   for (xiiUInt32 uiStep = 0; uiStep < uiSteps; ++uiStep)
   {
     mj_step(pModel, pData);
+  }
+
+  if (!m_BodyBindings.IsEmpty())
+  {
+    // mj_step evaluates poses before integration. Refresh kinematics for the final integrated state.
+    mj_kinematics(pModel, pData);
+    m_bSyncBodies = true;
   }
 }
 
