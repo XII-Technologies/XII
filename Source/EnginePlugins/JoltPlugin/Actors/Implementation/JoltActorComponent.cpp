@@ -2,6 +2,8 @@
 
 #include <JoltPlugin/JoltPluginPCH.h>
 
+#include <Core/Physics/SurfaceResource.h>
+#include <Core/ResourceManager/ResourceManager.h>
 #include <Core/World/World.h>
 #include <Core/WorldSerializer/WorldReader.h>
 #include <Core/WorldSerializer/WorldWriter.h>
@@ -9,12 +11,13 @@
 #include <JoltPlugin/System/JoltPhysicsWorldModule.h>
 
 // clang-format off
-XII_BEGIN_ABSTRACT_COMPONENT_TYPE(xiiJoltActorComponent, 2)
+XII_BEGIN_ABSTRACT_COMPONENT_TYPE(xiiJoltActorComponent, 3)
 {
   XII_BEGIN_PROPERTIES
   {
     XII_ACCESSOR_PROPERTY("CollisionLayer", GetCollisionLayer, SetCollisionLayer)->AddAttributes(new xiiDefaultValueAttribute(0)),
     XII_ACCESSOR_PROPERTY("ReportContacts", GetReportContacts, SetReportContacts)->AddAttributes(new xiiDefaultValueAttribute(false)),
+    XII_RESOURCE_ACCESSOR_PROPERTY("Surface", GetSurface, SetSurface)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Surface")),
   }
   XII_END_PROPERTIES;
 }
@@ -47,6 +50,18 @@ void xiiJoltActorComponent::SerializeComponent(xiiWorldWriter& inout_stream) con
 {
   SUPER::SerializeComponent(inout_stream);
   inout_stream.GetStream() << m_uiCollisionLayer << m_bReportContacts;
+  inout_stream.GetStream() << m_hSurface;
+}
+
+void xiiJoltActorComponent::SetSurface(const xiiSurfaceResourceHandle& hSurface)
+{
+  if (m_hSurface == hSurface)
+    return;
+  m_hSurface = hSurface;
+  if (m_hSurface.IsValid())
+    xiiResourceManager::PreloadResource(m_hSurface);
+  if (IsActiveAndSimulating())
+    GetWorld()->GetOrCreateModule<xiiJoltPhysicsWorldModule>()->SetBodySurface(GetHandle(), m_hSurface);
 }
 
 void xiiJoltActorComponent::SetReportContacts(bool bReportContacts)
@@ -67,6 +82,8 @@ void xiiJoltActorComponent::DeserializeComponent(xiiWorldReader& inout_stream)
   inout_stream.GetStream() >> m_uiCollisionLayer;
   if (inout_stream.GetComponentTypeVersion(xiiJoltActorComponent::GetStaticRTTI()) >= 2)
     inout_stream.GetStream() >> m_bReportContacts;
+  if (inout_stream.GetComponentTypeVersion(xiiJoltActorComponent::GetStaticRTTI()) >= 3)
+    inout_stream.GetStream() >> m_hSurface;
 }
 
 void xiiJoltActorComponent::OnSimulationStarted()

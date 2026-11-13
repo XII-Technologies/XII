@@ -51,11 +51,13 @@ public:
   xiiVec3   GetGravity() const override;
 
   void                 AddStaticCollisionBox(xiiGameObject* pOwner, xiiVec3 vBoxSize) override;
+  void                 AddFixedJointComponent(xiiGameObject* pOwner, const FixedJointConfig& cfg) override;
   xiiBoundingBoxSphere GetWorldSpaceBounds(xiiGameObject* pOwner, xiiUInt32 uiCollisionLayer, xiiBitflags<xiiPhysicsShapeType> shapeTypes, bool bIncludeChildObjects) const override;
 
 private:
   friend class xiiJoltActorComponent;
   friend class xiiJoltDynamicActorComponent;
+  friend class xiiJoltJointComponent;
 
   void Initialize() override;
   void Deinitialize() override;
@@ -63,8 +65,14 @@ private:
   void WorldClear() override;
 
   void Simulate(const UpdateContext& context);
+  void QueueJointUpdate(xiiComponentHandle hJoint, bool bRecreate);
+  void RemoveJoint(xiiComponentHandle hJoint);
+  void UpdateJoints();
+  void CheckJointBreakage(float fStepSeconds);
+  void UpdateMaterials();
   void QueueBodyUpdate(xiiComponentHandle hActor);
   void SetBodyContactReporting(xiiComponentHandle hActor, bool bEnabled);
+  void SetBodySurface(xiiComponentHandle hActor, const xiiSurfaceResourceHandle& hSurface);
   void RemoveBody(xiiComponentHandle hActor);
   void RebuildBody(class xiiJoltActorComponent& actor);
   void SynchronizeDynamicBodies();

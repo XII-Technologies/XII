@@ -1,5 +1,6 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <JoltPlugin/Joints/JoltJointComponent.h>
 #include <JoltPlugin/JoltPluginPCH.h>
 
 #include <Core/World/World.h>
@@ -69,6 +70,11 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(Jolt, JoltPlugin)
       if (xiiWorld* pWorld = xiiWorld::GetWorld(uiIndex))
       {
         XII_LOCK(pWorld->GetWriteMarker());
+        pWorld->DeleteModule(xiiGetStaticRTTI<xiiJoltFixedJointComponent>());
+        pWorld->DeleteModule(xiiGetStaticRTTI<xiiJoltPointJointComponent>());
+        pWorld->DeleteModule(xiiGetStaticRTTI<xiiJoltHingeJointComponent>());
+        pWorld->DeleteModule(xiiGetStaticRTTI<xiiJoltSliderJointComponent>());
+        pWorld->DeleteModule(xiiGetStaticRTTI<xiiJoltDistanceJointComponent>());
         pWorld->DeleteModule(xiiGetStaticRTTI<xiiJoltDynamicActorComponent>());
         pWorld->DeleteModule(xiiGetStaticRTTI<xiiJoltStaticActorComponent>());
         pWorld->DeleteModule(xiiGetStaticRTTI<xiiJoltBoxShapeComponent>());

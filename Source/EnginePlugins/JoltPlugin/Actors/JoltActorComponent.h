@@ -4,6 +4,7 @@
 
 #include <JoltPlugin/JoltPluginDLL.h>
 
+#include <Core/Physics/SurfaceResourceDescriptor.h>
 #include <Core/World/ComponentManager.h>
 
 /// Common lifecycle and collision-layer assignment for static and dynamic Jolt actors.
@@ -17,6 +18,10 @@ public:
 
   bool GetReportContacts() const { return m_bReportContacts; }
   void SetReportContacts(bool bReportContacts);
+
+  /// The single primitive uses this surface. Jolt's single Coulomb coefficient maps to dynamic friction.
+  const xiiSurfaceResourceHandle& GetSurface() const { return m_hSurface; }
+  void                            SetSurface(const xiiSurfaceResourceHandle& hSurface);
 
   void SerializeComponent(xiiWorldWriter& inout_stream) const override;
   void DeserializeComponent(xiiWorldReader& inout_stream) override;
@@ -33,8 +38,9 @@ private:
   static void QueueAncestorBodyUpdate(xiiGameObject* pObject);
   void        QueueSiblingBodyUpdates();
 
-  xiiUInt8 m_uiCollisionLayer = 0;
-  bool     m_bReportContacts  = false;
+  xiiUInt8                 m_uiCollisionLayer = 0;
+  bool                     m_bReportContacts  = false;
+  xiiSurfaceResourceHandle m_hSurface;
 };
 
 using xiiJoltStaticActorComponentManager = xiiComponentManager<class xiiJoltStaticActorComponent, xiiBlockStorageType::Compact>;

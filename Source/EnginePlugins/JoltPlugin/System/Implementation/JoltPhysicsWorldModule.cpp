@@ -2,6 +2,8 @@
 
 #include <JoltPlugin/JoltPluginPCH.h>
 
+#include <Core/Physics/SurfaceResource.h>
+#include <Core/ResourceManager/ResourceManager.h>
 #include <Core/World/World.h>
 #include <Foundation/Containers/DynamicArray.h>
 #include <Foundation/Containers/HashSet.h>
@@ -12,6 +14,7 @@
 #include <Foundation/Threading/Mutex.h>
 #include <Foundation/Utilities/ConversionUtils.h>
 #include <JoltPlugin/Actors/JoltDynamicActorComponent.h>
+#include <JoltPlugin/Joints/JoltJointComponent.h>
 #include <JoltPlugin/Shapes/JoltPrimitiveShapeComponent.h>
 #include <JoltPlugin/System/JoltPhysicsWorldModule.h>
 
@@ -33,6 +36,11 @@
 #include <Jolt/Physics/Collision/Shape/RotatedTranslatedShape.h>
 #include <Jolt/Physics/Collision/Shape/SphereShape.h>
 #include <Jolt/Physics/Collision/ShapeCast.h>
+#include <Jolt/Physics/Constraints/DistanceConstraint.h>
+#include <Jolt/Physics/Constraints/FixedConstraint.h>
+#include <Jolt/Physics/Constraints/HingeConstraint.h>
+#include <Jolt/Physics/Constraints/PointConstraint.h>
+#include <Jolt/Physics/Constraints/SliderConstraint.h>
 #include <Jolt/Physics/PhysicsSystem.h>
 
 XII_IMPLEMENT_WORLD_MODULE(xiiJoltPhysicsWorldModule);
@@ -218,10 +226,12 @@ struct xiiJoltPhysicsWorldModule::NativeWorld : JPH::ContactListener
     m_PhysicsSystem.Init(MaxBodies, 0, MaxBodyPairs, MaxContactConstraints, m_CollisionFilters, m_CollisionFilters, m_CollisionFilters);
     m_PhysicsSystem.SetGravity(JPH::Vec3(0.0f, 0.0f, -9.81f));
     m_PhysicsSystem.SetContactListener(this);
+    xiiResourceManager::GetResourceEvents().AddEventHandler(xiiMakeDelegate(&NativeWorld::OnResourceEvent, this));
   }
 
   ~NativeWorld()
   {
+    xiiResourceManager::GetResourceEvents().RemoveEventHandler(xiiMakeDelegate(&NativeWorld::OnResourceEvent, this));
     m_JobSystem.DrainTasks();
     m_PhysicsSystem.SetContactListener(nullptr);
     ClearBodies();
@@ -229,12 +239,13 @@ struct xiiJoltPhysicsWorldModule::NativeWorld : JPH::ContactListener
 
   struct BodyOwner
   {
-    xiiGameObjectHandle m_hObject;
-    xiiComponentHandle  m_hComponent;
-    xiiGameObjectHandle m_hShapeObject;
-    xiiComponentHandle  m_hShapeComponent;
-    xiiUInt32           m_uiFilterId;
-    bool                m_bDynamic;
+    xiiGameObjectHandle      m_hObject;
+    xiiComponentHandle       m_hComponent;
+    xiiGameObjectHandle      m_hShapeObject;
+    xiiComponentHandle       m_hShapeComponent;
+    xiiUInt32                m_uiFilterId;
+    bool                     m_bDynamic;
+    xiiSurfaceResourceHandle m_hSurface;
   };
 
   struct DynamicPose
@@ -274,6 +285,8 @@ struct xiiJoltPhysicsWorldModule::NativeWorld : JPH::ContactListener
     m_BodiesByComponent.Insert(hComponent, bodyId);
     m_OwnersByBody.Insert(bodyId.GetIndexAndSequenceNumber(), BodyOwner{pComponent->GetOwner()->GetHandle(), hComponent, shape.GetOwner()->GetHandle(), shape.GetHandle(), uiFilterId, ref_settings.mMotionType == JPH::EMotionType::Dynamic});
     bodies.AddBody(bodyId, activation);
+    m_bBodiesChanged = true;
+    m_MaterialsDirty = 1;
     return XII_SUCCESS;
   }
 
@@ -285,6 +298,10 @@ struct xiiJoltPhysicsWorldModule::NativeWorld : JPH::ContactListener
   }
 
   const BodyOwner* FindOwner(JPH::BodyID bodyId) const
+  {
+    return m_OwnersByBody.GetValue(bodyId.GetIndexAndSequenceNumber());
+  }
+  BodyOwner* FindOwnerMutable(JPH::BodyID bodyId)
   {
     return m_OwnersByBody.GetValue(bodyId.GetIndexAndSequenceNumber());
   }
@@ -397,6 +414,17 @@ struct xiiJoltPhysicsWorldModule::NativeWorld : JPH::ContactListener
       return false;
 
     const auto uiId = bodyId.GetIndexAndSequenceNumber();
+    for (auto it = m_Joints.GetIterator(); it.IsValid(); ++it)
+    {
+      auto& joint = it.Value();
+      if (joint.m_Bodies[0] == bodyId || joint.m_Bodies[1] == bodyId)
+      {
+        DetachJoint(joint);
+        joint.m_bRecreate = true;
+        m_WaitingJoints.Insert(it.Key());
+      }
+    }
+    m_bBodiesChanged = true;
     // A body can be removed while paused, before Jolt reports contact removals.
     if (m_uiTrackedContacts != 0)
     {
@@ -423,6 +451,13 @@ struct xiiJoltPhysicsWorldModule::NativeWorld : JPH::ContactListener
 
   void ClearBodies()
   {
+    for (auto it = m_Joints.GetIterator(); it.IsValid(); ++it)
+      DetachJoint(it.Value());
+    m_Joints.Clear();
+    m_PendingJoints.Clear();
+    m_WaitingJoints.Clear();
+    m_BreakableJoints.Clear();
+    m_BrokenJoints.Clear();
     m_PendingBodies.Clear();
     m_PosesToSync.Clear();
     m_Contacts.Clear();
@@ -450,6 +485,39 @@ struct xiiJoltPhysicsWorldModule::NativeWorld : JPH::ContactListener
   xiiDynamicArray<Contact>                 m_ContactEvents;
   xiiMutex                                 m_ImpulseMutex;
   xiiDynamicArray<QueuedImpulse>           m_QueuedImpulses;
+
+  struct Joint
+  {
+    JPH::Ref<JPH::TwoBodyConstraint> m_pConstraint;
+    JPH::BodyID                      m_Bodies[2];
+    float                            m_fBreakForce  = 0;
+    float                            m_fBreakTorque = 0;
+    bool                             m_bRecreate    = true;
+  };
+  void DetachJoint(Joint& joint)
+  {
+    if (joint.m_pConstraint != nullptr)
+    {
+      m_PhysicsSystem.RemoveConstraint(joint.m_pConstraint);
+      for (auto id : joint.m_Bodies)
+        if (!id.IsInvalid() && m_PhysicsSystem.GetBodyInterface().GetMotionType(id) == JPH::EMotionType::Dynamic)
+          m_PhysicsSystem.GetBodyInterface().ActivateBody(id);
+      joint.m_pConstraint = nullptr;
+    }
+  }
+  void OnResourceEvent(const xiiResourceEvent& event)
+  {
+    if ((event.m_Type == xiiResourceEvent::Type::ResourceContentUpdated || event.m_Type == xiiResourceEvent::Type::ResourceContentUnloading) &&
+        event.m_pResource->GetDynamicRTTI()->IsDerivedFrom<xiiSurfaceResource>())
+      m_MaterialsDirty = 1;
+  }
+  xiiHashTable<xiiComponentHandle, Joint> m_Joints;
+  xiiHashSet<xiiComponentHandle>          m_PendingJoints;
+  xiiHashSet<xiiComponentHandle>          m_WaitingJoints;
+  xiiDynamicArray<xiiComponentHandle>     m_BreakableJoints;
+  xiiDynamicArray<xiiComponentHandle>     m_BrokenJoints;
+  xiiAtomicInteger32                      m_MaterialsDirty{1};
+  bool                                    m_bBodiesChanged = false;
 
   const auto& GetBodyOwners() const { return m_OwnersByBody; }
 
@@ -536,7 +604,10 @@ void xiiJoltPhysicsWorldModule::WorldClear()
 void xiiJoltPhysicsWorldModule::QueueBodyUpdate(xiiComponentHandle hActor)
 {
   if (m_pNativeWorld)
+  {
     m_pNativeWorld->m_PendingBodies.Insert(hActor);
+    m_pNativeWorld->m_bBodiesChanged = true;
+  }
 }
 
 void xiiJoltPhysicsWorldModule::SetBodyContactReporting(xiiComponentHandle hActor, bool bEnabled)
@@ -684,6 +755,8 @@ void xiiJoltPhysicsWorldModule::RebuildBody(xiiJoltActorComponent& actor)
   settings.mUserData = actor.GetReportContacts() ? 1 : 0;
   if (nativeWorld.CreateBody(*GetWorld(), actor.GetHandle(), *pShape, actor.GetCollisionLayer(), settings, activation).Failed())
     xiiLog::Warning("Jolt could not allocate a body for '{}'.", object.GetName());
+  else
+    nativeWorld.FindOwnerMutable(nativeWorld.FindBody(actor.GetHandle()))->m_hSurface = actor.GetSurface();
 }
 
 void xiiJoltPhysicsWorldModule::SynchronizeDynamicBodies()
@@ -745,6 +818,8 @@ void xiiJoltPhysicsWorldModule::Simulate(const UpdateContext&)
       RebuildBody(*pActor);
   }
   pendingBodies.Clear();
+  UpdateJoints();
+  UpdateMaterials();
   ApplyQueuedImpulses();
 
   const xiiClock& clock         = GetWorld()->GetClock();
@@ -776,6 +851,7 @@ void xiiJoltPhysicsWorldModule::Simulate(const UpdateContext&)
   for (xiiUInt32 uiStep = 0; uiStep < uiSteps; ++uiStep)
   {
     errors |= nativeWorld.m_PhysicsSystem.Update(m_FixedStep.AsFloatInSeconds(), 1, &nativeWorld.m_TempAllocator, &nativeWorld.m_JobSystem);
+    CheckJointBreakage(m_FixedStep.AsFloatInSeconds());
   }
 
   SynchronizeDynamicBodies();
@@ -818,6 +894,17 @@ void xiiJoltPhysicsWorldModule::ApplyQueuedImpulses()
 void xiiJoltPhysicsWorldModule::DispatchContacts(const UpdateContext&)
 {
   auto& native = *m_pNativeWorld;
+  for (auto hJoint : native.m_BrokenJoints)
+  {
+    xiiJoltJointComponent* pJoint = nullptr;
+    if (GetWorld()->TryGetComponent(hJoint, pJoint) && pJoint->IsActiveAndSimulating() && pJoint->IsBroken())
+    {
+      xiiMsgPhysicsJointBroke msg;
+      msg.m_hJointObject = pJoint->GetOwner()->GetHandle();
+      pJoint->GetOwner()->PostEventMessage(msg, pJoint, xiiTime::MakeZero(), xiiObjectMsgQueueType::PostTransform);
+    }
+  }
+  native.m_BrokenJoints.Clear();
   for (const auto& contact : native.m_ContactEvents)
   {
     if (auto* pCached = native.m_Contacts.GetValue(contact.m_uiKey))
@@ -950,6 +1037,8 @@ namespace
     ref_result.m_hActorObject     = owner.m_hObject;
     ref_result.m_hShapeObject     = owner.m_hShapeObject;
     ref_result.m_uiObjectFilterID = owner.m_uiFilterId;
+    if constexpr (requires { ref_result.m_hSurface; })
+      ref_result.m_hSurface = owner.m_hSurface;
   }
 
   xiiTransform GetAxialQueryPose(const xiiTransform& transform)
@@ -1374,5 +1463,360 @@ xiiBoundingBoxSphere xiiJoltPhysicsWorldModule::GetWorldSpaceBounds(xiiGameObjec
   addBounds(addBounds, *pOwner);
   return bounds;
 }
+
+
+/// Updates are queued until synchronous PreAsync, after actor creation and before native stepping.
+void xiiJoltPhysicsWorldModule::QueueJointUpdate(xiiComponentHandle hJoint, bool bRecreate)
+{
+  if (!m_pNativeWorld)
+    return;
+  auto& joint = m_pNativeWorld->m_Joints[hJoint];
+  joint.m_bRecreate |= bRecreate;
+  m_pNativeWorld->m_PendingJoints.Insert(hJoint);
+}
+
+void xiiJoltPhysicsWorldModule::RemoveJoint(xiiComponentHandle hJoint)
+{
+  auto& native = *m_pNativeWorld;
+  if (auto* pJoint = native.m_Joints.GetValue(hJoint))
+    native.DetachJoint(*pJoint);
+  native.m_Joints.Remove(hJoint);
+  native.m_PendingJoints.Remove(hJoint);
+  native.m_WaitingJoints.Remove(hJoint);
+  native.m_BreakableJoints.RemoveAndSwap(hJoint);
+}
+
+namespace
+{
+  bool ValidJointFrame(const xiiTransform& frame)
+  {
+    return frame.m_vPosition.IsValid() && frame.m_qRotation.IsValid() &&
+      frame.m_vScale.IsEqual(xiiVec3(1.0f), 0.0001f);
+  }
+  bool NonNegative(float value) { return xiiMath::IsFinite(value) && value >= 0.0f; }
+
+  bool ValidJointSettings(const xiiJoltJointComponent& joint)
+  {
+    if (!NonNegative(joint.GetBreakForce()))
+      return false;
+    if (const auto* p = xiiDynamicCast<const xiiJoltHingeJointComponent*>(&joint))
+      return (!p->GetLimitsEnabled() || (p->GetLowerLimit().GetRadian() >= -JPH::JPH_PI && p->GetLowerLimit().GetRadian() <= 0 && p->GetUpperLimit().GetRadian() >= 0 && p->GetUpperLimit().GetRadian() <= JPH::JPH_PI)) &&
+        NonNegative(p->GetMaxMotorTorque()) && NonNegative(p->GetMotorFrequency()) && NonNegative(p->GetMotorDamping()) &&
+        xiiMath::IsFinite(p->GetTargetVelocity()) && xiiMath::IsFinite(p->GetTargetAngle().GetRadian()) &&
+        p->GetMotorMode().GetValue() <= xiiJoltJointMotorMode::Position && NonNegative(p->GetBreakTorque());
+    if (const auto* p = xiiDynamicCast<const xiiJoltSliderJointComponent*>(&joint))
+      return (!p->GetLimitsEnabled() || (xiiMath::IsFinite(p->GetLowerLimit()) && p->GetLowerLimit() <= 0 && xiiMath::IsFinite(p->GetUpperLimit()) && p->GetUpperLimit() >= 0)) &&
+        NonNegative(p->GetMaxMotorForce()) && NonNegative(p->GetMotorFrequency()) && NonNegative(p->GetMotorDamping()) &&
+        xiiMath::IsFinite(p->GetTargetVelocity()) && xiiMath::IsFinite(p->GetTargetPosition()) &&
+        p->GetMotorMode().GetValue() <= xiiJoltJointMotorMode::Position && NonNegative(p->GetBreakTorque());
+    if (const auto* p = xiiDynamicCast<const xiiJoltDistanceJointComponent*>(&joint))
+      return NonNegative(p->GetMinDistance()) && NonNegative(p->GetMaxDistance()) && p->GetMinDistance() <= p->GetMaxDistance() &&
+        NonNegative(p->GetSpringFrequency()) && NonNegative(p->GetSpringDamping());
+    if (const auto* p = xiiDynamicCast<const xiiJoltFixedJointComponent*>(&joint))
+      return NonNegative(p->GetBreakTorque());
+    return true;
+  }
+} // namespace
+
+void xiiJoltPhysicsWorldModule::UpdateJoints()
+{
+  auto& native = *m_pNativeWorld;
+  if (native.m_bBodiesChanged)
+  {
+    for (auto hJoint : native.m_WaitingJoints)
+      native.m_PendingJoints.Insert(hJoint);
+    native.m_bBodiesChanged = false;
+  }
+  for (auto hJoint : native.m_PendingJoints)
+  {
+    xiiJoltJointComponent* pComponent = nullptr;
+    if (!GetWorld()->TryGetComponent(hJoint, pComponent) || !pComponent->IsActiveAndSimulating() || pComponent->IsBroken())
+      continue;
+    auto&       joint  = native.m_Joints[hJoint];
+    const auto& config = pComponent->GetJointConfig();
+    native.m_WaitingJoints.Remove(hJoint);
+    if (!ValidJointSettings(*pComponent) || !ValidJointFrame(config.m_LocalFrameA) || !ValidJointFrame(config.m_LocalFrameB) ||
+        config.m_hActorB.IsInvalidated() || (!config.m_hActorA.IsInvalidated() && config.m_hActorA == config.m_hActorB))
+    {
+      xiiLog::Warning("Jolt joint '{}' has invalid actors, frames, limits, or motor settings.", pComponent->GetOwner()->GetName());
+      continue;
+    }
+    if (joint.m_bRecreate || joint.m_pConstraint == nullptr)
+    {
+      JPH::Body*                bodies[2] = {&JPH::Body::sFixedToWorld, nullptr};
+      const xiiGameObjectHandle actors[2] = {config.m_hActorA, config.m_hActorB};
+      xiiVec3                   scales[2] = {xiiVec3(1.0f), xiiVec3(1.0f)};
+      JPH::BodyID               ids[2];
+      bool                      bWaiting = false;
+      bool                      bInvalid = false;
+      for (xiiUInt32 i = 0; i < 2; ++i)
+      {
+        if (i == 0 && actors[i].IsInvalidated())
+          continue;
+        if (actors[i].GetInternalID().m_WorldIndex != GetWorld()->GetIndex())
+        {
+          bInvalid = true;
+          break;
+        }
+        xiiGameObject* pObject = nullptr;
+        if (!GetWorld()->TryGetObject(actors[i], pObject))
+        {
+          bWaiting = true;
+          break;
+        }
+        const auto* pActor = FindActiveActor(*pObject);
+        if (pActor == nullptr)
+        {
+          bWaiting = true;
+          break;
+        }
+        ids[i]    = native.FindBody(pActor->GetHandle());
+        bodies[i] = native.m_PhysicsSystem.GetBodyLockInterfaceNoLock().TryGetBody(ids[i]);
+        if (bodies[i] == nullptr)
+        {
+          bWaiting = true;
+          break;
+        }
+        pObject->UpdateGlobalTransform();
+        scales[i] = pObject->GetGlobalTransform().m_vScale;
+      }
+      if (bWaiting)
+      {
+        native.DetachJoint(joint);
+        native.m_WaitingJoints.Insert(hJoint);
+        continue;
+      }
+      if (bInvalid || bodies[1] == nullptr || bodies[0] == bodies[1] || (!bodies[0]->IsDynamic() && !bodies[1]->IsDynamic()))
+      {
+        native.DetachJoint(joint);
+        xiiLog::Warning("Jolt joint '{}' requires distinct same-world bodies with at least one dynamic actor.", pComponent->GetOwner()->GetName());
+        continue;
+      }
+
+      const xiiTransform frames[2] = {config.m_LocalFrameA, config.m_LocalFrameB};
+      JPH::RVec3         points[2];
+      JPH::Vec3          axesX[2], axesY[2];
+      for (xiiUInt32 i = 0; i < 2; ++i)
+      {
+        // XII frames are relative to the actor origin; Jolt local frames are relative to its center of mass.
+        const auto toCOM    = bodies[i]->GetInverseCenterOfMassTransform() * bodies[i]->GetWorldTransform();
+        points[i]           = JPH::RVec3(toCOM * ToJoltVector(frames[i].m_vPosition.CompMul(scales[i])));
+        const auto rotation = ToJoltRotation(frames[i].m_qRotation);
+        axesX[i]            = toCOM.Multiply3x3(rotation * JPH::Vec3::sAxisX());
+        axesY[i]            = toCOM.Multiply3x3(rotation * JPH::Vec3::sAxisY());
+      }
+      JPH::Ref<JPH::TwoBodyConstraint> pConstraint;
+      if (xiiDynamicCast<xiiJoltFixedJointComponent*>(pComponent))
+      {
+        JPH::FixedConstraintSettings settings;
+        settings.mSpace  = JPH::EConstraintSpace::LocalToBodyCOM;
+        settings.mPoint1 = points[0];
+        settings.mPoint2 = points[1];
+        settings.mAxisX1 = axesX[0];
+        settings.mAxisX2 = axesX[1];
+        settings.mAxisY1 = axesY[0];
+        settings.mAxisY2 = axesY[1];
+        pConstraint      = settings.Create(*bodies[0], *bodies[1]);
+      }
+      else if (xiiDynamicCast<xiiJoltPointJointComponent*>(pComponent))
+      {
+        JPH::PointConstraintSettings settings;
+        settings.mSpace  = JPH::EConstraintSpace::LocalToBodyCOM;
+        settings.mPoint1 = points[0];
+        settings.mPoint2 = points[1];
+        pConstraint      = settings.Create(*bodies[0], *bodies[1]);
+      }
+      else if (xiiDynamicCast<xiiJoltHingeJointComponent*>(pComponent))
+      {
+        JPH::HingeConstraintSettings settings;
+        settings.mSpace       = JPH::EConstraintSpace::LocalToBodyCOM;
+        settings.mPoint1      = points[0];
+        settings.mPoint2      = points[1];
+        settings.mHingeAxis1  = axesX[0];
+        settings.mHingeAxis2  = axesX[1];
+        settings.mNormalAxis1 = axesY[0];
+        settings.mNormalAxis2 = axesY[1];
+        pConstraint           = settings.Create(*bodies[0], *bodies[1]);
+      }
+      else if (xiiDynamicCast<xiiJoltSliderJointComponent*>(pComponent))
+      {
+        JPH::SliderConstraintSettings settings;
+        settings.mSpace       = JPH::EConstraintSpace::LocalToBodyCOM;
+        settings.mPoint1      = points[0];
+        settings.mPoint2      = points[1];
+        settings.mSliderAxis1 = axesX[0];
+        settings.mSliderAxis2 = axesX[1];
+        settings.mNormalAxis1 = axesY[0];
+        settings.mNormalAxis2 = axesY[1];
+        pConstraint           = settings.Create(*bodies[0], *bodies[1]);
+      }
+      else
+      {
+        JPH::DistanceConstraintSettings settings;
+        const auto*                     pDistance = xiiStaticCast<const xiiJoltDistanceJointComponent*>(pComponent);
+        settings.mSpace                           = JPH::EConstraintSpace::LocalToBodyCOM;
+        settings.mPoint1                          = points[0];
+        settings.mPoint2                          = points[1];
+        settings.mMinDistance                     = pDistance->GetMinDistance();
+        settings.mMaxDistance                     = pDistance->GetMaxDistance();
+        pConstraint                               = settings.Create(*bodies[0], *bodies[1]);
+      }
+      native.DetachJoint(joint);
+      joint.m_pConstraint = pConstraint;
+      joint.m_Bodies[0]   = ids[0];
+      joint.m_Bodies[1]   = ids[1];
+      joint.m_bRecreate   = false;
+      native.m_PhysicsSystem.AddConstraint(pConstraint);
+    }
+
+    joint.m_fBreakForce  = pComponent->GetBreakForce();
+    joint.m_fBreakTorque = pComponent->m_fBreakTorque;
+    if (const auto* pHinge = xiiDynamicCast<xiiJoltHingeJointComponent*>(pComponent))
+    {
+      auto& hinge = *static_cast<JPH::HingeConstraint*>(joint.m_pConstraint.GetPtr());
+      hinge.SetLimits(pHinge->GetLimitsEnabled() ? pHinge->GetLowerLimit().GetRadian() : -JPH::JPH_PI,
+                      pHinge->GetLimitsEnabled() ? pHinge->GetUpperLimit().GetRadian() : JPH::JPH_PI);
+      auto& motor           = hinge.GetMotorSettings();
+      motor.mSpringSettings = JPH::SpringSettings(JPH::ESpringMode::FrequencyAndDamping, pHinge->GetMotorFrequency(), pHinge->GetMotorDamping());
+      motor.SetTorqueLimit(pHinge->GetMaxMotorTorque());
+      hinge.SetMotorState(static_cast<JPH::EMotorState>(pHinge->GetMotorMode().GetValue()));
+      hinge.SetTargetAngularVelocity(pHinge->GetTargetVelocity());
+      hinge.SetTargetAngle(pHinge->GetTargetAngle().GetRadian());
+    }
+    else if (const auto* pSlider = xiiDynamicCast<xiiJoltSliderJointComponent*>(pComponent))
+    {
+      auto& slider = *static_cast<JPH::SliderConstraint*>(joint.m_pConstraint.GetPtr());
+      slider.SetLimits(pSlider->GetLimitsEnabled() ? pSlider->GetLowerLimit() : -FLT_MAX,
+                       pSlider->GetLimitsEnabled() ? pSlider->GetUpperLimit() : FLT_MAX);
+      auto& motor           = slider.GetMotorSettings();
+      motor.mSpringSettings = JPH::SpringSettings(JPH::ESpringMode::FrequencyAndDamping, pSlider->GetMotorFrequency(), pSlider->GetMotorDamping());
+      motor.SetForceLimit(pSlider->GetMaxMotorForce());
+      slider.SetMotorState(static_cast<JPH::EMotorState>(pSlider->GetMotorMode().GetValue()));
+      slider.SetTargetVelocity(pSlider->GetTargetVelocity());
+      slider.SetTargetPosition(pSlider->GetTargetPosition());
+    }
+    else if (const auto* pDistance = xiiDynamicCast<xiiJoltDistanceJointComponent*>(pComponent))
+    {
+      auto& distance = *static_cast<JPH::DistanceConstraint*>(joint.m_pConstraint.GetPtr());
+      distance.SetDistance(pDistance->GetMinDistance(), pDistance->GetMaxDistance());
+      distance.SetLimitsSpringSettings(JPH::SpringSettings(JPH::ESpringMode::FrequencyAndDamping, pDistance->GetSpringFrequency(), pDistance->GetSpringDamping()));
+    }
+    native.m_BreakableJoints.RemoveAndSwap(hJoint);
+    if (joint.m_fBreakForce > 0 || joint.m_fBreakTorque > 0)
+      native.m_BreakableJoints.PushBack(hJoint);
+    for (auto id : joint.m_Bodies)
+      if (!id.IsInvalid() && native.m_PhysicsSystem.GetBodyInterface().GetMotionType(id) == JPH::EMotionType::Dynamic)
+        native.m_PhysicsSystem.GetBodyInterface().ActivateBody(id);
+  }
+  native.m_PendingJoints.Clear();
+}
+
+void xiiJoltPhysicsWorldModule::CheckJointBreakage(float fStepSeconds)
+{
+  auto& native = *m_pNativeWorld;
+  for (xiiUInt32 i = 0; i < native.m_BreakableJoints.GetCount();)
+  {
+    const auto hJoint = native.m_BreakableJoints[i];
+    auto*      pJoint = native.m_Joints.GetValue(hJoint);
+    if (pJoint == nullptr || pJoint->m_pConstraint == nullptr || !pJoint->m_pConstraint->IsActive())
+    {
+      ++i;
+      continue;
+    }
+    double      fLinearImpulse = 0, fAngularImpulse = 0;
+    const auto* pConstraint = pJoint->m_pConstraint.GetPtr();
+    switch (pConstraint->GetSubType())
+    {
+      case JPH::EConstraintSubType::Fixed:
+      {
+        const auto& c   = *static_cast<const JPH::FixedConstraint*>(pConstraint);
+        fLinearImpulse  = c.GetTotalLambdaPosition().Length();
+        fAngularImpulse = c.GetTotalLambdaRotation().Length();
+        break;
+      }
+      case JPH::EConstraintSubType::Point:
+        fLinearImpulse = static_cast<const JPH::PointConstraint*>(pConstraint)->GetTotalLambdaPosition().Length();
+        break;
+      case JPH::EConstraintSubType::Hinge:
+      {
+        const auto& c      = *static_cast<const JPH::HingeConstraint*>(pConstraint);
+        fLinearImpulse     = c.GetTotalLambdaPosition().Length();
+        const double axial = double(c.GetTotalLambdaMotor()) + c.GetTotalLambdaRotationLimits();
+        fAngularImpulse    = xiiMath::Sqrt(double(c.GetTotalLambdaRotation().LengthSq()) + axial * axial);
+        break;
+      }
+      case JPH::EConstraintSubType::Slider:
+      {
+        const auto&  c     = *static_cast<const JPH::SliderConstraint*>(pConstraint);
+        const double axial = double(c.GetTotalLambdaMotor()) + c.GetTotalLambdaPositionLimits();
+        fLinearImpulse     = xiiMath::Sqrt(double(c.GetTotalLambdaPosition().LengthSq()) + axial * axial);
+        fAngularImpulse    = c.GetTotalLambdaRotation().Length();
+        break;
+      }
+      case JPH::EConstraintSubType::Distance:
+        fLinearImpulse = xiiMath::Abs(static_cast<const JPH::DistanceConstraint*>(pConstraint)->GetTotalLambdaPosition());
+        break;
+      default:
+        break;
+    }
+    // Native velocity-solver lambdas are impulses. Compare to F*dt and torque*dt for this fixed step.
+    if ((pJoint->m_fBreakForce > 0 && fLinearImpulse > double(pJoint->m_fBreakForce) * fStepSeconds) ||
+        (pJoint->m_fBreakTorque > 0 && fAngularImpulse > double(pJoint->m_fBreakTorque) * fStepSeconds))
+    {
+      native.DetachJoint(*pJoint);
+      xiiJoltJointComponent* pComponent = nullptr;
+      if (GetWorld()->TryGetComponent(hJoint, pComponent))
+        pComponent->m_bBroken = true;
+      native.m_BrokenJoints.PushBack(hJoint);
+      native.m_BreakableJoints.RemoveAtAndSwap(i);
+    }
+    else
+      ++i;
+  }
+}
+
+void xiiJoltPhysicsWorldModule::AddFixedJointComponent(xiiGameObject* pOwner, const FixedJointConfig& cfg)
+{
+  xiiJoltFixedJointComponent* pJoint = nullptr;
+  GetWorld()->GetOrCreateComponentManager<xiiJoltFixedJointComponentManager>()->CreateComponent(pOwner, pJoint);
+  pJoint->SetJointConfig(cfg);
+}
+
+void xiiJoltPhysicsWorldModule::SetBodySurface(xiiComponentHandle hActor, const xiiSurfaceResourceHandle& hSurface)
+{
+  if (auto* pOwner = m_pNativeWorld->FindOwnerMutable(m_pNativeWorld->FindBody(hActor)))
+    pOwner->m_hSurface = hSurface;
+  m_pNativeWorld->m_MaterialsDirty = 1;
+}
+
+void xiiJoltPhysicsWorldModule::UpdateMaterials()
+{
+  auto& native = *m_pNativeWorld;
+  if (native.m_MaterialsDirty.Set(0) == 0)
+    return;
+  for (auto it = native.GetBodyOwners().GetIterator(); it.IsValid(); ++it)
+  {
+    const auto& owner     = it.Value();
+    float       fFriction = 0.2f, fRestitution = 0.0f;
+    if (owner.m_hSurface.IsValid())
+    {
+      const xiiResourceLock<xiiSurfaceResource> surface(owner.m_hSurface, xiiResourceAcquireMode::PointerOnly);
+      if (surface->GetLoadingState() == xiiResourceState::Loaded)
+      {
+        const auto& descriptor = surface->GetDescriptor();
+        // Jolt has one Coulomb friction coefficient. Map dynamic friction; static friction remains authoring data.
+        if (NonNegative(descriptor.m_fPhysicsFrictionDynamic))
+          fFriction = descriptor.m_fPhysicsFrictionDynamic;
+        if (xiiMath::IsFinite(descriptor.m_fPhysicsRestitution))
+          fRestitution = xiiMath::Clamp(descriptor.m_fPhysicsRestitution, 0.0f, 1.0f);
+      }
+      else if (surface->GetLoadingState() == xiiResourceState::Unloaded)
+        xiiResourceManager::PreloadResource(owner.m_hSurface);
+    }
+    native.m_PhysicsSystem.GetBodyInterface().SetFriction(JPH::BodyID(it.Key()), fFriction);
+    native.m_PhysicsSystem.GetBodyInterface().SetRestitution(JPH::BodyID(it.Key()), fRestitution);
+  }
+}
+
 
 XII_STATICLINK_FILE(JoltPlugin, JoltPlugin_System_Implementation_JoltPhysicsWorldModule);
