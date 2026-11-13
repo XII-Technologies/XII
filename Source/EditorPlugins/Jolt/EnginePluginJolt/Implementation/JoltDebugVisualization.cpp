@@ -3,6 +3,7 @@
 #include <EnginePluginJolt/EnginePluginJoltPCH.h>
 
 #include <Core/World/World.h>
+#include <EnginePluginJolt/JoltAuthoring.h>
 #include <Foundation/Configuration/CVar.h>
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Containers/StaticArray.h>
@@ -30,6 +31,8 @@ namespace
       return;
 
     XII_LOCK(pWorld->GetWriteMarker());
+    if (auto* authoring = pWorld->GetModule<xiiJoltAuthoringWorldModule>())
+      authoring->Draw(*event.m_pView);
     auto* pPhysics = pWorld->GetModule<xiiJoltPhysicsWorldModule>();
     if (pPhysics == nullptr)
       return;
@@ -110,6 +113,12 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(EnginePluginJolt, JoltVisualization)
   ON_CORESYSTEMS_SHUTDOWN
   {
     xiiRenderWorldModule::GetRenderEvents().RemoveEventHandler(SubmitJoltDebugDraw);
+    for (xiiUInt32 index = 0; index < xiiWorld::GetWorldCount(); ++index)
+      if (auto* world = xiiWorld::GetWorld(index))
+      {
+        XII_LOCK(world->GetWriteMarker());
+        world->DeleteModule<xiiJoltAuthoringWorldModule>();
+      }
   }
 
 XII_END_SUBSYSTEM_DECLARATION;

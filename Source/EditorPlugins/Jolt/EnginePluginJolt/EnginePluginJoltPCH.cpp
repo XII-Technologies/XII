@@ -8,4 +8,5 @@ XII_STATICLINK_LIBRARY(EnginePluginJolt)
     return;
 
   XII_STATICLINK_REFERENCE(EnginePluginJolt_Implementation_JoltDebugVisualization);
+  XII_STATICLINK_REFERENCE(EnginePluginJolt_Implementation_JoltAuthoring);
 }

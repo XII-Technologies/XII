@@ -13,6 +13,11 @@ xii_create_target(LIBRARY ${PROJECT_NAME})
 
 xii_enable_strict_warnings(${PROJECT_NAME})
 
+# EditorEngineProcessFramework's default virtual hooks intentionally leave parameters unused.
+if(XII_CMAKE_COMPILER_MSVC)
+  target_compile_options(${PROJECT_NAME} PRIVATE /wd4100)
+endif()
+
 xii_link_target_qt(TARGET ${PROJECT_NAME} COMPONENTS Core Gui Widgets)
 
 target_link_libraries(${PROJECT_NAME}
