@@ -11,6 +11,7 @@
 #include <Foundation/Types/ArrayPtr.h>
 #include <Foundation/Types/UniquePtr.h>
 #include <MujocoPlugin/Resources/MuJoCoModelResource.h>
+#include <MujocoPlugin/System/MuJoCoInspection.h>
 #include <MujocoPlugin/System/MuJoCoState.h>
 
 /// Owns the compiled MuJoCo model and simulation state for one XII world.
@@ -83,6 +84,32 @@ public:
   [[nodiscard]] xiiResult AddBodyForceAtPosition(xiiMuJoCoElementId id, const xiiVec3& vForce, const xiiVec3& vPosition, const xiiVec3& vTorque = xiiVec3::MakeZero());
   void                    ClearExternalForces();
 
+  bool               IsStateAccessible() const { return m_pSimulation && !m_bExecuting; }
+  [[nodiscard]] bool IsStateCurrent(const xiiMuJoCoStateStamp& stamp) const;
+  [[nodiscard]] bool GetSensorInfo(xiiMuJoCoElementId id, xiiMuJoCoSensorInfo& out_info) const;
+  /// Refreshes derived state once when required. Disabled native sensors return failure.
+  /// Borrowed double views are available with double-precision MuJoCo. Copy access works with either precision.
+  [[nodiscard]] bool GetSensorReading(xiiMuJoCoElementId id, xiiMuJoCoSensorReading& out_reading);
+  [[nodiscard]] bool GetSensorReading(xiiStringView sName, xiiMuJoCoSensorReading& out_reading);
+  [[nodiscard]] bool CopySensorReading(xiiMuJoCoElementId id, xiiArrayPtr<double> out_values, xiiMuJoCoStateStamp& out_stamp);
+  [[nodiscard]] bool CopySensorReading(xiiStringView sName, xiiArrayPtr<double> out_values, xiiMuJoCoStateStamp& out_stamp);
+  [[nodiscard]] bool GetGeneralizedStateView(xiiMuJoCoGeneralizedStateView& out_view) const;
+
+  /// Contacts and sensors share a lazily evaluated state after the latest integrated step or direct edit.
+  /// Refreshing derived state may invoke existing native callbacks; no process-global callback is installed here.
+  xiiUInt32          GetContactCount();
+  [[nodiscard]] bool GetContact(xiiUInt32 uiIndex, xiiMuJoCoContactInfo& out_contact);
+  [[nodiscard]] bool GetContacts(xiiUInt32 uiFirst, xiiArrayPtr<xiiMuJoCoContactInfo> out_contacts);
+  [[nodiscard]] bool GetSimulationInfo(xiiMuJoCoSimulationInfo& out_info);
+  [[nodiscard]] bool GetStepDiagnostics(xiiMuJoCoStepDiagnostics& out_diagnostics) const;
+  /// Native statistics slots can differ from detected islands when a solver runs monolithically.
+  xiiUInt32          GetSolverStatisticsSlotCount() const;
+  [[nodiscard]] bool GetSolverInfo(xiiUInt32 uiSlot, xiiMuJoCoSolverInfo& out_info);
+  [[nodiscard]] bool GetSolverIteration(xiiUInt32 uiSlot, xiiUInt32 uiIteration, xiiMuJoCoSolverIteration& out_info);
+  xiiUInt32          GetWarningTypeCount() const;
+  [[nodiscard]] bool GetWarning(xiiUInt32 uiType, xiiMuJoCoWarningInfo& out_info) const;
+  [[nodiscard]] bool GetWarningText(xiiUInt32 uiType, xiiString& out_sText) const;
+
 private:
   friend class xiiMuJoCoModelComponent;
   friend class xiiMuJoCoBodyComponent;
@@ -111,14 +138,18 @@ private:
     xiiUInt32           m_uiDepth = 0;
   };
 
-  void ResolveBody(BodyBinding& ref_binding) const;
-  void SynchronizeBodies();
-  bool IsValidElement(xiiMuJoCoElementId id, xiiMuJoCoElementType type) const;
-  void RegisterActuator(xiiComponentHandle hComponent);
-  void UnregisterActuator(xiiComponentHandle hComponent);
-  void RebindActuators();
-  void ApplyPendingControls();
-  void ApplyExternalForces();
+  void                ResolveBody(BodyBinding& ref_binding) const;
+  void                RebuildBodyBindingMap();
+  bool                EnsureObservations();
+  xiiMuJoCoStateStamp GetStateStamp() const;
+  void                ReportNativeWarnings();
+  void                SynchronizeBodies();
+  bool                IsValidElement(xiiMuJoCoElementId id, xiiMuJoCoElementType type) const;
+  void                RegisterActuator(xiiComponentHandle hComponent);
+  void                UnregisterActuator(xiiComponentHandle hComponent);
+  void                RebindActuators();
+  void                ApplyPendingControls();
+  void                ApplyExternalForces();
 
   struct NativeSimulation;
   [[nodiscard]] xiiResult InstallModel(xiiSharedPtr<xiiMuJoCoCompiledModel> pModel, xiiStringView sSource);

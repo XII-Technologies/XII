@@ -11,7 +11,10 @@ enum class xiiMuJoCoElementType : xiiUInt8
 {
   Body,
   Joint,
-  Actuator
+  Actuator,
+  Sensor,
+  Geometry,
+  Site
 };
 
 /// A model-scoped identifier. Replacement and world destruction invalidate it.

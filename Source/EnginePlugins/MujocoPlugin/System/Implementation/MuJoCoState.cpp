@@ -22,6 +22,12 @@ namespace
         return mjOBJ_JOINT;
       case xiiMuJoCoElementType::Actuator:
         return mjOBJ_ACTUATOR;
+      case xiiMuJoCoElementType::Sensor:
+        return mjOBJ_SENSOR;
+      case xiiMuJoCoElementType::Geometry:
+        return mjOBJ_GEOM;
+      case xiiMuJoCoElementType::Site:
+        return mjOBJ_SITE;
     }
     return mjOBJ_UNKNOWN;
   }
@@ -97,6 +103,12 @@ xiiUInt32 xiiMuJoCoPhysicsWorldModule::GetElementCount(xiiMuJoCoElementType type
       return static_cast<xiiUInt32>(model.njnt);
     case xiiMuJoCoElementType::Actuator:
       return static_cast<xiiUInt32>(model.nactuator);
+    case xiiMuJoCoElementType::Sensor:
+      return static_cast<xiiUInt32>(model.nsensor);
+    case xiiMuJoCoElementType::Geometry:
+      return static_cast<xiiUInt32>(model.ngeom);
+    case xiiMuJoCoElementType::Site:
+      return static_cast<xiiUInt32>(model.nsite);
   }
   return 0;
 }
@@ -188,6 +200,7 @@ xiiResult xiiMuJoCoPhysicsWorldModule::SetJointPosition(xiiMuJoCoElementId id, x
   WriteValues(pPosition, values);
   NormalizeQuaternion(values, iOffset, iOffset >= 0 ? pPosition + iOffset : nullptr);
   m_pSimulation->m_bStateDirty = true;
+  ++m_pSimulation->m_uiStateRevision;
   return XII_SUCCESS;
 }
 
@@ -198,6 +211,7 @@ xiiResult xiiMuJoCoPhysicsWorldModule::SetJointVelocity(xiiMuJoCoElementId id, x
     return XII_FAILURE;
   WriteValues(m_pSimulation->m_pData->qvel + info.m_uiVelocityAddress, values);
   m_pSimulation->m_bStateDirty = true;
+  ++m_pSimulation->m_uiStateRevision;
   return XII_SUCCESS;
 }
 
@@ -211,6 +225,7 @@ xiiResult xiiMuJoCoPhysicsWorldModule::ResetJoint(xiiMuJoCoElementId id)
   mju_zero(data.qvel + info.m_uiVelocityAddress, info.m_uiVelocityCount);
   mju_zero(data.qfrc_applied + info.m_uiVelocityAddress, info.m_uiVelocityCount);
   m_pSimulation->m_bStateDirty = true;
+  ++m_pSimulation->m_uiStateRevision;
   return XII_SUCCESS;
 }
 
@@ -259,6 +274,7 @@ xiiResult xiiMuJoCoPhysicsWorldModule::SetGeneralizedState(xiiArrayPtr<const dou
     }
   }
   m_pSimulation->m_bStateDirty = true;
+  ++m_pSimulation->m_uiStateRevision;
   return XII_SUCCESS;
 }
 
@@ -266,13 +282,7 @@ void xiiMuJoCoPhysicsWorldModule::EvaluateState()
 {
   if (!m_pSimulation || m_bExecuting || !m_pSimulation->m_bStateDirty)
     return;
-  // Invalidate solver guesses once for a batch of direct edits.
-  std::fill_n(m_pSimulation->m_pData->qacc_warmstart, m_pSimulation->m_pModel->GetModel()->nv, mjtNum{0});
-  m_bExecuting = true;
-  mj_forward(m_pSimulation->m_pModel->GetModel(), m_pSimulation->m_pData.get());
-  m_bExecuting                 = false;
-  m_pSimulation->m_bStateDirty = false;
-  m_bSyncBodies                = true;
+  EnsureObservations();
 }
 
 bool xiiMuJoCoPhysicsWorldModule::GetBodyState(xiiMuJoCoElementId id, xiiMuJoCoBodyState& out_state)
@@ -428,6 +438,8 @@ xiiResult xiiMuJoCoPhysicsWorldModule::AddJointForce(xiiMuJoCoElementId id, xiiA
   for (xiiUInt32 i = 0; i < values.GetCount(); ++i)
     pForce[i] += static_cast<mjtNum>(values[i]);
   m_pSimulation->m_bExternalForcesApplied = true;
+  m_pSimulation->m_bObservationsDirty     = true;
+  ++m_pSimulation->m_uiStateRevision;
   return XII_SUCCESS;
 }
 
@@ -486,6 +498,8 @@ void xiiMuJoCoPhysicsWorldModule::ClearExternalForces()
     std::fill_n(m_pSimulation->m_pData->qfrc_applied, pModel->nv, mjtNum{0});
     std::fill_n(m_pSimulation->m_pData->xfrc_applied, 6 * pModel->nbody, mjtNum{0});
     m_pSimulation->m_bExternalForcesApplied = false;
+    m_pSimulation->m_bObservationsDirty     = true;
+    ++m_pSimulation->m_uiStateRevision;
   }
   m_pSimulation->m_BodyForces.Clear();
 }

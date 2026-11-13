@@ -18,6 +18,7 @@
 
 #include <mujoco/mujoco.h>
 
+#include <algorithm>
 #include <memory>
 
 XII_IMPLEMENT_WORLD_MODULE(xiiMuJoCoPhysicsWorldModule);
@@ -145,7 +146,8 @@ xiiResult xiiMuJoCoPhysicsWorldModule::InstallModel(xiiSharedPtr<xiiMuJoCoCompil
   const mjtSize  iMaxCount    = xiiMath::MaxValue<xiiInt32>();
   if (pNativeModel->nbody > iMaxCount || pNativeModel->njnt > iMaxCount || pNativeModel->nactuator > iMaxCount ||
       pNativeModel->nq > iMaxCount || pNativeModel->nv > iMaxCount || pNativeModel->nu > iMaxCount ||
-      pNativeModel->na > iMaxCount || pNativeModel->nout > iMaxCount)
+      pNativeModel->na > iMaxCount || pNativeModel->nout > iMaxCount || pNativeModel->nsensor > iMaxCount ||
+      pNativeModel->nsensordata > iMaxCount || pNativeModel->ngeom > iMaxCount || pNativeModel->nsite > iMaxCount)
   {
     xiiLog::Error("MuJoCo model '{}' exceeds the supported state indexing range.", sSource);
     return XII_FAILURE;
@@ -162,6 +164,7 @@ xiiResult xiiMuJoCoPhysicsWorldModule::InstallModel(xiiSharedPtr<xiiMuJoCoCompil
 
   // mj_makeData supplies native neutral controls, including identity quaternion controls.
   const auto uiControls = static_cast<xiiUInt32>(pNativeModel->nu);
+  pSimulation->m_BodySceneBindings.SetCount(static_cast<xiiUInt32>(pNativeModel->nbody));
   pSimulation->m_PendingControls.SetCount(uiControls);
   pSimulation->m_ControlPending.SetCount(uiControls, 0);
   pSimulation->m_NeutralControls.SetCount(uiControls);
@@ -179,6 +182,8 @@ xiiResult xiiMuJoCoPhysicsWorldModule::InstallModel(xiiSharedPtr<xiiMuJoCoCompil
   m_AccumulatedTime   = xiiTime::MakeZero();
   for (auto& binding : m_BodyBindings)
     ResolveBody(binding);
+  RebuildBodyBindingMap();
+  ReportNativeWarnings();
   m_bSyncBodies = true;
   RebindActuators();
   return XII_SUCCESS;
@@ -202,9 +207,15 @@ void xiiMuJoCoPhysicsWorldModule::ResetSimulation()
     m_pSimulation->m_bStateDirty            = false;
     m_pSimulation->m_bControlsPending       = false;
     m_pSimulation->m_bExternalForcesApplied = false;
+    m_pSimulation->m_bObservationsDirty     = false;
+    ++m_pSimulation->m_uiStateRevision;
+    m_pSimulation->m_uiStepIndex     = 0;
+    m_pSimulation->m_StepDiagnostics = {};
+    std::fill_n(m_pSimulation->m_WarningsReported, mjNWARNING, false);
     mj_forward(pModel, pData);
     m_bExecuting  = false;
     m_bSyncBodies = true;
+    ReportNativeWarnings();
     RebindActuators();
   }
 }
@@ -311,6 +322,7 @@ void xiiMuJoCoPhysicsWorldModule::RegisterBody(xiiComponentHandle hComponent, co
   binding.m_hObject    = hObject;
   binding.m_sBodyName  = sBodyName;
   ResolveBody(binding);
+  RebuildBodyBindingMap();
   m_bSyncBodies = true;
 }
 
@@ -321,6 +333,7 @@ void xiiMuJoCoPhysicsWorldModule::UnregisterBody(xiiComponentHandle hComponent)
     if (m_BodyBindings[i].m_hComponent == hComponent)
     {
       m_BodyBindings.RemoveAtAndSwap(i);
+      RebuildBodyBindingMap();
       return;
     }
   }
@@ -427,6 +440,8 @@ void xiiMuJoCoPhysicsWorldModule::Simulate(const UpdateContext&)
     return;
 
   EvaluateState();
+  m_pSimulation->m_StepDiagnostics.m_uiStepsThisUpdate      = 0;
+  m_pSimulation->m_StepDiagnostics.m_UpdateSteppingWallTime = xiiTime::MakeZero();
   XII_SCOPE_EXIT(SynchronizeBodies());
   const xiiClock& clock         = GetWorld()->GetClock();
   const double    fDeltaSeconds = clock.GetTimeDiff().GetSeconds();
@@ -452,9 +467,25 @@ void xiiMuJoCoPhysicsWorldModule::Simulate(const UpdateContext&)
   {
     ApplyPendingControls();
     ApplyExternalForces();
-    m_bExecuting = true;
+    auto& diagnostics        = m_pSimulation->m_StepDiagnostics;
+    diagnostics.m_fStartTime = pData->time;
+    const xiiTime started    = xiiTime::Now();
+    m_bExecuting             = true;
     mj_step(pModel, pData);
-    m_bExecuting = false;
+    m_bExecuting               = false;
+    diagnostics.m_StepWallTime = xiiTime::Now() - started;
+    diagnostics.m_UpdateSteppingWallTime += diagnostics.m_StepWallTime;
+    ++diagnostics.m_uiStepsThisUpdate;
+    diagnostics.m_fEndTime              = pData->time;
+    diagnostics.m_uiStepIndex           = ++m_pSimulation->m_uiStepIndex;
+    diagnostics.m_uiContactCount        = static_cast<xiiUInt32>(pData->ncon);
+    diagnostics.m_uiConstraintCount     = static_cast<xiiUInt32>(pData->nefc);
+    diagnostics.m_uiMaxSolverIterations = 0;
+    for (int i = 0; i < mjNISLAND; ++i)
+      diagnostics.m_uiMaxSolverIterations = xiiMath::Max(diagnostics.m_uiMaxSolverIterations, static_cast<xiiUInt32>(pData->solver_niter[i]));
+    ++m_pSimulation->m_uiStateRevision;
+    m_pSimulation->m_bObservationsDirty = true;
+    ReportNativeWarnings();
     ClearExternalForces();
   }
 

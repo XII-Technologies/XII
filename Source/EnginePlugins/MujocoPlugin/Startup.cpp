@@ -8,6 +8,7 @@
 #include <MujocoPlugin/Components/MuJoCoBodyComponent.h>
 #include <MujocoPlugin/Components/MuJoCoJointComponent.h>
 #include <MujocoPlugin/Components/MuJoCoModelComponent.h>
+#include <MujocoPlugin/Components/MuJoCoSensorComponent.h>
 #include <MujocoPlugin/System/MuJoCoPhysicsWorldModule.h>
 
 // clang-format off
@@ -26,6 +27,7 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(Mujoco, MujocoPlugin)
       if (xiiWorld* pWorld = xiiWorld::GetWorld(uiIndex))
       {
         XII_LOCK(pWorld->GetWriteMarker());
+        pWorld->DeleteModule(xiiGetStaticRTTI<xiiMuJoCoSensorComponent>());
         pWorld->DeleteModule(xiiGetStaticRTTI<xiiMuJoCoActuatorComponent>());
         pWorld->DeleteModule(xiiGetStaticRTTI<xiiMuJoCoJointComponent>());
         pWorld->DeleteModule(xiiGetStaticRTTI<xiiMuJoCoBodyComponent>());

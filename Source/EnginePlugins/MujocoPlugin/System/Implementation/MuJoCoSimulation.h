@@ -27,7 +27,18 @@ struct xiiMuJoCoPhysicsWorldModule::NativeSimulation
   xiiDynamicArray<mjtNum>                           m_NeutralControls;
   xiiDynamicArray<xiiUInt8>                         m_ControlPending;
   xiiDynamicArray<BodyForce>                        m_BodyForces;
-  bool                                              m_bStateDirty            = false;
-  bool                                              m_bControlsPending       = false;
-  bool                                              m_bExternalForcesApplied = false;
+  struct SceneBinding
+  {
+    xiiGameObjectHandle m_hObject;
+    xiiComponentHandle  m_hComponent;
+  };
+  xiiDynamicArray<SceneBinding> m_BodySceneBindings;
+  xiiUInt64                     m_uiStateRevision = 1;
+  xiiUInt64                     m_uiStepIndex     = 0;
+  xiiMuJoCoStepDiagnostics      m_StepDiagnostics;
+  bool                          m_WarningsReported[mjNWARNING] = {};
+  bool                          m_bObservationsDirty           = false;
+  bool                          m_bStateDirty                  = false;
+  bool                          m_bControlsPending             = false;
+  bool                          m_bExternalForcesApplied       = false;
 };
