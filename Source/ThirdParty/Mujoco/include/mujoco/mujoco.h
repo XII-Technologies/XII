@@ -83,6 +83,7 @@ MJAPI void mj_defaultVFS(mjVFS* vfs);
 
 // Mount a provider to handle file operations under the given path; return 0: success,
 // 2: repeated name, -1: invalid provider.
+// XII: An empty filepath supplies the default provider for this VFS.
 MJAPI int mj_mountVFS(mjVFS* vfs, const char* filepath, const mjpResourceProvider* provider);
 
 // Unmount a previously mounted provider; return 0: success, -1: not found in VFS.

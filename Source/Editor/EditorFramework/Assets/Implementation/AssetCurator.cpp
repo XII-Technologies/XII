@@ -871,6 +871,9 @@ xiiAssetInfo::TransformState xiiAssetCurator::UpdateAssetTransformState(xiiUuid 
     state = HashAsset(uiSettingsHash, transformDeps, thumbnailDeps, packageDeps, missingTransformDeps, missingThumbnailDeps, missingPackageDeps, out_AssetHash, out_ThumbHash, out_PackageHash, bForce, pAssetProfile, pContext);
     XII_ASSERT_DEV(state == xiiAssetInfo::Unknown || state == xiiAssetInfo::MissingTransformDependency || state == xiiAssetInfo::MissingThumbnailDependency || state == xiiAssetInfo::MissingPackageDependency, "Unhandled case of HashAsset return value.");
 
+    if (state == xiiAssetInfo::MissingTransformDependency && pTypeDescriptor->m_AssetDocumentFlags.IsSet(xiiAssetDocumentFlags::RefreshSourceDependencies))
+      state = xiiAssetInfo::NeedsImport;
+
     if (state == xiiAssetInfo::Unknown)
     {
       XII_LOCK(m_CuratorMutex);
@@ -1277,7 +1280,8 @@ xiiTransformStatus xiiAssetCurator::ProcessAsset(xiiAssetInfo* pAssetInfo, const
 
   xiiTransformStatus ret;
   xiiAssetDocument*  pAsset = static_cast<xiiAssetDocument*>(pDoc);
-  if (state == xiiAssetInfo::TransformState::NeedsTransform || (state == xiiAssetInfo::TransformState::NeedsThumbnail && assetFlags.IsSet(xiiAssetDocumentFlags::AutoThumbnailOnTransform)) || (transformFlags.IsSet(xiiTransformFlags::TriggeredManually) && state == xiiAssetInfo::TransformState::NeedsImport))
+  if (state == xiiAssetInfo::TransformState::NeedsTransform || (state == xiiAssetInfo::TransformState::NeedsThumbnail && assetFlags.IsSet(xiiAssetDocumentFlags::AutoThumbnailOnTransform)) ||
+      (state == xiiAssetInfo::NeedsImport && (transformFlags.IsSet(xiiTransformFlags::TriggeredManually) || assetFlags.IsSet(xiiAssetDocumentFlags::RefreshSourceDependencies))))
   {
     ret = pAsset->TransformAsset(transformFlags, pAssetProfile);
     if (ret.Succeeded())

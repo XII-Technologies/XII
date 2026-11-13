@@ -351,6 +351,9 @@ mjResource* VFS::FindMount(const std::string& fullpath) {
     }
   }
 
+  // XII: An explicit empty-path mount supplies the default provider for this VFS.
+  if (auto it = mounts_.find(""); it != mounts_.end()) { return it->second.get(); }
+
   const mjpResourceProvider* provider = mjp_findProvider(fullpath.c_str());
   if (provider) {
     if (auto it = mounts_.find(provider->prefix); it != mounts_.end()) { return it->second.get(); }
