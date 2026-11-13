@@ -17,8 +17,46 @@ XII_RESOURCE_IMPLEMENT_COMMON_CODE(xiiMuJoCoModelResource);
 
 namespace
 {
-  constexpr xiiUInt32 ModelMagic    = 0x4D4A4958; // XIJM
-  constexpr xiiUInt32 MaxModelBytes = 512 * 1024 * 1024;
+  constexpr xiiUInt32 ModelMagic       = 0x4D4A4958; // XIJM
+  constexpr xiiUInt32 MaxModelBytes    = 512 * 1024 * 1024;
+  constexpr int       NativeModelMagic = 54321; // MuJoCo's MJB header identifier.
+
+  // Dispatch by stream contents because callers may use a custom resource loader.
+  class ModelStreamReader final : public xiiStreamReader
+  {
+  public:
+    explicit ModelStreamReader(xiiStreamReader& source) : m_Source(source)
+    {
+      m_uiRemaining = static_cast<xiiUInt32>(source.ReadBytes(m_Prefix, XII_ARRAY_SIZE(m_Prefix)));
+    }
+
+    bool IsAsset() const
+    {
+      return m_uiRemaining == sizeof(m_Prefix) && xiiMemoryUtils::RawByteCompare(m_Prefix, "xiiAsset", sizeof(m_Prefix)) == 0;
+    }
+
+    bool IsNativeModel() const
+    {
+      return m_uiRemaining >= sizeof(NativeModelMagic) && xiiMemoryUtils::RawByteCompare(m_Prefix, &NativeModelMagic, sizeof(NativeModelMagic)) == 0;
+    }
+
+    xiiUInt64 ReadBytes(void* pBuffer, xiiUInt64 uiBytes) override
+    {
+      const auto uiPrefixBytes = static_cast<xiiUInt32>(xiiMath::Min<xiiUInt64>(uiBytes, m_uiRemaining));
+      if (uiPrefixBytes == 0)
+        return m_Source.ReadBytes(pBuffer, uiBytes);
+      auto* pBytes = static_cast<xiiUInt8*>(pBuffer);
+      if (pBytes)
+        xiiMemoryUtils::Copy(pBytes, m_Prefix + sizeof(m_Prefix) - m_uiRemaining, uiPrefixBytes);
+      m_uiRemaining -= uiPrefixBytes;
+      return uiPrefixBytes + (uiPrefixBytes == uiBytes ? 0 : m_Source.ReadBytes(pBytes ? pBytes + uiPrefixBytes : nullptr, uiBytes - uiPrefixBytes));
+    }
+
+  private:
+    xiiStreamReader& m_Source;
+    xiiUInt8         m_Prefix[8];
+    xiiUInt32        m_uiRemaining = 0;
+  };
 } // namespace
 
 xiiUInt64 xiiMuJoCoModelResourceDescriptor::GetCompilerVersion()
@@ -109,29 +147,27 @@ xiiResourceLoadDescription xiiMuJoCoModelResource::UpdateContent(xiiStreamReader
     xiiUInt32 uiPathBytes = 0;
     if (pStream->ReadDWordValue(&uiPathBytes).Succeeded() && pStream->SkipBytes(uiPathBytes) == uiPathBytes)
     {
-      xiiContiguousMemoryStreamStorage bytes;
-      bytes.ReadAll(*pStream, MaxModelBytes + 1);
-      if (bytes.GetStorageSize64() <= MaxModelBytes)
+      ModelStreamReader reader(*pStream);
+      if (reader.IsAsset())
       {
-        const auto payload     = bytes.GetContiguousMemoryRange(0);
-        int        nativeMagic = 0;
-        if (payload.GetCount() >= sizeof(nativeMagic))
-          xiiMemoryUtils::Copy(reinterpret_cast<xiiUInt8*>(&nativeMagic), payload.GetPtr(), sizeof(nativeMagic));
-        if (nativeMagic == 54321)
-          pModel = xiiMuJoCoCompiledModel::LoadBinary(payload, GetResourceID());
+        xiiAssetFileHeader               header;
+        xiiMuJoCoModelResourceDescriptor descriptor;
+        if (header.Read(reader).Succeeded() && descriptor.Load(reader).Succeeded())
+          pModel = xiiMuJoCoCompiledModel::LoadBinary(descriptor.m_ModelData, GetResourceID());
         else
-        {
-          xiiRawMemoryStreamReader         reader(payload.GetPtr(), payload.GetCount());
-          xiiAssetFileHeader               header;
-          xiiMuJoCoModelResourceDescriptor descriptor;
-          if (header.Read(reader).Succeeded() && descriptor.Load(reader).Succeeded())
-            pModel = xiiMuJoCoCompiledModel::LoadBinary(descriptor.m_ModelData, GetResourceID());
-          else
-            xiiLog::Error("MuJoCo model resource '{}' is invalid or incompatible. Transform it again with the current MuJoCo build.", GetResourceID());
-        }
+          xiiLog::Error("MuJoCo model resource '{}' is invalid or incompatible. Transform it again with the current MuJoCo build.", GetResourceID());
+      }
+      else if (reader.IsNativeModel())
+      {
+        xiiContiguousMemoryStreamStorage bytes;
+        bytes.ReadAll(reader, MaxModelBytes + 1);
+        if (bytes.GetStorageSize64() <= MaxModelBytes)
+          pModel = xiiMuJoCoCompiledModel::LoadBinary(bytes.GetContiguousMemoryRange(0), GetResourceID());
+        else
+          xiiLog::Error("MuJoCo model resource '{}' exceeds the supported MJB stream size.", GetResourceID());
       }
       else
-        xiiLog::Error("MuJoCo model resource '{}' exceeds the supported MJB stream size.", GetResourceID());
+        xiiLog::Error("MuJoCo model resource '{}' has an unrecognized file format.", GetResourceID());
     }
     else
     {
