@@ -27,6 +27,7 @@ public:
   void DeserializeComponent(xiiWorldReader& inout_stream) override;
 
 protected:
+  void OnActivated() override;
   void OnSimulationStarted() override;
   void OnDeactivated() override;
 

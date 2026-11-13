@@ -34,7 +34,7 @@ public:
 
   /// Sets a symmetric relationship between two collision layers. The native world must be empty.
   [[nodiscard]] xiiResult SetCollisionEnabled(xiiUInt8 uiLayerA, xiiUInt8 uiLayerB, bool bEnabled);
-  /// Reloads project layer settings transactionally. Rejects changes while native bodies or characters exist.
+  /// Reloads project layer settings transactionally for empty worlds and stopped worlds with generated static collision only.
   [[nodiscard]] xiiStatus ReloadCollisionLayerConfig();
 
   /// Sets debug modes for this world. Call with world write access.
@@ -86,6 +86,7 @@ private:
   friend class xiiJoltCharacterControllerComponent;
   friend class xiiJoltJointComponent;
   friend class xiiJoltShapeComponent;
+  friend class xiiJoltStaticCollisionComponent;
 
   void Initialize() override;
   void Deinitialize() override;
@@ -101,6 +102,10 @@ private:
   void RegisterShape(xiiComponentHandle hShape);
   void UnregisterShape(xiiComponentHandle hShape);
   void UpdateShapes();
+  void QueueStaticCollision(xiiComponentHandle hGroup);
+  void RemoveStaticCollision(xiiComponentHandle hGroup);
+  void InvalidateStaticCollisionDescendants(const xiiGameObject& object);
+  void UpdateStaticCollision(const UpdateContext& context);
   void QueueBodyUpdate(xiiComponentHandle hActor);
   void SetBodyContactReporting(xiiComponentHandle hActor, bool bEnabled);
   void SetBodySurface(xiiComponentHandle hActor, const xiiSurfaceResourceHandle& hSurface);

@@ -8,6 +8,7 @@
 #include <Foundation/Strings/StringBuilder.h>
 #include <JoltPlugin/Actors/JoltDynamicActorComponent.h>
 #include <JoltPlugin/Actors/JoltKinematicActorComponent.h>
+#include <JoltPlugin/Actors/JoltStaticCollisionComponent.h>
 #include <JoltPlugin/Character/JoltCharacterControllerComponent.h>
 #include <JoltPlugin/Joints/JoltJointComponent.h>
 #include <JoltPlugin/Resources/JoltCollisionMeshResource.h>
@@ -74,6 +75,7 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(Jolt, JoltPlugin)
       if (xiiWorld* pWorld = xiiWorld::GetWorld(uiIndex))
       {
         XII_LOCK(pWorld->GetWriteMarker());
+        pWorld->DeleteModule(xiiGetStaticRTTI<xiiJoltStaticCollisionComponent>());
         pWorld->DeleteModule(xiiGetStaticRTTI<xiiJoltFixedJointComponent>());
         pWorld->DeleteModule(xiiGetStaticRTTI<xiiJoltPointJointComponent>());
         pWorld->DeleteModule(xiiGetStaticRTTI<xiiJoltHingeJointComponent>());

@@ -128,6 +128,15 @@ xiiResult xiiJoltCollisionMeshResource::Cook(xiiJoltCollisionGeometryType::Enum 
                                              xiiArrayPtr<const xiiUInt32> indices, xiiArrayPtr<const xiiUInt16> triangleSurfaces,
                                              xiiArrayPtr<const xiiSurfaceResourceHandle> surfaces, xiiJoltCollisionMeshResourceDescriptor& out_descriptor)
 {
+  xiiSharedPtr<xiiJoltCollisionMeshData> data;
+  XII_SUCCEED_OR_RETURN(BuildShape(type, vertices, indices, triangleSurfaces, surfaces, data));
+  return SerializeShape(*data, out_descriptor);
+}
+
+xiiResult xiiJoltCollisionMeshResource::BuildShape(xiiJoltCollisionGeometryType::Enum type, xiiArrayPtr<const xiiVec3> vertices,
+                                                   xiiArrayPtr<const xiiUInt32> indices, xiiArrayPtr<const xiiUInt16> triangleSurfaces,
+                                                   xiiArrayPtr<const xiiSurfaceResourceHandle> surfaces, xiiSharedPtr<xiiJoltCollisionMeshData>& out_data)
+{
   if (JPH::Factory::sInstance == nullptr || vertices.GetCount() < 3 || vertices.GetCount() > 1000000 ||
       surfaces.GetCount() > MaxSurfaceSlots || type > xiiJoltCollisionGeometryType::TriangleMesh ||
       (type == xiiJoltCollisionGeometryType::ConvexHull && (vertices.GetCount() < 4 || surfaces.GetCount() > 1)))
@@ -200,16 +209,26 @@ xiiResult xiiJoltCollisionMeshResource::Cook(xiiJoltCollisionGeometryType::Enum 
     xiiLog::Error("Jolt collision cooking failed: {}", result.GetError().c_str());
     return XII_FAILURE;
   }
+  auto data        = XII_DEFAULT_NEW(xiiJoltCollisionMeshData);
+  data->m_Type     = type;
+  data->m_pShape   = result.Get();
+  data->m_Surfaces = surfaces;
+  if (data->m_Surfaces.IsEmpty())
+    data->m_Surfaces.SetCount(1);
+  out_data = std::move(data);
+  return XII_SUCCESS;
+}
+
+xiiResult xiiJoltCollisionMeshResource::SerializeShape(const xiiJoltCollisionMeshData& data, xiiJoltCollisionMeshResourceDescriptor& out_descriptor)
+{
   xiiJoltCollisionMeshResourceDescriptor descriptor;
-  descriptor.m_Type             = type;
+  descriptor.m_Type             = data.m_Type;
   descriptor.m_uiCookingVersion = GetCookingVersion();
-  descriptor.m_Surfaces         = surfaces;
-  if (descriptor.m_Surfaces.IsEmpty())
-    descriptor.m_Surfaces.SetCount(1);
+  descriptor.m_Surfaces         = data.m_Surfaces;
   xiiDefaultMemoryStreamStorage storage;
   xiiMemoryStreamWriter         stream(&storage);
   CollisionWriter               writer(stream);
-  result.Get()->SaveBinaryState(writer);
+  data.m_pShape->SaveBinaryState(writer);
   if (writer.IsFailed() || storage.GetStorageSize64() > MaxCookedBytes)
     return XII_FAILURE;
   descriptor.m_CookedData.SetCountUninitialized(storage.GetStorageSize32());
@@ -221,6 +240,13 @@ xiiResult xiiJoltCollisionMeshResource::Cook(xiiJoltCollisionGeometryType::Enum 
 }
 
 xiiResult xiiJoltCollisionMeshResource::CookStaticMesh(const xiiSmcDescription& geometry, xiiJoltCollisionMeshResourceDescriptor& out_descriptor)
+{
+  xiiSharedPtr<xiiJoltCollisionMeshData> data;
+  XII_SUCCEED_OR_RETURN(BuildStaticMesh(geometry, data));
+  return SerializeShape(*data, out_descriptor);
+}
+
+xiiResult xiiJoltCollisionMeshResource::BuildStaticMesh(const xiiSmcDescription& geometry, xiiSharedPtr<xiiJoltCollisionMeshData>& out_data)
 {
   xiiDynamicArray<xiiVec3>                  vertices;
   xiiDynamicArray<xiiUInt32>                indices;
@@ -241,7 +267,7 @@ xiiResult xiiJoltCollisionMeshResource::CookStaticMesh(const xiiSmcDescription& 
     for (xiiUInt32 i = 0; i < section.m_uiNumTriangles; ++i)
       materials[section.m_uiFirstTriangle + i] = section.m_uiSurfaceIndex;
   }
-  return Cook(xiiJoltCollisionGeometryType::TriangleMesh, vertices, indices, materials, surfaces, out_descriptor);
+  return BuildShape(xiiJoltCollisionGeometryType::TriangleMesh, vertices, indices, materials, surfaces, out_data);
 }
 
 xiiJoltCollisionMeshResource::xiiJoltCollisionMeshResource() : xiiResource(DoUpdate::OnAnyThread, 1) {}

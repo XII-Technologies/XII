@@ -15,6 +15,7 @@ target_link_libraries(${PROJECT_NAME}
   PUBLIC
   Core
   PRIVATE
+  GraphicsCore
   Jolt
 )
 

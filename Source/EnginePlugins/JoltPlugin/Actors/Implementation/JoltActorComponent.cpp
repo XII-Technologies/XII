@@ -94,6 +94,14 @@ void xiiJoltActorComponent::OnSimulationStarted()
   QueueAncestorBodyUpdate(GetOwner()->GetParent());
 }
 
+void xiiJoltActorComponent::OnActivated()
+{
+  SUPER::OnActivated();
+  xiiMsgStaticMeshChanged::Notify(*GetOwner());
+  if (auto* pModule = GetWorld()->GetModule<xiiJoltPhysicsWorldModule>())
+    pModule->InvalidateStaticCollisionDescendants(*GetOwner());
+}
+
 void xiiJoltActorComponent::OnDeactivated()
 {
   if (auto* pModule = GetWorld()->GetModule<xiiJoltPhysicsWorldModule>())
@@ -102,6 +110,9 @@ void xiiJoltActorComponent::OnDeactivated()
     QueueSiblingBodyUpdates();
     QueueAncestorBodyUpdate(GetOwner()->GetParent());
   }
+  xiiMsgStaticMeshChanged::Notify(*GetOwner());
+  if (auto* pModule = GetWorld()->GetModule<xiiJoltPhysicsWorldModule>())
+    pModule->InvalidateStaticCollisionDescendants(*GetOwner());
   SUPER::OnDeactivated();
 }
 

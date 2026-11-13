@@ -37,6 +37,7 @@ struct XII_JOLTPLUGIN_DLL xiiJoltCollisionMeshResourceDescriptor
 
 using xiiJoltCollisionMeshResourceHandle = xiiTypedResourceHandle<class xiiJoltCollisionMeshResource>;
 class xiiJoltCollisionMeshData;
+class xiiJoltSceneCollisionCook;
 
 class XII_JOLTPLUGIN_DLL xiiJoltCollisionMeshResource final : public xiiResource
 {
@@ -59,6 +60,12 @@ public:
 
 private:
   friend class xiiJoltPhysicsWorldModule;
+  friend class xiiJoltSceneCollisionCook;
+  static xiiResult                       BuildShape(xiiJoltCollisionGeometryType::Enum type, xiiArrayPtr<const xiiVec3> vertices,
+                                                    xiiArrayPtr<const xiiUInt32> indices, xiiArrayPtr<const xiiUInt16> triangleSurfaces,
+                                                    xiiArrayPtr<const xiiSurfaceResourceHandle> surfaces, xiiSharedPtr<xiiJoltCollisionMeshData>& out_data);
+  static xiiResult                       BuildStaticMesh(const xiiSmcDescription& geometry, xiiSharedPtr<xiiJoltCollisionMeshData>& out_data);
+  static xiiResult                       SerializeShape(const xiiJoltCollisionMeshData& data, xiiJoltCollisionMeshResourceDescriptor& out_descriptor);
   xiiSharedPtr<xiiJoltCollisionMeshData> GetData() const;
   xiiResourceLoadDescription             UnloadData(Unload what) override;
   xiiResourceLoadDescription             UpdateContent(xiiStreamReader* pStream) override;

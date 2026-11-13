@@ -17,9 +17,13 @@
 #include <Foundation/Threading/Lock.h>
 #include <Foundation/Threading/Mutex.h>
 #include <Foundation/Utilities/ConversionUtils.h>
+#include <GraphicsCore/Material/MaterialResource.h>
+#include <GraphicsCore/Meshes/MeshComponent.h>
 #include <JoltPlugin/Actors/JoltDynamicActorComponent.h>
+#include <JoltPlugin/Actors/JoltStaticCollisionComponent.h>
 #include <JoltPlugin/Joints/JoltJointComponent.h>
 #include <JoltPlugin/Resources/Implementation/JoltCollisionMeshData.h>
+#include <JoltPlugin/Resources/Implementation/JoltSceneCollisionCook.h>
 #include <JoltPlugin/Shapes/JoltPrimitiveShapeComponent.h>
 #include <JoltPlugin/System/JoltCollisionLayerConfig.h>
 #include <JoltPlugin/System/JoltPhysicsWorldModule.h>
@@ -161,7 +165,8 @@ namespace
   class DebugBodyFilter final : public JPH::BodyDrawFilter
   {
   public:
-    bool ShouldDraw(const JPH::Body& body) const override { return body.IsActive(); }
+    bool ShouldDraw(const JPH::Body& body) const override { return !m_bActiveOnly || body.IsActive(); }
+    bool m_bActiveOnly = false;
   };
 #endif
 
@@ -511,6 +516,7 @@ struct xiiJoltPhysicsWorldModule::NativeWorld : JPH::ContactListener
   {
     xiiResourceManager::GetResourceEvents().RemoveEventHandler(xiiMakeDelegate(&NativeWorld::OnResourceEvent, this));
     m_JobSystem.DrainTasks();
+    DrainStaticCooks();
     m_PhysicsSystem.SetContactListener(nullptr);
     ClearBodies();
   }
@@ -526,6 +532,7 @@ struct xiiJoltPhysicsWorldModule::NativeWorld : JPH::ContactListener
     xiiSurfaceResourceHandle m_hSurface;
     xiiHashedString          m_sCollisionInteraction;
     bool                     m_bMaterialInitialized = false;
+    bool                     m_bGenerated           = false;
     float                    m_fFriction            = 0.2f;
     float                    m_fRestitution         = 0;
   };
@@ -548,11 +555,13 @@ struct xiiJoltPhysicsWorldModule::NativeWorld : JPH::ContactListener
 
   struct ShapeOwner
   {
-    xiiGameObjectHandle                    m_hObject;
-    xiiComponentHandle                     m_hComponent;
-    xiiSurfaceResourceHandle               m_hSurfaceOverride;
-    xiiSharedPtr<xiiJoltCollisionMeshData> m_pResource;
-    xiiDynamicArray<BodyOwner>             m_Surfaces;
+    xiiGameObjectHandle                       m_hObject;
+    xiiComponentHandle                        m_hComponent;
+    xiiSurfaceResourceHandle                  m_hSurfaceOverride;
+    xiiSharedPtr<xiiJoltCollisionMeshData>    m_pResource;
+    xiiDynamicArray<xiiSurfaceResourceHandle> m_SurfaceSlots;
+    xiiDynamicArray<BodyOwner>                m_Surfaces;
+    xiiTransform                              m_StaticLocal = xiiTransform::MakeIdentity();
   };
   struct ShapeSet
   {
@@ -603,7 +612,7 @@ struct xiiJoltPhysicsWorldModule::NativeWorld : JPH::ContactListener
 
   /// One body per owning component. The owner handles must be live in this world.
   /// The supplied layer uses XII's collision-layer index. Motion type determines broadphase placement.
-  [[nodiscard]] xiiResult CreateBody(const xiiWorld& world, xiiComponentHandle hComponent, const xiiJoltShapeComponent& shape, xiiUInt8 uiCollisionLayer, JPH::BodyCreationSettings& ref_settings, JPH::EActivation activation)
+  [[nodiscard]] xiiResult CreateBody(const xiiWorld& world, xiiComponentHandle hComponent, const xiiComponent& shape, xiiUInt8 uiCollisionLayer, JPH::BodyCreationSettings& ref_settings, JPH::EActivation activation)
   {
     if (hComponent.IsInvalidated() || hComponent.GetInternalID().m_WorldIndex != world.GetIndex())
       return XII_FAILURE;
@@ -902,11 +911,54 @@ struct xiiJoltPhysicsWorldModule::NativeWorld : JPH::ContactListener
     m_TrackedShapes.Clear();
   }
 
-  xiiJoltCollisionFilters                           m_CollisionFilters;
-  xiiJoltJobSystem                                  m_JobSystem;
-  JPH::TempAllocatorImplWithMallocFallback          m_TempAllocator{ScratchBufferSize};
-  JPH::PhysicsSystem                                m_PhysicsSystem;
-  xiiHashSet<xiiComponentHandle>                    m_PendingBodies;
+  xiiJoltCollisionFilters                  m_CollisionFilters;
+  xiiJoltJobSystem                         m_JobSystem;
+  JPH::TempAllocatorImplWithMallocFallback m_TempAllocator{ScratchBufferSize};
+  JPH::PhysicsSystem                       m_PhysicsSystem;
+  xiiHashSet<xiiComponentHandle>           m_PendingBodies;
+
+  struct StaticSource
+  {
+    xiiGameObjectHandle                        m_hObject;
+    xiiComponentHandle                         m_hComponent;
+    xiiTransform                               m_Local = xiiTransform::MakeIdentity();
+    xiiSharedPtr<xiiJoltSceneCollisionCook>    m_pCook;
+    xiiDynamicArray<xiiMaterialResourceHandle> m_MaterialOverrides;
+    xiiDynamicArray<xiiMaterialResourceHandle> m_MaterialDependencies;
+  };
+  struct StaticGroup
+  {
+    xiiTransform                        m_Pose = xiiTransform::MakeIdentity();
+    xiiDynamicArray<StaticSource>       m_Sources;
+    xiiDynamicArray<xiiComponentHandle> m_InstalledSources;
+    bool                                m_bDirty     = true;
+    bool                                m_bPoseValid = true;
+  };
+  xiiHashTable<xiiComponentHandle, StaticGroup>                    m_StaticGroups;
+  xiiHashSet<xiiComponentHandle>                                   m_PendingStaticGroups;
+  xiiHashTable<xiiString, xiiSharedPtr<xiiJoltSceneCollisionCook>> m_StaticMeshCache;
+  xiiDynamicArray<xiiSharedPtr<xiiJoltSceneCollisionCook>>         m_StaticCooks;
+  xiiMutex                                                         m_StaticResourceMutex;
+  xiiHashSet<xiiUInt64>                                            m_StaticResourceChanges;
+  xiiHashSet<xiiUInt64>                                            m_StaticMeshReloads;
+  xiiAtomicInteger32                                               m_bStaticResourcesChanged{0};
+  xiiAtomicInteger32                                               m_StaticGroupCount{0};
+  bool                                                             m_bPruneStaticMeshCache = false;
+
+  void DrainStaticCooks()
+  {
+    for (const auto& task : m_StaticCooks)
+      xiiTaskSystem::CancelGroup(task->m_Group).IgnoreResult();
+    m_StaticCooks.Clear();
+    m_StaticMeshCache.Clear();
+    m_StaticGroups.Clear();
+    m_PendingStaticGroups.Clear();
+    m_StaticGroupCount = 0;
+    XII_LOCK(m_StaticResourceMutex);
+    m_StaticResourceChanges.Clear();
+    m_StaticMeshReloads.Clear();
+    m_bStaticResourcesChanged = 0;
+  }
   xiiDynamicArray<DynamicPose>                      m_PosesToSync;
   xiiHashTable<xiiComponentHandle, KinematicTarget> m_KinematicActors;
   xiiHashSet<xiiUInt32>                             m_TeleportedBodies;
@@ -1031,6 +1083,23 @@ struct xiiJoltPhysicsWorldModule::NativeWorld : JPH::ContactListener
     if ((event.m_Type == xiiResourceEvent::Type::ResourceContentUpdated || event.m_Type == xiiResourceEvent::Type::ResourceContentUnloading) &&
         event.m_pResource->GetDynamicRTTI()->IsDerivedFrom<xiiSurfaceResource>())
       m_MaterialsDirty = 1;
+    if (m_StaticGroupCount == 0)
+      return;
+    const auto* pType = event.m_pResource->GetDynamicRTTI();
+    const auto  hash  = event.m_pResource->GetResourceIDHash();
+    if (pType == xiiGetStaticRTTI<xiiMeshResource>() && event.m_Type == xiiResourceEvent::Type::ResourceContentUnloading)
+    {
+      XII_LOCK(m_StaticResourceMutex);
+      m_StaticMeshReloads.Insert(hash);
+      m_bStaticResourcesChanged = 1;
+    }
+    else if ((pType == xiiGetStaticRTTI<xiiMaterialResource>() || pType == xiiGetStaticRTTI<xiiJoltCollisionMeshResource>()) &&
+             (event.m_Type == xiiResourceEvent::Type::ResourceContentUpdated || event.m_Type == xiiResourceEvent::Type::ResourceContentUnloading))
+    {
+      XII_LOCK(m_StaticResourceMutex);
+      m_StaticResourceChanges.Insert(hash);
+      m_bStaticResourcesChanged = 1;
+    }
   }
   xiiHashTable<xiiComponentHandle, Joint> m_Joints;
   xiiHashSet<xiiComponentHandle>          m_PendingJoints;
@@ -1064,7 +1133,8 @@ xiiJoltPhysicsWorldModule::~xiiJoltPhysicsWorldModule() = default;
 
 bool xiiJoltPhysicsWorldModule::HasSimulationState() const
 {
-  return m_pNativeWorld && (m_pNativeWorld->m_PhysicsSystem.GetNumBodies() != 0 || !m_pNativeWorld->m_Characters.IsEmpty());
+  return m_pNativeWorld && GetWorld()->GetWorldSimulationEnabled() &&
+    (m_pNativeWorld->m_PhysicsSystem.GetNumBodies() != 0 || !m_pNativeWorld->m_Characters.IsEmpty());
 }
 
 xiiResult xiiJoltPhysicsWorldModule::SetSimulationStep(xiiTime fixedStep, xiiUInt32 uiMaxCatchUpSteps)
@@ -1091,8 +1161,18 @@ xiiResult xiiJoltPhysicsWorldModule::SetCollisionEnabled(xiiUInt8 uiLayerA, xiiU
 
 xiiStatus xiiJoltPhysicsWorldModule::ReloadCollisionLayerConfig()
 {
-  if (!m_pNativeWorld || m_pNativeWorld->m_PhysicsSystem.GetNumBodies() != 0 || !m_pNativeWorld->m_Characters.IsEmpty())
+  if (!m_pNativeWorld || !m_pNativeWorld->m_Characters.IsEmpty())
     return xiiStatus("Jolt collision-layer changes require an empty physics world. Restart simulation to apply them.");
+  if (m_pNativeWorld->m_PhysicsSystem.GetNumBodies() != 0)
+  {
+    // Authored preview bodies are also registered while the editor is stopped.
+    // Reloading the pair table is safe when only generated static bodies exist.
+    if (GetWorld()->GetWorldSimulationEnabled())
+      return xiiStatus("Jolt collision-layer changes require stopping simulation first.");
+    for (const auto& entry : m_pNativeWorld->GetBodyOwners())
+      if (!entry.Value().m_bGenerated)
+        return xiiStatus("Jolt collision-layer changes require an empty physics world. Restart simulation to apply them.");
+  }
   return m_pNativeWorld->m_CollisionFilters.m_Config.Load();
 }
 
@@ -1107,6 +1187,11 @@ void xiiJoltPhysicsWorldModule::Initialize()
   desc.m_fPriority                 = -100000.0f;
   RegisterUpdateFunction(desc);
 
+  auto staticCollision        = XII_CREATE_MODULE_UPDATE_FUNCTION_DESC(xiiJoltPhysicsWorldModule::UpdateStaticCollision, this);
+  staticCollision.m_Phase     = xiiWorldUpdatePhase::PreAsync;
+  staticCollision.m_fPriority = -99999.0f;
+  RegisterUpdateFunction(staticCollision);
+
   auto contacts    = XII_CREATE_MODULE_UPDATE_FUNCTION_DESC(xiiJoltPhysicsWorldModule::DispatchContacts, this);
   contacts.m_Phase = xiiWorldUpdatePhase::PostAsync;
   RegisterUpdateFunction(contacts);
@@ -1117,6 +1202,10 @@ void xiiJoltPhysicsWorldModule::Deinitialize()
   auto desc    = XII_CREATE_MODULE_UPDATE_FUNCTION_DESC(xiiJoltPhysicsWorldModule::Simulate, this);
   desc.m_Phase = xiiWorldUpdatePhase::PreAsync;
   DeregisterUpdateFunction(desc);
+
+  auto staticCollision    = XII_CREATE_MODULE_UPDATE_FUNCTION_DESC(xiiJoltPhysicsWorldModule::UpdateStaticCollision, this);
+  staticCollision.m_Phase = xiiWorldUpdatePhase::PreAsync;
+  DeregisterUpdateFunction(staticCollision);
 
   auto contacts    = XII_CREATE_MODULE_UPDATE_FUNCTION_DESC(xiiJoltPhysicsWorldModule::DispatchContacts, this);
   contacts.m_Phase = xiiWorldUpdatePhase::PostAsync;
@@ -1132,6 +1221,7 @@ void xiiJoltPhysicsWorldModule::OnSimulationStarted()
 
 void xiiJoltPhysicsWorldModule::WorldClear()
 {
+  m_pNativeWorld->DrainStaticCooks();
   m_pNativeWorld->ClearBodies();
   m_AccumulatedTime = xiiTime::MakeZero();
 }
@@ -1238,10 +1328,11 @@ const xiiJoltDebugDrawData* xiiJoltPhysicsWorldModule::GetDebugDrawData(xiiBitfl
   bodies.mDrawVelocity              = modes.IsSet(xiiJoltDebugMode::Velocities);
   const bool      bActiveOnly       = modes.IsSet(xiiJoltDebugMode::ActiveBodiesOnly);
   DebugBodyFilter filter;
+  filter.m_bActiveOnly = bActiveOnly;
   if (bodies.mDrawShape || bodies.mDrawBoundingBox || bodies.mDrawCenterOfMassTransform || bodies.mDrawWorldTransform || bodies.mDrawVelocity)
     native.m_PhysicsSystem.DrawBodies(bodies, &renderer, bActiveOnly ? &filter : nullptr);
 
-  if (bodies.mDrawWorldTransform || modes.IsSet(xiiJoltDebugMode::BodyIdentifiers))
+  if (bodies.mDrawWorldTransform || modes.IsSet(xiiJoltDebugMode::BodyIdentifiers) || (bodies.mDrawShape && !bActiveOnly))
   {
     for (auto it = native.GetBodyOwners().GetIterator(); it.IsValid(); ++it)
     {
@@ -1249,6 +1340,8 @@ const xiiJoltDebugDrawData* xiiJoltPhysicsWorldModule::GetDebugDrawData(xiiBitfl
       if (!lock.Succeeded() || (bActiveOnly && !lock.GetBody().IsActive()))
         continue;
       const auto& body = lock.GetBody();
+      if (bodies.mDrawShape && native.m_StaticGroups.Contains(it.Value().m_hComponent))
+        renderer.DrawText3D(body.GetPosition(), "Generated static collision", JPH::Color::sCyan, 0.15f);
       if (bodies.mDrawWorldTransform)
       {
         const auto color = body.IsSensor() ? JPH::Color::sYellow : body.IsStatic() ? JPH::Color::sGrey :
@@ -1265,6 +1358,17 @@ const xiiJoltDebugDrawData* xiiJoltPhysicsWorldModule::GetDebugDrawData(xiiBitfl
       }
     }
   }
+  if (bodies.mDrawShape && !bActiveOnly)
+    for (const auto& entry : native.m_StaticGroups)
+    {
+      const xiiJoltStaticCollisionComponent* pGroup = nullptr;
+      if (!static_cast<const xiiWorld*>(GetWorld())->TryGetComponent(entry.Key(), pGroup))
+        continue;
+      const auto state    = pGroup->GetCollisionState();
+      const auto position = pGroup->GetOwner()->GetGlobalPosition();
+      if (position.IsValid() && (state == xiiJoltStaticCollisionComponent::State::PendingGeometry || state == xiiJoltStaticCollisionComponent::State::PendingResource))
+        renderer.DrawText3D(JPH::RVec3(position.x, position.y, position.z), state == xiiJoltStaticCollisionComponent::State::PendingGeometry ? "Preparing static collision geometry" : "Loading static collision resource", JPH::Color::sOrange, 0.15f);
+    }
 
   const bool bConstraints = modes.IsSet(xiiJoltDebugMode::Constraints);
   const bool bLimits      = modes.IsSet(xiiJoltDebugMode::ConstraintLimits);
@@ -2208,10 +2312,14 @@ void xiiJoltPhysicsWorldModule::DispatchContacts(const UpdateContext&)
       if (!contact.m_bReport[i])
         continue;
 
-      const auto&                  owner  = contact.m_Owners[i];
-      const xiiJoltActorComponent* pActor = nullptr;
-      if (!static_cast<const xiiWorld*>(GetWorld())->TryGetComponent(owner.m_hComponent, pActor) ||
-          !pActor->IsActiveAndSimulating() || !pActor->GetReportContacts())
+      const auto&         owner      = contact.m_Owners[i];
+      const xiiComponent* pComponent = nullptr;
+      if (!static_cast<const xiiWorld*>(GetWorld())->TryGetComponent(owner.m_hComponent, pComponent))
+        continue;
+      const auto* pActor = xiiDynamicCast<const xiiJoltActorComponent*>(pComponent);
+      const auto* pGroup = xiiDynamicCast<const xiiJoltStaticCollisionComponent*>(pComponent);
+      if (!(pActor && pActor->IsActiveAndSimulating() && pActor->GetReportContacts()) &&
+          !(pGroup && pGroup->IsActiveAndInitialized() && pGroup->GetReportContacts()))
         continue;
 
       if (contact.m_Phase != xiiPhysicsContactPhase::Removed)
@@ -2227,7 +2335,8 @@ void xiiJoltPhysicsWorldModule::DispatchContacts(const UpdateContext&)
       msg.m_fImpactSqr            = contact.m_fImpactSqr;
       msg.m_Phase                 = contact.m_Phase;
       const xiiGameObject* pOther = nullptr;
-      if (static_cast<const xiiWorld*>(GetWorld())->TryGetObject(contact.m_Owners[1 - i].m_hObject, pOther))
+      const auto&          other  = contact.m_Owners[1 - i];
+      if (static_cast<const xiiWorld*>(GetWorld())->TryGetObject(other.m_bGenerated ? other.m_hShapeObject : other.m_hObject, pOther))
         msg.m_hOtherObject = pOther->GetHandle();
 
       GetWorld()->PostMessage(owner.m_hObject, msg, xiiTime::MakeZero(), xiiObjectMsgQueueType::PostTransform);
@@ -3145,6 +3254,8 @@ void xiiJoltPhysicsWorldModule::UpdateMaterials()
           const float oldF = surface.m_fFriction, oldR = surface.m_fRestitution;
           const bool  initialized = surface.m_bMaterialInitialized;
           auto        handle      = child.m_hSurfaceOverride;
+          if (!handle.IsValid() && i < child.m_SurfaceSlots.GetCount())
+            handle = child.m_SurfaceSlots[i];
           if (!handle.IsValid() && child.m_pResource && i < child.m_pResource->m_Surfaces.GetCount())
             handle = child.m_pResource->m_Surfaces[i];
           if (!handle.IsValid())
@@ -3180,6 +3291,454 @@ void xiiJoltPhysicsWorldModule::UnregisterShape(xiiComponentHandle hShape)
     if (!pShape->m_hActor.IsInvalidated())
       QueueBodyUpdate(pShape->m_hActor);
   native.m_TrackedShapes.Remove(hShape);
+}
+
+void xiiJoltPhysicsWorldModule::QueueStaticCollision(xiiComponentHandle hGroup)
+{
+  auto& native = *m_pNativeWorld;
+  if (!native.m_StaticGroups.Contains(hGroup))
+    native.m_StaticGroupCount.Increment();
+  native.m_StaticGroups[hGroup].m_bDirty = true;
+  native.m_PendingStaticGroups.Insert(hGroup);
+}
+
+void xiiJoltPhysicsWorldModule::RemoveStaticCollision(xiiComponentHandle hGroup)
+{
+  auto& native = *m_pNativeWorld;
+  if (native.m_StaticGroups.Remove(hGroup))
+  {
+    native.m_StaticGroupCount.Decrement();
+    native.m_bPruneStaticMeshCache = true;
+  }
+  native.m_PendingStaticGroups.Remove(hGroup);
+  native.RemoveBody(hGroup);
+}
+
+void xiiJoltPhysicsWorldModule::InvalidateStaticCollisionDescendants(const xiiGameObject& object)
+{
+  auto& native = *m_pNativeWorld;
+  for (auto& entry : native.m_StaticGroups)
+  {
+    const xiiJoltStaticCollisionComponent* pGroup = nullptr;
+    if (!static_cast<const xiiWorld*>(GetWorld())->TryGetComponent(entry.Key(), pGroup))
+      continue;
+    for (auto* pParent = pGroup->GetOwner(); pParent; pParent = pParent->GetParent())
+      if (pParent == &object)
+      {
+        entry.Value().m_bDirty = true;
+        native.m_PendingStaticGroups.Insert(entry.Key());
+        break;
+      }
+  }
+}
+
+void xiiJoltPhysicsWorldModule::UpdateStaticCollision(const UpdateContext&)
+{
+  using State                = xiiJoltStaticCollisionComponent::State;
+  auto&      native          = *m_pNativeWorld;
+  const bool bNeedsMaterials = !GetWorld()->GetWorldSimulationEnabled() && !native.m_StaticGroups.IsEmpty();
+  if (native.m_PendingStaticGroups.IsEmpty() && native.m_StaticCooks.IsEmpty() && !native.m_bPruneStaticMeshCache &&
+      native.m_bStaticResourcesChanged == 0)
+  {
+    if (bNeedsMaterials)
+      UpdateMaterials();
+    return;
+  }
+
+  xiiHashSet<xiiUInt64> changed, reloaded;
+  if (native.m_bStaticResourcesChanged.Set(0) != 0)
+  {
+    XII_LOCK(native.m_StaticResourceMutex);
+    changed.Swap(native.m_StaticResourceChanges);
+    reloaded.Swap(native.m_StaticMeshReloads);
+  }
+  if (!reloaded.IsEmpty())
+    for (auto it = native.m_StaticMeshCache.GetIterator(); it.IsValid();)
+      if (reloaded.Contains(it.Value()->m_hMesh.GetResourceIDHash()))
+        it = native.m_StaticMeshCache.Remove(it);
+      else
+        ++it;
+  if (!changed.IsEmpty() || !reloaded.IsEmpty())
+    for (auto it = native.m_StaticGroups.GetIterator(); it.IsValid(); ++it)
+    {
+      const xiiJoltStaticCollisionComponent* pGroup = nullptr;
+      if (!static_cast<const xiiWorld*>(GetWorld())->TryGetComponent(it.Key(), pGroup))
+        continue;
+      bool bUpdate = pGroup->GetCollisionMesh().IsValid() && changed.Contains(pGroup->GetCollisionMesh().GetResourceIDHash());
+      for (const auto& source : it.Value().m_Sources)
+      {
+        if (source.m_pCook && source.m_pCook->m_hMesh.IsValid() && reloaded.Contains(source.m_pCook->m_hMesh.GetResourceIDHash()))
+        {
+          it.Value().m_bDirty = true;
+          bUpdate             = true;
+        }
+        for (const auto& material : source.m_MaterialDependencies)
+          if (changed.Contains(material.GetResourceIDHash()))
+            bUpdate = true;
+      }
+      if (bUpdate)
+        native.m_PendingStaticGroups.Insert(it.Key());
+    }
+
+  const auto schedule = [&native](const xiiSharedPtr<xiiJoltSceneCollisionCook>& task) {
+    task->m_Group = xiiTaskSystem::StartSingleTask(task, xiiTaskPriority::LongRunning);
+    native.m_StaticCooks.PushBack(task);
+  };
+  bool bInstalled = false;
+  for (auto pending = native.m_PendingStaticGroups.GetIterator(); pending.IsValid();)
+  {
+    const auto                       hGroup = pending.Key();
+    xiiJoltStaticCollisionComponent* pGroup = nullptr;
+    if (!GetWorld()->TryGetComponent(hGroup, pGroup) || !pGroup->IsActiveAndInitialized())
+    {
+      pending = native.m_PendingStaticGroups.Remove(pending);
+      continue;
+    }
+    auto& group = native.m_StaticGroups[hGroup];
+    auto& root  = *pGroup->GetOwner();
+    if (std::exchange(group.m_bDirty, false))
+    {
+      xiiDynamicArray<NativeWorld::StaticSource> sources;
+      root.UpdateGlobalTransform();
+      group.m_Pose          = root.GetGlobalTransform();
+      group.m_bPoseValid    = group.m_Pose.m_vPosition.IsValid() && group.m_Pose.m_qRotation.IsValid();
+      const auto rootScale  = group.m_Pose.m_vScale;
+      group.m_Pose.m_vScale = xiiVec3(1.0f);
+      auto worldToBody      = xiiMat4::MakeIdentity();
+      if (group.m_bPoseValid)
+      {
+        worldToBody        = group.m_Pose.GetAsMat4();
+        group.m_bPoseValid = worldToBody.Invert().Succeeded();
+      }
+
+      const auto firstGroup = [](const xiiGameObject& object) -> const xiiJoltStaticCollisionComponent* {
+        for (auto* pComponent : object.GetComponents())
+          if (const auto* pOther = xiiDynamicCast<const xiiJoltStaticCollisionComponent*>(pComponent); pOther && pOther->IsActive())
+            return pOther;
+        return nullptr;
+      };
+      const auto hasActor = [](const xiiGameObject& object) {
+        for (auto* pComponent : object.GetComponents())
+          if (pComponent->IsActive() && xiiDynamicCast<const xiiJoltActorComponent*>(pComponent))
+            return true;
+        return false;
+      };
+      const auto hasCollisionBoundary = [&](const xiiGameObject& object) {
+        return !object.IsStatic() || hasActor(object) || firstGroup(object) != nullptr;
+      };
+
+      bool bEligible = root.IsStatic() && firstGroup(root) == pGroup;
+      for (auto* pObject = &root; pObject; pObject = pObject->GetParent())
+      {
+        // Observe edits above the group as well. Explicit actors own their complete subtree.
+        pObject->EnableComponentChangesNotifications();
+        pObject->EnableChildChangesNotifications();
+        bEligible &= !hasActor(*pObject);
+      }
+
+      if (bEligible && group.m_bPoseValid && pGroup->GetCollisionMesh().IsValid())
+      {
+        // A baked resource has no source-object map. Its contract is to represent
+        // this root's geometry independently of any child instances.
+        auto& source            = sources.ExpandAndGetRef();
+        source.m_hObject        = root.GetHandle();
+        source.m_hComponent     = hGroup;
+        source.m_Local.m_vScale = rootScale;
+      }
+      else if (bEligible && group.m_bPoseValid)
+      {
+        const auto collect = [&](auto&& self, xiiGameObject& object) -> void {
+          object.EnableChildChangesNotifications();
+          object.EnableComponentChangesNotifications();
+          object.EnableStaticTransformChangesNotifications();
+          if (!object.IsActive() || (&object != &root && hasCollisionBoundary(object)))
+            return;
+          object.UpdateGlobalTransform();
+          for (auto* pComponent : object.GetComponents())
+          {
+            if (!pComponent->IsActiveAndInitialized())
+              continue;
+            if (auto* pMesh = xiiDynamicCast<xiiStaticMeshComponent*>(pComponent); pMesh && pMesh->GetMesh().IsValid())
+            {
+              xiiTransform local;
+              if (!DecomposeShape(worldToBody * object.GetGlobalTransform().GetAsMat4(), local))
+              {
+                group.m_bPoseValid = false;
+                continue;
+              }
+              xiiStringBuilder key;
+              key.SetFormat("{}#{}", pMesh->GetMesh().GetResourceID(), pMesh->GetSectionIndex());
+              auto& task = native.m_StaticMeshCache[xiiString(key)];
+              if (!task)
+              {
+                task              = XII_DEFAULT_NEW(xiiJoltSceneCollisionCook);
+                task->m_hMesh     = pMesh->GetMesh();
+                task->m_uiSection = pMesh->GetSectionIndex();
+                schedule(task);
+              }
+              auto& source               = sources.ExpandAndGetRef();
+              source.m_hObject           = object.GetHandle();
+              source.m_hComponent        = pComponent->GetHandle();
+              source.m_Local             = local;
+              source.m_pCook             = task;
+              source.m_MaterialOverrides = pMesh->GetMaterialOverrides();
+            }
+            else
+            {
+              xiiMsgBuildStaticMesh message;
+              if (!pComponent->HandlesMessage(message))
+                continue;
+              xiiUniquePtr<xiiSmcDescription> geometry = XII_DEFAULT_NEW(xiiSmcDescription);
+              message.m_pStaticMeshDescription         = geometry.Borrow();
+              pComponent->SendMessage(message);
+              if (geometry->m_Triangles.IsEmpty())
+                continue;
+              for (auto& vertex : geometry->m_Vertices)
+                vertex = worldToBody.TransformPosition(vertex);
+              auto task         = XII_DEFAULT_NEW(xiiJoltSceneCollisionCook);
+              task->m_pGeometry = std::move(geometry);
+              schedule(task);
+              auto& source        = sources.ExpandAndGetRef();
+              source.m_hObject    = object.GetHandle();
+              source.m_hComponent = pComponent->GetHandle();
+              source.m_pCook      = std::move(task);
+            }
+          }
+          for (auto child = object.GetChildren(); child.IsValid(); ++child)
+            self(self, *child);
+        };
+        collect(collect, root);
+      }
+
+      // Old geometry may remain while a replacement loads, but never if it contains
+      // a contributor that was removed, deactivated or claimed by another group.
+      xiiHashSet<xiiComponentHandle> newSources(GetAllocator());
+      newSources.Reserve(sources.GetCount());
+      for (const auto& source : sources)
+        newSources.Insert(source.m_hComponent);
+      for (const auto hInstalled : group.m_InstalledSources)
+      {
+        if (!newSources.Contains(hInstalled))
+        {
+          native.RemoveBody(hGroup);
+          group.m_InstalledSources.Clear();
+          break;
+        }
+      }
+      group.m_Sources                = std::move(sources);
+      native.m_bPruneStaticMeshCache = true;
+    }
+
+    State                                  state = !group.m_bPoseValid ? State::Failed : group.m_Sources.IsEmpty() ? State::Unsupported :
+                                                                                                                     State::Ready;
+    xiiSharedPtr<xiiJoltCollisionMeshData> cookedResource;
+    if (state == State::Ready && pGroup->GetCollisionMesh().IsValid())
+    {
+      const auto&                                         handle = pGroup->GetCollisionMesh();
+      const xiiResourceLock<xiiJoltCollisionMeshResource> resource(handle, xiiResourceAcquireMode::PointerOnly);
+      cookedResource = resource->GetData();
+      if (!cookedResource)
+      {
+        if (resource->GetLoadingState() == xiiResourceState::LoadedResourceMissing)
+          state = State::Failed;
+        else
+        {
+          xiiResourceManager::PreloadResource(handle);
+          state = State::PendingResource;
+        }
+      }
+      else if (cookedResource->m_Type != xiiJoltCollisionGeometryType::TriangleMesh)
+        state = State::Failed;
+    }
+    if (state == State::Ready && !cookedResource)
+      for (const auto& source : group.m_Sources)
+      {
+        if (!xiiTaskSystem::IsTaskGroupFinished(source.m_pCook->m_Group))
+          state = State::PendingGeometry;
+        else if (!source.m_pCook->m_pResult)
+        {
+          state = State::Failed;
+          break;
+        }
+      }
+
+    NativeWorld::ShapeSet shapeSet;
+    if (state == State::Ready)
+      for (auto& source : group.m_Sources)
+      {
+        auto data = cookedResource ? cookedResource : source.m_pCook->m_pResult;
+        if (!data->m_pShape->IsValidScale(ToJoltVector(source.m_Local.m_vScale)))
+        {
+          state = State::Failed;
+          break;
+        }
+        auto& owner         = shapeSet.m_Shapes.ExpandAndGetRef();
+        owner.m_hObject     = source.m_hObject;
+        owner.m_hComponent  = source.m_hComponent;
+        owner.m_pResource   = data;
+        owner.m_StaticLocal = source.m_Local;
+        owner.m_Surfaces.SetCount(data->m_Surfaces.GetCount());
+
+        if (!cookedResource && !source.m_pCook->m_MaterialSlots.IsEmpty())
+        {
+          source.m_MaterialDependencies.Clear();
+          owner.m_SurfaceSlots.SetCount(source.m_pCook->m_MaterialSlots.GetCount());
+          for (xiiUInt32 i = 0; i < owner.m_SurfaceSlots.GetCount(); ++i)
+          {
+            const auto                slot = source.m_pCook->m_MaterialSlots[i];
+            xiiMaterialResourceHandle material;
+            if (slot < source.m_MaterialOverrides.GetCount())
+              material = source.m_MaterialOverrides[slot];
+            const auto& defaults = source.m_pCook->m_Materials;
+            if (!material.IsValid() && slot < defaults.GetCount() && !defaults[slot].IsEmpty())
+              material = xiiResourceManager::LoadResource<xiiMaterialResource>(defaults[slot]);
+            for (xiiUInt32 depth = 0; material.IsValid() && depth < 32; ++depth)
+            {
+              XII_LOCK(xiiResourceManager::GetMutex());
+              const xiiResourceLock<xiiMaterialResource> resource(material, xiiResourceAcquireMode::PointerOnly);
+              if (!source.m_MaterialDependencies.Contains(material))
+                source.m_MaterialDependencies.PushBack(material);
+              if (resource->GetLoadingState() != xiiResourceState::Loaded)
+              {
+                if (resource->GetLoadingState() == xiiResourceState::Unloaded)
+                  xiiResourceManager::PreloadResource(material);
+                break;
+              }
+              const auto& description = resource->GetCurrentDescription();
+              if (!description.m_sSurface.IsEmpty())
+              {
+                owner.m_SurfaceSlots[i] = xiiResourceManager::LoadResource<xiiSurfaceResource>(description.m_sSurface.GetView());
+                break;
+              }
+              if (material == description.m_hBaseMaterial)
+                break;
+              material = description.m_hBaseMaterial;
+            }
+          }
+        }
+      }
+
+    if (state == State::Ready)
+    {
+      auto  id            = native.FindBody(hGroup);
+      auto* pOld          = native.m_ShapeSets.GetValue(id.GetIndexAndSequenceNumber());
+      bool  bSameGeometry = pOld && pOld->m_Shapes.GetCount() == shapeSet.m_Shapes.GetCount();
+      if (bSameGeometry)
+        for (xiiUInt32 i = 0; i < shapeSet.m_Shapes.GetCount(); ++i)
+        {
+          const auto& old   = pOld->m_Shapes[i];
+          const auto& child = shapeSet.m_Shapes[i];
+          bSameGeometry &= old.m_pResource == child.m_pResource && old.m_hComponent == child.m_hComponent &&
+            old.m_StaticLocal.m_vPosition.IsEqual(child.m_StaticLocal.m_vPosition, 0.00001f) &&
+            old.m_StaticLocal.m_vScale.IsEqual(child.m_StaticLocal.m_vScale, 0.00001f) &&
+            old.m_StaticLocal.m_qRotation.IsEqualRotation(child.m_StaticLocal.m_qRotation, 0.00001f);
+        }
+      const auto&      position = group.m_Pose.m_vPosition;
+      const JPH::RVec3 nativePosition(position.x, position.y, position.z);
+      const auto       rotation = ToJoltRotation(group.m_Pose.m_qRotation);
+      if (bSameGeometry)
+      {
+        shapeSet.m_pRoot = pOld->m_pRoot;
+      }
+      else
+      {
+        JPH::StaticCompoundShapeSettings compound;
+        for (xiiUInt32 i = 0; i < shapeSet.m_Shapes.GetCount(); ++i)
+        {
+          const auto& child = shapeSet.m_Shapes[i];
+          const auto& local = child.m_StaticLocal;
+          auto        shape = child.m_pResource->m_pShape;
+          if (local.m_vScale != xiiVec3(1.0f))
+            shape = new JPH::ScaledShape(shape, ToJoltVector(local.m_vScale));
+          compound.AddShape(ToJoltVector(local.m_vPosition), ToJoltRotation(local.m_qRotation), shape, i);
+        }
+        auto result = compound.Create(native.m_TempAllocator);
+        if (result.HasError())
+        {
+          state = State::Failed;
+          if (!pGroup->m_bReportedFailure)
+          {
+            xiiLog::Warning("Could not assemble Jolt static collision for '{}': {}", root.GetName(), result.GetError().c_str());
+            pGroup->m_bReportedFailure = true;
+          }
+        }
+        else
+          shapeSet.m_pRoot = result.Get();
+      }
+      if (state == State::Ready)
+      {
+        auto& bodies = native.m_PhysicsSystem.GetBodyInterface();
+        if (id.IsInvalid() || !bSameGeometry)
+        {
+          // A different compound can reuse subshape IDs for different children. Replace
+          // the body so its existing contacts retire through the body registry.
+          JPH::BodyCreationSettings settings(shapeSet.m_pRoot.GetPtr(), nativePosition, rotation, JPH::EMotionType::Static, 0);
+          settings.mUserData = pGroup->GetReportContacts() ? 1 : 0;
+          if (native.CreateBody(*GetWorld(), hGroup, *pGroup, pGroup->GetCollisionLayer(), settings, JPH::EActivation::DontActivate).Failed())
+            state = State::Failed;
+          id = native.FindBody(hGroup);
+        }
+        else
+        {
+          const auto layer = xiiJoltCollisionFilters::MakeObjectLayer(pGroup->GetCollisionLayer(), JPH::EMotionType::Static);
+          if (bodies.GetObjectLayer(id) != layer)
+            bodies.SetObjectLayer(id, layer);
+          bodies.SetPositionAndRotationWhenChanged(id, nativePosition, rotation, JPH::EActivation::DontActivate);
+          SetBodyContactReporting(hGroup, pGroup->GetReportContacts());
+        }
+        if (state == State::Ready)
+        {
+          auto& owner        = *native.FindOwnerMutable(id);
+          owner.m_hSurface   = pGroup->GetSurface();
+          owner.m_bGenerated = true;
+          group.m_InstalledSources.Clear();
+          for (auto& child : shapeSet.m_Shapes)
+          {
+            group.m_InstalledSources.PushBack(child.m_hComponent);
+            for (auto& surface : child.m_Surfaces)
+            {
+              surface                   = owner;
+              surface.m_hShapeObject    = child.m_hObject;
+              surface.m_hShapeComponent = child.m_hComponent;
+            }
+          }
+          native.m_ShapeSets.Insert(id.GetIndexAndSequenceNumber(), std::move(shapeSet));
+          bInstalled = true;
+        }
+      }
+    }
+
+    if (state == State::Failed && !pGroup->m_bReportedFailure)
+      xiiLog::Warning("Could not build Jolt static collision for '{}'. Check mesh data, scale, collision resource type, and body capacity.", root.GetName());
+    if (state == State::Failed || state == State::Ready)
+      pGroup->m_bReportedFailure = state == State::Failed;
+    pGroup->m_State = state;
+    if (state == State::PendingGeometry || state == State::PendingResource)
+      ++pending;
+    else
+      pending = native.m_PendingStaticGroups.Remove(pending);
+  }
+
+  for (xiiUInt32 i = native.m_StaticCooks.GetCount(); i > 0; --i)
+  {
+    const auto& task = native.m_StaticCooks[i - 1];
+    if (xiiTaskSystem::IsTaskGroupFinished(task->m_Group))
+    {
+      native.m_StaticCooks.RemoveAtAndSwap(i - 1);
+      native.m_bPruneStaticMeshCache = true;
+    }
+  }
+  if (native.m_bPruneStaticMeshCache)
+  {
+    native.m_bPruneStaticMeshCache = false;
+    for (auto it = native.m_StaticMeshCache.GetIterator(); it.IsValid();)
+      if (it.Value()->GetRefCount() == 1)
+        it = native.m_StaticMeshCache.Remove(it);
+      else
+        ++it;
+  }
+  if (bInstalled || bNeedsMaterials)
+    UpdateMaterials();
 }
 
 void xiiJoltPhysicsWorldModule::UpdateShapes()
