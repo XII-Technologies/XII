@@ -68,7 +68,10 @@ xiiUInt64 xiiJoltCollisionMeshResource::GetCookingVersion()
 {
   using JPH::uint64;
   // Feature bits include Jolt precision and build options. Hashing the native words also distinguishes byte order.
-  const xiiUInt64 version[] = {JPH_VERSION_ID, sizeof(void*), 1};
+  // Hull and mesh binary state omits debug geometry. Canonicalize the renderer feature
+  // to its previous enabled value so Shipping can consume existing cooked assets.
+  constexpr xiiUInt64 uiDebugRendererVersionBit = xiiUInt64{1} << 29;
+  const xiiUInt64     version[]                 = {JPH_VERSION_ID | uiDebugRendererVersionBit, sizeof(void*), 1};
   return xiiHashingUtils::xxHash64(version, sizeof(version));
 }
 
