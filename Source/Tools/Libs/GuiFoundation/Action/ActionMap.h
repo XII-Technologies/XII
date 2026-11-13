@@ -138,6 +138,9 @@ public:
   /// If the target action is in this mapping, prefer not calling MapAction in the first place. Use this for actions to be removed that might be in a parent mapping and thus can't be modified directly.
   void HideAction(xiiActionDescriptorHandle hAction, xiiStringView sPath);
 
+  /// Removes this map's entries for an action before the owning plugin unregisters it.
+  void RemoveActionMapping(xiiActionDescriptorHandle hAction);
+
   /// Builds an action tree out of all mapped actions of this and any parent mappings.
   const TreeNode*               BuildActionTree();
   const xiiActionMapDescriptor* GetDescriptor(const xiiTreeNode<xiiActionMapDescriptor>* pObject) const;

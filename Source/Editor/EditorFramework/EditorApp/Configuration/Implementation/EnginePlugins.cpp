@@ -55,7 +55,7 @@ bool xiiQtEditorApp::CheckForEnginePluginModifications()
   {
     xiiPluginBundle& plugin = it.Value();
 
-    if (!plugin.m_bSelected || !plugin.m_bLoadCopy)
+    if (!plugin.m_bSelected || !plugin.m_bLoadCopy || !plugin.m_bSupportsLoadCopy)
       continue;
 
     for (const xiiString& rt : plugin.m_RuntimePlugins)

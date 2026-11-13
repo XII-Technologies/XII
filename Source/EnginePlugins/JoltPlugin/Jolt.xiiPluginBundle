@@ -4,11 +4,12 @@ PluginInfo
 {
   string %DisplayName{"Jolt Physics"}
   string %Description{"Provides high-performance real-time physics simulation using Jolt Physics, including rigid-body dynamics, collision detection, constraints, character controllers, and gameplay physics integration."}
-  string %EditorPlugins{"xiiEditorPluginJolt"}
+  string %EditorPlugins{"xiiJoltPlugin", "xiiEnginePluginJolt", "xiiEditorPluginJolt"}
   string %EditorEnginePlugins{"xiiEnginePluginJolt"}
   string %RuntimePlugins{"xiiJoltPlugin"}
-  string %PackageDependencies{"Jolt.dll"}
-  string %RequiredPlugins{}
+  string %PackageDependencies{"Jolt.dll", "Jolt.so"}
+  string %RequiredPlugins{"Assets", "Scene"}
   string %ExclusiveFeatures{}
+  bool %SupportsLoadCopy{false}
   string %EnabledInTemplates{"General3D"}
 }

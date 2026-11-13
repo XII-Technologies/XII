@@ -113,6 +113,9 @@ void xiiUnregisterMuJoCoEditor()
   for (const auto& panel : s_InspectorPanels)
     delete panel.data();
   s_InspectorPanels.clear();
+  for (const char* name : {"EditorPluginScene_DocumentMenuBar", "EditorPluginScene_Scene2MenuBar"})
+    if (auto* pMap = xiiActionMapManager::GetActionMap(name))
+      pMap->RemoveActionMapping(s_hInspector);
   xiiActionManager::UnregisterAction(s_hInspector);
   xiiActionMapManager::UnregisterActionMap(AssetMenu);
 }

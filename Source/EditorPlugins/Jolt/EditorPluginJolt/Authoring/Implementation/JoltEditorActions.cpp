@@ -337,6 +337,10 @@ void xiiUnregisterJoltEditorActions()
 {
   xiiToolsProject::s_Events.RemoveEventHandler(ProjectEvent);
   xiiDocumentManager::s_Events.RemoveEventHandler(DocumentEvent);
+  for (const char* name : {"EditorPluginScene_DocumentMenuBar", "EditorPluginScene_Scene2MenuBar"})
+    if (auto* pMap = xiiActionMapManager::GetActionMap(name))
+      for (auto handle : s_Actions)
+        pMap->RemoveActionMapping(handle);
   for (auto handle : s_Actions)
     xiiActionManager::UnregisterAction(handle);
   s_Actions.Clear();

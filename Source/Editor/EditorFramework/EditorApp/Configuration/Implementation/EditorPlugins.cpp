@@ -162,8 +162,19 @@ xiiResult xiiPluginBundle::ReadBundleFromDDL(xiiOpenDdlReader& ref_ddl)
       m_EnabledInTemplates[i] = pElement->GetPrimitivesString()[i];
   }
 
-  m_bMissing = false;
+  m_bSupportsLoadCopy = true;
+  if (const auto* pElement = pInfo->FindChildOfType(xiiOpenDdlPrimitiveType::Bool, "SupportsLoadCopy"))
+  {
+    if (pElement->GetNumPrimitives() != 1)
+    {
+      xiiLog::Error("Plugin bundle '{}' requires exactly one SupportsLoadCopy value.", m_sDisplayName);
+      m_bMissing = true;
+      return XII_FAILURE;
+    }
+    m_bSupportsLoadCopy = pElement->GetPrimitivesBool()[0];
+  }
 
+  m_bMissing = false;
   return XII_SUCCESS;
 }
 

@@ -1,6 +1,10 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #include <EnginePluginMujoco/EnginePluginMujocoPCH.h>
+#include <Foundation/Configuration/Plugin.h>
+
+XII_PLUGIN_DEPENDENCY(xiiMujocoPlugin);
+XII_PLUGIN_DEPENDENCY(xiiEnginePluginScene);
 
 XII_STATICLINK_LIBRARY(EnginePluginMujoco)
 {
