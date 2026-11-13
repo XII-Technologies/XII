@@ -89,6 +89,7 @@ public:
   [[nodiscard]] bool GetSensorInfo(xiiMuJoCoElementId id, xiiMuJoCoSensorInfo& out_info) const;
   /// Refreshes derived state once when required. Disabled native sensors return failure.
   /// Borrowed double views are available with double-precision MuJoCo. Copy access works with either precision.
+  /// Copy destinations must match GetSensorInfo().m_uiDimension exactly.
   [[nodiscard]] bool GetSensorReading(xiiMuJoCoElementId id, xiiMuJoCoSensorReading& out_reading);
   [[nodiscard]] bool GetSensorReading(xiiStringView sName, xiiMuJoCoSensorReading& out_reading);
   [[nodiscard]] bool CopySensorReading(xiiMuJoCoElementId id, xiiArrayPtr<double> out_values, xiiMuJoCoStateStamp& out_stamp);

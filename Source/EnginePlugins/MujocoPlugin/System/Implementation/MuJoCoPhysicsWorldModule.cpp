@@ -440,7 +440,7 @@ void xiiMuJoCoPhysicsWorldModule::Simulate(const UpdateContext&)
     return;
 
   EvaluateState();
-  m_pSimulation->m_StepDiagnostics.m_uiStepsThisUpdate      = 0;
+  m_pSimulation->m_StepDiagnostics.m_uiStepsLastUpdate      = 0;
   m_pSimulation->m_StepDiagnostics.m_UpdateSteppingWallTime = xiiTime::MakeZero();
   XII_SCOPE_EXIT(SynchronizeBodies());
   const xiiClock& clock         = GetWorld()->GetClock();
@@ -475,7 +475,7 @@ void xiiMuJoCoPhysicsWorldModule::Simulate(const UpdateContext&)
     m_bExecuting               = false;
     diagnostics.m_StepWallTime = xiiTime::Now() - started;
     diagnostics.m_UpdateSteppingWallTime += diagnostics.m_StepWallTime;
-    ++diagnostics.m_uiStepsThisUpdate;
+    ++diagnostics.m_uiStepsLastUpdate;
     diagnostics.m_fEndTime              = pData->time;
     diagnostics.m_uiStepIndex           = ++m_pSimulation->m_uiStepIndex;
     diagnostics.m_uiContactCount        = static_cast<xiiUInt32>(pData->ncon);

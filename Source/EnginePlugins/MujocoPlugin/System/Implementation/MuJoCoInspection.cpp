@@ -3,9 +3,8 @@
 #include <MujocoPlugin/MujocoPluginPCH.h>
 
 #include <Core/World/World.h>
-#include <Foundation/Math/Math.h>
-
 #include <Foundation/Logging/Log.h>
+#include <Foundation/Math/Math.h>
 #include <Foundation/Profiling/Profiling.h>
 #include <MujocoPlugin/System/Implementation/MuJoCoSimulation.h>
 
@@ -290,11 +289,13 @@ bool xiiMuJoCoPhysicsWorldModule::GetSolverInfo(xiiUInt32 uiSlot, xiiMuJoCoSolve
 {
   if (uiSlot >= mjNISLAND || !EnsureObservations())
     return false;
-  const auto& data              = *m_pSimulation->m_pData;
-  out_info.m_Stamp              = GetStateStamp();
-  out_info.m_uiIterations       = static_cast<xiiUInt32>(data.solver_niter[uiSlot]);
-  out_info.m_uiStoredIterations = xiiMath::Min(out_info.m_uiIterations, static_cast<xiiUInt32>(mjNSOLVER));
-  out_info.m_uiMatrixNonzeros   = static_cast<xiiUInt32>(data.solver_nnz[uiSlot]);
+  const auto& data                   = *m_pSimulation->m_pData;
+  out_info.m_Stamp                   = GetStateStamp();
+  out_info.m_uiIterations            = static_cast<xiiUInt32>(data.solver_niter[uiSlot]);
+  out_info.m_uiStoredIterations      = xiiMath::Min(out_info.m_uiIterations, static_cast<xiiUInt32>(mjNSOLVER));
+  out_info.m_bHasIterationStatistics = out_info.m_uiIterations > 0;
+  // MuJoCo clears iteration counts for unused slots, but their old matrix sizes can remain populated.
+  out_info.m_uiMatrixNonzeros = out_info.m_bHasIterationStatistics ? static_cast<xiiUInt32>(data.solver_nnz[uiSlot]) : 0;
   return true;
 }
 

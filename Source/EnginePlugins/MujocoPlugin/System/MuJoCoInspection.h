@@ -5,6 +5,7 @@
 #include <MujocoPlugin/MujocoPluginDLL.h>
 
 #include <Core/World/Declarations.h>
+#include <Foundation/Math/Vec3.h>
 #include <Foundation/Time/Time.h>
 #include <Foundation/Types/ArrayPtr.h>
 #include <MujocoPlugin/System/MuJoCoState.h>
@@ -45,6 +46,7 @@ struct xiiMuJoCoSensorInfo
 /// Borrowed data, valid only while holding the world's write marker and until the next native evaluation or state mutation.
 /// Do not retain across stepping, reset, model replacement, or module destruction. Copy data for longer retention.
 /// The timestamp is evaluation time; native delay/interval settings can make a sensor measure earlier states.
+/// Values preserve native scalar/vector ordering, including W,X,Y,Z quaternions.
 struct xiiMuJoCoSensorReading
 {
   xiiArrayPtr<const double> m_Values;
@@ -107,6 +109,7 @@ struct xiiMuJoCoSimulationInfo
 };
 
 /// Captured immediately after mj_step, independent of subsequent observation refreshes.
+/// Update totals describe the last invocation of the module's simulation update, including zero-step updates.
 struct xiiMuJoCoStepDiagnostics
 {
   xiiUInt64 m_uiStepIndex            = 0;
@@ -114,18 +117,19 @@ struct xiiMuJoCoStepDiagnostics
   double    m_fEndTime               = 0;
   xiiTime   m_StepWallTime           = xiiTime::MakeZero();
   xiiTime   m_UpdateSteppingWallTime = xiiTime::MakeZero();
-  xiiUInt32 m_uiStepsThisUpdate      = 0;
+  xiiUInt32 m_uiStepsLastUpdate      = 0;
   xiiUInt32 m_uiContactCount         = 0;
   xiiUInt32 m_uiConstraintCount      = 0;
-  xiiUInt32 m_uiMaxSolverIterations  = 0;
+  xiiUInt32 m_uiMaxSolverIterations  = 0; ///< Maximum across stored native slots in the final solve, not an integrator-wide iteration sum.
 };
 
 struct xiiMuJoCoSolverInfo
 {
   xiiMuJoCoStateStamp m_Stamp;
-  xiiUInt32           m_uiIterations       = 0;
-  xiiUInt32           m_uiStoredIterations = 0;
-  xiiUInt32           m_uiMatrixNonzeros   = 0;
+  xiiUInt32           m_uiIterations            = 0;
+  xiiUInt32           m_uiStoredIterations      = 0;
+  xiiUInt32           m_uiMatrixNonzeros        = 0;
+  bool                m_bHasIterationStatistics = false;
 };
 
 /// Native scaled solver metrics. Availability and meaning depend on the selected solver.
