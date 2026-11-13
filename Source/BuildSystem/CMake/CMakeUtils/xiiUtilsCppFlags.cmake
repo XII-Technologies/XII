@@ -363,7 +363,7 @@ endfunction()
 # ## xii_set_clib_build_flags(<target>)
 # #####################################
 function(xii_set_clib_build_flags TARGET_NAME)
-  set_target_properties(${TARGET_NAME} PROPERTIES C_STANDARD 11 C_STANDARD_REQUIRED ON C_EXTENSIONS OFF)
+  set_target_properties(${TARGET_NAME} PROPERTIES C_STANDARD 11 C_STANDARD_REQUIRED ON C_EXTENSIONS ON)
 
   if(XII_CMAKE_COMPILER_CLANG)
     get_target_property(TARGET_COMPILE_OPTS ${TARGET_NAME} COMPILE_OPTIONS)
