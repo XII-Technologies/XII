@@ -27,6 +27,8 @@ target_link_libraries(${PROJECT_NAME}
   JoltPlugin
   EditorFramework
   EditorPluginAssets
+  EditorPluginScene
+  EnginePluginJolt
   ModelImporter
 )
 
