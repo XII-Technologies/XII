@@ -9,7 +9,10 @@
 #include <Foundation/Containers/DynamicArray.h>
 #include <Foundation/Containers/HashSet.h>
 #include <Foundation/Containers/HashTable.h>
+#include <Foundation/Math/Color8UNorm.h>
 #include <Foundation/Math/Math.h>
+#include <Foundation/Profiling/Profiling.h>
+#include <Foundation/Strings/StringBuilder.h>
 #include <Foundation/Threading/AtomicInteger.h>
 #include <Foundation/Threading/Lock.h>
 #include <Foundation/Threading/Mutex.h>
@@ -48,6 +51,12 @@
 #include <Jolt/Physics/Constraints/PointConstraint.h>
 #include <Jolt/Physics/Constraints/SliderConstraint.h>
 #include <Jolt/Physics/PhysicsSystem.h>
+#ifdef JPH_DEBUG_RENDERER
+#  include <Jolt/Renderer/DebugRendererSimple.h>
+#endif
+
+#include <optional>
+#include <utility>
 
 XII_IMPLEMENT_WORLD_MODULE(xiiJoltPhysicsWorldModule);
 
@@ -67,6 +76,13 @@ namespace
   constexpr xiiUInt32 CollisionMaskWordBits  = 64;
   constexpr xiiUInt32 CollisionMaskWordCount = CollisionLayerCount / CollisionMaskWordBits;
 
+#ifdef JPH_DEBUG_RENDERER
+  constexpr xiiUInt32 MaxDebugContactPoints = 4096;
+  constexpr xiiUInt32 MaxDebugLines         = 300000;
+  constexpr xiiUInt32 MaxDebugTriangles     = 100000;
+  constexpr xiiUInt32 MaxDebugLabels        = 4096;
+  const auto          ContactDebugModes     = xiiJoltDebugMode::Contacts | xiiJoltDebugMode::ContactNormals;
+#endif
   constexpr JPH::BroadPhaseLayer StaticBroadPhase(0);
   constexpr JPH::BroadPhaseLayer MovingBroadPhase(1);
 
@@ -88,6 +104,67 @@ namespace
   {
     return xiiQuat(rotation.GetX(), rotation.GetY(), rotation.GetZ(), rotation.GetW());
   }
+
+#ifdef JPH_DEBUG_RENDERER
+  class JoltDebugCollector final : public JPH::DebugRendererSimple
+  {
+  public:
+    void DrawLine(JPH::RVec3Arg start, JPH::RVec3Arg end, JPH::ColorArg color) override
+    {
+      if (m_pData == nullptr)
+        return;
+      if (m_pData->m_Lines.GetCount() >= MaxDebugLines)
+      {
+        m_pData->m_bTruncated = true;
+        return;
+      }
+      m_pData->m_Lines.PushBack({FromJoltVector(start), FromJoltVector(end), ConvertColor(color)});
+    }
+
+    void DrawTriangle(JPH::RVec3Arg a, JPH::RVec3Arg b, JPH::RVec3Arg c, JPH::ColorArg color, ECastShadow) override
+    {
+      if (m_pData == nullptr)
+        return;
+      if (m_pData->m_Triangles.GetCount() >= MaxDebugTriangles)
+      {
+        m_pData->m_bTruncated = true;
+        return;
+      }
+      m_pData->m_Triangles.PushBack({{FromJoltVector(a), FromJoltVector(b), FromJoltVector(c)}, ConvertColor(color)});
+    }
+
+    void DrawText3D(JPH::RVec3Arg position, const JPH::string_view& text, JPH::ColorArg color, float) override
+    {
+      if (m_pData == nullptr)
+        return;
+      if (m_pData->m_Labels.GetCount() >= MaxDebugLabels)
+      {
+        m_pData->m_bTruncated = true;
+        return;
+      }
+      m_pData->m_Labels.PushBack({FromJoltVector(position), ConvertColor(color), xiiStringView(text.data(), text.data() + text.size())});
+    }
+
+    xiiJoltDebugDrawData* m_pData = nullptr;
+
+  private:
+    static xiiColor ConvertColor(JPH::ColorArg color)
+    {
+      return xiiColor(xiiColorGammaUB(color.r, color.g, color.b, color.a));
+    }
+  };
+
+  // Jolt permits one renderer instance. Its immutable triangle batches can be
+  // used by any world, while a synchronous draw scopes the output to one world.
+  xiiMutex                          s_DebugCollectorMutex;
+  std::optional<JoltDebugCollector> s_DebugCollector;
+
+  class DebugBodyFilter final : public JPH::BodyDrawFilter
+  {
+  public:
+    bool ShouldDraw(const JPH::Body& body) const override { return body.IsActive(); }
+  };
+#endif
 
   const xiiJoltActorComponent* FindActiveActor(const xiiGameObject& object)
   {
@@ -494,6 +571,22 @@ struct xiiJoltPhysicsWorldModule::NativeWorld : JPH::ContactListener
       return;
     settings.mCombinedFriction    = static_cast<float>(xiiMath::Sqrt(double(pOwnerA->m_fFriction) * pOwnerB->m_fFriction));
     settings.mCombinedRestitution = xiiMath::Max(pOwnerA->m_fRestitution, pOwnerB->m_fRestitution);
+#ifdef JPH_DEBUG_RENDERER
+    if (m_bCaptureDebugContacts)
+    {
+      XII_LOCK(m_ContactMutex);
+      for (JPH::uint i = 0; i < manifold.mRelativeContactPointsOn1.size(); ++i)
+      {
+        if (m_DebugContacts.GetCount() == MaxDebugContactPoints)
+        {
+          m_bDebugContactsTruncated = true;
+          break;
+        }
+        m_DebugContacts.PushBack({FromJoltVector(manifold.GetWorldSpaceContactPointOn1(i)), FromJoltVector(manifold.GetWorldSpaceContactPointOn2(i)),
+                                  FromJoltVector(manifold.mWorldSpaceNormal), manifold.mPenetrationDepth});
+      }
+    }
+#endif
     if ((a.GetUserData() | b.GetUserData()) == 0 || manifold.mRelativeContactPointsOn1.empty())
       return;
 
@@ -591,6 +684,10 @@ struct xiiJoltPhysicsWorldModule::NativeWorld : JPH::ContactListener
       return false;
 
     const auto uiId = bodyId.GetIndexAndSequenceNumber();
+#ifdef JPH_DEBUG_RENDERER
+    m_DebugContacts.Clear();
+    m_uiDebugFrame = xiiInvalidIndex;
+#endif
     for (auto it = m_Joints.GetIterator(); it.IsValid(); ++it)
     {
       auto& joint = it.Value();
@@ -659,6 +756,19 @@ struct xiiJoltPhysicsWorldModule::NativeWorld : JPH::ContactListener
     m_ContactEvents.Clear();
     m_DispatchContactEvents.Clear();
     m_QueuedImpulses.Clear();
+#ifdef JPH_DEBUG_RENDERER
+    m_DebugContacts.Clear();
+    m_bDebugContactsTruncated = false;
+    m_bCaptureDebugContacts   = false;
+    m_bDebugContactsRequested = false;
+    m_DebugData.m_Lines.Clear();
+    m_DebugData.m_Triangles.Clear();
+    m_DebugData.m_Labels.Clear();
+    m_uiDebugFrame = xiiInvalidIndex;
+#endif
+    m_LastUpdateDuration = xiiTime::MakeZero();
+    m_uiLastSteps        = 0;
+    m_uiLastUpdateErrors = 0;
     for (auto it = m_BodiesByComponent.GetIterator(); it.IsValid(); ++it)
     {
       DestroyBody(it.Value());
@@ -744,7 +854,27 @@ struct xiiJoltPhysicsWorldModule::NativeWorld : JPH::ContactListener
     const NativeWorld&  m_Native;
     xiiGameObjectHandle m_hOwner;
   };
-  xiiMutex                         m_ContactMutex;
+  xiiMutex                      m_ContactMutex;
+  xiiBitflags<xiiJoltDebugMode> m_DebugModes;
+  xiiTime                       m_LastUpdateDuration;
+  xiiUInt32                     m_uiLastSteps        = 0;
+  xiiUInt32                     m_uiLastUpdateErrors = 0;
+#ifdef JPH_DEBUG_RENDERER
+  struct DebugContact
+  {
+    xiiVec3 m_vPositionA;
+    xiiVec3 m_vPositionB;
+    xiiVec3 m_vNormal;
+    float   m_fDepth;
+  };
+  xiiDynamicArray<DebugContact> m_DebugContacts;
+  xiiJoltDebugDrawData          m_DebugData;
+  xiiBitflags<xiiJoltDebugMode> m_CollectedDebugModes;
+  xiiUInt32                     m_uiDebugFrame            = xiiInvalidIndex;
+  bool                          m_bCaptureDebugContacts   = false;
+  bool                          m_bDebugContactsRequested = false;
+  bool                          m_bDebugContactsTruncated = false;
+#endif
   xiiAtomicIntegerU32              m_uiTrackedContacts;
   xiiHashTable<xiiUInt64, Contact> m_Contacts;
   xiiDynamicArray<Contact>         m_ContactEvents;
@@ -869,6 +999,275 @@ void xiiJoltPhysicsWorldModule::WorldClear()
 {
   m_pNativeWorld->ClearBodies();
   m_AccumulatedTime = xiiTime::MakeZero();
+}
+
+void xiiJoltPhysicsWorldModule::SetDebugModes(xiiBitflags<xiiJoltDebugMode> modes)
+{
+  if (!m_pNativeWorld || m_pNativeWorld->m_DebugModes == modes)
+    return;
+  m_pNativeWorld->m_DebugModes = modes;
+#ifdef JPH_DEBUG_RENDERER
+  auto& native          = *m_pNativeWorld;
+  native.m_uiDebugFrame = xiiInvalidIndex;
+  if (!modes.IsAnySet(ContactDebugModes))
+  {
+    native.m_bDebugContactsRequested = false;
+    native.m_DebugContacts.Clear();
+    native.m_bDebugContactsTruncated = false;
+  }
+#endif
+}
+
+xiiBitflags<xiiJoltDebugMode> xiiJoltPhysicsWorldModule::GetDebugModes() const
+{
+  return m_pNativeWorld ? m_pNativeWorld->m_DebugModes : xiiBitflags<xiiJoltDebugMode>{};
+}
+
+bool xiiJoltPhysicsWorldModule::IsDebugDrawingSupported()
+{
+#ifdef JPH_DEBUG_RENDERER
+  return true;
+#else
+  return false;
+#endif
+}
+
+xiiJoltSimulationDiagnostics xiiJoltPhysicsWorldModule::GetSimulationDiagnostics() const
+{
+  xiiJoltSimulationDiagnostics diagnostics;
+  diagnostics.m_FixedStep = m_FixedStep;
+  if (!m_pNativeWorld)
+    return diagnostics;
+
+  const auto& native                       = *m_pNativeWorld;
+  const auto  bodies                       = native.m_PhysicsSystem.GetBodyStats();
+  diagnostics.m_uiBodies                   = bodies.mNumBodies;
+  diagnostics.m_uiActiveBodies             = bodies.mNumActiveBodiesDynamic + bodies.mNumActiveBodiesKinematic + bodies.mNumActiveSoftBodies;
+  diagnostics.m_uiSleepingBodies           = bodies.mNumBodiesDynamic - bodies.mNumActiveBodiesDynamic;
+  diagnostics.m_uiStaticBodies             = bodies.mNumBodiesStatic;
+  diagnostics.m_uiDynamicBodies            = bodies.mNumBodiesDynamic;
+  diagnostics.m_uiKinematicBodies          = bodies.mNumBodiesKinematic;
+  diagnostics.m_uiReportedContactManifolds = native.m_SubContacts.GetCount();
+  for (auto it = native.m_Joints.GetIterator(); it.IsValid(); ++it)
+    if (it.Value().m_pConstraint != nullptr)
+      ++diagnostics.m_uiConstraints;
+  diagnostics.m_uiCharacters           = native.m_Characters.GetCount();
+  diagnostics.m_uiSteps                = native.m_uiLastSteps;
+  diagnostics.m_LastUpdateDuration     = native.m_LastUpdateDuration;
+  diagnostics.m_uiUpdateErrors         = native.m_uiLastUpdateErrors;
+  diagnostics.m_uiReservedScratchBytes = ScratchBufferSize;
+  return diagnostics;
+}
+
+const xiiJoltDebugDrawData* xiiJoltPhysicsWorldModule::GetDebugDrawData(xiiBitflags<xiiJoltDebugMode> modes)
+{
+#ifdef JPH_DEBUG_RENDERER
+  if (!m_pNativeWorld)
+    return nullptr;
+  auto&      native    = *m_pNativeWorld;
+  const auto modifiers = xiiJoltDebugMode::Statistics | xiiJoltDebugMode::ActiveBodiesOnly | xiiJoltDebugMode::SolidShapes;
+  if ((modes.GetValue() & ~modifiers.GetValue()) == 0)
+    return nullptr;
+
+  // The renderer requests next update's samples only for worlds with a consuming view.
+  native.m_bDebugContactsRequested = modes.IsAnySet(ContactDebugModes);
+  if (native.m_uiDebugFrame == GetWorld()->GetUpdateCounter() && native.m_CollectedDebugModes == modes)
+    return &native.m_DebugData;
+  if (s_DebugCollectorMutex.TryLock().Failed())
+    return nullptr;
+  XII_SCOPE_EXIT(s_DebugCollectorMutex.Unlock());
+  if (!s_DebugCollector)
+  {
+    if (JPH::DebugRenderer::sInstance != nullptr)
+      return nullptr;
+    s_DebugCollector.emplace();
+  }
+
+  XII_PROFILE_SCOPE("Jolt Debug Geometry");
+  auto& data = native.m_DebugData;
+  data.m_Lines.Clear();
+  data.m_Triangles.Clear();
+  data.m_Labels.Clear();
+  data.m_bTruncated = modes.IsAnySet(ContactDebugModes) && native.m_bDebugContactsTruncated;
+  auto& renderer    = *s_DebugCollector;
+  renderer.m_pData  = &data;
+  XII_SCOPE_EXIT(renderer.m_pData = nullptr);
+
+  JPH::BodyManager::DrawSettings bodies;
+  bodies.mDrawShape                 = modes.IsSet(xiiJoltDebugMode::Shapes);
+  bodies.mDrawShapeWireframe        = !modes.IsSet(xiiJoltDebugMode::SolidShapes);
+  bodies.mDrawShapeColor            = modes.IsSet(xiiJoltDebugMode::BodyStates) ? JPH::BodyManager::EShapeColor::SleepColor : JPH::BodyManager::EShapeColor::MotionTypeColor;
+  bodies.mDrawBoundingBox           = modes.IsSet(xiiJoltDebugMode::Bounds);
+  bodies.mDrawCenterOfMassTransform = modes.IsSet(xiiJoltDebugMode::CentersOfMass);
+  bodies.mDrawWorldTransform        = modes.IsSet(xiiJoltDebugMode::BodyStates);
+  bodies.mDrawVelocity              = modes.IsSet(xiiJoltDebugMode::Velocities);
+  const bool      bActiveOnly       = modes.IsSet(xiiJoltDebugMode::ActiveBodiesOnly);
+  DebugBodyFilter filter;
+  if (bodies.mDrawShape || bodies.mDrawBoundingBox || bodies.mDrawCenterOfMassTransform || bodies.mDrawWorldTransform || bodies.mDrawVelocity)
+    native.m_PhysicsSystem.DrawBodies(bodies, &renderer, bActiveOnly ? &filter : nullptr);
+
+  if (bodies.mDrawWorldTransform || modes.IsSet(xiiJoltDebugMode::BodyIdentifiers))
+  {
+    for (auto it = native.GetBodyOwners().GetIterator(); it.IsValid(); ++it)
+    {
+      const JPH::BodyLockRead lock(native.m_PhysicsSystem.GetBodyLockInterface(), JPH::BodyID(it.Key()));
+      if (!lock.Succeeded() || (bActiveOnly && !lock.GetBody().IsActive()))
+        continue;
+      const auto& body = lock.GetBody();
+      if (bodies.mDrawWorldTransform)
+      {
+        const auto color = body.IsSensor() ? JPH::Color::sYellow : body.IsStatic() ? JPH::Color::sGrey :
+          !body.IsActive()                                                         ? JPH::Color::sRed :
+          body.IsKinematic()                                                       ? JPH::Color::sGreen :
+                                                                                     JPH::Color::sCyan;
+        renderer.DrawMarker(body.GetPosition(), color, 0.08f);
+      }
+      if (modes.IsSet(xiiJoltDebugMode::BodyIdentifiers))
+      {
+        xiiStringBuilder text;
+        text.SetFormat("Body {}:{}", body.GetID().GetIndex(), body.GetID().GetSequenceNumber());
+        renderer.DrawText3D(body.GetPosition(), text.GetData(), JPH::Color::sWhite, 0.15f);
+      }
+    }
+  }
+
+  const bool bConstraints = modes.IsSet(xiiJoltDebugMode::Constraints);
+  const bool bLimits      = modes.IsSet(xiiJoltDebugMode::ConstraintLimits);
+  if (bConstraints)
+    native.m_PhysicsSystem.DrawConstraintReferenceFrame(&renderer);
+  if (bLimits)
+    native.m_PhysicsSystem.DrawConstraintLimits(&renderer);
+  if (bConstraints || bLimits)
+    for (auto it = native.m_Joints.GetIterator(); it.IsValid(); ++it)
+    {
+      const auto* pConstraint = it.Value().m_pConstraint.GetPtr();
+      if (pConstraint == nullptr)
+      {
+        if (bConstraints)
+        {
+          const xiiJoltJointComponent* pJoint = nullptr;
+          if (GetWorld()->TryGetComponent(it.Key(), pJoint))
+          {
+            const auto position = JPH::RVec3(ToJoltVector(pJoint->GetOwner()->GetGlobalPosition()));
+            renderer.DrawText3D(position, pJoint->IsBroken() ? "Broken joint" : "Unresolved joint", JPH::Color::sRed, 0.15f);
+          }
+        }
+        continue;
+      }
+      const auto frameA = pConstraint->GetBody1()->GetCenterOfMassTransform() * pConstraint->GetConstraintToBody1Matrix();
+      const auto frameB = pConstraint->GetBody2()->GetCenterOfMassTransform() * pConstraint->GetConstraintToBody2Matrix();
+      const auto a      = frameA.GetTranslation();
+      const auto b      = frameB.GetTranslation();
+      if (bConstraints)
+      {
+        // DistanceConstraint's native draw uses cached solver positions. The
+        // current body frames also work before the first step and while paused.
+        if (pConstraint->GetSubType() != JPH::EConstraintSubType::Distance)
+          pConstraint->DrawConstraint(&renderer);
+        renderer.DrawLine(a, b, JPH::Color::sWhite);
+        renderer.DrawMarker(a, JPH::Color::sRed, 0.08f);
+        renderer.DrawMarker(b, JPH::Color::sGreen, 0.08f);
+      }
+
+      xiiStringBuilder text;
+      switch (pConstraint->GetSubType())
+      {
+        case JPH::EConstraintSubType::Hinge:
+        {
+          const auto& hinge = *static_cast<const JPH::HingeConstraint*>(pConstraint);
+          if (bConstraints && hinge.GetMotorState() == JPH::EMotorState::Position)
+          {
+            const auto axis   = frameA.GetAxisX();
+            const auto target = JPH::Quat::sRotation(axis, hinge.GetTargetAngle()) * frameA.GetAxisY();
+            renderer.DrawArrow(a, a + target * 0.35f, JPH::Color::sCyan, 0.04f);
+          }
+          else if (bConstraints && hinge.GetMotorState() == JPH::EMotorState::Velocity)
+            text.SetFormat("Target {} rad/s", xiiArgF(hinge.GetTargetAngularVelocity(), 2));
+          break;
+        }
+        case JPH::EConstraintSubType::Slider:
+        {
+          const auto& slider = *static_cast<const JPH::SliderConstraint*>(pConstraint);
+          if (bConstraints && slider.GetMotorState() == JPH::EMotorState::Position)
+            text.SetFormat("Target {} m", xiiArgF(slider.GetTargetPosition(), 2));
+          else if (bConstraints && slider.GetMotorState() == JPH::EMotorState::Velocity)
+            text.SetFormat("Target {} m/s", xiiArgF(slider.GetTargetVelocity(), 2));
+          break;
+        }
+        case JPH::EConstraintSubType::Distance:
+        {
+          const auto& distance = *static_cast<const JPH::DistanceConstraint*>(pConstraint);
+          if (bLimits)
+          {
+            const auto axis = JPH::Vec3(b - a).NormalizedOr(JPH::Vec3::sAxisX());
+            renderer.DrawMarker(a + axis * distance.GetMinDistance(), JPH::Color::sPurple, 0.08f);
+            if (distance.GetMaxDistance() < xiiMath::MaxValue<float>())
+              renderer.DrawMarker(a + axis * distance.GetMaxDistance(), JPH::Color::sPurple, 0.08f);
+            text.SetFormat("{} m  ({} to {} m)", xiiArgF(JPH::Vec3(b - a).Length(), 2), xiiArgF(distance.GetMinDistance(), 2), xiiArgF(distance.GetMaxDistance(), 2));
+          }
+          break;
+        }
+        default:
+          break;
+      }
+      if (!text.IsEmpty())
+        renderer.DrawText3D(b, text.GetData(), JPH::Color::sWhite, 0.15f);
+    }
+
+  if (modes.IsAnySet(ContactDebugModes))
+    for (const auto& contact : native.m_DebugContacts)
+    {
+      const JPH::RVec3 a(ToJoltVector(contact.m_vPositionA)), b(ToJoltVector(contact.m_vPositionB));
+      const auto       color = contact.m_fDepth < 0.0f ? JPH::Color::sCyan : JPH::Color::sOrange;
+      if (modes.IsSet(xiiJoltDebugMode::Contacts))
+      {
+        renderer.DrawMarker(a, color, 0.035f);
+        renderer.DrawMarker(b, color, 0.035f);
+        renderer.DrawLine(a, b, color);
+        xiiStringBuilder text;
+        text.SetFormat("Depth {} m", xiiArgF(contact.m_fDepth, 3));
+        renderer.DrawText3D(a, text.GetData(), color, 0.1f);
+      }
+      if (modes.IsSet(xiiJoltDebugMode::ContactNormals))
+        renderer.DrawArrow(a, a + 0.25f * ToJoltVector(contact.m_vNormal), color, 0.035f);
+    }
+
+  if (modes.IsSet(xiiJoltDebugMode::Characters))
+    for (auto it = native.m_Characters.GetIterator(); it.IsValid(); ++it)
+    {
+      const auto& character = *it.Value().m_pCharacter;
+      using GroundState     = JPH::CharacterBase::EGroundState;
+      const auto state      = !character.GetGroundBodyID().IsInvalid() && native.FindOwner(character.GetGroundBodyID()) == nullptr ? GroundState::InAir : character.GetGroundState();
+      const auto color      = state == GroundState::OnGround ? JPH::Color::sGreen : state == GroundState::OnSteepGround ? JPH::Color::sOrange :
+        state == GroundState::NotSupported                                                                              ? JPH::Color::sRed :
+                                                                                                                          JPH::Color::sCyan;
+      const auto position   = character.GetPosition();
+      character.GetShape()->Draw(&renderer, character.GetCenterOfMassTransform(), JPH::Vec3::sOne(), color, false, true);
+      renderer.DrawMarker(position, color, 0.08f);
+      renderer.DrawArrow(position, position + character.GetLinearVelocity(), JPH::Color::sWhite, 0.06f);
+      renderer.DrawText3D(position, JPH::CharacterBase::sToString(state), color, 0.15f);
+      if (state != GroundState::InAir)
+      {
+        const auto ground = character.GetGroundPosition();
+        renderer.DrawMarker(ground, color, 0.08f);
+        renderer.DrawArrow(ground, ground + 0.35f * character.GetGroundNormal(), color, 0.06f);
+      }
+    }
+
+  native.m_uiDebugFrame        = GetWorld()->GetUpdateCounter();
+  native.m_CollectedDebugModes = modes;
+  return &data;
+#else
+  XII_IGNORE_UNUSED(modes);
+  return nullptr;
+#endif
+}
+
+void xiiJoltPhysicsWorldModule::ShutdownDebugRenderer()
+{
+#ifdef JPH_DEBUG_RENDERER
+  s_DebugCollector.reset();
+#endif
 }
 
 void xiiJoltPhysicsWorldModule::QueueBodyUpdate(xiiComponentHandle hActor)
@@ -1147,6 +1546,11 @@ void xiiJoltPhysicsWorldModule::ApplyKinematicTeleports()
     bodies.SetLinearAndAngularVelocity(id, JPH::Vec3::sZero(), JPH::Vec3::sZero());
     bodies.InvalidateContactCache(id);
     native.m_TeleportedBodies.Insert(id.GetIndexAndSequenceNumber());
+#ifdef JPH_DEBUG_RENDERER
+    native.m_DebugContacts.Clear();
+    native.m_bDebugContactsTruncated = false;
+    native.m_uiDebugFrame            = xiiInvalidIndex;
+#endif
     pActor->m_bTeleportPending = false;
   }
 }
@@ -1506,6 +1910,13 @@ void xiiJoltPhysicsWorldModule::SynchronizeMovedObjects()
 
 void xiiJoltPhysicsWorldModule::Simulate(const UpdateContext&)
 {
+  auto& nativeWorld                = *m_pNativeWorld;
+  nativeWorld.m_LastUpdateDuration = xiiTime::MakeZero();
+  nativeWorld.m_uiLastSteps        = 0;
+  nativeWorld.m_uiLastUpdateErrors = 0;
+#ifdef JPH_DEBUG_RENDERER
+  const bool bCaptureContacts = std::exchange(nativeWorld.m_bDebugContactsRequested, false);
+#endif
   UpdateShapes();
   auto& pendingBodies = m_pNativeWorld->m_PendingBodies;
   for (const auto hActor : pendingBodies)
@@ -1546,9 +1957,16 @@ void xiiJoltPhysicsWorldModule::Simulate(const UpdateContext&)
   }
 
   [[maybe_unused]] const JPH::FPFlushDenormals flushDenormals;
-  auto&                                        nativeWorld = *m_pNativeWorld;
-  auto                                         errors      = JPH::EPhysicsUpdateError::None;
-  const float                                  fStep       = m_FixedStep.AsFloatInSeconds();
+  auto                                         errors = JPH::EPhysicsUpdateError::None;
+  const float                                  fStep  = m_FixedStep.AsFloatInSeconds();
+  XII_PROFILE_SCOPE("Jolt Physics");
+#ifdef JPH_DEBUG_RENDERER
+  nativeWorld.m_DebugContacts.Clear();
+  nativeWorld.m_bDebugContactsTruncated = false;
+  nativeWorld.m_bCaptureDebugContacts   = bCaptureContacts;
+  if (bCaptureContacts)
+    nativeWorld.m_DebugContacts.Reserve(MaxDebugContactPoints);
+#endif
   CaptureKinematicTargets();
   for (xiiUInt32 uiStep = 0; uiStep < uiSteps; ++uiStep)
   {
@@ -1558,10 +1976,17 @@ void xiiJoltPhysicsWorldModule::Simulate(const UpdateContext&)
     StepCharacters(fStep);
     if (nativeWorld.m_PhysicsSystem.GetNumBodies() != 0)
     {
+      const xiiTime start = xiiTime::Now();
       errors |= nativeWorld.m_PhysicsSystem.Update(fStep, 1, &nativeWorld.m_TempAllocator, &nativeWorld.m_JobSystem);
+      nativeWorld.m_LastUpdateDuration += xiiTime::Now() - start;
       CheckJointBreakage(fStep);
     }
   }
+  nativeWorld.m_uiLastSteps        = uiSteps;
+  nativeWorld.m_uiLastUpdateErrors = static_cast<xiiUInt32>(errors);
+#ifdef JPH_DEBUG_RENDERER
+  nativeWorld.m_bCaptureDebugContacts = false;
+#endif
 
   SynchronizeMovedObjects();
 

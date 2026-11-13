@@ -9,6 +9,7 @@
 #include <Foundation/Types/UniquePtr.h>
 #include <JoltPlugin/Actors/JoltKinematicActorComponent.h>
 #include <JoltPlugin/Character/JoltCharacterControllerComponent.h>
+#include <JoltPlugin/System/JoltDebugDraw.h>
 
 namespace JPH
 {
@@ -32,6 +33,20 @@ public:
 
   /// Sets a symmetric relationship between two collision layers. The native world must be empty.
   [[nodiscard]] xiiResult SetCollisionEnabled(xiiUInt8 uiLayerA, xiiUInt8 uiLayerB, bool bEnabled);
+
+  /// Sets debug modes for this world. Call with world write access.
+  void                          SetDebugModes(xiiBitflags<xiiJoltDebugMode> modes);
+  xiiBitflags<xiiJoltDebugMode> GetDebugModes() const;
+  /// Native body statistics walk the body registry. Call at a synchronous world update boundary.
+  xiiJoltSimulationDiagnostics GetSimulationDiagnostics() const;
+  static bool                  IsDebugDrawingSupported();
+  /// Collects once per world update and mode selection. Contact samples begin with the next step.
+  /// Borrowed data is invalidated by the next collection or structural change.
+  /// Call between simulation updates with world write access. Returns null when native drawing is unavailable.
+  const xiiJoltDebugDrawData* GetDebugDrawData(xiiBitflags<xiiJoltDebugMode> modes);
+
+  /// Releases the process-wide Jolt adapter after all native worlds have been removed.
+  static void ShutdownDebugRenderer();
 
   xiiUInt32 GetCollisionLayerByName(xiiStringView sName) const override;
   xiiUInt8  GetWeightCategoryByName(xiiStringView sName) const override;

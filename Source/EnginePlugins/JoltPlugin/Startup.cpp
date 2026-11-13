@@ -96,6 +96,7 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(Jolt, JoltPlugin)
     xiiJoltCollisionMeshResource::CleanupDynamicPluginReferences();
     // Release cached native shapes while Jolt's allocator, material, and registered types are still available.
     xiiResourceManager::FreeAllUnusedResources();
+    xiiJoltPhysicsWorldModule::ShutdownDebugRenderer();
     JPH::UnregisterTypes();
     delete JPH::Factory::sInstance;
     JPH::Factory::sInstance = nullptr;
