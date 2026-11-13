@@ -6,6 +6,7 @@
 
 #include <Core/Interfaces/PhysicsWorldModule.h>
 #include <Foundation/Time/Time.h>
+#include <Foundation/Types/Status.h>
 #include <Foundation/Types/UniquePtr.h>
 #include <JoltPlugin/Actors/JoltKinematicActorComponent.h>
 #include <JoltPlugin/Character/JoltCharacterControllerComponent.h>
@@ -33,6 +34,8 @@ public:
 
   /// Sets a symmetric relationship between two collision layers. The native world must be empty.
   [[nodiscard]] xiiResult SetCollisionEnabled(xiiUInt8 uiLayerA, xiiUInt8 uiLayerB, bool bEnabled);
+  /// Reloads project layer settings transactionally. Rejects changes while native bodies or characters exist.
+  [[nodiscard]] xiiStatus ReloadCollisionLayerConfig();
 
   /// Sets debug modes for this world. Call with world write access.
   void                          SetDebugModes(xiiBitflags<xiiJoltDebugMode> modes);
@@ -40,6 +43,11 @@ public:
   /// Native body statistics walk the body registry. Call at a synchronous world update boundary.
   xiiJoltSimulationDiagnostics GetSimulationDiagnostics() const;
   static bool                  IsDebugDrawingSupported();
+  /// True once native bodies or virtual characters exist, including while their simulation is paused.
+  bool HasSimulationState() const;
+  /// Reuses the runtime shape constructors, scaling validation, and native collision resource snapshots.
+  /// Cached local geometry is rebuilt only when its dimensions or resource snapshot change.
+  [[nodiscard]] static xiiResult UpdateShapePreview(const class xiiJoltShapeComponent& shape, xiiJoltShapePreview& inout_preview);
   /// Collects once per world update and mode selection. Contact samples begin with the next step.
   /// Borrowed data is invalidated by the next collection or structural change.
   /// Call between simulation updates with world write access. Returns null when native drawing is unavailable.

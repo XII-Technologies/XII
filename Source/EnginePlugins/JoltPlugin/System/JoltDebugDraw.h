@@ -4,12 +4,15 @@
 
 #include <JoltPlugin/JoltPluginDLL.h>
 
+#include <Core/World/Declarations.h>
 #include <Foundation/Containers/DynamicArray.h>
 #include <Foundation/Math/Color.h>
+#include <Foundation/Math/Transform.h>
 #include <Foundation/Math/Vec3.h>
 #include <Foundation/Strings/String.h>
 #include <Foundation/Time/Time.h>
 #include <Foundation/Types/Bitflags.h>
+#include <Foundation/Types/UniquePtr.h>
 
 struct xiiJoltDebugMode
 {
@@ -99,4 +102,24 @@ struct xiiJoltDebugDrawData
   xiiDynamicArray<Triangle> m_Triangles;
   xiiDynamicArray<Label>    m_Labels;
   bool                      m_bTruncated = false;
+};
+
+/// Cached local-space authored geometry. No native body is created. Owned by the preview consumer.
+/// Update at a synchronous boundary with world write access; native shape drawing requires Debug/Dev.
+class XII_JOLTPLUGIN_DLL xiiJoltShapePreview
+{
+public:
+  xiiJoltShapePreview();
+  ~xiiJoltShapePreview();
+  const xiiJoltDebugDrawData& GetGeometry() const;
+  xiiGameObjectHandle         m_hActor;
+  xiiTransform                m_Transform = xiiTransform::MakeIdentity();
+  xiiString                   m_sStatus;
+  bool                        m_bPending = false;
+
+private:
+  friend class xiiJoltPhysicsWorldModule;
+  struct Cache;
+  xiiJoltDebugDrawData m_Geometry;
+  xiiUniquePtr<Cache>  m_pCache;
 };

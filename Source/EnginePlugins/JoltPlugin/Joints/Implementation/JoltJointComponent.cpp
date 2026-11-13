@@ -7,6 +7,7 @@
 #include <Core/WorldSerializer/WorldWriter.h>
 #include <Foundation/Math/Math.h>
 #include <JoltPlugin/Joints/JoltJointComponent.h>
+#include <JoltPlugin/Shapes/JoltAuthoringAttributes.h>
 #include <JoltPlugin/System/JoltPhysicsWorldModule.h>
 
 // clang-format off
@@ -38,6 +39,9 @@ XII_BEGIN_COMPONENT_TYPE(xiiJoltFixedJointComponent, 1, xiiComponentMode::Dynami
   XII_BEGIN_ATTRIBUTES
   {
     new xiiCategoryAttribute("Physics/Jolt/Joints"),
+    new xiiJoltJointManipulatorAttribute("LocalFrameA", "ActorA"),
+    new xiiJoltJointManipulatorAttribute("LocalFrameB", "ActorB"),
+    new xiiJoltVisualizerAttribute(),
   }
   XII_END_ATTRIBUTES;
 }
@@ -48,6 +52,9 @@ XII_BEGIN_COMPONENT_TYPE(xiiJoltPointJointComponent, 1, xiiComponentMode::Dynami
   XII_BEGIN_ATTRIBUTES
   {
     new xiiCategoryAttribute("Physics/Jolt/Joints"),
+    new xiiJoltJointManipulatorAttribute("LocalFrameA", "ActorA"),
+    new xiiJoltJointManipulatorAttribute("LocalFrameB", "ActorB"),
+    new xiiJoltVisualizerAttribute(),
   }
   XII_END_ATTRIBUTES;
 }
@@ -71,6 +78,9 @@ XII_BEGIN_COMPONENT_TYPE(xiiJoltHingeJointComponent, 1, xiiComponentMode::Dynami
   XII_BEGIN_ATTRIBUTES
   {
     new xiiCategoryAttribute("Physics/Jolt/Joints"),
+    new xiiJoltJointManipulatorAttribute("LocalFrameA", "ActorA"),
+    new xiiJoltJointManipulatorAttribute("LocalFrameB", "ActorB"),
+    new xiiJoltVisualizerAttribute(),
   }
   XII_END_ATTRIBUTES;
 }
@@ -95,6 +105,9 @@ XII_BEGIN_COMPONENT_TYPE(xiiJoltSliderJointComponent, 1, xiiComponentMode::Dynam
   XII_BEGIN_ATTRIBUTES
   {
     new xiiCategoryAttribute("Physics/Jolt/Joints"),
+    new xiiJoltJointManipulatorAttribute("LocalFrameA", "ActorA"),
+    new xiiJoltJointManipulatorAttribute("LocalFrameB", "ActorB"),
+    new xiiJoltVisualizerAttribute(),
   }
   XII_END_ATTRIBUTES;
 }
@@ -113,6 +126,9 @@ XII_BEGIN_COMPONENT_TYPE(xiiJoltDistanceJointComponent, 1, xiiComponentMode::Dyn
   XII_BEGIN_ATTRIBUTES
   {
     new xiiCategoryAttribute("Physics/Jolt/Joints"),
+    new xiiJoltJointManipulatorAttribute("LocalFrameA", "ActorA"),
+    new xiiJoltJointManipulatorAttribute("LocalFrameB", "ActorB"),
+    new xiiJoltVisualizerAttribute(),
   }
   XII_END_ATTRIBUTES;
 }

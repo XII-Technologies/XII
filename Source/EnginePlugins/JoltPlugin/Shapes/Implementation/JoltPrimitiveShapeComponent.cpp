@@ -9,6 +9,7 @@
 #include <Core/WorldSerializer/WorldWriter.h>
 #include <Foundation/Math/Math.h>
 #include <JoltPlugin/Actors/JoltActorComponent.h>
+#include <JoltPlugin/Shapes/JoltAuthoringAttributes.h>
 #include <JoltPlugin/Shapes/JoltPrimitiveShapeComponent.h>
 #include <JoltPlugin/System/JoltPhysicsWorldModule.h>
 
@@ -35,6 +36,8 @@ XII_BEGIN_COMPONENT_TYPE(xiiJoltBoxShapeComponent, 1, xiiComponentMode::Static)
   XII_BEGIN_ATTRIBUTES
   {
     new xiiCategoryAttribute("Physics/Jolt/Shapes"),
+    new xiiJoltShapeManipulatorAttribute("Dimensions", ""),
+    new xiiJoltVisualizerAttribute(),
   }
   XII_END_ATTRIBUTES;
 }
@@ -50,6 +53,8 @@ XII_BEGIN_COMPONENT_TYPE(xiiJoltSphereShapeComponent, 1, xiiComponentMode::Stati
   XII_BEGIN_ATTRIBUTES
   {
     new xiiCategoryAttribute("Physics/Jolt/Shapes"),
+    new xiiJoltShapeManipulatorAttribute("Radius", ""),
+    new xiiJoltVisualizerAttribute(),
   }
   XII_END_ATTRIBUTES;
 }
@@ -207,6 +212,8 @@ XII_BEGIN_COMPONENT_TYPE(xiiJoltCapsuleShapeComponent, 1, xiiComponentMode::Stat
   XII_BEGIN_ATTRIBUTES
   {
     new xiiCategoryAttribute("Physics/Jolt/Shapes"),
+    new xiiJoltShapeManipulatorAttribute("Radius", "Height"),
+    new xiiJoltVisualizerAttribute(),
   }
   XII_END_ATTRIBUTES;
 }
@@ -267,6 +274,8 @@ XII_BEGIN_COMPONENT_TYPE(xiiJoltCylinderShapeComponent, 1, xiiComponentMode::Sta
   XII_BEGIN_ATTRIBUTES
   {
     new xiiCategoryAttribute("Physics/Jolt/Shapes"),
+    new xiiJoltShapeManipulatorAttribute("Radius", "Height"),
+    new xiiJoltVisualizerAttribute(),
   }
   XII_END_ATTRIBUTES;
 }
@@ -326,6 +335,8 @@ XII_BEGIN_COMPONENT_TYPE(xiiJoltConvexHullShapeComponent, 1, xiiComponentMode::S
   XII_BEGIN_ATTRIBUTES
   {
     new xiiCategoryAttribute("Physics/Jolt/Shapes"),
+    new xiiJoltShapeManipulatorAttribute("", ""),
+    new xiiJoltVisualizerAttribute(),
   }
   XII_END_ATTRIBUTES;
 }
@@ -368,6 +379,8 @@ XII_BEGIN_COMPONENT_TYPE(xiiJoltMeshShapeComponent, 1, xiiComponentMode::Static)
   XII_BEGIN_ATTRIBUTES
   {
     new xiiCategoryAttribute("Physics/Jolt/Shapes"),
+    new xiiJoltShapeManipulatorAttribute("", ""),
+    new xiiJoltVisualizerAttribute(),
   }
   XII_END_ATTRIBUTES;
 }

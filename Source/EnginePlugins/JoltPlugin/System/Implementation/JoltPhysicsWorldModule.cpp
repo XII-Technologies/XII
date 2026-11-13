@@ -21,6 +21,7 @@
 #include <JoltPlugin/Joints/JoltJointComponent.h>
 #include <JoltPlugin/Resources/Implementation/JoltCollisionMeshData.h>
 #include <JoltPlugin/Shapes/JoltPrimitiveShapeComponent.h>
+#include <JoltPlugin/System/JoltCollisionLayerConfig.h>
 #include <JoltPlugin/System/JoltPhysicsWorldModule.h>
 
 #include <JoltPlugin/System/Implementation/JoltJobSystem.h>
@@ -68,13 +69,11 @@ namespace
   static_assert(static_cast<int>(xiiJoltJointMotorMode::Off) == static_cast<int>(JPH::EMotorState::Off) &&
                 static_cast<int>(xiiJoltJointMotorMode::Velocity) == static_cast<int>(JPH::EMotorState::Velocity) &&
                 static_cast<int>(xiiJoltJointMotorMode::Position) == static_cast<int>(JPH::EMotorState::Position));
-  constexpr xiiUInt32 MaxBodies              = 4096;
-  constexpr xiiUInt32 MaxBodyPairs           = 16384;
-  constexpr xiiUInt32 MaxContactConstraints  = 8192;
-  constexpr xiiUInt32 ScratchBufferSize      = 8 * 1024 * 1024;
-  constexpr xiiUInt32 CollisionLayerCount    = 256;
-  constexpr xiiUInt32 CollisionMaskWordBits  = 64;
-  constexpr xiiUInt32 CollisionMaskWordCount = CollisionLayerCount / CollisionMaskWordBits;
+  constexpr xiiUInt32 MaxBodies             = 4096;
+  constexpr xiiUInt32 MaxBodyPairs          = 16384;
+  constexpr xiiUInt32 MaxContactConstraints = 8192;
+  constexpr xiiUInt32 ScratchBufferSize     = 8 * 1024 * 1024;
+  constexpr xiiUInt32 CollisionLayerCount   = xiiJoltCollisionLayerConfig::LayerCount;
 
 #ifdef JPH_DEBUG_RENDERER
   constexpr xiiUInt32 MaxDebugContactPoints = 4096;
@@ -270,17 +269,6 @@ namespace
     public JPH::ObjectLayerPairFilter
   {
   public:
-    xiiJoltCollisionFilters()
-    {
-      for (auto& mask : m_CollisionMasks)
-      {
-        for (auto& uiWord : mask)
-        {
-          uiWord = ~xiiUInt64{0};
-        }
-      }
-    }
-
     static JPH::ObjectLayer MakeObjectLayer(xiiUInt8 uiCollisionLayer, JPH::EMotionType motionType)
     {
       return static_cast<JPH::ObjectLayer>(uiCollisionLayer + (motionType == JPH::EMotionType::Static ? 0U : CollisionLayerCount));
@@ -288,8 +276,7 @@ namespace
 
     void SetCollisionEnabled(xiiUInt8 uiLayerA, xiiUInt8 uiLayerB, bool bEnabled)
     {
-      SetCollisionBit(uiLayerA, uiLayerB, bEnabled);
-      SetCollisionBit(uiLayerB, uiLayerA, bEnabled);
+      m_Config.SetCollisionEnabled(uiLayerA, uiLayerB, bEnabled);
     }
 
     JPH::uint GetNumBroadPhaseLayers() const override { return 2; }
@@ -321,32 +308,167 @@ namespace
 
     bool AreLayersEnabled(xiiUInt8 uiLayerA, xiiUInt8 uiLayerB) const
     {
-      return (m_CollisionMasks[uiLayerA][uiLayerB / CollisionMaskWordBits] & CollisionBit(uiLayerB)) != 0;
+      return m_Config.IsCollisionEnabled(uiLayerA, uiLayerB);
     }
 
-  private:
-    static constexpr xiiUInt64 CollisionBit(xiiUInt8 uiLayer)
-    {
-      return xiiUInt64{1} << (uiLayer % CollisionMaskWordBits);
-    }
-
-    void SetCollisionBit(xiiUInt8 uiLayer, xiiUInt8 uiOtherLayer, bool bEnabled)
-    {
-      xiiUInt64&      uiWord = m_CollisionMasks[uiLayer][uiOtherLayer / CollisionMaskWordBits];
-      const xiiUInt64 uiBit  = CollisionBit(uiOtherLayer);
-      if (bEnabled)
-      {
-        uiWord |= uiBit;
-      }
-      else
-      {
-        uiWord &= ~uiBit;
-      }
-    }
-
-    xiiUInt64 m_CollisionMasks[CollisionLayerCount][CollisionMaskWordCount];
+    xiiJoltCollisionLayerConfig m_Config;
   };
 } // namespace
+
+struct xiiJoltShapePreview::Cache
+{
+  xiiSharedPtr<xiiJoltCollisionMeshData> m_pResource;
+  JPH::RefConst<JPH::Shape>              m_pShape;
+  const xiiRTTI*                         m_pType       = nullptr;
+  xiiVec3                                m_vDimensions = xiiVec3::MakeZero();
+};
+
+xiiJoltShapePreview::xiiJoltShapePreview()  = default;
+xiiJoltShapePreview::~xiiJoltShapePreview() = default;
+
+const xiiJoltDebugDrawData& xiiJoltShapePreview::GetGeometry() const
+{
+  if (m_pCache && m_pCache->m_pResource && m_pCache->m_pResource->m_pPreviewGeometry)
+    return *m_pCache->m_pResource->m_pPreviewGeometry;
+  return m_Geometry;
+}
+
+xiiResult xiiJoltPhysicsWorldModule::UpdateShapePreview(const xiiJoltShapeComponent& shape, xiiJoltShapePreview& preview)
+{
+  preview.m_sStatus.Clear();
+  preview.m_bPending = false;
+#ifdef JPH_DEBUG_RENDERER
+  const auto*          object = shape.GetOwner();
+  const xiiGameObject* actor  = nullptr;
+  for (const auto* ancestor = object; ancestor && !actor; ancestor = ancestor->GetParent())
+    for (const auto* component : ancestor->GetComponents())
+      if (const auto* candidate = xiiDynamicCast<const xiiJoltActorComponent*>(component); candidate && candidate->IsActiveAndInitialized())
+      {
+        actor = ancestor;
+        break;
+      }
+  preview.m_hActor = actor ? actor->GetHandle() : xiiGameObjectHandle();
+  if (actor == nullptr)
+    actor = object;
+  xiiMat4      matrix;
+  xiiTransform local;
+  if (!ShapeMatrix(shape, *actor, matrix) || !DecomposeShape(matrix, local))
+  {
+    preview.m_sStatus = "Invalid, zero-scale, or sheared collider attachment.";
+    return XII_FAILURE;
+  }
+  auto actorPose      = actor->GetGlobalTransform();
+  actorPose.m_vScale  = xiiVec3(1.0f);
+  preview.m_Transform = actorPose * local;
+  xiiVec3 dimensions  = xiiVec3::MakeZero();
+  if (const auto* box = xiiDynamicCast<const xiiJoltBoxShapeComponent*>(&shape))
+    dimensions = box->GetDimensions();
+  else if (const auto* sphere = xiiDynamicCast<const xiiJoltSphereShapeComponent*>(&shape))
+    dimensions.x = sphere->GetRadius();
+  else if (const auto* capsule = xiiDynamicCast<const xiiJoltCapsuleShapeComponent*>(&shape))
+    dimensions = xiiVec3(capsule->GetRadius(), capsule->GetHeight(), 0);
+  else if (const auto* cylinder = xiiDynamicCast<const xiiJoltCylinderShapeComponent*>(&shape))
+    dimensions = xiiVec3(cylinder->GetRadius(), cylinder->GetHeight(), 0);
+
+  xiiSharedPtr<xiiJoltCollisionMeshData> resourceData;
+  xiiJoltCollisionMeshResourceHandle     resourceHandle;
+  bool                                   mesh = false;
+  if (const auto* hull = xiiDynamicCast<const xiiJoltConvexHullShapeComponent*>(&shape))
+    resourceHandle = hull->GetCollisionMesh();
+  else if (const auto* triangleMesh = xiiDynamicCast<const xiiJoltMeshShapeComponent*>(&shape))
+  {
+    resourceHandle = triangleMesh->GetCollisionMesh();
+    mesh           = true;
+  }
+  if (mesh || xiiDynamicCast<const xiiJoltConvexHullShapeComponent*>(&shape))
+  {
+    if (!resourceHandle.IsValid())
+    {
+      preview.m_sStatus = "Assign a collision mesh resource.";
+      return XII_FAILURE;
+    }
+    const xiiResourceLock<xiiJoltCollisionMeshResource> resource(resourceHandle, xiiResourceAcquireMode::PointerOnly);
+    resourceData = resource->GetData();
+    if (!resourceData)
+    {
+      preview.m_bPending = resource->GetLoadingState() != xiiResourceState::LoadedResourceMissing;
+      preview.m_sStatus  = preview.m_bPending ? "Collision resource pending." : "Invalid collision resource. Check its transformation diagnostics.";
+      if (preview.m_bPending)
+        xiiResourceManager::PreloadResource(resourceHandle);
+      return XII_FAILURE;
+    }
+    if ((resourceData->m_Type == xiiJoltCollisionGeometryType::TriangleMesh) != mesh)
+    {
+      preview.m_sStatus = "Collision resource geometry type does not match the collider.";
+      return XII_FAILURE;
+    }
+  }
+  if (!preview.m_pCache)
+    preview.m_pCache = XII_DEFAULT_NEW(xiiJoltShapePreview::Cache);
+  auto&      cache   = *preview.m_pCache;
+  const bool rebuild = cache.m_pType != shape.GetDynamicRTTI() || cache.m_vDimensions != dimensions || cache.m_pResource != resourceData;
+  // Validate scale on every pose change, without reconstructing an unchanged primitive.
+  JPH::RefConst<JPH::Shape> nativeShape;
+  if (!rebuild)
+    nativeShape = cache.m_pShape;
+  else if (resourceData)
+    nativeShape = resourceData->m_pShape;
+  else
+  {
+    auto result = CreatePrimitive(shape);
+    if (result.HasError())
+    {
+      preview.m_sStatus = result.GetError().c_str();
+      return XII_FAILURE;
+    }
+    nativeShape = result.Get();
+  }
+  if (!nativeShape->IsValidScale(ToJoltVector(local.m_vScale)))
+  {
+    preview.m_sStatus = "Jolt does not support the collider's authored scale.";
+    return XII_FAILURE;
+  }
+  if (mesh)
+  {
+    for (const auto* component : actor->GetComponents())
+      if (component->IsActiveAndInitialized() && (xiiDynamicCast<const xiiJoltDynamicActorComponent*>(component) || xiiDynamicCast<const xiiJoltKinematicActorComponent*>(component)))
+      {
+        preview.m_sStatus = "Triangle-mesh collision requires a static actor.";
+        return XII_FAILURE;
+      }
+  }
+  if (rebuild)
+  {
+    XII_LOCK(s_DebugCollectorMutex);
+    if (!s_DebugCollector)
+      s_DebugCollector.emplace();
+    // All instances of one immutable cooked resource reuse its converted debug geometry.
+    if (!resourceData || !resourceData->m_pPreviewGeometry)
+    {
+      if (resourceData)
+        resourceData->m_pPreviewGeometry = XII_DEFAULT_NEW(xiiJoltDebugDrawData);
+      auto& renderer = *s_DebugCollector;
+      auto& data     = resourceData ? *resourceData->m_pPreviewGeometry : preview.m_Geometry;
+      data.m_Lines.Clear();
+      data.m_Triangles.Clear();
+      data.m_Labels.Clear();
+      data.m_bTruncated = false;
+      renderer.m_pData  = &data;
+      nativeShape->Draw(&renderer, JPH::RMat44::sTranslation(JPH::RVec3(nativeShape->GetCenterOfMass())), JPH::Vec3::sOne(), JPH::Color::sWhite, false, true);
+      renderer.m_pData = nullptr;
+    }
+    cache.m_pShape      = nativeShape;
+    cache.m_pResource   = resourceData;
+    cache.m_pType       = shape.GetDynamicRTTI();
+    cache.m_vDimensions = dimensions;
+  }
+  return XII_SUCCESS;
+#else
+  XII_IGNORE_UNUSED(shape);
+  preview.m_sStatus = "Authored collision previews require a Debug or Dev build.";
+  return XII_FAILURE;
+#endif
+}
 
 struct xiiJoltPhysicsWorldModule::NativeWorld : JPH::ContactListener
 {
@@ -940,6 +1062,11 @@ xiiJoltPhysicsWorldModule::xiiJoltPhysicsWorldModule(xiiWorld* pWorld) :
 
 xiiJoltPhysicsWorldModule::~xiiJoltPhysicsWorldModule() = default;
 
+bool xiiJoltPhysicsWorldModule::HasSimulationState() const
+{
+  return m_pNativeWorld && (m_pNativeWorld->m_PhysicsSystem.GetNumBodies() != 0 || !m_pNativeWorld->m_Characters.IsEmpty());
+}
+
 xiiResult xiiJoltPhysicsWorldModule::SetSimulationStep(xiiTime fixedStep, xiiUInt32 uiMaxCatchUpSteps)
 {
   const float fStepSeconds = fixedStep.AsFloatInSeconds();
@@ -962,9 +1089,17 @@ xiiResult xiiJoltPhysicsWorldModule::SetCollisionEnabled(xiiUInt8 uiLayerA, xiiU
   return XII_SUCCESS;
 }
 
+xiiStatus xiiJoltPhysicsWorldModule::ReloadCollisionLayerConfig()
+{
+  if (!m_pNativeWorld || m_pNativeWorld->m_PhysicsSystem.GetNumBodies() != 0 || !m_pNativeWorld->m_Characters.IsEmpty())
+    return xiiStatus("Jolt collision-layer changes require an empty physics world. Restart simulation to apply them.");
+  return m_pNativeWorld->m_CollisionFilters.m_Config.Load();
+}
+
 void xiiJoltPhysicsWorldModule::Initialize()
 {
   m_pNativeWorld = XII_NEW(xiiFoundation::GetAlignedAllocator(), NativeWorld, GetAllocator());
+  ReloadCollisionLayerConfig().LogFailure();
 
   auto desc                        = XII_CREATE_MODULE_UPDATE_FUNCTION_DESC(xiiJoltPhysicsWorldModule::Simulate, this);
   desc.m_Phase                     = xiiWorldUpdatePhase::PreAsync;
@@ -2220,8 +2355,12 @@ namespace
 
 xiiUInt32 xiiJoltPhysicsWorldModule::GetCollisionLayerByName(xiiStringView sName) const
 {
-  if (sName.IsEqual_NoCase("Default"))
-    return 0;
+  if (m_pNativeWorld)
+  {
+    const auto layer = m_pNativeWorld->m_CollisionFilters.m_Config.FindLayer(sName);
+    if (layer != xiiInvalidIndex)
+      return layer;
+  }
 
   xiiUInt32   uiLayer = 0;
   const char* szEnd   = nullptr;

@@ -15,7 +15,7 @@ XII_BEGIN_ABSTRACT_COMPONENT_TYPE(xiiJoltActorComponent, 3)
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_ACCESSOR_PROPERTY("CollisionLayer", GetCollisionLayer, SetCollisionLayer)->AddAttributes(new xiiDefaultValueAttribute(0)),
+    XII_ACCESSOR_PROPERTY("CollisionLayer", GetCollisionLayer, SetCollisionLayer)->AddAttributes(new xiiDefaultValueAttribute(0), new xiiDynamicEnumAttribute("JoltCollisionLayer")),
     XII_ACCESSOR_PROPERTY("ReportContacts", GetReportContacts, SetReportContacts)->AddAttributes(new xiiDefaultValueAttribute(false)),
     XII_RESOURCE_ACCESSOR_PROPERTY("Surface", GetSurface, SetSurface)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Surface")),
   }

@@ -19,7 +19,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiJoltCharacterControllerComponent, 1, xiiComponentMod
   {
     XII_ACCESSOR_PROPERTY("Radius", GetRadius, SetRadius)->AddAttributes(new xiiDefaultValueAttribute(0.35f), new xiiClampValueAttribute(0.01f, 1000.0f)),
     XII_ACCESSOR_PROPERTY("Height", GetHeight, SetHeight)->AddAttributes(new xiiDefaultValueAttribute(1.8f), new xiiClampValueAttribute(0.02f, 2000.0f)),
-    XII_ACCESSOR_PROPERTY("CollisionLayer", GetCollisionLayer, SetCollisionLayer)->AddAttributes(new xiiDefaultValueAttribute(0)),
+    XII_ACCESSOR_PROPERTY("CollisionLayer", GetCollisionLayer, SetCollisionLayer)->AddAttributes(new xiiDefaultValueAttribute(0), new xiiDynamicEnumAttribute("JoltCollisionLayer")),
     XII_ACCESSOR_PROPERTY("Mass", GetMass, SetMass)->AddAttributes(new xiiDefaultValueAttribute(70.0f), new xiiClampValueAttribute(0.0f, 100000.0f)),
     XII_ACCESSOR_PROPERTY("MaxStrength", GetMaxStrength, SetMaxStrength)->AddAttributes(new xiiDefaultValueAttribute(100.0f), new xiiClampValueAttribute(0.0f, 1000000.0f)),
     XII_ACCESSOR_PROPERTY("MaxSlope", GetMaxSlope, SetMaxSlope)->AddAttributes(new xiiDefaultValueAttribute(xiiAngle::MakeFromDegree(50.0f))),
