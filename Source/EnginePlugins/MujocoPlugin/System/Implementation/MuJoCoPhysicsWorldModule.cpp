@@ -498,7 +498,8 @@ void xiiMuJoCoPhysicsWorldModule::UpdateRequestedModels()
   for (auto& instance : m_ModelInstances)
   {
     ReadPlacement(instance, false);
-    m_bCompositionDirty |= instance.m_uiAttemptedRevision != instance.m_pResource->m_uiRevision;
+    m_bCompositionDirty |= instance.m_uiAttemptedRevision != instance.m_pResource->m_uiRevision ||
+      instance.m_pResource->GetLoadingState() == xiiResourceState::Unloaded;
   }
   if (!m_bCompositionDirty)
     return;
@@ -514,12 +515,18 @@ void xiiMuJoCoPhysicsWorldModule::UpdateRequestedModels()
       }
     });
 
+  bool bLoading = false;
   for (const auto& instance : m_ModelInstances)
     if (instance.m_pResource->GetLoadingState() == xiiResourceState::Unloaded)
     {
-      m_sCompositionStatus = "Waiting for model resources.";
-      return;
+      xiiResourceManager::PreloadResource(instance.m_hResource);
+      bLoading = true;
     }
+  if (bLoading)
+  {
+    m_sCompositionStatus = "Waiting for model resources.";
+    return;
+  }
 
   xiiHybridArray<xiiSharedPtr<xiiMuJoCoCompiledModel>, 8> models;
   xiiHybridArray<xiiUInt32, 8>                            revisions;

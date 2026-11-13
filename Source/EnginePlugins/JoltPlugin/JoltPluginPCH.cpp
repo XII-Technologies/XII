@@ -9,6 +9,7 @@ XII_STATICLINK_LIBRARY(JoltPlugin)
 
   XII_STATICLINK_REFERENCE(JoltPlugin_Startup);
   XII_STATICLINK_REFERENCE(JoltPlugin_System_Implementation_JoltCollisionLayerConfig);
+  XII_STATICLINK_REFERENCE(JoltPlugin_System_Implementation_JoltPhysicsProfileConfig);
   XII_STATICLINK_REFERENCE(JoltPlugin_Shapes_Implementation_JoltAuthoringAttributes);
   XII_STATICLINK_REFERENCE(JoltPlugin_Actors_Implementation_JoltActorComponent);
   XII_STATICLINK_REFERENCE(JoltPlugin_Actors_Implementation_JoltStaticCollisionComponent);

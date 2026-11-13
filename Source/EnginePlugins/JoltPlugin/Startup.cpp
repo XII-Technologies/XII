@@ -65,6 +65,7 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(Jolt, JoltPlugin)
 #endif
     JPH::Factory::sInstance = new JPH::Factory();
     JPH::RegisterTypes();
+    xiiResourceManager::RegisterResourceForAssetType("JoltCollisionMesh", xiiGetStaticRTTI<xiiJoltCollisionMeshResource>());
   }
 
   ON_CORESYSTEMS_SHUTDOWN
@@ -95,6 +96,7 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(Jolt, JoltPlugin)
       }
     }
 
+    xiiResourceManager::RegisterResourceForAssetType("JoltCollisionMesh", nullptr);
     xiiJoltCollisionMeshResource::CleanupDynamicPluginReferences();
     // Release cached native shapes while Jolt's allocator, material, and registered types are still available.
     xiiResourceManager::FreeAllUnusedResources();

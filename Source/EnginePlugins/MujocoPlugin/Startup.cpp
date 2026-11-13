@@ -2,6 +2,7 @@
 
 #include <MujocoPlugin/MujocoPluginPCH.h>
 
+#include <Core/ResourceManager/ResourceManager.h>
 #include <Core/World/World.h>
 #include <Foundation/Configuration/Startup.h>
 #include <MujocoPlugin/Components/MuJoCoActuatorComponent.h>
@@ -19,6 +20,11 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(Mujoco, MujocoPlugin)
     "Core"
   END_SUBSYSTEM_DEPENDENCIES
 
+  ON_CORESYSTEMS_STARTUP
+  {
+    xiiResourceManager::RegisterResourceForAssetType("MuJoCoModel", xiiGetStaticRTTI<xiiMuJoCoModelResource>());
+  }
+
   ON_CORESYSTEMS_SHUTDOWN
   {
     // Plugin changes run with world updates quiesced. Detach delegates while the module code is loaded.
@@ -35,7 +41,9 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(Mujoco, MujocoPlugin)
         pWorld->DeleteModule<xiiMuJoCoPhysicsWorldModule>();
       }
     }
+    xiiResourceManager::RegisterResourceForAssetType("MuJoCoModel", nullptr);
     xiiMuJoCoModelResource::CleanupDynamicPluginReferences();
+    xiiResourceManager::FreeAllUnusedResources();
   }
 
 XII_END_SUBSYSTEM_DECLARATION;

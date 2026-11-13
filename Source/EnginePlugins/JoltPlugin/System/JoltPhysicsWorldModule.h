@@ -31,6 +31,8 @@ public:
 
   /// Sets the fixed step and per-update catch-up limit. A new configuration resets accumulated time.
   [[nodiscard]] xiiResult SetSimulationStep(xiiTime fixedStep, xiiUInt32 uiMaxCatchUpSteps);
+  /// Overrides the active profile's gravity for this world. Call with world write access.
+  [[nodiscard]] xiiResult SetGravity(const xiiVec3& vGravity);
 
   /// Sets a symmetric relationship between two collision layers. The native world must be empty.
   [[nodiscard]] xiiResult SetCollisionEnabled(xiiUInt8 uiLayerA, xiiUInt8 uiLayerB, bool bEnabled);

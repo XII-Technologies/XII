@@ -2,6 +2,7 @@
 
 #include <JoltPlugin/JoltPluginPCH.h>
 
+#include <Core/GameApplication/GameApplicationBase.h>
 #include <Core/Physics/SurfaceResource.h>
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Core/World/World.h>
@@ -26,6 +27,7 @@
 #include <JoltPlugin/Resources/Implementation/JoltSceneCollisionCook.h>
 #include <JoltPlugin/Shapes/JoltPrimitiveShapeComponent.h>
 #include <JoltPlugin/System/JoltCollisionLayerConfig.h>
+#include <JoltPlugin/System/JoltPhysicsProfileConfig.h>
 #include <JoltPlugin/System/JoltPhysicsWorldModule.h>
 
 #include <JoltPlugin/System/Implementation/JoltJobSystem.h>
@@ -73,11 +75,8 @@ namespace
   static_assert(static_cast<int>(xiiJoltJointMotorMode::Off) == static_cast<int>(JPH::EMotorState::Off) &&
                 static_cast<int>(xiiJoltJointMotorMode::Velocity) == static_cast<int>(JPH::EMotorState::Velocity) &&
                 static_cast<int>(xiiJoltJointMotorMode::Position) == static_cast<int>(JPH::EMotorState::Position));
-  constexpr xiiUInt32 MaxBodies             = 4096;
-  constexpr xiiUInt32 MaxBodyPairs          = 16384;
-  constexpr xiiUInt32 MaxContactConstraints = 8192;
-  constexpr xiiUInt32 ScratchBufferSize     = 8 * 1024 * 1024;
-  constexpr xiiUInt32 CollisionLayerCount   = xiiJoltCollisionLayerConfig::LayerCount;
+  constexpr xiiUInt32 ScratchBufferSize   = 8 * 1024 * 1024;
+  constexpr xiiUInt32 CollisionLayerCount = xiiJoltCollisionLayerConfig::LayerCount;
 
 #ifdef JPH_DEBUG_RENDERER
   constexpr xiiUInt32 MaxDebugContactPoints = 4096;
@@ -477,7 +476,7 @@ xiiResult xiiJoltPhysicsWorldModule::UpdateShapePreview(const xiiJoltShapeCompon
 
 struct xiiJoltPhysicsWorldModule::NativeWorld : JPH::ContactListener
 {
-  explicit NativeWorld(xiiAllocator* pAllocator) :
+  NativeWorld(xiiAllocator* pAllocator, const xiiJoltPhysicsProfileConfig& config) :
     m_ShapeSets(pAllocator),
     m_TrackedShapes(pAllocator),
     m_SubContacts(pAllocator),
@@ -500,14 +499,14 @@ struct xiiJoltPhysicsWorldModule::NativeWorld : JPH::ContactListener
     m_BodiesByComponent(pAllocator),
     m_OwnersByBody(pAllocator)
   {
-    m_PosesToSync.Reserve(MaxBodies);
-    m_Contacts.Reserve(MaxBodies);
-    m_SubContacts.Reserve(MaxContactConstraints);
-    m_ContactManifolds.Reserve(MaxBodies);
-    m_ContactEvents.Reserve(MaxBodies);
-    m_DispatchContactEvents.Reserve(MaxBodies);
-    m_PhysicsSystem.Init(MaxBodies, 0, MaxBodyPairs, MaxContactConstraints, m_CollisionFilters, m_CollisionFilters, m_CollisionFilters);
-    m_PhysicsSystem.SetGravity(JPH::Vec3(0.0f, 0.0f, -9.81f));
+    m_PosesToSync.Reserve(config.m_uiMaxBodies);
+    m_Contacts.Reserve(config.m_uiMaxBodies);
+    m_SubContacts.Reserve(config.m_uiMaxContactConstraints);
+    m_ContactManifolds.Reserve(config.m_uiMaxBodies);
+    m_ContactEvents.Reserve(config.m_uiMaxBodies);
+    m_DispatchContactEvents.Reserve(config.m_uiMaxBodies);
+    m_PhysicsSystem.Init(config.m_uiMaxBodies, 0, config.m_uiMaxBodyPairs, config.m_uiMaxContactConstraints, m_CollisionFilters, m_CollisionFilters, m_CollisionFilters);
+    m_PhysicsSystem.SetGravity(ToJoltVector(config.m_vGravity));
     m_PhysicsSystem.SetContactListener(this);
     xiiResourceManager::GetResourceEvents().AddEventHandler(xiiMakeDelegate(&NativeWorld::OnResourceEvent, this));
   }
@@ -1159,6 +1158,15 @@ xiiResult xiiJoltPhysicsWorldModule::SetCollisionEnabled(xiiUInt8 uiLayerA, xiiU
   return XII_SUCCESS;
 }
 
+xiiResult xiiJoltPhysicsWorldModule::SetGravity(const xiiVec3& vGravity)
+{
+  if (!m_pNativeWorld || !vGravity.IsValid())
+    return XII_FAILURE;
+
+  m_pNativeWorld->m_PhysicsSystem.SetGravity(ToJoltVector(vGravity));
+  return XII_SUCCESS;
+}
+
 xiiStatus xiiJoltPhysicsWorldModule::ReloadCollisionLayerConfig()
 {
   if (!m_pNativeWorld || !m_pNativeWorld->m_Characters.IsEmpty())
@@ -1178,7 +1186,18 @@ xiiStatus xiiJoltPhysicsWorldModule::ReloadCollisionLayerConfig()
 
 void xiiJoltPhysicsWorldModule::Initialize()
 {
-  m_pNativeWorld = XII_NEW(xiiFoundation::GetAlignedAllocator(), NativeWorld, GetAllocator());
+  const xiiJoltPhysicsProfileConfig defaults;
+  const auto*                       pApplication = xiiGameApplicationBase::GetGameApplicationBaseInstance();
+  const auto*                       pConfig      = pApplication ? pApplication->GetPlatformProfile().GetTypeConfig<xiiJoltPhysicsProfileConfig>() : nullptr;
+  if (pConfig && pConfig->Validate().Failed())
+  {
+    xiiLog::Warning("Invalid Jolt physics profile for world '{}'. Using default settings.", GetWorld()->GetName());
+    pConfig = nullptr;
+  }
+  const auto& config  = pConfig ? *pConfig : defaults;
+  m_pNativeWorld      = XII_NEW(xiiFoundation::GetAlignedAllocator(), NativeWorld, GetAllocator(), config);
+  m_FixedStep         = xiiTime::MakeFromSeconds(config.m_fFixedStep);
+  m_uiMaxCatchUpSteps = config.m_uiMaxCatchUpSteps;
   ReloadCollisionLayerConfig().LogFailure();
 
   auto desc                        = XII_CREATE_MODULE_UPDATE_FUNCTION_DESC(xiiJoltPhysicsWorldModule::Simulate, this);
@@ -1616,7 +1635,8 @@ void xiiJoltPhysicsWorldModule::RebuildBody(xiiJoltActorComponent& actor)
       resourceData = resource->GetData();
       if (!resourceData)
       {
-        xiiResourceManager::PreloadResource(resourceHandle);
+        if (resource->GetLoadingState() == xiiResourceState::Unloaded)
+          xiiResourceManager::PreloadResource(resourceHandle);
         // A resource replacement can be pending while a valid old body still owns its immutable snapshot.
         // Never preserve geometry whose contributing components have been removed or reparented.
         const auto* pOld     = nativeWorld.m_ShapeSets.GetValue(nativeWorld.FindBody(actor.GetHandle()).GetIndexAndSequenceNumber());
