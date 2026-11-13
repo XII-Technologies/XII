@@ -27,6 +27,8 @@ target_link_libraries(${PROJECT_NAME}
   Mujoco
   EditorFramework
   EditorPluginAssets
+  EditorPluginScene
+  EnginePluginMujoco
   ModelImporter
 )
 

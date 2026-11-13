@@ -8,4 +8,6 @@ XII_STATICLINK_LIBRARY(EditorPluginMujoco)
     return;
 
   XII_STATICLINK_REFERENCE(EditorPluginMujoco_ModelAsset_Implementation_MuJoCoModelAsset);
+  XII_STATICLINK_REFERENCE(EditorPluginMujoco_Authoring_Implementation_MuJoCoEditorIntegration);
+  XII_STATICLINK_REFERENCE(EditorPluginMujoco_Authoring_Implementation_MuJoCoSceneInspector);
 }
