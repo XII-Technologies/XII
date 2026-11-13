@@ -8,6 +8,12 @@
 #include <Foundation/Time/Time.h>
 #include <Foundation/Types/UniquePtr.h>
 
+namespace JPH
+{
+  class BodyID;
+  class BodyInterface;
+} // namespace JPH
+
 /// Owns the Jolt simulation for one XII world. Access requires the world's write marker.
 class XII_JOLTPLUGIN_DLL xiiJoltPhysicsWorldModule final : public xiiWorldModule
 {
@@ -25,12 +31,21 @@ public:
   [[nodiscard]] xiiResult SetCollisionEnabled(xiiUInt8 uiLayerA, xiiUInt8 uiLayerB, bool bEnabled);
 
 private:
+  friend class xiiJoltActorComponent;
+  friend class xiiJoltDynamicActorComponent;
+
   void Initialize() override;
   void Deinitialize() override;
   void OnSimulationStarted() override;
   void WorldClear() override;
 
   void Simulate(const UpdateContext& context);
+  void QueueBodyUpdate(xiiComponentHandle hActor);
+  void RemoveBody(xiiComponentHandle hActor);
+  void RebuildBody(class xiiJoltActorComponent& actor);
+  void SynchronizeDynamicBodies();
+
+  JPH::BodyInterface* FindDynamicBody(xiiComponentHandle hActor, JPH::BodyID& out_bodyId) const;
 
   struct NativeWorld;
   xiiUniquePtr<NativeWorld> m_pNativeWorld;

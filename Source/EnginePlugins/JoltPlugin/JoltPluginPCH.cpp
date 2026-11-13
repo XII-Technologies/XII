@@ -8,6 +8,9 @@ XII_STATICLINK_LIBRARY(JoltPlugin)
     return;
 
   XII_STATICLINK_REFERENCE(JoltPlugin_Startup);
+  XII_STATICLINK_REFERENCE(JoltPlugin_Actors_Implementation_JoltActorComponent);
+  XII_STATICLINK_REFERENCE(JoltPlugin_Actors_Implementation_JoltDynamicActorComponent);
+  XII_STATICLINK_REFERENCE(JoltPlugin_Shapes_Implementation_JoltPrimitiveShapeComponent);
   XII_STATICLINK_REFERENCE(JoltPlugin_System_Implementation_JoltJobSystem);
   XII_STATICLINK_REFERENCE(JoltPlugin_System_Implementation_JoltPhysicsWorldModule);
 }

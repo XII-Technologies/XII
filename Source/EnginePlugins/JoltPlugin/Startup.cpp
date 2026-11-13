@@ -5,6 +5,8 @@
 #include <Core/World/World.h>
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Strings/StringBuilder.h>
+#include <JoltPlugin/Actors/JoltDynamicActorComponent.h>
+#include <JoltPlugin/Shapes/JoltPrimitiveShapeComponent.h>
 #include <JoltPlugin/System/JoltPhysicsWorldModule.h>
 
 #include <Jolt/Jolt.h>
@@ -67,6 +69,10 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(Jolt, JoltPlugin)
       if (xiiWorld* pWorld = xiiWorld::GetWorld(uiIndex))
       {
         XII_LOCK(pWorld->GetWriteMarker());
+        pWorld->DeleteModule(xiiGetStaticRTTI<xiiJoltDynamicActorComponent>());
+        pWorld->DeleteModule(xiiGetStaticRTTI<xiiJoltStaticActorComponent>());
+        pWorld->DeleteModule(xiiGetStaticRTTI<xiiJoltBoxShapeComponent>());
+        pWorld->DeleteModule(xiiGetStaticRTTI<xiiJoltSphereShapeComponent>());
         pWorld->DeleteModule<xiiJoltPhysicsWorldModule>();
       }
     }
