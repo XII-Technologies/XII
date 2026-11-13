@@ -8,6 +8,8 @@
 #include <Foundation/Math/Vec3.h>
 #include <JoltPlugin/Actors/JoltActorComponent.h>
 
+struct xiiMsgPhysicsAddImpulse;
+
 using xiiJoltDynamicActorComponentManager = xiiComponentManager<class xiiJoltDynamicActorComponent, xiiBlockStorageType::Compact>;
 
 class XII_JOLTPLUGIN_DLL xiiJoltDynamicActorComponent final : public xiiJoltActorComponent
@@ -64,6 +66,7 @@ public:
   void DeserializeComponent(xiiWorldReader& inout_stream) override;
 
 private:
+  void    OnAddImpulse(xiiMsgPhysicsAddImpulse& ref_msg);
   float   m_fMass                   = 0.0f;
   float   m_fDensity                = 1000.0f;
   float   m_fGravityFactor          = 1.0f;

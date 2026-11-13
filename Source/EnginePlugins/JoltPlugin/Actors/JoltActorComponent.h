@@ -15,6 +15,9 @@ public:
   xiiUInt8 GetCollisionLayer() const { return m_uiCollisionLayer; }
   void     SetCollisionLayer(xiiUInt8 uiCollisionLayer);
 
+  bool GetReportContacts() const { return m_bReportContacts; }
+  void SetReportContacts(bool bReportContacts);
+
   void SerializeComponent(xiiWorldWriter& inout_stream) const override;
   void DeserializeComponent(xiiWorldReader& inout_stream) override;
 
@@ -31,6 +34,7 @@ private:
   void        QueueSiblingBodyUpdates();
 
   xiiUInt8 m_uiCollisionLayer = 0;
+  bool     m_bReportContacts  = false;
 };
 
 using xiiJoltStaticActorComponentManager = xiiComponentManager<class xiiJoltStaticActorComponent, xiiBlockStorageType::Compact>;

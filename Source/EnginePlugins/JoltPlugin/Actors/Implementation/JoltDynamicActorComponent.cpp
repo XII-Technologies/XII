@@ -29,6 +29,11 @@ XII_BEGIN_COMPONENT_TYPE(xiiJoltDynamicActorComponent, 1, xiiComponentMode::Dyna
     XII_ACCESSOR_PROPERTY("StartAsleep", GetStartAsleep, SetStartAsleep)->AddAttributes(new xiiDefaultValueAttribute(false)),
   }
   XII_END_PROPERTIES;
+  XII_BEGIN_MESSAGEHANDLERS
+  {
+    XII_MESSAGE_HANDLER(xiiMsgPhysicsAddImpulse, OnAddImpulse),
+  }
+  XII_END_MESSAGEHANDLERS;
   XII_BEGIN_ATTRIBUTES
   {
     new xiiCategoryAttribute("Physics/Jolt"),
@@ -240,6 +245,15 @@ bool xiiJoltDynamicActorComponent::IsBodyActive() const
   JPH::BodyID bodyId;
   const auto* pBodies = pModule != nullptr ? pModule->FindDynamicBody(GetHandle(), bodyId) : nullptr;
   return pBodies != nullptr && pBodies->IsActive(bodyId);
+}
+
+void xiiJoltDynamicActorComponent::OnAddImpulse(xiiMsgPhysicsAddImpulse& ref_msg)
+{
+  if (!IsActiveAndSimulating())
+    return;
+
+  if (const auto* pModule = static_cast<const xiiWorld*>(GetWorld())->GetModule<xiiJoltPhysicsWorldModule>())
+    pModule->QueueImpulse(GetHandle(), ref_msg);
 }
 
 void xiiJoltDynamicActorComponent::SerializeComponent(xiiWorldWriter& inout_stream) const

@@ -9,11 +9,12 @@
 #include <JoltPlugin/System/JoltPhysicsWorldModule.h>
 
 // clang-format off
-XII_BEGIN_ABSTRACT_COMPONENT_TYPE(xiiJoltActorComponent, 1)
+XII_BEGIN_ABSTRACT_COMPONENT_TYPE(xiiJoltActorComponent, 2)
 {
   XII_BEGIN_PROPERTIES
   {
     XII_ACCESSOR_PROPERTY("CollisionLayer", GetCollisionLayer, SetCollisionLayer)->AddAttributes(new xiiDefaultValueAttribute(0)),
+    XII_ACCESSOR_PROPERTY("ReportContacts", GetReportContacts, SetReportContacts)->AddAttributes(new xiiDefaultValueAttribute(false)),
   }
   XII_END_PROPERTIES;
 }
@@ -45,13 +46,27 @@ void xiiJoltActorComponent::SetCollisionLayer(xiiUInt8 uiCollisionLayer)
 void xiiJoltActorComponent::SerializeComponent(xiiWorldWriter& inout_stream) const
 {
   SUPER::SerializeComponent(inout_stream);
-  inout_stream.GetStream() << m_uiCollisionLayer;
+  inout_stream.GetStream() << m_uiCollisionLayer << m_bReportContacts;
+}
+
+void xiiJoltActorComponent::SetReportContacts(bool bReportContacts)
+{
+  if (m_bReportContacts == bReportContacts)
+    return;
+  m_bReportContacts = bReportContacts;
+  if (IsActiveAndSimulating())
+  {
+    if (auto* pModule = GetWorld()->GetModule<xiiJoltPhysicsWorldModule>())
+      pModule->SetBodyContactReporting(GetHandle(), bReportContacts);
+  }
 }
 
 void xiiJoltActorComponent::DeserializeComponent(xiiWorldReader& inout_stream)
 {
   SUPER::DeserializeComponent(inout_stream);
   inout_stream.GetStream() >> m_uiCollisionLayer;
+  if (inout_stream.GetComponentTypeVersion(xiiJoltActorComponent::GetStaticRTTI()) >= 2)
+    inout_stream.GetStream() >> m_bReportContacts;
 }
 
 void xiiJoltActorComponent::OnSimulationStarted()
