@@ -48,14 +48,20 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMsgPhysicCharacterContact, 1, xiiRTTIDefault
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
+XII_BEGIN_STATIC_REFLECTED_ENUM(xiiPhysicsContactPhase, 1)
+  XII_ENUM_CONSTANTS(xiiPhysicsContactPhase::Added, xiiPhysicsContactPhase::Persisted, xiiPhysicsContactPhase::Removed)
+XII_END_STATIC_REFLECTED_ENUM;
+
 XII_IMPLEMENT_MESSAGE_TYPE(xiiMsgPhysicContact);
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMsgPhysicContact, 1, xiiRTTIDefaultAllocator<xiiMsgPhysicContact>)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMsgPhysicContact, 2, xiiRTTIDefaultAllocator<xiiMsgPhysicContact>)
 {
   XII_BEGIN_PROPERTIES
   {
     XII_MEMBER_PROPERTY("GlobalPosition", m_vGlobalPosition),
     XII_MEMBER_PROPERTY("Normal", m_vNormal),
     XII_MEMBER_PROPERTY("ImpactSqr", m_fImpactSqr),
+    XII_ENUM_MEMBER_PROPERTY("Phase", xiiPhysicsContactPhase, m_Phase),
+    XII_MEMBER_PROPERTY("OtherObject", m_hOtherObject),
   }
   XII_END_PROPERTIES;
 }
