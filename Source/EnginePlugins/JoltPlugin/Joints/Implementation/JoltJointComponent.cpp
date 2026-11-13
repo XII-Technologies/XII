@@ -57,16 +57,15 @@ XII_BEGIN_COMPONENT_TYPE(xiiJoltHingeJointComponent, 1, xiiComponentMode::Dynami
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_ACCESSOR_PROPERTY("BreakTorque", GetBreakTorque, SetBreakTorque)->AddAttributes(new xiiClampValueAttribute(0.0f, xiiVariant())),
-    XII_ACCESSOR_PROPERTY("LimitsEnabled", GetLimitsEnabled, SetLimitsEnabled),
-    XII_ACCESSOR_PROPERTY("LowerLimit", GetLowerLimit, SetLowerLimit),
-    XII_ACCESSOR_PROPERTY("UpperLimit", GetUpperLimit, SetUpperLimit),
-    XII_ENUM_ACCESSOR_PROPERTY("MotorMode", xiiJoltJointMotorMode, GetMotorMode, SetMotorMode),
-    XII_ACCESSOR_PROPERTY("TargetVelocity", GetTargetVelocity, SetTargetVelocity),
-    XII_ACCESSOR_PROPERTY("TargetAngle", GetTargetAngle, SetTargetAngle),
-    XII_ACCESSOR_PROPERTY("MaxMotorTorque", GetMaxMotorTorque, SetMaxMotorTorque),
-    XII_ACCESSOR_PROPERTY("MotorFrequency", GetMotorFrequency, SetMotorFrequency),
-    XII_ACCESSOR_PROPERTY("MotorDamping", GetMotorDamping, SetMotorDamping),
+    XII_ACCESSOR_PROPERTY("LimitsEnabled", GetLimitsEnabled, SetLimitsEnabled)->AddAttributes(new xiiDefaultValueAttribute(true)),
+    XII_ACCESSOR_PROPERTY("LowerLimit", GetLowerLimit, SetLowerLimit)->AddAttributes(new xiiDefaultValueAttribute(xiiAngle::MakeFromDegree(-90.0f))),
+    XII_ACCESSOR_PROPERTY("UpperLimit", GetUpperLimit, SetUpperLimit)->AddAttributes(new xiiDefaultValueAttribute(xiiAngle::MakeFromDegree(90.0f))),
+    XII_ENUM_ACCESSOR_PROPERTY("MotorMode", xiiJoltJointMotorMode, GetMotorMode, SetMotorMode)->AddAttributes(new xiiDefaultValueAttribute(static_cast<xiiInt32>(xiiJoltJointMotorMode::Off))),
+    XII_ACCESSOR_PROPERTY("TargetVelocity", GetTargetVelocity, SetTargetVelocity)->AddAttributes(new xiiDefaultValueAttribute(0.0f)),
+    XII_ACCESSOR_PROPERTY("TargetAngle", GetTargetAngle, SetTargetAngle)->AddAttributes(new xiiDefaultValueAttribute(xiiAngle::MakeFromRadian(0.0f))),
+    XII_ACCESSOR_PROPERTY("MaxMotorTorque", GetMaxMotorTorque, SetMaxMotorTorque)->AddAttributes(new xiiDefaultValueAttribute(100.0f)),
+    XII_ACCESSOR_PROPERTY("MotorFrequency", GetMotorFrequency, SetMotorFrequency)->AddAttributes(new xiiDefaultValueAttribute(2.0f)),
+    XII_ACCESSOR_PROPERTY("MotorDamping", GetMotorDamping, SetMotorDamping)->AddAttributes(new xiiDefaultValueAttribute(1.0f)),
   }
   XII_END_PROPERTIES;
   XII_BEGIN_ATTRIBUTES
@@ -82,15 +81,15 @@ XII_BEGIN_COMPONENT_TYPE(xiiJoltSliderJointComponent, 1, xiiComponentMode::Dynam
   XII_BEGIN_PROPERTIES
   {
     XII_ACCESSOR_PROPERTY("BreakTorque", GetBreakTorque, SetBreakTorque)->AddAttributes(new xiiClampValueAttribute(0.0f, xiiVariant())),
-    XII_ACCESSOR_PROPERTY("LimitsEnabled", GetLimitsEnabled, SetLimitsEnabled),
-    XII_ACCESSOR_PROPERTY("LowerLimit", GetLowerLimit, SetLowerLimit),
-    XII_ACCESSOR_PROPERTY("UpperLimit", GetUpperLimit, SetUpperLimit),
-    XII_ENUM_ACCESSOR_PROPERTY("MotorMode", xiiJoltJointMotorMode, GetMotorMode, SetMotorMode),
-    XII_ACCESSOR_PROPERTY("TargetVelocity", GetTargetVelocity, SetTargetVelocity),
-    XII_ACCESSOR_PROPERTY("TargetPosition", GetTargetPosition, SetTargetPosition),
-    XII_ACCESSOR_PROPERTY("MaxMotorForce", GetMaxMotorForce, SetMaxMotorForce),
-    XII_ACCESSOR_PROPERTY("MotorFrequency", GetMotorFrequency, SetMotorFrequency),
-    XII_ACCESSOR_PROPERTY("MotorDamping", GetMotorDamping, SetMotorDamping),
+    XII_ACCESSOR_PROPERTY("LimitsEnabled", GetLimitsEnabled, SetLimitsEnabled)->AddAttributes(new xiiDefaultValueAttribute(true)),
+    XII_ACCESSOR_PROPERTY("LowerLimit", GetLowerLimit, SetLowerLimit)->AddAttributes(new xiiDefaultValueAttribute(-1.0f)),
+    XII_ACCESSOR_PROPERTY("UpperLimit", GetUpperLimit, SetUpperLimit)->AddAttributes(new xiiDefaultValueAttribute(1.0f)),
+    XII_ENUM_ACCESSOR_PROPERTY("MotorMode", xiiJoltJointMotorMode, GetMotorMode, SetMotorMode)->AddAttributes(new xiiDefaultValueAttribute(static_cast<xiiInt32>(xiiJoltJointMotorMode::Off))),
+    XII_ACCESSOR_PROPERTY("TargetVelocity", GetTargetVelocity, SetTargetVelocity)->AddAttributes(new xiiDefaultValueAttribute(0.0f)),
+    XII_ACCESSOR_PROPERTY("TargetPosition", GetTargetPosition, SetTargetPosition)->AddAttributes(new xiiDefaultValueAttribute(0.0f)),
+    XII_ACCESSOR_PROPERTY("MaxMotorForce", GetMaxMotorForce, SetMaxMotorForce)->AddAttributes(new xiiDefaultValueAttribute(100.0f)),
+    XII_ACCESSOR_PROPERTY("MotorFrequency", GetMotorFrequency, SetMotorFrequency)->AddAttributes(new xiiDefaultValueAttribute(2.0f)),
+    XII_ACCESSOR_PROPERTY("MotorDamping", GetMotorDamping, SetMotorDamping)->AddAttributes(new xiiDefaultValueAttribute(1.0f)),
   }
   XII_END_PROPERTIES;
   XII_BEGIN_ATTRIBUTES
@@ -105,10 +104,10 @@ XII_BEGIN_COMPONENT_TYPE(xiiJoltDistanceJointComponent, 1, xiiComponentMode::Dyn
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_ACCESSOR_PROPERTY("MinDistance", GetMinDistance, SetMinDistance),
-    XII_ACCESSOR_PROPERTY("MaxDistance", GetMaxDistance, SetMaxDistance),
-    XII_ACCESSOR_PROPERTY("SpringFrequency", GetSpringFrequency, SetSpringFrequency),
-    XII_ACCESSOR_PROPERTY("SpringDamping", GetSpringDamping, SetSpringDamping),
+    XII_ACCESSOR_PROPERTY("MinDistance", GetMinDistance, SetMinDistance)->AddAttributes(new xiiDefaultValueAttribute(1.0f)),
+    XII_ACCESSOR_PROPERTY("MaxDistance", GetMaxDistance, SetMaxDistance)->AddAttributes(new xiiDefaultValueAttribute(1.0f)),
+    XII_ACCESSOR_PROPERTY("SpringFrequency", GetSpringFrequency, SetSpringFrequency)->AddAttributes(new xiiDefaultValueAttribute(0.0f)),
+    XII_ACCESSOR_PROPERTY("SpringDamping", GetSpringDamping, SetSpringDamping)->AddAttributes(new xiiDefaultValueAttribute(1.0f)),
   }
   XII_END_PROPERTIES;
   XII_BEGIN_ATTRIBUTES
@@ -122,6 +121,9 @@ XII_END_COMPONENT_TYPE;
 
 void xiiJoltJointComponent::SetJointConfig(const xiiPhysicsWorldModuleInterface::JointConfig& config)
 {
+  if (m_Config.m_hActorA == config.m_hActorA && m_Config.m_hActorB == config.m_hActorB &&
+      m_Config.m_LocalFrameA == config.m_LocalFrameA && m_Config.m_LocalFrameB == config.m_LocalFrameB)
+    return;
   m_Config = config;
   QueueSettingsUpdate(true);
 }
@@ -153,16 +155,23 @@ void xiiJoltJointComponent::SetActorBReference(const char* szReference)
 }
 void xiiJoltJointComponent::SetLocalFrameA(const xiiTransform& frame)
 {
+  if (m_Config.m_LocalFrameA == frame)
+    return;
   m_Config.m_LocalFrameA = frame;
   QueueSettingsUpdate(true);
 }
 void xiiJoltJointComponent::SetLocalFrameB(const xiiTransform& frame)
 {
+  if (m_Config.m_LocalFrameB == frame)
+    return;
   m_Config.m_LocalFrameB = frame;
   QueueSettingsUpdate(true);
 }
 xiiResult xiiJoltJointComponent::CaptureJointFrames()
 {
+  if (m_Config.m_hActorB.IsInvalidated() || m_Config.m_hActorB.GetInternalID().m_WorldIndex != GetWorld()->GetIndex() ||
+      (!m_Config.m_hActorA.IsInvalidated() && m_Config.m_hActorA.GetInternalID().m_WorldIndex != GetWorld()->GetIndex()))
+    return XII_FAILURE;
   xiiGameObject* pActorB = nullptr;
   xiiGameObject* pActorA = nullptr;
   if (!GetWorld()->TryGetObject(m_Config.m_hActorB, pActorB) ||
@@ -170,19 +179,29 @@ xiiResult xiiJoltJointComponent::CaptureJointFrames()
     return XII_FAILURE;
 
   GetOwner()->UpdateGlobalTransform();
-  const auto frame = GetOwner()->GetGlobalTransform();
-  pActorB->UpdateGlobalTransform();
-  m_Config.m_LocalFrameB = xiiTransform::MakeLocalTransform(pActorB->GetGlobalTransform(), frame);
-  if (pActorA != nullptr)
-  {
-    pActorA->UpdateGlobalTransform();
-    m_Config.m_LocalFrameA = xiiTransform::MakeLocalTransform(pActorA->GetGlobalTransform(), frame);
-  }
-  else
-    m_Config.m_LocalFrameA = frame;
-  m_Config.m_LocalFrameA.m_vScale = xiiVec3(1.0f);
-  m_Config.m_LocalFrameB.m_vScale = xiiVec3(1.0f);
-  QueueSettingsUpdate(true);
+  auto frame     = GetOwner()->GetGlobalTransform();
+  frame.m_vScale = xiiVec3(1.0f);
+  if (!frame.m_vPosition.IsValid() || !frame.m_qRotation.IsValid())
+    return XII_FAILURE;
+  auto       config  = m_Config;
+  const auto capture = [&frame](xiiGameObject* pActor, xiiTransform& out_local) -> xiiResult {
+    if (pActor == nullptr)
+      out_local = frame;
+    else
+    {
+      pActor->UpdateGlobalTransform();
+      const auto& actorPose = pActor->GetGlobalTransform();
+      if (!actorPose.m_vPosition.IsValid() || !actorPose.m_qRotation.IsValid() || !actorPose.m_vScale.IsValid() ||
+          actorPose.m_vScale.x == 0 || actorPose.m_vScale.y == 0 || actorPose.m_vScale.z == 0)
+        return XII_FAILURE;
+      out_local          = xiiTransform::MakeLocalTransform(actorPose, frame);
+      out_local.m_vScale = xiiVec3(1.0f);
+    }
+    return out_local.m_vPosition.IsValid() && out_local.m_qRotation.IsValid() ? XII_SUCCESS : XII_FAILURE;
+  };
+  if (capture(pActorA, config.m_LocalFrameA).Failed() || capture(pActorB, config.m_LocalFrameB).Failed())
+    return XII_FAILURE;
+  SetJointConfig(config);
   return XII_SUCCESS;
 }
 void xiiJoltJointComponent::SetBreakForce(float fValue)

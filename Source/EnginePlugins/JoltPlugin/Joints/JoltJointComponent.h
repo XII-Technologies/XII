@@ -38,13 +38,14 @@ public:
   xiiGameObjectHandle                                GetActorB() const { return m_Config.m_hActorB; }
   void                                               SetActorAReference(const char* szReference);
   void                                               SetActorBReference(const char* szReference);
-  const char*                                        GetActorReference() const { return ""; }
-  const xiiTransform&                                GetLocalFrameA() const { return m_Config.m_LocalFrameA; }
-  const xiiTransform&                                GetLocalFrameB() const { return m_Config.m_LocalFrameB; }
-  void                                               SetLocalFrameA(const xiiTransform& frame);
-  void                                               SetLocalFrameB(const xiiTransform& frame);
+  /// Reference strings are resolved by the world; runtime references are stored and serialized as handles.
+  const char*         GetActorReference() const { return ""; }
+  const xiiTransform& GetLocalFrameA() const { return m_Config.m_LocalFrameA; }
+  const xiiTransform& GetLocalFrameB() const { return m_Config.m_LocalFrameB; }
+  void                SetLocalFrameA(const xiiTransform& frame);
+  void                SetLocalFrameB(const xiiTransform& frame);
 
-  /// Captures the owner's world pose as both attachment frames at the current actor poses.
+  /// Captures the owner's world pose as both attachment frames at the current actor scene poses.
   [[nodiscard]] xiiResult CaptureJointFrames();
   /// Explicitly repairs a broken joint and requests native recreation.
   void RecreateJoint();
@@ -83,6 +84,7 @@ public:
 };
 
 using xiiJoltPointJointComponentManager = xiiComponentManager<class xiiJoltPointJointComponent, xiiBlockStorageType::Compact>;
+/// Connects the two frame positions; rotation remains unconstrained.
 class XII_JOLTPLUGIN_DLL xiiJoltPointJointComponent final : public xiiJoltJointComponent
 {
   XII_DECLARE_COMPONENT_TYPE(xiiJoltPointJointComponent, xiiJoltJointComponent, xiiJoltPointJointComponentManager);
@@ -93,6 +95,8 @@ public:
 };
 
 using xiiJoltHingeJointComponentManager = xiiComponentManager<class xiiJoltHingeJointComponent, xiiBlockStorageType::Compact>;
+/// Local frame X is the hinge axis. Limits must contain zero and remain within [-pi, pi].
+/// Target velocity is radians/second; maximum motor torque is N m. Only force breaking is supported.
 class XII_JOLTPLUGIN_DLL xiiJoltHingeJointComponent final : public xiiJoltJointComponent
 {
   XII_DECLARE_COMPONENT_TYPE(xiiJoltHingeJointComponent, xiiJoltJointComponent, xiiJoltHingeJointComponentManager);
@@ -100,8 +104,6 @@ class XII_JOLTPLUGIN_DLL xiiJoltHingeJointComponent final : public xiiJoltJointC
 public:
   xiiJoltHingeJointComponent();
   ~xiiJoltHingeJointComponent() override;
-  float                          GetBreakTorque() const { return GetBreakTorqueValue(); }
-  void                           SetBreakTorque(float fValue) { SetBreakTorqueValue(fValue); }
   bool                           GetLimitsEnabled() const { return m_bLimitsEnabled; }
   void                           SetLimitsEnabled(bool value);
   xiiAngle                       GetLowerLimit() const { return m_LowerLimit; }
@@ -136,6 +138,7 @@ private:
 };
 
 using xiiJoltSliderJointComponentManager = xiiComponentManager<class xiiJoltSliderJointComponent, xiiBlockStorageType::Compact>;
+/// Local frame X is the translation axis. Limits must contain zero. Positions are meters, velocity meters/second.
 class XII_JOLTPLUGIN_DLL xiiJoltSliderJointComponent final : public xiiJoltJointComponent
 {
   XII_DECLARE_COMPONENT_TYPE(xiiJoltSliderJointComponent, xiiJoltJointComponent, xiiJoltSliderJointComponentManager);
@@ -179,6 +182,7 @@ private:
 };
 
 using xiiJoltDistanceJointComponentManager = xiiComponentManager<class xiiJoltDistanceJointComponent, xiiBlockStorageType::Compact>;
+/// Distances are meters. Equal minimum and maximum select fixed distance. Spring frequency zero uses hard limits.
 class XII_JOLTPLUGIN_DLL xiiJoltDistanceJointComponent final : public xiiJoltJointComponent
 {
   XII_DECLARE_COMPONENT_TYPE(xiiJoltDistanceJointComponent, xiiJoltJointComponent, xiiJoltDistanceJointComponentManager);

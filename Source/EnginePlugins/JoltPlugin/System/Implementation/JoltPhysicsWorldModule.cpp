@@ -50,6 +50,9 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 namespace
 {
+  static_assert(static_cast<int>(xiiJoltJointMotorMode::Off) == static_cast<int>(JPH::EMotorState::Off) &&
+                static_cast<int>(xiiJoltJointMotorMode::Velocity) == static_cast<int>(JPH::EMotorState::Velocity) &&
+                static_cast<int>(xiiJoltJointMotorMode::Position) == static_cast<int>(JPH::EMotorState::Position));
   constexpr xiiUInt32 MaxBodies              = 4096;
   constexpr xiiUInt32 MaxBodyPairs           = 16384;
   constexpr xiiUInt32 MaxContactConstraints  = 8192;
@@ -216,13 +219,20 @@ struct xiiJoltPhysicsWorldModule::NativeWorld : JPH::ContactListener
     m_PosesToSync(pAllocator),
     m_Contacts(pAllocator),
     m_ContactEvents(pAllocator),
+    m_DispatchContactEvents(pAllocator),
     m_QueuedImpulses(pAllocator),
+    m_Joints(pAllocator),
+    m_PendingJoints(pAllocator),
+    m_WaitingJoints(pAllocator),
+    m_BreakableJoints(pAllocator),
+    m_BrokenJoints(pAllocator),
     m_BodiesByComponent(pAllocator),
     m_OwnersByBody(pAllocator)
   {
     m_PosesToSync.Reserve(MaxBodies);
     m_Contacts.Reserve(MaxBodies);
     m_ContactEvents.Reserve(MaxBodies);
+    m_DispatchContactEvents.Reserve(MaxBodies);
     m_PhysicsSystem.Init(MaxBodies, 0, MaxBodyPairs, MaxContactConstraints, m_CollisionFilters, m_CollisionFilters, m_CollisionFilters);
     m_PhysicsSystem.SetGravity(JPH::Vec3(0.0f, 0.0f, -9.81f));
     m_PhysicsSystem.SetContactListener(this);
@@ -246,6 +256,8 @@ struct xiiJoltPhysicsWorldModule::NativeWorld : JPH::ContactListener
     xiiUInt32                m_uiFilterId;
     bool                     m_bDynamic;
     xiiSurfaceResourceHandle m_hSurface;
+    xiiHashedString          m_sCollisionInteraction;
+    bool                     m_bMaterialInitialized = false;
   };
 
   struct DynamicPose
@@ -327,6 +339,8 @@ struct xiiJoltPhysicsWorldModule::NativeWorld : JPH::ContactListener
   {
     if ((a.GetUserData() | b.GetUserData()) == 0 || manifold.mRelativeContactPointsOn1.empty())
       return;
+    if (phase == xiiPhysicsContactPhase::Persisted && ((a.GetUserData() | b.GetUserData()) & 1) == 0)
+      return; // Surface reactions only require the initial contact.
 
     const auto* pOwnerA = FindOwner(a.GetID());
     const auto* pOwnerB = FindOwner(b.GetID());
@@ -352,7 +366,7 @@ struct xiiJoltPhysicsWorldModule::NativeWorld : JPH::ContactListener
                     key,
                     xiiInvalidIndex,
                     phase,
-                    {a.GetUserData() != 0, b.GetUserData() != 0}};
+                    {(a.GetUserData() & 1) != 0, (b.GetUserData() & 1) != 0}};
     if (pPrevious != nullptr && pPrevious->m_uiEventIndex != xiiInvalidIndex)
     {
       contact.m_uiEventIndex = pPrevious->m_uiEventIndex;
@@ -417,7 +431,7 @@ struct xiiJoltPhysicsWorldModule::NativeWorld : JPH::ContactListener
     for (auto it = m_Joints.GetIterator(); it.IsValid(); ++it)
     {
       auto& joint = it.Value();
-      if (joint.m_Bodies[0] == bodyId || joint.m_Bodies[1] == bodyId)
+      if (joint.m_pConstraint != nullptr && (joint.m_Bodies[0] == bodyId || joint.m_Bodies[1] == bodyId))
       {
         DetachJoint(joint);
         joint.m_bRecreate = true;
@@ -463,6 +477,7 @@ struct xiiJoltPhysicsWorldModule::NativeWorld : JPH::ContactListener
     m_Contacts.Clear();
     m_uiTrackedContacts = 0;
     m_ContactEvents.Clear();
+    m_DispatchContactEvents.Clear();
     m_QueuedImpulses.Clear();
     for (auto it = m_BodiesByComponent.GetIterator(); it.IsValid(); ++it)
     {
@@ -483,6 +498,7 @@ struct xiiJoltPhysicsWorldModule::NativeWorld : JPH::ContactListener
   xiiAtomicIntegerU32                      m_uiTrackedContacts;
   xiiHashTable<xiiUInt64, Contact>         m_Contacts;
   xiiDynamicArray<Contact>                 m_ContactEvents;
+  xiiDynamicArray<Contact>                 m_DispatchContactEvents;
   xiiMutex                                 m_ImpulseMutex;
   xiiDynamicArray<QueuedImpulse>           m_QueuedImpulses;
 
@@ -616,7 +632,10 @@ void xiiJoltPhysicsWorldModule::SetBodyContactReporting(xiiComponentHandle hActo
   {
     const auto id = m_pNativeWorld->FindBody(hActor);
     if (!id.IsInvalid())
-      m_pNativeWorld->m_PhysicsSystem.GetBodyInterface().SetUserData(id, bEnabled ? 1 : 0);
+    {
+      auto& bodies = m_pNativeWorld->m_PhysicsSystem.GetBodyInterface();
+      bodies.SetUserData(id, (bodies.GetUserData(id) & ~JPH::uint64{1}) | (bEnabled ? 1 : 0));
+    }
   }
 }
 
@@ -897,7 +916,7 @@ void xiiJoltPhysicsWorldModule::DispatchContacts(const UpdateContext&)
   for (auto hJoint : native.m_BrokenJoints)
   {
     xiiJoltJointComponent* pJoint = nullptr;
-    if (GetWorld()->TryGetComponent(hJoint, pJoint) && pJoint->IsActiveAndSimulating() && pJoint->IsBroken())
+    if (GetWorld()->TryGetComponent(hJoint, pJoint) && pJoint->IsActiveAndSimulating())
     {
       xiiMsgPhysicsJointBroke msg;
       msg.m_hJointObject = pJoint->GetOwner()->GetHandle();
@@ -905,10 +924,34 @@ void xiiJoltPhysicsWorldModule::DispatchContacts(const UpdateContext&)
     }
   }
   native.m_BrokenJoints.Clear();
-  for (const auto& contact : native.m_ContactEvents)
+  // Surface interactions may instantiate scene objects. Keep events appended by lifecycle changes separate.
+  native.m_DispatchContactEvents.Swap(native.m_ContactEvents);
+  for (const auto& contact : native.m_DispatchContactEvents)
   {
     if (auto* pCached = native.m_Contacts.GetValue(contact.m_uiKey))
       pCached->m_uiEventIndex = xiiInvalidIndex;
+
+    if (contact.m_Phase == xiiPhysicsContactPhase::Added && contact.m_fImpactSqr > 0.0f)
+    {
+      // Prefer the stationary surface as the interaction target, using the striking object's interaction name.
+      const xiiUInt32 uiTarget    = !contact.m_Owners[0].m_bDynamic ? 0 : 1;
+      const auto&     target      = contact.m_Owners[uiTarget];
+      const auto&     source      = contact.m_Owners[1 - uiTarget];
+      const auto      hSurface    = target.m_hSurface.IsValid() ? target.m_hSurface : source.m_hSurface;
+      const auto&     interaction = source.m_hSurface.IsValid() ? source.m_sCollisionInteraction : target.m_sCollisionInteraction;
+      const auto*     pCurrentA   = native.FindOwner(native.FindBody(contact.m_Owners[0].m_hComponent));
+      const auto*     pCurrentB   = native.FindOwner(native.FindBody(contact.m_Owners[1].m_hComponent));
+      if (hSurface.IsValid() && !interaction.IsEmpty() && pCurrentA != nullptr && pCurrentB != nullptr &&
+          pCurrentA->m_uiFilterId == contact.m_Owners[0].m_uiFilterId && pCurrentB->m_uiFilterId == contact.m_Owners[1].m_uiFilterId)
+      {
+        const xiiResourceLock<xiiSurfaceResource> surface(hSurface, xiiResourceAcquireMode::PointerOnly);
+        if (surface->GetLoadingState() == xiiResourceState::Loaded)
+        {
+          const xiiVec3 vNormal = uiTarget == 0 ? contact.m_vNormal : -contact.m_vNormal;
+          surface->InteractWithSurface(GetWorld(), target.m_hObject, contact.m_vPosition, vNormal, -vNormal, interaction, nullptr, contact.m_fImpactSqr);
+        }
+      }
+    }
 
     for (xiiUInt32 i = 0; i < 2; ++i)
     {
@@ -940,7 +983,7 @@ void xiiJoltPhysicsWorldModule::DispatchContacts(const UpdateContext&)
       GetWorld()->PostMessage(owner.m_hObject, msg, xiiTime::MakeZero(), xiiObjectMsgQueueType::PostTransform);
     }
   }
-  native.m_ContactEvents.Clear();
+  native.m_DispatchContactEvents.Clear();
 }
 
 namespace
@@ -1503,7 +1546,7 @@ namespace
       return (!p->GetLimitsEnabled() || (p->GetLowerLimit().GetRadian() >= -JPH::JPH_PI && p->GetLowerLimit().GetRadian() <= 0 && p->GetUpperLimit().GetRadian() >= 0 && p->GetUpperLimit().GetRadian() <= JPH::JPH_PI)) &&
         NonNegative(p->GetMaxMotorTorque()) && NonNegative(p->GetMotorFrequency()) && NonNegative(p->GetMotorDamping()) &&
         xiiMath::IsFinite(p->GetTargetVelocity()) && xiiMath::IsFinite(p->GetTargetAngle().GetRadian()) &&
-        p->GetMotorMode().GetValue() <= xiiJoltJointMotorMode::Position && NonNegative(p->GetBreakTorque());
+        p->GetMotorMode().GetValue() <= xiiJoltJointMotorMode::Position;
     if (const auto* p = xiiDynamicCast<const xiiJoltSliderJointComponent*>(&joint))
       return (!p->GetLimitsEnabled() || (xiiMath::IsFinite(p->GetLowerLimit()) && p->GetLowerLimit() <= 0 && xiiMath::IsFinite(p->GetUpperLimit()) && p->GetUpperLimit() >= 0)) &&
         NonNegative(p->GetMaxMotorForce()) && NonNegative(p->GetMotorFrequency()) && NonNegative(p->GetMotorDamping()) &&
@@ -1514,7 +1557,7 @@ namespace
         NonNegative(p->GetSpringFrequency()) && NonNegative(p->GetSpringDamping());
     if (const auto* p = xiiDynamicCast<const xiiJoltFixedJointComponent*>(&joint))
       return NonNegative(p->GetBreakTorque());
-    return true;
+    return xiiDynamicCast<const xiiJoltPointJointComponent*>(&joint) != nullptr;
   }
 } // namespace
 
@@ -1578,7 +1621,13 @@ void xiiJoltPhysicsWorldModule::UpdateJoints()
           break;
         }
         pObject->UpdateGlobalTransform();
-        scales[i] = pObject->GetGlobalTransform().m_vScale;
+        scales[i]         = pObject->GetGlobalTransform().m_vScale;
+        const auto& frame = i == 0 ? config.m_LocalFrameA : config.m_LocalFrameB;
+        if (!scales[i].IsValid() || !frame.m_vPosition.CompMul(scales[i]).IsValid())
+        {
+          bInvalid = true;
+          break;
+        }
       }
       if (bWaiting)
       {
@@ -1599,11 +1648,10 @@ void xiiJoltPhysicsWorldModule::UpdateJoints()
       for (xiiUInt32 i = 0; i < 2; ++i)
       {
         // XII frames are relative to the actor origin; Jolt local frames are relative to its center of mass.
-        const auto toCOM    = bodies[i]->GetInverseCenterOfMassTransform() * bodies[i]->GetWorldTransform();
-        points[i]           = JPH::RVec3(toCOM * ToJoltVector(frames[i].m_vPosition.CompMul(scales[i])));
+        points[i]           = JPH::RVec3(ToJoltVector(frames[i].m_vPosition.CompMul(scales[i])) - bodies[i]->GetShape()->GetCenterOfMass());
         const auto rotation = ToJoltRotation(frames[i].m_qRotation);
-        axesX[i]            = toCOM.Multiply3x3(rotation * JPH::Vec3::sAxisX());
-        axesY[i]            = toCOM.Multiply3x3(rotation * JPH::Vec3::sAxisY());
+        axesX[i]            = rotation * JPH::Vec3::sAxisX();
+        axesY[i]            = rotation * JPH::Vec3::sAxisY();
       }
       JPH::Ref<JPH::TwoBodyConstraint> pConstraint;
       if (xiiDynamicCast<xiiJoltFixedJointComponent*>(pComponent))
@@ -1670,7 +1718,7 @@ void xiiJoltPhysicsWorldModule::UpdateJoints()
     }
 
     joint.m_fBreakForce  = pComponent->GetBreakForce();
-    joint.m_fBreakTorque = pComponent->m_fBreakTorque;
+    joint.m_fBreakTorque = (xiiDynamicCast<xiiJoltFixedJointComponent*>(pComponent) != nullptr || xiiDynamicCast<xiiJoltSliderJointComponent*>(pComponent) != nullptr) ? pComponent->m_fBreakTorque : 0.0f;
     if (const auto* pHinge = xiiDynamicCast<xiiJoltHingeJointComponent*>(pComponent))
     {
       auto& hinge = *static_cast<JPH::HingeConstraint*>(joint.m_pConstraint.GetPtr());
@@ -1739,10 +1787,9 @@ void xiiJoltPhysicsWorldModule::CheckJointBreakage(float fStepSeconds)
         break;
       case JPH::EConstraintSubType::Hinge:
       {
-        const auto& c      = *static_cast<const JPH::HingeConstraint*>(pConstraint);
-        fLinearImpulse     = c.GetTotalLambdaPosition().Length();
-        const double axial = double(c.GetTotalLambdaMotor()) + c.GetTotalLambdaRotationLimits();
-        fAngularImpulse    = xiiMath::Sqrt(double(c.GetTotalLambdaRotation().LengthSq()) + axial * axial);
+        const auto& c  = *static_cast<const JPH::HingeConstraint*>(pConstraint);
+        fLinearImpulse = c.GetTotalLambdaPosition().Length();
+        // Alignment lambdas use a non-orthonormal basis. Hinge torque breaking is intentionally unavailable.
         break;
       }
       case JPH::EConstraintSubType::Slider:
@@ -1796,10 +1843,14 @@ void xiiJoltPhysicsWorldModule::UpdateMaterials()
     return;
   for (auto it = native.GetBodyOwners().GetIterator(); it.IsValid(); ++it)
   {
-    const auto& owner     = it.Value();
-    float       fFriction = 0.2f, fRestitution = 0.0f;
+    auto& owner     = *native.FindOwnerMutable(JPH::BodyID(it.Key()));
+    float fFriction = 0.2f, fRestitution = 0.0f;
+    owner.m_sCollisionInteraction.Clear();
     if (owner.m_hSurface.IsValid())
     {
+      // Reload transitions hold this mutex. A Loaded state publishes a complete descriptor.
+      // Keep this rare metadata read protected without holding the lock during native simulation.
+      XII_LOCK(xiiResourceManager::GetMutex());
       const xiiResourceLock<xiiSurfaceResource> surface(owner.m_hSurface, xiiResourceAcquireMode::PointerOnly);
       if (surface->GetLoadingState() == xiiResourceState::Loaded)
       {
@@ -1809,12 +1860,20 @@ void xiiJoltPhysicsWorldModule::UpdateMaterials()
           fFriction = descriptor.m_fPhysicsFrictionDynamic;
         if (xiiMath::IsFinite(descriptor.m_fPhysicsRestitution))
           fRestitution = xiiMath::Clamp(descriptor.m_fPhysicsRestitution, 0.0f, 1.0f);
+        owner.m_sCollisionInteraction = descriptor.m_sOnCollideInteraction;
       }
       else if (surface->GetLoadingState() == xiiResourceState::Unloaded)
         xiiResourceManager::PreloadResource(owner.m_hSurface);
     }
-    native.m_PhysicsSystem.GetBodyInterface().SetFriction(JPH::BodyID(it.Key()), fFriction);
-    native.m_PhysicsSystem.GetBodyInterface().SetRestitution(JPH::BodyID(it.Key()), fRestitution);
+    auto&             bodies = native.m_PhysicsSystem.GetBodyInterface();
+    const JPH::BodyID id(it.Key());
+    const bool        bChanged = bodies.GetFriction(id) != fFriction || bodies.GetRestitution(id) != fRestitution;
+    bodies.SetFriction(id, fFriction);
+    bodies.SetRestitution(id, fRestitution);
+    if (bChanged && owner.m_bMaterialInitialized && owner.m_bDynamic)
+      bodies.ActivateBody(id);
+    owner.m_bMaterialInitialized = true;
+    bodies.SetUserData(id, (bodies.GetUserData(id) & 1) | (owner.m_sCollisionInteraction.IsEmpty() ? 0 : 2));
   }
 }
 
