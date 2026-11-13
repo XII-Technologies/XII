@@ -58,6 +58,7 @@ private:
   friend class xiiJoltActorComponent;
   friend class xiiJoltDynamicActorComponent;
   friend class xiiJoltJointComponent;
+  friend class xiiJoltShapeComponent;
 
   void Initialize() override;
   void Deinitialize() override;
@@ -70,6 +71,9 @@ private:
   void UpdateJoints();
   void CheckJointBreakage(float fStepSeconds);
   void UpdateMaterials();
+  void RegisterShape(xiiComponentHandle hShape);
+  void UnregisterShape(xiiComponentHandle hShape);
+  void UpdateShapes();
   void QueueBodyUpdate(xiiComponentHandle hActor);
   void SetBodyContactReporting(xiiComponentHandle hActor, bool bEnabled);
   void SetBodySurface(xiiComponentHandle hActor, const xiiSurfaceResourceHandle& hSurface);

@@ -1,12 +1,13 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
-#include <JoltPlugin/Joints/JoltJointComponent.h>
 #include <JoltPlugin/JoltPluginPCH.h>
 
 #include <Core/World/World.h>
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Strings/StringBuilder.h>
 #include <JoltPlugin/Actors/JoltDynamicActorComponent.h>
+#include <JoltPlugin/Joints/JoltJointComponent.h>
+#include <JoltPlugin/Resources/JoltCollisionMeshResource.h>
 #include <JoltPlugin/Shapes/JoltPrimitiveShapeComponent.h>
 #include <JoltPlugin/System/JoltPhysicsWorldModule.h>
 
@@ -79,10 +80,15 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(Jolt, JoltPlugin)
         pWorld->DeleteModule(xiiGetStaticRTTI<xiiJoltStaticActorComponent>());
         pWorld->DeleteModule(xiiGetStaticRTTI<xiiJoltBoxShapeComponent>());
         pWorld->DeleteModule(xiiGetStaticRTTI<xiiJoltSphereShapeComponent>());
+        pWorld->DeleteModule(xiiGetStaticRTTI<xiiJoltCapsuleShapeComponent>());
+        pWorld->DeleteModule(xiiGetStaticRTTI<xiiJoltCylinderShapeComponent>());
+        pWorld->DeleteModule(xiiGetStaticRTTI<xiiJoltConvexHullShapeComponent>());
+        pWorld->DeleteModule(xiiGetStaticRTTI<xiiJoltMeshShapeComponent>());
         pWorld->DeleteModule<xiiJoltPhysicsWorldModule>();
       }
     }
 
+    xiiJoltCollisionMeshResource::CleanupDynamicPluginReferences();
     JPH::UnregisterTypes();
     delete JPH::Factory::sInstance;
     JPH::Factory::sInstance = nullptr;

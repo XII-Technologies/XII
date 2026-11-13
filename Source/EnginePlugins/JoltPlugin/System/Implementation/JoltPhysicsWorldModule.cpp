@@ -5,6 +5,7 @@
 #include <Core/Physics/SurfaceResource.h>
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Core/World/World.h>
+#include <Foundation/Algorithm/HashingUtils.h>
 #include <Foundation/Containers/DynamicArray.h>
 #include <Foundation/Containers/HashSet.h>
 #include <Foundation/Containers/HashTable.h>
@@ -15,6 +16,7 @@
 #include <Foundation/Utilities/ConversionUtils.h>
 #include <JoltPlugin/Actors/JoltDynamicActorComponent.h>
 #include <JoltPlugin/Joints/JoltJointComponent.h>
+#include <JoltPlugin/Resources/Implementation/JoltCollisionMeshData.h>
 #include <JoltPlugin/Shapes/JoltPrimitiveShapeComponent.h>
 #include <JoltPlugin/System/JoltPhysicsWorldModule.h>
 
@@ -33,8 +35,11 @@
 #include <Jolt/Physics/Collision/Shape/BoxShape.h>
 #include <Jolt/Physics/Collision/Shape/CapsuleShape.h>
 #include <Jolt/Physics/Collision/Shape/CylinderShape.h>
+#include <Jolt/Physics/Collision/Shape/MeshShape.h>
 #include <Jolt/Physics/Collision/Shape/RotatedTranslatedShape.h>
+#include <Jolt/Physics/Collision/Shape/ScaledShape.h>
 #include <Jolt/Physics/Collision/Shape/SphereShape.h>
+#include <Jolt/Physics/Collision/Shape/StaticCompoundShape.h>
 #include <Jolt/Physics/Collision/ShapeCast.h>
 #include <Jolt/Physics/Constraints/DistanceConstraint.h>
 #include <Jolt/Physics/Constraints/FixedConstraint.h>
@@ -77,55 +82,88 @@ namespace
     return nullptr;
   }
 
-  // A nested actor owns its own subtree. Stop at the second shape so invalid setups
-  // cannot make the choice of collider depend on component traversal order.
-  bool CollectShape(xiiGameObject& object, xiiJoltShapeComponent*& ref_pShape)
+  void CollectShapes(xiiGameObject& object, xiiDynamicArray<xiiJoltShapeComponent*>& shapes)
   {
-    for (auto* pComponent : object.GetComponents())
-    {
-      if (auto* pShape = xiiDynamicCast<xiiJoltShapeComponent*>(pComponent); pShape != nullptr && pShape->IsActiveAndInitialized())
-      {
-        if (ref_pShape != nullptr)
-          return false;
-        ref_pShape = pShape;
-      }
-    }
-
+    for (auto* c : object.GetComponents())
+      if (auto* p = xiiDynamicCast<xiiJoltShapeComponent*>(c); p && p->IsActiveAndInitialized())
+        shapes.PushBack(p);
     for (auto it = object.GetChildren(); it.IsValid(); ++it)
-    {
-      if (FindActiveActor(*it) == nullptr && !CollectShape(*it, ref_pShape))
-        return false;
-    }
-    return true;
+      if (!FindActiveActor(*it))
+        CollectShapes(*it, shapes);
   }
-
-  JPH::ShapeSettings::ShapeResult CreatePrimitive(const xiiJoltShapeComponent& component, const xiiVec3& vScale, float fDensity)
+  const xiiJoltActorComponent* ShapeActor(const xiiGameObject* pObject)
+  {
+    for (; pObject; pObject = pObject->GetParent())
+      if (auto* pActor = FindActiveActor(*pObject))
+        return pActor;
+    return nullptr;
+  }
+  bool ShapeMatrix(const xiiJoltShapeComponent& shape, const xiiGameObject& actor, xiiMat4& matrix)
+  {
+    matrix        = xiiTransform(shape.GetLocalPosition(), shape.GetLocalRotation()).GetAsMat4();
+    const auto* p = shape.GetOwner();
+    for (; p && p != &actor; p = p->GetParent())
+      matrix = p->GetLocalTransform().GetAsMat4() * matrix;
+    if (!p)
+      return false;
+    matrix = xiiMat4::MakeScaling(actor.GetGlobalScaling()) * matrix;
+    return matrix.IsValid();
+  }
+  bool DecomposeShape(const xiiMat4& matrix, xiiTransform& pose)
+  {
+    xiiVec3 axes[3] = {matrix.GetColumn(0).GetAsVec3(), matrix.GetColumn(1).GetAsVec3(), matrix.GetColumn(2).GetAsVec3()};
+    xiiVec3 scale(axes[0].GetLength(), axes[1].GetLength(), axes[2].GetLength());
+    if (!scale.IsValid() || scale.x <= 0 || scale.y <= 0 || scale.z <= 0)
+      return false;
+    axes[0] /= scale.x;
+    axes[1] /= scale.y;
+    axes[2] /= scale.z;
+    if (xiiMath::Abs(axes[0].Dot(axes[1])) > 0.0001f || xiiMath::Abs(axes[0].Dot(axes[2])) > 0.0001f ||
+        xiiMath::Abs(axes[1].Dot(axes[2])) > 0.0001f)
+      return false;
+    if (axes[0].CrossRH(axes[1]).Dot(axes[2]) < 0)
+    {
+      scale.x = -scale.x;
+      axes[0] = -axes[0];
+    }
+    xiiMat3 rotation;
+    for (xiiUInt32 i = 0; i < 3; ++i)
+      rotation.SetColumn(i, axes[i]);
+    pose = xiiTransform(matrix.GetTranslationVector(), xiiQuat::MakeFromMat3(rotation), scale);
+    return pose.m_vPosition.IsValid() && pose.m_qRotation.IsValid();
+  }
+  JPH::Shape::ShapeResult CreatePrimitive(const xiiJoltShapeComponent& component)
   {
     if (const auto* pBox = xiiDynamicCast<const xiiJoltBoxShapeComponent*>(&component))
     {
-      const xiiVec3 vHalfExtents = pBox->GetDimensions().CompMul(vScale) * 0.5f;
-      if (vHalfExtents.IsValid() && vHalfExtents.x > 0.0f && vHalfExtents.y > 0.0f && vHalfExtents.z > 0.0f)
-      {
-        const float           fMinExtent = xiiMath::Min(vHalfExtents.x, vHalfExtents.y, vHalfExtents.z);
-        JPH::BoxShapeSettings settings(ToJoltVector(vHalfExtents), xiiMath::Min(JPH::cDefaultConvexRadius, 0.5f * fMinExtent));
-        settings.SetDensity(fDensity);
-        return settings.Create();
-      }
+      const auto half = pBox->GetDimensions() * 0.5f;
+      if (half.IsValid() && half.x > 0 && half.y > 0 && half.z > 0)
+        return JPH::BoxShapeSettings(ToJoltVector(half), xiiMath::Min(JPH::cDefaultConvexRadius, 0.5f * xiiMath::Min(half.x, half.y, half.z))).Create();
     }
     else if (const auto* pSphere = xiiDynamicCast<const xiiJoltSphereShapeComponent*>(&component))
     {
-      const float fRadius = pSphere->GetRadius() * vScale.x;
-      if (xiiMath::IsFinite(fRadius) && fRadius > 0.0f && vScale.IsEqual(xiiVec3(vScale.x), 0.00001f * vScale.x))
-      {
-        JPH::SphereShapeSettings settings(fRadius);
-        settings.SetDensity(fDensity);
-        return settings.Create();
-      }
+      if (xiiMath::IsFinite(pSphere->GetRadius()) && pSphere->GetRadius() > 0)
+        return JPH::SphereShapeSettings(pSphere->GetRadius()).Create();
     }
-
-    JPH::ShapeSettings::ShapeResult result;
-    result.SetError("Box dimensions must be positive and sphere scale must be positive and uniform.");
-    return result;
+    else
+    {
+      JPH::Shape::ShapeResult result;
+      if (const auto* pCapsule = xiiDynamicCast<const xiiJoltCapsuleShapeComponent*>(&component))
+      {
+        if (xiiMath::IsFinite(pCapsule->GetRadius()) && xiiMath::IsFinite(pCapsule->GetHeight()) && pCapsule->GetRadius() > 0 && pCapsule->GetHeight() > 0)
+          result = JPH::CapsuleShapeSettings(pCapsule->GetHeight() * 0.5f, pCapsule->GetRadius()).Create();
+      }
+      else if (const auto* pCylinder = xiiDynamicCast<const xiiJoltCylinderShapeComponent*>(&component))
+      {
+        if (xiiMath::IsFinite(pCylinder->GetRadius()) && xiiMath::IsFinite(pCylinder->GetHeight()) && pCylinder->GetRadius() > 0 && pCylinder->GetHeight() > 0)
+          result = JPH::CylinderShapeSettings(pCylinder->GetHeight() * 0.5f, pCylinder->GetRadius(), xiiMath::Min(JPH::cDefaultConvexRadius, 0.25f * xiiMath::Min(pCylinder->GetRadius(), pCylinder->GetHeight()))).Create();
+      }
+      if (!result.IsEmpty() && !result.HasError())
+        return JPH::RotatedTranslatedShapeSettings(JPH::Vec3::sZero(), JPH::Quat::sRotation(JPH::Vec3::sAxisX(), JPH::JPH_PI * 0.5f), result.Get()).Create();
+    }
+    JPH::Shape::ShapeResult error;
+    error.SetError("Collision dimensions must be finite and positive.");
+    return error;
   }
 
   class xiiJoltCollisionFilters final :
@@ -215,6 +253,10 @@ namespace
 struct xiiJoltPhysicsWorldModule::NativeWorld : JPH::ContactListener
 {
   explicit NativeWorld(xiiAllocator* pAllocator) :
+    m_ShapeSets(pAllocator),
+    m_TrackedShapes(pAllocator),
+    m_SubContacts(pAllocator),
+    m_ContactManifolds(pAllocator),
     m_PendingBodies(pAllocator),
     m_PosesToSync(pAllocator),
     m_Contacts(pAllocator),
@@ -231,6 +273,8 @@ struct xiiJoltPhysicsWorldModule::NativeWorld : JPH::ContactListener
   {
     m_PosesToSync.Reserve(MaxBodies);
     m_Contacts.Reserve(MaxBodies);
+    m_SubContacts.Reserve(MaxContactConstraints);
+    m_ContactManifolds.Reserve(MaxBodies);
     m_ContactEvents.Reserve(MaxBodies);
     m_DispatchContactEvents.Reserve(MaxBodies);
     m_PhysicsSystem.Init(MaxBodies, 0, MaxBodyPairs, MaxContactConstraints, m_CollisionFilters, m_CollisionFilters, m_CollisionFilters);
@@ -258,6 +302,8 @@ struct xiiJoltPhysicsWorldModule::NativeWorld : JPH::ContactListener
     xiiSurfaceResourceHandle m_hSurface;
     xiiHashedString          m_sCollisionInteraction;
     bool                     m_bMaterialInitialized = false;
+    float                    m_fFriction            = 0.2f;
+    float                    m_fRestitution         = 0;
   };
 
   struct DynamicPose
@@ -267,6 +313,56 @@ struct xiiJoltPhysicsWorldModule::NativeWorld : JPH::ContactListener
     xiiQuat             m_qRotation;
     xiiUInt32           m_uiDepth;
   };
+
+  struct ShapeOwner
+  {
+    xiiGameObjectHandle                    m_hObject;
+    xiiComponentHandle                     m_hComponent;
+    xiiSurfaceResourceHandle               m_hSurfaceOverride;
+    xiiSharedPtr<xiiJoltCollisionMeshData> m_pResource;
+    xiiDynamicArray<BodyOwner>             m_Surfaces;
+  };
+  struct ShapeSet
+  {
+    JPH::RefConst<JPH::Shape>   m_pRoot;
+    xiiDynamicArray<ShapeOwner> m_Shapes;
+  };
+  struct TrackedShape
+  {
+    xiiComponentHandle m_hActor;
+    xiiMat4            m_Matrix       = xiiMat4::MakeIdentity();
+    bool               m_bInitialized = false;
+    bool               m_bMatrixValid = false;
+  };
+  xiiHashTable<xiiUInt32, ShapeSet>              m_ShapeSets;
+  xiiHashTable<xiiComponentHandle, TrackedShape> m_TrackedShapes;
+  xiiAtomicInteger32                             m_GeometryDirty{1};
+
+  const BodyOwner* ResolveOwner(JPH::BodyID body, JPH::SubShapeID id) const
+  {
+    const auto* pSet = m_ShapeSets.GetValue(body.GetIndexAndSequenceNumber());
+    if (pSet == nullptr || pSet->m_Shapes.IsEmpty())
+      return FindOwner(body);
+    xiiUInt32       index     = 0;
+    JPH::SubShapeID remainder = id;
+    if (pSet->m_Shapes.GetCount() > 1)
+    {
+      const auto& compound = *static_cast<const JPH::StaticCompoundShape*>(pSet->m_pRoot.GetPtr());
+      const auto  child    = compound.GetSubShapeIndexFromID(id, remainder);
+      if (child >= compound.GetNumSubShapes())
+        return nullptr;
+      index = compound.GetSubShape(child).mUserData;
+    }
+    if (index >= pSet->m_Shapes.GetCount())
+      return nullptr;
+    const auto&     owner    = pSet->m_Shapes[index];
+    xiiUInt32       material = 0;
+    JPH::SubShapeID leafId;
+    const auto*     pLeaf = pSet->m_pRoot->GetLeafShape(id, leafId);
+    if (pLeaf != nullptr && pLeaf->GetSubType() == JPH::EShapeSubType::Mesh)
+      material = static_cast<const JPH::MeshShape*>(pLeaf)->GetMaterialIndex(leafId);
+    return material < owner.m_Surfaces.GetCount() ? &owner.m_Surfaces[material] : FindOwner(body);
+  }
 
   /// One body per owning component. The owner handles must be live in this world.
   /// The supplied layer uses XII's collision-layer index. Motion type determines broadphase placement.
@@ -329,22 +425,36 @@ struct xiiJoltPhysicsWorldModule::NativeWorld : JPH::ContactListener
     xiiEnum<xiiPhysicsContactPhase> m_Phase;
     bool                            m_bReport[2];
   };
+  struct SubContact
+  {
+    XII_DECLARE_POD_TYPE();
+
+    xiiUInt64 m_uiBodies;
+    xiiUInt64 m_uiShapes;
+    bool      operator==(const SubContact&) const = default;
+  };
+  struct SubContactHash
+  {
+    static xiiUInt32 Hash(const SubContact& key) { return xiiHashingUtils::xxHash32(&key, sizeof(key)); }
+    static bool      Equal(const SubContact& a, const SubContact& b) { return a == b; }
+  };
+  xiiHashSet<SubContact, SubContactHash> m_SubContacts;
+  xiiHashTable<xiiUInt64, xiiUInt32>     m_ContactManifolds;
 
   static xiiUInt64 ContactKey(JPH::BodyID a, JPH::BodyID b)
   {
     return (static_cast<xiiUInt64>(a.GetIndexAndSequenceNumber()) << 32) | b.GetIndexAndSequenceNumber();
   }
 
-  void RecordContact(const JPH::Body& a, const JPH::Body& b, const JPH::ContactManifold& manifold, xiiPhysicsContactPhase::Enum phase)
+  void RecordContact(const JPH::Body& a, const JPH::Body& b, const JPH::ContactManifold& manifold, JPH::ContactSettings& settings, xiiPhysicsContactPhase::Enum phase)
   {
-    if ((a.GetUserData() | b.GetUserData()) == 0 || manifold.mRelativeContactPointsOn1.empty())
-      return;
-    if (phase == xiiPhysicsContactPhase::Persisted && ((a.GetUserData() | b.GetUserData()) & 1) == 0)
-      return; // Surface reactions only require the initial contact.
-
-    const auto* pOwnerA = FindOwner(a.GetID());
-    const auto* pOwnerB = FindOwner(b.GetID());
+    const auto* pOwnerA = ResolveOwner(a.GetID(), manifold.mSubShapeID1);
+    const auto* pOwnerB = ResolveOwner(b.GetID(), manifold.mSubShapeID2);
     if (pOwnerA == nullptr || pOwnerB == nullptr)
+      return;
+    settings.mCombinedFriction    = static_cast<float>(xiiMath::Sqrt(double(pOwnerA->m_fFriction) * pOwnerB->m_fFriction));
+    settings.mCombinedRestitution = xiiMath::Max(pOwnerA->m_fRestitution, pOwnerB->m_fRestitution);
+    if ((a.GetUserData() | b.GetUserData()) == 0 || manifold.mRelativeContactPointsOn1.empty())
       return;
 
     JPH::Vec3 average = JPH::Vec3::sZero();
@@ -355,7 +465,10 @@ struct xiiJoltPhysicsWorldModule::NativeWorld : JPH::ContactListener
     const float fSpeed   = xiiMath::Max(0.0f, (a.GetPointVelocity(position) - b.GetPointVelocity(position)).Dot(normal));
 
     XII_LOCK(m_ContactMutex);
-    const auto  key       = ContactKey(a.GetID(), b.GetID());
+    const auto       key = ContactKey(a.GetID(), b.GetID());
+    const SubContact subContact{key, (xiiUInt64(manifold.mSubShapeID1.GetValue()) << 32) | manifold.mSubShapeID2.GetValue()};
+    if (!m_SubContacts.Insert(subContact))
+      ++m_ContactManifolds[key];
     const auto* pPrevious = m_Contacts.GetValue(key);
     if (pPrevious == nullptr)
       phase = xiiPhysicsContactPhase::Added;
@@ -387,14 +500,14 @@ struct xiiJoltPhysicsWorldModule::NativeWorld : JPH::ContactListener
       m_uiTrackedContacts.Increment();
   }
 
-  void OnContactAdded(const JPH::Body& a, const JPH::Body& b, const JPH::ContactManifold& manifold, JPH::ContactSettings&) override
+  void OnContactAdded(const JPH::Body& a, const JPH::Body& b, const JPH::ContactManifold& manifold, JPH::ContactSettings& settings) override
   {
-    RecordContact(a, b, manifold, xiiPhysicsContactPhase::Added);
+    RecordContact(a, b, manifold, settings, xiiPhysicsContactPhase::Added);
   }
 
-  void OnContactPersisted(const JPH::Body& a, const JPH::Body& b, const JPH::ContactManifold& manifold, JPH::ContactSettings&) override
+  void OnContactPersisted(const JPH::Body& a, const JPH::Body& b, const JPH::ContactManifold& manifold, JPH::ContactSettings& settings) override
   {
-    RecordContact(a, b, manifold, xiiPhysicsContactPhase::Persisted);
+    RecordContact(a, b, manifold, settings, xiiPhysicsContactPhase::Persisted);
   }
 
   void OnContactRemoved(const JPH::SubShapeIDPair& pair) override
@@ -403,6 +516,16 @@ struct xiiJoltPhysicsWorldModule::NativeWorld : JPH::ContactListener
       return;
 
     XII_LOCK(m_ContactMutex);
+    const auto       key = ContactKey(pair.GetBody1ID(), pair.GetBody2ID());
+    const SubContact subContact{key, (xiiUInt64(pair.GetSubShapeID1().GetValue()) << 32) | pair.GetSubShapeID2().GetValue()};
+    if (!m_SubContacts.Remove(subContact))
+      return;
+    if (auto* pCount = m_ContactManifolds.GetValue(key); pCount != nullptr && *pCount > 1)
+    {
+      --*pCount;
+      return;
+    }
+    m_ContactManifolds.Remove(key);
     Contact contact;
     if (m_Contacts.Remove(ContactKey(pair.GetBody1ID(), pair.GetBody2ID()), &contact))
     {
@@ -453,13 +576,22 @@ struct xiiJoltPhysicsWorldModule::NativeWorld : JPH::ContactListener
         contact.m_Phase      = xiiPhysicsContactPhase::Removed;
         contact.m_fImpactSqr = 0.0f;
         m_ContactEvents.PushBack(contact);
+        m_ContactManifolds.Remove(it.Key());
         it = m_Contacts.Remove(it);
         m_uiTrackedContacts.Decrement();
       }
     }
 
+    for (auto it = m_SubContacts.GetIterator(); it.IsValid();)
+    {
+      if (static_cast<xiiUInt32>(it.Key().m_uiBodies >> 32) == uiId || static_cast<xiiUInt32>(it.Key().m_uiBodies) == uiId)
+        it = m_SubContacts.Remove(it);
+      else
+        ++it;
+    }
     m_OwnersByBody.Remove(bodyId.GetIndexAndSequenceNumber());
     DestroyBody(bodyId);
+    m_ShapeSets.Remove(bodyId.GetIndexAndSequenceNumber());
     return true;
   }
 
@@ -475,6 +607,8 @@ struct xiiJoltPhysicsWorldModule::NativeWorld : JPH::ContactListener
     m_PendingBodies.Clear();
     m_PosesToSync.Clear();
     m_Contacts.Clear();
+    m_SubContacts.Clear();
+    m_ContactManifolds.Clear();
     m_uiTrackedContacts = 0;
     m_ContactEvents.Clear();
     m_DispatchContactEvents.Clear();
@@ -486,6 +620,8 @@ struct xiiJoltPhysicsWorldModule::NativeWorld : JPH::ContactListener
 
     m_OwnersByBody.Clear();
     m_BodiesByComponent.Clear();
+    m_ShapeSets.Clear();
+    m_TrackedShapes.Clear();
   }
 
   xiiJoltCollisionFilters                  m_CollisionFilters;
@@ -523,6 +659,9 @@ struct xiiJoltPhysicsWorldModule::NativeWorld : JPH::ContactListener
   }
   void OnResourceEvent(const xiiResourceEvent& event)
   {
+    if ((event.m_Type == xiiResourceEvent::Type::ResourceContentUpdated || event.m_Type == xiiResourceEvent::Type::ResourceContentUnloading) &&
+        event.m_pResource->GetDynamicRTTI()->IsDerivedFrom<xiiJoltCollisionMeshResource>())
+      m_GeometryDirty = 1;
     if ((event.m_Type == xiiResourceEvent::Type::ResourceContentUpdated || event.m_Type == xiiResourceEvent::Type::ResourceContentUnloading) &&
         event.m_pResource->GetDynamicRTTI()->IsDerivedFrom<xiiSurfaceResource>())
       m_MaterialsDirty = 1;
@@ -669,64 +808,120 @@ void xiiJoltPhysicsWorldModule::RebuildBody(xiiJoltActorComponent& actor)
     return;
   }
 
-  xiiJoltShapeComponent* pShape = nullptr;
-  if (!CollectShape(object, pShape))
+  xiiDynamicArray<xiiJoltShapeComponent*> shapes(GetAllocator());
+  CollectShapes(object, shapes);
+  if (shapes.IsEmpty())
   {
     nativeWorld.RemoveBody(actor.GetHandle());
-    xiiLog::Warning("Jolt actor '{}' requires a single active primitive shape.", object.GetName());
     return;
   }
-  if (pShape == nullptr)
-  {
-    nativeWorld.RemoveBody(actor.GetHandle());
-    return; // A collider that activates later will queue the actor again.
-  }
-
   object.UpdateGlobalTransform();
-  auto* pShapeObject = pShape->GetOwner();
-  if (pShapeObject != &object)
-    pShapeObject->UpdateGlobalTransform();
-
-  xiiTransform actorPose            = object.GetGlobalTransform();
-  actorPose.m_vScale                = xiiVec3(1.0f);
-  const xiiTransform shapeTransform = pShapeObject->GetGlobalTransform();
-  if (!actorPose.m_vPosition.IsValid() || !actorPose.m_qRotation.IsValid() ||
-      !shapeTransform.m_vPosition.IsValid() || !shapeTransform.m_qRotation.IsValid() || !shapeTransform.m_vScale.IsValid())
+  xiiTransform actorPose = object.GetGlobalTransform();
+  actorPose.m_vScale     = xiiVec3(1.0f);
+  if (!actorPose.m_vPosition.IsValid() || !actorPose.m_qRotation.IsValid())
   {
     nativeWorld.RemoveBody(actor.GetHandle());
-    xiiLog::Warning("Jolt actor '{}' has an invalid actor or shape transform.", object.GetName());
+    xiiLog::Warning("Jolt actor '{}' has an invalid pose.", object.GetName());
     return;
   }
-
-  const auto* pDynamic    = xiiDynamicCast<const xiiJoltDynamicActorComponent*>(&actor);
-  auto        shapeResult = CreatePrimitive(*pShape, shapeTransform.m_vScale.Abs(), pDynamic != nullptr ? pDynamic->GetDensity() : 1000.0f);
-  if (shapeResult.HasError())
+  const auto*                      pDynamic = xiiDynamicCast<const xiiJoltDynamicActorComponent*>(&actor);
+  NativeWorld::ShapeSet            shapeSet;
+  JPH::StaticCompoundShapeSettings compound;
+  for (auto* pShape : shapes)
+  {
+    xiiMat4      matrix;
+    xiiTransform local;
+    if (!ShapeMatrix(*pShape, object, matrix) || !DecomposeShape(matrix, local))
+    {
+      nativeWorld.RemoveBody(actor.GetHandle());
+      xiiLog::Warning("Jolt collider '{}' has an invalid, zero-scale, or sheared attachment transform.", pShape->GetOwner()->GetName());
+      return;
+    }
+    JPH::RefConst<JPH::Shape>              nativeShape;
+    xiiSharedPtr<xiiJoltCollisionMeshData> resourceData;
+    xiiJoltCollisionMeshResourceHandle     resourceHandle;
+    bool                                   bMesh = false;
+    if (const auto* pHull = xiiDynamicCast<const xiiJoltConvexHullShapeComponent*>(pShape))
+      resourceHandle = pHull->GetCollisionMesh();
+    else if (const auto* pMesh = xiiDynamicCast<const xiiJoltMeshShapeComponent*>(pShape))
+    {
+      resourceHandle = pMesh->GetCollisionMesh();
+      bMesh          = true;
+    }
+    if (bMesh || xiiDynamicCast<const xiiJoltConvexHullShapeComponent*>(pShape))
+    {
+      if (!resourceHandle.IsValid() || (bMesh && pDynamic))
+      {
+        nativeWorld.RemoveBody(actor.GetHandle());
+        xiiLog::Warning("Jolt collider '{}' requires a collision resource; triangle meshes require static actors.", pShape->GetOwner()->GetName());
+        return;
+      }
+      const xiiResourceLock<xiiJoltCollisionMeshResource> resource(resourceHandle, xiiResourceAcquireMode::PointerOnly);
+      resourceData = resource->GetData();
+      if (!resourceData)
+      {
+        xiiResourceManager::PreloadResource(resourceHandle);
+        // A resource replacement can be pending while a valid old body still owns its immutable snapshot.
+        // Never preserve geometry whose contributing components have been removed or reparented.
+        const auto* pOld     = nativeWorld.m_ShapeSets.GetValue(nativeWorld.FindBody(actor.GetHandle()).GetIndexAndSequenceNumber());
+        bool        preserve = pOld != nullptr;
+        if (pOld)
+          for (const auto& old : pOld->m_Shapes)
+          {
+            const xiiJoltShapeComponent* pComponent = nullptr;
+            preserve &= static_cast<const xiiWorld*>(GetWorld())->TryGetComponent(old.m_hComponent, pComponent) &&
+              pComponent->IsActiveAndInitialized() && ShapeActor(pComponent->GetOwner()) == &actor;
+          }
+        if (!preserve)
+          nativeWorld.RemoveBody(actor.GetHandle());
+        return;
+      }
+      if ((resourceData->m_Type == xiiJoltCollisionGeometryType::TriangleMesh) != bMesh)
+      {
+        nativeWorld.RemoveBody(actor.GetHandle());
+        xiiLog::Warning("Jolt collider '{}' references the wrong collision geometry type.", pShape->GetOwner()->GetName());
+        return;
+      }
+      nativeShape = resourceData->m_pShape;
+    }
+    else
+    {
+      auto result = CreatePrimitive(*pShape);
+      if (result.HasError())
+      {
+        nativeWorld.RemoveBody(actor.GetHandle());
+        xiiLog::Warning("Jolt collider '{}': {}", pShape->GetOwner()->GetName(), result.GetError().c_str());
+        return;
+      }
+      nativeShape = result.Get();
+    }
+    if (!nativeShape->IsValidScale(ToJoltVector(local.m_vScale)))
+    {
+      nativeWorld.RemoveBody(actor.GetHandle());
+      xiiLog::Warning("Jolt collider '{}' does not support its authored scale.", pShape->GetOwner()->GetName());
+      return;
+    }
+    if (local.m_vScale != xiiVec3(1.0f))
+      nativeShape = new JPH::ScaledShape(nativeShape, ToJoltVector(local.m_vScale));
+    const auto childIndex = shapeSet.m_Shapes.GetCount();
+    compound.AddShape(ToJoltVector(local.m_vPosition), ToJoltRotation(local.m_qRotation), nativeShape, childIndex);
+    auto& owner              = shapeSet.m_Shapes.ExpandAndGetRef();
+    owner.m_hObject          = pShape->GetOwner()->GetHandle();
+    owner.m_hComponent       = pShape->GetHandle();
+    owner.m_hSurfaceOverride = pShape->GetSurface();
+    owner.m_pResource        = resourceData;
+    owner.m_Surfaces.SetCount(resourceData ? resourceData->m_Surfaces.GetCount() : 1);
+  }
+  auto result = compound.Create(nativeWorld.m_TempAllocator);
+  if (result.HasError())
   {
     nativeWorld.RemoveBody(actor.GetHandle());
-    xiiLog::Warning("Jolt actor '{}': {}", object.GetName(), shapeResult.GetError().c_str());
+    xiiLog::Warning("Could not assemble Jolt actor '{}': {}", object.GetName(), result.GetError().c_str());
     return;
   }
-
-  JPH::RefConst<JPH::Shape> pNativeShape = shapeResult.Get().GetPtr();
-  if (pShapeObject != &object)
-  {
-    const xiiTransform local = xiiTransform::MakeLocalTransform(actorPose, shapeTransform);
-    if (!local.m_vPosition.IsValid() || !local.m_qRotation.IsValid())
-    {
-      nativeWorld.RemoveBody(actor.GetHandle());
-      xiiLog::Warning("Jolt actor '{}' has an invalid relative shape transform.", object.GetName());
-      return;
-    }
-    JPH::RotatedTranslatedShapeSettings settings(ToJoltVector(local.m_vPosition), ToJoltRotation(local.m_qRotation), pNativeShape.GetPtr());
-    auto                                result = settings.Create();
-    if (result.HasError())
-    {
-      nativeWorld.RemoveBody(actor.GetHandle());
-      xiiLog::Warning("Jolt actor '{}': {}", object.GetName(), result.GetError().c_str());
-      return;
-    }
-    pNativeShape = result.Get().GetPtr();
-  }
+  JPH::RefConst<JPH::Shape> pNativeShape = result.Get();
+  shapeSet.m_pRoot                       = pNativeShape;
+  auto* pShape                           = shapes[0];
 
   JPH::BodyCreationSettings settings(pNativeShape.GetPtr(),
                                      JPH::RVec3(actorPose.m_vPosition.x, actorPose.m_vPosition.y, actorPose.m_vPosition.z),
@@ -739,6 +934,7 @@ void xiiJoltPhysicsWorldModule::RebuildBody(xiiJoltActorComponent& actor)
     settings.mAngularDamping = pDynamic->GetAngularDamping();
     settings.mAllowSleeping  = pDynamic->GetAllowSleeping();
     auto massProperties      = pNativeShape->GetMassProperties();
+    massProperties.ScaleToMass(massProperties.mMass * pDynamic->GetDensity() / 1000.0f);
     if (pDynamic->GetMass() > 0.0f)
       massProperties.ScaleToMass(pDynamic->GetMass());
 
@@ -759,6 +955,8 @@ void xiiJoltPhysicsWorldModule::RebuildBody(xiiJoltActorComponent& actor)
       const auto& bodies = nativeWorld.m_PhysicsSystem.GetBodyInterface();
       bodies.GetPositionAndRotation(oldBody, settings.mPosition, settings.mRotation);
       bodies.GetLinearAndAngularVelocity(oldBody, settings.mLinearVelocity, settings.mAngularVelocity);
+      const auto oldCenter = bodies.GetShape(oldBody)->GetCenterOfMass();
+      settings.mLinearVelocity += settings.mAngularVelocity.Cross(settings.mRotation * (pNativeShape->GetCenterOfMass() - oldCenter));
       if (bodies.IsActive(oldBody) || !settings.mAllowSleeping)
         activation = JPH::EActivation::Activate;
     }
@@ -775,7 +973,19 @@ void xiiJoltPhysicsWorldModule::RebuildBody(xiiJoltActorComponent& actor)
   if (nativeWorld.CreateBody(*GetWorld(), actor.GetHandle(), *pShape, actor.GetCollisionLayer(), settings, activation).Failed())
     xiiLog::Warning("Jolt could not allocate a body for '{}'.", object.GetName());
   else
-    nativeWorld.FindOwnerMutable(nativeWorld.FindBody(actor.GetHandle()))->m_hSurface = actor.GetSurface();
+  {
+    const auto id        = nativeWorld.FindBody(actor.GetHandle());
+    auto&      bodyOwner = *nativeWorld.FindOwnerMutable(id);
+    bodyOwner.m_hSurface = actor.GetSurface();
+    for (auto& child : shapeSet.m_Shapes)
+      for (auto& surface : child.m_Surfaces)
+      {
+        surface                   = bodyOwner;
+        surface.m_hShapeObject    = child.m_hObject;
+        surface.m_hShapeComponent = child.m_hComponent;
+      }
+    nativeWorld.m_ShapeSets.Insert(id.GetIndexAndSequenceNumber(), std::move(shapeSet));
+  }
 }
 
 void xiiJoltPhysicsWorldModule::SynchronizeDynamicBodies()
@@ -829,6 +1039,7 @@ void xiiJoltPhysicsWorldModule::SynchronizeDynamicBodies()
 
 void xiiJoltPhysicsWorldModule::Simulate(const UpdateContext&)
 {
+  UpdateShapes();
   auto& pendingBodies = m_pNativeWorld->m_PendingBodies;
   for (const auto hActor : pendingBodies)
   {
@@ -1021,7 +1232,7 @@ namespace
   }
 
   template <typename Native>
-  struct QueryFilters final : JPH::BroadPhaseLayerFilter, JPH::ObjectLayerFilter, JPH::BodyFilter
+  struct QueryFilters final : JPH::BroadPhaseLayerFilter, JPH::ObjectLayerFilter, JPH::BodyFilter, JPH::ShapeFilter
   {
     QueryFilters(const Native& native, const xiiWorld& world, const xiiPhysicsQueryParameters& params) :
       m_Native(native), m_World(world), m_Params(params)
@@ -1045,8 +1256,34 @@ namespace
         return false;
 
       const auto*                  pOwner = m_Native.FindOwner(body.GetID());
-      const xiiJoltShapeComponent* pShape = nullptr;
-      return pOwner != nullptr && m_World.TryGetComponent(pOwner->m_hShapeComponent, pShape) && pShape->IsActiveAndInitialized();
+      const xiiJoltActorComponent* pActor = nullptr;
+      return pOwner != nullptr && m_World.TryGetComponent(pOwner->m_hComponent, pActor) && pActor->IsActiveAndSimulating();
+    }
+
+    bool ShouldCollide(const JPH::Shape* pShape, const JPH::SubShapeID& id) const override
+    {
+      const auto* pSet = m_Native.m_ShapeSets.GetValue(mBodyID2.GetIndexAndSequenceNumber());
+      if (pSet == nullptr || pSet->m_Shapes.IsEmpty())
+        return false;
+      xiiUInt32 index = 0;
+      if (pSet->m_Shapes.GetCount() > 1)
+      {
+        if (pShape == pSet->m_pRoot.GetPtr())
+          return true;
+        const auto&     compound = *static_cast<const JPH::StaticCompoundShape*>(pSet->m_pRoot.GetPtr());
+        JPH::SubShapeID remainder;
+        const auto      child = compound.GetSubShapeIndexFromID(id, remainder);
+        if (child >= compound.GetNumSubShapes())
+          return false;
+        index = compound.GetSubShape(child).mUserData;
+      }
+      const xiiJoltShapeComponent* pComponent = nullptr;
+      return index < pSet->m_Shapes.GetCount() && m_World.TryGetComponent(pSet->m_Shapes[index].m_hComponent, pComponent) && pComponent->IsActiveAndInitialized();
+    }
+
+    bool ShouldCollide(const JPH::Shape*, const JPH::SubShapeID&, const JPH::Shape* pShape, const JPH::SubShapeID& id) const override
+    {
+      return ShouldCollide(pShape, id);
     }
 
     const Native&                   m_Native;
@@ -1131,7 +1368,7 @@ bool xiiJoltPhysicsWorldModule::Raycast(xiiPhysicsCastResult& out_result, const 
   settings.mTreatConvexAsSolid = !params.m_bIgnoreInitialOverlap;
   bool bFound                  = false;
   auto onHit                   = [&](const JPH::RayCastResult& hit, JPH::CastRayCollector& collector) {
-    const auto* pOwner = m_pNativeWorld->FindOwner(hit.mBodyID);
+    const auto* pOwner = m_pNativeWorld->ResolveOwner(hit.mBodyID, hit.mSubShapeID2);
     if (pOwner == nullptr || hit.mFraction >= collector.GetEarlyOutFraction())
       return;
 
@@ -1149,7 +1386,7 @@ bool xiiJoltPhysicsWorldModule::Raycast(xiiPhysicsCastResult& out_result, const 
       collector.UpdateEarlyOutFraction(hit.mFraction);
   };
   RayCollector collector(onHit, params.m_bIgnoreInitialOverlap);
-  m_pNativeWorld->m_PhysicsSystem.GetNarrowPhaseQuery().CastRay(ray, settings, collector, filters, filters, filters);
+  m_pNativeWorld->m_PhysicsSystem.GetNarrowPhaseQuery().CastRay(ray, settings, collector, filters, filters, filters, filters);
   return bFound;
 }
 
@@ -1165,7 +1402,7 @@ bool xiiJoltPhysicsWorldModule::RaycastAll(xiiPhysicsCastResultArray& out_result
   JPH::RayCastSettings settings;
   settings.mTreatConvexAsSolid = !params.m_bIgnoreInitialOverlap;
   auto onHit                   = [&](const JPH::RayCastResult& hit, const JPH::CastRayCollector& collector) {
-    const auto* pOwner = m_pNativeWorld->FindOwner(hit.mBodyID);
+    const auto* pOwner = m_pNativeWorld->ResolveOwner(hit.mBodyID, hit.mSubShapeID2);
     if (pOwner == nullptr)
       return;
     const auto position = ray.GetPointOnRay(hit.mFraction);
@@ -1178,7 +1415,7 @@ bool xiiJoltPhysicsWorldModule::RaycastAll(xiiPhysicsCastResultArray& out_result
     result.m_fDistance = hit.mFraction * fDistance;
   };
   RayCollector collector(onHit, params.m_bIgnoreInitialOverlap);
-  m_pNativeWorld->m_PhysicsSystem.GetNarrowPhaseQuery().CastRay(ray, settings, collector, filters, filters, filters);
+  m_pNativeWorld->m_PhysicsSystem.GetNarrowPhaseQuery().CastRay(ray, settings, collector, filters, filters, filters, filters);
   out_results.m_Results.Sort([](const auto& a, const auto& b) { return a.m_fDistance < b.m_fDistance; });
   return !out_results.m_Results.IsEmpty();
 }
@@ -1219,12 +1456,12 @@ bool xiiJoltPhysicsWorldModule::SweepShape(xiiPhysicsCastResult& out_result, con
   settings.mBackFaceModeConvex = JPH::EBackFaceMode::CollideWithBackFaces;
   settings.mReturnDeepestPoint = !params.m_bIgnoreInitialOverlap;
   SweepCollector collector(params.m_bIgnoreInitialOverlap, collection == xiiPhysicsHitCollection::Any);
-  m_pNativeWorld->m_PhysicsSystem.GetNarrowPhaseQuery().CastShape(cast, settings, origin, collector, filters, filters, filters);
+  m_pNativeWorld->m_PhysicsSystem.GetNarrowPhaseQuery().CastShape(cast, settings, origin, collector, filters, filters, filters, filters);
   if (!collector.m_bFound)
     return false;
 
   const auto& hit    = collector.m_Result;
-  const auto* pOwner = m_pNativeWorld->FindOwner(hit.mBodyID2);
+  const auto* pOwner = m_pNativeWorld->ResolveOwner(hit.mBodyID2, hit.mSubShapeID2);
   if (pOwner == nullptr)
     return false;
 
@@ -1248,7 +1485,7 @@ bool xiiJoltPhysicsWorldModule::OverlapShape(xiiPhysicsOverlapResultArray* pResu
   if (pResults == nullptr)
   {
     JPH::AnyHitCollisionCollector<JPH::CollideShapeCollector> collector;
-    query.CollideShape(&shape, JPH::Vec3::sOne(), transform, {}, origin, collector, filters, filters, filters);
+    query.CollideShape(&shape, JPH::Vec3::sOne(), transform, {}, origin, collector, filters, filters, filters, filters);
     return collector.HadHit();
   }
 
@@ -1262,30 +1499,33 @@ bool xiiJoltPhysicsWorldModule::OverlapShape(xiiPhysicsOverlapResultArray* pResu
 
     void OnBody(const JPH::Body& body) override
     {
-      m_pOwner  = m_Native.FindOwner(body.GetID());
+      m_Body    = body.GetID();
       m_vCenter = FromJoltVector(body.GetCenterOfMassPosition());
     }
 
-    void AddHit(const JPH::CollideShapeResult&) override
+    void AddHit(const JPH::CollideShapeResult& hit) override
     {
-      if (m_pOwner == nullptr)
+      const auto* pOwner = m_Native.ResolveOwner(m_Body, hit.mSubShapeID2);
+      if (pOwner == nullptr)
         return;
+      for (const auto& existing : m_Results.m_Results)
+        if (existing.m_hActorObject == pOwner->m_hObject && existing.m_hShapeObject == pOwner->m_hShapeObject)
+          return;
       auto& result = m_Results.m_Results.ExpandAndGetRef();
       result       = {};
-      FillQueryOwner(*m_pOwner, result);
+      FillQueryOwner(*pOwner, result);
       result.m_vCenterPosition = m_vCenter;
-      m_pOwner                 = nullptr; // The current actor owns one primitive. Emit it once.
     }
 
   private:
     const NativeWorld&            m_Native;
     xiiPhysicsOverlapResultArray& m_Results;
-    const NativeWorld::BodyOwner* m_pOwner = nullptr;
+    JPH::BodyID                   m_Body;
     xiiVec3                       m_vCenter;
   };
 
   OverlapCollector collector(*m_pNativeWorld, *pResults);
-  query.CollideShape(&shape, JPH::Vec3::sOne(), transform, {}, origin, collector, filters, filters, filters);
+  query.CollideShape(&shape, JPH::Vec3::sOne(), transform, {}, origin, collector, filters, filters, filters, filters);
   return !pResults->m_Results.IsEmpty();
 }
 
@@ -1841,39 +2081,115 @@ void xiiJoltPhysicsWorldModule::UpdateMaterials()
   auto& native = *m_pNativeWorld;
   if (native.m_MaterialsDirty.Set(0) == 0)
     return;
+  auto refresh = [](NativeWorld::BodyOwner& owner, const xiiSurfaceResourceHandle& handle) {
+    owner.m_hSurface     = handle;
+    owner.m_fFriction    = 0.2f;
+    owner.m_fRestitution = 0;
+    owner.m_sCollisionInteraction.Clear();
+    if (!handle.IsValid())
+      return;
+    XII_LOCK(xiiResourceManager::GetMutex());
+    const xiiResourceLock<xiiSurfaceResource> surface(handle, xiiResourceAcquireMode::PointerOnly);
+    if (surface->GetLoadingState() == xiiResourceState::Loaded)
+    {
+      const auto& descriptor = surface->GetDescriptor();
+      if (NonNegative(descriptor.m_fPhysicsFrictionDynamic))
+        owner.m_fFriction = descriptor.m_fPhysicsFrictionDynamic;
+      if (xiiMath::IsFinite(descriptor.m_fPhysicsRestitution))
+        owner.m_fRestitution = xiiMath::Clamp(descriptor.m_fPhysicsRestitution, 0.0f, 1.0f);
+      owner.m_sCollisionInteraction = descriptor.m_sOnCollideInteraction;
+    }
+    else if (surface->GetLoadingState() == xiiResourceState::Unloaded)
+      xiiResourceManager::PreloadResource(handle);
+  };
   for (auto it = native.GetBodyOwners().GetIterator(); it.IsValid(); ++it)
   {
-    auto& owner     = *native.FindOwnerMutable(JPH::BodyID(it.Key()));
-    float fFriction = 0.2f, fRestitution = 0.0f;
-    owner.m_sCollisionInteraction.Clear();
-    if (owner.m_hSurface.IsValid())
-    {
-      // Reload transitions hold this mutex. A Loaded state publishes a complete descriptor.
-      // Keep this rare metadata read protected without holding the lock during native simulation.
-      XII_LOCK(xiiResourceManager::GetMutex());
-      const xiiResourceLock<xiiSurfaceResource> surface(owner.m_hSurface, xiiResourceAcquireMode::PointerOnly);
-      if (surface->GetLoadingState() == xiiResourceState::Loaded)
-      {
-        const auto& descriptor = surface->GetDescriptor();
-        // Jolt has one Coulomb friction coefficient. Map dynamic friction; static friction remains authoring data.
-        if (NonNegative(descriptor.m_fPhysicsFrictionDynamic))
-          fFriction = descriptor.m_fPhysicsFrictionDynamic;
-        if (xiiMath::IsFinite(descriptor.m_fPhysicsRestitution))
-          fRestitution = xiiMath::Clamp(descriptor.m_fPhysicsRestitution, 0.0f, 1.0f);
-        owner.m_sCollisionInteraction = descriptor.m_sOnCollideInteraction;
-      }
-      else if (surface->GetLoadingState() == xiiResourceState::Unloaded)
-        xiiResourceManager::PreloadResource(owner.m_hSurface);
-    }
+    auto&       owner       = *native.FindOwnerMutable(JPH::BodyID(it.Key()));
+    const float oldFriction = owner.m_fFriction, oldRestitution = owner.m_fRestitution;
+    refresh(owner, owner.m_hSurface);
+    bool changed      = owner.m_bMaterialInitialized && (oldFriction != owner.m_fFriction || oldRestitution != owner.m_fRestitution);
+    bool interactions = !owner.m_sCollisionInteraction.IsEmpty();
+    if (auto* pSet = native.m_ShapeSets.GetValue(it.Key()))
+      for (auto& child : pSet->m_Shapes)
+        for (xiiUInt32 i = 0; i < child.m_Surfaces.GetCount(); ++i)
+        {
+          auto&       surface = child.m_Surfaces[i];
+          const float oldF = surface.m_fFriction, oldR = surface.m_fRestitution;
+          const bool  initialized = surface.m_bMaterialInitialized;
+          auto        handle      = child.m_hSurfaceOverride;
+          if (!handle.IsValid() && child.m_pResource && i < child.m_pResource->m_Surfaces.GetCount())
+            handle = child.m_pResource->m_Surfaces[i];
+          if (!handle.IsValid())
+            handle = owner.m_hSurface;
+          surface                   = owner;
+          surface.m_hShapeObject    = child.m_hObject;
+          surface.m_hShapeComponent = child.m_hComponent;
+          refresh(surface, handle);
+          surface.m_bMaterialInitialized = true;
+          changed |= initialized && (oldF != surface.m_fFriction || oldR != surface.m_fRestitution);
+          interactions |= !surface.m_sCollisionInteraction.IsEmpty();
+        }
     auto&             bodies = native.m_PhysicsSystem.GetBodyInterface();
     const JPH::BodyID id(it.Key());
-    const bool        bChanged = bodies.GetFriction(id) != fFriction || bodies.GetRestitution(id) != fRestitution;
-    bodies.SetFriction(id, fFriction);
-    bodies.SetRestitution(id, fRestitution);
-    if (bChanged && owner.m_bMaterialInitialized && owner.m_bDynamic)
+    bodies.SetFriction(id, owner.m_fFriction);
+    bodies.SetRestitution(id, owner.m_fRestitution);
+    if (changed && owner.m_bDynamic)
       bodies.ActivateBody(id);
     owner.m_bMaterialInitialized = true;
-    bodies.SetUserData(id, (bodies.GetUserData(id) & 1) | (owner.m_sCollisionInteraction.IsEmpty() ? 0 : 2));
+    bodies.SetUserData(id, (bodies.GetUserData(id) & 1) | (interactions ? 2 : 0));
+  }
+}
+
+void xiiJoltPhysicsWorldModule::RegisterShape(xiiComponentHandle hShape)
+{
+  m_pNativeWorld->m_TrackedShapes[hShape] = {};
+}
+
+void xiiJoltPhysicsWorldModule::UnregisterShape(xiiComponentHandle hShape)
+{
+  auto& native = *m_pNativeWorld;
+  if (const auto* pShape = native.m_TrackedShapes.GetValue(hShape))
+    if (!pShape->m_hActor.IsInvalidated())
+      QueueBodyUpdate(pShape->m_hActor);
+  native.m_TrackedShapes.Remove(hShape);
+}
+
+void xiiJoltPhysicsWorldModule::UpdateShapes()
+{
+  auto&      native          = *m_pNativeWorld;
+  const bool geometryChanged = native.m_GeometryDirty.Set(0) != 0;
+  for (auto it = native.m_TrackedShapes.GetIterator(); it.IsValid(); ++it)
+  {
+    auto&                  tracked = it.Value();
+    xiiJoltShapeComponent* pShape  = nullptr;
+    if (!GetWorld()->TryGetComponent(it.Key(), pShape) || !pShape->IsActiveAndInitialized())
+      continue;
+    const auto* pActor = ShapeActor(pShape->GetOwner());
+    const auto  hActor = pActor ? pActor->GetHandle() : xiiComponentHandle{};
+    xiiMat4     matrix = xiiMat4::MakeIdentity();
+    bool        valid  = false;
+    if (pActor)
+    {
+      xiiGameObject* pObject = nullptr;
+      if (GetWorld()->TryGetObject(pActor->GetOwner()->GetHandle(), pObject))
+      {
+        pObject->UpdateGlobalTransform();
+        valid = ShapeMatrix(*pShape, *pObject, matrix);
+      }
+    }
+    const bool resourceShape = xiiDynamicCast<xiiJoltMeshShapeComponent*>(pShape) || xiiDynamicCast<xiiJoltConvexHullShapeComponent*>(pShape);
+    if (!tracked.m_bInitialized || tracked.m_hActor != hActor || tracked.m_bMatrixValid != valid ||
+        (valid && !tracked.m_Matrix.IsEqual(matrix, 0.00001f)) || (geometryChanged && resourceShape))
+    {
+      if (!tracked.m_hActor.IsInvalidated())
+        QueueBodyUpdate(tracked.m_hActor);
+      if (!hActor.IsInvalidated())
+        QueueBodyUpdate(hActor);
+      tracked.m_hActor       = hActor;
+      tracked.m_Matrix       = matrix;
+      tracked.m_bInitialized = true;
+      tracked.m_bMatrixValid = valid;
+    }
   }
 }
 
