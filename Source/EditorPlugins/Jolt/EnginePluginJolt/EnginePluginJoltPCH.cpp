@@ -6,4 +6,6 @@ XII_STATICLINK_LIBRARY(EnginePluginJolt)
 {
   if (bReturn)
     return;
+
+  XII_STATICLINK_REFERENCE(EnginePluginJolt_Implementation_JoltDebugVisualization);
 }
