@@ -11,11 +11,9 @@
 struct xiiGameObjectHandle;
 struct xiiSkeletonResourceDescriptor;
 
-/// Interface for physics world modules that provide physics simulation and queries.
-///
-/// Physics world modules implement physics functionality for a world, including
-/// collision detection, raycasting, and shape queries. Different physics engines
-/// can provide their own implementations of this interface.
+/// Generic rigid-body simulation and query interface. The world-module factory resolves this
+/// interface to its registered implementation, with project overrides in WorldModules.ddl.
+/// Model-based simulators may expose a separate concrete module in the same world.
 class XII_CORE_DLL xiiPhysicsWorldModuleInterface : public xiiWorldModule
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiPhysicsWorldModuleInterface, xiiWorldModule);

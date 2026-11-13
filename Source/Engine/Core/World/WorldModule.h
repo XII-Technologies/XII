@@ -141,6 +141,7 @@ private:
 
   static void PluginEventHandler(const xiiPluginEvent& EventData);
   void        FillBaseTypeIds();
+  void        ApplyInterfaceImplementation(xiiStringView sInterfaceName, xiiStringView sImplementationName);
   void        ClearUnloadedTypeToIDs();
   void        AdjustBaseTypeId(const xiiRTTI* pParentRtti, const xiiRTTI* pRtti, xiiUInt16 uiParentTypeId);
 

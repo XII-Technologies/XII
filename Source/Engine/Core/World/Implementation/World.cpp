@@ -597,6 +597,8 @@ xiiWorldModule* xiiWorld::GetOrCreateModule(const xiiRTTI* pRtti)
   if (pModule == nullptr)
   {
     pModule = xiiWorldModuleFactory::GetInstance()->CreateWorldModule(uiTypeId, this);
+    if (pModule == nullptr)
+      return nullptr;
     pModule->Initialize();
 
     m_Data.m_Modules[uiTypeId] = pModule;
