@@ -3,6 +3,7 @@
 #include <Core/CorePCH.h>
 
 #include <Core/Interfaces/PhysicsWorldModule.h>
+#include <Core/World/GameObject.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiPhysicsWorldModuleInterface, 1, xiiRTTINoAllocator)
@@ -113,6 +114,17 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMsgBuildStaticMesh, 1, xiiRTTIDefaultAllocat
   XII_END_ATTRIBUTES;
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
+
+XII_IMPLEMENT_MESSAGE_TYPE(xiiMsgStaticMeshChanged);
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMsgStaticMeshChanged, 1, xiiRTTIDefaultAllocator<xiiMsgStaticMeshChanged>)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
+void xiiMsgStaticMeshChanged::Notify(xiiGameObject& ref_object)
+{
+  xiiMsgStaticMeshChanged msg;
+  for (auto* pObject = &ref_object; pObject != nullptr; pObject = pObject->GetParent())
+    pObject->SendMessage(msg);
+}
 // clang-format on
 
 XII_STATICLINK_FILE(Core, Core_Interfaces_Implementation_PhysicsWorldModule);

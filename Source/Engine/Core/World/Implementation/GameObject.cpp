@@ -2,6 +2,7 @@
 
 #include <Core/CorePCH.h>
 
+#include <Core/Interfaces/PhysicsWorldModule.h>
 #include <Core/Messages/DeleteObjectMessage.h>
 #include <Core/Messages/HierarchyChangedMessages.h>
 #include <Core/Messages/TransformChangedMessage.h>
@@ -254,6 +255,8 @@ void xiiGameObject::MakeStaticInternal()
   m_Flags.Remove(xiiObjectFlags::Dynamic);
 
   GetWorld()->RecreateHierarchyData(this, true);
+  if (m_Flags.IsSet(xiiObjectFlags::ComponentChangesNotifications))
+    xiiMsgStaticMeshChanged::Notify(*this);
 }
 
 void xiiGameObject::UpdateGlobalTransformAndBoundsRecursive()
@@ -283,6 +286,7 @@ void xiiGameObject::UpdateGlobalTransformAndBoundsRecursive()
     msg.m_NewGlobalTransform = GetGlobalTransform();
 
     SendMessage(msg);
+    xiiMsgStaticMeshChanged::Notify(*this);
   }
 
   for (auto it = GetChildren(); it.IsValid(); ++it)
@@ -356,6 +360,8 @@ void xiiGameObject::MakeDynamic()
   m_Flags.Add(xiiObjectFlags::Dynamic);
 
   GetWorld()->RecreateHierarchyData(this, false);
+  if (m_Flags.IsSet(xiiObjectFlags::ComponentChangesNotifications))
+    xiiMsgStaticMeshChanged::Notify(*this);
 
   for (auto it = GetChildren(); it.IsValid(); ++it)
   {

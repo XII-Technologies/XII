@@ -232,3 +232,11 @@ struct XII_CORE_DLL xiiMsgBuildStaticMesh : public xiiMessage
   /// Append data to this description to add meshes to the automatic static mesh generation
   xiiSmcDescription* m_pStaticMeshDescription = nullptr;
 };
+
+/// Static geometry providers send this to their object and its ancestors when their contribution changes.
+struct XII_CORE_DLL xiiMsgStaticMeshChanged : public xiiMessage
+{
+  XII_DECLARE_MESSAGE_TYPE(xiiMsgStaticMeshChanged, xiiMessage);
+
+  static void Notify(xiiGameObject& ref_object);
+};

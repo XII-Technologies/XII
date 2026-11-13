@@ -2,6 +2,7 @@
 
 #include <GraphicsCore/GraphicsCorePCH.h>
 
+#include <Core/Interfaces/PhysicsWorldModule.h>
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Core/WorldSerializer/WorldReader.h>
 #include <Core/WorldSerializer/WorldWriter.h>
@@ -195,6 +196,8 @@ void xiiMeshComponentBase::SetMesh(const xiiMeshResourceHandle& hMesh)
 
   TriggerLocalBoundsUpdate();
   InvalidateCachedRenderData();
+  if (IsActiveAndInitialized() && xiiDynamicCast<xiiStaticMeshComponent*>(this))
+    xiiMsgStaticMeshChanged::Notify(*GetOwner());
 }
 
 const xiiMeshResourceHandle& xiiMeshComponentBase::GetMesh() const
@@ -214,6 +217,8 @@ void xiiMeshComponentBase::SetMaterialOverride(xiiUInt32 uiMaterialIndex, const 
 
   m_MaterialOverrides[uiMaterialIndex] = hMaterial;
   InvalidateCachedRenderData();
+  if (IsActiveAndInitialized() && xiiDynamicCast<xiiStaticMeshComponent*>(this))
+    xiiMsgStaticMeshChanged::Notify(*GetOwner());
 }
 
 const xiiMaterialResourceHandle& xiiMeshComponentBase::GetMaterialOverride(xiiUInt32 uiMaterialIndex) const
@@ -233,6 +238,8 @@ void xiiMeshComponentBase::ClearMaterialOverrides()
 
   m_MaterialOverrides.Clear();
   InvalidateCachedRenderData();
+  if (IsActiveAndInitialized() && xiiDynamicCast<xiiStaticMeshComponent*>(this))
+    xiiMsgStaticMeshChanged::Notify(*GetOwner());
 }
 
 xiiArrayPtr<const xiiMaterialResourceHandle> xiiMeshComponentBase::GetMaterialOverrides() const
@@ -275,6 +282,8 @@ void xiiMeshComponentBase::InsertMaterialOverrideFile(xiiUInt32 uiMaterialIndex,
 
   m_MaterialOverrides.InsertAt(uiMaterialIndex, hMaterial);
   InvalidateCachedRenderData();
+  if (IsActiveAndInitialized() && xiiDynamicCast<xiiStaticMeshComponent*>(this))
+    xiiMsgStaticMeshChanged::Notify(*GetOwner());
 }
 
 void xiiMeshComponentBase::RemoveMaterialOverrideFile(xiiUInt32 uiMaterialIndex)
@@ -283,6 +292,8 @@ void xiiMeshComponentBase::RemoveMaterialOverrideFile(xiiUInt32 uiMaterialIndex)
 
   m_MaterialOverrides.RemoveAtAndCopy(uiMaterialIndex);
   InvalidateCachedRenderData();
+  if (IsActiveAndInitialized() && xiiDynamicCast<xiiStaticMeshComponent*>(this))
+    xiiMsgStaticMeshChanged::Notify(*GetOwner());
 }
 
 void xiiMeshComponentBase::SetSectionIndex(xiiUInt32 uiSectionIndex)
@@ -292,6 +303,8 @@ void xiiMeshComponentBase::SetSectionIndex(xiiUInt32 uiSectionIndex)
 
   m_uiSectionIndex = uiSectionIndex;
   InvalidateCachedRenderData();
+  if (IsActiveAndInitialized() && xiiDynamicCast<xiiStaticMeshComponent*>(this))
+    xiiMsgStaticMeshChanged::Notify(*GetOwner());
 }
 
 xiiUInt32 xiiMeshComponentBase::GetSectionIndex() const
@@ -491,6 +504,18 @@ XII_END_COMPONENT_TYPE;
 
 xiiStaticMeshComponent::xiiStaticMeshComponent()  = default;
 xiiStaticMeshComponent::~xiiStaticMeshComponent() = default;
+
+void xiiStaticMeshComponent::OnActivated()
+{
+  SUPER::OnActivated();
+  xiiMsgStaticMeshChanged::Notify(*GetOwner());
+}
+
+void xiiStaticMeshComponent::OnDeactivated()
+{
+  SUPER::OnDeactivated();
+  xiiMsgStaticMeshChanged::Notify(*GetOwner());
+}
 
 xiiRenderData::Caching::Enum xiiStaticMeshComponent::GetRenderDataCaching() const
 {
