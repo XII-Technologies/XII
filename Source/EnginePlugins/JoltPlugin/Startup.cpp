@@ -7,6 +7,8 @@
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Strings/StringBuilder.h>
 #include <JoltPlugin/Actors/JoltDynamicActorComponent.h>
+#include <JoltPlugin/Actors/JoltKinematicActorComponent.h>
+#include <JoltPlugin/Character/JoltCharacterControllerComponent.h>
 #include <JoltPlugin/Joints/JoltJointComponent.h>
 #include <JoltPlugin/Resources/JoltCollisionMeshResource.h>
 #include <JoltPlugin/Shapes/JoltPrimitiveShapeComponent.h>
@@ -77,6 +79,8 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(Jolt, JoltPlugin)
         pWorld->DeleteModule(xiiGetStaticRTTI<xiiJoltHingeJointComponent>());
         pWorld->DeleteModule(xiiGetStaticRTTI<xiiJoltSliderJointComponent>());
         pWorld->DeleteModule(xiiGetStaticRTTI<xiiJoltDistanceJointComponent>());
+        pWorld->DeleteModule(xiiGetStaticRTTI<xiiJoltCharacterControllerComponent>());
+        pWorld->DeleteModule(xiiGetStaticRTTI<xiiJoltKinematicActorComponent>());
         pWorld->DeleteModule(xiiGetStaticRTTI<xiiJoltDynamicActorComponent>());
         pWorld->DeleteModule(xiiGetStaticRTTI<xiiJoltStaticActorComponent>());
         pWorld->DeleteModule(xiiGetStaticRTTI<xiiJoltBoxShapeComponent>());

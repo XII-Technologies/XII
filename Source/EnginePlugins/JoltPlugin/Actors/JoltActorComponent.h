@@ -7,7 +7,7 @@
 #include <Core/Physics/SurfaceResourceDescriptor.h>
 #include <Core/World/ComponentManager.h>
 
-/// Common lifecycle and collision-layer assignment for static and dynamic Jolt actors.
+/// Common lifecycle and collision-layer assignment for Jolt rigid bodies.
 class XII_JOLTPLUGIN_DLL xiiJoltActorComponent : public xiiComponent
 {
   XII_DECLARE_ABSTRACT_COMPONENT_TYPE(xiiJoltActorComponent, xiiComponent);
@@ -19,7 +19,7 @@ public:
   bool GetReportContacts() const { return m_bReportContacts; }
   void SetReportContacts(bool bReportContacts);
 
-  /// The single primitive uses this surface. Jolt's single Coulomb coefficient maps to dynamic friction.
+  /// Default surface for colliders without an override. Jolt's friction coefficient maps to dynamic friction.
   const xiiSurfaceResourceHandle& GetSurface() const { return m_hSurface; }
   void                            SetSurface(const xiiSurfaceResourceHandle& hSurface);
 

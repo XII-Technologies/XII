@@ -28,6 +28,7 @@
 #include <Jolt/Core/TempAllocator.h>
 #include <Jolt/Physics/Body/BodyCreationSettings.h>
 #include <Jolt/Physics/Body/BodyFilter.h>
+#include <Jolt/Physics/Character/CharacterVirtual.h>
 #include <Jolt/Physics/Collision/CastResult.h>
 #include <Jolt/Physics/Collision/CollisionCollectorImpl.h>
 #include <Jolt/Physics/Collision/ContactListener.h>
@@ -69,8 +70,24 @@ namespace
   constexpr JPH::BroadPhaseLayer StaticBroadPhase(0);
   constexpr JPH::BroadPhaseLayer MovingBroadPhase(1);
 
+  static_assert(static_cast<int>(xiiJoltCharacterGroundState::OnGround) == static_cast<int>(JPH::CharacterBase::EGroundState::OnGround) &&
+                static_cast<int>(xiiJoltCharacterGroundState::OnSteepGround) == static_cast<int>(JPH::CharacterBase::EGroundState::OnSteepGround) &&
+                static_cast<int>(xiiJoltCharacterGroundState::NotSupported) == static_cast<int>(JPH::CharacterBase::EGroundState::NotSupported) &&
+                static_cast<int>(xiiJoltCharacterGroundState::InAir) == static_cast<int>(JPH::CharacterBase::EGroundState::InAir));
+
   JPH::Vec3 ToJoltVector(const xiiVec3& vValue) { return JPH::Vec3(vValue.x, vValue.y, vValue.z); }
   JPH::Quat ToJoltRotation(const xiiQuat& qValue) { return JPH::Quat(qValue.x, qValue.y, qValue.z, qValue.w).Normalized(); }
+
+  template <typename Vector>
+  xiiVec3 FromJoltVector(const Vector& value)
+  {
+    return xiiVec3(static_cast<float>(value.GetX()), static_cast<float>(value.GetY()), static_cast<float>(value.GetZ()));
+  }
+
+  xiiQuat FromJoltRotation(JPH::QuatArg rotation)
+  {
+    return xiiQuat(rotation.GetX(), rotation.GetY(), rotation.GetZ(), rotation.GetW());
+  }
 
   const xiiJoltActorComponent* FindActiveActor(const xiiGameObject& object)
   {
@@ -263,6 +280,10 @@ struct xiiJoltPhysicsWorldModule::NativeWorld : JPH::ContactListener
     m_ContactManifolds(pAllocator),
     m_PendingBodies(pAllocator),
     m_PosesToSync(pAllocator),
+    m_KinematicActors(pAllocator),
+    m_TeleportedBodies(pAllocator),
+    m_Characters(pAllocator),
+    m_PendingCharacters(pAllocator),
     m_Contacts(pAllocator),
     m_ContactEvents(pAllocator),
     m_DispatchContactEvents(pAllocator),
@@ -316,6 +337,14 @@ struct xiiJoltPhysicsWorldModule::NativeWorld : JPH::ContactListener
     xiiVec3             m_vPosition;
     xiiQuat             m_qRotation;
     xiiUInt32           m_uiDepth;
+    bool                m_bPositionOnly = false;
+  };
+
+  struct KinematicTarget
+  {
+    JPH::RVec3 m_Position = JPH::RVec3::sZero();
+    JPH::Quat  m_Rotation = JPH::Quat::sIdentity();
+    bool       m_bValid   = false;
   };
 
   struct ShapeOwner
@@ -342,30 +371,35 @@ struct xiiJoltPhysicsWorldModule::NativeWorld : JPH::ContactListener
   xiiHashTable<xiiComponentHandle, TrackedShape> m_TrackedShapes;
   xiiAtomicInteger32                             m_GeometryDirty{1};
 
-  const BodyOwner* ResolveOwner(JPH::BodyID body, JPH::SubShapeID id) const
+  static const ShapeOwner* FindShapeOwner(const ShapeSet& set, JPH::SubShapeID id)
   {
-    const auto* pSet = m_ShapeSets.GetValue(body.GetIndexAndSequenceNumber());
-    if (pSet == nullptr || pSet->m_Shapes.IsEmpty())
-      return FindOwner(body);
     xiiUInt32       index     = 0;
     JPH::SubShapeID remainder = id;
-    if (pSet->m_Shapes.GetCount() > 1)
+    if (set.m_Shapes.GetCount() > 1)
     {
-      const auto& compound = *static_cast<const JPH::StaticCompoundShape*>(pSet->m_pRoot.GetPtr());
+      const auto& compound = *static_cast<const JPH::StaticCompoundShape*>(set.m_pRoot.GetPtr());
       const auto  child    = compound.GetSubShapeIndexFromID(id, remainder);
       if (child >= compound.GetNumSubShapes())
         return nullptr;
       index = compound.GetSubShape(child).mUserData;
     }
-    if (index >= pSet->m_Shapes.GetCount())
+    return index < set.m_Shapes.GetCount() ? &set.m_Shapes[index] : nullptr;
+  }
+
+  const BodyOwner* ResolveOwner(JPH::BodyID body, JPH::SubShapeID id) const
+  {
+    const auto* pSet = m_ShapeSets.GetValue(body.GetIndexAndSequenceNumber());
+    if (pSet == nullptr || pSet->m_Shapes.IsEmpty())
+      return FindOwner(body);
+    const auto* pOwner = FindShapeOwner(*pSet, id);
+    if (!pOwner)
       return nullptr;
-    const auto&     owner    = pSet->m_Shapes[index];
     xiiUInt32       material = 0;
     JPH::SubShapeID leafId;
     const auto*     pLeaf = pSet->m_pRoot->GetLeafShape(id, leafId);
     if (pLeaf != nullptr && pLeaf->GetSubType() == JPH::EShapeSubType::Mesh)
       material = static_cast<const JPH::MeshShape*>(pLeaf)->GetMaterialIndex(leafId);
-    return material < owner.m_Surfaces.GetCount() ? &owner.m_Surfaces[material] : FindOwner(body);
+    return material < pOwner->m_Surfaces.GetCount() ? &pOwner->m_Surfaces[material] : FindOwner(body);
   }
 
   /// One body per owning component. The owner handles must be live in this world.
@@ -396,6 +430,8 @@ struct xiiJoltPhysicsWorldModule::NativeWorld : JPH::ContactListener
     RemoveBody(hComponent);
     m_BodiesByComponent.Insert(hComponent, bodyId);
     m_OwnersByBody.Insert(bodyId.GetIndexAndSequenceNumber(), BodyOwner{pComponent->GetOwner()->GetHandle(), hComponent, shape.GetOwner()->GetHandle(), shape.GetHandle(), uiFilterId, ref_settings.mMotionType == JPH::EMotionType::Dynamic});
+    if (ref_settings.mMotionType == JPH::EMotionType::Kinematic)
+      m_KinematicActors.Insert(hComponent, KinematicTarget{});
     bodies.AddBody(bodyId, activation);
     m_bBodiesChanged = true;
     m_MaterialsDirty = 1;
@@ -593,7 +629,9 @@ struct xiiJoltPhysicsWorldModule::NativeWorld : JPH::ContactListener
       else
         ++it;
     }
-    m_OwnersByBody.Remove(bodyId.GetIndexAndSequenceNumber());
+    m_KinematicActors.Remove(hComponent);
+    m_TeleportedBodies.Remove(uiId);
+    m_OwnersByBody.Remove(uiId);
     DestroyBody(bodyId);
     m_ShapeSets.Remove(bodyId.GetIndexAndSequenceNumber());
     return true;
@@ -601,6 +639,10 @@ struct xiiJoltPhysicsWorldModule::NativeWorld : JPH::ContactListener
 
   void ClearBodies()
   {
+    m_Characters.Clear();
+    m_PendingCharacters.Clear();
+    m_KinematicActors.Clear();
+    m_TeleportedBodies.Clear();
     for (auto it = m_Joints.GetIterator(); it.IsValid(); ++it)
       DetachJoint(it.Value());
     m_Joints.Clear();
@@ -628,19 +670,87 @@ struct xiiJoltPhysicsWorldModule::NativeWorld : JPH::ContactListener
     m_TrackedShapes.Clear();
   }
 
-  xiiJoltCollisionFilters                  m_CollisionFilters;
-  xiiJoltJobSystem                         m_JobSystem;
-  JPH::TempAllocatorImplWithMallocFallback m_TempAllocator{ScratchBufferSize};
-  JPH::PhysicsSystem                       m_PhysicsSystem;
-  xiiHashSet<xiiComponentHandle>           m_PendingBodies;
-  xiiDynamicArray<DynamicPose>             m_PosesToSync;
-  xiiMutex                                 m_ContactMutex;
-  xiiAtomicIntegerU32                      m_uiTrackedContacts;
-  xiiHashTable<xiiUInt64, Contact>         m_Contacts;
-  xiiDynamicArray<Contact>                 m_ContactEvents;
-  xiiDynamicArray<Contact>                 m_DispatchContactEvents;
-  xiiMutex                                 m_ImpulseMutex;
-  xiiDynamicArray<QueuedImpulse>           m_QueuedImpulses;
+  xiiJoltCollisionFilters                           m_CollisionFilters;
+  xiiJoltJobSystem                                  m_JobSystem;
+  JPH::TempAllocatorImplWithMallocFallback          m_TempAllocator{ScratchBufferSize};
+  JPH::PhysicsSystem                                m_PhysicsSystem;
+  xiiHashSet<xiiComponentHandle>                    m_PendingBodies;
+  xiiDynamicArray<DynamicPose>                      m_PosesToSync;
+  xiiHashTable<xiiComponentHandle, KinematicTarget> m_KinematicActors;
+  xiiHashSet<xiiUInt32>                             m_TeleportedBodies;
+
+  struct CharacterContactListener final : JPH::CharacterContactListener
+  {
+    void OnContactAdded(const JPH::CharacterVirtual* pCharacter, const JPH::CharacterContact& contact, JPH::CharacterContactSettings& ref_settings) override
+    {
+      ref_settings.mCanReceiveImpulses = contact.mMotionTypeB == JPH::EMotionType::Dynamic && !contact.mIsSensorB && pCharacter->GetMaxStrength() > 0.0f;
+    }
+
+    void OnContactPersisted(const JPH::CharacterVirtual* pCharacter, const JPH::CharacterContact& contact, JPH::CharacterContactSettings& ref_settings) override
+    {
+      OnContactAdded(pCharacter, contact, ref_settings);
+    }
+  };
+
+  struct Character
+  {
+    JPH::Ref<JPH::CharacterVirtual>            m_pCharacter;
+    xiiJoltCharacterControllerComponent::State m_State;
+    float                                      m_fVerticalVelocity = 0.0f;
+    float                                      m_fRadius           = 0.0f;
+    float                                      m_fHeight           = 0.0f;
+    bool                                       m_bRefreshContacts  = true;
+  };
+
+  CharacterContactListener                    m_CharacterContactListener;
+  xiiHashTable<xiiComponentHandle, Character> m_Characters;
+  xiiHashSet<xiiComponentHandle>              m_PendingCharacters;
+
+  struct CharacterBodyFilter final : JPH::BodyFilter
+  {
+    CharacterBodyFilter(const NativeWorld& native, xiiGameObjectHandle hOwner) :
+      m_Native(native), m_hOwner(hOwner)
+    {
+    }
+
+    bool ShouldCollideLocked(const JPH::Body& body) const override
+    {
+      const auto* pOwner = m_Native.FindOwner(body.GetID());
+      return pOwner != nullptr && pOwner->m_hObject != m_hOwner;
+    }
+
+    const NativeWorld&  m_Native;
+    xiiGameObjectHandle m_hOwner;
+  };
+
+  struct CharacterShapeFilter final : JPH::ShapeFilter
+  {
+    CharacterShapeFilter(const NativeWorld& native, xiiGameObjectHandle hOwner) :
+      m_Native(native), m_hOwner(hOwner)
+    {
+    }
+
+    bool ShouldCollide(const JPH::Shape*, const JPH::SubShapeID&, const JPH::Shape* pShape, const JPH::SubShapeID& id) const override
+    {
+      const auto* pSet = m_Native.m_ShapeSets.GetValue(mBodyID2.GetIndexAndSequenceNumber());
+      if (pSet == nullptr || (pSet->m_Shapes.GetCount() > 1 && pSet->m_pRoot.GetPtr() == pShape))
+        return true;
+
+      // A character object can also own one child collider of another actor's compound.
+      const auto* pOwner = FindShapeOwner(*pSet, id);
+      return pOwner != nullptr && pOwner->m_hObject != m_hOwner;
+    }
+
+    const NativeWorld&  m_Native;
+    xiiGameObjectHandle m_hOwner;
+  };
+  xiiMutex                         m_ContactMutex;
+  xiiAtomicIntegerU32              m_uiTrackedContacts;
+  xiiHashTable<xiiUInt64, Contact> m_Contacts;
+  xiiDynamicArray<Contact>         m_ContactEvents;
+  xiiDynamicArray<Contact>         m_DispatchContactEvents;
+  xiiMutex                         m_ImpulseMutex;
+  xiiDynamicArray<QueuedImpulse>   m_QueuedImpulses;
 
   struct Joint
   {
@@ -703,7 +813,8 @@ xiiJoltPhysicsWorldModule::~xiiJoltPhysicsWorldModule() = default;
 xiiResult xiiJoltPhysicsWorldModule::SetSimulationStep(xiiTime fixedStep, xiiUInt32 uiMaxCatchUpSteps)
 {
   const float fStepSeconds = fixedStep.AsFloatInSeconds();
-  if (!xiiMath::IsFinite(fStepSeconds) || fStepSeconds <= 0.0f || uiMaxCatchUpSteps == 0)
+  if (!xiiMath::IsFinite(fStepSeconds) || fStepSeconds <= 0.0f || !xiiMath::IsFinite(1.0f / fStepSeconds) ||
+      uiMaxCatchUpSteps == 0 || !xiiMath::IsFinite(fStepSeconds * static_cast<float>(uiMaxCatchUpSteps)))
     return XII_FAILURE;
 
   m_FixedStep         = fixedStep;
@@ -714,7 +825,7 @@ xiiResult xiiJoltPhysicsWorldModule::SetSimulationStep(xiiTime fixedStep, xiiUIn
 
 xiiResult xiiJoltPhysicsWorldModule::SetCollisionEnabled(xiiUInt8 uiLayerA, xiiUInt8 uiLayerB, bool bEnabled)
 {
-  if (!m_pNativeWorld || m_pNativeWorld->m_PhysicsSystem.GetNumBodies() != 0)
+  if (!m_pNativeWorld || m_pNativeWorld->m_PhysicsSystem.GetNumBodies() != 0 || !m_pNativeWorld->m_Characters.IsEmpty())
     return XII_FAILURE;
 
   m_pNativeWorld->m_CollisionFilters.SetCollisionEnabled(uiLayerA, uiLayerB, bEnabled);
@@ -828,7 +939,10 @@ void xiiJoltPhysicsWorldModule::RebuildBody(xiiJoltActorComponent& actor)
     xiiLog::Warning("Jolt actor '{}' has an invalid pose.", object.GetName());
     return;
   }
-  const auto*                      pDynamic = xiiDynamicCast<const xiiJoltDynamicActorComponent*>(&actor);
+  const auto*                      pDynamic   = xiiDynamicCast<const xiiJoltDynamicActorComponent*>(&actor);
+  const auto*                      pKinematic = xiiDynamicCast<const xiiJoltKinematicActorComponent*>(&actor);
+  const auto                       motionType = pDynamic ? JPH::EMotionType::Dynamic : pKinematic ? JPH::EMotionType::Kinematic :
+                                                                                                    JPH::EMotionType::Static;
   NativeWorld::ShapeSet            shapeSet;
   JPH::StaticCompoundShapeSettings compound;
   for (auto* pShape : shapes)
@@ -854,7 +968,7 @@ void xiiJoltPhysicsWorldModule::RebuildBody(xiiJoltActorComponent& actor)
     }
     if (bMesh || xiiDynamicCast<const xiiJoltConvexHullShapeComponent*>(pShape))
     {
-      if (!resourceHandle.IsValid() || (bMesh && pDynamic))
+      if (!resourceHandle.IsValid() || (bMesh && motionType != JPH::EMotionType::Static))
       {
         nativeWorld.RemoveBody(actor.GetHandle());
         xiiLog::Warning("Jolt collider '{}' requires a collision resource; triangle meshes require static actors.", pShape->GetOwner()->GetName());
@@ -929,7 +1043,7 @@ void xiiJoltPhysicsWorldModule::RebuildBody(xiiJoltActorComponent& actor)
 
   JPH::BodyCreationSettings settings(pNativeShape.GetPtr(),
                                      JPH::RVec3(actorPose.m_vPosition.x, actorPose.m_vPosition.y, actorPose.m_vPosition.z),
-                                     ToJoltRotation(actorPose.m_qRotation), pDynamic != nullptr ? JPH::EMotionType::Dynamic : JPH::EMotionType::Static, 0);
+                                     ToJoltRotation(actorPose.m_qRotation), motionType, 0);
   auto                      activation = JPH::EActivation::DontActivate;
   if (pDynamic != nullptr)
   {
@@ -973,6 +1087,13 @@ void xiiJoltPhysicsWorldModule::RebuildBody(xiiJoltActorComponent& actor)
     }
   }
 
+  if (pKinematic)
+  {
+    // Rebuilding geometry must not move the body directly to a pending authored target.
+    const auto oldBody = nativeWorld.FindBody(actor.GetHandle());
+    if (!oldBody.IsInvalid())
+      nativeWorld.m_PhysicsSystem.GetBodyInterface().GetPositionAndRotation(oldBody, settings.mPosition, settings.mRotation);
+  }
   settings.mUserData = actor.GetReportContacts() ? 1 : 0;
   if (nativeWorld.CreateBody(*GetWorld(), actor.GetHandle(), *pShape, actor.GetCollisionLayer(), settings, activation).Failed())
     xiiLog::Warning("Jolt could not allocate a body for '{}'.", object.GetName());
@@ -992,7 +1113,320 @@ void xiiJoltPhysicsWorldModule::RebuildBody(xiiJoltActorComponent& actor)
   }
 }
 
-void xiiJoltPhysicsWorldModule::SynchronizeDynamicBodies()
+bool xiiJoltPhysicsWorldModule::GetKinematicState(const xiiJoltKinematicActorComponent& actor, xiiJoltKinematicActorComponent::BodyState& out_state) const
+{
+  if (!m_pNativeWorld)
+    return false;
+
+  const auto        id = m_pNativeWorld->FindBody(actor.GetHandle());
+  JPH::BodyLockRead lock(m_pNativeWorld->m_PhysicsSystem.GetBodyLockInterface(), id);
+  if (!lock.Succeeded() || !lock.GetBody().IsKinematic())
+    return false;
+
+  const auto& body             = lock.GetBody();
+  out_state.m_vPosition        = FromJoltVector(body.GetPosition());
+  out_state.m_qRotation        = FromJoltRotation(body.GetRotation());
+  out_state.m_vLinearVelocity  = FromJoltVector(body.GetLinearVelocity());
+  out_state.m_vAngularVelocity = FromJoltVector(body.GetAngularVelocity());
+  return true;
+}
+
+void xiiJoltPhysicsWorldModule::ApplyKinematicTeleports()
+{
+  auto& native = *m_pNativeWorld;
+  auto& bodies = native.m_PhysicsSystem.GetBodyInterfaceNoLock();
+  for (auto it = native.m_KinematicActors.GetIterator(); it.IsValid(); ++it)
+  {
+    const auto                      hActor = it.Key();
+    xiiJoltKinematicActorComponent* pActor = nullptr;
+    if (!GetWorld()->TryGetComponent(hActor, pActor) || !pActor->m_bTeleportPending)
+      continue;
+
+    const auto id = native.FindBody(hActor);
+    bodies.SetPositionAndRotation(id, JPH::RVec3(ToJoltVector(pActor->m_vTeleportPosition)), ToJoltRotation(pActor->m_qTeleportRotation), JPH::EActivation::Activate);
+    bodies.SetLinearAndAngularVelocity(id, JPH::Vec3::sZero(), JPH::Vec3::sZero());
+    bodies.InvalidateContactCache(id);
+    native.m_TeleportedBodies.Insert(id.GetIndexAndSequenceNumber());
+    pActor->m_bTeleportPending = false;
+  }
+}
+
+void xiiJoltPhysicsWorldModule::CaptureKinematicTargets()
+{
+  auto& native = *m_pNativeWorld;
+  for (auto it = native.m_KinematicActors.GetIterator(); it.IsValid(); ++it)
+  {
+    xiiJoltKinematicActorComponent* pActor = nullptr;
+    if (!GetWorld()->TryGetComponent(it.Key(), pActor) || pActor->m_bUseVelocity)
+      continue;
+
+    auto* pOwner = pActor->GetOwner();
+    pOwner->UpdateGlobalTransform();
+    const auto& transform = pOwner->GetGlobalTransform();
+    auto&       target    = it.Value();
+    target.m_bValid       = transform.m_vPosition.IsValid() && transform.m_qRotation.IsValid();
+    if (target.m_bValid)
+    {
+      target.m_Position = JPH::RVec3(ToJoltVector(transform.m_vPosition));
+      target.m_Rotation = ToJoltRotation(transform.m_qRotation);
+    }
+  }
+}
+
+void xiiJoltPhysicsWorldModule::UpdateKinematicBodies(float fTimeToTarget)
+{
+  auto& native = *m_pNativeWorld;
+  auto& bodies = native.m_PhysicsSystem.GetBodyInterfaceNoLock();
+  for (auto it = native.m_KinematicActors.GetIterator(); it.IsValid(); ++it)
+  {
+    const auto                      hActor = it.Key();
+    xiiJoltKinematicActorComponent* pActor = nullptr;
+    if (!GetWorld()->TryGetComponent(hActor, pActor))
+      continue;
+
+    const auto id = native.FindBody(hActor);
+    if (pActor->m_bUseVelocity)
+    {
+      bodies.SetLinearAndAngularVelocity(id, ToJoltVector(pActor->m_vLinearVelocity), ToJoltVector(pActor->m_vAngularVelocity));
+      continue;
+    }
+
+    const auto& target = it.Value();
+    const auto* pBody  = native.m_PhysicsSystem.GetBodyLockInterfaceNoLock().TryGetBody(id);
+    if (!pBody)
+      continue;
+
+    if (target.m_bValid)
+    {
+      const auto targetCenter = target.m_Position + target.m_Rotation * pBody->GetShape()->GetCenterOfMass();
+      const auto delta        = JPH::Vec3(targetCenter - pBody->GetCenterOfMassPosition());
+      if (xiiMath::IsFinite((delta / fTimeToTarget).LengthSq()) && xiiMath::IsFinite(xiiMath::Square(JPH::JPH_PI / fTimeToTarget)))
+      {
+        bodies.MoveKinematic(id, target.m_Position, target.m_Rotation, fTimeToTarget);
+        continue;
+      }
+    }
+    bodies.SetLinearAndAngularVelocity(id, JPH::Vec3::sZero(), JPH::Vec3::sZero());
+  }
+}
+
+void xiiJoltPhysicsWorldModule::QueueCharacterUpdate(xiiComponentHandle hCharacter)
+{
+  if (m_pNativeWorld)
+    m_pNativeWorld->m_PendingCharacters.Insert(hCharacter);
+}
+
+void xiiJoltPhysicsWorldModule::RemoveCharacter(xiiComponentHandle hCharacter)
+{
+  if (m_pNativeWorld)
+  {
+    m_pNativeWorld->m_PendingCharacters.Remove(hCharacter);
+    m_pNativeWorld->m_Characters.Remove(hCharacter);
+  }
+}
+
+void xiiJoltPhysicsWorldModule::UpdateCharacterConfigurations()
+{
+  auto& native = *m_pNativeWorld;
+  for (const auto hCharacter : native.m_PendingCharacters)
+  {
+    xiiJoltCharacterControllerComponent* pComponent = nullptr;
+    if (!GetWorld()->TryGetComponent(hCharacter, pComponent) || !pComponent->IsActiveAndSimulating() || !pComponent->GetSimulationEnabled())
+    {
+      native.m_Characters.Remove(hCharacter);
+      continue;
+    }
+
+    pComponent->GetOwner()->UpdateGlobalTransform();
+    const auto*   pPrevious    = native.m_Characters.GetValue(hCharacter);
+    const xiiVec3 vPosition    = pComponent->m_bTeleportPending ? pComponent->m_vTeleportPosition :
+      pPrevious                                                 ? pPrevious->m_State.m_vPosition :
+                                                                  pComponent->GetOwner()->GetGlobalPosition();
+    const float   fRadius      = pComponent->GetRadius();
+    const float   fHalfSegment = 0.5f * pComponent->GetHeight() - fRadius;
+    if (fHalfSegment < 0.0f || pComponent->GetContactPadding() >= fRadius || !vPosition.IsValid())
+    {
+      xiiLog::Warning("Jolt character '{}' requires a valid foot position, height at least twice the radius, and contact padding smaller than its radius.",
+                      pComponent->GetOwner()->GetName());
+      native.m_Characters.Remove(hCharacter);
+      continue;
+    }
+
+    const bool                bShapeChanged = !pPrevious || pPrevious->m_fRadius != fRadius || pPrevious->m_fHeight != pComponent->GetHeight();
+    JPH::RefConst<JPH::Shape> shape;
+    if (bShapeChanged)
+    {
+      auto capsule = JPH::CapsuleShapeSettings(fHalfSegment, fRadius).Create();
+      if (capsule.HasError())
+      {
+        xiiLog::Warning("Jolt could not create character capsule: {}", capsule.GetError().c_str());
+        continue;
+      }
+
+      auto result = JPH::RotatedTranslatedShapeSettings(JPH::Vec3(0.0f, 0.0f, 0.5f * pComponent->GetHeight()),
+                                                        JPH::Quat::sRotation(JPH::Vec3::sAxisX(), JPH::JPH_PI * 0.5f), capsule.Get())
+                      .Create();
+      if (result.HasError())
+      {
+        xiiLog::Warning("Jolt could not place character capsule: {}", result.GetError().c_str());
+        continue;
+      }
+      shape = result.Get();
+    }
+    else
+      shape = pPrevious->m_pCharacter->GetShape();
+
+    JPH::CharacterVirtualSettings settings;
+    const bool                    bCheckClearance = pPrevious && bShapeChanged && !pComponent->m_bTeleportPending;
+    settings.mShape                               = bCheckClearance ? pPrevious->m_pCharacter->GetShape() : shape.GetPtr();
+    settings.mUp                                  = JPH::Vec3::sAxisZ();
+    settings.mSupportingVolume                    = JPH::Plane(settings.mUp, -fRadius);
+    settings.mMaxSlopeAngle                       = pComponent->GetMaxSlope().GetRadian();
+    settings.mCollisionTolerance                  = pComponent->GetContactTolerance();
+    settings.mPredictiveContactDistance           = xiiMath::Max(settings.mPredictiveContactDistance, pComponent->GetContactPadding());
+    settings.mCharacterPadding                    = pComponent->GetContactPadding();
+    settings.mMaxCollisionIterations              = pComponent->GetMaxCollisionIterations();
+    settings.mEnhancedInternalEdgeRemoval         = true;
+
+    NativeWorld::Character entry;
+    entry.m_pCharacter = new JPH::CharacterVirtual(&settings, JPH::RVec3(ToJoltVector(vPosition)), JPH::Quat::sIdentity(), &native.m_PhysicsSystem);
+    if (bCheckClearance)
+    {
+      const auto layer  = xiiJoltCollisionFilters::MakeObjectLayer(pComponent->GetCollisionLayer(), JPH::EMotionType::Kinematic);
+      const auto hOwner = pComponent->GetOwner()->GetHandle();
+      if (!entry.m_pCharacter->SetShape(shape, settings.mCollisionTolerance, native.m_PhysicsSystem.GetDefaultBroadPhaseLayerFilter(layer),
+                                        native.m_PhysicsSystem.GetDefaultLayerFilter(layer), NativeWorld::CharacterBodyFilter(native, hOwner),
+                                        NativeWorld::CharacterShapeFilter(native, hOwner), native.m_TempAllocator))
+      {
+        xiiLog::Warning("Jolt character '{}' cannot change its collision shape at the current position.", pComponent->GetOwner()->GetName());
+        continue;
+      }
+    }
+    entry.m_pCharacter->SetListener(&native.m_CharacterContactListener);
+    entry.m_State.m_vPosition = vPosition;
+    entry.m_fRadius           = fRadius;
+    entry.m_fHeight           = pComponent->GetHeight();
+    if (pPrevious)
+      entry.m_fVerticalVelocity = pPrevious->m_fVerticalVelocity;
+    native.m_Characters.Insert(hCharacter, std::move(entry));
+  }
+  native.m_PendingCharacters.Clear();
+}
+
+bool xiiJoltPhysicsWorldModule::GetCharacterState(xiiComponentHandle hCharacter, xiiJoltCharacterControllerComponent::State& out_state) const
+{
+  const auto* pEntry = m_pNativeWorld ? m_pNativeWorld->m_Characters.GetValue(hCharacter) : nullptr;
+  if (!pEntry)
+    return false;
+
+  out_state     = pEntry->m_State;
+  const auto id = pEntry->m_pCharacter->GetGroundBodyID();
+  if (!id.IsInvalid() && (!m_pNativeWorld->FindOwner(id) || m_pNativeWorld->m_TeleportedBodies.Contains(id.GetIndexAndSequenceNumber())))
+  {
+    out_state.m_GroundState = xiiJoltCharacterGroundState::InAir;
+    out_state.m_hGroundObject.Invalidate();
+    out_state.m_vGroundNormal.SetZero();
+    out_state.m_vGroundVelocity.SetZero();
+  }
+  return true;
+}
+
+void xiiJoltPhysicsWorldModule::StepCharacters(float fStep)
+{
+  auto& native = *m_pNativeWorld;
+  auto& system = native.m_PhysicsSystem;
+  for (auto it = native.m_Characters.GetIterator(); it.IsValid(); ++it)
+  {
+    xiiJoltCharacterControllerComponent* pComponent = nullptr;
+    if (!GetWorld()->TryGetComponent(it.Key(), pComponent) || !pComponent->GetSimulationEnabled())
+      continue;
+
+    auto&                                   entry       = it.Value();
+    auto&                                   character   = *entry.m_pCharacter;
+    const auto                              layer       = xiiJoltCollisionFilters::MakeObjectLayer(pComponent->GetCollisionLayer(), JPH::EMotionType::Kinematic);
+    const auto                              broadPhase  = system.GetDefaultBroadPhaseLayerFilter(layer);
+    const auto                              objectLayer = system.GetDefaultLayerFilter(layer);
+    const auto                              hOwner      = pComponent->GetOwner()->GetHandle();
+    const NativeWorld::CharacterBodyFilter  bodyFilter(native, hOwner);
+    const NativeWorld::CharacterShapeFilter shapeFilter(native, hOwner);
+
+    character.SetMaxSlopeAngle(pComponent->GetMaxSlope().GetRadian());
+    character.SetMass(pComponent->GetMass());
+    character.SetMaxStrength(pComponent->GetMaxStrength());
+    character.SetPenetrationRecoverySpeed(pComponent->GetPenetrationRecoverySpeed());
+
+    const auto id = character.GetGroundBodyID();
+    if (pComponent->m_bTeleportPending)
+    {
+      character.SetPosition(JPH::RVec3(ToJoltVector(pComponent->m_vTeleportPosition)));
+      character.SetLinearVelocity(JPH::Vec3::sZero());
+      pComponent->m_bTeleportPending = false;
+      entry.m_fVerticalVelocity      = 0.0f;
+      entry.m_bRefreshContacts       = true;
+    }
+    if (entry.m_bRefreshContacts || (!id.IsInvalid() && (!native.FindOwner(id) || native.m_TeleportedBodies.Contains(id.GetIndexAndSequenceNumber()))))
+    {
+      character.RefreshContacts(broadPhase, objectLayer, bodyFilter, shapeFilter, native.m_TempAllocator);
+      entry.m_bRefreshContacts = false;
+    }
+
+    const bool bGrounded = character.GetGroundState() == JPH::CharacterBase::EGroundState::OnGround && entry.m_fVerticalVelocity <= 0.0f;
+    if (bGrounded)
+      character.UpdateGroundVelocity();
+    const auto groundVelocity = bGrounded ? character.GetGroundVelocity() : JPH::Vec3::sZero();
+    const bool bJump          = bGrounded && pComponent->m_fJumpSpeed > 0.0f;
+    if (bJump)
+      entry.m_fVerticalVelocity = pComponent->m_fJumpSpeed + groundVelocity.GetZ();
+    else if (bGrounded)
+      entry.m_fVerticalVelocity = 0.0f;
+    pComponent->m_fJumpSpeed = 0.0f;
+
+    const auto gravity = pComponent->GetGravityFactor() * system.GetGravity();
+    entry.m_fVerticalVelocity += gravity.GetZ() * fStep;
+    auto velocity = ToJoltVector(pComponent->m_vDesiredVelocity) + JPH::Vec3(0.0f, 0.0f, entry.m_fVerticalVelocity);
+    if (bGrounded)
+      velocity += bJump ? JPH::Vec3(groundVelocity.GetX(), groundVelocity.GetY(), 0.0f) : groundVelocity;
+    if (!xiiMath::IsFinite(velocity.LengthSq()) || !xiiMath::IsFinite((velocity * fStep).LengthSq()))
+    {
+      entry.m_fVerticalVelocity = 0.0f;
+      velocity                  = JPH::Vec3::sZero();
+    }
+    character.SetLinearVelocity(velocity);
+    const auto previous = character.GetPosition();
+
+    JPH::CharacterVirtual::ExtendedUpdateSettings settings;
+    settings.mStickToFloorStepDown = bJump || entry.m_fVerticalVelocity > 0.0f ? JPH::Vec3::sZero() : JPH::Vec3(0.0f, 0.0f, -pComponent->GetStepDownDistance());
+    settings.mWalkStairsStepUp     = bGrounded && !bJump ? JPH::Vec3(0.0f, 0.0f, pComponent->GetStepUpHeight()) : JPH::Vec3::sZero();
+    character.ExtendedUpdate(fStep, gravity, settings, broadPhase, objectLayer, bodyFilter, shapeFilter, native.m_TempAllocator);
+
+    auto& state       = entry.m_State;
+    state.m_vPosition = FromJoltVector(character.GetPosition());
+    state.m_vVelocity = FromJoltVector(JPH::Vec3(character.GetPosition() - previous) / fStep);
+    // Discard upward momentum lost to ceilings. Continue integrating gravity on unwalkable slopes.
+    if (entry.m_fVerticalVelocity > 0.0f)
+      entry.m_fVerticalVelocity = xiiMath::Clamp(state.m_vVelocity.z, 0.0f, entry.m_fVerticalVelocity);
+
+    state.m_GroundState     = static_cast<xiiJoltCharacterGroundState::Enum>(character.GetGroundState());
+    state.m_vGroundNormal   = FromJoltVector(character.GetGroundNormal());
+    state.m_vGroundVelocity = FromJoltVector(character.GetGroundVelocity());
+    state.m_hGroundObject.Invalidate();
+    if (const auto* pGround = native.FindOwner(character.GetGroundBodyID()))
+      state.m_hGroundObject = pGround->m_hObject;
+
+    state.m_bTouchingDynamicBody = false;
+    for (const auto& contact : character.GetActiveContacts())
+    {
+      if (contact.mHadCollision && !contact.mWasDiscarded && !contact.mIsSensorB && contact.mMotionTypeB == JPH::EMotionType::Dynamic)
+      {
+        state.m_bTouchingDynamicBody = true;
+        break;
+      }
+    }
+  }
+  native.m_TeleportedBodies.Clear();
+}
+
+void xiiJoltPhysicsWorldModule::SynchronizeMovedObjects()
 {
   auto&       nativeWorld = *m_pNativeWorld;
   auto&       poses       = nativeWorld.m_PosesToSync;
@@ -1000,8 +1434,15 @@ void xiiJoltPhysicsWorldModule::SynchronizeDynamicBodies()
   for (auto it = nativeWorld.GetBodyOwners().GetIterator(); it.IsValid(); ++it)
   {
     const auto& owner = it.Value();
-    if (!owner.m_bDynamic)
+    if (!owner.m_bDynamic && !nativeWorld.m_KinematicActors.Contains(owner.m_hComponent))
       continue;
+
+    if (!owner.m_bDynamic)
+    {
+      const xiiJoltKinematicActorComponent* pActor = nullptr;
+      if (!static_cast<const xiiWorld*>(GetWorld())->TryGetComponent(owner.m_hComponent, pActor) || !pActor->m_bUseVelocity)
+        continue;
+    }
 
     xiiGameObject* pObject = nullptr;
     if (!GetWorld()->TryGetObject(owner.m_hObject, pObject))
@@ -1010,12 +1451,28 @@ void xiiJoltPhysicsWorldModule::SynchronizeDynamicBodies()
     JPH::RVec3 position;
     JPH::Quat  rotation;
     bodies.GetPositionAndRotation(JPH::BodyID(it.Key()), position, rotation);
-    auto& pose       = poses.ExpandAndGetRef();
-    pose.m_hObject   = owner.m_hObject;
-    pose.m_vPosition = xiiVec3(static_cast<float>(position.GetX()), static_cast<float>(position.GetY()), static_cast<float>(position.GetZ()));
-    pose.m_qRotation = xiiQuat(rotation.GetX(), rotation.GetY(), rotation.GetZ(), rotation.GetW());
-    pose.m_uiDepth   = 0;
+    auto& pose           = poses.ExpandAndGetRef();
+    pose.m_hObject       = owner.m_hObject;
+    pose.m_vPosition     = xiiVec3(static_cast<float>(position.GetX()), static_cast<float>(position.GetY()), static_cast<float>(position.GetZ()));
+    pose.m_qRotation     = xiiQuat(rotation.GetX(), rotation.GetY(), rotation.GetZ(), rotation.GetW());
+    pose.m_bPositionOnly = false;
+    pose.m_uiDepth       = 0;
     for (auto* pParent = pObject->GetParent(); pParent != nullptr; pParent = pParent->GetParent())
+      ++pose.m_uiDepth;
+  }
+
+  for (auto it = nativeWorld.m_Characters.GetIterator(); it.IsValid(); ++it)
+  {
+    const xiiJoltCharacterControllerComponent* pComponent = nullptr;
+    if (!static_cast<const xiiWorld*>(GetWorld())->TryGetComponent(it.Key(), pComponent))
+      continue;
+
+    auto& pose           = poses.ExpandAndGetRef();
+    pose.m_hObject       = pComponent->GetOwner()->GetHandle();
+    pose.m_vPosition     = it.Value().m_State.m_vPosition;
+    pose.m_bPositionOnly = true;
+    pose.m_uiDepth       = 0;
+    for (auto* pParent = pComponent->GetOwner()->GetParent(); pParent != nullptr; pParent = pParent->GetParent())
       ++pose.m_uiDepth;
   }
 
@@ -1029,7 +1486,13 @@ void xiiJoltPhysicsWorldModule::SynchronizeDynamicBodies()
     if (pose.m_uiDepth != 0)
       pObject->UpdateGlobalTransform();
 
-    auto          transform = pObject->GetGlobalTransform();
+    auto transform = pObject->GetGlobalTransform();
+    if (pose.m_bPositionOnly)
+    {
+      if (transform.m_vPosition != pose.m_vPosition)
+        pObject->SetGlobalPosition(pose.m_vPosition);
+      continue;
+    }
     const xiiQuat qOpposite(-pose.m_qRotation.x, -pose.m_qRotation.y, -pose.m_qRotation.z, -pose.m_qRotation.w);
     if (transform.m_vPosition == pose.m_vPosition && (transform.m_qRotation == pose.m_qRotation || transform.m_qRotation == qOpposite))
       continue;
@@ -1054,11 +1517,14 @@ void xiiJoltPhysicsWorldModule::Simulate(const UpdateContext&)
   pendingBodies.Clear();
   UpdateJoints();
   UpdateMaterials();
+  ApplyKinematicTeleports();
+  UpdateCharacterConfigurations();
   ApplyQueuedImpulses();
 
   const xiiClock& clock         = GetWorld()->GetClock();
   const double    fDeltaSeconds = clock.GetTimeDiff().GetSeconds();
-  if (clock.GetPaused() || fDeltaSeconds <= 0.0 || !xiiMath::IsFinite(fDeltaSeconds) || m_pNativeWorld->m_PhysicsSystem.GetNumBodies() == 0)
+  if (clock.GetPaused() || fDeltaSeconds <= 0.0 || !xiiMath::IsFinite(fDeltaSeconds) ||
+      (m_pNativeWorld->m_PhysicsSystem.GetNumBodies() == 0 && m_pNativeWorld->m_Characters.IsEmpty()))
     return;
 
   m_AccumulatedTime += xiiTime::MakeFromSeconds(fDeltaSeconds);
@@ -1082,13 +1548,22 @@ void xiiJoltPhysicsWorldModule::Simulate(const UpdateContext&)
   [[maybe_unused]] const JPH::FPFlushDenormals flushDenormals;
   auto&                                        nativeWorld = *m_pNativeWorld;
   auto                                         errors      = JPH::EPhysicsUpdateError::None;
+  const float                                  fStep       = m_FixedStep.AsFloatInSeconds();
+  CaptureKinematicTargets();
   for (xiiUInt32 uiStep = 0; uiStep < uiSteps; ++uiStep)
   {
-    errors |= nativeWorld.m_PhysicsSystem.Update(m_FixedStep.AsFloatInSeconds(), 1, &nativeWorld.m_TempAllocator, &nativeWorld.m_JobSystem);
-    CheckJointBreakage(m_FixedStep.AsFloatInSeconds());
+    // Spread the authored target across the executed steps and let characters read the
+    // current platform velocities before Jolt integrates the rigid bodies.
+    UpdateKinematicBodies(fStep * static_cast<float>(uiSteps - uiStep));
+    StepCharacters(fStep);
+    if (nativeWorld.m_PhysicsSystem.GetNumBodies() != 0)
+    {
+      errors |= nativeWorld.m_PhysicsSystem.Update(fStep, 1, &nativeWorld.m_TempAllocator, &nativeWorld.m_JobSystem);
+      CheckJointBreakage(fStep);
+    }
   }
 
-  SynchronizeDynamicBodies();
+  SynchronizeMovedObjects();
 
   if (errors != JPH::EPhysicsUpdateError::None)
   {
@@ -1203,12 +1678,6 @@ void xiiJoltPhysicsWorldModule::DispatchContacts(const UpdateContext&)
 
 namespace
 {
-  template <typename Vector>
-  xiiVec3 FromJoltVector(const Vector& value)
-  {
-    return xiiVec3(static_cast<float>(value.GetX()), static_cast<float>(value.GetY()), static_cast<float>(value.GetZ()));
-  }
-
   bool IsPositive(float fValue)
   {
     return xiiMath::IsFinite(fValue) && fValue > 0.0f;
@@ -1269,20 +1738,11 @@ namespace
       const auto* pSet = m_Native.m_ShapeSets.GetValue(mBodyID2.GetIndexAndSequenceNumber());
       if (pSet == nullptr || pSet->m_Shapes.IsEmpty())
         return false;
-      xiiUInt32 index = 0;
-      if (pSet->m_Shapes.GetCount() > 1)
-      {
-        if (pShape == pSet->m_pRoot.GetPtr())
-          return true;
-        const auto&     compound = *static_cast<const JPH::StaticCompoundShape*>(pSet->m_pRoot.GetPtr());
-        JPH::SubShapeID remainder;
-        const auto      child = compound.GetSubShapeIndexFromID(id, remainder);
-        if (child >= compound.GetNumSubShapes())
-          return false;
-        index = compound.GetSubShape(child).mUserData;
-      }
+      if (pSet->m_Shapes.GetCount() > 1 && pShape == pSet->m_pRoot.GetPtr())
+        return true;
+      const auto*                  pOwner     = Native::FindShapeOwner(*pSet, id);
       const xiiJoltShapeComponent* pComponent = nullptr;
-      return index < pSet->m_Shapes.GetCount() && m_World.TryGetComponent(pSet->m_Shapes[index].m_hComponent, pComponent) && pComponent->IsActiveAndInitialized();
+      return pOwner && m_World.TryGetComponent(pOwner->m_hComponent, pComponent) && pComponent->IsActiveAndInitialized();
     }
 
     bool ShouldCollide(const JPH::Shape*, const JPH::SubShapeID&, const JPH::Shape* pShape, const JPH::SubShapeID& id) const override

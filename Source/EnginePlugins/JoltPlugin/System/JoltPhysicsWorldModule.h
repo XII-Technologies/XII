@@ -7,6 +7,8 @@
 #include <Core/Interfaces/PhysicsWorldModule.h>
 #include <Foundation/Time/Time.h>
 #include <Foundation/Types/UniquePtr.h>
+#include <JoltPlugin/Actors/JoltKinematicActorComponent.h>
+#include <JoltPlugin/Character/JoltCharacterControllerComponent.h>
 
 namespace JPH
 {
@@ -57,6 +59,8 @@ public:
 private:
   friend class xiiJoltActorComponent;
   friend class xiiJoltDynamicActorComponent;
+  friend class xiiJoltKinematicActorComponent;
+  friend class xiiJoltCharacterControllerComponent;
   friend class xiiJoltJointComponent;
   friend class xiiJoltShapeComponent;
 
@@ -79,7 +83,16 @@ private:
   void SetBodySurface(xiiComponentHandle hActor, const xiiSurfaceResourceHandle& hSurface);
   void RemoveBody(xiiComponentHandle hActor);
   void RebuildBody(class xiiJoltActorComponent& actor);
-  void SynchronizeDynamicBodies();
+  void SynchronizeMovedObjects();
+  void ApplyKinematicTeleports();
+  void CaptureKinematicTargets();
+  void UpdateKinematicBodies(float fTimeToTarget);
+  bool GetKinematicState(const xiiJoltKinematicActorComponent& actor, xiiJoltKinematicActorComponent::BodyState& out_state) const;
+  void QueueCharacterUpdate(xiiComponentHandle hCharacter);
+  void RemoveCharacter(xiiComponentHandle hCharacter);
+  void UpdateCharacterConfigurations();
+  void StepCharacters(float fStep);
+  bool GetCharacterState(xiiComponentHandle hCharacter, xiiJoltCharacterControllerComponent::State& out_state) const;
   void DispatchContacts(const UpdateContext& context);
   void QueueImpulse(xiiComponentHandle hActor, const xiiMsgPhysicsAddImpulse& msg) const;
   void ApplyQueuedImpulses();
