@@ -8,4 +8,6 @@ XII_STATICLINK_LIBRARY(JoltPlugin)
     return;
 
   XII_STATICLINK_REFERENCE(JoltPlugin_Startup);
+  XII_STATICLINK_REFERENCE(JoltPlugin_System_Implementation_JoltJobSystem);
+  XII_STATICLINK_REFERENCE(JoltPlugin_System_Implementation_JoltPhysicsWorldModule);
 }
