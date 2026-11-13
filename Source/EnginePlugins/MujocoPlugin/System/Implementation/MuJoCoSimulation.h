@@ -35,7 +35,7 @@ struct xiiMuJoCoPhysicsWorldModule::NativeSimulation
   };
   xiiDynamicArray<SceneBinding>       m_BodySceneBindings;
   xiiDynamicArray<InstalledInstance>  m_Instances;
-  xiiDynamicArray<xiiComponentHandle> m_GeometryOwners;
+  xiiDynamicArray<xiiComponentHandle> m_ElementOwners[6];
   xiiDynamicArray<xiiComponentHandle> m_FlexOwners;
   xiiUInt64                           m_uiStateRevision = 1;
   xiiUInt64                           m_uiStepIndex     = 0;

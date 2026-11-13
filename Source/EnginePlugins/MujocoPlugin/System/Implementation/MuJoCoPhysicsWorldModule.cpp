@@ -24,6 +24,7 @@
 
 #include <algorithm>
 #include <memory>
+#include <utility>
 
 XII_IMPLEMENT_WORLD_MODULE(xiiMuJoCoPhysicsWorldModule);
 
@@ -32,6 +33,18 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 namespace
 {
+  class CompositionLog final : public xiiLogInterface
+  {
+  public:
+    xiiLogInterface* m_pParent = xiiLog::GetThreadLocalLogSystem();
+    xiiString        m_sError;
+    void             HandleLogMessage(const xiiLoggingEventData& event) override
+    {
+      if (event.m_EventType == xiiLogMsgType::ErrorMsg && m_sError.IsEmpty())
+        m_sError = event.m_sText;
+      m_pParent->HandleLogMessage(event);
+    }
+  };
   using SpecPtr = std::unique_ptr<mjSpec, decltype([](mjSpec* pSpec) { mj_deleteSpec(pSpec); })>;
 
   // Every native path is resolved against the inputs captured by XII's asset transformer.
@@ -334,7 +347,12 @@ xiiResult xiiMuJoCoPhysicsWorldModule::InstallModel(xiiSharedPtr<xiiMuJoCoCompil
           }
       }
     };
-    mapOwners(pSimulation->m_GeometryOwners, mjOBJ_GEOM, pNativeModel->ngeom);
+    mapOwners(pSimulation->m_ElementOwners[0], mjOBJ_BODY, pNativeModel->nbody);
+    mapOwners(pSimulation->m_ElementOwners[1], mjOBJ_JOINT, pNativeModel->njnt);
+    mapOwners(pSimulation->m_ElementOwners[2], mjOBJ_ACTUATOR, pNativeModel->nactuator);
+    mapOwners(pSimulation->m_ElementOwners[3], mjOBJ_SENSOR, pNativeModel->nsensor);
+    mapOwners(pSimulation->m_ElementOwners[4], mjOBJ_GEOM, pNativeModel->ngeom);
+    mapOwners(pSimulation->m_ElementOwners[5], mjOBJ_SITE, pNativeModel->nsite);
     mapOwners(pSimulation->m_FlexOwners, mjOBJ_FLEX, pNativeModel->nflex);
   }
   pSimulation->m_pData.reset(mj_makeData(pNativeModel));
@@ -377,7 +395,8 @@ void xiiMuJoCoPhysicsWorldModule::ResetSimulation()
   if (m_bExecuting)
     return;
 
-  m_AccumulatedTime = xiiTime::MakeZero();
+  m_AccumulatedTime      = xiiTime::MakeZero();
+  m_bSingleStepRequested = false;
   if (m_pSimulation)
   {
     const mjModel* pModel = m_pSimulation->m_pModel->GetModel();
@@ -433,7 +452,9 @@ void xiiMuJoCoPhysicsWorldModule::RequestModel(xiiComponentHandle hOwner, const 
     m_ModelInstances.InsertAt(uiIndex, std::move(instance));
   }
 
-  auto& instance       = m_ModelInstances[uiIndex];
+  auto& instance = m_ModelInstances[uiIndex];
+  if (instance.m_hResource == hModel)
+    return;
   instance.m_hResource = hModel;
   const xiiResourceLock<xiiMuJoCoModelResource> resource(hModel, xiiResourceAcquireMode::PointerOnly);
   instance.m_pResource = resource.GetPointer();
@@ -495,7 +516,10 @@ void xiiMuJoCoPhysicsWorldModule::UpdateRequestedModels()
 
   for (const auto& instance : m_ModelInstances)
     if (instance.m_pResource->GetLoadingState() == xiiResourceState::Unloaded)
+    {
+      m_sCompositionStatus = "Waiting for model resources.";
       return;
+    }
 
   xiiHybridArray<xiiSharedPtr<xiiMuJoCoCompiledModel>, 8> models;
   xiiHybridArray<xiiUInt32, 8>                            revisions;
@@ -503,10 +527,18 @@ void xiiMuJoCoPhysicsWorldModule::UpdateRequestedModels()
   {
     auto pModel = instance.m_pResource->GetModel(revisions.ExpandAndGetRef());
     if (!pModel && instance.m_pResource->GetLoadingState() != xiiResourceState::LoadedResourceMissing)
+    {
+      m_sCompositionStatus = "Waiting for compiled model resources.";
       return;
+    }
     models.PushBack(std::move(pModel));
   }
   m_bCompositionDirty = false;
+  m_bCompositionReady = false;
+  CompositionLog    log;
+  xiiLogSystemScope logScope(&log);
+  m_sCompositionStatus = "No model instances registered.";
+  XII_SCOPE_EXIT(if (!log.m_sError.IsEmpty()) m_sCompositionStatus = log.m_sError);
   if (m_ModelInstances.IsEmpty())
     return;
 
@@ -535,10 +567,11 @@ void xiiMuJoCoPhysicsWorldModule::UpdateRequestedModels()
   }
 
   const auto& firstPlacement = m_ModelInstances[0].m_Placement;
-  if (models.GetCount() == 1 && firstPlacement.m_vPosition.IsZero() && firstPlacement.m_qRotation.IsEqualRotation(xiiQuat::MakeIdentity(), xiiMath::SmallEpsilon<float>()))
-    InstallModel(std::move(models[0]), m_ModelInstances[0].m_hResource.GetResourceID(), installed).IgnoreResult();
-  else
-    ComposeModels(models, installed).IgnoreResult();
+  const auto  result         = models.GetCount() == 1 && firstPlacement.m_vPosition.IsZero() && firstPlacement.m_qRotation.IsEqualRotation(xiiQuat::MakeIdentity(), xiiMath::SmallEpsilon<float>()) ?
+    InstallModel(std::move(models[0]), m_ModelInstances[0].m_hResource.GetResourceID(), installed) :
+    ComposeModels(models, installed);
+  m_bCompositionReady        = result.Succeeded();
+  m_sCompositionStatus       = result.Succeeded() ? "Ready" : "Composition failed; the previous valid simulation is retained where safe.";
 }
 
 xiiResult xiiMuJoCoPhysicsWorldModule::ComposeModels(xiiArrayPtr<const xiiSharedPtr<xiiMuJoCoCompiledModel>> models, xiiArrayPtr<InstalledInstance> instances)
@@ -617,21 +650,21 @@ xiiResult xiiMuJoCoPhysicsWorldModule::ComposeModels(xiiArrayPtr<const xiiShared
           xiiLog::Error("MuJoCo could not prepare '{}' for attachment: {}", sResource, mjs_getError(spec.get()));
           return XII_FAILURE;
         }
-        // Give unnamed contact geometry an instance namespace as well.
-        for (const auto type : {mjOBJ_GEOM, mjOBJ_FLEX})
+        // Unnamed elements need an attachment namespace for inspection and contact ownership.
+        for (const auto type : {mjOBJ_BODY, mjOBJ_JOINT, mjOBJ_ACTUATOR, mjOBJ_SENSOR, mjOBJ_SITE, mjOBJ_GEOM, mjOBJ_FLEX})
         {
           xiiUInt32 uiGenerated = 0;
           for (auto* pElement = mjs_firstElement(spec.get(), type); pElement; pElement = mjs_nextElement(spec.get(), pElement))
-            if (*mjs_getString(mjs_getName(pElement)) == '\0')
+            if ((type != mjOBJ_BODY || mjs_getParent(pElement)) && *mjs_getString(mjs_getName(pElement)) == '\0')
             {
               xiiStringBuilder sName;
               do
               {
-                sName.SetFormat("__xii_contact_{}", uiGenerated++);
+                sName.SetFormat("__xii_unnamed_{}", uiGenerated++);
               } while (mjs_findElement(spec.get(), type, sName.GetData()));
               if (mjs_setName(pElement, sName.GetData()) != 0)
               {
-                xiiLog::Error("MuJoCo could not name contact geometry in '{}': {}", sResource, mjs_getError(spec.get()));
+                xiiLog::Error("MuJoCo could not name an unnamed element in '{}': {}", sResource, mjs_getError(spec.get()));
                 return XII_FAILURE;
               }
             }
@@ -727,8 +760,10 @@ xiiResult xiiMuJoCoPhysicsWorldModule::ComposeModels(xiiArrayPtr<const xiiShared
 
 void xiiMuJoCoPhysicsWorldModule::ClearSimulation()
 {
-  m_uiModelGeneration = 0;
-  m_bExecuting        = true;
+  m_bCompositionReady    = false;
+  m_bSingleStepRequested = false;
+  m_uiModelGeneration    = 0;
+  m_bExecuting           = true;
   m_pSimulation.Clear();
   m_bExecuting      = false;
   m_AccumulatedTime = xiiTime::MakeZero();
@@ -794,7 +829,7 @@ void xiiMuJoCoPhysicsWorldModule::ResolveBody(BodyBinding& ref_binding) const
 
 void xiiMuJoCoPhysicsWorldModule::SynchronizeBodies()
 {
-  if (!m_bSyncBodies || !m_pSimulation)
+  if (!m_bSyncBodies || !m_pSimulation || m_bAuthoringPreview)
     return;
 
   m_bSyncBodies = false;
@@ -882,15 +917,21 @@ void xiiMuJoCoPhysicsWorldModule::WorldClear()
   m_ActuatorComponents.Clear();
   m_BodyBindings.Clear();
   m_ModelInstances.Clear();
-  m_bDebugRequested   = false;
-  m_bCompositionDirty = false;
+  m_bDebugRequested    = false;
+  m_bCompositionDirty  = false;
+  m_sCompositionStatus = "No model instances registered.";
+  m_bScenePreview = m_bAuthoringPreview = m_bDeferComposition = m_bSingleStepRequested = false;
   ClearSimulation();
 }
 
 void xiiMuJoCoPhysicsWorldModule::Simulate(const UpdateContext&)
 {
+  if (m_bDeferComposition)
+    return;
+  const auto generation = m_uiModelGeneration;
   UpdateRequestedModels();
-  if (!m_pSimulation || !GetWorld()->GetWorldSimulationEnabled())
+  const bool singleStep = std::exchange(m_bSingleStepRequested, false) && generation == m_uiModelGeneration && GetWorld()->GetClock().GetPaused();
+  if (!m_pSimulation || m_bAuthoringPreview || !GetWorld()->GetWorldSimulationEnabled())
     return;
 
   EvaluateState();
@@ -899,13 +940,14 @@ void xiiMuJoCoPhysicsWorldModule::Simulate(const UpdateContext&)
   XII_SCOPE_EXIT(SynchronizeBodies());
   const xiiClock& clock         = GetWorld()->GetClock();
   const double    fDeltaSeconds = clock.GetTimeDiff().GetSeconds();
-  if (clock.GetPaused() || !xiiMath::IsFinite(fDeltaSeconds) || fDeltaSeconds <= 0.0)
+  if (!singleStep && (clock.GetPaused() || !xiiMath::IsFinite(fDeltaSeconds) || fDeltaSeconds <= 0.0))
     return;
 
   const mjModel* pModel          = m_pSimulation->m_pModel->GetModel();
   const double   fStepSeconds    = pModel->opt.timestep;
-  const double   fElapsedSeconds = m_AccumulatedTime.GetSeconds() + fDeltaSeconds;
-  m_AccumulatedTime              = xiiTime::MakeFromSeconds(fElapsedSeconds);
+  const double   fElapsedSeconds = singleStep ? fStepSeconds : m_AccumulatedTime.GetSeconds() + fDeltaSeconds;
+  if (!singleStep)
+    m_AccumulatedTime = xiiTime::MakeFromSeconds(fElapsedSeconds);
   if (fElapsedSeconds < fStepSeconds)
     return;
 
@@ -913,7 +955,8 @@ void xiiMuJoCoPhysicsWorldModule::Simulate(const UpdateContext&)
   const double fElapsedSteps = xiiMath::Floor(fElapsedSeconds / fStepSeconds);
   const auto   uiSteps       = static_cast<xiiUInt32>(xiiMath::Min(fElapsedSteps, static_cast<double>(m_uiMaxCatchUpSteps)));
   const double fRemainder    = fElapsedSteps > m_uiMaxCatchUpSteps ? xiiMath::Mod(fElapsedSeconds, fStepSeconds) : xiiMath::Max(0.0, fElapsedSeconds - uiSteps * fStepSeconds);
-  m_AccumulatedTime          = xiiTime::MakeFromSeconds(fRemainder);
+  if (!singleStep)
+    m_AccumulatedTime = xiiTime::MakeFromSeconds(fRemainder);
 
   XII_PROFILE_SCOPE("MuJoCo Physics");
   mjData* pData = m_pSimulation->m_pData.get();

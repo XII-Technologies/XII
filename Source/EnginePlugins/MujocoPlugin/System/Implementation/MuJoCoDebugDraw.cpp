@@ -109,78 +109,6 @@ namespace
     return szName ? szName : "<unnamed>";
   }
 
-  const char* SensorSemantics(int iType)
-  {
-    switch (iType)
-    {
-      case mjSENS_TOUCH:
-        return "touch (N)";
-      case mjSENS_ACCELEROMETER:
-        return "local acceleration (m/s^2)";
-      case mjSENS_VELOCIMETER:
-        return "local velocity (m/s)";
-      case mjSENS_GYRO:
-        return "local angular velocity (rad/s)";
-      case mjSENS_FORCE:
-        return "local force (N)";
-      case mjSENS_TORQUE:
-        return "local torque (N m)";
-      case mjSENS_MAGNETOMETER:
-        return "local magnetic field";
-      case mjSENS_RANGEFINDER:
-        return "range (m)";
-      case mjSENS_CAMPROJECTION:
-        return "camera projection (pixels)";
-      case mjSENS_JOINTPOS:
-        return "joint position";
-      case mjSENS_JOINTVEL:
-        return "joint velocity";
-      case mjSENS_BALLQUAT:
-        return "joint quaternion (W,X,Y,Z)";
-      case mjSENS_BALLANGVEL:
-        return "joint angular velocity (rad/s)";
-      case mjSENS_FRAMEPOS:
-        return "frame position (m)";
-      case mjSENS_FRAMEQUAT:
-        return "frame quaternion (W,X,Y,Z)";
-      case mjSENS_FRAMEXAXIS:
-        return "frame X axis";
-      case mjSENS_FRAMEYAXIS:
-        return "frame Y axis";
-      case mjSENS_FRAMEZAXIS:
-        return "frame Z axis";
-      case mjSENS_FRAMELINVEL:
-        return "frame linear velocity (m/s)";
-      case mjSENS_FRAMEANGVEL:
-        return "frame angular velocity (rad/s)";
-      case mjSENS_FRAMELINACC:
-        return "frame linear acceleration (m/s^2)";
-      case mjSENS_FRAMEANGACC:
-        return "frame angular acceleration (rad/s^2)";
-      case mjSENS_SUBTREECOM:
-        return "subtree center of mass (m)";
-      case mjSENS_SUBTREELINVEL:
-        return "subtree velocity (m/s)";
-      case mjSENS_SUBTREEANGMOM:
-        return "subtree angular momentum";
-      case mjSENS_GEOMDIST:
-        return "geometry distance (m)";
-      case mjSENS_GEOMNORMAL:
-        return "geometry normal";
-      case mjSENS_GEOMFROMTO:
-        return "geometry segment (m)";
-      case mjSENS_CONTACT:
-        return "native contact channels";
-      case mjSENS_E_POTENTIAL:
-        return "potential energy (J)";
-      case mjSENS_E_KINETIC:
-        return "kinetic energy (J)";
-      case mjSENS_CLOCK:
-        return "time (s)";
-      default:
-        return "native sensor channels";
-    }
-  }
 
   const char* JointCoordinates(xiiMuJoCoJointType type)
   {
@@ -368,9 +296,11 @@ void xiiMuJoCoPhysicsWorldModule::PrepareDebugDraw(const UpdateContext&)
   if (settings.m_Modes.IsSet(xiiMuJoCoDebugMode::Statistics) && !GetSimulationInfo(output.m_Simulation))
     return;
 
-  const auto& model = *simulation.m_pModel->GetModel();
-  const auto& state = *simulation.m_pData;
-  const auto  modes = settings.m_Modes;
+  const auto&          model = *simulation.m_pModel->GetModel();
+  const auto&          state = *simulation.m_pData;
+  const auto           modes = settings.m_Modes;
+  xiiMuJoCoElementInfo selected;
+  const bool           hasSelection = GetElementInfo(settings.m_SelectedElement, selected);
   if (debug.m_PhysicalGeometry.IsEmpty() && modes.IsAnySet(xiiMuJoCoDebugMode::CollisionGeometry | xiiMuJoCoDebugMode::VisualGeometry | xiiMuJoCoDebugMode::Bounds))
   {
     debug.m_PhysicalGeometry.SetCount(static_cast<xiiUInt32>(model.ngeom), 0);
@@ -480,9 +410,14 @@ void xiiMuJoCoPhysicsWorldModule::PrepareDebugDraw(const UpdateContext&)
         {
           geometry.m_Transform       = pose;
           geometry.m_vSize           = DebugVector(model.geom_size + 3 * i);
-          geometry.m_Color           = bHull ? xiiColor::Aquamarine : xiiColor::LightGray;
+          geometry.m_Color           = hasSelection &&
+              ((selected.m_Id.m_Type == xiiMuJoCoElementType::Geometry && selected.m_Id.m_iIndex == i) ||
+               (selected.m_Id.m_Type != xiiMuJoCoElementType::Geometry && selected.m_iBody == model.geom_bodyid[i])) ?
+            xiiColor::Yellow :
+            bHull ? xiiColor::Aquamarine :
+                    xiiColor::LightGray;
           geometry.m_GeometryId      = GetElementId(xiiMuJoCoElementType::Geometry, static_cast<xiiUInt32>(i));
-          geometry.m_hModelComponent = simulation.m_GeometryOwners.IsEmpty() ? xiiComponentHandle{} : simulation.m_GeometryOwners[static_cast<xiiUInt32>(i)];
+          geometry.m_hModelComponent = simulation.m_ElementOwners[static_cast<xiiUInt32>(xiiMuJoCoElementType::Geometry)].IsEmpty() ? xiiComponentHandle{} : simulation.m_ElementOwners[static_cast<xiiUInt32>(xiiMuJoCoElementType::Geometry)][static_cast<xiiUInt32>(i)];
           if (geometry.m_Type == DrawData::GeometryType::Mesh)
           {
             geometry.m_uiMesh = meshEdges(model.geom_dataid[i], bHull);
@@ -766,7 +701,7 @@ void xiiMuJoCoPhysicsWorldModule::PrepareDebugDraw(const UpdateContext&)
       xiiTransform     pose, reference;
       const bool       bSpatial = ObjectPose(model, state, info.m_iObjectType, info.m_iObjectId, pose);
       xiiStringBuilder text;
-      text.SetFormat("{}  {} (type {})  dim {}  ", ElementName(model, mjOBJ_SENSOR, i), SensorSemantics(info.m_iType), info.m_iType, info.m_uiDimension);
+      text.SetFormat("{}  {} (type {})  dim {}  ", ElementName(model, mjOBJ_SENSOR, i), GetSensorSemantics(info.m_iType), info.m_iType, info.m_uiDimension);
       xiiMuJoCoSensorReading reading;
       if (GetSensorReading(id, reading))
         AppendValues(text, reading.m_Values);
@@ -791,6 +726,24 @@ void xiiMuJoCoPhysicsWorldModule::PrepareDebugDraw(const UpdateContext&)
       }
       Label(output, bSpatial ? &pose.m_vPosition : nullptr, text, xiiColor::Violet);
     }
+  if (hasSelection)
+  {
+    xiiTransform pose;
+    if (GetElementPose(selected.m_Id, pose))
+    {
+      Frame(output, pose, settings.m_fAxisLength);
+      Label(output, &pose.m_vPosition, selected.m_sName, xiiColor::Yellow);
+      if (selected.m_iParentBody >= 0 && selected.m_iParentBody != selected.m_iBody)
+      {
+        const auto   parent = GetElementId(xiiMuJoCoElementType::Body, static_cast<xiiUInt32>(selected.m_iParentBody));
+        xiiTransform parentPose;
+        if (GetElementPose(parent, parentPose))
+          Line(output, pose.m_vPosition, parentPose.m_vPosition, xiiColor::Yellow);
+      }
+      if (selected.m_Id.m_Type == xiiMuJoCoElementType::Joint)
+        Arrow(output, pose.m_vPosition, pose.m_vPosition + pose.m_qRotation * selected.m_vAxis * settings.m_fAxisLength, xiiColor::Yellow);
+    }
+  }
 }
 
 XII_STATICLINK_FILE(MujocoPlugin, MujocoPlugin_System_Implementation_MuJoCoDebugDraw);

@@ -14,6 +14,7 @@
 #include <MujocoPlugin/Resources/MuJoCoModelResource.h>
 #include <MujocoPlugin/System/MuJoCoDebugDraw.h>
 #include <MujocoPlugin/System/MuJoCoInspection.h>
+#include <MujocoPlugin/System/MuJoCoModelInspection.h>
 #include <MujocoPlugin/System/MuJoCoState.h>
 
 /// Owns the compiled MuJoCo model and simulation state for one XII world.
@@ -38,6 +39,21 @@ public:
 
   /// Restores the active model's initial state and evaluates it at time zero.
   void ResetSimulation();
+
+  /// Opt-in scene preview using the existing composition path. Authoring never steps or writes scene bindings.
+  /// Defer composition during interactive document transactions, then rebuild once at the next safe boundary.
+  void SetScenePreview(bool bEnabled, bool bAuthoring, bool bDeferComposition);
+  /// Requests exactly one step through Simulate(). Only accepted while paused and outside authoring mode.
+  [[nodiscard]] xiiResult RequestSingleStep();
+  const xiiString&        GetCompositionStatus() const { return m_sCompositionStatus; }
+  bool                    IsCompositionReady() const { return IsStateAccessible() && !m_bCompositionDirty && m_bCompositionReady; }
+  xiiUInt32               GetModelInstanceCount() const { return m_ModelInstances.GetCount(); }
+  [[nodiscard]] bool      GetModelInstanceInfo(xiiUInt32 uiIndex, xiiMuJoCoModelInstanceInfo& out_info) const;
+  [[nodiscard]] bool      GetElementInfo(xiiMuJoCoElementId id, xiiMuJoCoElementInfo& out_info) const;
+  xiiComponentHandle      GetElementOwner(xiiMuJoCoElementId id) const;
+  [[nodiscard]] bool      GetElementPose(xiiMuJoCoElementId id, xiiTransform& out_pose);
+  [[nodiscard]] bool      GetJointAppliedForce(xiiMuJoCoElementId id, xiiArrayPtr<double> out_values) const;
+  static const char*      GetSensorSemantics(xiiInt32 iNativeType);
 
   /// Sets the maximum number of fixed steps per world update. The limit must be positive.
   [[nodiscard]] xiiResult SetMaxCatchUpSteps(xiiUInt32 uiMaxCatchUpSteps);
@@ -140,6 +156,7 @@ private:
   void RequestModel(xiiComponentHandle hOwner, const xiiMuJoCoModelResourceHandle& hModel);
   void ReleaseModel(xiiComponentHandle hOwner);
   void UpdateRequestedModels();
+  void RefreshPreviewModels();
   void ClearSimulation();
 
   void RegisterBody(xiiComponentHandle hComponent, const xiiString& sBodyName);
@@ -202,5 +219,11 @@ private:
   bool                                m_bExecuting        = false;
   xiiMuJoCoDebugSettings              m_DebugSettings;
   xiiMuJoCoDebugSettings              m_RequestedDebugSettings;
-  bool                                m_bDebugRequested = false;
+  bool                                m_bDebugRequested      = false;
+  bool                                m_bScenePreview        = false;
+  bool                                m_bAuthoringPreview    = false;
+  bool                                m_bDeferComposition    = false;
+  bool                                m_bSingleStepRequested = false;
+  xiiString                           m_sCompositionStatus;
+  bool                                m_bCompositionReady = false;
 };

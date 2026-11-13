@@ -34,7 +34,17 @@ void xiiMuJoCoModelComponent::SetModel(const xiiMuJoCoModelResourceHandle& hMode
     return;
 
   m_hModel = hModel;
-  if (IsActiveAndSimulating())
+  if (!IsActiveAndInitialized())
+    return;
+  const auto* module = GetWorld()->GetModule<xiiMuJoCoPhysicsWorldModule>();
+  if (IsActiveAndSimulating() || (module && module->m_bScenePreview))
+    UpdateModel();
+}
+
+void xiiMuJoCoModelComponent::OnActivated()
+{
+  SUPER::OnActivated();
+  if (const auto* module = GetWorld()->GetModule<xiiMuJoCoPhysicsWorldModule>(); module && module->m_bScenePreview)
     UpdateModel();
 }
 

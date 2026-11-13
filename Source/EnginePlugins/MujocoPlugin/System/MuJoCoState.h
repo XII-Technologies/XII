@@ -20,9 +20,10 @@ enum class xiiMuJoCoElementType : xiiUInt8
 /// A model-scoped identifier. Replacement and world destruction invalidate it.
 struct xiiMuJoCoElementId
 {
-  xiiUInt64            m_uiModelGeneration = 0;
-  xiiInt32             m_iIndex            = -1;
-  xiiMuJoCoElementType m_Type              = xiiMuJoCoElementType::Body;
+  xiiUInt64            m_uiModelGeneration                         = 0;
+  xiiInt32             m_iIndex                                    = -1;
+  xiiMuJoCoElementType m_Type                                      = xiiMuJoCoElementType::Body;
+  bool                 operator==(const xiiMuJoCoElementId&) const = default;
 };
 
 enum class xiiMuJoCoJointType : xiiUInt8

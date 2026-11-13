@@ -216,8 +216,8 @@ bool xiiMuJoCoPhysicsWorldModule::GetContact(xiiUInt32 uiIndex, xiiMuJoCoContact
       out_contact.m_hModelComponents[i] = m_pSimulation->m_FlexOwners[contact.flex[i]];
     if (contact.geom[i] < 0 || contact.geom[i] >= model.ngeom)
       continue;
-    if (static_cast<xiiUInt32>(contact.geom[i]) < m_pSimulation->m_GeometryOwners.GetCount())
-      out_contact.m_hModelComponents[i] = m_pSimulation->m_GeometryOwners[contact.geom[i]];
+    if (static_cast<xiiUInt32>(contact.geom[i]) < m_pSimulation->m_ElementOwners[static_cast<xiiUInt32>(xiiMuJoCoElementType::Geometry)].GetCount())
+      out_contact.m_hModelComponents[i] = m_pSimulation->m_ElementOwners[static_cast<xiiUInt32>(xiiMuJoCoElementType::Geometry)][contact.geom[i]];
     out_contact.m_Geometries[i] = GetElementId(xiiMuJoCoElementType::Geometry, static_cast<xiiUInt32>(contact.geom[i]));
     const int iBody             = model.geom_bodyid[contact.geom[i]];
     if (iBody < 0 || iBody >= model.nbody)

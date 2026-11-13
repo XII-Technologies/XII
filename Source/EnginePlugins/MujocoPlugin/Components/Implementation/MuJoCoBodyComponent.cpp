@@ -36,6 +36,16 @@ void xiiMuJoCoBodyComponent::SetBodyName(const char* szName)
   m_sBodyName = szName;
   if (IsActiveAndSimulating())
     GetWorld()->GetOrCreateModule<xiiMuJoCoPhysicsWorldModule>()->RegisterBody(GetHandle(), m_sBodyName);
+  else if (IsActiveAndInitialized())
+    if (auto* pModule = GetWorld()->GetModule<xiiMuJoCoPhysicsWorldModule>(); pModule && pModule->m_bScenePreview)
+      pModule->RegisterBody(GetHandle(), m_sBodyName);
+}
+
+void xiiMuJoCoBodyComponent::OnActivated()
+{
+  SUPER::OnActivated();
+  if (auto* pModule = GetWorld()->GetModule<xiiMuJoCoPhysicsWorldModule>(); pModule && pModule->m_bScenePreview)
+    pModule->RegisterBody(GetHandle(), m_sBodyName);
 }
 
 void xiiMuJoCoBodyComponent::OnSimulationStarted()

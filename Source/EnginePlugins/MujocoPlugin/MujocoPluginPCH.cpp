@@ -17,5 +17,6 @@ XII_STATICLINK_LIBRARY(MujocoPlugin)
   XII_STATICLINK_REFERENCE(MujocoPlugin_System_Implementation_MuJoCoPhysicsWorldModule);
   XII_STATICLINK_REFERENCE(MujocoPlugin_System_Implementation_MuJoCoState);
   XII_STATICLINK_REFERENCE(MujocoPlugin_System_Implementation_MuJoCoInspection);
+  XII_STATICLINK_REFERENCE(MujocoPlugin_System_Implementation_MuJoCoModelInspection);
   XII_STATICLINK_REFERENCE(MujocoPlugin_System_Implementation_MuJoCoDebugDraw);
 }
