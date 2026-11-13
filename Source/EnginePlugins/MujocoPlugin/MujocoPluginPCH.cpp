@@ -8,4 +8,5 @@ XII_STATICLINK_LIBRARY(MujocoPlugin)
     return;
 
   XII_STATICLINK_REFERENCE(MujocoPlugin_Startup);
+  XII_STATICLINK_REFERENCE(MujocoPlugin_System_Implementation_MuJoCoPhysicsWorldModule);
 }

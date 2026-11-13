@@ -2,7 +2,9 @@
 
 #include <MujocoPlugin/MujocoPluginPCH.h>
 
+#include <Core/World/World.h>
 #include <Foundation/Configuration/Startup.h>
+#include <MujocoPlugin/System/MuJoCoPhysicsWorldModule.h>
 
 // clang-format off
 XII_BEGIN_SUBSYSTEM_DECLARATION(Mujoco, MujocoPlugin)
@@ -12,14 +14,17 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(Mujoco, MujocoPlugin)
     "Core"
   END_SUBSYSTEM_DEPENDENCIES
 
-  ON_CORESYSTEMS_STARTUP
-  {
-    // Register resources and initialize global state for the Mujoco physics engine.
-  }
-
   ON_CORESYSTEMS_SHUTDOWN
   {
-    // Unregister resources and clean up global state for the Mujoco physics engine.
+    // Plugin changes run with world updates quiesced. Detach delegates while the module code is loaded.
+    for (xiiUInt32 uiIndex = 0; uiIndex < xiiWorld::GetWorldCount(); ++uiIndex)
+    {
+      if (xiiWorld* pWorld = xiiWorld::GetWorld(uiIndex))
+      {
+        XII_LOCK(pWorld->GetWriteMarker());
+        pWorld->DeleteModule<xiiMuJoCoPhysicsWorldModule>();
+      }
+    }
   }
 
 XII_END_SUBSYSTEM_DECLARATION;
