@@ -8,4 +8,5 @@ XII_STATICLINK_LIBRARY(EnginePluginMujoco)
     return;
 
   XII_STATICLINK_REFERENCE(EnginePluginMujoco_Implementation_MuJoCoDebugVisualization);
+  XII_STATICLINK_REFERENCE(EnginePluginMujoco_Implementation_MuJoCoInspectorMessages);
 }
