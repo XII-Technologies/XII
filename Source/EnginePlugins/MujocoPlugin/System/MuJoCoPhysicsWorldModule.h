@@ -11,6 +11,7 @@
 #include <Foundation/Types/ArrayPtr.h>
 #include <Foundation/Types/UniquePtr.h>
 #include <MujocoPlugin/Resources/MuJoCoModelResource.h>
+#include <MujocoPlugin/System/MuJoCoState.h>
 
 /// Owns the compiled MuJoCo model and simulation state for one XII world.
 /// Access requires the world's write marker. Clearing the world releases the model and state.
@@ -37,9 +38,50 @@ public:
   /// Sets the maximum number of fixed steps per world update. The limit must be positive.
   [[nodiscard]] xiiResult SetMaxCatchUpSteps(xiiUInt32 uiMaxCatchUpSteps);
 
+  xiiUInt64          GetModelGeneration() const { return m_uiModelGeneration; }
+  xiiUInt32          GetElementCount(xiiMuJoCoElementType type) const;
+  xiiMuJoCoElementId ResolveElement(xiiMuJoCoElementType type, xiiStringView sName) const;
+  xiiMuJoCoElementId GetElementId(xiiMuJoCoElementType type, xiiUInt32 uiIndex) const;
+  [[nodiscard]] bool GetElementName(xiiMuJoCoElementId id, xiiString& out_sName) const;
+  [[nodiscard]] bool GetJointInfo(xiiMuJoCoElementId id, xiiMuJoCoJointInfo& out_info) const;
+  [[nodiscard]] bool GetJointPosition(xiiMuJoCoElementId id, xiiArrayPtr<double> out_values) const;
+  [[nodiscard]] bool GetJointVelocity(xiiMuJoCoElementId id, xiiArrayPtr<double> out_values) const;
+
+  /// Safe direct state edits, visible immediately to joint/generalized reads. Quaternion positions use W,X,Y,Z.
+  /// Output and input spans must match the metadata dimensions exactly.
+  [[nodiscard]] xiiResult SetJointPosition(xiiMuJoCoElementId id, xiiArrayPtr<const double> values);
+  [[nodiscard]] xiiResult SetJointVelocity(xiiMuJoCoElementId id, xiiArrayPtr<const double> values);
+  [[nodiscard]] xiiResult ResetJoint(xiiMuJoCoElementId id);
+  [[nodiscard]] bool      GetGeneralizedState(xiiArrayPtr<double> out_positions, xiiArrayPtr<double> out_velocities) const;
+  [[nodiscard]] xiiResult SetGeneralizedState(xiiArrayPtr<const double> positions, xiiArrayPtr<const double> velocities);
+  xiiUInt32               GetPositionCount() const;
+  xiiUInt32               GetVelocityCount() const;
+
+  /// Evaluates direct edits without advancing time. Body-state reads evaluate pending edits as needed.
+  void               EvaluateState();
+  [[nodiscard]] bool GetBodyState(xiiMuJoCoElementId id, xiiMuJoCoBodyState& out_state);
+  double             GetSimulationTime() const;
+
+  [[nodiscard]] bool GetActuatorInfo(xiiMuJoCoElementId id, xiiMuJoCoActuatorInfo& out_info) const;
+  [[nodiscard]] bool GetActuatorControlRange(xiiMuJoCoElementId id, xiiUInt32 uiChannel, bool& out_bLimited, double& out_fMin, double& out_fMax) const;
+  [[nodiscard]] bool GetActuatorControls(xiiMuJoCoElementId id, xiiArrayPtr<double> out_values) const;
+  /// Commands are committed before the next step, persist until changed, and honor native control clamping.
+  [[nodiscard]] xiiResult SetActuatorControls(xiiMuJoCoElementId id, xiiArrayPtr<const double> values);
+  /// Forces describe the most recent dynamics evaluation. Activation arrays follow native dimensions.
+  [[nodiscard]] bool      GetActuatorState(xiiMuJoCoElementId id, xiiArrayPtr<double> out_forces, xiiArrayPtr<double> out_activation, xiiArrayPtr<double> out_activationDerivative) const;
+  [[nodiscard]] xiiResult ResetActuatorControls(xiiMuJoCoElementId id);
+  void                    ResetActuatorControls();
+
+  /// Forces accumulate until one fixed step consumes them, including across paused/substep frames.
+  [[nodiscard]] xiiResult AddJointForce(xiiMuJoCoElementId id, xiiArrayPtr<const double> values);
+  [[nodiscard]] xiiResult AddBodyForce(xiiMuJoCoElementId id, const xiiVec3& vForce, const xiiVec3& vTorque = xiiVec3::MakeZero());
+  [[nodiscard]] xiiResult AddBodyForceAtPosition(xiiMuJoCoElementId id, const xiiVec3& vForce, const xiiVec3& vPosition, const xiiVec3& vTorque = xiiVec3::MakeZero());
+  void                    ClearExternalForces();
+
 private:
   friend class xiiMuJoCoModelComponent;
   friend class xiiMuJoCoBodyComponent;
+  friend class xiiMuJoCoActuatorComponent;
 
   void Initialize() override;
   void Deinitialize() override;
@@ -66,18 +108,27 @@ private:
 
   void ResolveBody(BodyBinding& ref_binding) const;
   void SynchronizeBodies();
+  bool IsValidElement(xiiMuJoCoElementId id, xiiMuJoCoElementType type) const;
+  void RegisterActuator(xiiComponentHandle hComponent);
+  void UnregisterActuator(xiiComponentHandle hComponent);
+  void RebindActuators();
+  void ApplyPendingControls();
+  void ApplyExternalForces();
 
   struct NativeSimulation;
   [[nodiscard]] xiiResult InstallModel(xiiSharedPtr<xiiMuJoCoCompiledModel> pModel, xiiStringView sSource);
 
-  xiiUniquePtr<NativeSimulation> m_pSimulation;
-  xiiMuJoCoModelResourceHandle   m_hRequestedModel;
-  const xiiMuJoCoModelResource*  m_pRequestedResource = nullptr; ///< Kept alive by m_hRequestedModel.
-  xiiComponentHandle             m_hModelOwner;
-  xiiDynamicArray<BodyBinding>   m_BodyBindings;
-  xiiTime                        m_AccumulatedTime;
-  xiiUInt32                      m_uiMaxCatchUpSteps   = 4;
-  xiiUInt32                      m_uiAttemptedRevision = 0;
-  bool                           m_bAttemptedRequest   = false;
-  bool                           m_bSyncBodies         = false;
+  xiiUniquePtr<NativeSimulation>      m_pSimulation;
+  xiiMuJoCoModelResourceHandle        m_hRequestedModel;
+  const xiiMuJoCoModelResource*       m_pRequestedResource = nullptr; ///< Kept alive by m_hRequestedModel.
+  xiiComponentHandle                  m_hModelOwner;
+  xiiDynamicArray<BodyBinding>        m_BodyBindings;
+  xiiDynamicArray<xiiComponentHandle> m_ActuatorComponents;
+  xiiUInt64                           m_uiModelGeneration = 0;
+  xiiTime                             m_AccumulatedTime;
+  xiiUInt32                           m_uiMaxCatchUpSteps   = 4;
+  xiiUInt32                           m_uiAttemptedRevision = 0;
+  bool                                m_bAttemptedRequest   = false;
+  bool                                m_bSyncBodies         = false;
+  bool                                m_bExecuting          = false;
 };

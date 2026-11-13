@@ -4,7 +4,9 @@
 
 #include <Core/World/World.h>
 #include <Foundation/Configuration/Startup.h>
+#include <MujocoPlugin/Components/MuJoCoActuatorComponent.h>
 #include <MujocoPlugin/Components/MuJoCoBodyComponent.h>
+#include <MujocoPlugin/Components/MuJoCoJointComponent.h>
 #include <MujocoPlugin/Components/MuJoCoModelComponent.h>
 #include <MujocoPlugin/System/MuJoCoPhysicsWorldModule.h>
 
@@ -24,6 +26,8 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(Mujoco, MujocoPlugin)
       if (xiiWorld* pWorld = xiiWorld::GetWorld(uiIndex))
       {
         XII_LOCK(pWorld->GetWriteMarker());
+        pWorld->DeleteModule(xiiGetStaticRTTI<xiiMuJoCoActuatorComponent>());
+        pWorld->DeleteModule(xiiGetStaticRTTI<xiiMuJoCoJointComponent>());
         pWorld->DeleteModule(xiiGetStaticRTTI<xiiMuJoCoBodyComponent>());
         pWorld->DeleteModule(xiiGetStaticRTTI<xiiMuJoCoModelComponent>());
         pWorld->DeleteModule<xiiMuJoCoPhysicsWorldModule>();

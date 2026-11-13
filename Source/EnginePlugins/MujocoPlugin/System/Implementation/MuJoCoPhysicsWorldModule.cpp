@@ -9,8 +9,11 @@
 #include <Foundation/Profiling/Profiling.h>
 #include <Foundation/Strings/PathUtils.h>
 #include <Foundation/Strings/StringBuilder.h>
+#include <Foundation/Threading/AtomicInteger.h>
+#include <MujocoPlugin/Components/MuJoCoActuatorComponent.h>
 #include <MujocoPlugin/Components/MuJoCoBodyComponent.h>
 #include <MujocoPlugin/Resources/Implementation/MuJoCoCompiledModel.h>
+#include <MujocoPlugin/System/Implementation/MuJoCoSimulation.h>
 #include <MujocoPlugin/System/MuJoCoPhysicsWorldModule.h>
 
 #include <mujoco/mujoco.h>
@@ -52,13 +55,6 @@ namespace
   }
 } // namespace
 
-struct xiiMuJoCoPhysicsWorldModule::NativeSimulation
-{
-  // Members are destroyed in reverse order so mjData is released first.
-  xiiSharedPtr<xiiMuJoCoCompiledModel>              m_pModel;
-  std::unique_ptr<mjData, decltype(&mj_deleteData)> m_pData{nullptr, mj_deleteData};
-};
-
 xiiMuJoCoPhysicsWorldModule::xiiMuJoCoPhysicsWorldModule(xiiWorld* pWorld) :
   xiiWorldModule(pWorld)
 {
@@ -68,6 +64,8 @@ xiiMuJoCoPhysicsWorldModule::~xiiMuJoCoPhysicsWorldModule() = default;
 
 xiiResult xiiMuJoCoPhysicsWorldModule::LoadModel(xiiStringView sPath)
 {
+  if (m_bExecuting)
+    return XII_FAILURE;
   if (!m_hModelOwner.IsInvalidated())
   {
     xiiLog::Error("A MuJoCo model component already controls world '{}'.", GetWorld()->GetName());
@@ -127,6 +125,8 @@ xiiResult xiiMuJoCoPhysicsWorldModule::LoadModel(xiiStringView sPath)
 
 xiiResult xiiMuJoCoPhysicsWorldModule::LoadModelFromBuffer(xiiArrayPtr<const xiiUInt8> modelBytes)
 {
+  if (m_bExecuting)
+    return XII_FAILURE;
   if (!m_hModelOwner.IsInvalidated())
   {
     xiiLog::Error("A MuJoCo model component already controls world '{}'.", GetWorld()->GetName());
@@ -138,7 +138,7 @@ xiiResult xiiMuJoCoPhysicsWorldModule::LoadModelFromBuffer(xiiArrayPtr<const xii
 
 xiiResult xiiMuJoCoPhysicsWorldModule::InstallModel(xiiSharedPtr<xiiMuJoCoCompiledModel> pModel, xiiStringView sSource)
 {
-  if (!pModel)
+  if (!pModel || m_bExecuting)
     return XII_FAILURE;
 
   xiiUniquePtr<NativeSimulation> pSimulation = XII_NEW(GetAllocator(), NativeSimulation);
@@ -151,26 +151,50 @@ xiiResult xiiMuJoCoPhysicsWorldModule::InstallModel(xiiSharedPtr<xiiMuJoCoCompil
     return XII_FAILURE;
   }
 
-  // mj_makeData resets to the model's initial state. Evaluate it before publishing the pair.
+  // mj_makeData supplies native neutral controls, including identity quaternion controls.
+  const auto uiControls = static_cast<xiiUInt32>(pNativeModel->nu);
+  pSimulation->m_PendingControls.SetCount(uiControls);
+  pSimulation->m_ControlPending.SetCount(uiControls, 0);
+  pSimulation->m_NeutralControls.SetCount(uiControls);
+  for (xiiUInt32 i = 0; i < uiControls; ++i)
+    pSimulation->m_NeutralControls[i] = pSimulation->m_pData->ctrl[i];
+
+  // Evaluate the initial state before publishing the pair.
+  m_bExecuting = true;
   mj_forward(pNativeModel, pSimulation->m_pData.get());
-  m_pSimulation     = std::move(pSimulation);
-  m_AccumulatedTime = xiiTime::MakeZero();
+  m_bExecuting = false;
+
+  static xiiAtomicIntegerU64 s_uiNextGeneration;
+  m_uiModelGeneration = s_uiNextGeneration.Increment();
+  m_pSimulation       = std::move(pSimulation);
+  m_AccumulatedTime   = xiiTime::MakeZero();
   for (auto& binding : m_BodyBindings)
     ResolveBody(binding);
   m_bSyncBodies = true;
+  RebindActuators();
   return XII_SUCCESS;
 }
 
 void xiiMuJoCoPhysicsWorldModule::ResetSimulation()
 {
+  if (m_bExecuting)
+    return;
+
   m_AccumulatedTime = xiiTime::MakeZero();
   if (m_pSimulation)
   {
     const mjModel* pModel = m_pSimulation->m_pModel->GetModel();
     mjData*        pData  = m_pSimulation->m_pData.get();
     mj_resetData(pModel, pData);
+    m_pSimulation->m_ControlPending.Clear();
+    m_pSimulation->m_ControlPending.SetCount(static_cast<xiiUInt32>(pModel->nu), 0);
+    m_pSimulation->m_BodyForces.Clear();
+    m_pSimulation->m_bStateDirty = false;
+    m_bExecuting                 = true;
     mj_forward(pModel, pData);
+    m_bExecuting  = false;
     m_bSyncBodies = true;
+    RebindActuators();
   }
 }
 
@@ -185,6 +209,8 @@ xiiResult xiiMuJoCoPhysicsWorldModule::SetMaxCatchUpSteps(xiiUInt32 uiMaxCatchUp
 
 void xiiMuJoCoPhysicsWorldModule::RequestModel(xiiComponentHandle hOwner, const xiiMuJoCoModelResourceHandle& hModel)
 {
+  if (m_bExecuting)
+    return;
   if (m_hModelOwner != hOwner && (!m_hModelOwner.IsInvalidated() || m_pSimulation))
   {
     xiiLog::Error("World '{}' already has a MuJoCo model. Only one model may control a world.", GetWorld()->GetName());
@@ -203,7 +229,7 @@ void xiiMuJoCoPhysicsWorldModule::RequestModel(xiiComponentHandle hOwner, const 
 
 void xiiMuJoCoPhysicsWorldModule::ReleaseModel(xiiComponentHandle hOwner)
 {
-  if (m_hModelOwner != hOwner)
+  if (m_bExecuting || m_hModelOwner != hOwner)
     return;
 
   m_pRequestedResource = nullptr;
@@ -238,11 +264,13 @@ void xiiMuJoCoPhysicsWorldModule::UpdateRequestedModel()
 
 void xiiMuJoCoPhysicsWorldModule::ClearSimulation()
 {
+  m_uiModelGeneration = 0;
   m_pSimulation.Clear();
   m_AccumulatedTime = xiiTime::MakeZero();
   m_bSyncBodies     = false;
   for (auto& binding : m_BodyBindings)
     binding.m_iBodyId = -1;
+  RebindActuators();
 }
 
 void xiiMuJoCoPhysicsWorldModule::RegisterBody(xiiComponentHandle hComponent, const xiiString& sBodyName)
@@ -370,6 +398,7 @@ void xiiMuJoCoPhysicsWorldModule::OnSimulationStarted()
 
 void xiiMuJoCoPhysicsWorldModule::WorldClear()
 {
+  m_ActuatorComponents.Clear();
   m_BodyBindings.Clear();
   m_pRequestedResource = nullptr;
   m_hRequestedModel.Invalidate();
@@ -384,6 +413,7 @@ void xiiMuJoCoPhysicsWorldModule::Simulate(const UpdateContext&)
   if (!m_pSimulation)
     return;
 
+  EvaluateState();
   XII_SCOPE_EXIT(SynchronizeBodies());
   const xiiClock& clock         = GetWorld()->GetClock();
   const double    fDeltaSeconds = clock.GetTimeDiff().GetSeconds();
@@ -407,15 +437,19 @@ void xiiMuJoCoPhysicsWorldModule::Simulate(const UpdateContext&)
   mjData* pData = m_pSimulation->m_pData.get();
   for (xiiUInt32 uiStep = 0; uiStep < uiSteps; ++uiStep)
   {
+    ApplyPendingControls();
+    ApplyExternalForces();
+    m_bExecuting = true;
     mj_step(pModel, pData);
+    m_bExecuting = false;
+    ClearExternalForces();
   }
 
-  if (!m_BodyBindings.IsEmpty())
-  {
-    // mj_step evaluates poses before integration. Refresh kinematics for the final integrated state.
-    mj_kinematics(pModel, pData);
-    m_bSyncBodies = true;
-  }
+  // Refresh the integrated body frames and spatial velocities without invoking control callbacks.
+  mj_kinematics(pModel, pData);
+  mj_comPos(pModel, pData);
+  mj_comVel(pModel, pData);
+  m_bSyncBodies = true;
 }
 
 XII_STATICLINK_FILE(MujocoPlugin, MujocoPlugin_System_Implementation_MuJoCoPhysicsWorldModule);
