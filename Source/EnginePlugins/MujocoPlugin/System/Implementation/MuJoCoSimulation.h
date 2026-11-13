@@ -4,6 +4,7 @@
 
 #include <MujocoPlugin/MujocoPluginDLL.h>
 
+#include <Foundation/Containers/HashTable.h>
 #include <MujocoPlugin/Resources/Implementation/MuJoCoCompiledModel.h>
 #include <MujocoPlugin/System/MuJoCoPhysicsWorldModule.h>
 
@@ -39,9 +40,25 @@ struct xiiMuJoCoPhysicsWorldModule::NativeSimulation
   xiiUInt64                           m_uiStateRevision = 1;
   xiiUInt64                           m_uiStepIndex     = 0;
   xiiMuJoCoStepDiagnostics            m_StepDiagnostics;
-  bool                                m_WarningsReported[mjNWARNING] = {};
-  bool                                m_bObservationsDirty           = false;
-  bool                                m_bStateDirty                  = false;
-  bool                                m_bControlsPending             = false;
-  bool                                m_bExternalForcesApplied       = false;
+  struct DebugState
+  {
+    DebugState() { mjv_defaultScene(&m_Scene); }
+    ~DebugState() { mjv_freeScene(&m_Scene); }
+    mjvScene                           m_Scene{};
+    xiiMuJoCoDebugDrawData             m_Data;
+    xiiHashTable<xiiUInt32, xiiUInt32> m_MeshLookup;
+    xiiUInt32                          m_uiCachedEdges = 0;
+    xiiDynamicArray<xiiUInt8>          m_PhysicalGeometry;
+    xiiDynamicArray<double>            m_Controls;
+    xiiDynamicArray<double>            m_Forces;
+    xiiDynamicArray<double>            m_Activation;
+    xiiDynamicArray<double>            m_ActivationDerivative;
+    xiiDynamicArray<double>            m_SensorValues;
+  };
+  xiiUniquePtr<DebugState> m_pDebug;
+  bool                     m_WarningsReported[mjNWARNING] = {};
+  bool                     m_bObservationsDirty           = false;
+  bool                     m_bStateDirty                  = false;
+  bool                     m_bControlsPending             = false;
+  bool                     m_bExternalForcesApplied       = false;
 };

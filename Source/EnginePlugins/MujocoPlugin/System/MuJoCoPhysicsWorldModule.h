@@ -12,6 +12,7 @@
 #include <Foundation/Types/ArrayPtr.h>
 #include <Foundation/Types/UniquePtr.h>
 #include <MujocoPlugin/Resources/MuJoCoModelResource.h>
+#include <MujocoPlugin/System/MuJoCoDebugDraw.h>
 #include <MujocoPlugin/System/MuJoCoInspection.h>
 #include <MujocoPlugin/System/MuJoCoState.h>
 
@@ -40,6 +41,13 @@ public:
 
   /// Sets the maximum number of fixed steps per world update. The limit must be positive.
   [[nodiscard]] xiiResult SetMaxCatchUpSteps(xiiUInt32 uiMaxCatchUpSteps);
+
+  [[nodiscard]] xiiResult       SetDebugSettings(const xiiMuJoCoDebugSettings& settings);
+  const xiiMuJoCoDebugSettings& GetDebugSettings() const { return m_DebugSettings; }
+  /// Requests a snapshot at the next PostAsync boundary. Returns the current snapshot only when
+  /// its model, state, and settings match. This accessor never evaluates or advances native state.
+  /// Requires world write access. Several views can consume the same snapshot.
+  const xiiMuJoCoDebugDrawData* GetDebugDrawData(const xiiMuJoCoDebugSettings& settings);
 
   /// Identifiers are scoped to one installed model in one world. Zero indicates that no model is installed.
   xiiUInt64          GetModelGeneration() const { return m_uiModelGeneration; }
@@ -128,6 +136,7 @@ private:
   void WorldClear() override;
 
   void Simulate(const UpdateContext& context);
+  void PrepareDebugDraw(const UpdateContext& context);
   void RequestModel(xiiComponentHandle hOwner, const xiiMuJoCoModelResourceHandle& hModel);
   void ReleaseModel(xiiComponentHandle hOwner);
   void UpdateRequestedModels();
@@ -191,4 +200,7 @@ private:
   bool                                m_bCompositionDirty = false;
   bool                                m_bSyncBodies       = false;
   bool                                m_bExecuting        = false;
+  xiiMuJoCoDebugSettings              m_DebugSettings;
+  xiiMuJoCoDebugSettings              m_RequestedDebugSettings;
+  bool                                m_bDebugRequested = false;
 };

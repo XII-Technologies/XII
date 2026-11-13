@@ -855,6 +855,10 @@ void xiiMuJoCoPhysicsWorldModule::Initialize()
   desc.m_Phase     = xiiWorldUpdatePhase::PreAsync;
   desc.m_fPriority = -100000.0f;
   RegisterUpdateFunction(desc);
+  auto debug        = XII_CREATE_MODULE_UPDATE_FUNCTION_DESC(xiiMuJoCoPhysicsWorldModule::PrepareDebugDraw, this);
+  debug.m_Phase     = xiiWorldUpdatePhase::PostAsync;
+  debug.m_fPriority = -100000.0f;
+  RegisterUpdateFunction(debug);
 }
 
 void xiiMuJoCoPhysicsWorldModule::Deinitialize()
@@ -862,6 +866,9 @@ void xiiMuJoCoPhysicsWorldModule::Deinitialize()
   auto desc    = XII_CREATE_MODULE_UPDATE_FUNCTION_DESC(xiiMuJoCoPhysicsWorldModule::Simulate, this);
   desc.m_Phase = xiiWorldUpdatePhase::PreAsync;
   DeregisterUpdateFunction(desc);
+  auto debug    = XII_CREATE_MODULE_UPDATE_FUNCTION_DESC(xiiMuJoCoPhysicsWorldModule::PrepareDebugDraw, this);
+  debug.m_Phase = xiiWorldUpdatePhase::PostAsync;
+  DeregisterUpdateFunction(debug);
   WorldClear();
 }
 
@@ -875,6 +882,7 @@ void xiiMuJoCoPhysicsWorldModule::WorldClear()
   m_ActuatorComponents.Clear();
   m_BodyBindings.Clear();
   m_ModelInstances.Clear();
+  m_bDebugRequested   = false;
   m_bCompositionDirty = false;
   ClearSimulation();
 }
