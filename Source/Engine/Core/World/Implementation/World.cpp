@@ -624,6 +624,7 @@ void xiiWorld::DeleteModule(const xiiRTTI* pRtti)
     if (xiiWorldModule* pModule = m_Data.m_Modules[uiTypeId])
     {
       m_Data.m_Modules[uiTypeId] = nullptr;
+      m_Data.m_ModulesToStartSimulation.RemoveAndCopy(pModule);
 
       pModule->Deinitialize();
       DeregisterUpdateFunctions(pModule);
@@ -1052,6 +1053,15 @@ void xiiWorld::DeregisterUpdateFunction(const xiiComponentManagerBase::UpdateFun
 {
   CheckForWriteAccess();
 
+  auto& pendingFunctions = m_Data.m_UpdateFunctionsToRegister;
+  for (xiiUInt32 i = pendingFunctions.GetCount(); i-- > 0;)
+  {
+    if (pendingFunctions[i].m_Phase == desc.m_Phase && pendingFunctions[i].m_Function.IsEqualIfComparable(desc.m_Function))
+    {
+      pendingFunctions.RemoveAtAndCopy(i);
+    }
+  }
+
   xiiDynamicArrayBase<xiiInternal::WorldData::RegisteredUpdateFunction>& updateFunctions = m_Data.m_UpdateFunctions[desc.m_Phase.GetValue()];
 
   for (xiiUInt32 i = updateFunctions.GetCount(); i-- > 0;)
@@ -1066,6 +1076,15 @@ void xiiWorld::DeregisterUpdateFunction(const xiiComponentManagerBase::UpdateFun
 void xiiWorld::DeregisterUpdateFunctions(xiiWorldModule* pModule)
 {
   CheckForWriteAccess();
+
+  auto& pendingFunctions = m_Data.m_UpdateFunctionsToRegister;
+  for (xiiUInt32 i = pendingFunctions.GetCount(); i-- > 0;)
+  {
+    if (pendingFunctions[i].m_Function.GetClassInstance() == pModule)
+    {
+      pendingFunctions.RemoveAtAndCopy(i);
+    }
+  }
 
   for (xiiUInt32 phase = xiiWorldUpdatePhase::PreAsync; phase < xiiWorldUpdatePhase::COUNT; ++phase)
   {
