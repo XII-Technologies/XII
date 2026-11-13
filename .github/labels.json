@@ -411,6 +411,22 @@
     ]
   },
   {
+    "name": "Module: JoltPlugin",
+    "color": "4db6ac",
+    "description": "Jolt rigid-body physics integration.",
+    "paths": [
+      "Source/EnginePlugins/JoltPlugin/**"
+    ]
+  },
+  {
+    "name": "Module: MujocoPlugin",
+    "color": "4db6ac",
+    "description": "MuJoCo model-based simulation integration.",
+    "paths": [
+      "Source/EnginePlugins/MujocoPlugin/**"
+    ]
+  },
+  {
     "name": "Module: RenderDocPlugin",
     "color": "4db6ac",
     "description": "RenderDoc graphics capture integration.",
@@ -440,6 +456,22 @@
     "description": "Editor plugin family: Fileserve.",
     "paths": [
       "Source/EditorPlugins/Fileserve/**"
+    ]
+  },
+  {
+    "name": "Module: EditorPlugins/Jolt",
+    "color": "1975d2",
+    "description": "Editor plugin family: Jolt.",
+    "paths": [
+      "Source/EditorPlugins/Jolt/**"
+    ]
+  },
+  {
+    "name": "Module: EditorPlugins/Mujoco",
+    "color": "1975d2",
+    "description": "Editor plugin family: Mujoco.",
+    "paths": [
+      "Source/EditorPlugins/Mujoco/**"
     ]
   },
   {
