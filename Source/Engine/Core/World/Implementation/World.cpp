@@ -623,6 +623,37 @@ void xiiWorld::DeleteModule(const xiiRTTI* pRtti)
   {
     if (xiiWorldModule* pModule = m_Data.m_Modules[uiTypeId])
     {
+      // Deferred component deletion still calls into the owning manager.
+      if (pModule->IsInstanceOf<xiiComponentManagerBase>())
+      {
+        DeleteDeadComponents();
+
+        // A replacement manager can reuse both the type ID and component slots.
+        // Remove old lifecycle work before those handles can resolve again.
+        const auto removePendingComponents = [uiTypeId](xiiDynamicArray<xiiComponentHandle>& components, xiiUInt32& uiNext) {
+          xiiUInt32 uiWrite    = 0;
+          xiiUInt32 uiNextKept = 0;
+          for (xiiUInt32 uiRead = 0; uiRead < components.GetCount(); ++uiRead)
+          {
+            if (components[uiRead].GetInternalID().m_TypeId == uiTypeId)
+              continue;
+
+            if (uiRead < uiNext)
+              ++uiNextKept;
+            components[uiWrite++] = components[uiRead];
+          }
+          components.SetCount(uiWrite);
+          uiNext = uiNextKept;
+        };
+
+        for (auto it = m_Data.m_InitBatches.GetIterator(); it.IsValid(); ++it)
+        {
+          auto& batch = *it.Value();
+          removePendingComponents(batch.m_ComponentsToInitialize, batch.m_uiNextComponentToInitialize);
+          removePendingComponents(batch.m_ComponentsToStartSimulation, batch.m_uiNextComponentToStartSimulation);
+        }
+      }
+
       m_Data.m_Modules[uiTypeId] = nullptr;
       m_Data.m_ModulesToStartSimulation.RemoveAndCopy(pModule);
 
