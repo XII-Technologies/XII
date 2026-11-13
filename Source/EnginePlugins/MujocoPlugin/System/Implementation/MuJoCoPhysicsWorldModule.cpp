@@ -3,6 +3,8 @@
 #include <MujocoPlugin/MujocoPluginPCH.h>
 
 #include <Core/World/World.h>
+#include <Foundation/Algorithm/HashingUtils.h>
+#include <Foundation/Containers/Map.h>
 #include <Foundation/IO/FileSystem/FileSystem.h>
 #include <Foundation/IO/OSFile.h>
 #include <Foundation/Math/Math.h>
@@ -12,10 +14,12 @@
 #include <Foundation/Threading/AtomicInteger.h>
 #include <MujocoPlugin/Components/MuJoCoActuatorComponent.h>
 #include <MujocoPlugin/Components/MuJoCoBodyComponent.h>
+#include <MujocoPlugin/Components/MuJoCoModelComponent.h>
 #include <MujocoPlugin/Resources/Implementation/MuJoCoCompiledModel.h>
 #include <MujocoPlugin/System/Implementation/MuJoCoSimulation.h>
 #include <MujocoPlugin/System/MuJoCoPhysicsWorldModule.h>
 
+#include <mujoco/mjxmacro.h>
 #include <mujoco/mujoco.h>
 
 #include <algorithm>
@@ -28,6 +32,159 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 namespace
 {
+  using SpecPtr = std::unique_ptr<mjSpec, decltype([](mjSpec* pSpec) { mj_deleteSpec(pSpec); })>;
+
+  // Every native path is resolved against the inputs captured by XII's asset transformer.
+  class CompositionInputs
+  {
+  public:
+    CompositionInputs()
+    {
+      mj_defaultVFS(&m_Vfs);
+      mjp_defaultProvider(&m_Provider);
+      m_Provider.data     = this;
+      m_Provider.open     = Open;
+      m_Provider.read     = Read;
+      m_Provider.close    = Close;
+      m_Provider.modified = Modified;
+      m_bMounted          = mj_mountVFS(&m_Vfs, "", &m_Provider) == 0;
+    }
+
+    ~CompositionInputs() { mj_deleteVFS(&m_Vfs); }
+
+    bool Add(xiiArrayPtr<const xiiMuJoCoCompiledModel::SourceFile> files)
+    {
+      for (const auto& file : files)
+      {
+        auto& input = m_Files[file.m_sPath];
+        if (input.m_pFile == &file)
+          continue;
+        if (input.m_pFile != nullptr && input.m_pFile->m_Data != file.m_Data)
+        {
+          xiiLog::Error("MuJoCo models contain different snapshots of '{}'. Transform the affected assets again.", file.m_sPath);
+          return false;
+        }
+        input.m_pFile  = &file;
+        input.m_uiHash = xiiHashingUtils::xxHash64(file.m_Data.GetData(), file.m_Data.GetCount());
+      }
+      return true;
+    }
+
+    mjVFS m_Vfs{};
+    bool  m_bMounted = false;
+
+  private:
+    struct Input
+    {
+      const xiiMuJoCoCompiledModel::SourceFile* m_pFile  = nullptr;
+      xiiUInt64                                 m_uiHash = 0;
+    };
+
+    static int Open(mjResource* pResource)
+    {
+      const auto&      inputs = *static_cast<const CompositionInputs*>(pResource->provider->data);
+      xiiStringBuilder path(pResource->name);
+      path.MakeCleanPath();
+      const auto it = inputs.m_Files.Find(path);
+      if (!it.IsValid())
+        return 0;
+      pResource->data = const_cast<Input*>(&it.Value());
+      xiiStringUtils::snprintf(pResource->timestamp, XII_ARRAY_SIZE(pResource->timestamp), "%llu", static_cast<unsigned long long>(it.Value().m_uiHash));
+      return 1;
+    }
+
+    static int Read(mjResource* pResource, const void** out_pBuffer)
+    {
+      const auto& bytes = static_cast<const Input*>(pResource->data)->m_pFile->m_Data;
+      *out_pBuffer      = bytes.GetData();
+      return static_cast<int>(bytes.GetCount());
+    }
+
+    static void Close(mjResource* pResource) { pResource->data = nullptr; }
+    static int  Modified(const mjResource* pResource, const char* szTimestamp)
+    {
+      return xiiStringUtils::IsEqual(pResource->timestamp, szTimestamp) ? 0 : 1;
+    }
+
+    mjpResourceProvider      m_Provider{};
+    xiiMap<xiiString, Input> m_Files;
+  };
+
+  const char* FindOptionMismatch(const mjOption& reference, const mjOption& candidate)
+  {
+#define X(type, field, count)             \
+  if (reference.field != candidate.field) \
+    return #field;
+#define XVEC(type, field, count)                                              \
+  if (!std::equal(reference.field, reference.field + count, candidate.field)) \
+    return #field;
+    MJOPTION_FIELDS
+#undef XVEC
+#undef X
+    return nullptr;
+  }
+
+  bool EqualLengthRangeOptions(const mjLROpt& a, const mjLROpt& b)
+  {
+    return a.mode == b.mode && a.useexisting == b.useexisting && a.uselimit == b.uselimit &&
+      a.accel == b.accel && a.maxforce == b.maxforce && a.timeconst == b.timeconst && a.timestep == b.timestep &&
+      a.inttotal == b.inttotal && a.interval == b.interval && a.tolrange == b.tolrange;
+  }
+
+  void PrepareSourceAssets(mjSpec* pSpec)
+  {
+    pSpec->compiler.usethread   = 0;
+    pSpec->compiler.passthrough = mjPASSTHROUGH_NONE;
+    for (const auto type : {mjOBJ_MESH, mjOBJ_HFIELD, mjOBJ_SKIN, mjOBJ_TEXTURE})
+      for (auto* pElement = mjs_firstElement(pSpec, type); pElement; pElement = mjs_nextElement(pSpec, pElement))
+      {
+        if (auto* pCompiler = mjs_getCompiler(pElement))
+        {
+          pCompiler->usethread   = 0;
+          pCompiler->passthrough = mjPASSTHROUGH_NONE;
+        }
+
+        // The attached spec uses the parent's strippath setting. Resolve that
+        // option into each affected source asset before attaching it.
+        const auto stripFile = [pSpec](mjString* pFile) {
+          if (pSpec->strippath && *mjs_getString(pFile))
+          {
+            const xiiString name(xiiPathUtils::GetFileNameAndExtension(mjs_getString(pFile)));
+            mjs_setString(pFile, name.GetData());
+          }
+        };
+        switch (type)
+        {
+          case mjOBJ_MESH:
+            stripFile(mjs_asMesh(pElement)->file);
+            break;
+          case mjOBJ_HFIELD:
+            stripFile(mjs_asHField(pElement)->file);
+            break;
+          case mjOBJ_SKIN:
+            stripFile(mjs_asSkin(pElement)->file);
+            break;
+          case mjOBJ_TEXTURE:
+          {
+            auto* pTexture  = mjs_asTexture(pElement);
+            pTexture->embed = mjEMBED_TRUE;
+            stripFile(pTexture->file);
+            if (pSpec->strippath)
+              for (int i = 0; i < 6; ++i)
+                if (const char* szFile = mjs_getInStringVec(pTexture->cubefiles, i); szFile && *szFile)
+                {
+                  const xiiString name(xiiPathUtils::GetFileNameAndExtension(szFile));
+                  mjs_setInStringVec(pTexture->cubefiles, i, name.GetData());
+                }
+            break;
+          }
+          default:
+            break;
+        }
+      }
+    pSpec->strippath = 0;
+  }
+
   mjModel* CompileMjcf(const char* szPath)
   {
     // Parse and compile explicitly to keep the spec local. mj_loadXML retains it for mj_saveLastXML.
@@ -67,7 +224,7 @@ xiiResult xiiMuJoCoPhysicsWorldModule::LoadModel(xiiStringView sPath)
 {
   if (m_bExecuting)
     return XII_FAILURE;
-  if (!m_hModelOwner.IsInvalidated())
+  if (!m_ModelInstances.IsEmpty())
   {
     xiiLog::Error("A MuJoCo model component already controls world '{}'.", GetWorld()->GetName());
     return XII_FAILURE;
@@ -128,7 +285,7 @@ xiiResult xiiMuJoCoPhysicsWorldModule::LoadModelFromBuffer(xiiArrayPtr<const xii
 {
   if (m_bExecuting)
     return XII_FAILURE;
-  if (!m_hModelOwner.IsInvalidated())
+  if (!m_ModelInstances.IsEmpty())
   {
     xiiLog::Error("A MuJoCo model component already controls world '{}'.", GetWorld()->GetName());
     return XII_FAILURE;
@@ -137,7 +294,7 @@ xiiResult xiiMuJoCoPhysicsWorldModule::LoadModelFromBuffer(xiiArrayPtr<const xii
   return InstallModel(xiiMuJoCoCompiledModel::LoadBinary(modelBytes, "MJB buffer"), "MJB buffer");
 }
 
-xiiResult xiiMuJoCoPhysicsWorldModule::InstallModel(xiiSharedPtr<xiiMuJoCoCompiledModel> pModel, xiiStringView sSource)
+xiiResult xiiMuJoCoPhysicsWorldModule::InstallModel(xiiSharedPtr<xiiMuJoCoCompiledModel> pModel, xiiStringView sSource, xiiArrayPtr<const InstalledInstance> instances)
 {
   if (!pModel || m_bExecuting)
     return XII_FAILURE;
@@ -147,7 +304,7 @@ xiiResult xiiMuJoCoPhysicsWorldModule::InstallModel(xiiSharedPtr<xiiMuJoCoCompil
   if (pNativeModel->nbody > iMaxCount || pNativeModel->njnt > iMaxCount || pNativeModel->nactuator > iMaxCount ||
       pNativeModel->nq > iMaxCount || pNativeModel->nv > iMaxCount || pNativeModel->nu > iMaxCount ||
       pNativeModel->na > iMaxCount || pNativeModel->nout > iMaxCount || pNativeModel->nsensor > iMaxCount ||
-      pNativeModel->nsensordata > iMaxCount || pNativeModel->ngeom > iMaxCount || pNativeModel->nsite > iMaxCount)
+      pNativeModel->nsensordata > iMaxCount || pNativeModel->ngeom > iMaxCount || pNativeModel->nsite > iMaxCount || pNativeModel->nflex > iMaxCount)
   {
     xiiLog::Error("MuJoCo model '{}' exceeds the supported state indexing range.", sSource);
     return XII_FAILURE;
@@ -155,6 +312,31 @@ xiiResult xiiMuJoCoPhysicsWorldModule::InstallModel(xiiSharedPtr<xiiMuJoCoCompil
 
   xiiUniquePtr<NativeSimulation> pSimulation = XII_NEW(GetAllocator(), NativeSimulation);
   pSimulation->m_pModel                      = std::move(pModel);
+  pSimulation->m_Instances                   = instances;
+  if (!instances.IsEmpty())
+  {
+    const auto mapOwners = [pNativeModel, instances](xiiDynamicArray<xiiComponentHandle>& ref_owners, mjtObj type, mjtSize iCount) {
+      ref_owners.SetCount(static_cast<xiiUInt32>(iCount));
+      if (instances.GetCount() == 1 && instances[0].m_sPrefix.IsEmpty())
+      {
+        for (auto& owner : ref_owners)
+          owner = instances[0].m_hComponent;
+        return;
+      }
+      for (xiiUInt32 i = 0; i < ref_owners.GetCount(); ++i)
+      {
+        const xiiStringView sName = mj_id2name(pNativeModel, type, static_cast<int>(i));
+        for (const auto& instance : instances)
+          if (sName.StartsWith(instance.m_sPrefix))
+          {
+            ref_owners[i] = instance.m_hComponent;
+            break;
+          }
+      }
+    };
+    mapOwners(pSimulation->m_GeometryOwners, mjOBJ_GEOM, pNativeModel->ngeom);
+    mapOwners(pSimulation->m_FlexOwners, mjOBJ_FLEX, pNativeModel->nflex);
+  }
   pSimulation->m_pData.reset(mj_makeData(pNativeModel));
   if (!pSimulation->m_pData)
   {
@@ -176,10 +358,11 @@ xiiResult xiiMuJoCoPhysicsWorldModule::InstallModel(xiiSharedPtr<xiiMuJoCoCompil
   mj_forward(pNativeModel, pSimulation->m_pData.get());
 
   static xiiAtomicIntegerU64 s_uiNextGeneration;
-  m_uiModelGeneration = s_uiNextGeneration.Increment();
-  m_pSimulation       = std::move(pSimulation);
-  m_bExecuting        = false;
-  m_AccumulatedTime   = xiiTime::MakeZero();
+  auto                       pPrevious = std::move(m_pSimulation);
+  m_uiModelGeneration                  = s_uiNextGeneration.Increment();
+  m_pSimulation                        = std::move(pSimulation);
+  m_bExecuting                         = false;
+  m_AccumulatedTime                    = xiiTime::MakeZero();
   for (auto& binding : m_BodyBindings)
     ResolveBody(binding);
   RebuildBodyBindingMap();
@@ -233,55 +416,313 @@ void xiiMuJoCoPhysicsWorldModule::RequestModel(xiiComponentHandle hOwner, const 
 {
   if (m_bExecuting)
     return;
-  if (m_hModelOwner != hOwner && (!m_hModelOwner.IsInvalidated() || m_pSimulation))
-  {
-    xiiLog::Error("World '{}' already has a MuJoCo model. Only one model may control a world.", GetWorld()->GetName());
+
+  xiiMuJoCoModelComponent* pComponent = nullptr;
+  if (!GetWorld()->TryGetComponent(hOwner, pComponent))
     return;
+
+  xiiUInt32  uiIndex   = 0;
+  const auto uiOwnerId = hOwner.GetInternalID().m_InstanceIndex;
+  while (uiIndex < m_ModelInstances.GetCount() && m_ModelInstances[uiIndex].m_hComponent.GetInternalID().m_InstanceIndex < uiOwnerId)
+    ++uiIndex;
+  if (uiIndex == m_ModelInstances.GetCount() || m_ModelInstances[uiIndex].m_hComponent != hOwner)
+  {
+    ModelInstance instance;
+    instance.m_hComponent = hOwner;
+    instance.m_hObject    = pComponent->GetOwner()->GetHandle();
+    m_ModelInstances.InsertAt(uiIndex, std::move(instance));
   }
 
-  m_hModelOwner     = hOwner;
-  m_hRequestedModel = hModel;
-  const xiiResourceLock<xiiMuJoCoModelResource> resource(m_hRequestedModel, xiiResourceAcquireMode::PointerOnly);
-  m_pRequestedResource = resource.GetPointer();
-  m_bAttemptedRequest  = false;
-
+  auto& instance       = m_ModelInstances[uiIndex];
+  instance.m_hResource = hModel;
+  const xiiResourceLock<xiiMuJoCoModelResource> resource(hModel, xiiResourceAcquireMode::PointerOnly);
+  instance.m_pResource = resource.GetPointer();
+  m_bCompositionDirty  = true;
   if (resource->GetLoadingState() == xiiResourceState::Unloaded)
-    xiiResourceManager::PreloadResource(m_hRequestedModel);
+    xiiResourceManager::PreloadResource(hModel);
 }
 
 void xiiMuJoCoPhysicsWorldModule::ReleaseModel(xiiComponentHandle hOwner)
 {
-  if (m_bExecuting || m_hModelOwner != hOwner)
+  if (m_bExecuting)
     return;
 
-  m_pRequestedResource = nullptr;
-  m_hRequestedModel.Invalidate();
-  m_hModelOwner.Invalidate();
-  m_bAttemptedRequest = false;
-  ClearSimulation();
+  for (xiiUInt32 i = 0; i < m_ModelInstances.GetCount(); ++i)
+    if (m_ModelInstances[i].m_hComponent == hOwner)
+    {
+      m_ModelInstances.RemoveAtAndCopy(i);
+      m_bCompositionDirty = true;
+      return;
+    }
 }
 
-void xiiMuJoCoPhysicsWorldModule::UpdateRequestedModel()
+void xiiMuJoCoPhysicsWorldModule::ReadPlacement(ModelInstance& ref_instance, bool bObserveOnly)
 {
-  if (m_pRequestedResource == nullptr)
+  xiiGameObject* pObject = nullptr;
+  if (!GetWorld()->TryGetObject(ref_instance.m_hObject, pObject))
+    return;
+  pObject->UpdateGlobalTransform();
+  const auto transform = pObject->GetGlobalTransform();
+  if (!bObserveOnly && (!ref_instance.m_bObserved || !ref_instance.m_Observed.IsIdentical(transform)))
+  {
+    ref_instance.m_Placement = transform;
+    m_bCompositionDirty      = true;
+  }
+  ref_instance.m_Observed  = transform;
+  ref_instance.m_bObserved = true;
+}
+
+void xiiMuJoCoPhysicsWorldModule::UpdateRequestedModels()
+{
+  for (auto& instance : m_ModelInstances)
+  {
+    ReadPlacement(instance, false);
+    m_bCompositionDirty |= instance.m_uiAttemptedRevision != instance.m_pResource->m_uiRevision;
+  }
+  if (!m_bCompositionDirty)
     return;
 
-  const xiiUInt32 uiRevision = m_pRequestedResource->m_uiRevision;
-  if (m_bAttemptedRequest && uiRevision == m_uiAttemptedRevision)
+  // A pending or failed replacement can keep the old simulation only while every installed
+  // component still participates. Removed components must stop contributing collision geometry.
+  XII_SCOPE_EXIT(
+    if (m_pSimulation) for (const auto& installed : m_pSimulation->m_Instances) {
+      if (std::none_of(begin(m_ModelInstances), end(m_ModelInstances), [&installed](const ModelInstance& instance) { return instance.m_hComponent == installed.m_hComponent; }))
+      {
+        ClearSimulation();
+        break;
+      }
+    });
+
+  for (const auto& instance : m_ModelInstances)
+    if (instance.m_pResource->GetLoadingState() == xiiResourceState::Unloaded)
+      return;
+
+  xiiHybridArray<xiiSharedPtr<xiiMuJoCoCompiledModel>, 8> models;
+  xiiHybridArray<xiiUInt32, 8>                            revisions;
+  for (const auto& instance : m_ModelInstances)
+  {
+    auto pModel = instance.m_pResource->GetModel(revisions.ExpandAndGetRef());
+    if (!pModel && instance.m_pResource->GetLoadingState() != xiiResourceState::LoadedResourceMissing)
+      return;
+    models.PushBack(std::move(pModel));
+  }
+  m_bCompositionDirty = false;
+  if (m_ModelInstances.IsEmpty())
     return;
 
-  const auto state = m_pRequestedResource->GetLoadingState();
-  if (state == xiiResourceState::Unloaded)
-    return;
+  xiiHybridArray<InstalledInstance, 8> installed;
+  for (xiiUInt32 i = 0; i < m_ModelInstances.GetCount(); ++i)
+    m_ModelInstances[i].m_uiAttemptedRevision = revisions[i];
+  for (xiiUInt32 i = 0; i < m_ModelInstances.GetCount(); ++i)
+  {
+    const auto& instance  = m_ModelInstances[i];
+    const auto& placement = instance.m_Placement;
+    if (!models[i])
+    {
+      xiiLog::Error("MuJoCo world '{}' could not load model resource '{}'.", GetWorld()->GetName(), instance.m_hResource.GetResourceID());
+      return;
+    }
+    const xiiGameObject* pObject = nullptr;
+    if (!GetWorld()->TryGetObject(instance.m_hObject, pObject))
+      return;
+    if (!placement.IsValid() || !placement.m_vScale.IsEqual(xiiVec3(1.0f), xiiMath::SmallEpsilon<float>()))
+    {
+      xiiLog::Error("MuJoCo model '{}' on '{}' requires a valid, unscaled placement.", instance.m_hResource.GetResourceID(), pObject->GetName());
+      return;
+    }
+    auto& entry        = installed.ExpandAndGetRef();
+    entry.m_hComponent = instance.m_hComponent;
+  }
 
-  auto pModel = m_pRequestedResource->GetModel(m_uiAttemptedRevision);
-  // Reload may have removed the content since the state read. A successful or failed load publishes a new revision.
-  if (!pModel && m_pRequestedResource->GetLoadingState() != xiiResourceState::LoadedResourceMissing)
-    return;
+  const auto& firstPlacement = m_ModelInstances[0].m_Placement;
+  if (models.GetCount() == 1 && firstPlacement.m_vPosition.IsZero() && firstPlacement.m_qRotation.IsEqualRotation(xiiQuat::MakeIdentity(), xiiMath::SmallEpsilon<float>()))
+    InstallModel(std::move(models[0]), m_ModelInstances[0].m_hResource.GetResourceID(), installed).IgnoreResult();
+  else
+    ComposeModels(models, installed).IgnoreResult();
+}
 
-  m_bAttemptedRequest = true;
-  if (pModel)
-    InstallModel(std::move(pModel), m_hRequestedModel.GetResourceID()).IgnoreResult();
+xiiResult xiiMuJoCoPhysicsWorldModule::ComposeModels(xiiArrayPtr<const xiiSharedPtr<xiiMuJoCoCompiledModel>> models, xiiArrayPtr<InstalledInstance> instances)
+{
+  XII_PROFILE_SCOPE("MuJoCo Model Composition");
+  CompositionInputs inputs;
+  if (!inputs.m_bMounted)
+  {
+    xiiLog::Error("MuJoCo could not mount model inputs for world '{}'.", GetWorld()->GetName());
+    return XII_FAILURE;
+  }
+  const auto& options = models[0]->GetModel()->opt;
+  for (xiiUInt32 i = 0; i < models.GetCount(); ++i)
+  {
+    const auto sResource = m_ModelInstances[i].m_hResource.GetResourceID();
+    const auto files     = models[i]->GetSourceFiles();
+    if (files.IsEmpty())
+    {
+      xiiLog::Error("MuJoCo resource '{}' has no source snapshot. Transform an MJCF or URDF asset to compose or place this model.", sResource);
+      return XII_FAILURE;
+    }
+    if (const char* szField = FindOptionMismatch(options, models[i]->GetModel()->opt))
+    {
+      xiiLog::Error("MuJoCo resource '{}' has a conflicting '{}' option. Composed models must use matching world physics options.", sResource, szField);
+      return XII_FAILURE;
+    }
+    if (!inputs.Add(files))
+      return XII_FAILURE;
+  }
+
+  xiiMuJoCoCompiledModel::ModelPtr pModel(nullptr, mj_deleteModel);
+  {
+    m_bExecuting = true;
+    XII_SCOPE_EXIT(m_bExecuting = false);
+    // The input snapshots and their parsed specs are shared by repeated instances during this build.
+    xiiMap<const xiiMuJoCoCompiledModel*, SpecPtr> sources;
+    SpecPtr                                        parent(mj_makeSpec());
+    if (!parent)
+    {
+      xiiLog::Error("MuJoCo could not create a model specification for world '{}'.", GetWorld()->GetName());
+      return XII_FAILURE;
+    }
+    parent->option             = options;
+    parent->compiler.usethread = 0;
+    parent->compiler.conflict  = mjCONFLICT_ERROR;
+    mjs_setDeepCopy(parent.get(), 1);
+    auto* pWorldBody = mjs_findBody(parent.get(), "world");
+
+    for (xiiUInt32 i = 0; i < instances.GetCount(); ++i)
+    {
+      auto&       instance  = instances[i];
+      const auto& request   = m_ModelInstances[i];
+      const auto  sResource = request.m_hResource.GetResourceID();
+      auto        source    = sources.Find(models[i].Borrow());
+      if (!source.IsValid())
+      {
+        char        error[4096] = {};
+        const auto& root        = models[i]->GetSourceFiles()[0];
+        SpecPtr     spec(mj_parseXML(root.m_sPath.GetData(), &inputs.m_Vfs, error, sizeof(error)));
+        if (!spec)
+        {
+          xiiLog::Error("MuJoCo could not parse the source snapshot of '{}': {}", sResource, error);
+          return XII_FAILURE;
+        }
+        if (spec->compiler.settotalmass > 0.0)
+        {
+          xiiLog::Error("MuJoCo resource '{}' uses settotalmass, which cannot be applied per instance.", sResource);
+          return XII_FAILURE;
+        }
+        PrepareSourceAssets(spec.get());
+        // These compiler operations apply to a complete spec. Apply them before attachment
+        // so the importing model cannot restructure any other instance.
+        if ((spec->compiler.discardvisual && mjs_discardVisual(spec.get(), &inputs.m_Vfs) < 0) ||
+            (spec->compiler.fusestatic && mjs_fuseStatic(spec.get(), &inputs.m_Vfs) < 0))
+        {
+          xiiLog::Error("MuJoCo could not prepare '{}' for attachment: {}", sResource, mjs_getError(spec.get()));
+          return XII_FAILURE;
+        }
+        // Give unnamed contact geometry an instance namespace as well.
+        for (const auto type : {mjOBJ_GEOM, mjOBJ_FLEX})
+        {
+          xiiUInt32 uiGenerated = 0;
+          for (auto* pElement = mjs_firstElement(spec.get(), type); pElement; pElement = mjs_nextElement(spec.get(), pElement))
+            if (*mjs_getString(mjs_getName(pElement)) == '\0')
+            {
+              xiiStringBuilder sName;
+              do
+              {
+                sName.SetFormat("__xii_contact_{}", uiGenerated++);
+              } while (mjs_findElement(spec.get(), type, sName.GetData()));
+              if (mjs_setName(pElement, sName.GetData()) != 0)
+              {
+                xiiLog::Error("MuJoCo could not name contact geometry in '{}': {}", sResource, mjs_getError(spec.get()));
+                return XII_FAILURE;
+              }
+            }
+        }
+        source = sources.Insert(models[i].Borrow(), std::move(spec));
+      }
+
+      auto* pSource = source.Value().get();
+      if (i == 0)
+      {
+        parent->visual         = pSource->visual;
+        parent->authored       = pSource->authored;
+        parent->memory         = pSource->memory;
+        parent->compiler.LRopt = pSource->compiler.LRopt;
+      }
+      else if (!EqualLengthRangeOptions(parent->compiler.LRopt, pSource->compiler.LRopt))
+      {
+        xiiLog::Error("MuJoCo resource '{}' has incompatible actuator length-range compiler options.", sResource);
+        return XII_FAILURE;
+      }
+      // mjs_attach adds a world frame to the supplied spec. Keep the parsed spec pristine for reuse.
+      SpecPtr child(mj_copySpec(pSource));
+      if (!child)
+      {
+        xiiLog::Error("MuJoCo could not copy the specification of '{}'.", sResource);
+        return XII_FAILURE;
+      }
+      auto*       pFrame    = mjs_addFrame(pWorldBody, nullptr);
+      const auto& placement = request.m_Placement;
+      const auto& position  = placement.m_vPosition;
+      const auto& rotation  = placement.m_qRotation;
+      pFrame->pos[0]        = position.x;
+      pFrame->pos[1]        = position.y;
+      pFrame->pos[2]        = position.z;
+      pFrame->quat[0]       = rotation.w;
+      pFrame->quat[1]       = rotation.x;
+      pFrame->quat[2]       = rotation.y;
+      pFrame->quat[3]       = rotation.z;
+      const auto       id   = instance.m_hComponent.GetInternalID();
+      xiiStringBuilder sPrefix;
+      sPrefix.SetFormat("xii_{}_{}_", static_cast<xiiUInt32>(id.m_InstanceIndex), static_cast<xiiUInt32>(id.m_Generation));
+      instance.m_sPrefix = sPrefix;
+      if (!mjs_attach(pFrame->element, child->element, instance.m_sPrefix.GetData(), nullptr))
+      {
+        xiiLog::Error("MuJoCo could not attach '{}' in world '{}': {}", sResource, GetWorld()->GetName(), mjs_getError(parent.get()));
+        return XII_FAILURE;
+      }
+    }
+
+    pModel.reset(mj_compile(parent.get(), &inputs.m_Vfs));
+    if (!pModel)
+    {
+      xiiLog::Error("MuJoCo could not compile the composition for world '{}': {}", GetWorld()->GetName(), mjs_getError(parent.get()));
+      return XII_FAILURE;
+    }
+    if (const char* szField = FindOptionMismatch(options, pModel->opt))
+    {
+      xiiLog::Error("MuJoCo composition for world '{}' changed the effective '{}' option.", GetWorld()->GetName(), szField);
+      return XII_FAILURE;
+    }
+    mjtSize iBodies = 1, iJoints = 0, iGeometries = 0, iActuators = 0, iSensors = 0, iPositions = 0, iVelocities = 0, iSites = 0, iFlexes = 0;
+    mjtSize iContactPairs = 0, iExclusions = 0, iEqualities = 0, iTendons = 0;
+    for (const auto& model : models)
+    {
+      const auto& native = *model->GetModel();
+      iBodies += native.nbody - 1;
+      iJoints += native.njnt;
+      iGeometries += native.ngeom;
+      iActuators += native.nactuator;
+      iSensors += native.nsensor;
+      iPositions += native.nq;
+      iVelocities += native.nv;
+      iSites += native.nsite;
+      iFlexes += native.nflex;
+      iContactPairs += native.npair;
+      iExclusions += native.nexclude;
+      iEqualities += native.neq;
+      iTendons += native.ntendon;
+    }
+    if (pModel->nbody != iBodies || pModel->njnt != iJoints || pModel->ngeom != iGeometries || pModel->nactuator != iActuators ||
+        pModel->nsensor != iSensors || pModel->nq != iPositions || pModel->nv != iVelocities || pModel->nsite != iSites || pModel->nflex != iFlexes ||
+        pModel->npair != iContactPairs || pModel->nexclude != iExclusions || pModel->neq != iEqualities || pModel->ntendon != iTendons)
+    {
+      xiiLog::Error("MuJoCo composition for world '{}' did not preserve the input model elements or degrees of freedom.", GetWorld()->GetName());
+      return XII_FAILURE;
+    }
+    for (int i = 0; i < mjs_numWarnings(parent.get()); ++i)
+      xiiLog::Warning("MuJoCo composition for world '{}': {}", GetWorld()->GetName(), mjs_getWarning(parent.get(), i));
+  }
+  const auto sWorld = GetWorld()->GetName();
+  return InstallModel(xiiMuJoCoCompiledModel::Adopt(std::move(pModel), sWorld), sWorld, instances);
 }
 
 void xiiMuJoCoPhysicsWorldModule::ClearSimulation()
@@ -341,10 +782,11 @@ void xiiMuJoCoPhysicsWorldModule::UnregisterBody(xiiComponentHandle hComponent)
 
 void xiiMuJoCoPhysicsWorldModule::ResolveBody(BodyBinding& ref_binding) const
 {
-  ref_binding.m_iBodyId = -1;
-  if (m_pSimulation)
+  ref_binding.m_iBodyId        = -1;
+  const xiiGameObject* pObject = nullptr;
+  if (m_pSimulation && GetWorld()->TryGetObject(ref_binding.m_hObject, pObject))
   {
-    ref_binding.m_iBodyId = mj_name2id(m_pSimulation->m_pModel->GetModel(), mjOBJ_BODY, ref_binding.m_sBodyName.GetData());
+    ref_binding.m_iBodyId = ResolveElementForObject(pObject, xiiMuJoCoElementType::Body, ref_binding.m_sBodyName).m_iIndex;
     if (ref_binding.m_iBodyId < 0)
       xiiLog::Warning("MuJoCo body '{}' was not found in the model for world '{}'.", ref_binding.m_sBodyName, GetWorld()->GetName());
   }
@@ -372,7 +814,8 @@ void xiiMuJoCoPhysicsWorldModule::SynchronizeBodies()
 
   // SetGlobalTransform computes local space using the current parent pose.
   m_BodyBindings.Sort([](const BodyBinding& a, const BodyBinding& b) { return a.m_uiDepth < b.m_uiDepth; });
-  const auto& data = *m_pSimulation->m_pData;
+  const auto& data            = *m_pSimulation->m_pData;
+  bool        bWroteTransform = false;
   for (const auto& binding : m_BodyBindings)
   {
     xiiGameObject* pObject = nullptr;
@@ -397,15 +840,20 @@ void xiiMuJoCoPhysicsWorldModule::SynchronizeBodies()
     transform.m_vPosition = vPosition;
     transform.m_qRotation = qRotation;
     pObject->SetGlobalTransform(transform);
+    bWroteTransform = true;
   }
+  // Scene output can move an instance's own anchor or an ancestor. Keep the authored
+  // placement used by composition, but recognize those writes as observed scene state.
+  if (bWroteTransform)
+    for (auto& instance : m_ModelInstances)
+      ReadPlacement(instance, true);
 }
 
 void xiiMuJoCoPhysicsWorldModule::Initialize()
 {
-  auto desc                        = XII_CREATE_MODULE_UPDATE_FUNCTION_DESC(xiiMuJoCoPhysicsWorldModule::Simulate, this);
-  desc.m_Phase                     = xiiWorldUpdatePhase::PreAsync;
-  desc.m_bOnlyUpdateWhenSimulating = true;
-  desc.m_fPriority                 = -100000.0f;
+  auto desc        = XII_CREATE_MODULE_UPDATE_FUNCTION_DESC(xiiMuJoCoPhysicsWorldModule::Simulate, this);
+  desc.m_Phase     = xiiWorldUpdatePhase::PreAsync;
+  desc.m_fPriority = -100000.0f;
   RegisterUpdateFunction(desc);
 }
 
@@ -426,17 +874,15 @@ void xiiMuJoCoPhysicsWorldModule::WorldClear()
 {
   m_ActuatorComponents.Clear();
   m_BodyBindings.Clear();
-  m_pRequestedResource = nullptr;
-  m_hRequestedModel.Invalidate();
-  m_hModelOwner.Invalidate();
-  m_bAttemptedRequest = false;
+  m_ModelInstances.Clear();
+  m_bCompositionDirty = false;
   ClearSimulation();
 }
 
 void xiiMuJoCoPhysicsWorldModule::Simulate(const UpdateContext&)
 {
-  UpdateRequestedModel();
-  if (!m_pSimulation)
+  UpdateRequestedModels();
+  if (!m_pSimulation || !GetWorld()->GetWorldSimulationEnabled())
     return;
 
   EvaluateState();

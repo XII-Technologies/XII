@@ -4,6 +4,7 @@
 
 #include <Core/World/World.h>
 #include <Foundation/Math/Math.h>
+#include <Foundation/Strings/StringBuilder.h>
 #include <MujocoPlugin/Components/MuJoCoActuatorComponent.h>
 #include <MujocoPlugin/System/Implementation/MuJoCoSimulation.h>
 
@@ -127,6 +128,47 @@ xiiMuJoCoElementId xiiMuJoCoPhysicsWorldModule::ResolveElement(xiiMuJoCoElementT
   const xiiString sTerminatedName(sName);
   const int       iIndex = mj_name2id(m_pSimulation->m_pModel->GetModel(), NativeObjectType(type), sTerminatedName.GetData());
   return iIndex >= 0 ? GetElementId(type, static_cast<xiiUInt32>(iIndex)) : xiiMuJoCoElementId{};
+}
+
+xiiMuJoCoElementId xiiMuJoCoPhysicsWorldModule::ResolveElement(xiiComponentHandle hModel, xiiMuJoCoElementType type, xiiStringView sName) const
+{
+  if (!IsStateAccessible() || sName.IsEmpty())
+    return {};
+  for (const auto& instance : m_pSimulation->m_Instances)
+    if (instance.m_hComponent == hModel)
+    {
+      if (instance.m_sPrefix.IsEmpty())
+        return ResolveElement(type, sName);
+      return ResolveElement(type, xiiStringBuilder(instance.m_sPrefix, sName));
+    }
+  return {};
+}
+
+xiiMuJoCoElementId xiiMuJoCoPhysicsWorldModule::ResolveElementForObject(const xiiGameObject* pObject, xiiMuJoCoElementType type, xiiStringView sName) const
+{
+  if (!IsStateAccessible())
+    return {};
+  const auto& instances = m_pSimulation->m_Instances;
+  if (instances.IsEmpty())
+    return ResolveElement(type, sName);
+  for (; pObject != nullptr; pObject = pObject->GetParent())
+  {
+    xiiComponentHandle hModel;
+    for (const auto& instance : m_ModelInstances)
+    {
+      if (instance.m_hObject == pObject->GetHandle())
+      {
+        if (!hModel.IsInvalidated())
+          return {}; // The same anchor has multiple model components.
+        hModel = instance.m_hComponent;
+      }
+    }
+    if (!hModel.IsInvalidated())
+      return ResolveElement(hModel, type, sName);
+  }
+  if (instances.GetCount() == 1 && m_ModelInstances.GetCount() == 1)
+    return ResolveElement(instances[0].m_hComponent, type, sName);
+  return {};
 }
 
 bool xiiMuJoCoPhysicsWorldModule::IsValidElement(xiiMuJoCoElementId id, xiiMuJoCoElementType type) const

@@ -6,6 +6,7 @@
 
 #include <Core/World/WorldModule.h>
 #include <Foundation/Containers/DynamicArray.h>
+#include <Foundation/Math/Transform.h>
 #include <Foundation/Strings/String.h>
 #include <Foundation/Time/Time.h>
 #include <Foundation/Types/ArrayPtr.h>
@@ -44,6 +45,11 @@ public:
   xiiUInt64          GetModelGeneration() const { return m_uiModelGeneration; }
   xiiUInt32          GetElementCount(xiiMuJoCoElementType type) const;
   xiiMuJoCoElementId ResolveElement(xiiMuJoCoElementType type, xiiStringView sName) const;
+  /// Resolves an authored name in the specified installed model instance.
+  xiiMuJoCoElementId ResolveElement(xiiComponentHandle hModel, xiiMuJoCoElementType type, xiiStringView sName) const;
+  /// Uses the nearest model component on the object or its ancestors. A lone scene model
+  /// also accepts bindings elsewhere in the world.
+  xiiMuJoCoElementId ResolveElementForObject(const xiiGameObject* pObject, xiiMuJoCoElementType type, xiiStringView sName) const;
   xiiMuJoCoElementId GetElementId(xiiMuJoCoElementType type, xiiUInt32 uiIndex) const;
   [[nodiscard]] bool GetElementName(xiiMuJoCoElementId id, xiiString& out_sName) const;
   [[nodiscard]] bool GetJointInfo(xiiMuJoCoElementId id, xiiMuJoCoJointInfo& out_info) const;
@@ -124,7 +130,7 @@ private:
   void Simulate(const UpdateContext& context);
   void RequestModel(xiiComponentHandle hOwner, const xiiMuJoCoModelResourceHandle& hModel);
   void ReleaseModel(xiiComponentHandle hOwner);
-  void UpdateRequestedModel();
+  void UpdateRequestedModels();
   void ClearSimulation();
 
   void RegisterBody(xiiComponentHandle hComponent, const xiiString& sBodyName);
@@ -152,20 +158,37 @@ private:
   void                ApplyPendingControls();
   void                ApplyExternalForces();
 
+  struct ModelInstance
+  {
+    xiiComponentHandle            m_hComponent;
+    xiiGameObjectHandle           m_hObject;
+    xiiMuJoCoModelResourceHandle  m_hResource;
+    const xiiMuJoCoModelResource* m_pResource           = nullptr; ///< Kept alive by m_hResource.
+    xiiTransform                  m_Placement           = xiiTransform::MakeIdentity();
+    xiiTransform                  m_Observed            = xiiTransform::MakeIdentity();
+    xiiUInt32                     m_uiAttemptedRevision = 0;
+    bool                          m_bObserved           = false;
+  };
+
+  struct InstalledInstance
+  {
+    xiiComponentHandle m_hComponent;
+    xiiString          m_sPrefix;
+  };
+
   struct NativeSimulation;
-  [[nodiscard]] xiiResult InstallModel(xiiSharedPtr<xiiMuJoCoCompiledModel> pModel, xiiStringView sSource);
+  [[nodiscard]] xiiResult InstallModel(xiiSharedPtr<xiiMuJoCoCompiledModel> pModel, xiiStringView sSource, xiiArrayPtr<const InstalledInstance> instances = {});
+  [[nodiscard]] xiiResult ComposeModels(xiiArrayPtr<const xiiSharedPtr<xiiMuJoCoCompiledModel>> models, xiiArrayPtr<InstalledInstance> instances);
+  void                    ReadPlacement(ModelInstance& ref_instance, bool bObserveOnly);
 
   xiiUniquePtr<NativeSimulation>      m_pSimulation;
-  xiiMuJoCoModelResourceHandle        m_hRequestedModel;
-  const xiiMuJoCoModelResource*       m_pRequestedResource = nullptr; ///< Kept alive by m_hRequestedModel.
-  xiiComponentHandle                  m_hModelOwner;
+  xiiDynamicArray<ModelInstance>      m_ModelInstances;
   xiiDynamicArray<BodyBinding>        m_BodyBindings;
   xiiDynamicArray<xiiComponentHandle> m_ActuatorComponents;
   xiiUInt64                           m_uiModelGeneration = 0;
   xiiTime                             m_AccumulatedTime;
-  xiiUInt32                           m_uiMaxCatchUpSteps   = 4;
-  xiiUInt32                           m_uiAttemptedRevision = 0;
-  bool                                m_bAttemptedRequest   = false;
-  bool                                m_bSyncBodies         = false;
-  bool                                m_bExecuting          = false;
+  xiiUInt32                           m_uiMaxCatchUpSteps = 4;
+  bool                                m_bCompositionDirty = false;
+  bool                                m_bSyncBodies       = false;
+  bool                                m_bExecuting        = false;
 };

@@ -9,7 +9,8 @@
 
 using xiiMuJoCoModelComponentManager = xiiComponentManager<class xiiMuJoCoModelComponent, xiiBlockStorageType::Compact>;
 
-/// Controls the single scene-authored simulation in the world. Model coordinates are world coordinates.
+/// Contributes an instance to the world's MuJoCo simulation. The owning object's world
+/// transform places the model and its hierarchy scopes scene bindings.
 class XII_MUJOCOPLUGIN_DLL xiiMuJoCoModelComponent final : public xiiComponent
 {
   XII_DECLARE_COMPONENT_TYPE(xiiMuJoCoModelComponent, xiiComponent, xiiMuJoCoModelComponentManager);

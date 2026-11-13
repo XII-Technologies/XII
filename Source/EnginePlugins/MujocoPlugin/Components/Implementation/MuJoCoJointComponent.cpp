@@ -65,7 +65,7 @@ bool xiiMuJoCoJointComponent::ResolveJoint() const
     m_uiResolvedGeneration = uiGeneration;
     if (uiGeneration != 0 && !m_sJointName.IsEmpty())
     {
-      m_JointId = pModule->ResolveElement(xiiMuJoCoElementType::Joint, m_sJointName);
+      m_JointId = pModule->ResolveElementForObject(GetOwner(), xiiMuJoCoElementType::Joint, m_sJointName);
       if (m_JointId.m_iIndex < 0)
         xiiLog::Warning("MuJoCo joint '{}' was not found in world '{}'.", m_sJointName, GetWorld()->GetName());
     }

@@ -67,7 +67,7 @@ bool xiiMuJoCoSensorComponent::ResolveSensor() const
     m_uiResolvedGeneration = uiGeneration;
     if (uiGeneration != 0 && !m_sSensorName.IsEmpty())
     {
-      m_SensorId = pModule->ResolveElement(xiiMuJoCoElementType::Sensor, m_sSensorName);
+      m_SensorId = pModule->ResolveElementForObject(GetOwner(), xiiMuJoCoElementType::Sensor, m_sSensorName);
       if (m_SensorId.m_iIndex < 0)
         xiiLog::Warning("MuJoCo sensor '{}' was not found in world '{}'.", m_sSensorName, GetWorld()->GetName());
     }

@@ -79,6 +79,7 @@ struct xiiMuJoCoContactInfo
   xiiGameObjectHandle m_hBodyObjects[2]; ///< A representative scene binding for each rigid body, if available.
   xiiComponentHandle  m_hBodyComponents[2];
   xiiComponentHandle  m_hModelComponent;
+  xiiComponentHandle  m_hModelComponents[2]; ///< Instance owning each contact endpoint.
   xiiInt32            m_iFlex[2]           = {-1, -1};
   xiiInt32            m_iElement[2]        = {-1, -1};
   xiiInt32            m_iVertex[2]         = {-1, -1};

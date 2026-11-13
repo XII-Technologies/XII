@@ -81,7 +81,7 @@ void xiiMuJoCoActuatorComponent::ApplyControl()
     m_uiResolvedGeneration = uiGeneration;
     if (uiGeneration != 0 && !m_sActuatorName.IsEmpty())
     {
-      m_ActuatorId = pModule->ResolveElement(xiiMuJoCoElementType::Actuator, m_sActuatorName);
+      m_ActuatorId = pModule->ResolveElementForObject(GetOwner(), xiiMuJoCoElementType::Actuator, m_sActuatorName);
       xiiMuJoCoActuatorInfo info;
       if (!pModule->GetActuatorInfo(m_ActuatorId, info))
         xiiLog::Warning("MuJoCo actuator '{}' was not found in world '{}'.", m_sActuatorName, GetWorld()->GetName());

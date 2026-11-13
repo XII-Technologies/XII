@@ -205,14 +205,19 @@ bool xiiMuJoCoPhysicsWorldModule::GetContact(xiiUInt32 uiIndex, xiiMuJoCoContact
   out_contact.m_vTangent2        = InspectionVector(contact.frame + 6);
   out_contact.m_fDistance        = contact.dist;
   out_contact.m_fInclusionMargin = contact.includemargin;
-  out_contact.m_hModelComponent  = m_hModelOwner;
+  if (m_pSimulation->m_Instances.GetCount() == 1)
+    out_contact.m_hModelComponent = m_pSimulation->m_Instances[0].m_hComponent;
   for (xiiUInt32 i = 0; i < 2; ++i)
   {
     out_contact.m_iFlex[i]    = contact.flex[i];
     out_contact.m_iElement[i] = contact.elem[i];
     out_contact.m_iVertex[i]  = contact.vert[i];
+    if (contact.flex[i] >= 0 && static_cast<xiiUInt32>(contact.flex[i]) < m_pSimulation->m_FlexOwners.GetCount())
+      out_contact.m_hModelComponents[i] = m_pSimulation->m_FlexOwners[contact.flex[i]];
     if (contact.geom[i] < 0 || contact.geom[i] >= model.ngeom)
       continue;
+    if (static_cast<xiiUInt32>(contact.geom[i]) < m_pSimulation->m_GeometryOwners.GetCount())
+      out_contact.m_hModelComponents[i] = m_pSimulation->m_GeometryOwners[contact.geom[i]];
     out_contact.m_Geometries[i] = GetElementId(xiiMuJoCoElementType::Geometry, static_cast<xiiUInt32>(contact.geom[i]));
     const int iBody             = model.geom_bodyid[contact.geom[i]];
     if (iBody < 0 || iBody >= model.nbody)
@@ -222,6 +227,8 @@ bool xiiMuJoCoPhysicsWorldModule::GetContact(xiiUInt32 uiIndex, xiiMuJoCoContact
     out_contact.m_hBodyObjects[i]    = binding.m_hObject;
     out_contact.m_hBodyComponents[i] = binding.m_hComponent;
   }
+  if (out_contact.m_hModelComponents[0] == out_contact.m_hModelComponents[1])
+    out_contact.m_hModelComponent = out_contact.m_hModelComponents[0];
   out_contact.m_uiDimension        = static_cast<xiiUInt32>(contact.dim);
   out_contact.m_iExclusion         = contact.exclude;
   out_contact.m_iConstraintAddress = contact.efc_address;
