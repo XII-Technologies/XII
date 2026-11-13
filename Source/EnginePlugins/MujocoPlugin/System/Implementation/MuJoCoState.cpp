@@ -53,8 +53,9 @@ namespace
 
   int QuaternionOffset(int iType)
   {
-    return iType == mjJNT_FREE ? 3 : iType == mjJNT_BALL ? 0 :
-                                                           -1;
+    if (iType == mjJNT_FREE)
+      return 3;
+    return iType == mjJNT_BALL ? 0 : -1;
   }
 
   // Normalize after scaling by the largest coordinate so finite inputs cannot overflow.
@@ -135,13 +136,26 @@ bool xiiMuJoCoPhysicsWorldModule::GetJointInfo(xiiMuJoCoElementId id, xiiMuJoCoJ
 {
   if (!IsValidElement(id, xiiMuJoCoElementType::Joint))
     return false;
-  const auto& model            = *m_pSimulation->m_pModel->GetModel();
-  const int   iType            = model.jnt_type[id.m_iIndex];
-  out_info.m_Type              = static_cast<xiiMuJoCoJointType>(iType);
-  out_info.m_uiPositionCount   = iType == mjJNT_FREE ? 7 : iType == mjJNT_BALL ? 4 :
-                                                                                 1;
-  out_info.m_uiVelocityCount   = iType == mjJNT_FREE ? 6 : iType == mjJNT_BALL ? 3 :
-                                                                                 1;
+  const auto& model = *m_pSimulation->m_pModel->GetModel();
+  const int   iType = model.jnt_type[id.m_iIndex];
+  static_assert(static_cast<int>(xiiMuJoCoJointType::Free) == mjJNT_FREE && static_cast<int>(xiiMuJoCoJointType::Ball) == mjJNT_BALL &&
+                static_cast<int>(xiiMuJoCoJointType::Slide) == mjJNT_SLIDE && static_cast<int>(xiiMuJoCoJointType::Hinge) == mjJNT_HINGE);
+  out_info.m_Type = static_cast<xiiMuJoCoJointType>(iType);
+  switch (iType)
+  {
+    case mjJNT_FREE:
+      out_info.m_uiPositionCount = 7;
+      out_info.m_uiVelocityCount = 6;
+      break;
+    case mjJNT_BALL:
+      out_info.m_uiPositionCount = 4;
+      out_info.m_uiVelocityCount = 3;
+      break;
+    default:
+      out_info.m_uiPositionCount = 1;
+      out_info.m_uiVelocityCount = 1;
+      break;
+  }
   out_info.m_uiPositionAddress = static_cast<xiiUInt32>(model.jnt_qposadr[id.m_iIndex]);
   out_info.m_uiVelocityAddress = static_cast<xiiUInt32>(model.jnt_dofadr[id.m_iIndex]);
   out_info.m_bLimited          = model.jnt_limited[id.m_iIndex] != 0;
@@ -173,7 +187,6 @@ xiiResult xiiMuJoCoPhysicsWorldModule::SetJointPosition(xiiMuJoCoElementId id, x
   auto* pPosition = m_pSimulation->m_pData->qpos + info.m_uiPositionAddress;
   WriteValues(pPosition, values);
   NormalizeQuaternion(values, iOffset, iOffset >= 0 ? pPosition + iOffset : nullptr);
-  mju_zero(m_pSimulation->m_pData->qacc_warmstart, GetVelocityCount());
   m_pSimulation->m_bStateDirty = true;
   return XII_SUCCESS;
 }
@@ -197,7 +210,6 @@ xiiResult xiiMuJoCoPhysicsWorldModule::ResetJoint(xiiMuJoCoElementId id)
   mju_copy(data.qpos + info.m_uiPositionAddress, m_pSimulation->m_pModel->GetModel()->qpos0 + info.m_uiPositionAddress, info.m_uiPositionCount);
   mju_zero(data.qvel + info.m_uiVelocityAddress, info.m_uiVelocityCount);
   mju_zero(data.qfrc_applied + info.m_uiVelocityAddress, info.m_uiVelocityCount);
-  mju_zero(data.qacc_warmstart, GetVelocityCount());
   m_pSimulation->m_bStateDirty = true;
   return XII_SUCCESS;
 }
@@ -246,7 +258,6 @@ xiiResult xiiMuJoCoPhysicsWorldModule::SetGeneralizedState(xiiArrayPtr<const dou
       NormalizeQuaternion(positions, iAddress, data.qpos + iAddress);
     }
   }
-  std::fill_n(data.qacc_warmstart, model.nv, mjtNum{0});
   m_pSimulation->m_bStateDirty = true;
   return XII_SUCCESS;
 }
@@ -255,6 +266,8 @@ void xiiMuJoCoPhysicsWorldModule::EvaluateState()
 {
   if (!m_pSimulation || m_bExecuting || !m_pSimulation->m_bStateDirty)
     return;
+  // Invalidate solver guesses once for a batch of direct edits.
+  std::fill_n(m_pSimulation->m_pData->qacc_warmstart, m_pSimulation->m_pModel->GetModel()->nv, mjtNum{0});
   m_bExecuting = true;
   mj_forward(m_pSimulation->m_pModel->GetModel(), m_pSimulation->m_pData.get());
   m_bExecuting                 = false;
@@ -313,8 +326,11 @@ bool xiiMuJoCoPhysicsWorldModule::GetActuatorControlRange(xiiMuJoCoElementId id,
 bool xiiMuJoCoPhysicsWorldModule::GetActuatorControls(xiiMuJoCoElementId id, xiiArrayPtr<double> out_values) const
 {
   xiiMuJoCoActuatorInfo info;
-  return GetActuatorInfo(id, info) &&
-    CopyValues(m_pSimulation->m_pData->ctrl + m_pSimulation->m_pModel->GetModel()->actuator_ctrladr[id.m_iIndex], info.m_uiControlCount, out_values);
+  if (!GetActuatorInfo(id, info))
+    return false;
+  if (info.m_uiControlCount == 0)
+    return out_values.IsEmpty();
+  return CopyValues(m_pSimulation->m_pData->ctrl + m_pSimulation->m_pModel->GetModel()->actuator_ctrladr[id.m_iIndex], info.m_uiControlCount, out_values);
 }
 
 xiiResult xiiMuJoCoPhysicsWorldModule::SetActuatorControls(xiiMuJoCoElementId id, xiiArrayPtr<const double> values)
@@ -333,6 +349,7 @@ xiiResult xiiMuJoCoPhysicsWorldModule::SetActuatorControls(xiiMuJoCoElementId id
     m_pSimulation->m_PendingControls[static_cast<xiiUInt32>(uiAddress)] = static_cast<mjtNum>(fValue);
     m_pSimulation->m_ControlPending[static_cast<xiiUInt32>(uiAddress)]  = 1;
   }
+  m_pSimulation->m_bControlsPending = true;
   return XII_SUCCESS;
 }
 
@@ -344,7 +361,8 @@ bool xiiMuJoCoPhysicsWorldModule::GetActuatorState(xiiMuJoCoElementId id, xiiArr
     return false;
   const auto& model = *m_pSimulation->m_pModel->GetModel();
   const auto& data  = *m_pSimulation->m_pData;
-  CopyValues(data.actuator_force + model.actuator_outadr[id.m_iIndex], info.m_uiOutputCount, out_forces);
+  if (info.m_uiOutputCount > 0)
+    CopyValues(data.actuator_force + model.actuator_outadr[id.m_iIndex], info.m_uiOutputCount, out_forces);
   if (info.m_uiActivationCount > 0)
   {
     CopyValues(data.act + model.actuator_actadr[id.m_iIndex], info.m_uiActivationCount, out_activation);
@@ -365,6 +383,7 @@ xiiResult xiiMuJoCoPhysicsWorldModule::ResetActuatorControls(xiiMuJoCoElementId 
     m_pSimulation->m_PendingControls[uiAddress] = m_pSimulation->m_NeutralControls[uiAddress];
     m_pSimulation->m_ControlPending[uiAddress]  = 1;
   }
+  m_pSimulation->m_bControlsPending = true;
   return XII_SUCCESS;
 }
 
@@ -377,10 +396,13 @@ void xiiMuJoCoPhysicsWorldModule::ResetActuatorControls()
     m_pSimulation->m_PendingControls[i] = m_pSimulation->m_NeutralControls[i];
     m_pSimulation->m_ControlPending[i]  = 1;
   }
+  m_pSimulation->m_bControlsPending = true;
 }
 
 void xiiMuJoCoPhysicsWorldModule::ApplyPendingControls()
 {
+  if (!m_pSimulation->m_bControlsPending)
+    return;
   for (xiiUInt32 i = 0; i < m_pSimulation->m_ControlPending.GetCount(); ++i)
   {
     if (m_pSimulation->m_ControlPending[i])
@@ -389,6 +411,7 @@ void xiiMuJoCoPhysicsWorldModule::ApplyPendingControls()
       m_pSimulation->m_ControlPending[i] = 0;
     }
   }
+  m_pSimulation->m_bControlsPending = false;
 }
 
 xiiResult xiiMuJoCoPhysicsWorldModule::AddJointForce(xiiMuJoCoElementId id, xiiArrayPtr<const double> values)
@@ -404,6 +427,7 @@ xiiResult xiiMuJoCoPhysicsWorldModule::AddJointForce(xiiMuJoCoElementId id, xiiA
   }
   for (xiiUInt32 i = 0; i < values.GetCount(); ++i)
     pForce[i] += static_cast<mjtNum>(values[i]);
+  m_pSimulation->m_bExternalForcesApplied = true;
   return XII_SUCCESS;
 }
 
@@ -425,8 +449,11 @@ xiiResult xiiMuJoCoPhysicsWorldModule::AddBodyForceAtPosition(xiiMuJoCoElementId
 
 void xiiMuJoCoPhysicsWorldModule::ApplyExternalForces()
 {
-  const auto* pModel = m_pSimulation->m_pModel->GetModel();
-  auto&       data   = *m_pSimulation->m_pData;
+  if (m_pSimulation->m_BodyForces.IsEmpty())
+    return;
+  m_pSimulation->m_bExternalForcesApplied = true;
+  const auto* pModel                      = m_pSimulation->m_pModel->GetModel();
+  auto&       data                        = *m_pSimulation->m_pData;
   for (const auto& command : m_pSimulation->m_BodyForces)
   {
     const mjtNum force[3]  = {command.m_vForce.x, command.m_vForce.y, command.m_vForce.z};
@@ -453,9 +480,13 @@ void xiiMuJoCoPhysicsWorldModule::ClearExternalForces()
 {
   if (!m_pSimulation || m_bExecuting)
     return;
-  const auto* pModel = m_pSimulation->m_pModel->GetModel();
-  std::fill_n(m_pSimulation->m_pData->qfrc_applied, pModel->nv, mjtNum{0});
-  std::fill_n(m_pSimulation->m_pData->xfrc_applied, 6 * pModel->nbody, mjtNum{0});
+  if (m_pSimulation->m_bExternalForcesApplied)
+  {
+    const auto* pModel = m_pSimulation->m_pModel->GetModel();
+    std::fill_n(m_pSimulation->m_pData->qfrc_applied, pModel->nv, mjtNum{0});
+    std::fill_n(m_pSimulation->m_pData->xfrc_applied, 6 * pModel->nbody, mjtNum{0});
+    m_pSimulation->m_bExternalForcesApplied = false;
+  }
   m_pSimulation->m_BodyForces.Clear();
 }
 

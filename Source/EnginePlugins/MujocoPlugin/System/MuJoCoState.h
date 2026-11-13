@@ -30,6 +30,8 @@ enum class xiiMuJoCoJointType : xiiUInt8
   Hinge
 };
 
+/// Positions have 7/4/1 coordinates for free/ball/scalar joints; velocities have 6/3/1 degrees of freedom.
+/// Limits retain MuJoCo's native meaning: meters for slides, radians for hinges, and angular extent for balls.
 struct xiiMuJoCoJointInfo
 {
   xiiMuJoCoJointType m_Type              = xiiMuJoCoJointType::Hinge;
@@ -55,6 +57,7 @@ struct xiiMuJoCoActuatorInfo
   xiiUInt32 m_uiActivationCount = 0;
 };
 
+/// World-space pose and velocities at the regular body-frame origin. Angular velocity is radians/second.
 struct xiiMuJoCoBodyState
 {
   xiiVec3 m_vPosition        = xiiVec3::MakeZero();

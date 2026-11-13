@@ -15,6 +15,7 @@
 
 /// Owns the compiled MuJoCo model and simulation state for one XII world.
 /// Access requires the world's write marker. Clearing the world releases the model and state.
+/// State operations fail while native stepping or evaluation is executing, including from native callbacks.
 class XII_MUJOCOPLUGIN_DLL xiiMuJoCoPhysicsWorldModule final : public xiiWorldModule
 {
   XII_DECLARE_WORLD_MODULE();
@@ -38,6 +39,7 @@ public:
   /// Sets the maximum number of fixed steps per world update. The limit must be positive.
   [[nodiscard]] xiiResult SetMaxCatchUpSteps(xiiUInt32 uiMaxCatchUpSteps);
 
+  /// Identifiers are scoped to one installed model in one world. Zero indicates that no model is installed.
   xiiUInt64          GetModelGeneration() const { return m_uiModelGeneration; }
   xiiUInt32          GetElementCount(xiiMuJoCoElementType type) const;
   xiiMuJoCoElementId ResolveElement(xiiMuJoCoElementType type, xiiStringView sName) const;
@@ -64,6 +66,7 @@ public:
 
   [[nodiscard]] bool GetActuatorInfo(xiiMuJoCoElementId id, xiiMuJoCoActuatorInfo& out_info) const;
   [[nodiscard]] bool GetActuatorControlRange(xiiMuJoCoElementId id, xiiUInt32 uiChannel, bool& out_bLimited, double& out_fMin, double& out_fMax) const;
+  /// Reads committed native controls. Pending commands become visible here when the next step begins.
   [[nodiscard]] bool GetActuatorControls(xiiMuJoCoElementId id, xiiArrayPtr<double> out_values) const;
   /// Commands are committed before the next step, persist until changed, and honor native control clamping.
   [[nodiscard]] xiiResult SetActuatorControls(xiiMuJoCoElementId id, xiiArrayPtr<const double> values);
@@ -74,7 +77,9 @@ public:
 
   /// Forces accumulate until one fixed step consumes them, including across paused/substep frames.
   [[nodiscard]] xiiResult AddJointForce(xiiMuJoCoElementId id, xiiArrayPtr<const double> values);
+  /// Force and torque use world axes. Force acts at the body's center of mass.
   [[nodiscard]] xiiResult AddBodyForce(xiiMuJoCoElementId id, const xiiVec3& vForce, const xiiVec3& vTorque = xiiVec3::MakeZero());
+  /// Force, torque, and application position are in world space; MuJoCo computes the generalized wrench.
   [[nodiscard]] xiiResult AddBodyForceAtPosition(xiiMuJoCoElementId id, const xiiVec3& vForce, const xiiVec3& vPosition, const xiiVec3& vTorque = xiiVec3::MakeZero());
   void                    ClearExternalForces();
 

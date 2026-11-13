@@ -141,9 +141,18 @@ xiiResult xiiMuJoCoPhysicsWorldModule::InstallModel(xiiSharedPtr<xiiMuJoCoCompil
   if (!pModel || m_bExecuting)
     return XII_FAILURE;
 
+  const mjModel* pNativeModel = pModel->GetModel();
+  const mjtSize  iMaxCount    = xiiMath::MaxValue<xiiInt32>();
+  if (pNativeModel->nbody > iMaxCount || pNativeModel->njnt > iMaxCount || pNativeModel->nactuator > iMaxCount ||
+      pNativeModel->nq > iMaxCount || pNativeModel->nv > iMaxCount || pNativeModel->nu > iMaxCount ||
+      pNativeModel->na > iMaxCount || pNativeModel->nout > iMaxCount)
+  {
+    xiiLog::Error("MuJoCo model '{}' exceeds the supported state indexing range.", sSource);
+    return XII_FAILURE;
+  }
+
   xiiUniquePtr<NativeSimulation> pSimulation = XII_NEW(GetAllocator(), NativeSimulation);
   pSimulation->m_pModel                      = std::move(pModel);
-  const mjModel* pNativeModel                = pSimulation->m_pModel->GetModel();
   pSimulation->m_pData.reset(mj_makeData(pNativeModel));
   if (!pSimulation->m_pData)
   {
@@ -162,11 +171,11 @@ xiiResult xiiMuJoCoPhysicsWorldModule::InstallModel(xiiSharedPtr<xiiMuJoCoCompil
   // Evaluate the initial state before publishing the pair.
   m_bExecuting = true;
   mj_forward(pNativeModel, pSimulation->m_pData.get());
-  m_bExecuting = false;
 
   static xiiAtomicIntegerU64 s_uiNextGeneration;
   m_uiModelGeneration = s_uiNextGeneration.Increment();
   m_pSimulation       = std::move(pSimulation);
+  m_bExecuting        = false;
   m_AccumulatedTime   = xiiTime::MakeZero();
   for (auto& binding : m_BodyBindings)
     ResolveBody(binding);
@@ -185,12 +194,14 @@ void xiiMuJoCoPhysicsWorldModule::ResetSimulation()
   {
     const mjModel* pModel = m_pSimulation->m_pModel->GetModel();
     mjData*        pData  = m_pSimulation->m_pData.get();
+    m_bExecuting          = true;
     mj_resetData(pModel, pData);
     m_pSimulation->m_ControlPending.Clear();
     m_pSimulation->m_ControlPending.SetCount(static_cast<xiiUInt32>(pModel->nu), 0);
     m_pSimulation->m_BodyForces.Clear();
-    m_pSimulation->m_bStateDirty = false;
-    m_bExecuting                 = true;
+    m_pSimulation->m_bStateDirty            = false;
+    m_pSimulation->m_bControlsPending       = false;
+    m_pSimulation->m_bExternalForcesApplied = false;
     mj_forward(pModel, pData);
     m_bExecuting  = false;
     m_bSyncBodies = true;
@@ -265,7 +276,9 @@ void xiiMuJoCoPhysicsWorldModule::UpdateRequestedModel()
 void xiiMuJoCoPhysicsWorldModule::ClearSimulation()
 {
   m_uiModelGeneration = 0;
+  m_bExecuting        = true;
   m_pSimulation.Clear();
+  m_bExecuting      = false;
   m_AccumulatedTime = xiiTime::MakeZero();
   m_bSyncBodies     = false;
   for (auto& binding : m_BodyBindings)

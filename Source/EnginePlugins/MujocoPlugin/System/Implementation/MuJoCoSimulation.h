@@ -7,6 +7,8 @@
 #include <MujocoPlugin/Resources/Implementation/MuJoCoCompiledModel.h>
 #include <MujocoPlugin/System/MuJoCoPhysicsWorldModule.h>
 
+#include <memory>
+
 struct xiiMuJoCoPhysicsWorldModule::NativeSimulation
 {
   struct BodyForce
@@ -25,5 +27,7 @@ struct xiiMuJoCoPhysicsWorldModule::NativeSimulation
   xiiDynamicArray<mjtNum>                           m_NeutralControls;
   xiiDynamicArray<xiiUInt8>                         m_ControlPending;
   xiiDynamicArray<BodyForce>                        m_BodyForces;
-  bool                                              m_bStateDirty = false;
+  bool                                              m_bStateDirty            = false;
+  bool                                              m_bControlsPending       = false;
+  bool                                              m_bExternalForcesApplied = false;
 };
