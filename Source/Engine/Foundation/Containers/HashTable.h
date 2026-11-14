@@ -73,9 +73,13 @@ public:
   std::tuple_element_t<Index, xiiHashTableBaseConstIterator>& get() const
   {
     if constexpr (Index == 0)
+    {
       return Key();
+    }
     if constexpr (Index == 1)
+    {
       return Value();
+    }
   }
 };
 
@@ -126,18 +130,26 @@ public:
   std::tuple_element_t<Index, xiiHashTableBaseIterator>& get()
   {
     if constexpr (Index == 0)
+    {
       return xiiHashTableBaseConstIterator<KeyType, ValueType, Hasher>::Key();
+    }
     if constexpr (Index == 1)
+    {
       return Value();
+    }
   }
 
   template <std::size_t Index>
   std::tuple_element_t<Index, xiiHashTableBaseIterator>& get() const
   {
     if constexpr (Index == 0)
+    {
       return xiiHashTableBaseConstIterator<KeyType, ValueType, Hasher>::Key();
+    }
     if constexpr (Index == 1)
+    {
       return Value();
+    }
   }
 };
 

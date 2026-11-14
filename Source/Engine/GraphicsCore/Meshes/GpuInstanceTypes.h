@@ -57,9 +57,9 @@ struct XII_GRAPHICSCORE_DLL xiiGpuSceneInstance
   xiiMat4 m_PreviousGlobalTransform = xiiMat4::MakeIdentity();
   /// Rows of the inverse-transpose upper 3x3. Keeping these in the instance record avoids
   /// recomputing an inverse per mesh vertex and produces correct normals under non-uniform scale.
-  xiiVec4   m_NormalTransformRow0 = xiiVec4(1.0f, 0.0f, 0.0f, 0.0f);
-  xiiVec4   m_NormalTransformRow1 = xiiVec4(0.0f, 1.0f, 0.0f, 0.0f);
-  xiiVec4   m_NormalTransformRow2 = xiiVec4(0.0f, 0.0f, 1.0f, 0.0f);
+  xiiVec4   m_NormalTransformRow0 = xiiVec4(1.0F, 0.0F, 0.0F, 0.0F);
+  xiiVec4   m_NormalTransformRow1 = xiiVec4(0.0F, 1.0F, 0.0F, 0.0F);
+  xiiVec4   m_NormalTransformRow2 = xiiVec4(0.0F, 0.0F, 1.0F, 0.0F);
   xiiVec4   m_BoundsCenterRadius  = xiiVec4::MakeZero();
   xiiVec4   m_BoundsExtents       = xiiVec4::MakeZero();
   xiiUInt32 m_uiGeometryIndex     = xiiInvalidIndex;
@@ -73,7 +73,7 @@ struct XII_GRAPHICSCORE_DLL xiiGpuSceneInstance
   xiiUInt32 m_uiFirstPrimitive = 0U;
   xiiUInt32 m_uiPrimitiveCount = 0U; ///< Zero means the complete selected LOD.
   xiiUInt32 m_uiForcedLod      = xiiInvalidIndex;
-  float     m_fLodBias         = 0.0f;
+  float     m_fLodBias         = 0.0F;
   xiiUInt32 m_uiDrawLod        = xiiInvalidIndex;
   /// Dense index of the object supplying geometry-level LOD controls and history. Invalid means self.
   xiiUInt32 m_uiLodSelectionIndex = xiiInvalidIndex;

@@ -479,7 +479,9 @@ T xiiVariant::ConvertTo(xiiResult* out_pConversionStatus /* = nullptr*/) const
   if (!CanConvertTo<T>())
   {
     if (out_pConversionStatus != nullptr)
+    {
       *out_pConversionStatus = XII_FAILURE;
+    }
 
     return T();
   }
@@ -487,7 +489,9 @@ T xiiVariant::ConvertTo(xiiResult* out_pConversionStatus /* = nullptr*/) const
   if (m_uiType == TypeDeduction<T>::value)
   {
     if (out_pConversionStatus != nullptr)
+    {
       *out_pConversionStatus = XII_SUCCESS;
+    }
 
     return Cast<T>();
   }
@@ -497,7 +501,9 @@ T xiiVariant::ConvertTo(xiiResult* out_pConversionStatus /* = nullptr*/) const
   xiiVariantHelper::To(*this, result, bSuccessful);
 
   if (out_pConversionStatus != nullptr)
+  {
     *out_pConversionStatus = bSuccessful ? XII_SUCCESS : XII_FAILURE;
+  }
 
   return result;
 }

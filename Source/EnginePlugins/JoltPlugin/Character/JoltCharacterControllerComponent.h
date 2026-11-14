@@ -105,23 +105,23 @@ private:
   void OnDeactivated() override;
   void QueueCharacterUpdate();
 
-  float     m_fRadius                   = 0.35f;
-  float     m_fHeight                   = 1.8f;
+  float     m_fRadius                   = 0.35F;
+  float     m_fHeight                   = 1.8F;
   xiiUInt8  m_uiCollisionLayer          = 0;
-  float     m_fMass                     = 70.0f;
-  float     m_fMaxStrength              = 100.0f;
-  xiiAngle  m_MaxSlope                  = xiiAngle::MakeFromDegree(50.0f);
-  float     m_fStepUpHeight             = 0.35f;
-  float     m_fStepDownDistance         = 0.35f;
-  float     m_fPenetrationRecoverySpeed = 1.0f;
-  float     m_fContactTolerance         = 0.001f;
-  float     m_fContactPadding           = 0.02f;
+  float     m_fMass                     = 70.0F;
+  float     m_fMaxStrength              = 100.0F;
+  xiiAngle  m_MaxSlope                  = xiiAngle::MakeFromDegree(50.0F);
+  float     m_fStepUpHeight             = 0.35F;
+  float     m_fStepDownDistance         = 0.35F;
+  float     m_fPenetrationRecoverySpeed = 1.0F;
+  float     m_fContactTolerance         = 0.001F;
+  float     m_fContactPadding           = 0.02F;
   xiiUInt32 m_uiMaxCollisionIterations  = 5U;
-  float     m_fGravityFactor            = 1.0f;
+  float     m_fGravityFactor            = 1.0F;
   bool      m_bSimulationEnabled        = true;
 
   xiiVec3 m_vDesiredVelocity  = xiiVec3::MakeZero();
   xiiVec3 m_vTeleportPosition = xiiVec3::MakeZero();
-  float   m_fJumpSpeed        = 0.0f;
+  float   m_fJumpSpeed        = 0.0F;
   bool    m_bTeleportPending  = false;
 };

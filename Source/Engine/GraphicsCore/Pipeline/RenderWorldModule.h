@@ -104,13 +104,13 @@ public:
   xiiResult                UpdateWorldLights(xiiArrayPtr<xiiRenderData* const> packets);
   const xiiWorldLightData* GetWorldLightData() const { return m_pWorldLights.Borrow(); }
 
-  virtual ~xiiRenderWorldModule();
+  ~xiiRenderWorldModule() override;
 
-  virtual void Initialize() override;
+  void Initialize() override;
 
-  virtual void Deinitialize() override;
+  void Deinitialize() override;
 
-  virtual void OnSimulationStarted() override;
+  void OnSimulationStarted() override;
 
   /// Creates a new view and assumes ownership.
   ///

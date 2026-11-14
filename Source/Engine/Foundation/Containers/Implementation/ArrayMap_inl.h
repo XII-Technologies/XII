@@ -55,7 +55,9 @@ template <typename KEY, typename VALUE>
 inline void xiiArrayMapBase<KEY, VALUE>::Sort() const
 {
   if (m_bSorted)
+  {
     return;
+  }
 
   m_bSorted = true;
   m_Data.Sort();
@@ -121,7 +123,9 @@ xiiUInt32 xiiArrayMapBase<KEY, VALUE>::LowerBound(const CompatibleKeyType& key) 
   }
 
   if (lb == m_Data.GetCount())
+  {
     return xiiInvalidIndex;
+  }
 
   return lb;
 }
@@ -153,7 +157,9 @@ xiiUInt32 xiiArrayMapBase<KEY, VALUE>::UpperBound(const CompatibleKeyType& key) 
   }
 
   if (ub == m_Data.GetCount())
+  {
     return xiiInvalidIndex;
+  }
 
   return ub;
 }
@@ -242,7 +248,9 @@ bool xiiArrayMapBase<KEY, VALUE>::RemoveAndCopy(const CompatibleKeyType& key, bo
   const xiiUInt32 uiIndex = Find(key);
 
   if (uiIndex == xiiInvalidIndex)
+  {
     return false;
+  }
 
   RemoveAtAndCopy(uiIndex, bKeepSorted);
   return true;
@@ -262,15 +270,21 @@ bool xiiArrayMapBase<KEY, VALUE>::Contains(const CompatibleKeyType& key, const V
   xiiUInt32 atpos = LowerBound(key);
 
   if (atpos == xiiInvalidIndex)
+  {
     return false;
+  }
 
   while (atpos < m_Data.GetCount())
   {
     if (m_Data[atpos].key != key)
+    {
       return false;
+    }
 
     if (m_Data[atpos].value == value)
+    {
       return true;
+    }
 
     ++atpos;
   }

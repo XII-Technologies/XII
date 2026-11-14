@@ -28,14 +28,14 @@ private:
 class XII_EDITORPLUGINASSETS_DLL xiiVisualShaderNodeManager : public xiiDocumentNodeManager
 {
 public:
-  virtual bool InternalIsNode(const xiiDocumentObject* pObject) const override;
-  virtual void InternalCreatePins(const xiiDocumentObject* pObject, NodeInternal& ref_node) override;
-  virtual void GetNodeCreationTemplates(xiiDynamicArray<xiiNodeCreationTemplate>& out_templates) const override;
+  bool InternalIsNode(const xiiDocumentObject* pObject) const override;
+  void InternalCreatePins(const xiiDocumentObject* pObject, NodeInternal& ref_node) override;
+  void GetNodeCreationTemplates(xiiDynamicArray<xiiNodeCreationTemplate>& out_templates) const override;
 
-  virtual xiiStatus InternalCanConnect(const xiiPin& source, const xiiPin& target, CanConnectResult& out_result) const override;
+  xiiStatus InternalCanConnect(const xiiPin& source, const xiiPin& target, CanConnectResult& out_result) const override;
 
 private:
-  virtual xiiStatus InternalCanAdd(const xiiRTTI* pRtti, const xiiDocumentObject* pParent, xiiStringView sParentProperty, const xiiVariant& index) const override;
+  xiiStatus InternalCanAdd(const xiiRTTI* pRtti, const xiiDocumentObject* pParent, xiiStringView sParentProperty, const xiiVariant& index) const override;
 
   xiiUInt32 CountNodesOfType(xiiVisualShaderNodeType::Enum type) const;
 };

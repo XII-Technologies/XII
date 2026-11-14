@@ -16,7 +16,7 @@ class xiiSceneLayerBase : public xiiReflectedClass
 
 public:
   xiiSceneLayerBase();
-  ~xiiSceneLayerBase();
+  ~xiiSceneLayerBase() override;
 
 public:
   mutable xiiScene2Document* m_pDocument = nullptr;
@@ -28,7 +28,7 @@ class xiiSceneLayer : public xiiSceneLayerBase
 
 public:
   xiiSceneLayer();
-  ~xiiSceneLayer();
+  ~xiiSceneLayer() override;
 
 public:
   xiiUuid m_Layer;
@@ -40,7 +40,7 @@ class xiiSceneDocumentSettings : public xiiSceneDocumentSettingsBase
 
 public:
   xiiSceneDocumentSettings();
-  ~xiiSceneDocumentSettings();
+  ~xiiSceneDocumentSettings() override;
 
 public:
   xiiDynamicArray<xiiSceneLayerBase*> m_Layers;
@@ -71,7 +71,7 @@ class XII_EDITORPLUGINSCENE_DLL xiiScene2Document : public xiiSceneDocument
 
 public:
   xiiScene2Document(xiiStringView sDocumentPath);
-  ~xiiScene2Document();
+  ~xiiScene2Document() override;
 
   /// \name Scene Data Accessors
   ///@{
@@ -109,7 +109,7 @@ public:
   const xiiDocumentObject* GetLayerObject(const xiiUuid& layerGuid) const;
   xiiSceneDocument*        GetLayerDocument(const xiiUuid& layerGuid) const;
 
-  virtual xiiGameObjectDocument* GetRedirectedGameObjectDoc() override;
+  xiiGameObjectDocument* GetRedirectedGameObjectDoc() override;
 
   bool IsAnyLayerModified() const;
 
@@ -120,20 +120,20 @@ public:
   /// \name Base Class Functions
   ///@{
 
-  virtual void                     InitializeAfterLoading(bool bFirstTimeCreation) override;
-  virtual void                     InitializeAfterLoadingAndSaving() override;
-  virtual const xiiDocumentObject* GetSettingsObject() const override;
-  virtual void                     HandleEngineMessage(const xiiEditorEngineDocumentMsg* pMsg) override;
-  virtual xiiTaskGroupID           InternalSaveDocument(AfterSaveCallback callback) override;
-  virtual void                     SendGameWorldToEngine() override;
-  virtual xiiTransformStatus       InternalTransformAsset(xiiStringView sTargetFile, xiiStringView sOutputTag, const xiiPlatformProfile* pAssetProfile, const xiiAssetFileHeader& assetHeader, xiiBitflags<xiiTransformFlags> transformFlags) override;
+  void                     InitializeAfterLoading(bool bFirstTimeCreation) override;
+  void                     InitializeAfterLoadingAndSaving() override;
+  const xiiDocumentObject* GetSettingsObject() const override;
+  void                     HandleEngineMessage(const xiiEditorEngineDocumentMsg* pMsg) override;
+  xiiTaskGroupID           InternalSaveDocument(AfterSaveCallback callback) override;
+  void                     SendGameWorldToEngine() override;
+  xiiTransformStatus       InternalTransformAsset(xiiStringView sTargetFile, xiiStringView sOutputTag, const xiiPlatformProfile* pAssetProfile, const xiiAssetFileHeader& assetHeader, xiiBitflags<xiiTransformFlags> transformFlags) override;
 
   ///@}
   /// \name Selection Specific Functions
   ///@{
 
   void         PreventDoubleSelectionChange(bool b);
-  virtual void UndoSelection() override;
+  void         UndoSelection() override;
 
   ///@}
 

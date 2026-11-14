@@ -67,7 +67,9 @@ struct xiiConstructionCounter
     s_iDestructionsLast  = s_iDestructions;
 
     if (!b)
+    {
       PrintStats();
+    }
 
     return (b);
   }
@@ -80,7 +82,9 @@ struct xiiConstructionCounter
     s_iDestructionsLast  = s_iDestructions;
 
     if (!b)
+    {
       PrintStats();
+    }
 
     return (b);
   }
@@ -92,7 +96,9 @@ struct xiiConstructionCounter
     const bool bd = (s_iDestructions == (s_iDestructionsLast + iDes));
 
     if (!(bc && bd))
+    {
       PrintStats();
+    }
 
     s_iConstructionsLast = s_iConstructions;
     s_iDestructionsLast  = s_iDestructions;
@@ -110,7 +116,9 @@ struct xiiConstructionCounter
   static bool HasAllDestructed()
   {
     if (s_iConstructions != s_iDestructions)
+    {
       PrintStats();
+    }
 
     s_iConstructionsLast = s_iConstructions;
     s_iDestructionsLast  = s_iDestructions;
@@ -163,7 +171,9 @@ struct xiiConstructionCounterRelocatable
   ~xiiConstructionCounterRelocatable()
   {
     if (m_valid)
+    {
       s_iDestructions++;
+    }
   }
 
   void operator=(xiiConstructionCounterRelocatable&& other) noexcept
@@ -188,7 +198,9 @@ struct xiiConstructionCounterRelocatable
     const bool bd = (s_iDestructions == (s_iDestructionsLast + iDes));
 
     if (!(bc && bd))
+    {
       PrintStats();
+    }
 
     s_iConstructionsLast = s_iConstructions;
     s_iDestructionsLast  = s_iDestructions;
@@ -200,7 +212,9 @@ struct xiiConstructionCounterRelocatable
   static bool HasAllDestructed()
   {
     if (s_iConstructions != s_iDestructions)
+    {
       PrintStats();
+    }
 
     s_iConstructionsLast = s_iConstructions;
     s_iDestructionsLast  = s_iDestructions;

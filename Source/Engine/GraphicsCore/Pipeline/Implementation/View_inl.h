@@ -38,7 +38,9 @@ XII_ALWAYS_INLINE void xiiView::SetSwapChain(const xiiGALSwapChain* pSwapChain)
 XII_ALWAYS_INLINE void xiiView::SetCamera(xiiCamera* pCamera)
 {
   if (m_pCamera == pCamera)
+  {
     return;
+  }
 
   m_pCamera = pCamera;
   // Modification counters belong to a camera, so equal counters on a replacement camera must
@@ -103,7 +105,9 @@ XII_ALWAYS_INLINE xiiEnum<xiiRenderPath> xiiView::GetRenderPath() const
 XII_ALWAYS_INLINE void xiiView::SetRenderPath(xiiEnum<xiiRenderPath> value)
 {
   if (m_Data.m_RenderPath != value)
+  {
     InvalidateTemporalHistory();
+  }
 
   m_Data.m_RenderPath = value;
 }
@@ -116,7 +120,9 @@ XII_ALWAYS_INLINE const xiiRectFloat& xiiView::GetViewport() const
 XII_ALWAYS_INLINE void xiiView::SetViewport(const xiiRectFloat& viewport)
 {
   if (m_Data.m_ViewPortRect != viewport)
+  {
     InvalidateTemporalHistory();
+  }
 
   m_Data.m_ViewPortRect = viewport;
   UpdateRenderResolutionState();
@@ -153,7 +159,9 @@ XII_FORCE_INLINE bool xiiView::IsValid() const
 XII_FORCE_INLINE xiiResult xiiView::ComputePickingRay(float fScreenPosX, float fScreenPosY, xiiVec3& out_vRayStartPos, xiiVec3& out_vRayDir) const
 {
   if (m_pCamera == nullptr)
+  {
     return XII_FAILURE;
+  }
   UpdateCachedMatrices();
 
   return m_Data.ComputePickingRay(fScreenPosX, fScreenPosY, out_vRayStartPos, out_vRayDir);
@@ -169,7 +177,9 @@ XII_FORCE_INLINE xiiResult xiiView::ComputeScreenSpacePos(const xiiVec3& vPoint,
 XII_FORCE_INLINE xiiResult xiiView::ComputeWorldSpacePos(float fNormalizedScreenPosX, float fNormalizedScreenPosY, xiiVec3& out_vWorldPos) const
 {
   if (m_pCamera == nullptr)
+  {
     return XII_FAILURE;
+  }
   UpdateCachedMatrices();
 
   return m_Data.ComputeWorldSpacePos(fNormalizedScreenPosX, fNormalizedScreenPosY, out_vWorldPos);

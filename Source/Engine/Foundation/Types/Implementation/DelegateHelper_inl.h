@@ -32,7 +32,7 @@ private:
   }
 
 public:
-  virtual xiiLambdaDelegateStorageBase* Clone(xiiAllocator* pAllocator) const override
+  xiiLambdaDelegateStorageBase* Clone(xiiAllocator* pAllocator) const override
   {
     if constexpr (std::is_copy_constructible<Function>::value)
     {
@@ -45,7 +45,7 @@ public:
     }
   }
 
-  virtual void InplaceCopy(xiiUInt8* pBuffer) const override
+  void InplaceCopy(xiiUInt8* pBuffer) const override
   {
     if constexpr (std::is_copy_constructible<Function>::value)
     {
@@ -57,7 +57,7 @@ public:
     }
   }
 
-  virtual void InplaceMove(xiiUInt8* pBuffer) override
+  void InplaceMove(xiiUInt8* pBuffer) override
   {
     if constexpr (std::is_move_constructible<Function>::value)
     {

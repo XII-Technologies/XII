@@ -51,7 +51,7 @@ public:
   virtual void SetListener(xiiInt32 iIndex, const xiiVec3& vPosition, const xiiVec3& vForward, const xiiVec3& vUp, const xiiVec3& vVelocity) = 0;
 
   /// Plays a sound once. Callced by xiiSoundInterface::PlaySound().
-  virtual xiiResult OneShotSound(xiiStringView sResourceID, const xiiTransform& globalPosition, float fPitch = 1.0f, float fVolume = 1.0f, bool bBlockIfNotLoaded = true) = 0;
+  virtual xiiResult OneShotSound(xiiStringView sResourceID, const xiiTransform& globalPosition, float fPitch = 1.0F, float fVolume = 1.0F, bool bBlockIfNotLoaded = true) = 0;
 
   /// Plays a sound once.
   ///
@@ -68,5 +68,5 @@ public:
   ///
   /// Also by default a pitch of 1 is always used. If the game speed is not 1 (xiiWorld clock), a custom pitch would need to be provided,
   /// if the sound should play at the same speed.
-  static xiiResult PlaySound(xiiStringView sResourceID, const xiiTransform& globalPosition, float fPitch = 1.0f, float fVolume = 1.0f, bool bBlockIfNotLoaded = true);
+  static xiiResult PlaySound(xiiStringView sResourceID, const xiiTransform& globalPosition, float fPitch = 1.0F, float fVolume = 1.0F, bool bBlockIfNotLoaded = true);
 };

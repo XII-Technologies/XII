@@ -18,7 +18,7 @@ class XII_EDITORFRAMEWORK_DLL xiiAssetDocumentManager : public xiiDocumentManage
 
 public:
   xiiAssetDocumentManager();
-  ~xiiAssetDocumentManager();
+  ~xiiAssetDocumentManager() override;
 
   /// Opens the asset file and reads the "Header" into the given xiiAssetDocumentInfo.
   virtual xiiStatus ReadAssetDocumentInfo(xiiUniquePtr<xiiAssetDocumentInfo>& out_pInfo, xiiStreamReader& inout_stream) const;
@@ -30,7 +30,7 @@ public:
 
   // xiiDocumentManager overrides:
 public:
-  virtual xiiStatus CloneDocument(xiiStringView sPath, xiiStringView sClonePath, xiiUuid& inout_cloneGuid) override;
+  xiiStatus CloneDocument(xiiStringView sPath, xiiStringView sClonePath, xiiUuid& inout_cloneGuid) override;
 
   /// \name Asset Profile Functions
   ///@{

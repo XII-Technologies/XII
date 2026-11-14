@@ -43,15 +43,15 @@ public:
 
   xiiObjectMetaData();
 
-  bool HasMetaData(const KEY objectKey) const;
+  bool HasMetaData(KEY objectKey) const;
 
-  void ClearMetaData(const KEY objectKey);
+  void ClearMetaData(KEY objectKey);
 
   /// Will always return a non-null result. May be a default object.
-  const VALUE* BeginReadMetaData(const KEY objectKey) const;
+  const VALUE* BeginReadMetaData(KEY objectKey) const;
   void         EndReadMetaData() const;
 
-  VALUE* BeginModifyMetaData(const KEY objectKey);
+  VALUE* BeginModifyMetaData(KEY objectKey);
   void   EndModifyMetaData(xiiUInt32 uiModifiedFlags = 0xFFFFFFFF);
 
 

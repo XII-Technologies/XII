@@ -32,10 +32,10 @@ public:
   };
 
   /// Normalization factor for getting colors by index. E.g. xiiColorScheme::Blue * s_fIndexNormalizer would get exactly Blue as color.
-  constexpr static float s_fIndexNormalizer = 1.0f / (Count - 2);
+  constexpr static float s_fIndexNormalizer = 1.0F / (Count - 2);
 
   /// Get the scheme color with the given brightness (0..9) and with optional saturation and alpha.
-  XII_FORCE_INLINE static xiiColor GetColor(Enum schemeColor, xiiUInt8 uiBrightness, float fSaturation = 1.0f, float fAlpha = 1.0f)
+  XII_FORCE_INLINE static xiiColor GetColor(Enum schemeColor, xiiUInt8 uiBrightness, float fSaturation = 1.0F, float fAlpha = 1.0F)
   {
     XII_ASSERT_DEV(uiBrightness <= 9, "Brightness is too large");
 
@@ -46,7 +46,7 @@ public:
 
   /// Get the scheme color using a floating point index instead of the enum. The resulting color will be interpolated between the predefined ones.
   /// Does not include gray.
-  static xiiColor GetColor(float fIndex, xiiUInt8 uiBrightness, float fSaturation = 1.0f, float fAlpha = 1.0f);
+  static xiiColor GetColor(float fIndex, xiiUInt8 uiBrightness, float fSaturation = 1.0F, float fAlpha = 1.0F);
 
   /// Get a scheme color with predefined brightness and saturation to look good with the XII tools dark UI scheme.
   XII_ALWAYS_INLINE static xiiColor DarkUI(Enum schemeColor)
@@ -57,7 +57,8 @@ public:
   /// Gets a scheme color by index with predefined brightness and saturation to look good with the XII tools dark UI scheme.
   XII_FORCE_INLINE static xiiColor DarkUI(float fIndex)
   {
-    xiiUInt32 uiIndexA, uiIndexB;
+    xiiUInt32 uiIndexA;
+    xiiUInt32 uiIndexB;
     float     fFrac;
     GetInterpolation(fIndex, uiIndexA, uiIndexB, fFrac);
 
@@ -73,7 +74,8 @@ public:
   /// Get a scheme color by index with predefined brightness and saturation to look good as highlight color in XII tools. Can also be used in a 3D scene for e.g. visualizers etc.
   XII_FORCE_INLINE static xiiColor LightUI(float fIndex)
   {
-    xiiUInt32 uiIndexA, uiIndexB;
+    xiiUInt32 uiIndexA;
+    xiiUInt32 uiIndexB;
     float     fFrac;
     GetInterpolation(fIndex, uiIndexA, uiIndexB, fFrac);
 

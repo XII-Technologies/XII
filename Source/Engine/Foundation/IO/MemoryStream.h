@@ -88,34 +88,38 @@ public:
     m_Storage.Reserve(uiInitialCapacity);
   }
 
-  virtual xiiUInt64 GetStorageSize64() const override { return m_Storage.GetCount(); }
-  virtual void      Clear() override { m_Storage.Clear(); }
-  virtual void      Compact() override { m_Storage.Compact(); }
-  virtual xiiUInt64 GetHeapMemoryUsage() const override { return m_Storage.GetHeapMemoryUsage(); }
+  xiiUInt64 GetStorageSize64() const override { return m_Storage.GetCount(); }
+  void      Clear() override { m_Storage.Clear(); }
+  void      Compact() override { m_Storage.Compact(); }
+  xiiUInt64 GetHeapMemoryUsage() const override { return m_Storage.GetHeapMemoryUsage(); }
 
-  virtual void Reserve(xiiUInt64 uiBytes) override
+  void Reserve(xiiUInt64 uiBytes) override
   {
     XII_ASSERT_DEV(uiBytes <= xiiMath::MaxValue<xiiUInt32>(), "xiiMemoryStreamContainerStorage only supports 32 bit addressable sizes.");
     m_Storage.Reserve(static_cast<xiiUInt32>(uiBytes));
   }
 
-  virtual xiiResult CopyToStream(xiiStreamWriter& ref_stream) const override
+  xiiResult CopyToStream(xiiStreamWriter& ref_stream) const override
   {
     return ref_stream.WriteBytes(m_Storage.GetData(), m_Storage.GetCount());
   }
 
-  virtual xiiArrayPtr<const xiiUInt8> GetContiguousMemoryRange(xiiUInt64 uiStartByte) const override
+  xiiArrayPtr<const xiiUInt8> GetContiguousMemoryRange(xiiUInt64 uiStartByte) const override
   {
     if (uiStartByte >= m_Storage.GetCount())
+    {
       return {};
+    }
 
     return xiiArrayPtr<const xiiUInt8>(m_Storage.GetData() + uiStartByte, m_Storage.GetCount() - static_cast<xiiUInt32>(uiStartByte));
   }
 
-  virtual xiiArrayPtr<xiiUInt8> GetContiguousMemoryRange(xiiUInt64 uiStartByte) override
+  xiiArrayPtr<xiiUInt8> GetContiguousMemoryRange(xiiUInt64 uiStartByte) override
   {
     if (uiStartByte >= m_Storage.GetCount())
+    {
       return {};
+    }
 
     return xiiArrayPtr<xiiUInt8>(m_Storage.GetData() + uiStartByte, m_Storage.GetCount() - static_cast<xiiUInt32>(uiStartByte));
   }
@@ -124,7 +128,7 @@ public:
   const xiiUInt8* GetData() const { return m_Storage.GetData(); }
 
 private:
-  virtual void SetInternalSize(xiiUInt64 uiSize) override
+  void SetInternalSize(xiiUInt64 uiSize) override
   {
     XII_ASSERT_DEV(uiSize <= xiiMath::MaxValue<xiiUInt32>(), "Storage that large is not supported.");
     m_Storage.SetCountUninitialized(static_cast<xiiUInt32>(uiSize));
@@ -163,20 +167,20 @@ class XII_FOUNDATION_DLL xiiDefaultMemoryStreamStorage final : public xiiMemoryS
 {
 public:
   xiiDefaultMemoryStreamStorage(xiiUInt32 uiInitialCapacity = 0, xiiAllocator* pAllocator = xiiFoundation::GetDefaultAllocator());
-  ~xiiDefaultMemoryStreamStorage();
+  ~xiiDefaultMemoryStreamStorage() override;
 
-  virtual void Reserve(xiiUInt64 uiBytes) override; // [tested]
+  void Reserve(xiiUInt64 uiBytes) override; // [tested]
 
-  virtual xiiUInt64                   GetStorageSize64() const override; // [tested]
-  virtual void                        Clear() override;
-  virtual void                        Compact() override;
-  virtual xiiUInt64                   GetHeapMemoryUsage() const override;
-  virtual xiiResult                   CopyToStream(xiiStreamWriter& ref_stream) const override;
-  virtual xiiArrayPtr<const xiiUInt8> GetContiguousMemoryRange(xiiUInt64 uiStartByte) const override; // [tested]
-  virtual xiiArrayPtr<xiiUInt8>       GetContiguousMemoryRange(xiiUInt64 uiStartByte) override;       // [tested]
+  xiiUInt64                   GetStorageSize64() const override; // [tested]
+  void                        Clear() override;
+  void                        Compact() override;
+  xiiUInt64                   GetHeapMemoryUsage() const override;
+  xiiResult                   CopyToStream(xiiStreamWriter& ref_stream) const override;
+  xiiArrayPtr<const xiiUInt8> GetContiguousMemoryRange(xiiUInt64 uiStartByte) const override; // [tested]
+  xiiArrayPtr<xiiUInt8>       GetContiguousMemoryRange(xiiUInt64 uiStartByte) override;       // [tested]
 
 private:
-  virtual void SetInternalSize(xiiUInt64 uiSize) override;
+  void SetInternalSize(xiiUInt64 uiSize) override;
 
   void AddChunk(xiiUInt32 uiMinimumSize);
 
@@ -206,9 +210,9 @@ class xiiMemoryStreamContainerWrapperStorage : public xiiMemoryStreamStorageInte
 public:
   xiiMemoryStreamContainerWrapperStorage(CONTAINER* pContainer) { m_pStorage = pContainer; }
 
-  virtual xiiUInt64 GetStorageSize64() const override { return m_pStorage->GetCount(); }
+  xiiUInt64 GetStorageSize64() const override { return m_pStorage->GetCount(); }
 
-  virtual void Clear() override
+  void Clear() override
   {
     if constexpr (!std::is_const<CONTAINER>::value)
     {
@@ -216,7 +220,7 @@ public:
     }
   }
 
-  virtual void Compact() override
+  void Compact() override
   {
     if constexpr (!std::is_const<CONTAINER>::value)
     {
@@ -224,9 +228,9 @@ public:
     }
   }
 
-  virtual xiiUInt64 GetHeapMemoryUsage() const override { return m_pStorage->GetHeapMemoryUsage(); }
+  xiiUInt64 GetHeapMemoryUsage() const override { return m_pStorage->GetHeapMemoryUsage(); }
 
-  virtual void Reserve(xiiUInt64 uiBytes) override
+  void Reserve(xiiUInt64 uiBytes) override
   {
     if constexpr (!std::is_const<CONTAINER>::value)
     {
@@ -235,25 +239,29 @@ public:
     }
   }
 
-  virtual xiiResult CopyToStream(xiiStreamWriter& ref_stream) const override
+  xiiResult CopyToStream(xiiStreamWriter& ref_stream) const override
   {
     return ref_stream.WriteBytes(m_pStorage->GetData(), m_pStorage->GetCount());
   }
 
-  virtual xiiArrayPtr<const xiiUInt8> GetContiguousMemoryRange(xiiUInt64 uiStartByte) const override
+  xiiArrayPtr<const xiiUInt8> GetContiguousMemoryRange(xiiUInt64 uiStartByte) const override
   {
     if (uiStartByte >= m_pStorage->GetCount())
+    {
       return {};
+    }
 
     return xiiArrayPtr<const xiiUInt8>(m_pStorage->GetData() + uiStartByte, m_pStorage->GetCount() - static_cast<xiiUInt32>(uiStartByte));
   }
 
-  virtual xiiArrayPtr<xiiUInt8> GetContiguousMemoryRange(xiiUInt64 uiStartByte) override
+  xiiArrayPtr<xiiUInt8> GetContiguousMemoryRange(xiiUInt64 uiStartByte) override
   {
     if constexpr (!std::is_const<CONTAINER>::value)
     {
       if (uiStartByte >= m_pStorage->GetCount())
+      {
         return {};
+      }
 
       return xiiArrayPtr<xiiUInt8>(m_pStorage->GetData() + uiStartByte, m_pStorage->GetCount() - static_cast<xiiUInt32>(uiStartByte));
     }
@@ -264,7 +272,7 @@ public:
   }
 
 private:
-  virtual void SetInternalSize(xiiUInt64 uiSize) override
+  void SetInternalSize(xiiUInt64 uiSize) override
   {
     if (!std::is_const<CONTAINER>::value)
     {
@@ -292,7 +300,7 @@ public:
   /// Pass nullptr if you are going to set the storage stream later via SetStorage().
   xiiMemoryStreamReader(const xiiMemoryStreamStorageInterface* pStreamStorage = nullptr);
 
-  ~xiiMemoryStreamReader();
+  ~xiiMemoryStreamReader() override;
 
   /// Sets the storage object upon which to operate. Resets the read position to zero.
   /// Pass nullptr if you want to detach from any previous storage stream, for example to ensure its reference count gets properly reduced.
@@ -305,10 +313,10 @@ public:
   /// Reads either uiBytesToRead or the amount of remaining bytes in the stream into pReadBuffer.
   ///
   /// It is valid to pass nullptr for pReadBuffer, in this case the memory stream position is only advanced by the given number of bytes.
-  virtual xiiUInt64 ReadBytes(void* pReadBuffer, xiiUInt64 uiBytesToRead) override; // [tested]
+  xiiUInt64 ReadBytes(void* pReadBuffer, xiiUInt64 uiBytesToRead) override; // [tested]
 
   /// Skips bytes in the stream (e.g. for skipping objects which can't be serialized due to missing information etc.)
-  virtual xiiUInt64 SkipBytes(xiiUInt64 uiBytesToSkip) override; // [tested]
+  xiiUInt64 SkipBytes(xiiUInt64 uiBytesToSkip) override; // [tested]
 
   /// Sets the read position to be used
   void SetReadPosition(xiiUInt64 uiReadPosition); // [tested]
@@ -345,7 +353,7 @@ public:
   /// Pass the memory storage object to which to write to.
   xiiMemoryStreamWriter(xiiMemoryStreamStorageInterface* pStreamStorage = nullptr);
 
-  ~xiiMemoryStreamWriter();
+  ~xiiMemoryStreamWriter() override;
 
   /// Sets the storage object upon which to operate. Resets the write position to the end of the storage stream.
   /// Pass nullptr if you want to detach from any previous storage stream, for example to ensure its reference count gets properly reduced.
@@ -354,13 +362,15 @@ public:
     m_pStreamStorage  = pStreamStorage;
     m_uiWritePosition = 0;
     if (m_pStreamStorage)
+    {
       m_uiWritePosition = m_pStreamStorage->GetStorageSize64();
+    }
   }
 
   /// Copies uiBytesToWrite from pWriteBuffer into the memory stream.
   ///
   /// pWriteBuffer must be a valid buffer and must hold that much data.
-  virtual xiiResult WriteBytes(const void* pWriteBuffer, xiiUInt64 uiBytesToWrite) override; // [tested]
+  xiiResult WriteBytes(const void* pWriteBuffer, xiiUInt64 uiBytesToWrite) override; // [tested]
 
   /// Sets the write position to be used
   void SetWritePosition(xiiUInt64 uiWritePosition); // [tested]
@@ -400,7 +410,7 @@ public:
     Reset(container);
   }
 
-  ~xiiRawMemoryStreamReader();
+  ~xiiRawMemoryStreamReader() override;
 
   void Reset(const void* pData, xiiUInt64 uiDataSize); // [tested]
 
@@ -413,10 +423,10 @@ public:
   /// Reads either uiBytesToRead or the amount of remaining bytes in the stream into pReadBuffer.
   ///
   /// It is valid to pass nullptr for pReadBuffer, in this case the memory stream position is only advanced by the given number of bytes.
-  virtual xiiUInt64 ReadBytes(void* pReadBuffer, xiiUInt64 uiBytesToRead) override; // [tested]
+  xiiUInt64 ReadBytes(void* pReadBuffer, xiiUInt64 uiBytesToRead) override; // [tested]
 
   /// Skips bytes in the stream (e.g. for skipping objects which can't be serialized due to missing information etc.)
-  virtual xiiUInt64 SkipBytes(xiiUInt64 uiBytesToSkip) override; // [tested]
+  xiiUInt64 SkipBytes(xiiUInt64 uiBytesToSkip) override; // [tested]
 
   /// Sets the read position to be used
   void SetReadPosition(xiiUInt64 uiReadPosition); // [tested]
@@ -461,7 +471,7 @@ public:
     Reset(ref_container);
   }
 
-  ~xiiRawMemoryStreamWriter(); // [tested]
+  ~xiiRawMemoryStreamWriter() override; // [tested]
 
   void Reset(void* pData, xiiUInt64 uiDataSize); // [tested]
 
@@ -483,7 +493,7 @@ public:
   /// Copies uiBytesToWrite from pWriteBuffer into the memory stream.
   ///
   /// pWriteBuffer must be a valid buffer and must hold that much data.
-  virtual xiiResult WriteBytes(const void* pWriteBuffer, xiiUInt64 uiBytesToWrite) override; // [tested]
+  xiiResult WriteBytes(const void* pWriteBuffer, xiiUInt64 uiBytesToWrite) override; // [tested]
 
 private:
   xiiUInt8* m_pRawMemory = nullptr;

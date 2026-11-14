@@ -5,7 +5,9 @@
 XII_STATICLINK_LIBRARY(DearImguiPlugin)
 {
   if (bReturn)
+  {
     return;
+  }
 
   XII_STATICLINK_REFERENCE(DearImguiPlugin_Implementation_DearImguiSubsystem);
   XII_STATICLINK_REFERENCE(DearImguiPlugin_Implementation_DearImguiContext);

@@ -19,13 +19,13 @@ public:
 
   void AddSimpleTest(const char* szName, SimpleTestFunc testFunc);
 
-  virtual const char* GetTestName() const override { return m_szTestName; }
+  const char* GetTestName() const override { return m_szTestName; }
 
 private:
-  virtual void          SetupSubTests() override;
-  virtual xiiTestAppRun RunSubTest(xiiInt32 iIdentifier, xiiUInt32 uiInvocationCount) override;
-  virtual xiiResult     InitializeSubTest(xiiInt32 iIdentifier) override;
-  virtual xiiResult     DeInitializeSubTest(xiiInt32 iIdentifier) override;
+  void          SetupSubTests() override;
+  xiiTestAppRun RunSubTest(xiiInt32 iIdentifier, xiiUInt32 uiInvocationCount) override;
+  xiiResult     InitializeSubTest(xiiInt32 iIdentifier) override;
+  xiiResult     DeInitializeSubTest(xiiInt32 iIdentifier) override;
 
 private:
   struct SimpleTestEntry

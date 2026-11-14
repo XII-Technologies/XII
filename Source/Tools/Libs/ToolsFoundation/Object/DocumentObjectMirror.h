@@ -64,7 +64,7 @@ protected:
   bool           IsDiscardedByFilter(const xiiDocumentObject* pObject, xiiStringView sProperty) const;
   static void    CreatePath(xiiObjectChange& out_change, const xiiDocumentObject* pRoot, xiiStringView sProperty);
   static xiiUuid FindRootOpObject(const xiiDocumentObject* pObject, xiiHybridArray<const xiiDocumentObject*, 8>& path);
-  static void    FlattenSteps(const xiiArrayPtr<const xiiDocumentObject* const> path, xiiHybridArray<xiiPropertyPathStep, 2>& out_steps);
+  static void    FlattenSteps(xiiArrayPtr<const xiiDocumentObject* const> path, xiiHybridArray<xiiPropertyPathStep, 2>& out_steps);
 
   virtual void ApplyOp(xiiObjectChange& change);
   void         ApplyOp(xiiRttiConverterObject object, const xiiObjectChange& change);

@@ -12,7 +12,7 @@ class XII_TEST_DLL xiiTestLogInterface : public xiiLogInterface
 public:
   xiiTestLogInterface() = default;
   ~xiiTestLogInterface();
-  virtual void HandleLogMessage(const xiiLoggingEventData& le) override;
+  void HandleLogMessage(const xiiLoggingEventData& le) override;
 
   /// Add expected message. Will fail the test when the expected message is not
   /// encountered. Can take an optional count, if messages are expected multiple times

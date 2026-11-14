@@ -36,10 +36,12 @@ public:
   xiiSubSystem()
   {
     for (xiiInt32 i = 0; i < xiiStartupStage::ENUM_COUNT; ++i)
+    {
       m_bStartupDone[i] = false;
+    }
   }
 
-  virtual ~xiiSubSystem() = default;
+  ~xiiSubSystem() = default;
 
   /// Returns the name of the subsystem. Must be overridden.
   virtual xiiStringView GetSubSystemName() const = 0;

@@ -103,9 +103,9 @@ public:
   };
 
   xiiSceneAction(const xiiActionContext& context, const char* szName, ActionType type);
-  ~xiiSceneAction();
+  ~xiiSceneAction() override;
 
-  virtual void Execute(const xiiVariant& value) override;
+  void Execute(const xiiVariant& value) override;
 
   void        LaunchPlayer(const xiiPlayerLaunchConfig& config, bool bUseCurrentScene);
   QStringList GetPlayerCommandLine(xiiStringBuilder& out_sSingleLine) const;

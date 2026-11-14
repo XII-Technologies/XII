@@ -82,31 +82,31 @@ struct XII_GRAPHICSCORE_DLL xiiSensorCalibration
   xiiUInt32 m_uiResolutionX = 1280U;
   xiiUInt32 m_uiResolutionY = 720U;
 
-  float m_fFocalLengthXPixels    = 640.0f;
-  float m_fFocalLengthYPixels    = 640.0f;
-  float m_fPrincipalPointXPixels = 639.5f;
-  float m_fPrincipalPointYPixels = 359.5f;
+  float m_fFocalLengthXPixels    = 640.0F;
+  float m_fFocalLengthYPixels    = 640.0F;
+  float m_fPrincipalPointXPixels = 639.5F;
+  float m_fPrincipalPointYPixels = 359.5F;
 
   /// Brown-Conrady coefficients in normalized sensor coordinates.
   /// Radial stores k1, k2, k3; tangential stores p1, p2.
   xiiVec3 m_vRadialDistortion     = xiiVec3::MakeZero();
   xiiVec2 m_vTangentialDistortion = xiiVec2::MakeZero();
 
-  float m_fNearPlaneMeters       = 0.05f;
-  float m_fFarPlaneMeters        = 1000.0f;
-  float m_fExposureSeconds       = 1.0f / 60.0f;
-  float m_fRollingShutterSeconds = 0.0f;
+  float m_fNearPlaneMeters       = 0.05F;
+  float m_fFarPlaneMeters        = 1000.0F;
+  float m_fExposureSeconds       = 1.0F / 60.0F;
+  float m_fRollingShutterSeconds = 0.0F;
 
-  float     m_fWavelengthNanometers              = 550.0f;
-  xiiVec3   m_vSpectralSensitivity               = xiiVec3(0.2126f, 0.7152f, 0.0722f);
-  float     m_fQuantumEfficiency                 = 0.72f;
-  float     m_fRadianceToElectrons               = 10000.0f;
-  float     m_fAnalogGain                        = 1.0f;
-  float     m_fReadNoiseElectrons                = 1.5f;
-  float     m_fShotNoiseScale                    = 1.0f;
-  float     m_fSaturationElectrons               = 30000.0f;
-  float     m_fDepthNoiseStandardDeviationMeters = 0.002f;
-  float     m_fDepthNoiseScalePerMeter           = 0.001f;
+  float     m_fWavelengthNanometers              = 550.0F;
+  xiiVec3   m_vSpectralSensitivity               = xiiVec3(0.2126F, 0.7152F, 0.0722F);
+  float     m_fQuantumEfficiency                 = 0.72F;
+  float     m_fRadianceToElectrons               = 10000.0F;
+  float     m_fAnalogGain                        = 1.0F;
+  float     m_fReadNoiseElectrons                = 1.5F;
+  float     m_fShotNoiseScale                    = 1.0F;
+  float     m_fSaturationElectrons               = 30000.0F;
+  float     m_fDepthNoiseStandardDeviationMeters = 0.002F;
+  float     m_fDepthNoiseScalePerMeter           = 0.001F;
   xiiUInt32 m_uiOutputBitDepth                   = 16U;
   xiiUInt32 m_uiNoiseSeed                        = 0U;
 };

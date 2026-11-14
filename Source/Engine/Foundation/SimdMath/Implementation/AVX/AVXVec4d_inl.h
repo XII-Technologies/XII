@@ -224,8 +224,8 @@ inline bool xiiSimdVec4d::IsNaN() const
   // Mantissa Mask  ->  XII_BIT(MANTISSA_BITS) - 1  ->   XII_BIT(52) - 1
   // Exponent Mask  ->  MAX_BITS XOR MANTISSA_BTIS  ->  (XII_BIT(63) - 1) ^ ((XII_BIT(52) - 1)
 
-  alignas(32) const xiiUInt64 s_exponentMask[4] = {0x7FF0000000000000ull, 0x7FF0000000000000ull, 0x7FF0000000000000ull, 0x7FF0000000000000ull};
-  alignas(32) const xiiUInt64 s_mantissaMask[4] = {0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu};
+  alignas(32) const xiiUInt64 s_exponentMask[4] = {0x7FF0000000000000ULL, 0x7FF0000000000000ULL, 0x7FF0000000000000ULL, 0x7FF0000000000000ULL};
+  alignas(32) const xiiUInt64 s_mantissaMask[4] = {0xFFFFFFFFU, 0xFFFFFFFFU, 0xFFFFFFFFU, 0xFFFFFFFFU};
 
   __m256d exponentMask = _mm256_load_pd(reinterpret_cast<const double*>(s_exponentMask));
   __m256d mantissaMask = _mm256_load_pd(reinterpret_cast<const double*>(s_mantissaMask));
@@ -244,7 +244,7 @@ XII_ALWAYS_INLINE bool xiiSimdVec4d::IsValid() const
   // NAN -> (exponent = all 1, mantissa = non-zero)
   // INF -> (exponent = all 1, mantissa = zero)
 
-  alignas(32) const xiiUInt64 s_exponentMask[4] = {0x7FF0000000000000ull, 0x7FF0000000000000ull, 0x7FF0000000000000ull, 0x7FF0000000000000ull};
+  alignas(32) const xiiUInt64 s_exponentMask[4] = {0x7FF0000000000000ULL, 0x7FF0000000000000ULL, 0x7FF0000000000000ULL, 0x7FF0000000000000ULL};
 
   __m256d exponentMask = _mm256_load_pd(reinterpret_cast<const double*>(s_exponentMask));
 

@@ -18,7 +18,7 @@ XII_FORCE_INLINE xiiBoundingSphereTemplate<Type> xiiBoundingSphereTemplate<Type>
 {
   xiiBoundingSphereTemplate<Type> res;
   res.m_vCenter.SetZero();
-  res.m_fRadius = 0.0f;
+  res.m_fRadius = 0.0F;
   return res;
 }
 
@@ -50,7 +50,7 @@ XII_FORCE_INLINE xiiBoundingSphereTemplate<Type> xiiBoundingSphereTemplate<Type>
 
   const xiiVec3Template<Type>* pCur = &pPoints[0];
 
-  xiiVec3Template<Type> vCenter(0.0f);
+  xiiVec3Template<Type> vCenter(0.0F);
 
   for (xiiUInt32 i = 0; i < uiNumPoints; ++i)
   {
@@ -60,7 +60,7 @@ XII_FORCE_INLINE xiiBoundingSphereTemplate<Type> xiiBoundingSphereTemplate<Type>
 
   vCenter /= (Type)uiNumPoints;
 
-  Type fMaxDistSQR = 0.0f;
+  Type fMaxDistSQR = 0.0F;
 
   pCur = &pPoints[0];
   for (xiiUInt32 i = 0; i < uiNumPoints; ++i)
@@ -89,7 +89,7 @@ bool xiiBoundingSphereTemplate<Type>::IsZero(Type fEpsilon /* = xiiMath::Default
 template <typename Type>
 bool xiiBoundingSphereTemplate<Type>::IsValid() const
 {
-  return (m_vCenter.IsValid() && m_fRadius >= 0.0f);
+  return (m_vCenter.IsValid() && m_fRadius >= 0.0F);
 }
 
 template <typename Type>
@@ -104,7 +104,9 @@ void xiiBoundingSphereTemplate<Type>::ExpandToInclude(const xiiVec3Template<Type
   const Type fDistSQR = (vPoint - m_vCenter).GetLengthSquared();
 
   if (xiiMath::Square(m_fRadius) < fDistSQR)
+  {
     m_fRadius = xiiMath::Sqrt(fDistSQR);
+  }
 }
 
 template <typename Type>
@@ -158,7 +160,7 @@ XII_ALWAYS_INLINE void xiiBoundingSphereTemplate<Type>::Translate(const xiiVec3T
 template <typename Type>
 XII_FORCE_INLINE void xiiBoundingSphereTemplate<Type>::ScaleFromCenter(Type fScale)
 {
-  XII_ASSERT_DEBUG(fScale >= 0.0f, "Cannot invert the sphere.");
+  XII_ASSERT_DEBUG(fScale >= 0.0F, "Cannot invert the sphere.");
 
   m_fRadius *= fScale;
 
@@ -168,9 +170,9 @@ XII_FORCE_INLINE void xiiBoundingSphereTemplate<Type>::ScaleFromCenter(Type fSca
 template <typename Type>
 void xiiBoundingSphereTemplate<Type>::ScaleFromOrigin(const xiiVec3Template<Type>& vScale)
 {
-  XII_ASSERT_DEBUG(vScale.x >= 0.0f, "Cannot invert the sphere.");
-  XII_ASSERT_DEBUG(vScale.y >= 0.0f, "Cannot invert the sphere.");
-  XII_ASSERT_DEBUG(vScale.z >= 0.0f, "Cannot invert the sphere.");
+  XII_ASSERT_DEBUG(vScale.x >= 0.0F, "Cannot invert the sphere.");
+  XII_ASSERT_DEBUG(vScale.y >= 0.0F, "Cannot invert the sphere.");
+  XII_ASSERT_DEBUG(vScale.z >= 0.0F, "Cannot invert the sphere.");
 
   m_vCenter = m_vCenter.CompMul(vScale);
 
@@ -235,7 +237,9 @@ const xiiVec3Template<Type> xiiBoundingSphereTemplate<Type>::GetClampedPoint(con
 
   // return the point, if it is already inside the sphere
   if (fDistSQR <= xiiMath::Square(m_fRadius))
+  {
     return vPoint;
+  }
 
   // otherwise return a point on the surface of the sphere
 
@@ -258,7 +262,9 @@ bool xiiBoundingSphereTemplate<Type>::Contains(const xiiVec3Template<Type>* pPoi
   for (xiiUInt32 i = 0; i < uiNumPoints; ++i)
   {
     if ((*pCur - m_vCenter).GetLengthSquared() > fRadiusSQR)
+    {
       return false;
+    }
 
     pCur = xiiMemoryUtils::AddByteOffset(pCur, uiStride);
   }
@@ -280,7 +286,9 @@ bool xiiBoundingSphereTemplate<Type>::Overlaps(const xiiVec3Template<Type>* pPoi
   for (xiiUInt32 i = 0; i < uiNumPoints; ++i)
   {
     if ((*pCur - m_vCenter).GetLengthSquared() <= fRadiusSQR)
+    {
       return true;
+    }
 
     pCur = xiiMemoryUtils::AddByteOffset(pCur, uiStride);
   }
@@ -296,7 +304,7 @@ void xiiBoundingSphereTemplate<Type>::ExpandToInclude(const xiiVec3Template<Type
 
   const xiiVec3Template<Type>* pCur = &pPoints[0];
 
-  Type fMaxDistSQR = 0.0f;
+  Type fMaxDistSQR = 0.0F;
 
   for (xiiUInt32 i = 0; i < uiNumPoints; ++i)
   {
@@ -307,7 +315,9 @@ void xiiBoundingSphereTemplate<Type>::ExpandToInclude(const xiiVec3Template<Type
   }
 
   if (xiiMath::Square(m_fRadius) < fMaxDistSQR)
+  {
     m_fRadius = xiiMath::Sqrt(fMaxDistSQR);
+  }
 }
 
 template <typename Type>
@@ -346,27 +356,39 @@ bool xiiBoundingSphereTemplate<Type>::GetRayIntersection(const xiiVec3Template<T
   const Type d             = vRelPos.Dot(vRayDirNormalized);
   const Type fRelPosLenSQR = vRelPos.GetLengthSquared();
 
-  if (d < 0.0f && fRelPosLenSQR > fRadiusSQR)
+  if (d < 0.0F && fRelPosLenSQR > fRadiusSQR)
+  {
     return false;
+  }
 
   const Type m2 = fRelPosLenSQR - xiiMath::Square(d);
 
   if (m2 > fRadiusSQR)
+  {
     return false;
+  }
 
   const Type q = xiiMath::Sqrt(fRadiusSQR - m2);
 
   Type fIntersectionTime;
 
   if (fRelPosLenSQR > fRadiusSQR)
+  {
     fIntersectionTime = d - q;
+  }
   else
+  {
     fIntersectionTime = d + q;
+  }
 
   if (out_pIntersectionDistance)
+  {
     *out_pIntersectionDistance = fIntersectionTime;
+  }
   if (out_pIntersection)
+  {
     *out_pIntersection = vRayStartPos + vRayDirNormalized * fIntersectionTime;
+  }
 
   return true;
 }
@@ -374,23 +396,31 @@ bool xiiBoundingSphereTemplate<Type>::GetRayIntersection(const xiiVec3Template<T
 template <typename Type>
 bool xiiBoundingSphereTemplate<Type>::GetLineSegmentIntersection(const xiiVec3Template<Type>& vLineStartPos, const xiiVec3Template<Type>& vLineEndPos, Type* out_pHitFraction /* = nullptr */, xiiVec3Template<Type>* out_pIntersection /* = nullptr */) const
 {
-  Type fIntersection = 0.0f;
+  Type fIntersection = 0.0F;
 
   const xiiVec3Template<Type> vDir     = vLineEndPos - vLineStartPos;
   xiiVec3Template<Type>       vDirNorm = vDir;
   const Type                  fLen     = vDirNorm.GetLengthAndNormalize();
 
   if (!GetRayIntersection(vLineStartPos, vDirNorm, &fIntersection))
+  {
     return false;
+  }
 
   if (fIntersection > fLen)
+  {
     return false;
+  }
 
   if (out_pHitFraction)
+  {
     *out_pHitFraction = fIntersection / fLen;
+  }
 
   if (out_pIntersection)
+  {
     *out_pIntersection = vLineStartPos + vDirNorm * fIntersection;
+  }
 
   return true;
 }

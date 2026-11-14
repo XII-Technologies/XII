@@ -4,7 +4,6 @@
 
 #include <GraphicsCore/GraphicsCoreDLL.h>
 
-#include <Foundation/Algorithm/HashableStruct.h>
 #include <Foundation/Containers/DynamicArray.h>
 #include <Foundation/Containers/HashTable.h>
 #include <Foundation/Containers/HybridArray.h>
@@ -68,7 +67,7 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderGraphResourceFlags);
 /// Opaque handle to a virtual texture resource declared in the render graph.
 using xiiRenderGraphResourceHandleId = xiiGenericId<32, 16>;
 
-class XII_GRAPHICSCORE_DLL xiiRenderGraphTextureHandle : public xiiHashableStruct<xiiRenderGraphTextureHandle>
+class XII_GRAPHICSCORE_DLL xiiRenderGraphTextureHandle
 {
 public:
   XII_DECLARE_POD_TYPE();
@@ -99,7 +98,7 @@ private:
 };
 
 /// Opaque handle to a virtual buffer resource declared in the render graph.
-class XII_GRAPHICSCORE_DLL xiiRenderGraphBufferHandle : public xiiHashableStruct<xiiRenderGraphBufferHandle>
+class XII_GRAPHICSCORE_DLL xiiRenderGraphBufferHandle
 {
 public:
   XII_DECLARE_POD_TYPE();
@@ -130,7 +129,7 @@ private:
 };
 
 /// Opaque handle to a registered render pass.
-class XII_GRAPHICSCORE_DLL xiiRenderGraphPassHandle : public xiiHashableStruct<xiiRenderGraphPassHandle>
+class XII_GRAPHICSCORE_DLL xiiRenderGraphPassHandle
 {
   XII_DECLARE_HANDLE_TYPE(xiiRenderGraphPassHandle, xiiRenderGraphId);
 
@@ -139,7 +138,7 @@ public:
 };
 
 /// Describes a resource state barrier synthesized during compilation.
-struct XII_GRAPHICSCORE_DLL xiiRenderGraphBarrierDescription : public xiiHashableStruct<xiiRenderGraphBarrierDescription>
+struct XII_GRAPHICSCORE_DLL xiiRenderGraphBarrierDescription
 {
   XII_DECLARE_POD_TYPE();
 
@@ -245,7 +244,7 @@ struct XII_GRAPHICSCORE_DLL xiiRenderGraphCompiledPass
 };
 
 /// Controls optional features of the render graph compiler.
-struct XII_GRAPHICSCORE_DLL xiiRenderGraphCompileSettings : public xiiHashableStruct<xiiRenderGraphCompileSettings>
+struct XII_GRAPHICSCORE_DLL xiiRenderGraphCompileSettings
 {
   XII_DECLARE_POD_TYPE();
 
@@ -258,7 +257,7 @@ struct XII_GRAPHICSCORE_DLL xiiRenderGraphCompileSettings : public xiiHashableSt
 };
 
 /// Per-compile statistics for diagnostics and HUD display.
-struct XII_GRAPHICSCORE_DLL xiiRenderGraphStatistics : public xiiHashableStruct<xiiRenderGraphStatistics>
+struct XII_GRAPHICSCORE_DLL xiiRenderGraphStatistics
 {
   XII_DECLARE_POD_TYPE();
 

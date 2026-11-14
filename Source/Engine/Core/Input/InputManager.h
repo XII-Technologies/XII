@@ -284,7 +284,7 @@ private:
 
     xiiString                      m_sDisplayName;     ///< The display name. Use this to present input slots in UIs.
     float                          m_fValue;           ///< The current value.
-    float                          m_fValueOld = 0.0f; ///< The previous value. Needed so that GetInputSlotState can be called during input update phase.
+    float                          m_fValueOld = 0.0F; ///< The previous value. Needed so that GetInputSlotState can be called during input update phase.
     xiiKeyState::Enum              m_State;            ///< The current state.
     float                          m_fDeadZone;        ///< The dead zone. Unless the value exceeds this, it reports a zero value.
     xiiBitflags<xiiInputSlotFlags> m_SlotFlags;        ///< Describes the capabilities of the slot.

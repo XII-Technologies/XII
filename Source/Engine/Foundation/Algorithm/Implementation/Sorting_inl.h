@@ -6,7 +6,9 @@ template <typename Container, typename Comparer>
 void xiiSorting::QuickSort(Container& ref_container, const Comparer& comparer)
 {
   if (ref_container.IsEmpty())
+  {
     return;
+  }
 
   QuickSort(ref_container, 0, ref_container.GetCount() - 1, comparer);
 }
@@ -15,7 +17,9 @@ template <typename T, typename Comparer>
 void xiiSorting::QuickSort(xiiArrayPtr<T>& ref_pArray, const Comparer& comparer)
 {
   if (ref_pArray.IsEmpty())
+  {
     return;
+  }
 
   QuickSort(ref_pArray, 0, ref_pArray.GetCount() - 1, comparer);
 }
@@ -24,7 +28,9 @@ template <typename Container, typename Comparer>
 void xiiSorting::InsertionSort(Container& ref_container, const Comparer& comparer)
 {
   if (ref_container.IsEmpty())
+  {
     return;
+  }
 
   InsertionSort(ref_container, 0, ref_container.GetCount() - 1, comparer);
 }
@@ -33,7 +39,9 @@ template <typename T, typename Comparer>
 void xiiSorting::InsertionSort(xiiArrayPtr<T>& ref_pArray, const Comparer& comparer)
 {
   if (ref_pArray.IsEmpty())
+  {
     return;
+  }
 
   InsertionSort(ref_pArray, 0, ref_pArray.GetCount() - 1, comparer);
 }
@@ -42,7 +50,9 @@ template <typename Container, typename Comparer>
 void xiiSorting::BubbleSort(Container& ref_container, const Comparer& comparer)
 {
   if (ref_container.IsEmpty())
+  {
     return;
+  }
 
   BubbleSort(ref_container, 0, ref_container.GetCount() - 1, comparer);
 }
@@ -51,7 +61,9 @@ template <typename T, typename Comparer>
 void xiiSorting::BubbleSort(xiiArrayPtr<T>& ref_pArray, const Comparer& comparer)
 {
   if (ref_pArray.IsEmpty())
+  {
     return;
+  }
 
   BubbleSort(ref_pArray, 0, ref_pArray.GetCount() - 1, comparer);
 }
@@ -60,7 +72,9 @@ template <typename Container, typename Comparer>
 void xiiSorting::SelectionSort(Container& ref_container, const Comparer& comparer)
 {
   if (ref_container.IsEmpty())
+  {
     return;
+  }
 
   SelectionSort(ref_container, 0, ref_container.GetCount() - 1, comparer);
 }
@@ -69,7 +83,9 @@ template <typename T, typename Comparer>
 void xiiSorting::SelectionSort(xiiArrayPtr<T>& ref_pArray, const Comparer& comparer)
 {
   if (ref_pArray.IsEmpty())
+  {
     return;
+  }
 
   SelectionSort(ref_pArray, 0, ref_pArray.GetCount() - 1, comparer);
 }
@@ -78,7 +94,9 @@ template <typename Container, typename Comparer>
 void xiiSorting::SelectionSortStable(Container& ref_container, const Comparer& comparer)
 {
   if (ref_container.IsEmpty())
+  {
     return;
+  }
 
   SelectionSortStable(ref_container, 0, ref_container.GetCount() - 1, comparer);
 }
@@ -87,7 +105,9 @@ template <typename T, typename Comparer>
 void xiiSorting::SelectionSortStable(xiiArrayPtr<T>& ref_pArray, const Comparer& comparer)
 {
   if (ref_pArray.IsEmpty())
+  {
     return;
+  }
 
   SelectionSortStable(ref_pArray, 0, ref_pArray.GetCount() - 1, comparer);
 }
@@ -96,7 +116,9 @@ template <typename Container, typename Comparer>
 void xiiSorting::MergeSort(Container& ref_container, const Comparer& comparer)
 {
   if (ref_container.IsEmpty())
+  {
     return;
+  }
 
   MergeSort(ref_container, 0, ref_container.GetCount() - 1, comparer);
 }
@@ -105,7 +127,9 @@ template <typename T, typename Comparer>
 void xiiSorting::MergeSort(xiiArrayPtr<T>& ref_pArray, const Comparer& comparer)
 {
   if (ref_pArray.IsEmpty())
+  {
     return;
+  }
 
   MergeSort(ref_pArray, 0, ref_pArray.GetCount() - 1, comparer);
 }
@@ -114,7 +138,9 @@ template <typename Container, typename ScratchContainer, typename KeyFunc>
 void xiiSorting::RadixSort(Container& ref_container, ScratchContainer& ref_scratchBuffer, const KeyFunc& keyFunc)
 {
   if (ref_container.IsEmpty())
+  {
     return;
+  }
 
   XII_ASSERT_DEV(ref_scratchBuffer.GetCount() >= ref_container.GetCount(), "Radix sort scratch buffer has {0} elements, but {1} are required.", ref_scratchBuffer.GetCount(), ref_container.GetCount());
 
@@ -125,7 +151,9 @@ template <typename T, typename ScratchContainer, typename KeyFunc>
 void xiiSorting::RadixSort(xiiArrayPtr<T>& ref_pArray, ScratchContainer& ref_scratchBuffer, const KeyFunc& keyFunc)
 {
   if (ref_pArray.IsEmpty())
+  {
     return;
+  }
 
   XII_ASSERT_DEV(ref_scratchBuffer.GetCount() >= ref_pArray.GetCount(), "Radix sort scratch buffer has {0} elements, but {1} are required.", ref_scratchBuffer.GetCount(), ref_pArray.GetCount());
 
@@ -531,7 +559,9 @@ template <typename Container, typename Comparer>
 void xiiSorting::MergeSort(Container& container, xiiUInt32 uiStartIndex, xiiUInt32 uiEndIndex, const Comparer& comparer)
 {
   if (uiStartIndex >= uiEndIndex)
+  {
     return;
+  }
 
   // The same as uiStartIndex + (uiEndIndex - uiStartIndex) / 2.
   xiiUInt32 uiMiddleIndex = (uiStartIndex + uiEndIndex) >> 1;
@@ -545,7 +575,9 @@ template <typename T, typename Comparer>
 void xiiSorting::MergeSort(xiiArrayPtr<T>& pArray, xiiUInt32 uiStartIndex, xiiUInt32 uiEndIndex, const Comparer& comparer)
 {
   if (uiStartIndex >= uiEndIndex)
+  {
     return;
+  }
 
   // The same as uiStartIndex + (uiEndIndex - uiStartIndex) / 2.
   xiiUInt32 uiMiddleIndex = (uiStartIndex + uiEndIndex) >> 1;
@@ -559,7 +591,9 @@ void xiiSorting::MergeSort(xiiArrayPtr<T>& pArray, xiiUInt32 uiStartIndex, xiiUI
 template <typename Container, typename Comparer>
 void xiiSorting::Merge(Container& container, xiiUInt32 uiStartIndex, xiiUInt32 uiMiddleIndex, xiiUInt32 uiEndIndex, const Comparer& comparer)
 {
-  xiiUInt32 i{}, j{}, k{};
+  xiiUInt32 i{};
+  xiiUInt32 j{};
+  xiiUInt32 k{};
   xiiUInt32 uiRightSideSize = uiEndIndex - uiMiddleIndex;
   xiiUInt32 uiLeftSideSize  = uiMiddleIndex - uiStartIndex + 1;
 
@@ -625,7 +659,9 @@ void xiiSorting::Merge(xiiArrayPtr<T>& pArray, xiiUInt32 uiStartIndex, xiiUInt32
 {
   T* pPtr = pArray.GetPtr();
 
-  xiiUInt32 i{}, j{}, k{};
+  xiiUInt32 i{};
+  xiiUInt32 j{};
+  xiiUInt32 k{};
   xiiUInt32 uiRightSideSize = uiEndIndex - uiMiddleIndex;
   xiiUInt32 uiLeftSideSize  = uiMiddleIndex - uiStartIndex + 1;
 
@@ -693,7 +729,9 @@ void xiiSorting::RadixSortInternal(Container& container, ScratchContainer& scrat
 {
   const xiiUInt32 uiCount = container.GetCount();
   if (uiCount < 2)
+  {
     return;
+  }
 
   XII_ASSERT_DEV(scratchBuffer.GetCount() >= uiCount, "Radix sort scratch buffer has {0} elements, but {1} are required.", scratchBuffer.GetCount(), uiCount);
 
@@ -737,7 +775,9 @@ void xiiSorting::RadixSortInternal(Container& container, ScratchContainer& scrat
 
       // A bucket that alone holds all elements means this pass is a no-op.
       if (counts[uiPass][b] == uiCount)
+      {
         break; // uiPassMask bit stays 0, so remaining offsets don't matter.
+      }
 
       uiRunning += counts[uiPass][b];
 
@@ -756,7 +796,9 @@ void xiiSorting::RadixSortInternal(Container& container, ScratchContainer& scrat
   for (xiiUInt32 uiPass = 0; uiPass < 8; ++uiPass)
   {
     if (!(uiPassMask & (1U << uiPass)))
+    {
       continue;
+    }
 
     const xiiUInt32 uiShift  = uiPass * 8U;
     xiiUInt32*      pOffsets = offsets[uiPass];

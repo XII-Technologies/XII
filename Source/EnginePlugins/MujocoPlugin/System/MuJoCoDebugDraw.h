@@ -62,9 +62,9 @@ struct xiiMuJoCoDebugSettings
 {
   xiiBitflags<xiiMuJoCoDebugMode> m_Modes;
   xiiMuJoCoElementId              m_SelectedElement; ///< Transient selection, never a serialized model reference.
-  float                           m_fAxisLength  = 0.25f;
-  float                           m_fForceScale  = 0.01f; ///< Meters per Newton, and per Newton-meter for torque arrows.
-  float                           m_fPlaneExtent = 10.0f; ///< Inspection half extent for infinite planes.
+  float                           m_fAxisLength  = 0.25F;
+  float                           m_fForceScale  = 0.01F; ///< Meters per Newton, and per Newton-meter for torque arrows.
+  float                           m_fPlaneExtent = 10.0F; ///< Inspection half extent for infinite planes.
 
   bool operator==(const xiiMuJoCoDebugSettings&) const = default;
 };

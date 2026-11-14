@@ -119,7 +119,7 @@ protected:
 
   xiiGALPipelineResourceSignature(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALPipelineResourceSignatureCreationDescription& creationDescription);
 
-  virtual ~xiiGALPipelineResourceSignature();
+  ~xiiGALPipelineResourceSignature() override;
 
   virtual xiiResult InitPlatform() = 0;
 

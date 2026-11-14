@@ -36,11 +36,11 @@ class xiiQtSceneDocumentWindowBase : public xiiQtGameObjectDocumentWindow, publi
 
 public:
   xiiQtSceneDocumentWindowBase(xiiSceneDocument* pDocument);
-  ~xiiQtSceneDocumentWindowBase();
+  ~xiiQtSceneDocumentWindowBase() override;
 
   xiiSceneDocument* GetSceneDocument() const;
 
-  virtual void CreateImageCapture(xiiStringView sOutputPath) override;
+  void CreateImageCapture(xiiStringView sOutputPath) override;
 
 public Q_SLOTS:
   void ToggleViews(QWidget* pView);
@@ -48,14 +48,14 @@ public Q_SLOTS:
 public:
   /// \name xiiGameObjectGizmoInterface implementation
   ///@{
-  virtual xiiObjectAccessorBase* GetObjectAccessor() override;
-  virtual bool                   CanDuplicateSelection() const override;
-  virtual void                   DuplicateSelection() override;
+  xiiObjectAccessorBase* GetObjectAccessor() override;
+  bool                   CanDuplicateSelection() const override;
+  void                   DuplicateSelection() override;
   ///@}
 
 protected:
-  virtual void ProcessMessageEventHandler(const xiiEditorEngineDocumentMsg* pMsg) override;
-  virtual void InternalRedraw() override;
+  void ProcessMessageEventHandler(const xiiEditorEngineDocumentMsg* pMsg) override;
+  void InternalRedraw() override;
 
   void GameObjectEventHandler(const xiiGameObjectEvent& e);
   void SnapSelectionToPosition(bool bSnapEachObject);
@@ -72,7 +72,7 @@ class xiiQtSceneDocumentWindow : public xiiQtSceneDocumentWindowBase
 
 public:
   xiiQtSceneDocumentWindow(xiiSceneDocument* pDocument);
-  ~xiiQtSceneDocumentWindow();
+  ~xiiQtSceneDocumentWindow() override;
 
-  virtual xiiStringView GetWindowLayoutGroupName() const override { return "Scene"; }
+  xiiStringView GetWindowLayoutGroupName() const override { return "Scene"; }
 };

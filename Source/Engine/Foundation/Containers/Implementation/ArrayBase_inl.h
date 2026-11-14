@@ -16,7 +16,9 @@ void xiiArrayBase<T, Derived>::operator=(const xiiArrayPtr<const T>& rhs)
   if (this->GetData() == rhs.GetPtr())
   {
     if (m_uiCount == rhs.GetCount())
+    {
       return;
+    }
 
     XII_ASSERT_DEV(m_uiCount > rhs.GetCount(), "Dangling array pointer. The given array pointer points to invalid memory.");
 
@@ -62,7 +64,9 @@ template <typename T, typename Derived>
 bool xiiArrayBase<T, Derived>::operator==(const xiiArrayBase<T, Derived>& rhs) const
 {
   if (m_uiCount != rhs.GetCount())
+  {
     return false;
+  }
 
   return xiiMemoryUtils::IsEqual(static_cast<const Derived*>(this)->GetElementsPtr(), rhs.GetData(), m_uiCount);
 }
@@ -223,7 +227,9 @@ bool xiiArrayBase<T, Derived>::RemoveAndCopy(const T& value)
   xiiUInt32 uiIndex = IndexOf(value);
 
   if (uiIndex == xiiInvalidIndex)
+  {
     return false;
+  }
 
   RemoveAtAndCopy(uiIndex);
   return true;
@@ -235,7 +241,9 @@ bool xiiArrayBase<T, Derived>::RemoveAndSwap(const T& value)
   xiiUInt32 uiIndex = IndexOf(value);
 
   if (uiIndex == xiiInvalidIndex)
+  {
     return false;
+  }
 
   RemoveAtAndSwap(uiIndex);
   return true;
@@ -280,7 +288,9 @@ xiiUInt32 xiiArrayBase<T, Derived>::IndexOf(const T& value, xiiUInt32 uiStartInd
   for (xiiUInt32 i = uiStartIndex; i < m_uiCount; i++)
   {
     if (xiiMemoryUtils::IsEqual(pElements + i, &value))
+    {
       return i;
+    }
   }
   return xiiInvalidIndex;
 }
@@ -293,7 +303,9 @@ xiiUInt32 xiiArrayBase<T, Derived>::LastIndexOf(const T& value, xiiUInt32 uiStar
   for (xiiUInt32 i = xiiMath::Min(uiStartIndex, m_uiCount); i-- > 0;)
   {
     if (xiiMemoryUtils::IsEqual(pElements + i, &value))
+    {
       return i;
+    }
   }
   return xiiInvalidIndex;
 }
@@ -417,7 +429,9 @@ template <typename T, typename Derived>
 XII_ALWAYS_INLINE T* xiiArrayBase<T, Derived>::GetData()
 {
   if (IsEmpty())
+  {
     return nullptr;
+  }
 
   return static_cast<Derived*>(this)->GetElementsPtr();
 }
@@ -426,7 +440,9 @@ template <typename T, typename Derived>
 XII_ALWAYS_INLINE const T* xiiArrayBase<T, Derived>::GetData() const
 {
   if (IsEmpty())
+  {
     return nullptr;
+  }
 
   return static_cast<const Derived*>(this)->GetElementsPtr();
 }

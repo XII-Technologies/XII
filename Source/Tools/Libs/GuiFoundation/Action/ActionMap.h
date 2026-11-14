@@ -54,7 +54,9 @@ public:
   bool RemoveChild(xiiUInt32 uiIndex)
   {
     if (uiIndex > m_Children.GetCount())
+    {
       return false;
+    }
 
     xiiTreeNode<T>* pChild = m_Children[uiIndex];
     m_Children.RemoveAtAndCopy(uiIndex);
@@ -68,7 +70,9 @@ public:
     for (xiiUInt32 i = 0; i < m_pParent->GetChildren().GetCount(); i++)
     {
       if (m_pParent->GetChildren()[i] == this)
+      {
         return i;
+      }
     }
     XII_REPORT_FAILURE("Couldn't find oneself in own parent!");
     return -1;

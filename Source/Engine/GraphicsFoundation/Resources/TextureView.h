@@ -127,7 +127,7 @@ protected:
 
   xiiGALTextureView(xiiSharedPtr<xiiGALDevice> pDevice, xiiSharedPtr<xiiGALTexture> pTexture, const xiiGALTextureViewCreationDescription& creationDescription);
 
-  virtual ~xiiGALTextureView();
+  ~xiiGALTextureView() override;
 
   virtual xiiResult InitPlatform() = 0;
 

@@ -30,9 +30,9 @@ class XII_EDITORFRAMEWORK_DLL xiiViewLightButtonAction : public xiiButtonAction
 
 public:
   xiiViewLightButtonAction(const xiiActionContext& context, const char* szName, xiiEngineViewLightSettingsEvent::Type button);
-  ~xiiViewLightButtonAction();
+  ~xiiViewLightButtonAction() override;
 
-  virtual void Execute(const xiiVariant& value) override;
+  void         Execute(const xiiVariant& value) override;
   void         LightSettingsEventHandler(const xiiEngineViewLightSettingsEvent& e);
   void         UpdateAction();
 
@@ -48,9 +48,9 @@ class XII_EDITORFRAMEWORK_DLL xiiViewLightSliderAction : public xiiSliderAction
 
 public:
   xiiViewLightSliderAction(const xiiActionContext& context, const char* szName, xiiEngineViewLightSettingsEvent::Type button);
-  ~xiiViewLightSliderAction();
+  ~xiiViewLightSliderAction() override;
 
-  virtual void Execute(const xiiVariant& value) override;
+  void         Execute(const xiiVariant& value) override;
   void         LightSettingsEventHandler(const xiiEngineViewLightSettingsEvent& e);
   void         UpdateAction();
 

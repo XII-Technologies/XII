@@ -79,7 +79,7 @@ public:
   };
 
   xiiAssetDocument(xiiStringView sDocumentPath, xiiDocumentObjectManager* pObjectManager, xiiAssetDocEngineConnection engineConnectionType);
-  ~xiiAssetDocument();
+  ~xiiAssetDocument() override;
 
   /// \name Asset Functions
   ///@{
@@ -190,13 +190,13 @@ protected:
   ///@{
 
   /// Overrides the base function to call UpdateAssetDocumentInfo() to update the settings hash
-  virtual xiiTaskGroupID InternalSaveDocument(AfterSaveCallback callback) override;
+  xiiTaskGroupID InternalSaveDocument(AfterSaveCallback callback) override;
 
   /// Implements auto transform on save
-  virtual void InternalAfterSaveDocument() override;
+  void InternalAfterSaveDocument() override;
 
-  virtual void InitializeAfterLoading(bool bFirstTimeCreation) override;
-  virtual void InitializeAfterLoadingAndSaving() override;
+  void InitializeAfterLoading(bool bFirstTimeCreation) override;
+  void InitializeAfterLoadingAndSaving() override;
 
   ///@}
   /// \name Asset Functions
@@ -293,7 +293,7 @@ protected:
 protected:
   xiiUniquePtr<xiiIPCObjectMirrorEditor> m_pMirror;
 
-  virtual xiiDocumentInfo* CreateDocumentInfo() override;
+  xiiDocumentInfo* CreateDocumentInfo() override;
 
   xiiTransformStatus DoTransformAsset(const xiiPlatformProfile* pAssetProfile, xiiBitflags<xiiTransformFlags> transformFlags);
 

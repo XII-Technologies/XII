@@ -24,7 +24,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGpuDrivenSceneConfiguration, xiiNoBase, 1, xi
       XII_MEMBER_PROPERTY("PopulateScene", m_bPopulateScene),
       XII_MEMBER_PROPERTY("GridWidth", m_uiGridWidth)->AddAttributes(new xiiDefaultValueAttribute(24U), new xiiClampValueAttribute(1U, 512U)),
       XII_MEMBER_PROPERTY("GridHeight", m_uiGridHeight)->AddAttributes(new xiiDefaultValueAttribute(16U), new xiiClampValueAttribute(1U, 512U)),
-      XII_MEMBER_PROPERTY("ObjectSpacing", m_fObjectSpacing)->AddAttributes(new xiiDefaultValueAttribute(2.4f), new xiiClampValueAttribute(0.25f, 20.0f)),
+      XII_MEMBER_PROPERTY("ObjectSpacing", m_fObjectSpacing)->AddAttributes(new xiiDefaultValueAttribute(2.4F), new xiiClampValueAttribute(0.25F, 20.0F)),
       XII_MEMBER_PROPERTY("MaxVisibleMeshlets", m_uiMaxVisibleMeshlets)->AddAttributes(new xiiDefaultValueAttribute(262144U)),
       XII_MEMBER_PROPERTY("FramesInFlight", m_uiFramesInFlight)->AddAttributes(new xiiDefaultValueAttribute(3U), new xiiClampValueAttribute(2U, 8U)),
     } XII_END_PROPERTIES;
@@ -34,7 +34,9 @@ XII_END_STATIC_REFLECTED_TYPE;
 xiiResult xiiGpuDrivenSceneWorld::ConfigureSubsystems(const xiiGpuDrivenSceneConfiguration& configuration)
 {
   if (!xiiGALBindlessResourceTable::IsInitialized())
+  {
     return XII_FAILURE;
+  }
 
   xiiGALBindlessResourceTableDescription bindlessDescription;
   bindlessDescription.m_uiBufferSRVCapacity = 256U;
@@ -59,7 +61,9 @@ xiiResult xiiGpuDrivenSceneWorld::ConfigureSubsystems(const xiiGpuDrivenSceneCon
 xiiResult xiiGpuDrivenSceneWorld::Initialize(xiiGALDevice* pDevice, const xiiGpuDrivenSceneConfiguration& configuration)
 {
   if (pDevice == nullptr)
+  {
     return XII_FAILURE;
+  }
 
   m_Configuration = configuration;
   xiiWorldDescription worldDescription("GPU-driven component world");
@@ -83,7 +87,9 @@ xiiResult xiiGpuDrivenSceneWorld::Initialize(xiiGALDevice* pDevice, const xiiGpu
     XII_SUCCEED_OR_RETURN(CreateSceneObjects());
   }
   else
+  {
     m_World->GetOrCreateModule<xiiRenderWorldModule>();
+  }
   xiiView* view = nullptr;
   m_hRenderView = m_World->GetModule<xiiRenderWorldModule>()->CreateView("GPU-driven authored extraction", view);
   return view ? XII_SUCCESS : XII_FAILURE;
@@ -104,7 +110,9 @@ void xiiGpuDrivenSceneWorld::Shutdown()
 xiiView* xiiGpuDrivenSceneWorld::GetRenderView() const
 {
   if (!m_World)
+  {
     return nullptr;
+  }
   XII_LOCK(m_World->GetReadMarker());
   xiiView* view = nullptr;
   static_cast<const xiiWorld*>(m_World.Borrow())->GetModule<xiiRenderWorldModule>()->TryGetView(m_hRenderView, view);
@@ -114,10 +122,10 @@ xiiView* xiiGpuDrivenSceneWorld::GetRenderView() const
 xiiResult xiiGpuDrivenSceneWorld::CreateMaterials()
 {
   const xiiColor colors[] = {
-    xiiColor(0.10f, 0.55f, 1.0f),
-    xiiColor(1.0f, 0.28f, 0.08f),
-    xiiColor(0.18f, 0.95f, 0.42f),
-    xiiColor(0.85f, 0.18f, 0.95f),
+    xiiColor(0.10F, 0.55F, 1.0F),
+    xiiColor(1.0F, 0.28F, 0.08F),
+    xiiColor(0.18F, 0.95F, 0.42F),
+    xiiColor(0.85F, 0.18F, 0.95F),
   };
 
   for (xiiUInt32 i = 0U; i < XII_ARRAY_SIZE(colors); ++i)
@@ -125,7 +133,9 @@ xiiResult xiiGpuDrivenSceneWorld::CreateMaterials()
     xiiMaterialResourceDescriptor material;
     material.m_BaseColor = colors[i];
     if (!m_Configuration.m_sTexture.IsEmpty())
+    {
       material.m_hBaseColorTexture = xiiResourceManager::LoadResource<xiiTexture2DResource>(m_Configuration.m_sTexture);
+    }
     if (m_Configuration.m_bAuthoredMaterials)
     {
       material.m_hShader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Materials/DefaultMaterial.xiiShader");
@@ -157,8 +167,12 @@ xiiResult xiiGpuDrivenSceneWorld::CreateGeometry()
       const auto&                            descriptor = buffer->GetDescriptor();
       xiiLog::Info("Compiled geometry: {} pages, {} clusters, {} retained page payload bytes.", descriptor.m_GeometryPages.GetCount(), descriptor.m_Meshlets.GetCount(), descriptor.m_GeometryPageData.GetCount());
       for (const auto& page : descriptor.m_GeometryPages)
+      {
         if (page.m_bRequired)
+        {
           xiiLog::Info("Geometry root: {} clusters, {} children, {} object-space error.", page.m_uiClusterCount, page.m_uiChildCount, page.m_fGeometricError);
+        }
+      }
     }
     return mesh.IsValid() && mesh.GetAcquireResult() == xiiResourceAcquireResult::Final ? XII_SUCCESS : XII_FAILURE;
   }
@@ -167,9 +181,13 @@ xiiResult xiiGpuDrivenSceneWorld::CreateGeometry()
   {
     xiiGeometry geometry;
     if (i == 0)
-      geometry.AddStackedSphere(0.8f, m_Configuration.m_uiMeshDetail, m_Configuration.m_uiMeshDetail / 2U);
+    {
+      geometry.AddStackedSphere(0.8F, m_Configuration.m_uiMeshDetail, m_Configuration.m_uiMeshDetail / 2U);
+    }
     else
-      geometry.AddBox(xiiVec3(1.5f), true);
+    {
+      geometry.AddBox(xiiVec3(1.5F), true);
+    }
     geometry.TriangulatePolygons();
     xiiMeshResourceDescriptor descriptor;
     descriptor.GetMeshBufferDescriptor().AllocateStreamsFromGeometry(geometry, xiiGALPrimitiveTopology::TriangleList, true);
@@ -201,7 +219,9 @@ xiiResult xiiGpuDrivenSceneWorld::CreateGeometry()
 xiiBoundingBoxSphere xiiGpuDrivenSceneWorld::GetImportedMeshBounds() const
 {
   if (m_Configuration.m_sMesh.IsEmpty() || m_GeometryAssets.IsEmpty())
+  {
     return xiiBoundingBoxSphere::MakeInvalid();
+  }
   xiiResourceLock<xiiMeshResource> mesh(m_GeometryAssets[0].m_hMesh, xiiResourceAcquireMode::PointerOnly);
   return mesh->GetBounds();
 }
@@ -215,15 +235,18 @@ xiiResult xiiGpuDrivenSceneWorld::CreateSceneObjects()
   rootDescription.m_bDynamic = true;
   m_hAssemblyRoot            = m_World->CreateObject(rootDescription, root);
   for (xiiUInt32 y = 0; y < m_Configuration.m_uiGridHeight; ++y)
+  {
     for (xiiUInt32 x = 0; x < m_Configuration.m_uiGridWidth; ++x)
     {
       const auto               index = m_Objects.GetCount();
-      const xiiVec3            position(6 + y * m_Configuration.m_fObjectSpacing, (float(x) - float(m_Configuration.m_uiGridWidth - 1) * 0.5f) * m_Configuration.m_fObjectSpacing, m_Configuration.m_sMesh.IsEmpty() ? (float(index % 5) - 2) * 0.32f : 0.0f);
+      const xiiVec3            position(6 + y * m_Configuration.m_fObjectSpacing, (float(x) - float(m_Configuration.m_uiGridWidth - 1) * 0.5F) * m_Configuration.m_fObjectSpacing, m_Configuration.m_sMesh.IsEmpty() ? (float(index % 5) - 2) * 0.32F : 0.0F);
       xiiGameObjectDescription description;
       description.m_bDynamic      = true;
       description.m_LocalPosition = position;
       if (index < 64)
+      {
         description.m_hParent = m_hAssemblyRoot;
+      }
       xiiGameObject* object = nullptr;
       m_Objects.PushBack(m_World->CreateObject(description, object));
       m_BasePositions.PushBack(position);
@@ -239,9 +262,12 @@ xiiResult xiiGpuDrivenSceneWorld::CreateSceneObjects()
       {
         xiiResourceLock<xiiMeshResource> imported(mesh->GetMesh(), xiiResourceAcquireMode::PointerOnly);
         for (xiiUInt32 slot = 0; slot < imported->GetMaterials().GetCount(); ++slot)
+        {
           mesh->SetMaterialOverride(slot, material);
+        }
       }
     }
+  }
   m_World->Update();
   return XII_SUCCESS;
 }
@@ -260,13 +286,17 @@ void xiiGpuDrivenSceneWorld::Update(xiiTime deltaTime)
   {
     xiiGameObject* object = nullptr;
     if (!m_World->TryGetObject(m_Objects[i], object))
+    {
       continue;
+    }
     xiiTransform transform = xiiTransform::MakeIdentity();
     transform.m_vPosition  = m_BasePositions[i];
-    transform.m_vPosition.z += 0.45f * xiiMath::Sin(xiiAngle::MakeFromRadian(m_fAnimationTime * 1.7f + float(i) * 0.31f));
-    transform.m_qRotation = xiiQuat::MakeFromAxisAndAngle(xiiVec3::MakeAxisZ(), xiiAngle::MakeFromRadian(m_fAnimationTime * 0.3f + float(i) * 0.01f));
+    transform.m_vPosition.z += 0.45F * xiiMath::Sin(xiiAngle::MakeFromRadian(m_fAnimationTime * 1.7F + float(i) * 0.31F));
+    transform.m_qRotation = xiiQuat::MakeFromAxisAndAngle(xiiVec3::MakeAxisZ(), xiiAngle::MakeFromRadian(m_fAnimationTime * 0.3F + float(i) * 0.01F));
     if (i == 0)
-      transform.m_vScale = xiiVec3(1, 0.65f, 1.35f);
+    {
+      transform.m_vScale = xiiVec3(1, 0.65F, 1.35F);
+    }
     object->SetLocalPosition(transform.m_vPosition);
     object->SetLocalRotation(transform.m_qRotation);
     object->SetLocalScaling(transform.m_vScale);
@@ -274,8 +304,8 @@ void xiiGpuDrivenSceneWorld::Update(xiiTime deltaTime)
   xiiGameObject* root = nullptr;
   if (m_World->TryGetObject(m_hAssemblyRoot, root))
   {
-    root->SetLocalPosition(xiiVec3(0, 0, 0.15f * xiiMath::Sin(xiiAngle::MakeFromRadian(m_fAnimationTime * 0.5f))));
-    root->SetLocalRotation(xiiQuat::MakeFromAxisAndAngle(xiiVec3::MakeAxisZ(), xiiAngle::MakeFromRadian(0.035f * xiiMath::Sin(xiiAngle::MakeFromRadian(m_fAnimationTime * 0.25f)))));
+    root->SetLocalPosition(xiiVec3(0, 0, 0.15F * xiiMath::Sin(xiiAngle::MakeFromRadian(m_fAnimationTime * 0.5F))));
+    root->SetLocalRotation(xiiQuat::MakeFromAxisAndAngle(xiiVec3::MakeAxisZ(), xiiAngle::MakeFromRadian(0.035F * xiiMath::Sin(xiiAngle::MakeFromRadian(m_fAnimationTime * 0.25F)))));
   }
   m_World->Update();
 }

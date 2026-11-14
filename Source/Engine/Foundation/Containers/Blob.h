@@ -25,7 +25,7 @@ public:
 
   /// Initializes the xiiBlobPtr with the given pointer and number of elements. No memory is allocated or copied.
   template <typename U>
-  inline xiiBlobPtr(U* pPtr, xiiUInt64 uiCount) :
+  xiiBlobPtr(U* pPtr, xiiUInt64 uiCount) :
     m_pPtr(pPtr), m_uiCount(uiCount)
   {
     // If any of the arguments is invalid, we invalidate ourself.
@@ -158,19 +158,23 @@ public:
   }
 
   /// Compares the two arrays for equality.
-  inline bool operator==(const xiiBlobPtr<const T>& other) const // [tested]
+  bool operator==(const xiiBlobPtr<const T>& other) const // [tested]
   {
     if (GetCount() != other.GetCount())
+    {
       return false;
+    }
 
     if (GetPtr() == other.GetPtr())
+    {
       return true;
+    }
 
     return xiiMemoryUtils::IsEqual(static_cast<const ValueType*>(GetPtr()), static_cast<const ValueType*>(other.GetPtr()), static_cast<size_t>(GetCount()));
   }
 
   /// Copies the data from \a other into this array. The arrays must have the exact same size.
-  inline void CopyFrom(const xiiBlobPtr<const T>& other) // [tested]
+  void CopyFrom(const xiiBlobPtr<const T>& other) // [tested]
   {
     XII_ASSERT_DEV(GetCount() == other.GetCount(), "Count for copy does not match. Target has {0} elements, source {1} elements", GetCount(), other.GetCount());
 
@@ -190,7 +194,7 @@ public:
 
 private:
   PointerType m_pPtr    = nullptr;
-  xiiUInt64   m_uiCount = 0u;
+  xiiUInt64   m_uiCount = 0U;
 };
 
 //////////////////////////////////////////////////////////////////////////

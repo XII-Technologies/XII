@@ -156,7 +156,9 @@ inline void xiiStringBuilder::AppendTerminator()
 {
   // make sure the string terminates with a zero.
   if (m_Data.IsEmpty() || (m_Data.PeekBack() != '\0'))
+  {
     m_Data.PushBack('\0');
+  }
 }
 
 inline void xiiStringBuilder::ToUpper()

@@ -27,7 +27,7 @@ class XII_DEARIMGUIPLUGIN_DLL xiiImguiFrame : public xiiRefCounted
 {
 public:
   xiiImguiFrame();
-  ~xiiImguiFrame();
+  ~xiiImguiFrame() override;
   xiiArrayPtr<const ImDrawVert>                    GetVertices() const { return m_Vertices; }
   xiiArrayPtr<const ImDrawIdx>                     GetIndices() const { return m_Indices; }
   xiiArrayPtr<const xiiImguiDrawCommand>           GetCommands() const { return m_Commands; }

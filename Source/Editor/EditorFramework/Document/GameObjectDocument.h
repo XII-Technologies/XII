@@ -100,12 +100,12 @@ class XII_EDITORFRAMEWORK_DLL xiiGameObjectDocument : public xiiAssetDocument
 
 public:
   xiiGameObjectDocument(xiiStringView sDocumentPath, xiiDocumentObjectManager* pObjectManager, xiiAssetDocEngineConnection engineConnectionType = xiiAssetDocEngineConnection::FullObjectMirroring);
-  ~xiiGameObjectDocument();
+  ~xiiGameObjectDocument() override;
 
   /// In case a document consists of multiple layers, this redirection is necessary to execute actions on the active layer.
   virtual xiiGameObjectDocument* GetRedirectedGameObjectDoc() { return this; }
 
-  virtual xiiEditorInputContext* GetEditorInputContextOverride() override;
+  xiiEditorInputContext* GetEditorInputContextOverride() override;
 
 protected:
   void SubscribeGameObjectEventHandlers();
@@ -141,7 +141,7 @@ public:
   /// to then do modifications on this base transformation every frame.
   void ComputeTopLevelSelectedGameObjects(xiiDeque<xiiSelectedGameObject>& out_selection);
 
-  virtual void HandleEngineMessage(const xiiEditorEngineDocumentMsg* pMsg) override;
+  void HandleEngineMessage(const xiiEditorEngineDocumentMsg* pMsg) override;
 
 private:
   void DeallocateEditTools();
@@ -233,7 +233,7 @@ public:
   xiiTransform ComputeGlobalTransform(const xiiDocumentObject* pObject) const;
 
   /// Traverses the pObject hierarchy up until it hits a xiiGameObject, then computes the global transform of that.
-  virtual xiiResult ComputeObjectTransformation(const xiiDocumentObject* pObject, xiiTransform& out_result) const override;
+  xiiResult ComputeObjectTransformation(const xiiDocumentObject* pObject, xiiTransform& out_result) const override;
 
   ///@}
   /// \name Node Names
@@ -263,9 +263,9 @@ protected:
   /// on the engine side (after play the game etc.)
   virtual void SendGameWorldToEngine();
 
-  virtual void InitializeAfterLoading(bool bFirstTimeCreation) override;
-  virtual void AttachMetaDataBeforeSaving(xiiAbstractObjectGraph& graph) const override;
-  virtual void RestoreMetaDataAfterLoading(const xiiAbstractObjectGraph& graph, bool bUndoable) override;
+  void InitializeAfterLoading(bool bFirstTimeCreation) override;
+  void AttachMetaDataBeforeSaving(xiiAbstractObjectGraph& graph) const override;
+  void RestoreMetaDataAfterLoading(const xiiAbstractObjectGraph& graph, bool bUndoable) override;
 
 public:
   void SelectionManagerEventHandler(const xiiSelectionManagerEvent& e);
@@ -290,7 +290,7 @@ private:
 
   bool  m_bPauseSimulation = false;
   bool  m_bStepSimulation  = false;
-  float m_fSimulationSpeed = 1.0f;
+  float m_fSimulationSpeed = 1.0F;
 
   using TransformTable = xiiHashTable<const xiiDocumentObject*, xiiSimdTransform, xiiHashHelper<const xiiDocumentObject*>, xiiAlignedAllocatorWrapper>;
   mutable TransformTable m_GlobalTransforms;

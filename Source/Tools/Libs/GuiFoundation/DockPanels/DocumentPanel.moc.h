@@ -15,9 +15,9 @@ public:
 
 public:
   xiiQtDocumentPanel(ads::CDockManager* pDockManager, QWidget* pParent, xiiDocument* pDocument);
-  ~xiiQtDocumentPanel();
+  ~xiiQtDocumentPanel() override;
 
-  virtual bool event(QEvent* pEvent) override;
+  bool event(QEvent* pEvent) override;
 
 private:
   xiiDocument* m_pDocument = nullptr;

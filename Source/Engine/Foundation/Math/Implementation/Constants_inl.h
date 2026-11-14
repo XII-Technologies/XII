@@ -9,7 +9,7 @@ namespace xiiMath
   template <>
   constexpr float Pi()
   {
-    return static_cast<float>(3.1415926535897932384626433832795f);
+    return static_cast<float>(3.1415926535897932384626433832795F);
   }
 
   template <>
@@ -23,7 +23,7 @@ namespace xiiMath
   template <>
   constexpr float Phi()
   {
-    return static_cast<float>(1.6180339887498948482045868343656f);
+    return static_cast<float>(1.6180339887498948482045868343656F);
   }
 
   template <>
@@ -82,7 +82,7 @@ namespace xiiMath
 
     // NaN = 0111 1111 1000 0000 0000 0000 0000 0001
 
-    xiiIntFloatUnion i2f(0x7f800042u);
+    xiiIntFloatUnion i2f(0x7f800042U);
     return i2f.f;
   }
 
@@ -94,7 +94,7 @@ namespace xiiMath
 
     // NaN = 0111 1111 1111 0000 0000 0000 0000 0000 0000 0000 0000 0000 0000 0000 0000 0001
 
-    xiiInt64DoubleUnion i2f(0x7FF0000000000042ull);
+    xiiInt64DoubleUnion i2f(0x7FF0000000000042ULL);
     return i2f.f;
   }
 
@@ -135,7 +135,7 @@ namespace xiiMath
     // INF = 0111 1111 1000 0000 0000 0000 0000 0000
 
     // bitwise representation of float infinity (positive)
-    xiiIntFloatUnion i2f(0x7f800000u);
+    xiiIntFloatUnion i2f(0x7f800000U);
     return i2f.f;
   }
 
@@ -148,7 +148,7 @@ namespace xiiMath
     // INF = 0111 1111 1111 0000 0000 0000 0000 0000 0000 0000 0000 0000 0000 0000 0000 0000
 
     // bitwise representation of double infinity (positive)
-    xiiInt64DoubleUnion i2f(0x7FF0000000000000ull);
+    xiiInt64DoubleUnion i2f(0x7FF0000000000000ULL);
 
     return i2f.f;
   }
@@ -170,7 +170,7 @@ namespace xiiMath
   template <>
   constexpr xiiUInt32 MaxValue()
   {
-    return 0xFFFFFFFFu;
+    return 0xFFFFFFFFU;
   }
 
 #if XII_ENABLED(XII_COMPILER_CLANG)
@@ -186,7 +186,7 @@ namespace xiiMath
   template <>
   constexpr xiiUInt64 MaxValue()
   {
-    return 0xFFFFFFFFFFFFFFFFull;
+    return 0xFFFFFFFFFFFFFFFFULL;
   }
 
   template <>
@@ -210,7 +210,7 @@ namespace xiiMath
   template <>
   constexpr xiiInt64 MaxValue()
   {
-    return 0x7FFFFFFFFFFFFFFFll;
+    return 0x7FFFFFFFFFFFFFFFLL;
   }
 
   template <>
@@ -292,7 +292,7 @@ namespace xiiMath
   template <>
   constexpr float HighValue()
   {
-    return 1.8446726e+019f;
+    return 1.8446726e+019F;
   }
 
   template <>

@@ -115,7 +115,7 @@ xiiArchiveTool.exe \"C:/Stuff.xiiArchive\" -out \"C:/MyStuff\"\n\
 class xiiArchiveBuilderImpl : public xiiArchiveBuilder
 {
 protected:
-  virtual void WriteFileResultCallback(xiiUInt32 uiCurEntry, xiiUInt32 uiMaxEntries, xiiStringView sSourceFile, xiiUInt64 uiSourceSize, xiiUInt64 uiStoredSize, xiiTime duration) const override
+  void WriteFileResultCallback(xiiUInt32 uiCurEntry, xiiUInt32 uiMaxEntries, xiiStringView sSourceFile, xiiUInt64 uiSourceSize, xiiUInt64 uiStoredSize, xiiTime duration) const override
   {
     const xiiUInt64 uiPercentage = (uiSourceSize == 0) ? 100 : (uiStoredSize * 100 / uiSourceSize);
     xiiLog::Info(" [{}%%] {} ({}%%) - {}", xiiArgU(100 * uiCurEntry / uiMaxEntries, 2), sSourceFile, uiPercentage, duration);
@@ -126,7 +126,7 @@ class xiiArchiveReaderImpl : public xiiArchiveReader
 {
 public:
 protected:
-  virtual bool ExtractNextFileCallback(xiiUInt32 uiCurEntry, xiiUInt32 uiMaxEntries, xiiStringView sSourceFile) const override
+  bool ExtractNextFileCallback(xiiUInt32 uiCurEntry, xiiUInt32 uiMaxEntries, xiiStringView sSourceFile) const override
   {
     xiiLog::Info(" [{}%%] {}", xiiArgU(100 * uiCurEntry / uiMaxEntries, 2), sSourceFile);
     return true;
@@ -134,7 +134,7 @@ protected:
 
 
 
-  virtual bool ExtractFileProgressCallback(xiiUInt64 uiBytesWritten, xiiUInt64 uiTotalBytes) const override
+  bool ExtractFileProgressCallback(xiiUInt64 uiBytesWritten, xiiUInt64 uiTotalBytes) const override
   {
     // xiiLog::Dev("   {}%%", xiiArgU(100 * uiBytesWritten / uiTotalBytes));
     return true;
@@ -231,7 +231,9 @@ public:
         xiiStringView sArg = GetArgument(a);
 
         if (sArg.IsEqual_NoCase("-out"))
+        {
           break;
+        }
 
         m_sInputs.PushBack(xiiOSFile::MakePathAbsoluteWithCWD(sArg));
 
@@ -274,7 +276,7 @@ public:
     return XII_SUCCESS;
   }
 
-  virtual void AfterCoreSystemsStartup() override
+  void AfterCoreSystemsStartup() override
   {
     // Add the empty data directory to access files via absolute paths
     xiiFileSystem::AddDataDirectory("", "App", ":", xiiDataDirUsage::AllowWrites).IgnoreResult();
@@ -283,7 +285,7 @@ public:
     xiiGlobalLog::AddLogWriter(xiiLogWriter::VisualStudio::LogMessageHandler);
   }
 
-  virtual void BeforeCoreSystemsShutdown() override
+  void BeforeCoreSystemsShutdown() override
   {
     // prevent further output during shutdown
     xiiGlobalLog::RemoveLogWriter(xiiLogWriter::Console::LogMessageHandler);
@@ -297,16 +299,24 @@ public:
     const xiiStringView ext = xiiPathUtils::GetFileExtension(sFile);
 
     if (ext.IsEqual_NoCase("jpg") || ext.IsEqual_NoCase("jpeg") || ext.IsEqual_NoCase("png"))
+    {
       return xiiArchiveBuilder::InclusionMode::Uncompressed;
+    }
 
     if (ext.IsEqual_NoCase("zip") || ext.IsEqual_NoCase("7z"))
+    {
       return xiiArchiveBuilder::InclusionMode::Uncompressed;
+    }
 
     if (ext.IsEqual_NoCase("mp3") || ext.IsEqual_NoCase("ogg"))
+    {
       return xiiArchiveBuilder::InclusionMode::Uncompressed;
+    }
 
     if (ext.IsEqual_NoCase("dds"))
+    {
       return xiiArchiveBuilder::InclusionMode::Compress_zstd_fast;
+    }
 
     return xiiArchiveBuilder::InclusionMode::Compress_zstd_average;
   }
@@ -375,7 +385,7 @@ public:
     return XII_SUCCESS;
   }
 
-  virtual Execution Run() override
+  Execution Run() override
   {
     {
       xiiStringBuilder cmdHelp;

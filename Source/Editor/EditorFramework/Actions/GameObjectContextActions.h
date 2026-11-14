@@ -35,9 +35,9 @@ public:
   };
 
   xiiGameObjectContextAction(const xiiActionContext& context, const char* szName, ActionType type);
-  ~xiiGameObjectContextAction();
+  ~xiiGameObjectContextAction() override;
 
-  virtual void Execute(const xiiVariant& value) override;
+  void Execute(const xiiVariant& value) override;
 
 private:
   void SelectionEventHandler(const xiiSelectionManagerEvent& e);

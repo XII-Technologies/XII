@@ -25,7 +25,7 @@ public:
 
   /// Returns the actual type of the property. You can then compare that with known types, eg. compare it to xiiGetStaticRTTI<int>()
   /// to see whether this is an int property.
-  virtual const xiiRTTI* GetSpecificType() const override // [tested]
+  const xiiRTTI* GetSpecificType() const override // [tested]
   {
     return xiiGetStaticRTTI<typename xiiTypeTraits<Type>::NonConstReferenceType>();
   }
@@ -47,15 +47,15 @@ public:
   }
 
   /// Returns a pointer to the member property.
-  virtual void* GetPropertyPointer() const override { return (void*)&m_Value; }
+  void* GetPropertyPointer() const override { return (void*)&m_Value; }
 
   /// Returns the value of the property. Pass the instance pointer to the surrounding class along.
-  virtual Type GetValue() const override // [tested]
+  Type GetValue() const override // [tested]
   {
     return m_Value;
   }
 
-  virtual xiiVariant GetConstant() const override { return xiiVariant(m_Value); }
+  xiiVariant GetConstant() const override { return xiiVariant(m_Value); }
 
 private:
   Type m_Value;

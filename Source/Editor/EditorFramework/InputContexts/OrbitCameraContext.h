@@ -38,19 +38,19 @@ public:
   xiiVec3 GetVolumeHalfSize() const { return m_Volume.GetHalfExtents(); }
 
 protected:
-  virtual void DoFocusLost(bool bCancel) override;
+  void DoFocusLost(bool bCancel) override;
 
-  virtual xiiEditorInput DoMousePressEvent(QMouseEvent* e) override;
-  virtual xiiEditorInput DoMouseReleaseEvent(QMouseEvent* e) override;
-  virtual xiiEditorInput DoMouseMoveEvent(QMouseEvent* e) override;
-  virtual xiiEditorInput DoWheelEvent(QWheelEvent* e) override;
-  virtual xiiEditorInput DoKeyPressEvent(QKeyEvent* e) override;
-  virtual xiiEditorInput DoKeyReleaseEvent(QKeyEvent* e) override;
+  xiiEditorInput DoMousePressEvent(QMouseEvent* e) override;
+  xiiEditorInput DoMouseReleaseEvent(QMouseEvent* e) override;
+  xiiEditorInput DoMouseMoveEvent(QMouseEvent* e) override;
+  xiiEditorInput DoWheelEvent(QWheelEvent* e) override;
+  xiiEditorInput DoKeyPressEvent(QKeyEvent* e) override;
+  xiiEditorInput DoKeyReleaseEvent(QKeyEvent* e) override;
 
-  virtual void OnSetOwner(xiiQtEngineDocumentWindow* pOwnerWindow, xiiQtEngineViewWidget* pOwnerView) override {}
+  void OnSetOwner(xiiQtEngineDocumentWindow* pOwnerWindow, xiiQtEngineViewWidget* pOwnerView) override {}
 
 private:
-  virtual void UpdateContext() override;
+  void UpdateContext() override;
 
   float GetCameraSpeed() const;
 

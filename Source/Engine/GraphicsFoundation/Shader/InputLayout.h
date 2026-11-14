@@ -93,7 +93,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALVertexInputLayout
 };
 
 /// This describes a single element in the input layout.
-struct XII_GRAPHICSFOUNDATION_DLL xiiGALLayoutElement : public xiiHashableStruct<xiiGALLayoutElement>
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALLayoutElement
 {
   XII_DECLARE_POD_TYPE();
 
@@ -114,7 +114,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALLayoutElement : public xiiHashableStruct
 };
 
 /// This describes the input layout creation description.
-struct XII_GRAPHICSFOUNDATION_DLL xiiGALInputLayoutCreationDescription : public xiiHashableStruct<xiiGALInputLayoutCreationDescription>
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALInputLayoutCreationDescription
 {
   xiiStaticArray<xiiGALLayoutElement, XII_GAL_MAX_LAYOUT_ELEMENTS> m_LayoutElements; ///< The input layout elements.
 };
@@ -134,7 +134,7 @@ protected:
 
   xiiGALInputLayout(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALInputLayoutCreationDescription& creationDescription);
 
-  virtual ~xiiGALInputLayout();
+  ~xiiGALInputLayout() override;
 
   virtual xiiResult InitPlatform(xiiGALShader* pShader) = 0;
 

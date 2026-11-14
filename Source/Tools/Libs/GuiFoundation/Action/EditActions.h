@@ -44,9 +44,9 @@ public:
     Delete,
   };
   xiiEditAction(const xiiActionContext& context, xiiStringView sName, ButtonType button);
-  ~xiiEditAction();
+  ~xiiEditAction() override;
 
-  virtual void Execute(const xiiVariant& value) override;
+  void Execute(const xiiVariant& value) override;
 
 private:
   void SelectionEventHandler(const xiiSelectionManagerEvent& e);

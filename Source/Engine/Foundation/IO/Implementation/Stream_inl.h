@@ -89,7 +89,9 @@ xiiResult xiiStreamReader::ReadWordValue(T* pWordValue)
   static_assert(sizeof(T) == sizeof(xiiUInt16));
 
   if (ReadBytes(reinterpret_cast<xiiUInt8*>(pWordValue), sizeof(T)) != sizeof(T))
+  {
     return XII_FAILURE;
+  }
 
   return XII_SUCCESS;
 }
@@ -100,7 +102,9 @@ xiiResult xiiStreamReader::ReadDWordValue(T* pDWordValue)
   static_assert(sizeof(T) == sizeof(xiiUInt32));
 
   if (ReadBytes(reinterpret_cast<xiiUInt8*>(pDWordValue), sizeof(T)) != sizeof(T))
+  {
     return XII_FAILURE;
+  }
 
   return XII_SUCCESS;
 }
@@ -111,7 +115,9 @@ xiiResult xiiStreamReader::ReadQWordValue(T* pQWordValue)
   static_assert(sizeof(T) == sizeof(xiiUInt64));
 
   if (ReadBytes(reinterpret_cast<xiiUInt8*>(pQWordValue), sizeof(T)) != sizeof(T))
+  {
     return XII_FAILURE;
+  }
 
   return XII_SUCCESS;
 }
@@ -390,7 +396,9 @@ xiiResult xiiStreamReader::ReadArray(ValueType (&array)[uiSize])
   XII_SUCCEED_OR_RETURN(ReadQWordValue(&uiCount));
 
   if (static_cast<xiiUInt32>(uiCount) != uiSize)
+  {
     return XII_FAILURE;
+  }
 
   if (uiCount < xiiMath::MaxValue<xiiUInt32>())
   {

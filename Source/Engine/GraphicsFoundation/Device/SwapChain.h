@@ -44,7 +44,7 @@ protected:
 
   xiiGALSwapChain(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALSwapChainCreationDescription& creationDescription);
 
-  virtual ~xiiGALSwapChain();
+  ~xiiGALSwapChain() override;
 
   virtual xiiResult InitPlatform() = 0;
 

@@ -5,33 +5,49 @@
 inline xiiVec3 xiiCamera::GetCenterPosition() const
 {
   if (m_Mode == xiiCameraMode::Stereo)
-    return (GetPosition(xiiCameraEye::Left) + GetPosition(xiiCameraEye::Right)) * 0.5f;
+  {
+    return (GetPosition(xiiCameraEye::Left) + GetPosition(xiiCameraEye::Right)) * 0.5F;
+  }
   else
+  {
     return GetPosition();
+  }
 }
 
 inline xiiVec3 xiiCamera::GetCenterDirForwards() const
 {
   if (m_Mode == xiiCameraMode::Stereo)
+  {
     return (GetDirForwards(xiiCameraEye::Left) + GetDirForwards(xiiCameraEye::Right)).GetNormalized();
+  }
   else
+  {
     return GetDirForwards();
+  }
 }
 
 inline xiiVec3 xiiCamera::GetCenterDirUp() const
 {
   if (m_Mode == xiiCameraMode::Stereo)
+  {
     return (GetDirUp(xiiCameraEye::Left) + GetDirUp(xiiCameraEye::Right)).GetNormalized();
+  }
   else
+  {
     return GetDirUp();
+  }
 }
 
 inline xiiVec3 xiiCamera::GetCenterDirRight() const
 {
   if (m_Mode == xiiCameraMode::Stereo)
+  {
     return (GetDirRight(xiiCameraEye::Left) + GetDirRight(xiiCameraEye::Right)).GetNormalized();
+  }
   else
+  {
     return GetDirRight();
+  }
 }
 
 XII_ALWAYS_INLINE float xiiCamera::GetNearPlane() const

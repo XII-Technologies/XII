@@ -11,7 +11,7 @@ class XII_TOOLSFOUNDATION_DLL xiiDocumentManager : public xiiReflectedClass
   XII_ADD_DYNAMIC_REFLECTION(xiiDocumentManager, xiiReflectedClass);
 
 public:
-  virtual ~xiiDocumentManager() = default;
+  ~xiiDocumentManager() override = default;
 
   static const xiiHybridArray<xiiDocumentManager*, 16>& GetAllDocumentManagers() { return s_AllDocumentManagers; }
 

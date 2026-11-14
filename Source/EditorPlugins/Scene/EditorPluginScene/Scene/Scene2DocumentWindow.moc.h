@@ -12,10 +12,10 @@ class xiiQtScene2DocumentWindow : public xiiQtSceneDocumentWindowBase
 
 public:
   xiiQtScene2DocumentWindow(xiiScene2Document* pDocument);
-  ~xiiQtScene2DocumentWindow();
+  ~xiiQtScene2DocumentWindow() override;
 
-  virtual xiiStringView GetWindowLayoutGroupName() const override { return "Scene2"; }
-  virtual bool          InternalCanCloseWindow() override;
+  xiiStringView GetWindowLayoutGroupName() const override { return "Scene2"; }
+  bool          InternalCanCloseWindow() override;
 
   xiiStatus SaveAllLayers();
 };

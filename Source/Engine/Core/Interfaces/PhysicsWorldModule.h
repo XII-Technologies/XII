@@ -191,7 +191,7 @@ struct XII_CORE_DLL xiiMsgPhysicContact : public xiiMessage
 
   xiiVec3                         m_vGlobalPosition;
   xiiVec3                         m_vNormal;
-  float                           m_fImpactSqr = 0.0f; ///< Squared closing speed before the solver runs.
+  float                           m_fImpactSqr = 0.0F; ///< Squared closing speed before the solver runs.
   xiiEnum<xiiPhysicsContactPhase> m_Phase;
   xiiGameObjectHandle             m_hOtherObject;
 };

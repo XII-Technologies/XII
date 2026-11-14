@@ -188,7 +188,7 @@ protected:
 
   xiiGALBlendState(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALBlendStateCreationDescription& creationDescription);
 
-  virtual ~xiiGALBlendState();
+  ~xiiGALBlendState() override;
 
   virtual xiiResult InitPlatform() = 0;
 

@@ -17,14 +17,14 @@ class XII_EDITORFRAMEWORK_DLL xiiQtGameObjectDocumentWindow : public xiiQtEngine
   Q_OBJECT
 public:
   xiiQtGameObjectDocumentWindow(xiiGameObjectDocument* pDocument);
-  ~xiiQtGameObjectDocumentWindow();
+  ~xiiQtGameObjectDocumentWindow() override;
 
   xiiGameObjectDocument* GetGameObjectDocument() const;
 
 protected:
   xiiWorldSettingsMsgToEngine GetWorldSettings() const;
   xiiGridSettingsMsgToEngine  GetGridSettings() const;
-  virtual void                ProcessMessageEventHandler(const xiiEditorEngineDocumentMsg* pMsg) override;
+  void                        ProcessMessageEventHandler(const xiiEditorEngineDocumentMsg* pMsg) override;
 
 private:
   void GameObjectEventHandler(const xiiGameObjectEvent& e);

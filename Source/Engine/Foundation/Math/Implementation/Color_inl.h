@@ -47,12 +47,12 @@ inline void xiiColor::SetRGBA(float fLinearRed, float fLinearGreen, float fLinea
 inline xiiColor xiiColor::MakeFromKelvin(xiiUInt32 uiKelvin)
 {
   xiiColor finalColor;
-  float    fKelvin        = xiiMath::Clamp(uiKelvin, 1000u, 40000u) / 1000.0f;
+  float    fKelvin        = xiiMath::Clamp(uiKelvin, 1000U, 40000U) / 1000.0F;
   float    fKelvinSquared = fKelvin * fKelvin;
 
-  finalColor.r = fKelvin < 6.570f ? 1.0f : xiiMath::Saturate((1.35651f + 0.216422f * fKelvin + 0.000633715f * fKelvinSquared) / (-3.24223f + 0.918711f * fKelvin));
-  finalColor.g = fKelvin < 6.570f ? xiiMath::Saturate((-399.809f + 414.271f * fKelvin + 111.543f * fKelvinSquared) / (2779.24f + 164.143f * fKelvin + 84.7356f * fKelvinSquared)) : xiiMath::Saturate((1370.38f + 734.616f * fKelvin + 0.689955f * fKelvinSquared) / (-4625.69f + 1699.87f * fKelvin));
-  finalColor.b = fKelvin > 6.570f ? 1.0f : xiiMath::Saturate((348.963f - 523.53f * fKelvin + 183.62f * fKelvinSquared) / (2848.82f - 214.52f * fKelvin + 78.8614f * fKelvinSquared));
+  finalColor.r = fKelvin < 6.570F ? 1.0F : xiiMath::Saturate((1.35651F + 0.216422F * fKelvin + 0.000633715F * fKelvinSquared) / (-3.24223F + 0.918711F * fKelvin));
+  finalColor.g = fKelvin < 6.570F ? xiiMath::Saturate((-399.809F + 414.271F * fKelvin + 111.543F * fKelvinSquared) / (2779.24F + 164.143F * fKelvin + 84.7356F * fKelvinSquared)) : xiiMath::Saturate((1370.38F + 734.616F * fKelvin + 0.689955F * fKelvinSquared) / (-4625.69F + 1699.87F * fKelvin));
+  finalColor.b = fKelvin > 6.570F ? 1.0F : xiiMath::Saturate((348.963F - 523.53F * fKelvin + 183.62F * fKelvinSquared) / (2848.82F - 214.52F * fKelvin + 78.8614F * fKelvinSquared));
 
   return finalColor;
 }
@@ -60,7 +60,7 @@ inline xiiColor xiiColor::MakeFromKelvin(xiiUInt32 uiKelvin)
 // http://en.wikipedia.org/wiki/Luminance_%28relative%29
 XII_FORCE_INLINE float xiiColor::GetLuminance() const
 {
-  return 0.2126f * r + 0.7152f * g + 0.0722f * b;
+  return 0.2126F * r + 0.7152F * g + 0.0722F * b;
 }
 
 inline xiiColor xiiColor::GetInvertedColor() const
@@ -68,19 +68,27 @@ inline xiiColor xiiColor::GetInvertedColor() const
   XII_NAN_ASSERT(this);
   XII_ASSERT_DEBUG(IsNormalized(), "Cannot invert a color that has values outside the [0; 1] range");
 
-  return xiiColor(1.0f - r, 1.0f - g, 1.0f - b, 1.0f - a);
+  return xiiColor(1.0F - r, 1.0F - g, 1.0F - b, 1.0F - a);
 }
 
 inline bool xiiColor::IsNaN() const
 {
   if (xiiMath::IsNaN(r))
+  {
     return true;
+  }
   if (xiiMath::IsNaN(g))
+  {
     return true;
+  }
   if (xiiMath::IsNaN(b))
+  {
     return true;
+  }
   if (xiiMath::IsNaN(a))
+  {
     return true;
+  }
 
   return false;
 }
@@ -197,7 +205,7 @@ inline const xiiColor operator/(const xiiColor& c, float f)
 {
   XII_NAN_ASSERT(&c);
 
-  float f_inv = 1.0f / f;
+  float f_inv = 1.0F / f;
   return xiiColor(c.r * f_inv, c.g * f_inv, c.b * f_inv, c.a * f_inv);
 }
 
@@ -209,17 +217,29 @@ XII_ALWAYS_INLINE bool operator==(const xiiColor& c1, const xiiColor& c2)
 XII_FORCE_INLINE bool operator<(const xiiColor& c1, const xiiColor& c2)
 {
   if (c1.r < c2.r)
+  {
     return true;
+  }
   if (c1.r > c2.r)
+  {
     return false;
+  }
   if (c1.g < c2.g)
+  {
     return true;
+  }
   if (c1.g > c2.g)
+  {
     return false;
+  }
   if (c1.b < c2.b)
+  {
     return true;
+  }
   if (c1.b > c2.b)
+  {
     return false;
+  }
 
   return (c1.a < c2.a);
 }

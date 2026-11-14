@@ -10,7 +10,7 @@
 struct XII_GRAPHICSCORE_DLL xiiResourceStreamingSettings
 {
   xiiInt32  m_iTextureUploadMiB                                   = 64;
-  float     m_fTextureMipBias                                     = 0.0f;
+  float     m_fTextureMipBias                                     = 0.0F;
   xiiInt32  m_iTextureMinimumMip                                  = 0;
   xiiInt32  m_iTextureCacheMiB                                    = 512;
   xiiInt32  m_iGeometryCacheMiB                                   = 256;

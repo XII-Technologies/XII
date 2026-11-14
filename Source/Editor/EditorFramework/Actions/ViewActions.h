@@ -41,8 +41,8 @@ class XII_EDITORFRAMEWORK_DLL xiiRenderModeAction : public xiiEnumerationMenuAct
 public:
   xiiRenderModeAction(const xiiActionContext& context, const char* szName, const char* szIconPath);
   void             GetEntries(xiiDynamicArray<Item>& out_entries) override;
-  virtual xiiInt64 GetValue() const override;
-  virtual void     Execute(const xiiVariant& value) override;
+  xiiInt64         GetValue() const override;
+  void             Execute(const xiiVariant& value) override;
 };
 
 ///
@@ -52,8 +52,8 @@ class XII_EDITORFRAMEWORK_DLL xiiPerspectiveAction : public xiiEnumerationMenuAc
 
 public:
   xiiPerspectiveAction(const xiiActionContext& context, const char* szName, const char* szIconPath);
-  virtual xiiInt64 GetValue() const override;
-  virtual void     Execute(const xiiVariant& value) override;
+  xiiInt64 GetValue() const override;
+  void     Execute(const xiiVariant& value) override;
 };
 
 class XII_EDITORFRAMEWORK_DLL xiiViewAction : public xiiButtonAction
@@ -69,9 +69,9 @@ public:
   };
 
   xiiViewAction(const xiiActionContext& context, const char* szName, ButtonType button);
-  ~xiiViewAction();
+  ~xiiViewAction() override;
 
-  virtual void Execute(const xiiVariant& value) override;
+  void Execute(const xiiVariant& value) override;
 
 private:
   ButtonType m_ButtonType;

@@ -13,7 +13,7 @@ class XII_EDITORFRAMEWORK_DLL xiiAssetDocumentInfo final : public xiiDocumentInf
 
 public:
   xiiAssetDocumentInfo();
-  virtual ~xiiAssetDocumentInfo();
+  ~xiiAssetDocumentInfo() override;
   xiiAssetDocumentInfo(xiiAssetDocumentInfo&& rhs);
   void operator=(xiiAssetDocumentInfo&& rhs);
   /// Creates a clone without meta data.

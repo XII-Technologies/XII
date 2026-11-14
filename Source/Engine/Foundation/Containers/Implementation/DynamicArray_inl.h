@@ -178,14 +178,16 @@ template <typename T>
 void xiiDynamicArrayBase<T>::Reserve(xiiUInt32 uiCapacity)
 {
   if (this->m_uiCapacity >= uiCapacity)
+  {
     return;
+  }
 
   const xiiUInt64 uiCurCap64      = static_cast<xiiUInt64>(this->m_uiCapacity);
   xiiUInt64       uiNewCapacity64 = uiCurCap64 + (uiCurCap64 / 2);
 
   uiNewCapacity64 = xiiMath::Max<xiiUInt64>(uiNewCapacity64, uiCapacity);
 
-  constexpr xiiUInt64 uiMaxCapacity = 0xFFFFFFFFllu - (CAPACITY_ALIGNMENT - 1);
+  constexpr xiiUInt64 uiMaxCapacity = 0xFFFFFFFFLLU - (CAPACITY_ALIGNMENT - 1);
 
   // the maximum value must leave room for the capacity alignment computation below (without overflowing the 32 bit range)
   uiNewCapacity64 = xiiMath::Min<xiiUInt64>(uiNewCapacity64, uiMaxCapacity);
@@ -201,7 +203,9 @@ template <typename T>
 void xiiDynamicArrayBase<T>::Compact()
 {
   if (m_pAllocator.GetFlags() == Storage::External)
+  {
     return;
+  }
 
   if (this->IsEmpty())
   {
@@ -235,7 +239,9 @@ template <typename T>
 xiiUInt64 xiiDynamicArrayBase<T>::GetHeapMemoryUsage() const
 {
   if (this->m_pAllocator.GetFlags() == Storage::External)
+  {
     return 0;
+  }
 
   return (xiiUInt64)this->m_uiCapacity * (xiiUInt64)sizeof(T);
 }

@@ -4,7 +4,6 @@
 
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
-#include <Foundation/Algorithm/HashableStruct.h>
 #include <Foundation/Math/Color.h>
 #include <Foundation/Math/Size.h>
 #include <Foundation/Types/Uuid.h>
@@ -68,16 +67,16 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceFeatures : public xiiHashableStruc
 };
 
 /// This describes the optimized depth-stencil clear value.
-struct XII_GRAPHICSFOUNDATION_DLL xiiGALDepthStencilClearValue : public xiiHashableStruct<xiiGALDepthStencilClearValue>
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALDepthStencilClearValue
 {
   XII_DECLARE_POD_TYPE();
 
-  float    m_fDepth    = 1.0f; ///< Depth clear value.
+  float    m_fDepth    = 1.0F; ///< Depth clear value.
   xiiUInt8 m_uiStencil = 0U;   ///< Stencil clear value.
 };
 
 /// This describes the optimized color clear value.
-struct XII_GRAPHICSFOUNDATION_DLL xiiGALOptimizedClearValue : public xiiHashableStruct<xiiGALOptimizedClearValue>
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALOptimizedClearValue
 {
   XII_DECLARE_POD_TYPE();
 
@@ -104,7 +103,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALNativeWindowDescription
 };
 
 /// This describes the swap chain creation description.
-struct XII_GRAPHICSFOUNDATION_DLL xiiGALSwapChainCreationDescription : public xiiHashableStruct<xiiGALSwapChainCreationDescription>
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALSwapChainCreationDescription
 {
   XII_DECLARE_POD_TYPE();
 
@@ -117,7 +116,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSwapChainCreationDescription : public xi
                                                                                                            ///
                                                                                                            ///  \note When xiiGALSurfaceTransform::Optimal is used, the engine will select the most optimal surface transformation. An application may request a specific transform and the engine will try to use that. If the transform is not available, the engine will select the most optimal transform. After the swap chain has been created, this member will contain the actual transform selected by the engine.
   xiiUInt32 m_uiBufferCount         = 2U;                                                                  ///< The number of buffers in the swap chain.
-  float     m_fDefaultDepthValue    = 1.0f;                                                                ///< Default depth value, which is used as the optimized depth clear value in D3D12.
+  float     m_fDefaultDepthValue    = 1.0F;                                                                ///< Default depth value, which is used as the optimized depth clear value in D3D12.
   xiiUInt8  m_uiDefaultStencilValue = 0U;                                                                  ///< Default stencil value, which is used as the optimized clear value in D3D12.
 };
 
@@ -438,8 +437,8 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALMultiPlanarFormatDescription : public xi
   {
     xiiEnum<xiiGALResourceFormat> m_SubFormat         = xiiGALResourceFormat::Unknown; ///< Format of this plane (e.g., R8_UNORM, R8G8_UNORM, R16_UNORM).
     xiiUInt8                      m_uiBytesPerElement = 0U;                            ///< Bytes per element in this plane.
-    float                         m_fWidthFactor      = 1.0f;                          ///< Width scaling relative to full resolution (0.5 for chroma).
-    float                         m_fHeightFactor     = 1.0f;                          ///< Height scaling relative to full resolution (0.5 for chroma).
+    float                         m_fWidthFactor      = 1.0F;                          ///< Width scaling relative to full resolution (0.5 for chroma).
+    float                         m_fHeightFactor     = 1.0F;                          ///< Height scaling relative to full resolution (0.5 for chroma).
   };
 
   /// Returns the number of planes in this multi-planar format.
@@ -497,15 +496,19 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALMultiPlanarFormatDescription : public xi
   XII_ALWAYS_INLINE bool IsValid() const
   {
     if (!xiiGALResourceFormat::IsMultiplanar(m_Format))
+    {
       return false;
+    }
 
     if (m_Planes.GetCount() == 0)
+    {
       return false;
+    }
 
     for (xiiUInt32 i = 0; i < m_Planes.GetCount(); ++i)
     {
       const Plane& p = m_Planes[i];
-      if (p.m_SubFormat == xiiGALResourceFormat::Unknown || p.m_uiBytesPerElement == 0 || p.m_fWidthFactor <= 0.0f || p.m_fHeightFactor <= 0.0f)
+      if (p.m_SubFormat == xiiGALResourceFormat::Unknown || p.m_uiBytesPerElement == 0 || p.m_fWidthFactor <= 0.0F || p.m_fHeightFactor <= 0.0F)
       {
         return false;
       }

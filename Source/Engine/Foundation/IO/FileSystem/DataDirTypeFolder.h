@@ -19,7 +19,7 @@ namespace xiiDataDirectory
   class XII_FOUNDATION_DLL FolderType : public xiiDataDirectoryType
   {
   public:
-    ~FolderType();
+    ~FolderType() override;
 
     /// The factory that can be registered at xiiFileSystem to create data directories of this type.
     static xiiDataDirectoryType* Factory(xiiStringView sDataDirectory, xiiStringView sGroup, xiiStringView sRootName, xiiDataDirUsage usage);
@@ -39,30 +39,30 @@ namespace xiiDataDirectory
     static xiiString s_sRedirectionPrefix;
 
     /// When s_sRedirectionFile and s_sRedirectionPrefix are used to enable file redirection, this will reload those config files.
-    virtual void ReloadExternalConfigs() override;
+    void ReloadExternalConfigs() override;
 
-    virtual const xiiString128& GetRedirectedDataDirectoryPath() const override { return m_sRedirectedDataDirPath; }
+    const xiiString128& GetRedirectedDataDirectoryPath() const override { return m_sRedirectedDataDirPath; }
 
   protected:
     // The implementations of the abstract functions.
 
-    virtual xiiDataDirectoryReader* OpenFileToRead(xiiStringView sFile, xiiFileShareMode::Enum FileShareMode, bool bSpecificallyThisDataDir) override;
+    xiiDataDirectoryReader* OpenFileToRead(xiiStringView sFile, xiiFileShareMode::Enum FileShareMode, bool bSpecificallyThisDataDir) override;
 
-    virtual bool                    ResolveAssetRedirection(xiiStringView sPathOrAssetGuid, xiiStringBuilder& out_sRedirection) override;
-    virtual bool                    ResolveAssetIdentifier(xiiStringView sPath, xiiStringBuilder& out_sGuid) override;
-    virtual xiiDataDirectoryWriter* OpenFileToWrite(xiiStringView sFile, xiiFileShareMode::Enum FileShareMode) override;
-    virtual void                    RemoveDataDirectory() override;
-    virtual void                    DeleteFile(xiiStringView sFile) override;
-    virtual bool                    ExistsFile(xiiStringView sFile, bool bOneSpecificDataDir) override;
-    virtual xiiResult               GetFileStats(xiiStringView sFileOrFolder, bool bOneSpecificDataDir, xiiFileStats& out_Stats) override;
+    bool                            ResolveAssetRedirection(xiiStringView sPathOrAssetGuid, xiiStringBuilder& out_sRedirection) override;
+    bool                            ResolveAssetIdentifier(xiiStringView sPath, xiiStringBuilder& out_sGuid) override;
+    xiiDataDirectoryWriter*         OpenFileToWrite(xiiStringView sFile, xiiFileShareMode::Enum FileShareMode) override;
+    void                            RemoveDataDirectory() override;
+    void                            DeleteFile(xiiStringView sFile) override;
+    bool                            ExistsFile(xiiStringView sFile, bool bOneSpecificDataDir) override;
+    xiiResult                       GetFileStats(xiiStringView sFileOrFolder, bool bOneSpecificDataDir, xiiFileStats& out_Stats) override;
     virtual FolderReader*           CreateFolderReader() const;
     virtual FolderWriter*           CreateFolderWriter() const;
 
     /// Called by 'xiiDataDirectoryType_Folder::Factory'
-    virtual xiiResult InternalInitializeDataDirectory(xiiStringView sDirectory) override;
+    xiiResult InternalInitializeDataDirectory(xiiStringView sDirectory) override;
 
     /// Marks the given reader/writer as reusable.
-    virtual void OnReaderWriterClose(xiiDataDirectoryReaderWriterBase* pClosed) override;
+    void OnReaderWriterClose(xiiDataDirectoryReaderWriterBase* pClosed) override;
 
     void LoadRedirectionFile();
 
@@ -88,13 +88,13 @@ namespace xiiDataDirectory
       m_bIsInUse = false;
     }
 
-    virtual xiiUInt64 Skip(xiiUInt64 uiBytes) override;
-    virtual xiiUInt64 Read(void* pBuffer, xiiUInt64 uiBytes) override;
-    virtual xiiUInt64 GetFileSize() const override;
+    xiiUInt64 Skip(xiiUInt64 uiBytes) override;
+    xiiUInt64 Read(void* pBuffer, xiiUInt64 uiBytes) override;
+    xiiUInt64 GetFileSize() const override;
 
   protected:
-    virtual xiiResult InternalOpen(xiiFileShareMode::Enum FileShareMode) override;
-    virtual void      InternalClose() override;
+    xiiResult InternalOpen(xiiFileShareMode::Enum FileShareMode) override;
+    void      InternalClose() override;
 
     friend class FolderType;
 
@@ -114,12 +114,12 @@ namespace xiiDataDirectory
       m_bIsInUse = false;
     }
 
-    virtual xiiResult Write(const void* pBuffer, xiiUInt64 uiBytes) override;
-    virtual xiiUInt64 GetFileSize() const override;
+    xiiResult Write(const void* pBuffer, xiiUInt64 uiBytes) override;
+    xiiUInt64 GetFileSize() const override;
 
   protected:
-    virtual xiiResult InternalOpen(xiiFileShareMode::Enum FileShareMode) override;
-    virtual void      InternalClose() override;
+    xiiResult InternalOpen(xiiFileShareMode::Enum FileShareMode) override;
+    void      InternalClose() override;
 
     friend class FolderType;
 

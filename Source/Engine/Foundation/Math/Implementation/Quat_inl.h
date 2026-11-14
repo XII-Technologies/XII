@@ -159,9 +159,13 @@ template <typename Type>
 bool xiiQuatTemplate<Type>::IsValid(Type fEpsilon) const
 {
   if (!GetVectorPart().IsValid())
+  {
     return false;
+  }
   if (!xiiMath::IsFinite(w))
+  {
     return false;
+  }
 
   Type n = x * x + y * y + z * z + w * w;
 
@@ -182,17 +186,23 @@ bool xiiQuatTemplate<Type>::IsEqualRotation(const xiiQuatTemplate<Type>& qOther,
     return true;
   }
 
-  xiiVec3Template<Type>  vA1, vA2;
-  xiiAngleTemplate<Type> A1, A2;
+  xiiVec3Template<Type>  vA1;
+  xiiVec3Template<Type>  vA2;
+  xiiAngleTemplate<Type> A1;
+  xiiAngleTemplate<Type> A2;
 
   GetRotationAxisAndAngle(vA1, A1);
   qOther.GetRotationAxisAndAngle(vA2, A2);
 
-  if ((A1.IsEqualSimple(A2, xiiAngleTemplate<Type>::MakeFromDegree(static_cast<Type>(360.0f * fEpsilon)))) && (vA1.IsEqual(vA2, fEpsilon)))
+  if ((A1.IsEqualSimple(A2, xiiAngleTemplate<Type>::MakeFromDegree(static_cast<Type>(360.0F * fEpsilon)))) && (vA1.IsEqual(vA2, fEpsilon)))
+  {
     return true;
+  }
 
-  if ((A1.IsEqualSimple(-A2, xiiAngleTemplate<Type>::MakeFromDegree(static_cast<Type>(360.0f * fEpsilon)))) && (vA1.IsEqual(-vA2, fEpsilon)))
+  if ((A1.IsEqualSimple(-A2, xiiAngleTemplate<Type>::MakeFromDegree(static_cast<Type>(360.0F * fEpsilon)))) && (vA1.IsEqual(-vA2, fEpsilon)))
+  {
     return true;
+  }
 
   return false;
 }
@@ -295,10 +305,14 @@ xiiQuatTemplate<Type> xiiQuatTemplate<Type>::MakeFromMat3(const xiiMat3Template<
     xiiInt32       i      = 0;
 
     if (m.Element(1, 1) > m.Element(0, 0))
+    {
       i = 1;
+    }
 
     if (m.Element(2, 2) > m.Element(i, i))
+    {
       i = 2;
+    }
 
     xiiInt32 j = next[i];
     xiiInt32 k = next[j];
@@ -373,9 +387,13 @@ xiiQuatTemplate<Type> xiiQuatTemplate<Type>::MakeShortestRotation(const xiiVec3T
   {
     // find an axis, that is not identical and not opposing, xiiVec3Template::Cross-product to find perpendicular vector, rotate around that
     if (xiiMath::Abs(v0.Dot(xiiVec3Template<Type>(1, 0, 0))) < (Type)0.8)
+    {
       return MakeFromAxisAndAngle(v0.CrossRH(xiiVec3Template<Type>(1, 0, 0)).GetNormalized(), xiiAngleTemplate<Type>::MakeFromRadian(xiiMath::Pi<Type>()));
+    }
     else
+    {
       return MakeFromAxisAndAngle(v0.CrossRH(xiiVec3Template<Type>(0, 1, 0)).GetNormalized(), xiiAngleTemplate<Type>::MakeFromRadian(xiiMath::Pi<Type>()));
+    }
   }
 
   const xiiVec3Template<Type> c = v0.CrossRH(v1);
@@ -384,7 +402,7 @@ xiiQuatTemplate<Type> xiiQuatTemplate<Type>::MakeShortestRotation(const xiiVec3T
 
   XII_ASSERT_DEBUG(c.IsValid(), "SetShortestRotation failed.");
 
-  const Type fOneDivS = 1.0f / s;
+  const Type fOneDivS = 1.0F / s;
 
   xiiQuatTemplate<Type> q;
   q.x = c.x * fOneDivS;
@@ -415,7 +433,8 @@ xiiQuatTemplate<Type> xiiQuatTemplate<Type>::MakeSlerp(const xiiQuatTemplate<Typ
     cosTheta  = -cosTheta;
   }
 
-  Type t0, t1;
+  Type t0;
+  Type t1;
 
   if (cosTheta < qdelta)
   {
@@ -439,7 +458,9 @@ xiiQuatTemplate<Type> xiiQuatTemplate<Type>::MakeSlerp(const xiiQuatTemplate<Typ
   }
 
   if (bFlipSign)
+  {
     t1 = -t1;
+  }
 
   xiiQuatTemplate<Type> q;
 
@@ -481,14 +502,14 @@ void xiiQuatTemplate<Type>::GetAsEulerAngles(xiiAngleTemplate<Type>& out_x, xiiA
   if (fSingularityTest > fSingularityThreshold) // singularity at north pole
   {
     yaw   = -static_cast<Type>(2) * xiiMath::ATan2(x, w);
-    pitch = xiiAngleTemplate<Type>::MakeFromDegree(90.0f);
-    roll  = xiiAngleTemplate<Type>::MakeFromDegree(0.0f);
+    pitch = xiiAngleTemplate<Type>::MakeFromDegree(90.0F);
+    roll  = xiiAngleTemplate<Type>::MakeFromDegree(0.0F);
   }
   else if (fSingularityTest < -fSingularityThreshold) // singularity at south pole
   {
     yaw   = static_cast<Type>(2) * xiiMath::ATan2(x, w);
-    pitch = xiiAngleTemplate<Type>::MakeFromDegree(-90.0f);
-    roll  = xiiAngleTemplate<Type>::MakeFromDegree(0.0f);
+    pitch = xiiAngleTemplate<Type>::MakeFromDegree(-90.0F);
+    roll  = xiiAngleTemplate<Type>::MakeFromDegree(0.0F);
   }
   else
   {

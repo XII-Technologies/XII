@@ -59,7 +59,9 @@ xiiResult ReadCompleteFile(const char* szFile, xiiDynamicArray<xiiUInt8>& out_fi
 
   xiiFileReader File;
   if (File.Open(szFile) == XII_FAILURE)
+  {
     return XII_FAILURE;
+  }
 
   xiiUInt8 uiTemp[1024];
   while (true)
@@ -67,7 +69,9 @@ xiiResult ReadCompleteFile(const char* szFile, xiiDynamicArray<xiiUInt8>& out_fi
     const xiiUInt64 uiRead = File.ReadBytes(uiTemp, 1023);
 
     if (uiRead == 0)
+    {
       return XII_SUCCESS; // file is automatically closed here
+    }
 
     out_fileContent.PushBackRange(xiiArrayPtr<xiiUInt8>(uiTemp, (xiiUInt32)uiRead));
   }
@@ -113,7 +117,9 @@ FileStats GetFileStats(const char* szFile)
 
   xiiDynamicArray<xiiUInt8> FileContent;
   if (ReadCompleteFile(szFile, FileContent) == XII_FAILURE)
+  {
     return s;
+  }
 
   FileContent.PushBack('\0');
 
@@ -144,7 +150,9 @@ FileStats GetFileStats(const char* szFile)
       TrimWhitespaces(sLine);
 
       if (sLine.IsEmpty())
+      {
         ++s.m_uiEmptyLines;
+      }
       else
       {
         ++s.m_uiLines;
@@ -190,13 +198,15 @@ public:
     m_sSearchDir = "";
   }
 
-  virtual void AfterCoreSystemsStartup() override
+  void AfterCoreSystemsStartup() override
   {
     auto pCmd = xiiCommandLineUtils::GetGlobalInstance();
 
     // Pass the absolute path to the directory that should be scanned as the first parameter to this application
     if (pCmd->GetParameterCount() > 1)
+    {
       m_sSearchDir = pCmd->GetParameter(1);
+    }
 
     if (m_sSearchDir.IsEmpty())
     {
@@ -231,7 +241,7 @@ public:
     xiiGlobalLog::AddLogWriter(xiiLoggingEvent::Handler(&xiiLogWriter::HTML::LogMessageHandler, &g_HtmlLog));
   }
 
-  virtual void BeforeCoreSystemsShutdown() override
+  void BeforeCoreSystemsShutdown() override
   {
     xiiPlugin::UnloadAllPlugins();
 
@@ -239,7 +249,7 @@ public:
     g_HtmlLog.EndLog();
   }
 
-  virtual xiiApplication::Execution Run() override
+  xiiApplication::Execution Run() override
   {
 #if XII_ENABLED(XII_SUPPORTS_FILE_ITERATORS) || defined(XII_DOCS)
 
@@ -253,7 +263,8 @@ public:
 
     if (it.IsValid())
     {
-      xiiStringBuilder b, sExt;
+      xiiStringBuilder b;
+      xiiStringBuilder sExt;
 
       // While there are additional files / folders
       for (; it.IsValid(); it.Next())

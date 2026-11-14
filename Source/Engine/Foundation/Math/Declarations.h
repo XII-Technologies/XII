@@ -277,7 +277,7 @@ struct XII_FOUNDATION_DLL xiiBasisAxis
   static xiiVec3d GetBasisVectorDouble(xiiBasisAxis::Enum basisAxis);
 
   /// Computes a matrix representing the transformation. 'Forward' represents the X axis, 'Right' the Y axis and 'Up' the Z axis.
-  static xiiMat3 CalculateTransformationMatrix(xiiBasisAxis::Enum forwardDir, xiiBasisAxis::Enum rightDir, xiiBasisAxis::Enum dir, float fUniformScale = 1.0f, float fScaleX = 1.0f, float fScaleY = 1.0f, float fScaleZ = 1.0f);
+  static xiiMat3 CalculateTransformationMatrix(xiiBasisAxis::Enum forwardDir, xiiBasisAxis::Enum rightDir, xiiBasisAxis::Enum dir, float fUniformScale = 1.0F, float fScaleX = 1.0F, float fScaleY = 1.0F, float fScaleZ = 1.0F);
 
   /// Computes a matrix representing the transformation. 'Forward' represents the X axis, 'Right' the Y axis and 'Up' the Z axis.
   static xiiMat3d CalculateTransformationMatrix(xiiBasisAxis::Enum forwardDir, xiiBasisAxis::Enum rightDir, xiiBasisAxis::Enum dir, double fUniformScale = 1.0, double fScaleX = 1.0, double fScaleY = 1.0, double fScaleZ = 1.0);

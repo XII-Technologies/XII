@@ -554,12 +554,12 @@ XII_ALWAYS_INLINE bool xiiWorld::ReportErrorWhenStaticObjectMoves() const
 XII_ALWAYS_INLINE float xiiWorld::GetInvDeltaSeconds() const
 {
   const float fDelta = (float)m_Data.m_Clock.GetTimeDiff().GetSeconds();
-  if (fDelta > 0.0f)
+  if (fDelta > 0.0F)
   {
-    return 1.0f / fDelta;
+    return 1.0F / fDelta;
   }
 
   // Use zero instead of infinity to avoid potential issues with infinite values in other parts of the code.
   // A zero value will just lead to no time-based changes, which is the expected behavior when the clock is paused.
-  return 0.0f;
+  return 0.0F;
 }

@@ -38,7 +38,7 @@ class XII_GUIFOUNDATION_DLL xiiQtContainerWindow : public QMainWindow
 public:
   /// Constructor.
   xiiQtContainerWindow();
-  ~xiiQtContainerWindow();
+  ~xiiQtContainerWindow() override;
 
   static xiiQtContainerWindow* GetContainerWindow() { return s_pContainerWindow; }
 
@@ -78,7 +78,7 @@ public Q_SLOTS:
   void ShowCommandPalette();
 
 protected:
-  virtual bool eventFilter(QObject* obj, QEvent* e) override;
+  bool         eventFilter(QObject* obj, QEvent* e) override;
   bool         nativeEvent(const QByteArray& eventType, void* pMessage, qintptr* pResult) override;
 
 private:
@@ -113,7 +113,7 @@ private:
   void DocumentWindowEventHandler(const xiiQtDocumentWindowEvent& e);
   void ProjectEventHandler(const xiiToolsProjectEvent& e);
 
-  virtual void closeEvent(QCloseEvent* e) override;
+  void closeEvent(QCloseEvent* e) override;
 
 private:
   ads::CDockManager*                    m_pDockManager  = nullptr;

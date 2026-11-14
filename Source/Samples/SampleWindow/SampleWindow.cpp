@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <SampleWindow/SampleWindow.h>
 
 #include <Core/Graphics/Camera.h>
@@ -27,9 +29,9 @@ public:
     m_bCloseRequested = false;
   }
 
-  virtual void       OnClickClose() override { m_bCloseRequested = true; }
-  virtual xiiSizeU32 GetClientAreaSize() const override { return xiiSizeU32(g_uiWindowWidth, g_uiWindowHeight); }
-  virtual void       OnResize(const xiiSizeU32& newWindowSize) override
+  void       OnClickClose() override { m_bCloseRequested = true; }
+  xiiSizeU32 GetClientAreaSize() const override { return xiiSizeU32(g_uiWindowWidth, g_uiWindowHeight); }
+  void       OnResize(const xiiSizeU32& newWindowSize) override
   {
     xiiWindow::OnResize(newWindowSize);
 
@@ -65,7 +67,9 @@ xiiApplication::Execution xiiSampleWindowApp::Run()
   }
 
   if (m_pWindow->m_bCloseRequested || xiiInputManager::GetInputActionState("Main", "CloseApp") == xiiKeyState::Pressed)
+  {
     return Execution::Quit;
+  }
 
   // Make sure time goes on
   xiiClock::GetGlobalClock()->Update();
@@ -79,19 +83,27 @@ xiiApplication::Execution xiiSampleWindowApp::Run()
     m_pWindow->GetInputDevice()->SetShowMouseCursor(false);
     m_pWindow->GetInputDevice()->SetClipMouseCursor(xiiMouseCursorClipMode::ClipToPosition);
 
-    float       fInputValue = 0.0f;
-    const float fMouseSpeed = 0.01f;
+    float       fInputValue = 0.0F;
+    const float fMouseSpeed = 0.01F;
 
-    xiiVec3 mouseMotion(0.0f);
+    xiiVec3 mouseMotion(0.0F);
 
     if (xiiInputManager::GetInputActionState("Main", "LookPosX", &fInputValue) != xiiKeyState::Up)
+    {
       mouseMotion.x += fInputValue * fMouseSpeed;
+    }
     if (xiiInputManager::GetInputActionState("Main", "LookNegX", &fInputValue) != xiiKeyState::Up)
+    {
       mouseMotion.x -= fInputValue * fMouseSpeed;
+    }
     if (xiiInputManager::GetInputActionState("Main", "LookPosY", &fInputValue) != xiiKeyState::Up)
+    {
       mouseMotion.y -= fInputValue * fMouseSpeed;
+    }
     if (xiiInputManager::GetInputActionState("Main", "LookNegY", &fInputValue) != xiiKeyState::Up)
+    {
       mouseMotion.y += fInputValue * fMouseSpeed;
+    }
   }
   else
   {
@@ -101,34 +113,50 @@ xiiApplication::Execution xiiSampleWindowApp::Run()
 
   // Turn camera with arrow keys
   {
-    float       fInputValue = 0.0f;
-    const float fTurnSpeed  = 1.0f;
+    float       fInputValue = 0.0F;
+    const float fTurnSpeed  = 1.0F;
 
-    xiiVec3 mouseMotion(0.0f);
+    xiiVec3 mouseMotion(0.0F);
 
     if (xiiInputManager::GetInputActionState("Main", "TurnPosX", &fInputValue) != xiiKeyState::Up)
+    {
       mouseMotion.x += fInputValue * fTurnSpeed;
+    }
     if (xiiInputManager::GetInputActionState("Main", "TurnNegX", &fInputValue) != xiiKeyState::Up)
+    {
       mouseMotion.x -= fInputValue * fTurnSpeed;
+    }
     if (xiiInputManager::GetInputActionState("Main", "TurnPosY", &fInputValue) != xiiKeyState::Up)
+    {
       mouseMotion.y += fInputValue * fTurnSpeed;
+    }
     if (xiiInputManager::GetInputActionState("Main", "TurnNegY", &fInputValue) != xiiKeyState::Up)
+    {
       mouseMotion.y -= fInputValue * fTurnSpeed;
+    }
   }
 
   // Apply translation
   {
-    float   fInputValue = 0.0f;
-    xiiVec3 cameraMotion(0.0f);
+    float   fInputValue = 0.0F;
+    xiiVec3 cameraMotion(0.0F);
 
     if (xiiInputManager::GetInputActionState("Main", "MovePosX", &fInputValue) != xiiKeyState::Up)
+    {
       cameraMotion.x += fInputValue;
+    }
     if (xiiInputManager::GetInputActionState("Main", "MoveNegX", &fInputValue) != xiiKeyState::Up)
+    {
       cameraMotion.x -= fInputValue;
+    }
     if (xiiInputManager::GetInputActionState("Main", "MovePosY", &fInputValue) != xiiKeyState::Up)
+    {
       cameraMotion.y += fInputValue;
+    }
     if (xiiInputManager::GetInputActionState("Main", "MoveNegY", &fInputValue) != xiiKeyState::Up)
+    {
       cameraMotion.y -= fInputValue;
+    }
   }
 
   // Make sure telemetry is sent out regularly.

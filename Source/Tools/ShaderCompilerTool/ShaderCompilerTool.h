@@ -12,20 +12,20 @@ public:
 
   xiiShaderCompilerApplication();
 
-  virtual xiiApplication::Execution Run() override;
+  xiiApplication::Execution Run() override;
 
 private:
   void      PrintConfig();
   xiiResult CompileShader(xiiStringView sShaderFile);
   xiiResult ExtractPermutationVarValues(xiiStringView sShaderFile);
 
-  virtual xiiResult BeforeCoreSystemsStartup() override;
-  virtual void      AfterCoreSystemsStartup() override;
-  virtual void      Init_LoadProjectPlugins() override {}
-  virtual void      Init_SetupDefaultResources() override {}
-  virtual void      Init_ConfigureInput() override {}
-  virtual void      Init_ConfigureTags() override {}
-  virtual bool      Run_ProcessApplicationInput() override { return true; }
+  xiiResult BeforeCoreSystemsStartup() override;
+  void      AfterCoreSystemsStartup() override;
+  void      Init_LoadProjectPlugins() override {}
+  void      Init_SetupDefaultResources() override {}
+  void      Init_ConfigureInput() override {}
+  void      Init_ConfigureTags() override {}
+  bool      Run_ProcessApplicationInput() override { return true; }
 
   xiiGALPermutationGenerator                      m_PermutationGenerator;
   xiiString                                       m_sPlatforms;

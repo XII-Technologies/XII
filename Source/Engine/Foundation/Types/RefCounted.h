@@ -25,7 +25,7 @@ public:
   }
 
   /// Increments the reference counter. Returns the new reference count.
-  inline xiiUInt32 AddRef() const // [tested]
+  xiiUInt32 AddRef() const // [tested]
   {
     return xiiAtomicUtils::Increment(m_uiRefCount);
   }
@@ -33,7 +33,7 @@ public:
   /// Adds a reference only while the count is nonzero. Never resurrects an object whose last reference was released.
   ///
   /// The caller must separately ensure the object's memory remains accessible (for example, with a cache lock also taken by its destructor); this is not a weak pointer by itself.
-  inline bool TryAddRef() const
+  bool TryAddRef() const
   {
     xiiUInt32 uiCount = xiiAtomicUtils::Read(m_uiRefCount);
 
@@ -51,19 +51,19 @@ public:
   }
 
   /// Decrements the reference counter. Returns the new reference count.ywat
-  inline xiiUInt32 ReleaseRef() const // [tested]
+  xiiUInt32 ReleaseRef() const // [tested]
   {
     return xiiAtomicUtils::Decrement(m_uiRefCount);
   }
 
   /// Returns true if the reference count is greater than 0, false otherwise.
-  inline bool IsReferenced() const // [tested]
+  bool IsReferenced() const // [tested]
   {
     return m_uiRefCount > 0;
   }
 
   /// Returns the current reference count.
-  inline xiiUInt32 GetRefCount() const // [tested]
+  xiiUInt32 GetRefCount() const // [tested]
   {
     return m_uiRefCount;
   }
@@ -117,7 +117,9 @@ public:
   void operator=(T* pNewReference)
   {
     if (pNewReference == m_pReferencedObject)
+    {
       return;
+    }
 
     ReleaseReferenceIfValid();
 
@@ -131,7 +133,9 @@ public:
   void operator=(const xiiScopedRefPointer<T>& other)
   {
     if (other.m_pReferencedObject == m_pReferencedObject)
+    {
       return;
+    }
 
     ReleaseReferenceIfValid();
 
@@ -162,7 +166,7 @@ public:
 
 private:
   /// Internal helper function to add a reference on the current object (if != nullptr)
-  inline void AddReferenceIfValid()
+  void AddReferenceIfValid()
   {
     if (m_pReferencedObject != nullptr)
     {
@@ -171,7 +175,7 @@ private:
   }
 
   /// Internal helper function to release a reference on the current object (if != nullptr)
-  inline void ReleaseReferenceIfValid()
+  void ReleaseReferenceIfValid()
   {
     if (m_pReferencedObject != nullptr)
     {

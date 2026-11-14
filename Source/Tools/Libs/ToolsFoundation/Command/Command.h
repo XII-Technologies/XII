@@ -19,7 +19,7 @@ class XII_TOOLSFOUNDATION_DLL xiiCommand : public xiiReflectedClass
 
 public:
   xiiCommand();
-  ~xiiCommand();
+  ~xiiCommand() override;
 
   bool IsUndoable() const { return m_bUndoable; };
   bool HasChildActions() const { return !m_ChildActions.IsEmpty(); }

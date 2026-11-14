@@ -17,8 +17,8 @@ class XII_GRAPHICSCORE_DLL xiiSkyLightRenderData final : public xiiRenderData
 
 public:
   xiiTextureCubeResourceHandle m_hEnvironmentMap;
-  float                        m_fIntensity  = 1.0f;
-  float                        m_fSaturation = 1.0f;
+  float                        m_fIntensity  = 1.0F;
+  float                        m_fSaturation = 1.0F;
   xiiInt32                     m_iPriority   = 0;
 };
 
@@ -31,7 +31,7 @@ class XII_GRAPHICSCORE_DLL xiiSkyLightComponent final : public xiiRenderComponen
 
 public:
   xiiSkyLightComponent();
-  ~xiiSkyLightComponent();
+  ~xiiSkyLightComponent() override;
 
   xiiBitflags<xiiRenderExtractionCategory> GetRenderExtractionCategories() const override { return xiiRenderExtractionCategory::Lights; }
   void                                     SerializeComponent(xiiWorldWriter& inout_stream) const override;
@@ -52,7 +52,7 @@ protected:
 
 private:
   xiiTextureCubeResourceHandle m_hEnvironmentMap;
-  float                        m_fIntensity  = 1.0f;
-  float                        m_fSaturation = 1.0f;
+  float                        m_fIntensity  = 1.0F;
+  float                        m_fSaturation = 1.0F;
   xiiInt32                     m_iPriority   = 0;
 };

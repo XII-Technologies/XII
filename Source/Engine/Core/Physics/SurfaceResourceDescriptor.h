@@ -41,8 +41,8 @@ struct XII_CORE_DLL xiiSurfaceInteraction
   xiiPrefabResourceHandle                 m_hPrefab;
   xiiEnum<xiiSurfaceInteractionAlignment> m_Alignment;
   xiiAngle                                m_Deviation;
-  float                                   m_fImpulseThreshold = 0.0f;
-  float                                   m_fImpulseScale     = 1.0f;
+  float                                   m_fImpulseThreshold = 0.0F;
+  float                                   m_fImpulseScale     = 1.0F;
 
   const xiiRangeView<xiiStringView, xiiUInt32> GetParameters() const;                                         // [ property ] (exposed parameter)
   void                                         SetParameter(xiiStringView sKey, const xiiVariant& value);     // [ property ] (exposed parameter)

@@ -8,9 +8,13 @@ bool xiiUuid::operator==(const xiiUuid& other) const
 bool xiiUuid::operator<(const xiiUuid& other) const
 {
   if (m_uiHigh < other.m_uiHigh)
+  {
     return true;
+  }
   if (m_uiHigh > other.m_uiHigh)
+  {
     return false;
+  }
 
   return m_uiLow < other.m_uiLow;
 }

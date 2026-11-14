@@ -17,7 +17,7 @@ class XII_CORE_DLL xiiProfileConfigData : public xiiSettings
 
 public:
   xiiProfileConfigData();
-  ~xiiProfileConfigData();
+  ~xiiProfileConfigData() override;
 
   virtual void SaveRuntimeData(xiiChunkStreamWriter& ref_stream) const;
   virtual void LoadRuntimeData(xiiChunkStreamReader& ref_stream);
@@ -31,7 +31,7 @@ class XII_CORE_DLL xiiPlatformProfile final : public xiiReflectedClass
 
 public:
   xiiPlatformProfile();
-  ~xiiPlatformProfile();
+  ~xiiPlatformProfile() override;
 
   void          SetConfigName(xiiStringView sName) { m_sName = sName; }
   xiiStringView GetConfigName() const { return m_sName; }

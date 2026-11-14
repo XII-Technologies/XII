@@ -16,24 +16,24 @@ public:
   const xiiVec3 GetTranslationResult() const { return GetTransformation().m_vPosition - m_vStartPosition; }
   const xiiQuat GetRotationResult() const { return GetTransformation().m_qRotation; }
 
-  virtual bool IsPickingSelectedAllowed() const override { return false; }
-  virtual bool IsPickingGizmosAllowed() const override { return false; }
+  bool IsPickingSelectedAllowed() const override { return false; }
+  bool IsPickingGizmosAllowed() const override { return false; }
 
   /// True after an axis handle aligns to a mesh in this gesture. Later grid hits retain that orientation.
   bool ModifiesRotation() const { return m_bModifiesRotation; }
 
-  virtual void UpdateStatusBarText(xiiQtEngineDocumentWindow* pWindow) override;
+  void UpdateStatusBarText(xiiQtEngineDocumentWindow* pWindow) override;
 
 protected:
-  virtual void DoFocusLost(bool bCancel) override;
+  void DoFocusLost(bool bCancel) override;
 
-  virtual xiiEditorInput DoMousePressEvent(QMouseEvent* e) override;
-  virtual xiiEditorInput DoMouseReleaseEvent(QMouseEvent* e) override;
-  virtual xiiEditorInput DoMouseMoveEvent(QMouseEvent* e) override;
+  xiiEditorInput DoMousePressEvent(QMouseEvent* e) override;
+  xiiEditorInput DoMouseReleaseEvent(QMouseEvent* e) override;
+  xiiEditorInput DoMouseMoveEvent(QMouseEvent* e) override;
 
-  virtual void OnSetOwner(xiiQtEngineDocumentWindow* pOwnerWindow, xiiQtEngineViewWidget* pOwnerView) override;
-  virtual void OnVisibleChanged(bool bVisible) override;
-  virtual void OnTransformationChanged(const xiiTransform& transform) override;
+  void OnSetOwner(xiiQtEngineDocumentWindow* pOwnerWindow, xiiQtEngineViewWidget* pOwnerView) override;
+  void OnVisibleChanged(bool bVisible) override;
+  void OnTransformationChanged(const xiiTransform& transform) override;
 
   xiiEngineGizmoHandle m_hBobble;
   xiiEngineGizmoHandle m_hAlignPX;

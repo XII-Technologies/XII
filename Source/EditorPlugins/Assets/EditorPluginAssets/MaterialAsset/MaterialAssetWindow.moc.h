@@ -29,16 +29,16 @@ class xiiQtMaterialAssetDocumentWindow : public xiiQtEngineDocumentWindow
 
 public:
   xiiQtMaterialAssetDocumentWindow(xiiMaterialAssetDocument* pDocument);
-  ~xiiQtMaterialAssetDocumentWindow();
+  ~xiiQtMaterialAssetDocumentWindow() override;
 
   xiiMaterialAssetDocument* GetMaterialDocument();
-  virtual xiiStringView     GetWindowLayoutGroupName() const override { return "MaterialAsset"; }
+  xiiStringView             GetWindowLayoutGroupName() const override { return "MaterialAsset"; }
 
 protected:
-  virtual void InternalRedraw() override;
+  void InternalRedraw() override;
 
 
-  virtual void showEvent(QShowEvent* event) override;
+  void showEvent(QShowEvent* event) override;
 
 private Q_SLOTS:
   void OnOpenShaderClicked(bool);
@@ -48,7 +48,7 @@ private:
   void                       CreatePreviewControls();
   xiiPreviewLightingSettings m_PreviewLighting;
   bool                       m_bPreviewGrid        = false;
-  float                      m_fPreviewOrientation = 0.0f;
+  float                      m_fPreviewOrientation = 0.0F;
   void                       PropertyEventHandler(const xiiDocumentObjectPropertyEvent& e);
   void                       SelectionEventHandler(const xiiSelectionManagerEvent& e);
   void                       SendRedrawMsg();
@@ -77,8 +77,8 @@ class xiiMaterialModelAction : public xiiEnumerationMenuAction
 
 public:
   xiiMaterialModelAction(const xiiActionContext& context, const char* szName, const char* szIconPath);
-  virtual xiiInt64 GetValue() const override;
-  virtual void     Execute(const xiiVariant& value) override;
+  xiiInt64 GetValue() const override;
+  void     Execute(const xiiVariant& value) override;
 };
 
 class xiiMaterialAssetActions

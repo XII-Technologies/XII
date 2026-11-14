@@ -98,7 +98,7 @@ struct XII_EDITORFRAMEWORK_DLL xiiCppProject : public xiiEditorSettings
   };
 
   xiiCppProject();
-  ~xiiCppProject();
+  ~xiiCppProject() override;
 
   static xiiString GetTargetSourceDir(xiiStringView sProjectDirectory = {});
 

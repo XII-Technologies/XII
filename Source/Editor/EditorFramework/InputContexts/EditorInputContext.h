@@ -28,7 +28,7 @@ class XII_EDITORFRAMEWORK_DLL xiiEditorInputContext : public xiiReflectedClass
 public:
   xiiEditorInputContext();
 
-  virtual ~xiiEditorInputContext();
+  ~xiiEditorInputContext() override;
 
   void FocusLost(bool bCancel);
 

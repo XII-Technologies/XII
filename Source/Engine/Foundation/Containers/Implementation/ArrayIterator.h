@@ -58,7 +58,7 @@ public:
   XII_ALWAYS_INLINE void operator+=(std::ptrdiff_t rhs) { m_uiIndex += rhs; }
   XII_ALWAYS_INLINE void operator-=(std::ptrdiff_t rhs) { m_uiIndex -= rhs; }
 
-  inline const T& operator*() const
+  const T& operator*() const
   {
     if (reverse)
     {
@@ -132,7 +132,7 @@ public:
   XII_ALWAYS_INLINE iterator_base operator+(std::ptrdiff_t rhs) const { return iterator_base(*this->m_pArray, this->m_uiIndex + rhs); }
   XII_ALWAYS_INLINE iterator_base operator-(std::ptrdiff_t rhs) const { return iterator_base(*this->m_pArray, this->m_uiIndex - rhs); }
 
-  inline T& operator*() const
+  T& operator*() const
   {
     if (reverse)
     {

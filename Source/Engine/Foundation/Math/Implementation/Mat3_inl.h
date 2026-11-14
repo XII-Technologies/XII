@@ -71,7 +71,9 @@ xiiMat3Template<Type> xiiMat3Template<Type>::MakeZero()
   xiiMat3Template<Type> res;
 
   for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(res.m_fElementsCM); ++i)
-    res.m_fElementsCM[i] = 0.0f;
+  {
+    res.m_fElementsCM[i] = 0.0F;
+  }
 
   return res;
 }
@@ -80,15 +82,15 @@ template <typename Type>
 xiiMat3Template<Type> xiiMat3Template<Type>::MakeIdentity()
 {
   xiiMat3Template<Type> res;
-  res.m_fElementsCM[0] = 1.0f;
-  res.m_fElementsCM[1] = 0.0f;
-  res.m_fElementsCM[2] = 0.0f;
-  res.m_fElementsCM[3] = 0.0f;
-  res.m_fElementsCM[4] = 1.0f;
-  res.m_fElementsCM[5] = 0.0f;
-  res.m_fElementsCM[6] = 0.0f;
-  res.m_fElementsCM[7] = 0.0f;
-  res.m_fElementsCM[8] = 1.0f;
+  res.m_fElementsCM[0] = 1.0F;
+  res.m_fElementsCM[1] = 0.0F;
+  res.m_fElementsCM[2] = 0.0F;
+  res.m_fElementsCM[3] = 0.0F;
+  res.m_fElementsCM[4] = 1.0F;
+  res.m_fElementsCM[5] = 0.0F;
+  res.m_fElementsCM[6] = 0.0F;
+  res.m_fElementsCM[7] = 0.0F;
+  res.m_fElementsCM[8] = 1.0F;
   return res;
 }
 
@@ -151,7 +153,7 @@ xiiMat3Template<Type> xiiMat3Template<Type>::MakeRotationX(xiiAngleTemplate<Type
   const Type fSin = xiiMath::Sin(angle);
   const Type fCos = xiiMath::Cos(angle);
 
-  return xiiMat3Template<Type>::MakeFromValues(1.0f, 0.0f, 0.0f, 0.0f, fCos, -fSin, 0.0f, fSin, fCos);
+  return xiiMat3Template<Type>::MakeFromValues(1.0F, 0.0F, 0.0F, 0.0F, fCos, -fSin, 0.0F, fSin, fCos);
 }
 
 template <typename Type>
@@ -160,7 +162,7 @@ xiiMat3Template<Type> xiiMat3Template<Type>::MakeRotationY(xiiAngleTemplate<Type
   const Type fSin = xiiMath::Sin(angle);
   const Type fCos = xiiMath::Cos(angle);
 
-  return xiiMat3Template<Type>::MakeFromValues(fCos, 0.0f, fSin, 0.0f, 1.0f, 0.0f, -fSin, 0.0f, fCos);
+  return xiiMat3Template<Type>::MakeFromValues(fCos, 0.0F, fSin, 0.0F, 1.0F, 0.0F, -fSin, 0.0F, fCos);
 }
 
 template <typename Type>
@@ -169,7 +171,7 @@ xiiMat3Template<Type> xiiMat3Template<Type>::MakeRotationZ(xiiAngleTemplate<Type
   const Type fSin = xiiMath::Sin(angle);
   const Type fCos = xiiMath::Cos(angle);
 
-  return xiiMat3Template<Type>::MakeFromValues(fCos, -fSin, 0.0f, fSin, fCos, 0.0f, 0.0f, 0.0f, 1.0f);
+  return xiiMat3Template<Type>::MakeFromValues(fCos, -fSin, 0.0F, fSin, fCos, 0.0F, 0.0F, 0.0F, 1.0F);
 }
 
 template <typename Type>
@@ -288,7 +290,9 @@ template <typename Type>
 XII_FORCE_INLINE void xiiMat3Template<Type>::operator*=(Type f)
 {
   for (xiiInt32 i = 0; i < 9; ++i)
+  {
     m_fElementsCM[i] *= f;
+  }
 
   XII_NAN_ASSERT(this);
 }
@@ -338,7 +342,9 @@ const xiiMat3Template<Type> operator*(const xiiMat3Template<Type>& m1, Type f)
   xiiMat3Template<Type> r;
 
   for (xiiUInt32 i = 0; i < 9; ++i)
+  {
     r.m_fElementsCM[i] = m1.m_fElementsCM[i] * f;
+  }
 
   XII_NAN_ASSERT(&r);
 
@@ -357,7 +363,9 @@ const xiiMat3Template<Type> operator+(const xiiMat3Template<Type>& m1, const xii
   xiiMat3Template<Type> r;
 
   for (xiiUInt32 i = 0; i < 9; ++i)
+  {
     r.m_fElementsCM[i] = m1.m_fElementsCM[i] + m2.m_fElementsCM[i];
+  }
 
   XII_NAN_ASSERT(&r);
 
@@ -370,7 +378,9 @@ const xiiMat3Template<Type> operator-(const xiiMat3Template<Type>& m1, const xii
   xiiMat3Template<Type> r;
 
   for (xiiUInt32 i = 0; i < 9; ++i)
+  {
     r.m_fElementsCM[i] = m1.m_fElementsCM[i] - m2.m_fElementsCM[i];
+  }
 
   XII_NAN_ASSERT(&r);
 
@@ -386,7 +396,9 @@ bool xiiMat3Template<Type>::IsIdentical(const xiiMat3Template<Type>& rhs) const
   for (xiiUInt32 i = 0; i < 9; ++i)
   {
     if (m_fElementsCM[i] != rhs.m_fElementsCM[i])
+    {
       return false;
+    }
   }
 
   return true;
@@ -398,12 +410,14 @@ bool xiiMat3Template<Type>::IsEqual(const xiiMat3Template<Type>& rhs, Type fEpsi
   XII_NAN_ASSERT(this);
   XII_NAN_ASSERT(&rhs);
 
-  XII_ASSERT_DEBUG(fEpsilon >= 0.0f, "Epsilon may not be negative.");
+  XII_ASSERT_DEBUG(fEpsilon >= 0.0F, "Epsilon may not be negative.");
 
   for (xiiUInt32 i = 0; i < 9; ++i)
   {
     if (!xiiMath::IsEqual(m_fElementsCM[i], rhs.m_fElementsCM[i], fEpsilon))
+    {
       return false;
+    }
   }
 
   return true;
@@ -423,7 +437,9 @@ bool xiiMat3Template<Type>::IsZero(Type fEpsilon) const
   for (xiiUInt32 i = 0; i < 9; ++i)
   {
     if (!xiiMath::IsZero(m_fElementsCM[i], fEpsilon))
+    {
       return false;
+    }
   }
 
   return true;
@@ -435,25 +451,43 @@ bool xiiMat3Template<Type>::IsIdentity(Type fEpsilon) const
   XII_NAN_ASSERT(this);
 
   if (!xiiMath::IsEqual(Element(0, 0), (Type)1, fEpsilon))
+  {
     return false;
+  }
   if (!xiiMath::IsEqual(Element(0, 1), (Type)0, fEpsilon))
+  {
     return false;
+  }
   if (!xiiMath::IsEqual(Element(0, 2), (Type)0, fEpsilon))
+  {
     return false;
+  }
 
   if (!xiiMath::IsEqual(Element(1, 0), (Type)0, fEpsilon))
+  {
     return false;
+  }
   if (!xiiMath::IsEqual(Element(1, 1), (Type)1, fEpsilon))
+  {
     return false;
+  }
   if (!xiiMath::IsEqual(Element(1, 2), (Type)0, fEpsilon))
+  {
     return false;
+  }
 
   if (!xiiMath::IsEqual(Element(2, 0), (Type)0, fEpsilon))
+  {
     return false;
+  }
   if (!xiiMath::IsEqual(Element(2, 1), (Type)0, fEpsilon))
+  {
     return false;
+  }
   if (!xiiMath::IsEqual(Element(2, 2), (Type)1, fEpsilon))
+  {
     return false;
+  }
 
   return true;
 }
@@ -464,7 +498,9 @@ bool xiiMat3Template<Type>::IsValid() const
   for (xiiUInt32 i = 0; i < 9; ++i)
   {
     if (!xiiMath::IsFinite(m_fElementsCM[i]))
+    {
       return false;
+    }
   }
 
   return true;
@@ -476,7 +512,9 @@ bool xiiMat3Template<Type>::IsNaN() const
   for (xiiUInt32 i = 0; i < 9; ++i)
   {
     if (xiiMath::IsNaN(m_fElementsCM[i]))
+    {
       return true;
+    }
   }
 
   return false;
@@ -503,11 +541,17 @@ xiiResult xiiMat3Template<Type>::SetScalingFactors(const xiiVec3Template<Type>& 
   xiiVec3Template<Type> tz(Element(2, 0), Element(2, 1), Element(2, 2));
 
   if (tx.SetLength(vXYZ.x, fEpsilon) == XII_FAILURE)
+  {
     return XII_FAILURE;
+  }
   if (ty.SetLength(vXYZ.y, fEpsilon) == XII_FAILURE)
+  {
     return XII_FAILURE;
+  }
   if (tz.SetLength(vXYZ.z, fEpsilon) == XII_FAILURE)
+  {
     return XII_FAILURE;
+  }
 
 
   Element(0, 0) = tx.x;

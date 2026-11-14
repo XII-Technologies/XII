@@ -55,7 +55,9 @@ xiiTypedResourceHandle<ResourceType> xiiResourceManager::CreateResource(xiiStrin
 
   xiiTypedResourceHandle<ResourceType> hResource(GetResource<ResourceType>(sResourceID, false));
   if (!hResource.IsValid())
+  {
     return hResource;
+  }
 
   ResourceType* pResource = BeginAcquireResource(hResource, xiiResourceAcquireMode::PointerOnly);
   pResource->SetResourceDescription(sResourceDescription);
@@ -130,15 +132,21 @@ ResourceType* xiiResourceManager::BeginAcquireResource(const xiiTypedResourceHan
   if ((mode == xiiResourceAcquireMode::AllowLoadingFallback || mode == xiiResourceAcquireMode::AllowLoadingFallback_NeverFail) && GetForceNoFallbackAcquisition() > 0)
   {
     if (mode == xiiResourceAcquireMode::AllowLoadingFallback)
+    {
       mode = xiiResourceAcquireMode::BlockTillLoaded;
+    }
     else if (mode == xiiResourceAcquireMode::AllowLoadingFallback_NeverFail)
+    {
       mode = xiiResourceAcquireMode::BlockTillLoaded_NeverFail;
+    }
   }
 
   if (mode == xiiResourceAcquireMode::PointerOnly)
   {
     if (out_pAcquireResult)
+    {
       *out_pAcquireResult = xiiResourceAcquireResult::Final;
+    }
 
     // pResource->m_iLockCount.Increment();
     return pResource;
@@ -159,7 +167,9 @@ ResourceType* xiiResourceManager::BeginAcquireResource(const xiiTypedResourceHan
       {
         // return the fallback resource for now, if there is one
         if (out_pAcquireResult)
+        {
           *out_pAcquireResult = xiiResourceAcquireResult::LoadingFallback;
+        }
 
         // Fallback order is as follows:
         //  1) Prefer any resource specific fallback resource
@@ -167,11 +177,17 @@ ResourceType* xiiResourceManager::BeginAcquireResource(const xiiTypedResourceHan
         //  3) If nothing else is available, take the fallback for the whole resource type
 
         if (pResource->m_hLoadingFallback.IsValid())
+        {
           return (ResourceType*)BeginAcquireResource(pResource->m_hLoadingFallback, xiiResourceAcquireMode::BlockTillLoaded);
+        }
         else if (hFallbackResource.IsValid())
+        {
           return (ResourceType*)BeginAcquireResource(hFallbackResource, xiiResourceAcquireMode::BlockTillLoaded);
+        }
         else
+        {
           return (ResourceType*)BeginAcquireResource(GetResourceTypeLoadingFallback<ResourceType>(), xiiResourceAcquireMode::BlockTillLoaded);
+        }
       }
 
       EnsureResourceLoadingState(pResource, xiiResourceState::Loaded);
@@ -182,7 +198,9 @@ ResourceType* xiiResourceManager::BeginAcquireResource(const xiiTypedResourceHan
       // accessing IsQueuedForLoading without a lock here is save because InternalPreloadResource() will lock and early out if necessary
       // and accidentally skipping InternalPreloadResource() is no problem
       if (IsQueuedForLoading(pResource) == false && pResource->GetNumQualityLevelsLoadable() > 0)
+      {
         InternalPreloadResource(pResource, false);
+      }
     }
   }
 
@@ -194,7 +212,9 @@ ResourceType* xiiResourceManager::BeginAcquireResource(const xiiTypedResourceHan
     if (xiiResourceManager::GetResourceTypeMissingFallback<ResourceType>().IsValid())
     {
       if (out_pAcquireResult)
+      {
         *out_pAcquireResult = xiiResourceAcquireResult::MissingFallback;
+      }
 
       return (ResourceType*)BeginAcquireResource(xiiResourceManager::GetResourceTypeMissingFallback<ResourceType>(), xiiResourceAcquireMode::BlockTillLoaded);
     }
@@ -205,13 +225,17 @@ ResourceType* xiiResourceManager::BeginAcquireResource(const xiiTypedResourceHan
     }
 
     if (out_pAcquireResult)
+    {
       *out_pAcquireResult = xiiResourceAcquireResult::None;
+    }
 
     return nullptr;
   }
 
   if (out_pAcquireResult)
+  {
     *out_pAcquireResult = xiiResourceAcquireResult::Final;
+  }
 
   // pResource->m_iLockCount.Increment();
   return pResource;

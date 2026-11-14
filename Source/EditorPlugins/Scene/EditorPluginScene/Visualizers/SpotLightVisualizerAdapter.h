@@ -10,13 +10,13 @@ class xiiSpotLightVisualizerAdapter : public xiiVisualizerAdapter
 {
 public:
   xiiSpotLightVisualizerAdapter();
-  ~xiiSpotLightVisualizerAdapter();
+  ~xiiSpotLightVisualizerAdapter() override;
 
 protected:
-  virtual void Finalize() override;
-  virtual void Update() override;
+  void Finalize() override;
+  void Update() override;
 
-  virtual void UpdateGizmoTransform() override;
+  void UpdateGizmoTransform() override;
 
   float                m_fScale;
   float                m_fAngleScale;

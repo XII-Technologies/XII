@@ -39,10 +39,10 @@ class xiiSceneObjectManager : public xiiDocumentObjectManager
 {
 public:
   xiiSceneObjectManager();
-  virtual void GetCreateableTypes(xiiHybridArray<const xiiRTTI*, 32>& ref_types) const override;
+  void GetCreateableTypes(xiiHybridArray<const xiiRTTI*, 32>& ref_types) const override;
 
 private:
-  virtual xiiStatus InternalCanAdd(const xiiRTTI* pRtti, const xiiDocumentObject* pParent, xiiStringView sParentProperty, const xiiVariant& index) const override;
-  virtual xiiStatus InternalCanSelect(const xiiDocumentObject* pObject) const override;
-  virtual xiiStatus InternalCanMove(const xiiDocumentObject* pObject, const xiiDocumentObject* pNewParent, xiiStringView sParentProperty, const xiiVariant& index) const override;
+  xiiStatus InternalCanAdd(const xiiRTTI* pRtti, const xiiDocumentObject* pParent, xiiStringView sParentProperty, const xiiVariant& index) const override;
+  xiiStatus InternalCanSelect(const xiiDocumentObject* pObject) const override;
+  xiiStatus InternalCanMove(const xiiDocumentObject* pObject, const xiiDocumentObject* pNewParent, xiiStringView sParentProperty, const xiiVariant& index) const override;
 };

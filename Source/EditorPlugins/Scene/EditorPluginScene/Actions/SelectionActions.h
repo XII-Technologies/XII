@@ -81,9 +81,9 @@ public:
   };
 
   xiiSelectionAction(const xiiActionContext& context, const char* szName, ActionType type);
-  ~xiiSelectionAction();
+  ~xiiSelectionAction() override;
 
-  virtual void Execute(const xiiVariant& value) override;
+  void Execute(const xiiVariant& value) override;
 
   void OpenPrefabDocument();
 

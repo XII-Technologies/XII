@@ -201,7 +201,7 @@ inline bool xiiVec4Template<Type>::IsZero() const
 {
   XII_NAN_ASSERT(this);
 
-  return ((x == 0.0f) && (y == 0.0f) && (z == 0.0f) && (w == 0.0f));
+  return ((x == 0.0F) && (y == 0.0F) && (z == 0.0F) && (w == 0.0F));
 }
 
 template <typename Type>
@@ -216,13 +216,21 @@ template <typename Type>
 inline bool xiiVec4Template<Type>::IsNaN() const
 {
   if (xiiMath::IsNaN(x))
+  {
     return true;
+  }
   if (xiiMath::IsNaN(y))
+  {
     return true;
+  }
   if (xiiMath::IsNaN(z))
+  {
     return true;
+  }
   if (xiiMath::IsNaN(w))
+  {
     return true;
+  }
 
   return false;
 }
@@ -231,13 +239,21 @@ template <typename Type>
 inline bool xiiVec4Template<Type>::IsValid() const
 {
   if (!xiiMath::IsFinite(x))
+  {
     return false;
+  }
   if (!xiiMath::IsFinite(y))
+  {
     return false;
+  }
   if (!xiiMath::IsFinite(z))
+  {
     return false;
+  }
   if (!xiiMath::IsFinite(w))
+  {
     return false;
+  }
 
   return true;
 }
@@ -472,17 +488,29 @@ XII_FORCE_INLINE bool operator<(const xiiVec4Template<Type>& v1, const xiiVec4Te
   XII_NAN_ASSERT(&v2);
 
   if (v1.x < v2.x)
+  {
     return true;
+  }
   if (v1.x > v2.x)
+  {
     return false;
+  }
   if (v1.y < v2.y)
+  {
     return true;
+  }
   if (v1.y > v2.y)
+  {
     return false;
+  }
   if (v1.z < v2.z)
+  {
     return true;
+  }
   if (v1.z > v2.z)
+  {
     return false;
+  }
 
   return (v1.w < v2.w);
 }

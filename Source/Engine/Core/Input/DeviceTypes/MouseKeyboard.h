@@ -27,7 +27,7 @@ class XII_CORE_DLL xiiInputDeviceMouseKeyboard : public xiiInputDevice
   XII_ADD_DYNAMIC_REFLECTION(xiiInputDeviceMouseKeyboard, xiiInputDevice);
 
 public:
-  xiiInputDeviceMouseKeyboard() { m_vMouseScale.Set(1.0f); }
+  xiiInputDeviceMouseKeyboard() { m_vMouseScale.Set(1.0F); }
 
   /// Shows or hides the mouse cursor inside the application window.
   virtual void SetShowMouseCursor(bool bShow) = 0;
@@ -61,7 +61,7 @@ public:
 protected:
   void SetFocused(bool bFocused) { m_bIsFocused = bFocused; }
 
-  virtual void UpdateInputSlotValues() override;
+  void UpdateInputSlotValues() override;
 
   xiiTime         m_DoubleClickTime = xiiTime::MakeFromMilliseconds(500);
   static xiiInt32 s_iMouseIsOverWindowNumber;

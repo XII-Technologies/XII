@@ -7,14 +7,14 @@ namespace xiiInternal
   {
   public:
     xiiAllocatorImpl(xiiStringView sName, xiiAllocator* pParent);
-    ~xiiAllocatorImpl();
+    ~xiiAllocatorImpl() override;
 
     // xiiAllocator implementation
-    virtual void*          Allocate(size_t uiSize, size_t uiAlign, xiiMemoryUtils::DestructorFunction destructorFunc = nullptr) override;
-    virtual void           Deallocate(void* pPtr) override;
-    virtual size_t         AllocatedSize(const void* pPtr) override;
-    virtual xiiAllocatorId GetId() const override;
-    virtual Stats          GetStats() const override;
+    void*          Allocate(size_t uiSize, size_t uiAlign, xiiMemoryUtils::DestructorFunction destructorFunc = nullptr) override;
+    void           Deallocate(void* pPtr) override;
+    size_t         AllocatedSize(const void* pPtr) override;
+    xiiAllocatorId GetId() const override;
+    Stats          GetStats() const override;
 
     xiiAllocator* GetParent() const;
 
@@ -37,7 +37,7 @@ namespace xiiInternal
   {
   public:
     xiiAllocatorMixinReallocate(xiiStringView sName, xiiAllocator* pParent);
-    virtual void* Reallocate(void* pPtr, size_t uiCurrentSize, size_t uiNewSize, size_t uiAlign) override;
+    void* Reallocate(void* pPtr, size_t uiCurrentSize, size_t uiNewSize, size_t uiAlign) override;
   };
 }; // namespace xiiInternal
 
@@ -67,7 +67,9 @@ void* xiiInternal::xiiAllocatorImpl<A, TrackingMode>::Allocate(size_t uiSize, si
 
   // zero size allocations always return nullptr without tracking (since deallocate nullptr is ignored)
   if (uiSize == 0)
+  {
     return nullptr;
+  }
 
   XII_ASSERT_DEBUG(xiiMath::IsPowerOf2((xiiUInt32)uiAlign), "Alignment must be power of two");
 

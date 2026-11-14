@@ -20,13 +20,13 @@ public:
   XII_FORCE_INLINE void operator=(const xiiMat3& m)
   {
     xiiMemoryUtils::Copy(&m_Data[0], &m.m_fElementsCM[0], 3);
-    m_Data[3] = 0.0f;
+    m_Data[3] = 0.0F;
 
     xiiMemoryUtils::Copy(&m_Data[4], &m.m_fElementsCM[3], 3);
-    m_Data[7] = 0.0f;
+    m_Data[7] = 0.0F;
 
     xiiMemoryUtils::Copy(&m_Data[8], &m.m_fElementsCM[6], 3);
-    m_Data[11] = 0.0f;
+    m_Data[11] = 0.0F;
   }
 
 private:
@@ -60,9 +60,9 @@ public:
 
   XII_ALWAYS_INLINE xiiShaderTransform() = default;
 
-  inline void operator=(const xiiTransform& t) { *this = t.GetAsMat4(); }
+  void operator=(const xiiTransform& t) { *this = t.GetAsMat4(); }
 
-  inline void operator=(const xiiMat4& t)
+  void operator=(const xiiMat4& t)
   {
     float data[16];
     t.GetAsArray(data, xiiMatrixLayout::RowMajor);
@@ -73,7 +73,7 @@ public:
     }
   }
 
-  inline void operator=(const xiiMat3& t)
+  void operator=(const xiiMat3& t)
   {
     float data[9];
     t.GetAsArray(data, xiiMatrixLayout::RowMajor);
@@ -94,7 +94,7 @@ public:
     m_Data[11] = 0;
   }
 
-  inline xiiMat4 GetAsMat4() const
+  xiiMat4 GetAsMat4() const
   {
     xiiMat4 res;
     res.SetRow(0, reinterpret_cast<const xiiVec4&>(m_Data[0]));
@@ -105,7 +105,7 @@ public:
     return res;
   }
 
-  inline xiiVec3 GetTranslationVector() const
+  xiiVec3 GetTranslationVector() const
   {
     return xiiVec3(m_Data[3], m_Data[7], m_Data[11]);
   }

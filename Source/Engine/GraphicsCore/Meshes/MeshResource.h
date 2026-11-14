@@ -89,8 +89,8 @@ struct XII_GRAPHICSCORE_DLL xiiMeshSection
 /// Mesh LOD (Level of Detail) containing multiple sections, used to define different levels of detail for a mesh resource.
 struct XII_GRAPHICSCORE_DLL xiiMeshLOD
 {
-  float                              m_fScreenSize    = 1.0f;                        ///< Screen size threshold for this LOD, used for LOD selection when m_LodMode is xiiMeshLodSelectionMode::ScreenSize.
-  float                              m_fMaxDistance   = 0.0f;                        ///< Maximum distance for this LOD, used for LOD selection when m_LodMode is xiiMeshLodSelectionMode::Distance.
+  float                              m_fScreenSize    = 1.0F;                        ///< Screen size threshold for this LOD, used for LOD selection when m_LodMode is xiiMeshLodSelectionMode::ScreenSize.
+  float                              m_fMaxDistance   = 0.0F;                        ///< Maximum distance for this LOD, used for LOD selection when m_LodMode is xiiMeshLodSelectionMode::Distance.
   xiiUInt32                          m_uiFirstMeshlet = 0U;                          ///< Index of the first meshlet in this LOD, used for rendering and culling.
   xiiUInt32                          m_uiMeshletCount = 0U;                          ///< Number of meshlets in this LOD.
   xiiHybridArray<xiiMeshSection, 8U> m_Sections;                                     ///< Sections contained in this LOD, used for rendering and culling.
@@ -193,7 +193,7 @@ public:
   /// \param fMaxDistance Maximum distance for this LOD, used for LOD selection.
   ///
   /// \return Reference to the newly added LOD, which can be further modified (e.g., by adding sections to it).
-  xiiMeshLOD& AddLOD(float fScreenSize, float fMaxDistance = 0.0f);
+  xiiMeshLOD& AddLOD(float fScreenSize, float fMaxDistance = 0.0F);
 
   /// Collapses all sub-meshes (sections at LOD 0) into a single section, used to optimize meshes that have multiple small sections.
   void CollapseSubMeshes();
@@ -232,7 +232,7 @@ public:
   xiiSkeletonResourceHandle                      m_hDefaultSkeleton;            ///< Handle to the default skeleton resource for this mesh, used for skeletal animation when no specific skeleton is assigned.
   xiiHashTable<xiiHashedString, xiiMeshBoneData> m_Bones;                       ///< Hash table mapping bone names to bone data for this mesh, used for skeletal animation.
   xiiDynamicArray<xiiMeshMorphTarget>            m_MorphTargets;                ///< Array of morph targets for this mesh, used for shape animation.
-  float                                          m_fMaxBoneVertexOffset = 0.0f; ///< Maximum vertex offset caused by bone influences in this mesh, used for bounding volume calculations and culling of skinned meshes.
+  float                                          m_fMaxBoneVertexOffset = 0.0F; ///< Maximum vertex offset caused by bone influences in this mesh, used for bounding volume calculations and culling of skinned meshes.
 
 private:
   xiiDynamicArray<xiiString>      m_Materials;                                    ///< Array of material paths for this mesh, used to reference materials for rendering.
@@ -254,7 +254,7 @@ class XII_GRAPHICSCORE_DLL xiiMeshResource final : public xiiResource
 
 public:
   xiiMeshResource();
-  ~xiiMeshResource();
+  ~xiiMeshResource() override;
 
   /// Returns the descriptor used to create this mesh resource, containing all the data and properties for this mesh.
   const xiiMeshResourceDescriptor& GetDescriptor() const;
@@ -296,9 +296,9 @@ public:
   xiiEnum<xiiMeshLodSelectionMode> GetLodMode() const;
 
 private:
-  virtual xiiResourceLoadDescription UnloadData(Unload whatToUnload) override;
-  virtual xiiResourceLoadDescription UpdateContent(xiiStreamReader* pStream) override;
-  virtual void                       UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage) override;
+  xiiResourceLoadDescription UnloadData(Unload whatToUnload) override;
+  xiiResourceLoadDescription UpdateContent(xiiStreamReader* pStream) override;
+  void                       UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage) override;
 
   /// Creates the mesh buffer resource for this mesh based on the mesh buffer descriptor contained in the provided mesh resource descriptor, used to initialize the GPU buffers for this mesh.
   xiiResult CreateMeshBufferFromDescriptor(xiiMeshResourceDescriptor& inout_descriptor);

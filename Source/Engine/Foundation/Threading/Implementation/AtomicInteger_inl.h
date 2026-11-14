@@ -108,7 +108,9 @@ XII_ALWAYS_INLINE void xiiAtomicInteger<T>::Min(T x)
   while (true)
   {
     if (current <= x)
+    {
       break;
+    }
 
     T expected = current;
     T newValue = x;
@@ -116,7 +118,9 @@ XII_ALWAYS_INLINE void xiiAtomicInteger<T>::Min(T x)
     current = xiiAtomicUtils::CompareExchange(m_Value, static_cast<xii_atomic_underlying_t<T>>(expected), static_cast<xii_atomic_underlying_t<T>>(newValue));
 
     if (current == expected)
+    {
       break;
+    }
   }
 }
 
@@ -128,7 +132,9 @@ XII_ALWAYS_INLINE void xiiAtomicInteger<T>::Max(T x)
   while (true)
   {
     if (current >= x)
+    {
       break;
+    }
 
     T expected = current;
     T newValue = x;
@@ -136,7 +142,9 @@ XII_ALWAYS_INLINE void xiiAtomicInteger<T>::Max(T x)
     current = xiiAtomicUtils::CompareExchange(m_Value, static_cast<xii_atomic_underlying_t<T>>(expected), static_cast<xii_atomic_underlying_t<T>>(newValue));
 
     if (current == expected)
+    {
       break;
+    }
   }
 }
 

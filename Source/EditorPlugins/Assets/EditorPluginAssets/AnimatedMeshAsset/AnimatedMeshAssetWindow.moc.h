@@ -20,14 +20,14 @@ class xiiQtAnimatedMeshAssetDocumentWindow : public xiiQtEngineDocumentWindow
 
 public:
   xiiQtAnimatedMeshAssetDocumentWindow(xiiAnimatedMeshAssetDocument* pDocument);
-  ~xiiQtAnimatedMeshAssetDocumentWindow();
+  ~xiiQtAnimatedMeshAssetDocumentWindow() override;
 
   xiiAnimatedMeshAssetDocument* GetMeshDocument();
-  virtual xiiStringView         GetWindowLayoutGroupName() const override { return "AnimatedMeshAsset"; }
+  xiiStringView                 GetWindowLayoutGroupName() const override { return "AnimatedMeshAsset"; }
 
 protected:
-  virtual void InternalRedraw() override;
-  virtual void ProcessMessageEventHandler(const xiiEditorEngineDocumentMsg* pMsg) override;
+  void InternalRedraw() override;
+  void ProcessMessageEventHandler(const xiiEditorEngineDocumentMsg* pMsg) override;
 
 protected Q_SLOTS:
   void HighlightTimer();

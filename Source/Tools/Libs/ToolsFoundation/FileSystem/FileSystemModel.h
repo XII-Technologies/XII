@@ -76,7 +76,7 @@ public:
 
 public:
   /// Return true if the two paths point to the same file on disk. On different platforms the same strings can produce different results. This function assumes both paths are absolute and cleaned via xiiStringBuilder::MakeCleanPath.
-  static bool IsSameFile(const xiiStringView sAbsolutePathA, const xiiStringView sAbsolutePathB);
+  static bool IsSameFile(xiiStringView sAbsolutePathA, xiiStringView sAbsolutePathB);
 
   /// Computes the hash of the given file. Optionally passes the data stream through into another stream writer.
   static xiiUInt64 HashFile(xiiStreamReader& ref_inputStream, xiiStreamWriter* pPassThroughStream);

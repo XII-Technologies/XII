@@ -67,8 +67,8 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALRasterizerStateCreationDescription : pub
   bool                    m_bScissorEnable         = false;                 ///< Enable scissor-rectangle culling. All pixels outside an active scissor rectangle are culled. The default is false.
   bool                    m_bAntialiasedLineEnable = true;                  ///< Specifies whether to enable line antialiasing. The default is true.
   xiiInt32                m_iDepthBias             = 0;                     ///< Constant value added to the depth of a given pixel. The default is false.
-  float                   m_fDepthBiasClamp        = 0.0f;                  ///< The maximum depth bias of a pixel. The default is 0.
-  float                   m_fSlopeScaledDepthBias  = 0.0f;                  ///< Scalar that scales the given pixel's slope before adding to the pixel's depth. The default is 0.
+  float                   m_fDepthBiasClamp        = 0.0F;                  ///< The maximum depth bias of a pixel. The default is 0.
+  float                   m_fSlopeScaledDepthBias  = 0.0F;                  ///< Scalar that scales the given pixel's slope before adding to the pixel's depth. The default is 0.
 };
 
 /// Interface that defines methods to manipulate a rasterizer state object.
@@ -86,7 +86,7 @@ protected:
 
   xiiGALRasterizerState(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALRasterizerStateCreationDescription& creationDescription);
 
-  virtual ~xiiGALRasterizerState();
+  ~xiiGALRasterizerState() override;
 
   virtual xiiResult InitPlatform() = 0;
 

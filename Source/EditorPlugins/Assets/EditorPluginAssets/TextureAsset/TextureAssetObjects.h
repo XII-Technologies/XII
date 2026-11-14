@@ -89,9 +89,9 @@ public:
   bool  m_bFlipHorizontal        = false;
   bool  m_bDilateColor           = false;
   bool  m_bPreserveAlphaCoverage = false;
-  float m_fResolutionScale       = 1.0f;
+  float m_fResolutionScale       = 1.0F;
   float m_fHdrExposureBias       = 0;
-  float m_fAlphaThreshold        = 0.5f;
+  float m_fAlphaThreshold        = 0.5F;
 
   xiiEnum<xiiTextureConverterSamplerPreset> m_SamplerPreset;
   bool                                      m_bUseCustomFiltering = false;

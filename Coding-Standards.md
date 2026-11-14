@@ -2,9 +2,9 @@
 
 This guide defines what readable, correct, robust, maintainable, and performance-conscious C++ looks like in XII. A style guide cannot replace design review, tests, benchmarks, platform documentation, or sound engineering judgment. Its purpose is to make routine decisions predictable and to make exceptions explicit.
 
-**Precedence when rules differ:** correctness and portability come first; then documented public API and serialized-format compatibility; then the repository's root `.clang-format`, `.editorconfig`, build settings, and target-specific conventions; then this document; then local neighboring code for cases this document leaves open. Do not reformat unrelated code merely to apply a new preference. This document does **not** claim to reproduce exact `.clang-format` or `.editorconfig` values, which must be read from the target checkout.
+**Precedence when rules differ:** correctness and portability come first; then documented public API, reflection, and serialized-format compatibility; then the explicit requirements of this document and the repository's approved `.clang-format`, `.clang-tidy`, `.editorconfig`, build settings, and machine-readable exception registry. These normative sources **MUST** agree. Any conflict between a written rule and a tool configuration **MUST** be resolved through a reviewed standards-and-tooling change before the affected code is merged; contributors **MUST NOT** choose whichever permits a more convenient result. Local neighboring code is not an authority for formatting or naming exceptions. Do not reformat unrelated code merely to apply a new preference. The exact formatter options and tool versions are read from the checked-in configurations and pinned CI toolchain.
 
-The words **MUST**, **SHOULD**, and **MAY** indicate mandatory rules, expected defaults (exceptions need a reason), and permitted alternatives. XII-specific APIs shown in examples are taken from the supplied engine code where possible. Examples labeled **illustrative** show a design pattern and may require adaptation to the exact current API.
+The words **MUST**, **SHOULD**, and **MAY** indicate mandatory rules, engineering recommendations requiring documented rationale for deviations, and expressly permitted alternatives. Formatting, naming, syntax, and file-layout requirements are mandatory unless an explicit rule defines an exception. The absence of an automatic check does not make such a requirement optional. A legacy implementation or an example does not grant an exception for new code. XII-specific APIs shown in examples are taken from the supplied engine code where possible. Examples labeled **illustrative** show a design pattern and may require adaptation to the exact current API.
 
 ## Contents
 
@@ -43,7 +43,9 @@ xiiResult LoadConfiguration(xiiStringView sPath)
   xiiFileReader file;
 
   if (file.Open(sPath).Failed())
+  {
     return XII_FAILURE;
+  }
 
   return ParseConfiguration(file);
 }
@@ -526,10 +528,10 @@ Contributors **MUST NOT** introduce personal formatting conventions that conflic
 - The repository's `.clang-format` configuration **MUST NOT** be overridden through personal editor settings or alternative formatting configurations.
 - Formatting **MUST** remain consistent regardless of the editor, IDE, operating system, or development environment used.
 - Contributors **MUST NOT** manually introduce alignment, indentation, or spacing conventions that conflict with the configured formatter.
-- Existing brace placement, declaration layout, spacing, and naming conventions **SHOULD** be preserved where they are not governed by automated formatting.
+- New and modified code **MUST** follow the explicitly defined brace, declaration, spacing, and naming requirements in §§2–3. Existing noncompliant code outside the modified scope is legacy technical debt, not precedent for new code.
 - Formatting changes **MUST NOT** alter program semantics, preprocessor behavior, or documented interfaces.
 - Source files **MUST NOT** contain trailing whitespace, inconsistent indentation, unintended mixed line endings, or unresolved merge conflict markers.
-- Source text **SHOULD** use UTF-8 encoding unless a specific file format, platform interface, or toolchain requires otherwise.
+- Source text **MUST** use UTF-8 encoding. Other encodings are permitted only for paths explicitly registered as binary, generated, or externally constrained exceptions.
 - File encodings and line-ending conventions **MUST NOT** be changed without considering repository configuration and tooling compatibility.
 
 #### Scope of Formatting Changes
@@ -537,25 +539,34 @@ Contributors **MUST NOT** introduce personal formatting conventions that conflic
 Formatting changes **MUST** remain proportional to the scope of the work being performed.
 
 - Functional pull requests **MUST NOT** include unrelated repository-wide or mass formatting changes.
-- Contributors **SHOULD** format only the files or code regions affected by their modifications when formatting an entire file would introduce substantial unrelated changes.
-- Existing formatting inconsistencies outside the scope of a change **SHOULD** be addressed separately unless correcting them is necessary for the current modification.
-- Dedicated formatting changes **MUST** be separated from functional changes whenever practical.
+- Functional changes **MUST** format added and modified source lines, including the smallest complete adjacent syntactic constructs required for a correct formatter result. They **MUST NOT** reformat unrelated lines or files.
+- Formatting defects outside the changed region **MUST** be left for a dedicated formatting-only change, unless a defect prevents the modified code from compiling or passing required validation.
+- Dedicated whole-file or repository-wide formatting changes **MUST** use a separate, explicitly labeled formatting-only pull request and must contain no intentional behavior changes.
 - Formatting-only changes **MUST NOT** intentionally modify program behavior.
 
 Keeping formatting changes separate from functional changes reduces review noise, preserves meaningful version-control history, and simplifies regression analysis.
 
 #### Automated Formatting and Tooling
 
-Automated formatting **SHOULD** be integrated into the development workflow to reduce manual effort and prevent inconsistencies.
+Automated formatting **MUST** be integrated into local validation and required continuous-integration checks for all maintained C/C++ changes.
 
-- Editors and IDEs **SHOULD** be configured to discover and use the repository's `.clang-format` and `.editorconfig` files.
-- Contributors **SHOULD** use automated formatting before submitting changes for review.
-- Continuous integration **MAY** enforce formatting compliance using the repository's approved formatter configuration.
+- Editors and IDEs **MUST NOT** submit formatting that differs from the repository's approved formatter and EditorConfig output; the choice of editor remains unrestricted.
+- Contributors **MUST** run the pinned formatter and relevant Clang-Tidy checks on changed, maintained source before submitting a pull request.
+- Continuous integration **MUST** reject formatting and mandatory lint violations in changed maintained source; its status check **MUST** be required for merging.
+- The approved LLVM toolchain target is **LLVM 23** (`clang-format-23`, `clang-tidy-23`). The exact toolchain build **MUST** be recorded in `Utilities/CI/style-policy.json`, and all local and CI invocations **MUST** use the approved version; upgrades require a separate reviewed tooling change. Existing CI jobs invoking LLVM 22 **MUST** be migrated before enforcing this revision.
 - Automated formatting tools **MUST NOT** silently rewrite unrelated source files as part of a functional change.
 - Formatter upgrades or modifications to formatting configuration **MUST** be reviewed independently because they may affect a substantial portion of the codebase.
-- Generated source files **SHOULD** be formatted consistently when supported by their generators. Contributors **MUST NOT** manually format generated output when those changes would be overwritten by regeneration.
+- Generated, vendored, and externally maintained paths **MUST** be recorded in the approved, machine-readable style exception registry, with a path pattern, owner, reason, and validation method. Those paths **MUST NOT** be directly rewritten by source-formatting automation. All other paths are maintained source. Generators **MUST** produce reproducible output under the applicable generator contract.
 
-Where automated formatting cannot express a particular convention, contributors **SHOULD** follow the established style of the surrounding code.
+Where ClangFormat or standard Clang-Tidy cannot express a mandatory convention, the rule **MUST** be implemented in an XII-specific validator, AST check, or required review checklist until automation is available. Surrounding code cannot waive the requirement.
+
+#### Repository-Controlled Style Registries
+
+Deterministic XII style policy **MUST** be defined by two version-controlled files: `Utilities/CI/style-policy.json` and `Utilities/CI/style-exceptions.json`. Their absence is an integration blocker, not permission for contributors or automated agents to choose conventions independently.
+
+- `style-policy.json` **MUST** declare the approved LLVM tool versions, semantic type-to-prefix mapping, approved terminology and acronym spellings, unit suffixes, significant result types, module include-group ranking, generated/third-party paths, and compatibility-sensitive symbol baseline. Entries **MUST** be validated for duplicates and contradictory mappings.
+- `style-exceptions.json` **MUST** contain only specifically approved exceptions. Each entry **MUST** record a rule identifier, exact path/pattern or symbol scope, issue reference, technical reason, reviewing owner, and a validation or expiry condition. Unmatched exception entries and undeclared local suppressions **MUST** fail CI.
+- Registries and tool configurations **MUST** be updated in the same reviewed change as the normative standard they implement. A new code pattern not covered by an explicitly permitted entry **MUST** comply with the default mandatory rule.
 
 #### Formatting Exceptions
 
@@ -571,7 +582,7 @@ Examples include:
 
 Exceptions **MUST** be narrowly scoped and justified by a concrete technical requirement.
 
-ClangFormat suppression directives **SHOULD NOT** be introduced merely to preserve personal formatting preferences. Where suppression is necessary, it **SHOULD** encompass the smallest practical region.
+ClangFormat suppression **MUST NOT** be used for personal formatting preferences. A necessary suppression **MUST** use a balanced `// clang-format off` and `// clang-format on` pair enclosing only the required construct. The suppression **MUST** be registered against the source path and an approved issue/exception identifier; unbalanced, unregistered, or unexplained directives **MUST** fail CI. Suppression does not waive correctness, naming, or other lint rules.
 
 **Guiding principle:**
 
@@ -579,18 +590,18 @@ ClangFormat suppression directives **SHOULD NOT** be introduced merely to preser
 
 ### 2.2 Braces and Indentation
 
-Consistent brace placement and indentation are essential for expressing control flow clearly and preventing ambiguity. XII follows Allman-style braces for class definitions, function definitions, and multi-line control blocks, with indentation and spacing governed by the repository's `.clang-format` configuration.
+Consistent brace placement and indentation are essential for expressing control flow clearly and preventing ambiguity. XII **MUST** use Allman-style brace placement for multi-line class, struct, namespace, function, lambda, and control-flow definitions. Every control-flow body requires braces irrespective of length. Short function and lambda definitions may use a single-line form only when the approved `.clang-format` emits that form; contributors **MUST NOT** substitute personal layout choices. Indentation and spacing are governed by the approved `.clang-format` configuration.
 
 Braces and indentation **MUST** make the logical structure of the code immediately apparent without requiring readers to infer statement ownership.
 
 #### General Requirements
 
-- Class, struct, namespace, function, and multi-line control-flow definitions **MUST** follow the brace placement prescribed by `.clang-format`.
+- Class, struct, namespace, function, lambda, `if`, `else`, `for`, `while`, and `do` bodies **MUST** use the braces and placement prescribed by the approved `.clang-format`. `else if` is a conditional chain and does not require an extra wrapper around the nested `if`. Any approved single-line function or lambda **MUST** still have braces.
 - Use consistent indentation according to the repository's configured indentation width.
 - Opening and closing braces **MUST** clearly delimit the scope they introduce.
 - Closing braces **MUST** align with their corresponding declarations or control statements.
 - Do not introduce unnecessary nesting when guard clauses or early returns provide a clearer implementation.
-- Braces **MUST NOT** be omitted when doing so introduces ambiguity or makes the control flow difficult to follow.
+- Braces **MUST NOT** be omitted from any control-flow body, including bodies containing only `return`, `break`, `continue`, `throw`, or a single expression. Empty control-flow bodies **MUST** use explicit braces.
 - Do not manually align statements or braces in ways that conflict with the repository's formatter.
 
 **Prefer:**
@@ -613,9 +624,7 @@ The structure makes access control, function scope, and member declarations imme
 
 #### Single-Statement Control Blocks
 
-Braces **MAY** be omitted for simple, single-statement conditions and loops when the resulting control flow remains unambiguous.
-
-This convention is particularly appropriate for guard clauses, validation checks, and early returns.
+Braces **MUST** enclose every single-statement conditional and loop body without exception for guard clauses, validation checks, early returns, or short statements.
 
 **Prefer:**
 
@@ -623,24 +632,20 @@ This convention is particularly appropriate for guard clauses, validation checks
 xiiResult Initialize(xiiDevice* pDevice)
 {
   if (pDevice == nullptr)
+  {
     return XII_FAILURE;
+  }
 
   if (m_bInitialized)
+  {
     return XII_SUCCESS;
+  }
 
   return InitializeResources(pDevice);
 }
 ```
 
-Braces **SHOULD** be omitted only when all of the following conditions are satisfied:
-
-- The controlled body contains exactly one statement.
-- The statement remains readable without additional scope.
-- No ambiguity exists regarding control-flow ownership.
-- The condition and its body are sufficiently simple to understand immediately.
-- Omitting braces is consistent with the surrounding code and formatter configuration.
-
-Braces **SHOULD** be introduced when the controlled statement becomes more complex or when additional statements are added.
+Braces are mandatory regardless of the number of statements, the complexity of the condition, or neighboring source conventions. The `readability-braces-around-statements` diagnostic **MUST** be enabled with `ShortStatementLines: '0'`; absence of a compiler diagnostic does not waive this rule.
 
 #### Multi-Statement Control Blocks
 
@@ -708,7 +713,9 @@ Where possible, simplify nested conditions using guard clauses or combined predi
 
 ```cpp
 if (!bVisible)
+{
   return;
+}
 
 if (!bReady)
 {
@@ -723,7 +730,7 @@ Early returns **SHOULD** be preferred when they reduce nesting without obscuring
 
 #### Conditional Branches
 
-For `if`, `else if`, and `else` chains, braces **SHOULD** be applied consistently across branches when any branch requires a multi-statement body.
+For `if`, `else if`, and `else` chains, **every branch MUST** use braces around its statement body.
 
 **Prefer:**
 
@@ -743,24 +750,24 @@ else
 }
 ```
 
-Avoid mixing braced and unbraced branches when doing so makes the structure less predictable.
-
-Simple conditional chains **MAY** omit braces where permitted by the formatter and where every branch remains unambiguous.
+Mixing braced and unbraced branches is prohibited. Short conditional chains have no exception.
 
 #### Loops and Iteration
 
 Loop bodies follow the same rules as conditional statements.
 
-Braces **MAY** be omitted for simple, single-statement loops.
+Braces **MUST** be used for all loop bodies, including simple single-statement loops.
 
 **Prefer:**
 
 ```cpp
 for (xiiUInt32 uiIndex = 0; uiIndex < m_Entries.GetCount(); ++uiIndex)
+{
   ProcessEntry(m_Entries[uiIndex]);
+}
 ```
 
-Braces **MUST** be used for multi-statement loop bodies.
+Braces **MUST** also be used for multi-statement loop bodies.
 
 **Prefer:**
 
@@ -770,7 +777,9 @@ for (xiiUInt32 uiIndex = 0; uiIndex < m_Entries.GetCount(); ++uiIndex)
   ResourceEntry& entry = m_Entries[uiIndex];
 
   if (!entry.m_bActive)
+  {
     continue;
+  }
 
   ProcessEntry(entry);
   UpdateStatistics(entry);
@@ -807,7 +816,7 @@ An explicit scope is justified here because it determines the duration of synchr
 
 Code structure **SHOULD** remain easy to modify without introducing accidental changes in control flow.
 
-- When adding statements to an unbraced control block, introduce braces before expanding the body.
+- Any pre-existing unbraced control block affected by a source change **MUST** be brought into compliance with the mandatory brace rule before the change is merged.
 - Review nested branches carefully when modifying conditions or adding `else` clauses.
 - Avoid formatting that visually suggests a statement belongs to a scope when it does not.
 - Do not rely on indentation alone to express control flow; C++ semantics are determined by statement structure and braces.
@@ -826,11 +835,11 @@ Alignment should clarify related code without introducing unnecessary whitespace
 #### General Requirements
 
 - Use consistent spacing around operators, assignments, declarations, and expressions as prescribed by the repository's formatter.
-- Related declarations and initializations **MAY** be aligned when doing so improves readability and is supported by the formatter.
-- Do not manually introduce alignment that conflicts with automated formatting.
-- Avoid aligning unrelated statements or declarations across large regions of code.
-- Use blank lines to separate logically distinct operations, not individual statements without meaningful separation.
-- Do not introduce excessive vertical whitespace that unnecessarily fragments cohesive implementations.
+- Declarations, assignments, and macros **MUST** use exactly the alignment emitted by the approved ClangFormat configuration.
+- Manually inserted alignment that is not emitted by the formatter **MUST NOT** be retained.
+- Semantic judgments about whether declarations are sufficiently related **MUST NOT** be used to override the formatter; change the formatter configuration through a separate reviewed style change instead.
+- Maintained code **MUST NOT** contain more than one consecutive empty line; empty lines immediately following an opening brace **MUST NOT** appear.
+- Include groups **MUST** be separated by exactly one empty line under §2.5. Other blank-line placements **MUST** match the approved formatter output, rather than a reviewer's subjective idea of logical grouping.
 - Preserve consistent spacing within classes, functions, namespaces, and control-flow structures.
 
 **Prefer:**
@@ -841,7 +850,7 @@ xiiUInt32 m_uiPassCount  = 0U;
 bool      m_bActive      = false;
 ```
 
-Related member declarations may benefit from alignment because their types, names, and initializers form a compact logical group.
+The alignment shown is required only if produced by the approved formatter. Adjacency and the formatter's grouping rules, not an individual author's judgment, determine alignment.
 
 **Avoid:**
 
@@ -855,11 +864,11 @@ bool                         m_bActive      = false;
 xiiUniquePtr<xiiResourceData> m_pResourceData;
 ```
 
-Alignment **SHOULD NOT** introduce large amounts of whitespace merely to maintain common columns across unrelated declarations.
+Alignment not emitted by the approved formatter **MUST NOT** be introduced or preserved.
 
 #### Logical Spacing
 
-Blank lines **SHOULD** communicate transitions between logically distinct operations.
+Blank-line placement **MUST** be formatter-compliant. A maximum of one consecutive empty line and no empty line at the start of a block are mandatory. The root `.clang-format` **MUST** set `MaxEmptyLinesToKeep: 1` and `KeepEmptyLinesAtTheStartOfBlocks: false` as part of adopting this revision.
 
 **Prefer:**
 
@@ -868,7 +877,9 @@ const xiiUInt32 uiWidth  = descriptor.m_uiWidth;
 const xiiUInt32 uiHeight = descriptor.m_uiHeight;
 
 if (uiWidth == 0U || uiHeight == 0U)
+{
   return XII_FAILURE;
+}
 
 const xiiUInt64 uiPixelCount = static_cast<xiiUInt64>(uiWidth) * uiHeight;
 
@@ -876,9 +887,7 @@ AllocateStorage(uiPixelCount);
 InitializeStorage();
 ```
 
-Avoid inserting blank lines after every declaration or statement when those statements form one cohesive operation.
-
-Similarly, do not compress unrelated stages of an implementation into a single uninterrupted block.
+Additional logical spacing beyond the formatter's mechanically enforced rules is a readability review concern, not permission to insert unsupported whitespace or to reject formatter-compliant output.
 
 **Guiding principle:**
 
@@ -892,13 +901,13 @@ Prefer explicit operations and predictable control flow over compact expressions
 
 #### General Requirements
 
-- Declare one independently meaningful variable per statement.
-- Initialize variables at the point of declaration whenever practical.
-- Prefer declarations in the narrowest scope that satisfies their intended use.
-- Avoid assignment inside conditional expressions unless it materially improves clarity.
-- Use parentheses to clarify complex boolean expressions, particularly when mixing logical operators.
-- Do not combine unrelated side effects into a single statement.
-- Avoid comma expressions when ordinary sequential statements communicate the same behavior more clearly.
+- Each ordinary declaration statement **MUST** declare exactly one variable. Structured bindings, function parameters, and syntax-mandated multi-declarators are exempt.
+- A local variable **MUST** be initialized at declaration when its intended initial value is available. Deferred initialization **MUST** be justified by a documented control-flow or API constraint; introducing an arbitrary default solely to satisfy lint is prohibited.
+- Variables **MUST** be declared in the narrowest scope that preserves their required lifetime and behavior; scope-changing refactors require semantic review.
+- Assignment expressions **MUST NOT** appear within `if`, `while`, or other Boolean control conditions. Condition-declarations and C++17 `if`/`switch` initializer clauses remain permitted.
+- When `&&` and `||` occur in the same Boolean condition, operands whose grouping depends on mixed precedence **MUST** be explicitly parenthesized or extracted into named predicates. Refactoring **MUST** preserve short-circuit and evaluation behavior.
+- Side-effecting operations **MUST** preserve their required evaluation order; independent side effects **MUST** use distinct statements.
+- The comma **operator** **MUST NOT** be used in executable expressions, except in `for` increment clauses and explicitly reviewed macro bodies. Commas separating arguments, declarations, or initializers are not comma operators.
 - Prefer early returns for invalid inputs and unmet preconditions when they simplify control flow.
 - Do not rely on implicit operator precedence when an expression could reasonably be misinterpreted.
 - Do not introduce temporary variables that merely rename an expression without improving readability, correctness, or reuse.
@@ -912,7 +921,9 @@ const xiiUInt32 uiWidth  = descriptor.m_uiWidth;
 const xiiUInt32 uiHeight = descriptor.m_uiHeight;
 
 if (uiWidth == 0U || uiHeight == 0U)
+{
   return XII_FAILURE;
+}
 ```
 
 **Avoid:**
@@ -926,11 +937,11 @@ uiHeight = descriptor.m_uiHeight;
 
 Separate declarations make initialization and variable lifetime easier to inspect.
 
-Multiple declarations in a single statement **SHOULD** be avoided when their variables have independent meanings or initialization requirements.
+Multiple ordinary variables in a single declaration statement are prohibited regardless of their apparent relationship. Configure `readability-isolate-declaration` for this rule.
 
 #### Assignments and Conditions
 
-Assignments within conditions **SHOULD** be avoided when separating the operations improves clarity.
+Assignment expressions inside control conditions are prohibited. A separately declared value, an `if` initializer clause, or a declaration-condition may be used when it preserves the original semantics.
 
 **Prefer:**
 
@@ -938,7 +949,9 @@ Assignments within conditions **SHOULD** be avoided when separating the operatio
 xiiResource* pResource = FindResource(sName);
 
 if (pResource == nullptr)
+{
   return XII_FAILURE;
+}
 
 ProcessResource(*pResource);
 ```
@@ -954,11 +967,11 @@ else
 
 The second form is valid C++, but the first makes lookup, validation, and subsequent processing distinct operations.
 
-C++17-style conditional initializers **MAY** be used when their scope restriction provides a clear benefit and the condition remains straightforward.
+C++17-style `if` and `switch` initializer clauses are permitted syntax, provided the initializer is distinct from the Boolean condition and the initializer and condition do not violate any separate correctness or lifetime rule.
 
 #### Complex Expressions
 
-Complex conditions **SHOULD** be structured so that their intent is immediately understandable.
+Conditions combining logical `&&` and `||` **MUST** include explicit grouping parentheses at each mixed-precedence boundary or use separately named predicates. All other expression decomposition is a readability review decision, not a license to omit mandatory parentheses.
 
 **Prefer:**
 
@@ -967,7 +980,9 @@ const bool bRequiresUpdate = bDirty || bForceUpdate;
 const bool bCanUpdate      = bInitialized && !bPendingDestruction;
 
 if (bRequiresUpdate && bCanUpdate)
+{
   UpdateResource();
+}
 ```
 
 **Avoid:**
@@ -999,7 +1014,7 @@ RecordStatistics();
 UpdateResourceState(), NotifyDependents(), RecordStatistics();
 ```
 
-Avoid expressions that modify and access shared state through multiple operands when their evaluation order is unclear or dependent on subtle language rules.
+Unsequenced conflicting modifications and reads are prohibited. Comma-operator restrictions, sequencing, and any required parenthesization **MUST** be enforced independently of whether the expression appears readable.
 
 **Guiding principle:**
 
@@ -1021,21 +1036,23 @@ Include ordering should communicate the relationship between the current transla
 - Public headers **MUST NOT** depend on a precompiled header to provide missing declarations or dependencies.
 - Avoid circular header dependencies. Use forward declarations where appropriate and where complete type information is not required.
 - Do not use relative paths to navigate between module include directories when the repository's module-qualified include paths are available.
-- Preserve the established include ordering and grouping conventions.
-- Separate meaningful include groups with a single blank line.
-- Do not introduce unnecessary blank lines within a cohesive include group.
+- Include ordering **MUST** follow the fixed category sequence below; local file history does not define alternative ordering.
+- Required prologue includes **MUST** occupy their designated first position; within each remaining category, header names **MUST** be sorted using the approved ClangFormat rules.
+- Exactly one blank line **MUST** separate nonempty include categories. Empty categories are omitted; there **MUST NOT** be blank lines inside a category. Conditional preprocessor include blocks are maintained as independent groups and **MUST** preserve the conditions and grouping required for correctness.
 
 #### Header Files
 
-Header files **MUST** begin with the repository's required license and copyright notice, followed by `#pragma once`.
+Header files **MUST** begin with the exact repository-approved copyright/license notice, followed by one blank line, `#pragma once`, one blank line, and their required includes. `#pragma once` **MUST** occur exactly once. The approved copyright notice for XII-owned files is `/// Copyright (c) Theophilus Eriata. All Rights Reserved.`; third-party notices must remain legally accurate and are covered by registered path exclusions.
 
-For headers belonging to a dynamically linked module, the module's `DLL.h` **MUST** be the first included header immediately following `#pragma once`.
+For headers belonging to a dynamically linked module, the module's `DLL.h` **MUST** be the first included header after the required single blank line following `#pragma once`.
 
 No other include directive or forward declaration should appear between `#pragma once` and the module's `DLL.h`.
 
 **Prefer:**
 
 ```cpp
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #pragma once
 
 #include <GraphicsCore/GraphicsCoreDLL.h>
@@ -1055,22 +1072,27 @@ Headers for modules that do not use a DLL export header are exempt from this req
 
 #### Implementation Files
 
+C++ implementation files **MUST** begin with the exact repository-approved copyright/license notice and one blank line. In a PCH-enabled module the first include **MUST** be its module PCH, followed by one blank line. The paired public header, where one exists, **MUST** be included as the next include. In a module without a PCH, the paired header **MUST** be the first include when one exists.
 
-C++ implementation files **MUST** begin with the repository's required license and copyright notice. For implementation files that use a module precompiled header, the corresponding module PCH **MUST** be the first include immediately following that notice, before all other header dependencies.
+The include categories **MUST** appear in the following order, with the first two applicable categories fixed ahead of all sorted dependency groups:
 
-Other dependencies **SHOULD** then be grouped according to their architectural relationship.
+1. Required module PCH for `.cpp` files, or module `DLL.h` for public headers, in the exact position defined above.
+2. Paired public header for `.cpp` files, if one exists and is not the PCH.
+3. Direct engine dependencies from other modules, ordered according to the approved module dependency ranking (lower-level dependencies first), then alphabetically within a module.
+4. Additional headers from the current module, sorted alphabetically.
+5. Permitted third-party and platform headers, grouped by provider and sorted within each provider.
+6. Standard-library headers, sorted alphabetically.
 
-A typical implementation file follows this structure:
-
-1. Module precompiled header.
-2. Required headers from lower-level modules.
-3. Headers from the current module.
-4. Additional dependencies from other permitted modules or application-specific components.
+The module-to-category mapping and dependency ranking **MUST** be machine-readable and reviewed with the build dependency graph. A missing or invalid category mapping **MUST** be reported rather than guessed from a neighboring file.
 
 **Prefer:**
 
 ```cpp
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <GraphicsCore/GraphicsCorePCH.h>
+
+#include <GraphicsCore/Pipeline/RenderGraphManager.h>
 
 #include <Foundation/Containers/IdTable.h>
 #include <Foundation/Threading/Mutex.h>
@@ -1083,17 +1105,19 @@ A typical implementation file follows this structure:
 
 The ordering of include groups **MUST NOT** be interpreted as permission to introduce architectural dependencies that violate the module dependency graph.
 
-Where project-specific conventions establish a different ordering, those conventions take precedence unless they conflict with the repository's formatting or build requirements.
+An alternate ordering is permitted only when required by a documented compilation dependency and explicitly approved in the machine-readable exception registry. Neighboring code does not establish an exception.
 
 #### Forward Declarations
 
-Forward declarations **SHOULD** be used when they meaningfully reduce compilation dependencies without compromising correctness or interface clarity.
+Forward declarations **MUST** be used only where a complete type is not required and their use preserves the header's independent compilation. Replacing an include with a forward declaration is a dependency-design decision, not a source-formatting exemption.
 
 They are generally appropriate for types referenced exclusively through pointers or references when no complete definition is required.
 
 **Prefer:**
 
 ```cpp
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #pragma once
 
 #include <GraphicsCore/GraphicsCoreDLL.h>
@@ -1127,24 +1151,20 @@ Header dependencies influence compilation time, coupling, and the scope of rebui
 
 **Guiding principle:**
 
-> Every include should represent an intentional dependency. Headers must stand independently, module boundaries must remain explicit, and include ordering must follow the repository's established conventions.
+> Every include must represent an intentional dependency. Headers must stand independently, module boundaries must remain explicit, and include ordering must follow the approved category policy rather than neighboring-file precedent.
 
 ### 2.6 Section Separators
 
-Section separators **MAY** be used to organize substantial implementation files and distinguish meaningful groups of functionality.
-
-Their purpose is navigation and structural clarity, not decoration.
+New visual-only comment separators are prohibited in maintained XII-owned source. Function names, namespaces, and IDE navigation provide code organization without requiring contributors to decide where decorative barriers are appropriate. Existing separators may remain untouched outside a dedicated cleanup.
 
 #### General Requirements
 
-- Use the repository's established separator style where section dividers are appropriate.
-- Prefer section separators between logically distinct implementation groups.
-- Do not insert separators between every small function or helper.
-- Avoid excessive or deeply nested visual section hierarchies.
-- Section organization **SHOULD** reflect the responsibilities of the implementation rather than arbitrary file length.
-- Do not use section separators to compensate for unrelated responsibilities that should be separated into different components or translation units.
+- New banner comments consisting primarily of repeated `/`, `-`, `=`, `*`, or similar decoration **MUST NOT** be added to maintained source.
+- Legacy banners **MUST NOT** be copied into new files or expanded during feature work. A standalone style-only change may remove them.
+- Named `//` comments explaining an actual subsystem contract remain permitted, subject to §2.7.
+- Code responsibility boundaries **MUST** be expressed through proper declarations, functions, types, and file structure, not decorative banners.
 
-**Prefer:**
+**Legacy example (prohibited in new source):**
 
 ```cpp
 //////////////////////////////////////////////////////////////////////////
@@ -1164,15 +1184,15 @@ void xiiResourceRegistry::Clear()
 }
 ```
 
-Separators can improve navigation when distinguishing construction and destruction, resource management, serialization, or other substantial implementation groups.
+The legacy separators in this example are retained only to illustrate the pattern being retired. New code **MUST NOT** introduce them.
 
-For short implementation files containing a small number of closely related functions, additional separators are generally unnecessary.
+The prohibition applies to every new maintained file, independent of file length or number of functions.
 
 #### Structural Organization
 
-When section separators are used, related implementations **SHOULD** remain grouped consistently.
+Existing legacy separators do not authorize their use in new files. Implementations **MUST** follow the responsibility and source-layout requirements of §§2.8 and 4.1.
 
-Examples of meaningful groups include:
+Examples of implementation responsibilities that must remain discoverable through names and type boundaries include:
 
 - Construction, initialization, and destruction.
 - Public interface implementations.
@@ -1182,13 +1202,13 @@ Examples of meaningful groups include:
 - Internal algorithms and helper functions.
 - Platform-specific implementations.
 
-Section dividers **MUST NOT** replace clear function names, cohesive class design, or appropriate source-file organization.
+New section dividers **MUST NOT** be introduced. Existing banners have no normative effect on file organization or code ownership.
 
-An excessively large implementation file should be evaluated for responsibility boundaries rather than divided indefinitely with decorative comments.
+A large implementation file must be evaluated for actual responsibility boundaries rather than divided with decorative comments.
 
 **Guiding principle:**
 
-> Use visual separators to clarify meaningful implementation boundaries, not to disguise unnecessary complexity or fragmented design.
+> Source organization must be discoverable through declarations, names, and coherent responsibilities, not optional decorative barriers.
 
 ### 2.7 File Endings and Comments
 
@@ -1203,7 +1223,7 @@ Comments should explain intent, constraints, and non-obvious decisions rather th
 - Required copyright and license notices **MUST** follow the repository's established form.
 - Existing license notices **MUST NOT** be removed or modified without authorization.
 - Contributors **MUST NOT** copy personal or third-party copyright notices into unrelated files without an applicable legal or licensing basis.
-- Required static-link registration macros **MUST** be preserved where applicable. See §17.
+- Required static-link registration macros **MUST** be preserved where applicable. Their use must be validated against the owning module's actual registration mechanism and relevant rules in §§4.7 and 6.6.
 - Generated source files **MUST** retain any required generator metadata, registration declarations, or structural markers.
 
 #### Commenting Requirements
@@ -1241,10 +1261,10 @@ Comments that merely restate the next operation add noise without improving comp
 
 - Do not retain commented-out implementations as a substitute for version control.
 - Obsolete code **MUST** be removed rather than indefinitely disabled.
-- `#if 0` blocks **SHOULD NOT** be used to preserve abandoned implementations.
+- `#if 0` blocks **MUST NOT** be used to preserve abandoned implementations in maintained code. A genuine platform or compatibility requirement **MUST** use an approved feature conditional or registered exception.
 - Temporary debugging statements, experimental code, and instrumentation **MUST** be removed before submission unless intentionally retained as supported functionality.
-- `TODO` and `FIXME` comments **SHOULD** identify a concrete issue or required action rather than serve as vague placeholders.
-- Workarounds **SHOULD** explain the underlying constraint and, where appropriate, reference the associated issue or dependency.
+- New TODO and FIXME comments **MUST** use the form `// TODO(#123): Describe the required action.` or `// FIXME(#123): Describe the required correction.`, with a valid tracking issue ID; other trackers require an explicitly registered prefix. Vague placeholders and untracked new TODO/FIXME comments are prohibited.
+- Workarounds **MUST** identify the underlying constraint and link to an issue, upstream defect, specification, or documented platform requirement. Untracked workarounds are prohibited.
 
 **Avoid:**
 
@@ -1285,9 +1305,9 @@ This convention separates interface declarations from implementation details whi
 - Public header files (`.h`) **MUST** reside in the directory corresponding to their module and subsystem.
 - C++ implementation files (`.cpp`) **MUST** reside in an `Implementation` subdirectory within the same directory as their corresponding headers.
 - The `Implementation` directory **MUST** use the exact capitalization established by the repository.
-- Related headers and implementation files **SHOULD** share the same base filename to make their relationship immediately apparent.
+- When a `.cpp` implements a corresponding public `.h`, both files **MUST** have the same base filename. Translation units without a one-to-one public header **MUST** use the named responsibility of the implementation and be registered as a deliberate non-paired implementation when required by the layout validator.
 - Implementation files **MUST NOT** be placed directly alongside public headers unless an established repository convention or technical requirement explicitly permits it.
-- Private implementation headers **SHOULD** reside in the `Implementation` directory when they are not intended for consumption outside the subsystem.
+- Private implementation-only headers **MUST** reside under the corresponding `Implementation` directory.
 - Do not introduce unnecessary directory hierarchies or separate implementation directories when an existing subsystem structure is sufficient.
 
 #### Directory Structure
@@ -1319,7 +1339,7 @@ The preferred structure keeps public interfaces immediately discoverable while g
 
 #### Implementation-Specific Headers
 
-Headers that define private implementation details **SHOULD** remain within the `Implementation` directory when they are not part of the module's public interface.
+Headers that define private implementation details **MUST** remain within the corresponding `Implementation` directory and **MUST NOT** be published as public module headers.
 
 Examples include internal helper classes, private data structures, and implementation-specific utilities.
 
@@ -1329,9 +1349,7 @@ If a private header becomes necessary for multiple independent subsystems, its r
 
 #### Exceptions
 
-Exceptions **MAY** be permitted for generated sources, platform-specific implementations, third-party code, or files subject to established build-system conventions.
-
-Any deviation **SHOULD** follow an existing repository pattern and have a clear technical justification.
+Layout exceptions **MUST** be explicitly recorded in the approved style exception registry, including the exact path or path pattern, reason, owner, and required validation. Generated, platform-specific, third-party, and build-generated files receive no implicit exception merely because of their category. Unregistered deviations are prohibited.
 
 **Guiding principle:**
 
@@ -1344,9 +1362,9 @@ Consistent naming is essential for readability, maintainability, and discoverabi
 
 XII uses a combination of PascalCase, descriptive identifiers, and type-dependent prefixes to maintain consistency across its C++ codebase.
 
-**Preserved baseline rule:** Type-dependent prefixes are **mandatory for member variables only** when an applicable type is known. Local variables and function parameters may use type-dependent prefixes, but their use remains at the programmer's discretion.
+**Mandatory naming rule:** New and modified member variables, local variables, and function parameters **MUST** use the applicable type-dependent prefix from §3.2 when their semantic type is recognized. Instance members add `m_`, mutable static fields add `s_`, and ordinary locals/parameters omit those ownership markers. Output-direction parameters use the mandatory `out_` or `inout_` marker before the applicable type prefix under §7.4. Types without a recognized prefix use descriptive identifiers without an invented type prefix.
 
-Examples throughout this document generally use type-dependent prefixes for local variables and parameters to remain consistent with common XII conventions. These examples **MUST NOT** be interpreted as making such prefixes mandatory outside member variables.
+Existing public, reflected, serialized, and externally consumed names are compatibility contracts. Noncompliant legacy spellings **MUST NOT** be changed solely by an automatic style fix; changes require an explicitly reviewed compatibility migration. This compatibility protection does not grant permission to introduce new noncompliant names.
 
 ### 3.1 Type and Symbol Names
 
@@ -1359,11 +1377,11 @@ Names **MUST** be descriptive, consistent with established engine terminology, a
 | Enum values | PascalCase | `Unloaded`, `Loaded`, `Invalid` |
 | Functions and methods | PascalCase | `Initialize()`, `CreateResource()` |
 | Accessors | `Get`, `Is`, `Has`, `Can`, `Set` as appropriate | `GetCount()`, `IsInitialized()` |
-| Local variables | Descriptive; type prefix optional | `uiResourceCount`, `resourceCount` |
-| Function parameters | Descriptive; type prefix optional | `sPath`, `path` |
-| Private/protected instance fields | `m_` + applicable type prefix | `m_uiCount`, `m_pResource` |
+| Local variables | Applicable semantic type prefix followed by PascalCase; unclassified types use descriptive names | `uiResourceCount`, `pResource` |
+| Function parameters | Applicable semantic type prefix followed by PascalCase; direction marker where needed | `sPath`, `hResource`, `out_uiCount` |
+| All new non-static member fields | `m_` + applicable semantic type prefix | `m_uiCount`, `m_pResource` |
 | Private/protected mutable static fields | `s_` + applicable type prefix | `s_uiInstanceCount` |
-| Private/protected static constants | PascalCase, preferably `constexpr` | `MaxResourceCount` |
+| Static compile-time constants | PascalCase; `constexpr` or `constinit` as required by semantics | `MaxResourceCount` |
 | Compile-time constants | PascalCase, consistent with scope | `DefaultAlignment` |
 | Macros and compile switches | Established `XII_` convention | `XII_ASSERT_DEV`, `XII_ENABLED` |
 | Template type parameters | Semantic PascalCase | `ValueType`, `AllocatorType` |
@@ -1375,9 +1393,9 @@ Names **MUST** be descriptive, consistent with established engine terminology, a
 #### General Requirements
 
 - Public symbols **MUST** use terminology consistent with the subsystem that owns them.
-- Names **SHOULD** describe responsibilities, behavior, or meaning rather than incidental implementation details.
-- Avoid abbreviations that require private knowledge of the implementation.
-- Prefer established engine terminology over inventing alternative names for existing concepts.
+- Names **MUST** follow the syntactic naming taxonomy in this section; domain terminology and approved abbreviations **MUST** follow the versioned project terminology registry.
+- Abbreviations absent from the approved terminology registry **MUST NOT** be introduced into new public symbols.
+- Existing terminology **MUST** be used consistently for the same concept; introducing a synonym requires an explicit distinction in the interface contract.
 - Do not encode unnecessary implementation details into identifiers when those details may change.
 - Distinguish operations with different semantics through meaningful names rather than arbitrary suffixes.
 - Do not rename stable public symbols solely for stylistic consistency when doing so would create unnecessary compatibility changes.
@@ -1427,12 +1445,12 @@ These prefixes communicate the semantic type of the stored value and are applied
 
 - Member variables **MUST** use their applicable type-dependent prefixes.
 - Prefixes **MUST** represent the semantic type of the value rather than a convenient or misleading interpretation.
-- Type aliases and wrappers **SHOULD** follow the semantic category they represent when that category is unambiguous.
+- Type aliases and wrappers **MUST** be classified in the versioned XII type-prefix mapping when they represent a recognized semantic family. Unclassified types have no additional type prefix; contributors **MUST NOT** invent one.
 - Do not assign pointer prefixes to integer values merely because those values represent memory addresses.
 - Handles **MUST** use the `h` prefix rather than the `p` prefix, even when they refer to independently allocated resources.
 - Smart pointers such as `xiiUniquePtr` and `xiiSharedPtr` use the `p` prefix because they represent pointer-based access and ownership.
 - Types without an established prefix **MUST NOT** be assigned arbitrary prefixes merely to maintain a visual pattern.
-- Prefixes **SHOULD** remain consistent when a member's type changes. A type change that alters the appropriate prefix should trigger a corresponding identifier review.
+- A type change that changes the required semantic prefix **MUST** update the identifier in the same change, subject to the documented migration process for compatibility-sensitive identifiers.
 
 **Prefer:**
 
@@ -1484,16 +1502,12 @@ The naming convention must remain faithful to the type's public semantics rather
 
 ### 3.3 Public Fields
 
-The existing XII naming policy does **not** require the `m_` prefix for public non-static data members.
-
-However, many existing public engine structures use `m_` consistently, particularly configuration objects, descriptors, reflected structures, and serialized data.
-
-For new public data structures, contributors **SHOULD** follow the naming convention established by the surrounding module.
+New public non-static data members **MUST** use the same `m_` and type-dependent prefix convention as other member variables. This includes configuration objects, descriptors, reflected structures, and serialized types. Existing public member names are preserved under the compatibility migration rule in §§3.1 and 14.6.
 
 #### General Requirements
 
-- Public fields **SHOULD** use a consistent naming style within the same structure.
-- New configuration and descriptor structures **SHOULD** follow the established conventions of neighboring public data types.
+- Every new public non-static field **MUST** use the `m_` marker followed by the applicable semantic type prefix.
+- New configuration and descriptor structures **MUST** follow this exact naming convention, not an alternative selected from neighboring public data types.
 - Public field names **MUST** communicate their intended meaning and, where relevant, units or state.
 - Do not mix prefixed and unprefixed public fields arbitrarily within a new structure.
 - Existing public fields **MUST NOT** be renamed solely for aesthetic consistency without evaluating compatibility implications.
@@ -1512,7 +1526,7 @@ struct xiiSimulationSettings
 
 This structure follows a consistent field convention and communicates each value's semantics through its name.
 
-Public fields may be accessed directly when the structure intentionally represents data rather than an encapsulated behavioral abstraction.
+Direct access to public fields is permitted only when the structure explicitly represents a data contract without invariants requiring controlled mutation; all new public fields still obey the mandatory naming convention.
 
 Do not introduce getters and setters for every field of a simple configuration or value structure unless doing so protects meaningful invariants or provides necessary behavior.
 
@@ -1548,38 +1562,33 @@ private:
 
 - Instance fields **MUST** be distinguishable from local variables and parameters through the `m_` prefix.
 - Private and protected mutable static fields **MUST** use `s_`.
-- Private and protected static constants **SHOULD** use PascalCase without the mutable-static prefix.
-- Prefer `constexpr` for compile-time constants when supported by the required semantics.
+- Private, protected, public, and namespace-scope compile-time constants **MUST** use PascalCase without `m_` or `s_`.
+- Use `constexpr` for values that are constant expressions; use `constinit` for variables that require static initialization without implying constness. Do not substitute either specifier where the language semantics differ.
 - Avoid mutable static state when ordinary object ownership or explicitly managed subsystem state provides a clearer design.
 - Static data **MUST** have well-defined initialization, synchronization, and destruction behavior.
 - Public mutable static fields **SHOULD** be avoided when they expose internal state or permit uncontrolled modification.
 
-The existing naming policy exempts public static fields from the private-static naming requirement.
-
-Nevertheless, public mutable state should not be introduced casually. Prefer named constants or controlled operations when invariants or synchronization requirements must be preserved.
+New public mutable static fields **MUST** use the `s_` marker and applicable semantic prefix unless they are externally specified ABI symbols. Such exceptions **MUST** be registered and reviewed for compatibility; public mutable static exposure remains subject to interface design review.
 
 ### 3.5 Fixed-Size Arrays
 
-The existing XII naming policy permits a relaxed member-prefix convention for fixed-size arrays.
-
-Both of the following declarations are permitted:
+Fixed-size array members **MUST** follow the same typed member-prefix rule as other members. The following example contrasts the required new spelling with a prohibited alternative:
 
 ```cpp
-bool m_bActiveFlags[3];
-bool mActiveFlags[3];
+bool m_bActiveFlags[3]; // Required for new code.
+bool mActiveFlags[3];   // Legacy spelling; prohibited in new declarations.
 ```
 
-For new code, the conventional typed-member form is **RECOMMENDED** because it remains consistent with other member declarations.
+Only the conventional typed-member form is permitted for new declarations. Pre-existing public or serialized array names remain compatibility-protected until a reviewed migration.
 
 #### General Requirements
 
-- Fixed-size arrays **MAY** use the relaxed member-prefix convention established by the original policy.
-- New fixed-size array members **SHOULD** use the conventional `m_` and applicable type prefix.
-- A class or structure **SHOULD** use one consistent naming style for its fixed-size array members.
-- Existing array members **MUST NOT** be renamed solely to eliminate a permitted naming exception.
+- New fixed-size array members **MUST** use `m_` and the applicable semantic type prefix without an array-specific exception.
+- Arrays, pointers, and containers **MUST** use the naming rule applicable to their semantic types; an array declaration does not waive type prefix requirements.
+- Existing compatibility-sensitive array names **MUST NOT** be renamed automatically; migration requires review of their consumers, reflection, and persistent formats.
 - Array names **SHOULD** describe the meaning of their elements rather than merely identify the storage as an array.
 
-**Prefer for new code:**
+**Required for new code:**
 
 ```cpp
 class xiiInputState
@@ -1600,10 +1609,10 @@ A boolean name should make its true and false meanings immediately apparent.
 
 #### General Requirements
 
-- Boolean member fields **MUST** use the `b` type prefix where applicable.
-- Prefer affirmative condition names over unnecessary negations.
-- Avoid ambiguous terms such as `Flag`, `Status`, `State`, or `Check` when a more specific condition can be expressed.
-- Boolean query methods **SHOULD** use `Is`, `Has`, or `Can` according to their semantics.
+- All new Boolean variables and fields **MUST** use the `b` semantic type prefix, after any required `m_`, `s_`, `out_`, or `inout_` marker.
+- Boolean names **MUST** describe the affirmative condition where that condition is the value being represented; inverted legacy representations require an explicit migration.
+- Ambiguous placeholder names such as `Flag`, `Status`, `State`, or `Check` **MUST NOT** be introduced when they fail to identify the actual condition.
+- New read-only predicate APIs **MUST** use `Is`, `Has`, or `Can` (or an approved semantic predicate verb); Boolean results representing an operation's success, such as `TryLoad`, are not predicate APIs.
 - Queries **SHOULD NOT** modify observable object state unless their contract explicitly communicates that behavior.
 - Do not use `Get` for boolean queries when `Is`, `Has`, or `Can` communicates the intended meaning more precisely.
 
@@ -1635,7 +1644,7 @@ Prefer query names that communicate distinct meanings:
 | `Get` | Retrieve a value or object | `GetResourceCount()` |
 | `Set` | Assign or configure state | `SetPriority()` |
 
-These conventions are semantic guidelines rather than a requirement to mechanically rename established public APIs.
+These naming conventions are mandatory for new APIs. Existing public APIs remain compatibility-protected; new names and approved migrations **MUST** follow the rule.
 
 **Guiding principle:**
 
@@ -1681,11 +1690,11 @@ xiiUInt32         uiOffset;
 float             fTime;
 ```
 
-The shorter names may be acceptable within a tightly constrained local scope where their meaning is unambiguous. However, public interfaces and long-lived member fields should use sufficiently descriptive names to remain understandable independently of nearby implementation details.
+Short, generic names **MUST NOT** be introduced for public APIs, long-lived members, resource handles, or values with important units or lifetime semantics. Conventional local names for trivial loop indices and generic algorithm parameters remain permitted only if their scope and meaning are explicit.
 
 #### Units and Measurements
 
-Unit-bearing identifiers **SHOULD** use explicit unit suffixes when the unit is not already guaranteed by a strongly typed abstraction.
+Public APIs and member or parameter fields containing primitive physical quantities **MUST** use an approved explicit unit suffix (`Bytes`, `Seconds`, `Milliseconds`, `Meters`, `Hertz`, or another registry-defined unit) unless their declared strong type encodes the unit.
 
 Examples include:
 
@@ -1697,7 +1706,7 @@ Examples include:
 
 Do not mix values expressed in different units without explicit conversion.
 
-Where a dedicated type already encodes units, repeating the unit in every identifier may be unnecessary.
+A dedicated unit-carrying type is the sole default exemption from a primitive-value unit suffix. Any other exemption **MUST** be recorded in the approved type/terminology mapping.
 
 #### Identity and Ordering
 
@@ -1737,7 +1746,7 @@ Names should favor clarity over brevity, particularly in public APIs and cross-m
 - Avoid introducing synonyms for established terms unless they represent meaningfully different concepts.
 - Public APIs **SHOULD** use sufficiently descriptive names to remain understandable without implementation context.
 - Identifiers, comments, documentation, assertions, and diagnostic messages **MUST** use correct spelling and terminology.
-- Acronym capitalization **SHOULD** follow the existing conventions of the surrounding API.
+- Acronym spelling and capitalization **MUST** follow the approved engine-wide terminology registry; neighboring code cannot authorize alternative spellings.
 - Do not rename stable public symbols solely to expand an established abbreviation without considering compatibility consequences.
 
 **Prefer:**
@@ -1758,7 +1767,7 @@ bool IsResRes() const;
 
 #### Established Acronyms
 
-Common technical abbreviations are acceptable when they are widely recognized or already established within XII.
+Only acronyms included in the approved terminology registry are permitted in new identifiers. The following table defines the initial permitted vocabulary; additions require a reviewed registry update.
 
 Examples include:
 
@@ -1772,17 +1781,17 @@ Examples include:
 | `UI` | User Interface |
 | `SRV` | Shader Resource View |
 | `UAV` | Unordered Access View |
-| `RT` | Render Target or Ray Tracing, depending on context |
+| `RT` | Historically ambiguous: Render Target or Ray Tracing; **not approved for new ambiguous identifiers** |
 | `SIMD` | Single Instruction, Multiple Data |
 | `ECS` | Entity Component System |
 
-An acronym **SHOULD NOT** be used when its meaning is ambiguous within the relevant subsystem.
+An acronym **MUST NOT** be used when its meaning is ambiguous within the relevant subsystem; use the full distinct domain term instead.
 
 For example, `RT` may refer to a render target or ray tracing. Where both concepts appear in the same context, prefer a more explicit name.
 
 #### Terminology Consistency
 
-A subsystem **SHOULD** establish consistent terminology for its primary concepts.
+A subsystem **MUST** use the approved terminology for its primary concepts. A new synonym **MUST** have a documented semantic distinction and a reviewed registry entry.
 
 For example, if an API uses the term `ResourceHandle`, related interfaces should not arbitrarily alternate between `ResourceId`, `ResourceReference`, and `ResourceToken` unless those names represent distinct abstractions.
 
@@ -1848,12 +1857,12 @@ The include organization and module `DLL.h` placement requirements are defined i
 - Forward declarations **SHOULD** be used where legal and beneficial to reduce unnecessary dependencies.
 - Avoid including implementation-specific headers in public interfaces unless their definitions are genuinely required.
 - Public headers **SHOULD** minimize dependencies on unrelated modules.
-- Header self-sufficiency **SHOULD** be validated through independent compilation or automated header checks.
+- Header self-sufficiency **MUST** be validated by compiling maintained public headers independently, including a PCH-disabled validation path on supported toolchains.
 
 **Prefer:**
 
 ```cpp
-// ResourceLoader.h
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #pragma once
 
@@ -1898,7 +1907,7 @@ Smart pointers may support declarations involving incomplete types, but their de
 **Prefer:**
 
 ```cpp
-// SimulationController.h
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #pragma once
 
@@ -1920,7 +1929,7 @@ private:
 ```
 
 ```cpp
-// Implementation/SimulationController.cpp
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #include <Core/CorePCH.h>
 
@@ -1959,6 +1968,8 @@ In addition to preventing repeated inclusion, header design **MUST** respect C++
 **Avoid:**
 
 ```cpp
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #pragma once
 
 xiiUInt32 GetDefaultCapacity()
@@ -1972,6 +1983,8 @@ Including this header in multiple translation units can produce multiple definit
 **Prefer:**
 
 ```cpp
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #pragma once
 
 XII_ALWAYS_INLINE xiiUInt32 GetDefaultCapacity()
@@ -2033,14 +2046,14 @@ This separation helps reduce rebuild propagation and permits implementations to 
 
 ### 4.5 Internal Linkage and Translation-Unit Helpers
 
-Symbols used exclusively within a single implementation file **SHOULD** have internal linkage or otherwise remain inaccessible outside that translation unit.
+Symbols used exclusively within a single implementation file **MUST** have internal linkage or remain private to their enclosing type.
 
 This prevents accidental dependencies on implementation details and reduces the risk of symbol collisions.
 
 #### General Requirements
 
-- Prefer unnamed namespaces for non-member helper functions, constants, and implementation-specific types that are local to a translation unit.
-- File-local `static` functions and variables **MAY** be used when consistent with neighboring implementations.
+- New file-local non-member functions, constants, and helper types **MUST** use an unnamed namespace instead of file-scope `static`, unless C language linkage or an approved platform contract requires otherwise.
+- Existing file-local `static` declarations may remain outside the touched scope but **MUST NOT** be copied into new source.
 - Do not export helper symbols without a demonstrated external consumer.
 - Do not place translation-unit implementation details in public namespaces unnecessarily.
 - Helpers **SHOULD** be located near the operations that use them when doing so improves readability.
@@ -2093,7 +2106,7 @@ Their placement **MUST** satisfy C++ instantiation and linkage requirements with
 #### Template Requirements
 
 - Template definitions **MUST** be visible at their required instantiation points unless explicit instantiation is used.
-- Template implementations **SHOULD** follow the existing module conventions for headers and `_inl.h` files.
+- Template implementations **MUST** use the approved module header or `_inl.h` organization while keeping definitions visible at each required instantiation point.
 - Do not place template definitions exclusively in `.cpp` files unless all required specializations are explicitly instantiated and the supported instantiation contract is documented.
 - Avoid unnecessarily large template implementations in public headers when the code can be organized into a dedicated implementation include.
 - Template interfaces **SHOULD** expose only the constraints and operations required by their consumers.
@@ -2101,7 +2114,7 @@ Their placement **MUST** satisfy C++ instantiation and linkage requirements with
 
 #### Inline Functions
 
-- Small accessors and simple operations **MAY** be defined inline when consistent with surrounding code.
+- Small accessors and simple operations **MAY** be defined inline only when this is compatible with language linkage rules and the approved formatter output; surrounding-file style is not an independent formatting authority.
 - Substantial non-template implementations **SHOULD** remain in `.cpp` files.
 - Do not assume that the `inline` keyword guarantees machine-code inlining.
 - Do not move implementations into headers solely in pursuit of speculative performance improvements.
@@ -2130,7 +2143,7 @@ The trivial accessor is suitable for a header definition, while `Advance()` may 
 
 #### Template Implementation Includes
 
-Where the repository uses `_inl.h` files, these **SHOULD** remain associated with the corresponding template declarations and follow the established include structure.
+Where the repository uses `_inl.h` files, those files **MUST** remain associated with their corresponding template declarations and satisfy the approved module include structure.
 
 Do not introduce additional source-file extensions or template organization patterns without a clear benefit.
 
@@ -2214,7 +2227,7 @@ The implementation-file ordering requirements, including placement of the reposi
 - Implementation files belonging to PCH-enabled modules **MUST** use the corresponding module PCH according to the repository's build configuration.
 - Public headers **MUST NOT** depend on a PCH for required declarations.
 - Implementation files **MUST** include their associated public declaration and other directly required headers.
-- Removing or disabling PCH support **SHOULD NOT** reveal missing dependencies in otherwise valid source files.
+- Removing or disabling PCH support **MUST NOT** reveal missing direct dependencies in maintained public headers or translation units.
 - A PCH **MUST NOT** be used to conceal circular dependencies or invalid include relationships.
 - Avoid adding narrowly used dependencies to a module PCH solely to eliminate local include directives.
 - Changes to shared PCH content **SHOULD** consider compilation impact across the entire module.
@@ -2236,7 +2249,7 @@ The PCH accelerates compilation, while the remaining includes document the trans
 
 #### Compilation Validation
 
-When modifying shared headers, PCH configuration, or module dependencies, contributors **SHOULD** consider validating builds with PCH disabled where the build system supports that configuration.
+When modifying shared headers, PCH configuration, or module dependencies, contributors **MUST** run the PCH-disabled validation target where the build configuration supports it. If unsupported, the limitation **MUST** be recorded in the pull request.
 
 This helps identify accidental dependencies that ordinary PCH-enabled builds might conceal.
 
@@ -2404,7 +2417,7 @@ Prefer straightforward initialization over constructors that perform substantial
 - Prefer default member initializers for stable, context-independent defaults.
 - Use constructor member initializer lists for values supplied through constructor parameters.
 - References and `const` members **MUST** be initialized during construction.
-- Members **SHOULD** be initialized in their declaration order to avoid misleading initialization dependencies.
+- Constructor initializer lists **MUST** list members in their actual declaration order, after base-class initializers in the order required by C++.
 - Constructors accepting a single argument **SHOULD** be marked `explicit` unless implicit conversion is intentional and documented.
 - Prefer `= default` for constructors that require no custom behavior.
 - Use `= delete` to explicitly prohibit construction or conversion operations where appropriate.
@@ -2453,7 +2466,7 @@ private:
 };
 ```
 
-Initializer lists **SHOULD** follow declaration order to make actual initialization behavior apparent.
+Initializer lists **MUST** follow actual base-class and member declaration order; enforce compiler reordering diagnostics as errors.
 
 #### Recoverable Construction Failures
 
@@ -2518,7 +2531,9 @@ public:
   void End()
   {
     if (!m_bActive)
+    {
       return;
+    }
 
     ReleaseResources();
     m_bActive = false;
@@ -2757,7 +2772,9 @@ public:
   xiiResult Begin()
   {
     if (m_bActive)
+    {
       return XII_FAILURE;
+    }
 
     m_bActive = true;
     return XII_SUCCESS;
@@ -3095,7 +3112,9 @@ Borrowing **MUST NOT** be interpreted as ownership transfer or a guarantee that 
 xiiGALDevice* pDevice = m_pDevice.Borrow();
 
 if (pDevice == nullptr)
+{
   return XII_FAILURE;
+}
 
 InitializeDeviceResources(*pDevice);
 ```
@@ -3276,7 +3295,9 @@ xiiResult UpdateResource(xiiResourceHandle hResource)
   Entry* pEntry = nullptr;
 
   if (!m_ResourceTable.TryGetValue(hResource, pEntry))
+  {
     return XII_FAILURE;
+  }
 
   return pEntry->Update();
 }
@@ -3536,7 +3557,7 @@ Resource reuse and destruction **MUST** be based on the synchronization semantic
 
 Do not assume that advancing a frame counter by a particular amount proves that earlier GPU work has completed.
 
-Detailed GPU synchronization, queue completion, and retirement requirements are covered in §15.
+Detailed GPU synchronization, queue completion, and retirement requirements are defined in this §6.9 and the relevant ownership requirements of §§1.2 and 6.7.
 
 **Guiding principle:**
 
@@ -3568,10 +3589,14 @@ public:
   xiiResult Initialize()
   {
     if (m_bInitialized)
+    {
       return XII_FAILURE;
+    }
 
     if (InitializeResources().Failed())
+    {
       return XII_FAILURE;
+    }
 
     m_bInitialized = true;
     return XII_SUCCESS;
@@ -3580,7 +3605,9 @@ public:
   void Shutdown()
   {
     if (!m_bInitialized)
+    {
       return;
+    }
 
     ReleaseResources();
     m_bInitialized = false;
@@ -3858,15 +3885,13 @@ Do not mechanically replace `const T&` with `T` based solely on `sizeof(T)`.
 
 ### 7.4 Output and Input/Output Parameters
 
-Output parameters **SHOULD** use descriptive names that distinguish produced values from ordinary inputs.
-
-XII commonly uses the `out_` and `inout_` naming conventions. These are recommended documentation conventions rather than mandatory type-dependent prefix requirements for all parameters.
+Output parameters **MUST** use `out_` and input/output parameters **MUST** use `inout_`. These are mandatory semantic direction markers for new and modified parameters, followed by an applicable type prefix under §3.2. A non-const borrowed parameter that is not an output **MUST** have a documented mutation contract and must not be falsely marked as output.
 
 #### Naming Conventions
 
 - Use `out_` for parameters whose primary purpose is to receive a produced value.
 - Use `inout_` for parameters whose existing value is intentionally read and modified.
-- Names **SHOULD** retain applicable type-dependent prefixes after the direction marker.
+- Parameter names **MUST** retain the applicable semantic type prefix after `out_` or `inout_`.
 - Do not use output-direction prefixes for parameters that are merely mutable implementation details.
 - Output parameters **MUST** have documented validity guarantees on success and failure.
 - Prefer direct return values when the function produces one simple result and does not require independent failure reporting.
@@ -3974,15 +3999,15 @@ Interfaces **MUST** consider the actual mutability of reachable state rather tha
 
 ### 7.6 `[[nodiscard]]` and Return-Value Significance
 
-Return values that communicate failure, ownership, identity, or other correctness-critical information **SHOULD** be marked `[[nodiscard]]`.
+Return values that communicate failure, resource ownership, identity creation, or other expressly enumerated correctness-critical results **MUST** be annotated `[[nodiscard]]` at the result type or declaration, unless the type already carries an equivalent annotation.
 
 The attribute helps identify accidental result omission but does not replace explicit error-handling contracts.
 
 #### General Requirements
 
-- Functions returning a failure-sensitive result **SHOULD** use `[[nodiscard]]` where the relevant result type is not already annotated.
-- Resource creation functions returning owning objects or handles **SHOULD** use `[[nodiscard]]`.
-- Functions returning values whose omission would likely indicate a programming error **SHOULD** use `[[nodiscard]]`.
+- Functions returning `xiiResult` or another failure-sensitive result **MUST** use a `[[nodiscard]]` return type or declaration where supported.
+- Resource creation and acquisition functions returning owning objects or handles **MUST** be `[[nodiscard]]` unless the returned type already declares the attribute.
+- Other result types requiring `[[nodiscard]]` **MUST** be named in an approved result-significance registry; contributors **MUST NOT** invent ad hoc exemptions.
 - Do not apply `[[nodiscard]]` mechanically to every trivial getter without considering existing API conventions.
 - Do not suppress return-value diagnostics merely to satisfy compilation.
 - If ignoring a result is intentional, use the established mechanism and ensure that doing so is safe under the operation's contract.
@@ -4481,7 +4506,9 @@ Early exits reduce unnecessary nesting and make the successful execution path ea
 xiiResult ProcessDocument(xiiStringView sPath)
 {
   if (sPath.IsEmpty())
+  {
     return XII_FAILURE;
+  }
 
   xiiFileReader file;
 
@@ -4750,7 +4777,9 @@ When deterministic ordering among equal priorities is required, use an explicit 
 m_Entries.Sort([](const auto& a, const auto& b)
 {
   if (a.m_iPriority != b.m_iPriority)
+  {
     return a.m_iPriority > b.m_iPriority;
+  }
 
   return a.m_uiRegistrationOrder < b.m_uiRegistrationOrder;
 });
@@ -4812,7 +4841,9 @@ const bool bValidSession = session.IsActive() && session.GetSessionId() == uiExp
 const bool bHasDependencies = pScheduler != nullptr && pResourceManager != nullptr;
 
 if (!bValidSession || !bHasDependencies)
+{
   return XII_FAILURE;
+}
 ```
 
 This separates session validity from dependency availability.
@@ -4858,7 +4889,9 @@ For negative conditions:
 
 ```cpp
 if (!bInitialized)
+{
   return XII_FAILURE;
+}
 ```
 
 Do not sacrifice readability merely to eliminate parentheses or intermediate variables.
@@ -4913,7 +4946,9 @@ The intended sequence is explicit.
 xiiResourceHandle hResource = CreateResource(descriptor);
 
 if (hResource.IsInvalidated())
+{
   return XII_FAILURE;
+}
 
 InitializeResource(hResource);
 ```
@@ -4959,10 +4994,14 @@ Overflow and narrowing errors can lead to invalid allocations, incorrect indexin
 
 ```cpp
 if (uiStride == 0U)
+{
   return XII_FAILURE;
+}
 
 if (uiElementCount > xiiMath::MaxValue<xiiUInt64>() / uiStride)
+{
   return XII_FAILURE;
+}
 
 const xiiUInt64 uiByteCount = static_cast<xiiUInt64>(uiElementCount) * uiStride;
 ```
@@ -5000,7 +5039,9 @@ This is sufficient only when the resulting value is guaranteed to fit within tha
 
 ```cpp
 if (uiElementCount > xiiMath::MaxValue<xiiUInt32>())
+{
   return XII_FAILURE;
+}
 
 const xiiUInt32 uiCount = static_cast<xiiUInt32>(uiElementCount);
 ```
@@ -5025,7 +5066,9 @@ If `iOffset` is negative, conversion to an unsigned type produces an unintended 
 const xiiInt32 iOffset = GetOffset();
 
 if (iOffset < 0)
+{
   return XII_FAILURE;
+}
 
 const xiiUInt32 uiOffset = static_cast<xiiUInt32>(iOffset);
 ```
@@ -5036,7 +5079,9 @@ const xiiUInt32 uiOffset = static_cast<xiiUInt32>(iOffset);
 
 ```cpp
 if (uiBucketCount == 0U)
+{
   return XII_FAILURE;
+}
 
 const xiiUInt32 uiBucketIndex = uiHash % uiBucketCount;
 ```
@@ -5117,7 +5162,9 @@ When finite values are required, validate them before performing calculations th
 
 ```cpp
 if (!xiiMath::IsFinite(fDeltaTime))
+{
   return XII_FAILURE;
+}
 ```
 
 This assumes the operation treats non-finite time values as invalid input.
@@ -5138,12 +5185,12 @@ Reordering floating-point operations for performance **MUST** account for its ef
 
 Fallthrough between `switch` cases **MUST** be intentional and immediately recognizable.
 
-Use the standard `[[fallthrough]]` attribute where supported and consistent with the surrounding code.
+Intentional fallthrough **MUST** use the standard `[[fallthrough]]` attribute at the fallthrough point. Comments alone are not sufficient.
 
 #### General Requirements
 
 - Implicit fallthrough **MUST NOT** occur accidentally.
-- Intentional fallthrough **SHOULD** use `[[fallthrough]]`.
+- Intentional fallthrough **MUST** use `[[fallthrough]]`.
 - Do not rely solely on comments to indicate fallthrough when the compiler supports the standard attribute.
 - Each case **SHOULD** terminate through `break`, `return`, another control transfer, or explicit fallthrough.
 - Avoid fallthrough when duplicating a small amount of straightforward code would communicate the behavior more clearly.
@@ -5303,7 +5350,7 @@ Prefer explicit intermediate values when they clarify units, ownership, ordering
 
 #### General Requirements
 
-- Avoid excessively nested conditional operators.
+- Nested conditional (`?:`) expressions **MUST NOT** be used; split the selection into explicitly named intermediate values or ordinary control flow without changing evaluation semantics.
 - Do not combine unrelated calculations and side effects into a single expression.
 - Prefer named intermediate values when they clarify important assumptions or units.
 - Avoid introducing intermediate values that merely duplicate obvious expressions.
@@ -5732,7 +5779,9 @@ Lazy evaluation and borrowed storage introduce lifetime and mutation considerati
 for (const xiiResourceEntry& entry : m_Entries)
 {
   if (!entry.m_bActive)
+  {
     continue;
+  }
 
   ProcessEntry(entry);
 }
@@ -5984,7 +6033,7 @@ Prefer the narrowest C++ cast that accurately expresses the intended conversion.
 - Use `static_cast` for well-defined explicit numeric and related conversions.
 - Use `const_cast` only when constness changes are explicitly justified and safe.
 - Use `reinterpret_cast` only when low-level representation conversion is necessary and valid.
-- Avoid C-style casts because they obscure the conversion category.
+- New C-style casts **MUST NOT** be used in C++ source. Use the semantically appropriate explicit C++ cast or an established XII checked conversion facility. Macros or third-party interfaces requiring a C-style cast require a registered exception.
 - Narrowing conversions **MUST** be range-checked when values may exceed the destination range.
 - Do not use casts to suppress legitimate type mismatches.
 - Prefer XII's established checked casting or type conversion utilities where available.
@@ -7574,7 +7623,9 @@ When registration requires modifying several structures, failure must not leave 
 xiiResult RegisterResource(xiiStringView sName)
 {
   if (m_NameLookup.Contains(sName))
+  {
     return XII_FAILURE;
+  }
 
   // Prepare and validate the required resource state.
   // Publish the resource only when registration can
@@ -8009,7 +8060,9 @@ Their presence **MUST NOT** be required for correct execution in configurations 
 xiiResult InitializeStorage(xiiAllocator* pAllocator)
 {
   if (pAllocator == nullptr)
+  {
     return XII_FAILURE;
+  }
 
   return CreateStorage(pAllocator);
 }
@@ -8027,7 +8080,9 @@ Both mechanisms may be justified when a condition simultaneously represents a pr
 XII_ASSERT_DEV(pDevice != nullptr, "A valid device is required.");
 
 if (pDevice == nullptr)
+{
   return XII_FAILURE;
+}
 ```
 
 The assertion identifies an unexpected caller violation during development, while the runtime guard prevents the implementation from dereferencing a null pointer.
@@ -8176,7 +8231,9 @@ For example, loading an optional configuration file may permit falling back to d
 xiiResult LoadOptionalSettings(xiiStringView sPath)
 {
   if (LoadSettings(sPath).Succeeded())
+  {
     return XII_SUCCESS;
+  }
 
   ApplyDefaultSettings();
 
@@ -8292,13 +8349,17 @@ A useful pattern for multi-step operations is:
 xiiResult RegisterResource(xiiStringView sName, xiiResourceHandle& out_hResource)
 {
   if (m_NameLookup.Contains(sName))
+  {
     return XII_FAILURE;
+  }
 
   xiiUniquePtr<ResourceEntry> pEntry =
     CreateResourceEntry(sName);
 
   if (pEntry == nullptr)
+  {
     return XII_FAILURE;
+  }
 
   XII_SUCCEED_OR_RETURN(ValidateResourceEntry(*pEntry));
 
@@ -8512,10 +8573,14 @@ xiiResult ReadPayload(xiiArrayPtr<const xiiUInt8> pData, xiiUInt64 uiOffset, xii
   const xiiUInt64 uiDataSize = pData.GetCount();
 
   if (uiOffset > uiDataSize)
+  {
     return XII_FAILURE;
+  }
 
   if (uiLength > uiDataSize - uiOffset)
+  {
     return XII_FAILURE;
+  }
 
   return ProcessPayload(pData, uiOffset, uiLength);
 }
@@ -8997,16 +9062,16 @@ Their meanings apply consistently throughout this document.
 |---|---|
 | **MUST** | Mandatory requirement for applicable code |
 | **MUST NOT** | Prohibited behavior |
-| **SHOULD** | Strong recommendation that may be overridden with a justified reason |
-| **SHOULD NOT** | Strong recommendation against a practice, with justified exceptions permitted |
-| **MAY** | Optional practice permitted when appropriate |
+| **SHOULD** | Engineering recommendation; deviations require an explicit technical rationale in review |
+| **SHOULD NOT** | Engineering practice disfavored by default; exceptions require a documented technical rationale |
+| **MAY** | Permitted choice only within the explicitly described alternatives, never a waiver of another MUST |
 
 #### General Requirements
 
 - **MUST** requirements are normative and **MUST NOT** be bypassed informally.
 - **MUST NOT** requirements prohibit the described behavior unless an approved exception or policy revision explicitly permits it.
-- Deviations from **SHOULD** requirements **MUST** have a defensible technical rationale.
-- A **MAY** statement grants permission but does not imply that the practice is preferred.
+- Deviations from **SHOULD** and **SHOULD NOT** engineering guidance **MUST** identify a concrete technical reason in code review; convenience, precedent, and agent preference are insufficient.
+- A **MAY** statement permits only the alternatives expressly described. It does not grant an implicit exception to another mandatory rule or establish a new format convention.
 - Requirements **MUST** be interpreted within their documented scope.
 - Examples **MUST NOT** be treated as additional mandatory rules when their accompanying text explicitly identifies them as illustrative.
 - Existing compatibility constraints **MUST** be considered when applying standards to previously established APIs.
@@ -9024,11 +9089,11 @@ A deviation from a **SHOULD** rule may be justified by:
 - External API requirements.
 - Ownership or lifetime contracts that make the recommended approach unsuitable.
 
-Such deviations **SHOULD** be documented when their rationale would not be apparent to future maintainers.
+Such deviations **MUST** be documented in the pull request or maintained design documentation, identifying the affected guideline and the reason.
 
 #### Exceptions to Mandatory Requirements
 
-A **MUST** requirement should not be bypassed through an undocumented local exception.
+A **MUST** or **MUST NOT** requirement **MUST NOT** be bypassed through an undocumented, implicit, or locally invented exception.
 
 When compliance is genuinely impossible or would violate a more fundamental system requirement, contributors **MUST** follow the project's established design-review or standards-amendment process.
 
@@ -9041,7 +9106,7 @@ The proposed deviation should identify:
 5. The correctness and compatibility implications.
 6. The tests or validation supporting the decision.
 
-Approval of a specific exception does not automatically establish a new repository-wide convention.
+Approved style exceptions **MUST** be recorded in a version-controlled, machine-readable registry at `Utilities/CI/style-exceptions.json` containing: rule ID, path or symbol scope, issue reference, technical justification, reviewing owner, and validation condition. The registry is a required integration dependency of this revision; until it exists and is validated by CI, no new style exceptions may be admitted. Approval of one exception does not establish a new repository-wide convention.
 
 **Guiding principle:**
 
@@ -9051,7 +9116,7 @@ Approval of a specific exception does not automatically establish a new reposito
 
 Coding standards must evolve alongside the engine, but changes to established conventions **MUST** be deliberate.
 
-A pattern appearing in several implementation files does not automatically make it an approved repository-wide requirement.
+A pattern appearing in several implementation files does not establish an approved repository-wide rule, exception, or precedent. Tool rules and registered exceptions are the only authorities for mechanical style.
 
 #### General Requirements
 
@@ -9109,17 +9174,17 @@ Not every convention has the same historical origin or enforcement status.
 
 #### Established Repository Conventions
 
-The original `Coding-Standards.md` provides the baseline naming and tooling conventions incorporated into this guide.
+The original repository conventions provide the historical baseline for naming and tooling, but this revision deliberately strengthens the mechanical rules established in §§2–3. Historical permissions for optional local and parameter type prefixes, unprefixed public fields, and relaxed fixed-array names **MUST NOT** be treated as active exceptions for new source.
 
-These include:
+The current mandatory rules include:
 
-- Engine naming and symbol conventions.
-- Type-dependent member prefixes.
-- The distinction between mandatory member prefixes and optional local-variable or parameter prefixes.
-- Existing flexibility for public fields, static fields, and fixed-size arrays.
-- Repository formatting and tooling conventions.
+- Engine naming and symbol conventions enforced through §3.
+- Type-dependent prefixes for recognized member, local, and parameter semantic types.
+- Typed `m_` markers for all new public and non-public instance fields, including fixed-size arrays.
+- Typed `s_` markers for new mutable static fields and PascalCase static constants.
+- Repository-wide formatting and source layout rules enforced through §2 and the approved LLVM 23 tooling.
 
-These baseline rules **MUST** remain accurately represented unless intentionally revised through the project's standards governance process.
+Existing public, reflected, serialized, and persisted names remain compatibility-protected pending an explicit migration under §14.6. These requirements supersede the earlier permissive conventions; changing them further requires the reviewed standards governance process.
 
 #### Extended Engineering Requirements
 
@@ -9161,7 +9226,7 @@ Where examples describe conceptual APIs, they should remain clearly distinguisha
 
 #### Source of Authority
 
-When documents or examples appear to conflict, contributors **SHOULD** resolve the discrepancy according to the following considerations:
+When documents or examples appear to conflict, contributors **MUST** report and resolve the discrepancy through an approved standards or toolchain change using the following authority order:
 
 1. Explicitly approved project standards and architectural requirements.
 2. Current build, formatting, and platform configuration.
@@ -9169,7 +9234,7 @@ When documents or examples appear to conflict, contributors **SHOULD** resolve t
 4. Established implementation conventions.
 5. Illustrative examples and informal recommendations.
 
-This ordering is guidance for resolving ambiguity, not permission to ignore mandatory requirements. A substantive conflict between an approved standard and the implementation should be resolved through review rather than silently choosing whichever is more convenient.
+This ordering determines which contracts require preservation while a conflict is resolved; it does not waive any mandatory requirement. Conflicting rules **MUST** be reconciled before merging affected changes.
 
 **Guiding principle:**
 
@@ -9177,16 +9242,16 @@ This ordering is guidance for resolving ambiguity, not permission to ignore mand
 
 ### 14.4 Standards Changes and Review
 
-Changes to this document **SHOULD** receive the same engineering scrutiny as changes to shared engine interfaces.
+Changes to this document **MUST** receive the same engineering scrutiny as changes to shared engine interfaces.
 
 A wording change can alter implementation expectations, compatibility requirements, or the interpretation of existing code.
 
 #### General Requirements
 
-- Standards changes **MUST** be internally consistent with the rest of the document.
+- Standards changes **MUST** be internally consistent with the rest of the document, applicable automated checks, and approved exception registry.
 - New mandatory requirements **SHOULD** identify the correctness, maintainability, portability, or compatibility problem they address.
 - Do not introduce requirements solely to formalize personal preferences.
-- Rules **SHOULD** be sufficiently precise that contributors can determine whether an implementation complies.
+- Mechanical rules **MUST** define an observable pass/fail criterion; engineering guidance **MUST** identify the contracts and evidence to consider, not impose arbitrary line-count or abstraction-count thresholds.
 - Examples **SHOULD** demonstrate the intended behavior without introducing unnecessary subsystem-specific assumptions.
 - Standards updates **MUST** consider existing public APIs and compatibility obligations.
 - New requirements **SHOULD** be enforceable through review, tests, static analysis, or automated tooling where practical.
@@ -9215,13 +9280,13 @@ A requirement that cannot be explained or verified clearly **SHOULD** be reconsi
 
 ### 14.5 Automated Enforcement and Human Judgment
 
-Automated tooling **SHOULD** enforce objective and mechanically verifiable requirements wherever practical.
+Automated tooling **MUST** enforce all objectively checkable formatting, naming, syntax, and file-layout requirements on added and modified maintained source. Requirements that cannot yet be implemented as stock Clang-Tidy or ClangFormat checks **MUST** be tracked as XII-specific check gaps with a responsible owner; their unimplemented status does not make them optional.
 
 Human review should concentrate on correctness, architecture, ownership, concurrency, and other matters that require interpretation.
 
 #### Automated Enforcement
 
-Suitable automated checks may include:
+Required automated validation includes:
 
 - ClangFormat compliance.
 - Whitespace and line-ending validation.
@@ -9235,7 +9300,15 @@ Suitable automated checks may include:
 - Serialization compatibility tests.
 - Platform and backend compilation.
 
-These tools should follow the repository's established configuration and supported toolchains.
+These tools **MUST** follow the committed configurations, pinning, approved exclusions, and changed-code enforcement policy. The mandatory checks **MUST** be required PR status checks; diagnostic reporting-only checks **MUST** be explicitly classified and must not be represented as enforced requirements.
+
+#### Enforcement Scope and Adoption
+
+- **Maintained source** means XII-authored, non-generated C/C++ code not listed in the approved external/generated-path registry.
+- **Changed code** means added or modified lines and the minimal complete syntactic constructs needed to satisfy formatter and AST rules. A legacy violation outside that region is tracked separately, never accepted as a new precedent.
+- **Compatibility-sensitive declarations** include exported/public APIs, reflected names, serialized properties, plugin interfaces, and persisted identifiers. These **MUST NOT** be automatically renamed for style alone; the approved migration path **MUST** include consumer and serialization review.
+- The formatting baseline and tool configurations **MUST** be updated together with any normative rule they implement. In particular, the root `.clang-format` **MUST** adopt the blank-line and block-structure options stated in §2 before this revision is made a merge gate, and all current CI formatter invocations **MUST** use LLVM 23.
+- Compliance reports **MUST** distinguish checks that executed from checks still awaiting custom XII validation. An unimplemented check is a verification gap, not proof of compliance.
 
 #### Human Review
 
@@ -9266,8 +9339,8 @@ Such code **SHOULD** be improved deliberately without creating unnecessary compa
 
 #### General Requirements
 
-- New code **MUST** follow the applicable current standards.
-- Modified code **SHOULD** move toward current standards where practical and compatible with the change.
+- New code **MUST** follow all applicable current standards.
+- Modified maintained source **MUST** satisfy applicable mechanical formatting, naming, syntax, and file-layout rules in the changed region; compatibility-sensitive public-symbol migrations require a separately reviewed change and approved legacy baseline.
 - Do not rename established public symbols solely for stylistic consistency without reviewing their consumers.
 - Avoid broad mechanical refactoring within unrelated functional changes.
 - Legacy patterns **MUST NOT** automatically be treated as approved conventions for new implementations.
@@ -9302,7 +9375,7 @@ Incorrect examples can establish misleading expectations even when the surroundi
 
 #### General Requirements
 
-- Code examples **SHOULD** follow current naming and formatting conventions.
+- All preferred, normative, and newly added illustrative code examples **MUST** follow current naming, braces, and formatting requirements. Deliberately prohibited examples **MUST** be labeled **Avoid** and explain the violation.
 - Repository-specific examples **SHOULD** use verified APIs where practical.
 - Conceptual APIs **MUST** be identified as illustrative when they are not guaranteed to exist.
 - Examples **MUST NOT** intentionally demonstrate undefined behavior as a preferred implementation.
@@ -9322,7 +9395,7 @@ Prefer examples that:
 - Remain short enough to understand without substantial surrounding implementation.
 - Preserve relevant correctness assumptions.
 
-Examples do not need to be production-complete implementations when their purpose is conceptual, but they must not imply guarantees the actual APIs do not provide.
+Examples do not need to be production-complete implementations when their purpose is conceptual, but they must not imply guarantees the actual APIs do not provide. Code fragments are distinguished from complete-file examples: snippets focusing on a function or expression may omit the copyright and include prologue, while every complete-file example **MUST** include the required notice, include structure, and `#pragma once` or PCH ordering as applicable.
 
 **Guiding principle:**
 

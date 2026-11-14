@@ -147,10 +147,10 @@ public:
   /// Sets the value that the application will return to the OS.
   /// You can call this function at any point during execution to update the return value of the application.
   /// Default is zero.
-  inline void SetReturnCode(xiiInt32 iReturnCode) { m_iReturnCode = iReturnCode; }
+  void SetReturnCode(xiiInt32 iReturnCode) { m_iReturnCode = iReturnCode; }
 
   /// Returns the currently set value that the application will return to the OS.
-  inline xiiInt32 GetReturnCode() const { return m_iReturnCode; }
+  xiiInt32 GetReturnCode() const { return m_iReturnCode; }
 
   /// If the return code is not zero, this function might be called to get a string to print the error code in human readable form.
   virtual const char* TranslateReturnCode() const { return ""; }

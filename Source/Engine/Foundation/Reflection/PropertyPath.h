@@ -35,7 +35,7 @@ public:
   /// The '[index]' part is only added for properties that require indices (arrays and maps).
   xiiResult InitializeFromPath(const xiiRTTI& rootObjectRtti, xiiStringView sPath);
   ///Resolves a path provided as an array of xiiPropertyPathStep.
-  xiiResult InitializeFromPath(const xiiRTTI* pRootObjectRtti, const xiiArrayPtr<const xiiPropertyPathStep> path);
+  xiiResult InitializeFromPath(const xiiRTTI* pRootObjectRtti, xiiArrayPtr<const xiiPropertyPathStep> path);
 
   ///Applies the entire path and allows writing to the target object.
   xiiResult WriteToLeafObject(void* pRootObject, const xiiRTTI* pType, xiiDelegate<void(void* pLeaf, const xiiRTTI& pType)> func) const;
@@ -72,7 +72,7 @@ private:
     xiiVariant                 m_Index;
   };
 
-  static xiiResult ResolvePath(void* pCurrentObject, const xiiRTTI* pType, const xiiArrayPtr<const ResolvedStep> path, bool bWriteToObject, const xiiDelegate<void(void* pLeaf, const xiiRTTI& pType)>& func);
+  static xiiResult ResolvePath(void* pCurrentObject, const xiiRTTI* pType, xiiArrayPtr<const ResolvedStep> path, bool bWriteToObject, const xiiDelegate<void(void* pLeaf, const xiiRTTI& pType)>& func);
 
   bool                            m_bIsValid = false;
   xiiHybridArray<ResolvedStep, 2> m_PathSteps;

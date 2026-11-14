@@ -73,7 +73,7 @@ class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiEngineGizmoHandle : public xiiGizm
 
 public:
   xiiEngineGizmoHandle();
-  ~xiiEngineGizmoHandle();
+  ~xiiEngineGizmoHandle() override;
 
   void ConfigureHandle(xiiGizmo* pOwner, xiiEngineGizmoHandleType type, const xiiColor& color, xiiBitflags<xiiGizmoFlags> flags, const char* szCustomMesh = nullptr);
   void SetColor(const xiiColor& color);

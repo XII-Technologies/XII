@@ -231,7 +231,9 @@ XII_ALWAYS_INLINE void xiiMemoryUtils::CopyOverlapped(T* pDestination, const T* 
     XII_CHECK_CLASS(T);
 
     if (pDestination == pSource)
+    {
       return;
+    }
 
     if (pDestination < pSource)
     {
@@ -299,7 +301,9 @@ XII_ALWAYS_INLINE void xiiMemoryUtils::RelocateOverlapped(T* pDestination, T* pS
     XII_CHECK_CLASS(T);
 
     if (pDestination == pSource)
+    {
       return;
+    }
 
     if (pDestination < pSource)
     {
@@ -422,7 +426,9 @@ XII_ALWAYS_INLINE bool xiiMemoryUtils::IsEqual(const T* a, const T* b, size_t ui
     for (size_t i = 0; i < uiCount; ++i)
     {
       if (!(a[i] == b[i]))
+      {
         return false;
+      }
     }
     return true;
   }

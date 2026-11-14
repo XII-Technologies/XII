@@ -44,7 +44,7 @@ class XII_EDITORFRAMEWORK_DLL xiiQtEngineViewWidget : public QWidget
 
 public:
   xiiQtEngineViewWidget(QWidget* pParent, xiiQtEngineDocumentWindow* pDocumentWindow, xiiEngineViewConfig* pViewConfig);
-  ~xiiQtEngineViewWidget();
+  ~xiiQtEngineViewWidget() override;
 
   /// Add input contexts in the order in which they are supposed to be processed
   xiiHybridArray<xiiEditorInputContext*, 8> m_InputContexts;
@@ -75,7 +75,7 @@ public:
   bool                       HasNavigationGizmo() const { return m_pNavigationGizmo != nullptr; }
   xiiViewportNavigationGizmo GetNavigationGizmoGeometry() const;
   void                       InterpolateCameraOrbitTo(const xiiVec3& vDirection);
-  void                       CancelCameraInterpolation() { m_fCameraLerp = 1.0f; }
+  void                       CancelCameraInterpolation() { m_fCameraLerp = 1.0F; }
   virtual xiiVec3            GetCameraOrbitPoint() const;
   virtual void               OrbitCamera(const xiiVec2& vRadians) {}
 
@@ -128,24 +128,24 @@ public:
 
 protected:
   /// Used to deactivate shortcuts
-  virtual bool eventFilter(QObject* object, QEvent* event) override;
+  bool eventFilter(QObject* object, QEvent* event) override;
 
-  virtual void          paintEvent(QPaintEvent* event) override;
-  virtual QPaintEngine* paintEngine() const override { return nullptr; }
+  void          paintEvent(QPaintEvent* event) override;
+  QPaintEngine* paintEngine() const override { return nullptr; }
 
-  virtual void resizeEvent(QResizeEvent* event) override;
+  void resizeEvent(QResizeEvent* event) override;
 
-  virtual void keyPressEvent(QKeyEvent* e) override;
-  virtual void keyReleaseEvent(QKeyEvent* e) override;
-  virtual void mousePressEvent(QMouseEvent* e) override;
-  virtual void mouseReleaseEvent(QMouseEvent* e) override;
+  void         keyPressEvent(QKeyEvent* e) override;
+  void         keyReleaseEvent(QKeyEvent* e) override;
+  void         mousePressEvent(QMouseEvent* e) override;
+  void         mouseReleaseEvent(QMouseEvent* e) override;
   void         mouseDoubleClickEvent(QMouseEvent* e) override;
-  virtual void mouseMoveEvent(QMouseEvent* e) override;
-  virtual void wheelEvent(QWheelEvent* e) override;
-  virtual void focusOutEvent(QFocusEvent* e) override;
-  virtual void dragEnterEvent(QDragEnterEvent* e) override;
-  virtual void dragLeaveEvent(QDragLeaveEvent* e) override;
-  virtual void dropEvent(QDropEvent* e) override;
+  void         mouseMoveEvent(QMouseEvent* e) override;
+  void         wheelEvent(QWheelEvent* e) override;
+  void         focusOutEvent(QFocusEvent* e) override;
+  void         dragEnterEvent(QDragEnterEvent* e) override;
+  void         dragLeaveEvent(QDragLeaveEvent* e) override;
+  void         dropEvent(QDropEvent* e) override;
 
 protected:
   void         InitializeNavigationGizmo();
@@ -174,7 +174,7 @@ protected:
   xiiEditorViewportNavigationGizmo* m_pNavigationGizmo    = nullptr;
   bool                              m_bOrbitInterpolation = false;
   xiiVec3                           m_vCameraOrbitPoint;
-  float                             m_fCameraOrbitDistance = 1.0f;
+  float                             m_fCameraOrbitDistance = 1.0F;
   xiiQuat                           m_qCameraStartRotation;
   xiiQuat                           m_qCameraTargetRotation;
 
@@ -206,7 +206,7 @@ class XII_EDITORFRAMEWORK_DLL xiiQtViewWidgetContainer : public ads::CDockWidget
 
 public:
   xiiQtViewWidgetContainer(ads::CDockManager* pDockManager, QWidget* pParent, xiiQtEngineViewWidget* pViewWidget, xiiStringView sToolBarMapping);
-  ~xiiQtViewWidgetContainer();
+  ~xiiQtViewWidgetContainer() override;
 
   xiiQtEngineViewWidget* GetViewWidget() const { return m_pViewWidget; }
   QVBoxLayout*           GetLayout() const { return m_pLayout; }

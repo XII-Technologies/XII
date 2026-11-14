@@ -56,7 +56,7 @@ public:
 
   /// Initializes the xiiArrayPtr to be empty.
   XII_ALWAYS_INLINE xiiArrayPtr() : // [tested]
-    m_pPtr(nullptr), m_uiCount(0u)
+    m_pPtr(nullptr), m_uiCount(0U)
   {
   }
 
@@ -68,7 +68,7 @@ public:
   }
 
   /// Initializes the xiiArrayPtr with the given pointer and number of elements. No memory is allocated or copied.
-  inline xiiArrayPtr(T* pPtr, xiiUInt32 uiCount) : // [tested]
+  xiiArrayPtr(T* pPtr, xiiUInt32 uiCount) : // [tested]
     m_pPtr(pPtr), m_uiCount(uiCount)
   {
     // If any of the arguments is invalid, we invalidate ourself.
@@ -231,49 +231,63 @@ public:
 
   /// Compares the two arrays for equality.
   template <typename = typename std::enable_if<std::is_const<T>::value == false>>
-  inline bool operator==(const xiiArrayPtr<const T>& other) const // [tested]
+  bool operator==(const xiiArrayPtr<const T>& other) const // [tested]
   {
     if (GetCount() != other.GetCount())
+    {
       return false;
+    }
 
     if (GetPtr() == other.GetPtr())
+    {
       return true;
+    }
 
     return xiiMemoryUtils::IsEqual(static_cast<const ValueType*>(GetPtr()), static_cast<const ValueType*>(other.GetPtr()), GetCount());
   }
 
   /// Compares the two arrays for equality.
-  inline bool operator==(const xiiArrayPtr<T>& other) const // [tested]
+  bool operator==(const xiiArrayPtr<T>& other) const // [tested]
   {
     if (GetCount() != other.GetCount())
+    {
       return false;
+    }
 
     if (GetPtr() == other.GetPtr())
+    {
       return true;
+    }
 
     return xiiMemoryUtils::IsEqual(static_cast<const ValueType*>(GetPtr()), static_cast<const ValueType*>(other.GetPtr()), GetCount());
   }
 
   /// Compares the two arrays for less.
-  inline bool operator<(const xiiArrayPtr<const T>& other) const // [tested]
+  bool operator<(const xiiArrayPtr<const T>& other) const // [tested]
   {
     if (GetCount() != other.GetCount())
+    {
       return GetCount() < other.GetCount();
+    }
 
     for (xiiUInt32 i = 0; i < GetCount(); ++i)
     {
       if (GetPtr()[i] < other.GetPtr()[i])
+      {
         return true;
+      }
 
       if (other.GetPtr()[i] < GetPtr()[i])
+      {
         return false;
+      }
     }
 
     return false;
   }
 
   /// Copies the data from \a other into this array. The arrays must have the exact same size.
-  inline void CopyFrom(const xiiArrayPtr<const T>& other) // [tested]
+  void CopyFrom(const xiiArrayPtr<const T>& other) // [tested]
   {
     XII_ASSERT_DEV(GetCount() == other.GetCount(), "Count for copy does not match. Target has {0} elements, source {1} elements", GetCount(), other.GetCount());
 
@@ -293,24 +307,28 @@ public:
   }
 
   /// Searches for the first occurrence of the given value and returns its index or xiiInvalidIndex if not found.
-  inline xiiUInt32 IndexOf(const T& value, xiiUInt32 uiStartIndex = 0) const // [tested]
+  xiiUInt32 IndexOf(const T& value, xiiUInt32 uiStartIndex = 0) const // [tested]
   {
     for (xiiUInt32 i = uiStartIndex; i < m_uiCount; ++i)
     {
       if (xiiMemoryUtils::IsEqual(m_pPtr + i, &value))
+      {
         return i;
+      }
     }
 
     return xiiInvalidIndex;
   }
 
   /// Searches for the last occurrence of the given value and returns its index or xiiInvalidIndex if not found.
-  inline xiiUInt32 LastIndexOf(const T& value, xiiUInt32 uiStartIndex = xiiInvalidIndex) const // [tested]
+  xiiUInt32 LastIndexOf(const T& value, xiiUInt32 uiStartIndex = xiiInvalidIndex) const // [tested]
   {
     for (xiiUInt32 i = ::xiiMath::Min(uiStartIndex, m_uiCount); i-- > 0;)
     {
       if (xiiMemoryUtils::IsEqual(m_pPtr + i, &value))
+      {
         return i;
+      }
     }
     return xiiInvalidIndex;
   }

@@ -105,23 +105,37 @@ struct xiiPropertyFlags
 
     xiiBitflags<xiiPropertyFlags>  flags;
     constexpr xiiVariantType::Enum type = static_cast<xiiVariantType::Enum>(xiiVariantTypeDeduction<CleanType>::value);
-    if constexpr (std::is_same<CleanType, xiiVariant>::value || (type >= xiiVariantType::FirstStandardType && type <= xiiVariantType::LastStandardType) || std::is_same<Type, const char*>::value) // We treat const char* as a basic type and not a pointer.
+    if constexpr (std::is_same<CleanType, xiiVariant>::value || (type >= xiiVariantType::FirstStandardType && type <= xiiVariantType::LastStandardType) || std::is_same<Type, const char*>::value)
+    { // We treat const char* as a basic type and not a pointer.
       flags.Add(xiiPropertyFlags::StandardType);
+    }
     else if constexpr (xiiIsEnum<CleanType>::value)
+    {
       flags.Add(xiiPropertyFlags::IsEnum);
+    }
     else if constexpr (xiiIsBitflags<CleanType>::value)
+    {
       flags.Add(xiiPropertyFlags::Bitflags);
+    }
     else
+    {
       flags.Add(xiiPropertyFlags::Class);
+    }
 
     if constexpr (std::is_const<typename xiiTypeTraits<Type>::NonReferencePointerType>::value)
+    {
       flags.Add(xiiPropertyFlags::Const);
+    }
 
     if constexpr (std::is_pointer<Type>::value && !std::is_same<Type, const char*>::value)
+    {
       flags.Add(xiiPropertyFlags::Pointer);
+    }
 
     if constexpr (std::is_reference<Type>::value)
+    {
       flags.Add(xiiPropertyFlags::Reference);
+    }
 
     return flags;
   }
@@ -191,15 +205,25 @@ public:
 
     m_Attributes.PushBack(pAttrib1);
     if (pAttrib2)
+    {
       m_Attributes.PushBack(pAttrib2);
+    }
     if (pAttrib3)
+    {
       m_Attributes.PushBack(pAttrib3);
+    }
     if (pAttrib4)
+    {
       m_Attributes.PushBack(pAttrib4);
+    }
     if (pAttrib5)
+    {
       m_Attributes.PushBack(pAttrib5);
+    }
     if (pAttrib6)
+    {
       m_Attributes.PushBack(pAttrib6);
+    }
     return this;
   };
 
@@ -227,7 +251,7 @@ public:
   }
 
   /// Returns xiiPropertyCategory::Constant.
-  virtual xiiPropertyCategory::Enum GetCategory() const override { return xiiPropertyCategory::Constant; } // [tested]
+  xiiPropertyCategory::Enum GetCategory() const override { return xiiPropertyCategory::Constant; } // [tested]
 
   /// Returns a pointer to the constant data or nullptr. See xiiAbstractMemberProperty::GetPropertyPointer for more information.
   virtual void* GetPropertyPointer() const = 0;
@@ -251,7 +275,7 @@ public:
   }
 
   /// Returns xiiPropertyCategory::Member.
-  virtual xiiPropertyCategory::Enum GetCategory() const override { return xiiPropertyCategory::Member; }
+  xiiPropertyCategory::Enum GetCategory() const override { return xiiPropertyCategory::Member; }
 
   /// Returns a pointer to the property data or nullptr. If a valid pointer is returned, that pointer and the information from
   /// GetSpecificType() can be used to step deeper into the type (if required).
@@ -287,7 +311,7 @@ public:
   }
 
   /// Returns xiiPropertyCategory::Array.
-  virtual xiiPropertyCategory::Enum GetCategory() const override { return xiiPropertyCategory::Array; }
+  xiiPropertyCategory::Enum GetCategory() const override { return xiiPropertyCategory::Array; }
 
   /// Returns number of elements.
   virtual xiiUInt32 GetCount(const void* pInstance) const = 0;
@@ -332,7 +356,7 @@ public:
   }
 
   /// Returns xiiPropertyCategory::Set.
-  virtual xiiPropertyCategory::Enum GetCategory() const override { return xiiPropertyCategory::Set; }
+  xiiPropertyCategory::Enum GetCategory() const override { return xiiPropertyCategory::Set; }
 
   /// Returns whether the set is empty.
   virtual bool IsEmpty(const void* pInstance) const = 0;
@@ -367,7 +391,7 @@ public:
   }
 
   /// Returns xiiPropertyCategory::Map.
-  virtual xiiPropertyCategory::Enum GetCategory() const override { return xiiPropertyCategory::Map; }
+  xiiPropertyCategory::Enum GetCategory() const override { return xiiPropertyCategory::Map; }
 
   /// Returns whether the set is empty.
   virtual bool IsEmpty(const void* pInstance) const = 0;
@@ -554,7 +578,7 @@ public:
   {
   }
 
-  virtual xiiPropertyCategory::Enum GetCategory() const override { return xiiPropertyCategory::Function; }
+  xiiPropertyCategory::Enum GetCategory() const override { return xiiPropertyCategory::Function; }
 
   /// Returns the type of function, see xiiFunctionPropertyType::Enum.
   virtual xiiFunctionType::Enum GetFunctionType() const = 0;
@@ -587,7 +611,7 @@ public:
   /// it is impossible to pass along a nullptr.
   virtual void Execute(void* pInstance, xiiArrayPtr<xiiVariant> arguments, xiiVariant& out_returnValue) const = 0;
 
-  virtual const xiiRTTI* GetSpecificType() const override { return GetReturnType(); }
+  const xiiRTTI* GetSpecificType() const override { return GetReturnType(); }
 
   /// Adds flags to the property. Returns itself to allow to be called during initialization.
   xiiAbstractFunctionProperty* AddFlags(xiiBitflags<xiiPropertyFlags> flags)

@@ -50,7 +50,9 @@ void xiiBoundingSphereTemplate<Type>::ExpandToInclude(const xiiBoundingBoxTempla
   const Type fDistSQR = vMostDistantPoint.GetLengthSquared();
 
   if (xiiMath::Square(m_fRadius) < fDistSQR)
+  {
     m_fRadius = xiiMath::Sqrt(fDistSQR);
+  }
 }
 
 template <typename Type>
@@ -98,10 +100,14 @@ xiiPositionOnPlane::Enum xiiPlaneTemplate<Type>::GetObjectPosition(const xiiBoun
   const Type fDist = GetDistanceTo(sphere.m_vCenter);
 
   if (fDist >= sphere.m_fRadius)
+  {
     return xiiPositionOnPlane::Front;
+  }
 
   if (-fDist >= sphere.m_fRadius)
+  {
     return xiiPositionOnPlane::Back;
+  }
 
   return xiiPositionOnPlane::Spanning;
 }
@@ -131,10 +137,14 @@ xiiPositionOnPlane::Enum xiiPlaneTemplate<Type>::GetObjectPosition(const xiiBoun
   }
 
   if (GetDistanceTo(vPos) <= (Type)0)
+  {
     return xiiPositionOnPlane::Back;
+  }
 
   if (GetDistanceTo(vNeg) >= (Type)0)
+  {
     return xiiPositionOnPlane::Front;
+  }
 
   return xiiPositionOnPlane::Spanning;
 }
@@ -188,7 +198,7 @@ Type xiiPlaneTemplate<Type>::GetMaximumDistanceTo(const xiiBoundingBoxTemplate<T
 template <typename Type>
 xiiMat3Template<Type> xiiMat3Template<Type>::MakeAxisRotation(const xiiVec3Template<Type>& vAxis, xiiAngleTemplate<Type> angle)
 {
-  XII_ASSERT_DEBUG(vAxis.IsNormalized(0.1f), "vAxis must be normalized.");
+  XII_ASSERT_DEBUG(vAxis.IsNormalized(0.1F), "vAxis must be normalized.");
 
   const Type cos         = xiiMath::Cos(angle);
   const Type sin         = xiiMath::Sin(angle);
@@ -234,7 +244,9 @@ xiiResult xiiMat3Template<Type>::Invert(Type fEpsilon)
     Element(0, 2) * (Element(2, 1) * Element(1, 0) - Element(1, 1) * Element(2, 0));
 
   if (xiiMath::IsZero(fDet, fEpsilon))
+  {
     return XII_FAILURE;
+  }
 
   const Type fOneDivDet = (Type)1 / fDet;
 
@@ -314,7 +326,9 @@ xiiResult xiiMat4Template<Type>::Invert(Type fEpsilon)
   const Type fDet = GetDeterminantOf4x4Matrix(*this);
 
   if (xiiMath::IsZero(fDet, fEpsilon))
+  {
     return XII_FAILURE;
+  }
 
   Type fOneDivDet = xiiMath::Invert(fDet);
 

@@ -18,7 +18,7 @@ public:
 
   xiiUInt32 GetNumParameters() const override { return ARG_COUNT; }
 
-  virtual xiiVariant::Type::Enum GetParameterType(xiiUInt32 uiParam) const override
+  xiiVariant::Type::Enum GetParameterType(xiiUInt32 uiParam) const override
   {
     XII_ASSERT_DEV(uiParam < GetNumParameters(), "Invalid Parameter Index {0}", uiParam);
 
@@ -57,7 +57,7 @@ public:
     return xiiVariant::Type::Invalid;
   }
 
-  virtual xiiResult Call(xiiArrayPtr<xiiVariant> params) override
+  xiiResult Call(xiiArrayPtr<xiiVariant> params) override
   {
     XII_IGNORE_UNUSED(params);
 
@@ -68,42 +68,54 @@ public:
     P0 param0 = params[0].ConvertTo<P0>(&r);
 
     if (r.Failed())
+    {
       return XII_FAILURE;
+    }
 #endif
 
 #if (ARG_COUNT > 1)
     P1 param1 = params[1].ConvertTo<P1>(&r);
 
     if (r.Failed())
+    {
       return XII_FAILURE;
+    }
 #endif
 
 #if (ARG_COUNT > 2)
     P2 param2 = params[2].ConvertTo<P2>(&r);
 
     if (r.Failed())
+    {
       return XII_FAILURE;
+    }
 #endif
 
 #if (ARG_COUNT > 3)
     P3 param3 = params[3].ConvertTo<P3>(&r);
 
     if (r.Failed())
+    {
       return XII_FAILURE;
+    }
 #endif
 
 #if (ARG_COUNT > 4)
     P4 param4 = params[4].ConvertTo<P4>(&r);
 
     if (r.Failed())
+    {
       return XII_FAILURE;
+    }
 #endif
 
 #if (ARG_COUNT > 5)
     P5 param5 = params[5].ConvertTo<P5>(&r);
 
     if (r.Failed())
+    {
       return XII_FAILURE;
+    }
 #endif
 
     m_Func(XII_LIST(param, ARG_COUNT));

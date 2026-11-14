@@ -20,7 +20,7 @@ public:
                   "Pointer to standard types are not supported.");
   }
 
-  virtual const xiiRTTI* GetSpecificType() const override { return xiiGetStaticRTTI<typename xiiTypeTraits<Type>::NonConstReferencePointerType>(); }
+  const xiiRTTI* GetSpecificType() const override { return xiiGetStaticRTTI<typename xiiTypeTraits<Type>::NonConstReferencePointerType>(); }
 };
 
 
@@ -48,10 +48,12 @@ public:
     m_Remove      = remove;
 
     if (m_Insert == nullptr || remove == nullptr)
+    {
       xiiAbstractMapProperty::m_Flags.Add(xiiPropertyFlags::ReadOnly);
+    }
   }
 
-  virtual bool IsEmpty(const void* pInstance) const override
+  bool IsEmpty(const void* pInstance) const override
   {
     // this should be decltype(auto) c = ...; but MSVC 16 is too dumb for that (MSVC 15 works fine)
     decltype((static_cast<const Class*>(pInstance)->*m_GetKeyRange)()) c = (static_cast<const Class*>(pInstance)->*m_GetKeyRange)();
@@ -59,7 +61,7 @@ public:
     return begin(c) == end(c);
   }
 
-  virtual void Clear(void* pInstance) const override
+  void Clear(void* pInstance) const override
   {
     while (true)
     {
@@ -68,36 +70,40 @@ public:
 
       auto it = begin(c);
       if (it != end(c))
+      {
         Remove(pInstance, *it);
+      }
       else
+      {
         return;
+      }
     }
   }
 
-  virtual void Insert(void* pInstance, xiiStringView sKey, const void* pObject) const override
+  void Insert(void* pInstance, xiiStringView sKey, const void* pObject) const override
   {
     XII_ASSERT_DEBUG(m_Insert != nullptr, "The property '{0}' has no insert function, thus it is read-only.", xiiAbstractProperty::GetPropertyName());
     (static_cast<Class*>(pInstance)->*m_Insert)(sKey, *static_cast<const RealType*>(pObject));
   }
 
-  virtual void Remove(void* pInstance, xiiStringView sKey) const override
+  void Remove(void* pInstance, xiiStringView sKey) const override
   {
     XII_ASSERT_DEBUG(m_Remove != nullptr, "The property '{0}' has no remove function, thus it is read-only.", xiiAbstractProperty::GetPropertyName());
     (static_cast<Class*>(pInstance)->*m_Remove)(sKey);
   }
 
-  virtual bool Contains(const void* pInstance, xiiStringView sKey) const override
+  bool Contains(const void* pInstance, xiiStringView sKey) const override
   {
     RealType value;
     return (static_cast<const Class*>(pInstance)->*m_GetValue)(sKey, value);
   }
 
-  virtual bool GetValue(const void* pInstance, xiiStringView sKey, void* pObject) const override
+  bool GetValue(const void* pInstance, xiiStringView sKey, void* pObject) const override
   {
     return (static_cast<const Class*>(pInstance)->*m_GetValue)(sKey, *static_cast<RealType*>(pObject));
   }
 
-  virtual void GetKeys(const void* pInstance, xiiHybridArray<xiiString, 16>& out_keys) const override
+  void GetKeys(const void* pInstance, xiiHybridArray<xiiString, 16>& out_keys) const override
   {
     out_keys.Clear();
     decltype(auto) c = (static_cast<const Class*>(pInstance)->*m_GetKeyRange)();
@@ -137,12 +143,14 @@ public:
     m_Remove       = remove;
 
     if (m_Insert == nullptr)
+    {
       xiiAbstractMapProperty::m_Flags.Add(xiiPropertyFlags::ReadOnly);
+    }
   }
 
-  virtual bool IsEmpty(const void* pInstance) const override { return (static_cast<const Class*>(pInstance)->*m_GetContainer)().IsEmpty(); }
+  bool IsEmpty(const void* pInstance) const override { return (static_cast<const Class*>(pInstance)->*m_GetContainer)().IsEmpty(); }
 
-  virtual void Clear(void* pInstance) const override
+  void Clear(void* pInstance) const override
   {
     decltype(auto) c = (static_cast<const Class*>(pInstance)->*m_GetContainer)();
     while (!IsEmpty(pInstance))
@@ -152,26 +160,26 @@ public:
     }
   }
 
-  virtual void Insert(void* pInstance, xiiStringView sKey, const void* pObject) const override
+  void Insert(void* pInstance, xiiStringView sKey, const void* pObject) const override
   {
     XII_ASSERT_DEBUG(m_Insert != nullptr, "The property '{0}' has no insert function, thus it is read-only.", xiiAbstractProperty::GetPropertyName());
 
     (static_cast<Class*>(pInstance)->*m_Insert)(sKey, *static_cast<const RealType*>(pObject));
   }
 
-  virtual void Remove(void* pInstance, xiiStringView sKey) const override
+  void Remove(void* pInstance, xiiStringView sKey) const override
   {
     XII_ASSERT_DEBUG(m_Remove != nullptr, "The property '{0}' has no remove function, thus it is read-only.", xiiAbstractProperty::GetPropertyName());
 
     (static_cast<Class*>(pInstance)->*m_Remove)(sKey);
   }
 
-  virtual bool Contains(const void* pInstance, xiiStringView sKey) const override
+  bool Contains(const void* pInstance, xiiStringView sKey) const override
   {
     return (static_cast<const Class*>(pInstance)->*m_GetContainer)().Contains(sKey);
   }
 
-  virtual bool GetValue(const void* pInstance, xiiStringView sKey, void* pObject) const override
+  bool GetValue(const void* pInstance, xiiStringView sKey, void* pObject) const override
   {
     decltype(auto)  c     = (static_cast<const Class*>(pInstance)->*m_GetContainer)();
     const RealType* value = c.GetValue(sKey);
@@ -182,7 +190,7 @@ public:
     return value != nullptr;
   }
 
-  virtual void GetKeys(const void* pInstance, xiiHybridArray<xiiString, 16>& out_keys) const override
+  void GetKeys(const void* pInstance, xiiHybridArray<xiiString, 16>& out_keys) const override
   {
     decltype(auto) c = (static_cast<const Class*>(pInstance)->*m_GetContainer)();
     out_keys.Clear();
@@ -228,38 +236,40 @@ public:
     m_Getter      = getter;
 
     if (m_Getter == nullptr)
+    {
       xiiAbstractMapProperty::m_Flags.Add(xiiPropertyFlags::ReadOnly);
+    }
   }
 
-  virtual bool IsEmpty(const void* pInstance) const override { return m_ConstGetter(static_cast<const Class*>(pInstance)).IsEmpty(); }
+  bool IsEmpty(const void* pInstance) const override { return m_ConstGetter(static_cast<const Class*>(pInstance)).IsEmpty(); }
 
-  virtual void Clear(void* pInstance) const override
+  void Clear(void* pInstance) const override
   {
     XII_ASSERT_DEBUG(m_Getter != nullptr, "The property '{0}' has no non-const set accessor function, thus it is read-only.", xiiAbstractProperty::GetPropertyName());
 
     m_Getter(static_cast<Class*>(pInstance)).Clear();
   }
 
-  virtual void Insert(void* pInstance, xiiStringView sKey, const void* pObject) const override
+  void Insert(void* pInstance, xiiStringView sKey, const void* pObject) const override
   {
     XII_ASSERT_DEBUG(m_Getter != nullptr, "The property '{0}' has no non-const set accessor function, thus it is read-only.", xiiAbstractProperty::GetPropertyName());
 
     m_Getter(static_cast<Class*>(pInstance)).Insert(sKey, *static_cast<const RealType*>(pObject));
   }
 
-  virtual void Remove(void* pInstance, xiiStringView sKey) const override
+  void Remove(void* pInstance, xiiStringView sKey) const override
   {
     XII_ASSERT_DEBUG(m_Getter != nullptr, "The property '{0}' has no non-const set accessor function, thus it is read-only.", xiiAbstractProperty::GetPropertyName());
 
     m_Getter(static_cast<Class*>(pInstance)).Remove(sKey);
   }
 
-  virtual bool Contains(const void* pInstance, xiiStringView sKey) const override
+  bool Contains(const void* pInstance, xiiStringView sKey) const override
   {
     return m_ConstGetter(static_cast<const Class*>(pInstance)).Contains(sKey);
   }
 
-  virtual bool GetValue(const void* pInstance, xiiStringView sKey, void* pObject) const override
+  bool GetValue(const void* pInstance, xiiStringView sKey, void* pObject) const override
   {
     const RealType* value = m_ConstGetter(static_cast<const Class*>(pInstance)).GetValue(sKey);
     if (value)
@@ -269,7 +279,7 @@ public:
     return value != nullptr;
   }
 
-  virtual void GetKeys(const void* pInstance, xiiHybridArray<xiiString, 16>& out_keys) const override
+  void GetKeys(const void* pInstance, xiiHybridArray<xiiString, 16>& out_keys) const override
   {
     decltype(auto) c = m_ConstGetter(static_cast<const Class*>(pInstance));
     out_keys.Clear();

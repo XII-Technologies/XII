@@ -49,7 +49,7 @@ public:
   xiiApplicationPluginConfig     m_PluginConfig;
   xiiString                      m_sFileserveAddress; ///< Optionally used for remote processes to tell them with which IP address to connect to the host
   xiiString                      m_sAssetProfile;
-  float                          m_fDevicePixelRatio = 1.0f;
+  float                          m_fDevicePixelRatio = 1.0F;
 };
 
 /// Sent to remote processes to shut them down.
@@ -302,7 +302,7 @@ public:
   bool      m_bUseSharedTexture = false;
   xiiUInt16 m_uiWindowWidth;
   xiiUInt16 m_uiWindowHeight;
-  float     m_fDevicePixelRatio = 1.0f;
+  float                  m_fDevicePixelRatio = 1.0F;
   bool      m_bUpdatePickingData;
   bool      m_bEnablePickingSelected;
   bool      m_bEnablePickTransparent;
@@ -547,7 +547,7 @@ class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiSimulationSettingsMsgToEngine : pu
 
 public:
   bool  m_bSimulateWorld   = false;
-  float m_fSimulationSpeed = 1.0f;
+  float m_fSimulationSpeed = 1.0F;
 };
 
 class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiGridSettingsMsgToEngine : public xiiEditorEngineDocumentMsg
@@ -555,7 +555,7 @@ class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiGridSettingsMsgToEngine : public x
   XII_ADD_DYNAMIC_REFLECTION(xiiGridSettingsMsgToEngine, xiiEditorEngineDocumentMsg);
 
 public:
-  float   m_fGridDensity = 0.0f;
+  float   m_fGridDensity = 0.0F;
   xiiVec3 m_vGridCenter;
   xiiVec3 m_vGridTangent1;
   xiiVec3 m_vGridTangent2;
@@ -566,7 +566,7 @@ class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiGlobalSettingsMsgToEngine : public
   XII_ADD_DYNAMIC_REFLECTION(xiiGlobalSettingsMsgToEngine, xiiEditorEngineMsg);
 
 public:
-  float m_fGizmoScale = 0.0f;
+  float m_fGizmoScale = 0.0F;
 };
 
 class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiWorldSettingsMsgToEngine : public xiiEditorEngineDocumentMsg

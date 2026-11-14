@@ -16,15 +16,15 @@ class XII_EDITORFRAMEWORK_DLL xiiEditorPreferencesUser : public xiiEditorSetting
 
 public:
   xiiEditorPreferencesUser();
-  ~xiiEditorPreferencesUser();
+  ~xiiEditorPreferencesUser() override;
 
   void ApplyDefaultValues(xiiEngineViewLightSettings& ref_settings);
   void SetAsDefaultValues(const xiiEngineViewLightSettings& settings);
 
-  float     m_fPerspectiveFieldOfView = 70.0f;
-  xiiAngle  m_RotationSnapValue       = xiiAngle::MakeFromDegree(15.0f);
-  float     m_fScaleSnapValue         = 0.125f;
-  float     m_fTranslationSnapValue   = 0.25f;
+  float     m_fPerspectiveFieldOfView = 70.0F;
+  xiiAngle  m_RotationSnapValue       = xiiAngle::MakeFromDegree(15.0F);
+  float     m_fScaleSnapValue         = 0.125F;
+  float     m_fTranslationSnapValue   = 0.25F;
   bool      m_bUsePrecompiledTools    = true;
   xiiString m_sCustomPrecompiledToolsFolder;
   bool      m_bLoadLastProjectAtStartup          = true;
@@ -38,9 +38,9 @@ public:
   xiiUInt32 m_uiAutoSaveMinutes = 5;
 
   bool     m_bDirectionalLight            = true;
-  xiiAngle m_DirectionalLightAngle        = xiiAngle::MakeFromDegree(70.0f);
+  xiiAngle m_DirectionalLightAngle        = xiiAngle::MakeFromDegree(70.0F);
   bool     m_bDirectionalLightShadows     = false;
-  float    m_fDirectionalLightIntensity   = 10.0f;
+  float    m_fDirectionalLightIntensity   = 10.0F;
   bool     m_bClearEditorLogsOnPlay       = true;
   bool     m_bCombinedEditorAndEngineLogs = true;
 
@@ -71,7 +71,7 @@ private:
   void OnChanged() override;
   void SyncGlobalSettings();
 
-  float     m_fGizmoSize                  = 1.5f;
+  float     m_fGizmoSize                  = 1.5F;
   bool      m_bShowInDevelopmentFeatures  = false;
   xiiUInt16 m_uiMaxFramerate              = 60;
   xiiUInt16 m_uiMaxFramerateWhenUnfocused = 15U;

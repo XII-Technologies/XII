@@ -30,7 +30,7 @@ class XII_CORE_DLL xiiWorldModule : public xiiReflectedClass
 
 protected:
   xiiWorldModule(xiiWorld* pWorld);
-  virtual ~xiiWorldModule();
+  ~xiiWorldModule() override;
 
 public:
   /// Returns the corresponding world to this module.
@@ -71,7 +71,7 @@ protected:
     xiiEnum<xiiWorldUpdatePhase>       m_Phase;                             ///< The update phase in which this update function should be called. See xiiWorld for a description on the different phases.
     bool                               m_bOnlyUpdateWhenSimulating = false; ///< The update function is only called when the world simulation is enabled.
     xiiUInt16                          m_uiAsyncPhaseBatchSize     = 0;     ///< Zero means m_Function is called once per frame, to update all components, but still in parallel with other world modules. Non-zero means m_Function is called multiple times (in parallel) with batches of roughly this size.
-    float                              m_fPriority                 = 0.0f;  ///< Higher priority (higher number) means that this function is called earlier than a function with lower priority.
+    float                              m_fPriority                 = 0.0F;  ///< Higher priority (higher number) means that this function is called earlier than a function with lower priority.
   };
 
   /// Registers the given update function at the world.

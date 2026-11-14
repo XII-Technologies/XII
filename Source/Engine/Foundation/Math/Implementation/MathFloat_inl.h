@@ -32,7 +32,7 @@ namespace xiiMath
     // INF -> (exponent = all 1, mantissa = zero)
 
     xiiIntFloatUnion i2f(value);
-    return ((i2f.i & 0x7f800000u) != 0x7f800000u);
+    return ((i2f.i & 0x7f800000U) != 0x7f800000U);
   }
 
   XII_ALWAYS_INLINE bool IsNaN(float value)
@@ -42,7 +42,7 @@ namespace xiiMath
     // INF -> (exponent = all 1, mantissa = zero)
 
     xiiIntFloatUnion i2f(value);
-    return (((i2f.i & 0x7f800000u) == 0x7f800000u) && ((i2f.i & 0x7FFFFFu) != 0));
+    return (((i2f.i & 0x7f800000U) == 0x7f800000U) && ((i2f.i & 0x7FFFFFU) != 0));
   }
 
   XII_ALWAYS_INLINE float Floor(float f)
@@ -67,12 +67,12 @@ namespace xiiMath
 
   XII_ALWAYS_INLINE float Round(float f)
   {
-    return Floor(f + 0.5f);
+    return Floor(f + 0.5F);
   }
 
   XII_ALWAYS_INLINE xiiInt32 RoundToInt(float f)
   {
-    return FloorToInt(f + 0.5f);
+    return FloorToInt(f + 0.5F);
   }
 
   XII_ALWAYS_INLINE float RoundToMultiple(float f, float fMultiple)
@@ -166,7 +166,7 @@ namespace xiiMath
 
   XII_ALWAYS_INLINE float Root(float f, float fNthRoot)
   {
-    return powf(f, 1.0f / fNthRoot);
+    return powf(f, 1.0F / fNthRoot);
   }
 
   XII_ALWAYS_INLINE float Sqrt(float f)
@@ -181,7 +181,7 @@ namespace xiiMath
 
   XII_ALWAYS_INLINE float Hypot(float x, float y)
   {
-    return sqrtf(powf(x, 2.0f) + powf(y, 2.0f));
+    return sqrtf(powf(x, 2.0F) + powf(y, 2.0F));
   }
 
   XII_ALWAYS_INLINE float NormalizeToRange(float value, float fMin, float fMax)

@@ -5,7 +5,9 @@
 XII_STATICLINK_LIBRARY(MujocoPlugin)
 {
   if (bReturn)
+  {
     return;
+  }
 
   XII_STATICLINK_REFERENCE(MujocoPlugin_Startup);
   XII_STATICLINK_REFERENCE(MujocoPlugin_Components_Implementation_MuJoCoActuatorComponent);

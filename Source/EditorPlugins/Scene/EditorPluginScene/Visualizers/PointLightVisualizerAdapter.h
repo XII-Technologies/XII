@@ -10,13 +10,13 @@ class xiiPointLightVisualizerAdapter : public xiiVisualizerAdapter
 {
 public:
   xiiPointLightVisualizerAdapter();
-  ~xiiPointLightVisualizerAdapter();
+  ~xiiPointLightVisualizerAdapter() override;
 
 protected:
-  virtual void Finalize() override;
-  virtual void Update() override;
+  void Finalize() override;
+  void Update() override;
 
-  virtual void UpdateGizmoTransform() override;
+  void UpdateGizmoTransform() override;
 
   float                m_fScale;
   xiiEngineGizmoHandle m_hGizmo;

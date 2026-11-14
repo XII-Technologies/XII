@@ -19,7 +19,7 @@ public:
   xiiFileReader() = default;
 
   /// Destructor, closes the file, if it is still open (RAII).
-  ~xiiFileReader() { Close(); }
+  ~xiiFileReader() override { Close(); }
 
   /// Opens the given file for reading. Returns XII_SUCCESS if the file could be opened. A cache is created to speed up small reads.
   ///
@@ -31,10 +31,10 @@ public:
   void Close();
 
   /// Attempts to read the given number of bytes into the buffer. Returns the actual number of bytes read.
-  virtual xiiUInt64 ReadBytes(void* pReadBuffer, xiiUInt64 uiBytesToRead) override;
+  xiiUInt64 ReadBytes(void* pReadBuffer, xiiUInt64 uiBytesToRead) override;
 
   /// Helper method to skip a number of bytes. Returns the actual number of bytes skipped.
-  virtual xiiUInt64 SkipBytes(xiiUInt64 uiBytesToSkip) override;
+  xiiUInt64 SkipBytes(xiiUInt64 uiBytesToSkip) override;
 
   /// Whether the end of the file was reached during reading.
   ///

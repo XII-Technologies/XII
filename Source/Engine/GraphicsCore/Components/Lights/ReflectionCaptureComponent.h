@@ -54,12 +54,12 @@ class XII_GRAPHICSCORE_DLL xiiReflectionCaptureRenderData : public xiiRenderData
 
 public:
   xiiTextureCubeResourceHandle              m_hReflectionMap;
-  xiiVec3                                   m_vHalfExtents = xiiVec3(5.0f);
+  xiiVec3                                   m_vHalfExtents = xiiVec3(5.0F);
   xiiEnum<xiiReflectionProbeInfluenceShape> m_InfluenceShape;
-  float                                     m_fSphereRadius      = 5.0f;
-  float                                     m_fBlendDistance     = 1.0f;
-  float                                     m_fIntensity         = 1.0f;
-  float                                     m_fSaturation        = 1.0f;
+  float                                     m_fSphereRadius      = 5.0F;
+  float                                     m_fBlendDistance     = 1.0F;
+  float                                     m_fIntensity         = 1.0F;
+  float                                     m_fSaturation        = 1.0F;
   xiiInt32                                  m_iPriority          = 0;
   bool                                      m_bParallaxCorrected = true;
 };
@@ -76,11 +76,11 @@ class XII_GRAPHICSCORE_DLL xiiReflectionCaptureComponent : public xiiRenderCompo
 public:
   xiiReflectionCaptureComponent();
   xiiBitflags<xiiRenderExtractionCategory> GetRenderExtractionCategories() const override { return xiiRenderExtractionCategory::Lights; }
-  ~xiiReflectionCaptureComponent();
+  ~xiiReflectionCaptureComponent() override;
 
-  virtual void      SerializeComponent(xiiWorldWriter& inout_stream) const override;
-  virtual void      DeserializeComponent(xiiWorldReader& inout_stream) override;
-  virtual xiiResult GetLocalBounds(xiiBoundingBoxSphere& out_bounds, bool& out_bAlwaysVisible, xiiMsgUpdateLocalBounds& ref_msg) override;
+  void      SerializeComponent(xiiWorldWriter& inout_stream) const override;
+  void      DeserializeComponent(xiiWorldReader& inout_stream) override;
+  xiiResult GetLocalBounds(xiiBoundingBoxSphere& out_bounds, bool& out_bAlwaysVisible, xiiMsgUpdateLocalBounds& ref_msg) override;
 
   void                                SetReflectionMap(const xiiTextureCubeResourceHandle& hReflectionMap);
   const xiiTextureCubeResourceHandle& GetReflectionMap() const;
@@ -115,11 +115,11 @@ protected:
 private:
   xiiTextureCubeResourceHandle              m_hReflectionMap;
   xiiEnum<xiiReflectionProbeInfluenceShape> m_InfluenceShape;
-  xiiVec3                                   m_vHalfExtents       = xiiVec3(5.0f);
-  float                                     m_fSphereRadius      = 5.0f;
-  float                                     m_fBlendDistance     = 1.0f;
-  float                                     m_fIntensity         = 1.0f;
-  float                                     m_fSaturation        = 1.0f;
+  xiiVec3                                   m_vHalfExtents       = xiiVec3(5.0F);
+  float                                     m_fSphereRadius      = 5.0F;
+  float                                     m_fBlendDistance     = 1.0F;
+  float                                     m_fIntensity         = 1.0F;
+  float                                     m_fSaturation        = 1.0F;
   xiiInt32                                  m_iPriority          = 0;
   bool                                      m_bParallaxCorrected = true;
 };

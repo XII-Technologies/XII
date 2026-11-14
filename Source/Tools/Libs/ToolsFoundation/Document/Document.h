@@ -62,7 +62,7 @@ class XII_TOOLSFOUNDATION_DLL xiiDocument : public xiiReflectedClass
 
 public:
   xiiDocument(xiiStringView sPath, xiiDocumentObjectManager* pDocumentObjectManagerImpl);
-  virtual ~xiiDocument();
+  ~xiiDocument() override;
 
   /// \name Document State Functions
   ///@{

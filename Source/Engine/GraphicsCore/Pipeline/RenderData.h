@@ -32,7 +32,7 @@ public:
   };
 
   xiiRenderData()          = default;
-  virtual ~xiiRenderData() = default;
+  ~xiiRenderData() override = default;
 
 public:
   xiiTransform         m_GlobalTransform = xiiTransform::MakeIdentity();

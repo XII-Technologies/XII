@@ -29,7 +29,7 @@ public:
     m_pEditorApp = new xiiQtEditorApp;
   }
 
-  virtual xiiResult BeforeCoreSystemsStartup() override
+  xiiResult BeforeCoreSystemsStartup() override
   {
 #if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
     // Establish identity before QApplication, splash screens, or native taskbar windows exist.
@@ -44,7 +44,7 @@ public:
     return XII_SUCCESS;
   }
 
-  virtual void AfterCoreSystemsShutdown() override
+  void AfterCoreSystemsShutdown() override
   {
     xiiQtEditorApp::GetSingleton()->DeInitQt();
 
@@ -52,7 +52,7 @@ public:
     m_pEditorApp = nullptr;
   }
 
-  virtual Execution Run() override
+  Execution Run() override
   {
     {
       xiiStringBuilder sCMDHelp;

@@ -66,7 +66,7 @@ inline xiiStringView xiiDataDirPath::GetDataDirParentRelativePath() const
 inline xiiStringView xiiDataDirPath::GetDataDirRelativePath() const
 {
   XII_ASSERT_DEBUG(IsValid(), "Path is not in a data directory, only GetAbsolutePath is allowed to be called.");
-  const xiiUInt32 uiOffset = xiiMath::Min(m_sAbsolutePath.GetElementCount(), m_uiDataDirParent + m_uiDataDirLength + 1u);
+  const xiiUInt32 uiOffset = xiiMath::Min(m_sAbsolutePath.GetElementCount(), m_uiDataDirParent + m_uiDataDirLength + 1U);
   return xiiStringView(m_sAbsolutePath.GetData() + uiOffset, m_sAbsolutePath.GetElementCount() - uiOffset);
 }
 

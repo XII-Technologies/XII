@@ -49,18 +49,18 @@ public:
   /// Used when CTRL+drag moves the object AND the camera
   void SetCameraSpeed(float fSpeed);
 
-  virtual void UpdateStatusBarText(xiiQtEngineDocumentWindow* pWindow) override;
+  void UpdateStatusBarText(xiiQtEngineDocumentWindow* pWindow) override;
 
 protected:
-  virtual void DoFocusLost(bool bCancel) override;
+  void DoFocusLost(bool bCancel) override;
 
-  virtual xiiEditorInput DoMousePressEvent(QMouseEvent* e) override;
-  virtual xiiEditorInput DoMouseReleaseEvent(QMouseEvent* e) override;
-  virtual xiiEditorInput DoMouseMoveEvent(QMouseEvent* e) override;
+  xiiEditorInput DoMousePressEvent(QMouseEvent* e) override;
+  xiiEditorInput DoMouseReleaseEvent(QMouseEvent* e) override;
+  xiiEditorInput DoMouseMoveEvent(QMouseEvent* e) override;
 
-  virtual void OnSetOwner(xiiQtEngineDocumentWindow* pOwnerWindow, xiiQtEngineViewWidget* pOwnerView) override;
-  virtual void OnVisibleChanged(bool bVisible) override;
-  virtual void OnTransformationChanged(const xiiTransform& transform) override;
+  void OnSetOwner(xiiQtEngineDocumentWindow* pOwnerWindow, xiiQtEngineViewWidget* pOwnerView) override;
+  void OnVisibleChanged(bool bVisible) override;
+  void OnTransformationChanged(const xiiTransform& transform) override;
 
   xiiResult GetPointOnAxis(xiiInt32 iScreenPosX, xiiInt32 iScreenPosY, xiiVec3& out_Result) const;
   xiiResult GetPointOnPlane(xiiInt32 iScreenPosX, xiiInt32 iScreenPosY, xiiVec3& out_Result) const;

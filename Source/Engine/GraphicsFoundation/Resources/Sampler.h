@@ -57,11 +57,11 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSamplerCreationDescription : public xiiH
                                                                                             ///           When set to False, the range of image coordinates is 0.0 to 1.0.
                                                                                             ///
                                                                                             ///           Unnormalized coordinates are only supported in Vulkan and Metal.
-  float                             m_fMipLODBias        = 0.0f;                            ///< Offset from the calculated mipmap level. The default is 0;
+  float                             m_fMipLODBias        = 0.0F;                            ///< Offset from the calculated mipmap level. The default is 0;
   xiiUInt32                         m_uiMaxAnisotropy    = 0U;                              ///< Maximum anisotropy level for the anisotropic filter. The default is 0.
   xiiEnum<xiiGALComparisonFunction> m_ComparisonFunction = xiiGALComparisonFunction::Never; ///< A function that compares sampled data against existing sampled data when comparisons filter used. The default is Never.
   xiiColor                          m_BorderColor        = xiiColor::Black;                 ///< Border color to use if the texture address border is specified for AddressU, AddressV, or AddressW. The default is xiiColor::Black.
-  float                             m_fMinLOD            = 0.0f;                            ///< Specifies the minimum value that LOD is clamped to before accessing the texture MIP levels. The default is 0.
+  float                             m_fMinLOD            = 0.0F;                            ///< Specifies the minimum value that LOD is clamped to before accessing the texture MIP levels. The default is 0.
   float                             m_fMaxLOD            = xiiMath::MaxValue<float>();      ///< Specifies the maximum value that LOD is clamped to before accessing the texture MIP levels. The default is xiiMath::MaxValue<float>().
 };
 
@@ -80,7 +80,7 @@ protected:
 
   xiiGALSampler(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALSamplerCreationDescription& creationDescription);
 
-  virtual ~xiiGALSampler();
+  ~xiiGALSampler() override;
 
   virtual xiiResult InitPlatform() = 0;
 

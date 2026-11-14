@@ -166,7 +166,7 @@ protected:
 
   xiiGALBottomLevelAS(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALBottomLevelASCreationDescription& creationDescription);
 
-  virtual ~xiiGALBottomLevelAS();
+  ~xiiGALBottomLevelAS() override;
 
   virtual xiiResult InitPlatform() = 0;
 

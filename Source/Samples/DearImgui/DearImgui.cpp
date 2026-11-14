@@ -46,7 +46,9 @@ public:
       tool.m_pWindow->Initialize(window).AssertSuccess();
       tool.m_pWindow->GetWindowEvents().AddEventHandler([this, i](const xiiWindowEvent& event) {
         if (event.m_Type == xiiWindowEvent::Type::CloseButtonClicked)
+        {
           m_Tools[i].m_bClose = true;
+        }
       });
     }
     xiiStringView shaderModel, compiler;
@@ -120,17 +122,23 @@ public:
   Execution Run() override
   {
     for (auto& tool : m_Tools)
+    {
       if (tool.m_pWindow)
+      {
         tool.m_pWindow->ProcessWindowMessages();
+      }
+    }
     xiiClock::GetGlobalClock()->Update();
     const auto delta = xiiClock::GetGlobalClock()->GetTimeDiff();
     xiiInputManager::PollHardware();
     for (auto& tool : m_Tools)
+    {
       if (!tool.m_bClose && tool.m_pWindow)
       {
         const auto size = tool.m_pWindow->GetClientAreaSize();
         xiiImguiInput::UpdateFromDevice(tool.m_hContext, *tool.m_pWindow->GetInputDevice(), {float(size.width), float(size.height)}).AssertSuccess();
       }
+    }
     xiiInputManager::Update(delta);
 
     bool anyOpen = false;
@@ -145,9 +153,13 @@ public:
       anyOpen         = true;
       const auto size = tool.m_pWindow->GetClientAreaSize();
       if (!size.HasNonZeroArea())
+      {
         continue;
+      }
       if (size != tool.m_pSwapChain->GetCurrentSize())
+      {
         tool.m_pSwapChain->Resize(size).AssertSuccess();
+      }
       tool.m_pView->SetViewport({0, 0, float(size.width), float(size.height)});
       xiiImguiScopedContext    scope(tool.m_hContext);
       xiiImguiFrameDescription frame;
@@ -163,24 +175,31 @@ public:
         ImGui::SliderFloat("Value", &tool.m_fValue, 0, 1);
         ImGui::InputText("Text", tool.m_Text, XII_ARRAY_SIZE(tool.m_Text));
         if (ImGui::Button("Increment"))
+        {
           ++tool.m_uiClicks;
+        }
         ImGui::SameLine();
         ImGui::Text("Count: %u", tool.m_uiClicks);
         ImGui::Text("Mouse capture: %s", scope.GetInputCapture().m_bMouse ? "yes" : "no");
         ImGui::TextUnformatted("Resize either window; each tool owns its input and UI state.");
         if (ImGui::Button("Submit empty frames"))
+        {
           tool.m_bShowUI = false;
+        }
         ImGui::End();
       }
       scope.EndFrame(tool.m_pFrame).AssertSuccess();
     }
     if (!anyOpen || WasQuitRequested())
+    {
       return Execution::Quit;
+    }
     m_pDevice->BeginFrame();
     {
       xiiRenderGraphFrame frame;
       frame.Begin().AssertSuccess();
       for (auto& tool : m_Tools)
+      {
         if (tool.m_pWindow && tool.m_pWindow->IsVisible() && tool.m_pSwapChain->GetCurrentSize().HasNonZeroArea())
         {
           xiiStringBuilder error;
@@ -192,6 +211,7 @@ public:
           }
           tool.m_pSwapChain->Present();
         }
+      }
       if (m_Tools[0].m_pFrame)
       {
         xiiStringBuilder error;
@@ -218,9 +238,13 @@ public:
     m_MirrorPipeline.Clear();
     m_pMirror.Clear();
     for (auto& tool : m_Tools)
+    {
       CloseTool(tool);
+    }
     for (auto& tool : m_Tools)
+    {
       tool.m_pWorld.Clear();
+    }
     m_pMirrorView = nullptr;
     m_pPipeline.Clear();
     xiiStartup::ShutdownHighLevelSystems();
@@ -239,7 +263,7 @@ private:
     xiiSharedPtr<const xiiImguiFrame> m_pFrame;
     xiiRenderGraphHandle              m_hGraph;
     xiiRenderPipelineInstance         m_Pipeline;
-    float                             m_fValue           = 0.5f;
+    float                             m_fValue           = 0.5F;
     char                              m_Text[128]        = "Type here";
     xiiUInt32                         m_uiClicks         = 0;
     xiiEventSubscriptionID            m_TextSubscription = 0;
@@ -251,7 +275,9 @@ private:
   void CloseTool(Tool& tool)
   {
     if (!tool.m_pWindow)
+    {
       return;
+    }
     xiiRenderGraphManager::DestroyGraph(tool.m_hGraph).AssertSuccess();
     tool.m_hGraph.Invalidate();
     tool.m_Pipeline.Clear();
@@ -263,7 +289,9 @@ private:
     tool.m_pSwapChain.Clear();
     // The main world's mirror view remains live until its graph is destroyed at shutdown.
     if (&tool != &m_Tools[0] || m_hMirrorGraph.IsInvalidated())
+    {
       tool.m_pWorld.Clear();
+    }
     tool.m_pWindow->Destroy().AssertSuccess();
     tool.m_pWindow.Clear();
   }
@@ -274,7 +302,7 @@ private:
     xiiRenderGraphTextureHandle color;
     graph.AddPass<xiiRenderGraphTextureHandle>("Clear UI background", xiiGALCommandQueueFlags::Graphics, [&](auto& data, xiiRenderGraphBuilder& builder) {
         color = data = builder.WriteTexture(builder.ImportTexture("UI target", texture, texture->GetResourceState()), xiiGALResourceStateFlags::RenderTarget);
-        builder.SetPassRenderPassManaged(); }, [](const auto& data, xiiRenderGraphPassContext& execution) { execution.GetCommandList().ClearRenderTargetView(execution.GetTexture(data)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor(0.025f, 0.04f, 0.065f)); });
+        builder.SetPassRenderPassManaged(); }, [](const auto& data, xiiRenderGraphPassContext& execution) { execution.GetCommandList().ClearRenderTargetView(execution.GetTexture(data)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor(0.025F, 0.04F, 0.065F)); });
     xiiRenderPipelineBinding binding;
     binding.m_pFrameData                         = XII_DEFAULT_NEW(xiiImguiFrameData, graph.GetSetupSerial(), std::move(frame));
     const xiiRenderPipelineInputBinding inputs[] = {

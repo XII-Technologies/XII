@@ -26,7 +26,7 @@ namespace xiiInternal
     constexpr xiiUInt32 uiLength = static_cast<xiiUInt32>(N - 1);
     if constexpr (uiLength == 0)
     {
-      return 46947589u;
+      return 46947589U;
     }
     else
     {
@@ -91,7 +91,7 @@ namespace xiiInternal
     constexpr xiiUInt32 uiLength = static_cast<xiiUInt32>(N - 1);
     if constexpr (uiLength == 0)
     {
-      return 17241709254077376921llu;
+      return 17241709254077376921LLU;
     }
     else
     {

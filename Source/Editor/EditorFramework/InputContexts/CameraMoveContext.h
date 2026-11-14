@@ -33,28 +33,28 @@ public:
   static float ConvertCameraSpeed(xiiUInt32 uiSpeedIdx);
 
 protected:
-  virtual void DoFocusLost(bool bCancel) override;
+  void DoFocusLost(bool bCancel) override;
 
-  virtual xiiEditorInput DoKeyPressEvent(QKeyEvent* e) override;
-  virtual xiiEditorInput DoKeyReleaseEvent(QKeyEvent* e) override;
-  virtual xiiEditorInput DoMousePressEvent(QMouseEvent* e) override;
-  virtual xiiEditorInput DoMouseReleaseEvent(QMouseEvent* e) override;
-  virtual xiiEditorInput DoMouseMoveEvent(QMouseEvent* e) override;
-  virtual xiiEditorInput DoWheelEvent(QWheelEvent* e) override;
+  xiiEditorInput DoKeyPressEvent(QKeyEvent* e) override;
+  xiiEditorInput DoKeyReleaseEvent(QKeyEvent* e) override;
+  xiiEditorInput DoMousePressEvent(QMouseEvent* e) override;
+  xiiEditorInput DoMouseReleaseEvent(QMouseEvent* e) override;
+  xiiEditorInput DoMouseMoveEvent(QMouseEvent* e) override;
+  xiiEditorInput DoWheelEvent(QWheelEvent* e) override;
 
-  virtual void OnSetOwner(xiiQtEngineDocumentWindow* pOwnerWindow, xiiQtEngineViewWidget* pOwnerView) override {}
+  void OnSetOwner(xiiQtEngineDocumentWindow* pOwnerWindow, xiiQtEngineViewWidget* pOwnerView) override {}
 
   void OnActivated() override;
 
 private:
-  virtual void UpdateContext() override;
+  void UpdateContext() override;
 
   void SetMoveSpeed(xiiInt32 iSpeed);
   void ResetCursor();
   void SetCurrentMouseMode();
   void DeactivateIfLast();
 
-  float m_fOrbitPointDistance = 1.0f;
+  float m_fOrbitPointDistance = 1.0F;
 
   xiiVec2I32 m_vLastMousePos  = xiiVec2I32::MakeZero();
   xiiVec2I32 m_vMouseClickPos = xiiVec2I32::MakeZero();

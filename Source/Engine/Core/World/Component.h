@@ -30,7 +30,7 @@ class XII_CORE_DLL xiiComponent : public xiiReflectedClass
 protected:
   /// Keep the constructor private or protected in derived classes, so it cannot be called manually.
   xiiComponent();
-  virtual ~xiiComponent();
+  ~xiiComponent() override;
 
 public:
   /// Sets the active flag of the component, which affects its active state.

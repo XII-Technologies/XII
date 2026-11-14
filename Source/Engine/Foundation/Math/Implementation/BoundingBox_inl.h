@@ -185,7 +185,9 @@ bool xiiBoundingBoxTemplate<Type>::Contains(const xiiVec3Template<Type>* pPoints
   for (xiiUInt32 i = 0; i < uiNumPoints; ++i)
   {
     if (!Contains(*pCur))
+    {
       return false;
+    }
 
     pCur = xiiMemoryUtils::AddByteOffset(pCur, uiStride);
   }
@@ -200,18 +202,30 @@ bool xiiBoundingBoxTemplate<Type>::Overlaps(const xiiBoundingBoxTemplate<Type>& 
   XII_NAN_ASSERT(&rhs);
 
   if (rhs.m_vMin.x >= m_vMax.x)
+  {
     return false;
+  }
   if (rhs.m_vMin.y >= m_vMax.y)
+  {
     return false;
+  }
   if (rhs.m_vMin.z >= m_vMax.z)
+  {
     return false;
+  }
 
   if (m_vMin.x >= rhs.m_vMax.x)
+  {
     return false;
+  }
   if (m_vMin.y >= rhs.m_vMax.y)
+  {
     return false;
+  }
   if (m_vMin.z >= rhs.m_vMax.z)
+  {
     return false;
+  }
 
   return true;
 }
@@ -227,7 +241,9 @@ bool xiiBoundingBoxTemplate<Type>::Overlaps(const xiiVec3Template<Type>* pPoints
   for (xiiUInt32 i = 0; i < uiNumPoints; ++i)
   {
     if (Contains(*pCur))
+    {
       return true;
+    }
 
     pCur = xiiMemoryUtils::AddByteOffset(pCur, uiStride);
   }
@@ -293,7 +309,9 @@ void xiiBoundingBoxTemplate<Type>::TransformFromCenter(const xiiMat4Template<Typ
   *this                               = MakeInvalid();
 
   for (xiiUInt32 i = 0; i < 8; ++i)
+  {
     ExpandToInclude(vCenter + mTransform.TransformPosition(vCorners[i] - vCenter));
+  }
 }
 
 template <typename Type>
@@ -338,7 +356,7 @@ Type xiiBoundingBoxTemplate<Type>::GetDistanceSquaredTo(const xiiBoundingBoxTemp
   XII_NAN_ASSERT(this);
   XII_NAN_ASSERT(&rhs);
 
-  Type fDistSQR = 0.0f;
+  Type fDistSQR = 0.0F;
 
   {
     if (rhs.m_vMin.x > m_vMax.x)
@@ -396,16 +414,18 @@ bool xiiBoundingBoxTemplate<Type>::GetRayIntersection(const xiiVec3Template<Type
 
   XII_NAN_ASSERT(this);
 
-  float tMin, tMax;
+  float tMin;
+  float tMax;
 
   // Compare along X and Z axis, find intersection point
   {
-    float tMinY, tMaxY;
+    float tMinY;
+    float tMaxY;
 
-    const float fDivX = 1.0f / vRayDir.x;
-    const float fDivY = 1.0f / vRayDir.y;
+    const float fDivX = 1.0F / vRayDir.x;
+    const float fDivY = 1.0F / vRayDir.y;
 
-    if (vRayDir.x >= 0.0f)
+    if (vRayDir.x >= 0.0F)
     {
       tMin = (m_vMin.x - vStartPos.x) * fDivX;
       tMax = (m_vMax.x - vStartPos.x) * fDivX;
@@ -416,7 +436,7 @@ bool xiiBoundingBoxTemplate<Type>::GetRayIntersection(const xiiVec3Template<Type
       tMax = (m_vMin.x - vStartPos.x) * fDivX;
     }
 
-    if (vRayDir.y >= 0.0f)
+    if (vRayDir.y >= 0.0F)
     {
       tMinY = (m_vMin.y - vStartPos.y) * fDivY;
       tMaxY = (m_vMax.y - vStartPos.y) * fDivY;
@@ -428,21 +448,28 @@ bool xiiBoundingBoxTemplate<Type>::GetRayIntersection(const xiiVec3Template<Type
     }
 
     if (tMin > tMaxY || tMinY > tMax)
+    {
       return false;
+    }
 
     if (tMinY > tMin)
+    {
       tMin = tMinY;
+    }
     if (tMaxY < tMax)
+    {
       tMax = tMaxY;
+    }
   }
 
   // Compare along Z axis and previous result, find intersection point
   {
-    float tMinZ, tMaxZ;
+    float tMinZ;
+    float tMaxZ;
 
-    const float fDivZ = 1.0f / vRayDir.z;
+    const float fDivZ = 1.0F / vRayDir.z;
 
-    if (vRayDir.z >= 0.0f)
+    if (vRayDir.z >= 0.0F)
     {
       tMinZ = (m_vMin.z - vStartPos.z) * fDivZ;
       tMaxZ = (m_vMax.z - vStartPos.z) * fDivZ;
@@ -454,23 +481,35 @@ bool xiiBoundingBoxTemplate<Type>::GetRayIntersection(const xiiVec3Template<Type
     }
 
     if (tMin > tMaxZ || tMinZ > tMax)
+    {
       return false;
+    }
 
     if (tMinZ > tMin)
+    {
       tMin = tMinZ;
+    }
     if (tMaxZ < tMax)
+    {
       tMax = tMaxZ;
+    }
   }
 
   // rays that start inside the box are considered as not hitting the box
-  if (tMax <= 0.0f)
+  if (tMax <= 0.0F)
+  {
     return false;
+  }
 
   if (out_pIntersectionDistance)
+  {
     *out_pIntersectionDistance = tMin;
+  }
 
   if (out_pIntersection)
+  {
     *out_pIntersection = vStartPos + tMin * vRayDir;
+  }
 
   return true;
 }
@@ -480,14 +519,18 @@ bool xiiBoundingBoxTemplate<Type>::GetLineSegmentIntersection(const xiiVec3Templ
 {
   const xiiVec3Template<Type> vRayDir = vEndPos - vStartPos;
 
-  Type fIntersection = 0.0f;
+  Type fIntersection = 0.0F;
   if (!GetRayIntersection(vStartPos, vRayDir, &fIntersection, out_pIntersection))
+  {
     return false;
+  }
 
   if (out_pLineFraction)
+  {
     *out_pLineFraction = fIntersection;
+  }
 
-  return fIntersection <= 1.0f;
+  return fIntersection <= 1.0F;
 }
 
 

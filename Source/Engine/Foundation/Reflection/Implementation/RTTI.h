@@ -133,7 +133,7 @@ public:
   }
 
   /// Returns whether this type can handle the message type with the given id.
-  inline bool CanHandleMessage(xiiMessageId id) const
+  bool CanHandleMessage(xiiMessageId id) const
   {
     XII_ASSERT_DEBUG(m_uiMsgIdOffset != xiiSmallInvalidIndex, "Message handler table should have been gathered at this point.\n"
                                                               "If this assert is triggered for a type loaded from a dynamic plugin,\n"
@@ -267,17 +267,17 @@ private:
 struct XII_FOUNDATION_DLL xiiRTTINoAllocator : public xiiRTTIAllocator
 {
   /// Returns false, because this type of allocator is used for classes that shall not be allocated dynamically.
-  virtual bool CanAllocate() const override { return false; } // [tested]
+  bool CanAllocate() const override { return false; } // [tested]
 
   /// Will trigger an assert.
-  virtual xiiInternal::NewInstance<void> AllocateInternal(xiiAllocator* pAllocator) override // [tested]
+  xiiInternal::NewInstance<void> AllocateInternal(xiiAllocator* pAllocator) override // [tested]
   {
     XII_REPORT_FAILURE("This function should never be called.");
     return xiiInternal::NewInstance<void>(nullptr, pAllocator);
   }
 
   /// Will trigger an assert.
-  virtual void Deallocate(void* pObject, xiiAllocator* pAllocator) override // [tested]
+  void Deallocate(void* pObject, xiiAllocator* pAllocator) override // [tested]
   {
     XII_IGNORE_UNUSED(pObject);
     XII_IGNORE_UNUSED(pAllocator);
@@ -290,7 +290,7 @@ template <typename CLASS, typename AllocatorWrapper = xiiDefaultAllocatorWrapper
 struct xiiRTTIDefaultAllocator : public xiiRTTIAllocator
 {
   /// Returns a new instance that was allocated with the given allocator.
-  virtual xiiInternal::NewInstance<void> AllocateInternal(xiiAllocator* pAllocator) override // [tested]
+  xiiInternal::NewInstance<void> AllocateInternal(xiiAllocator* pAllocator) override // [tested]
   {
     if (pAllocator == nullptr)
     {
@@ -301,7 +301,7 @@ struct xiiRTTIDefaultAllocator : public xiiRTTIAllocator
   }
 
   /// Clones the given instance with the given allocator.
-  virtual xiiInternal::NewInstance<void> CloneInternal(const void* pObject, xiiAllocator* pAllocator) override // [tested]
+  xiiInternal::NewInstance<void> CloneInternal(const void* pObject, xiiAllocator* pAllocator) override // [tested]
   {
     if (pAllocator == nullptr)
     {
@@ -320,7 +320,7 @@ struct xiiRTTIDefaultAllocator : public xiiRTTIAllocator
   }
 
   /// Deletes the given instance with the given allocator.
-  virtual void Deallocate(void* pObject, xiiAllocator* pAllocator) override // [tested]
+  void Deallocate(void* pObject, xiiAllocator* pAllocator) override // [tested]
   {
     if (pAllocator == nullptr)
     {

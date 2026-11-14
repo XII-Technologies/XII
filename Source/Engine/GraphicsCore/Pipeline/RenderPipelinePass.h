@@ -46,7 +46,7 @@ class XII_GRAPHICSCORE_DLL xiiRenderPipelinePass : public xiiReflectedClass
   XII_ADD_DYNAMIC_REFLECTION(xiiRenderPipelinePass, xiiReflectedClass);
 
 public:
-  virtual ~xiiRenderPipelinePass();
+  ~xiiRenderPipelinePass() override;
   /// Authored, occurrence-local parameter overrides. Kept separate from compile-time pass properties.
   xiiVariantDictionary m_ParameterOverrides;
   /// Authoring-only owned objects. Runtime pass instances consume compiled pins instead.

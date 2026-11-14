@@ -41,17 +41,17 @@ class xiiMeshAssetProperties : public xiiReflectedClass
 
 public:
   xiiMeshAssetProperties();
-  ~xiiMeshAssetProperties();
+  ~xiiMeshAssetProperties() override;
 
   static void PropertyMetaStateEventHandler(xiiPropertyMetaStateEvent& e);
 
   xiiString m_sMeshFile;
-  float     m_fUniformScaling = 1.0f;
+  float     m_fUniformScaling = 1.0F;
 
-  float     m_fRadius   = 0.5f;
-  float     m_fRadius2  = 0.5f;
-  float     m_fHeight   = 1.0f;
-  xiiAngle  m_Angle     = xiiAngle::MakeFromDegree(360.0f);
+  float     m_fRadius   = 0.5F;
+  float     m_fRadius2  = 0.5F;
+  float     m_fHeight   = 1.0F;
+  xiiAngle  m_Angle     = xiiAngle::MakeFromDegree(360.0F);
   xiiUInt16 m_uiDetail  = 0;
   xiiUInt16 m_uiDetail2 = 0;
   bool      m_bCap      = true;

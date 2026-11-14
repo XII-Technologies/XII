@@ -214,14 +214,14 @@ private:
   xiiVec3 InternalGetDirUp(xiiCameraEye eye = xiiCameraEye::Left) const;
   xiiVec3 InternalGetDirRight(xiiCameraEye eye = xiiCameraEye::Left) const;
 
-  float m_fNearPlane = 0.1f;
-  float m_fFarPlane  = 1000.0f;
+  float m_fNearPlane = 0.1F;
+  float m_fFarPlane  = 1000.0F;
 
   xiiCameraMode::Enum m_Mode = xiiCameraMode::None;
 
-  float m_fFovOrDim = 90.0f;
+  float m_fFovOrDim = 90.0F;
 
-  float m_fExposure = 1.0f;
+  float m_fExposure = 1.0F;
 
   xiiVec3 m_vCameraPosition[2];
   xiiMat4 m_mViewMatrix[2];

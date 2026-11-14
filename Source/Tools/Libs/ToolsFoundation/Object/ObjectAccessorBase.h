@@ -11,7 +11,7 @@ class XII_TOOLSFOUNDATION_DLL xiiObjectAccessorBase : public xiiReflectedClass
   XII_ADD_DYNAMIC_REFLECTION(xiiObjectAccessorBase, xiiReflectedClass);
 
 public:
-  virtual ~xiiObjectAccessorBase();
+  ~xiiObjectAccessorBase() override;
   const xiiDocumentObjectManager* GetObjectManager() const;
 
   /// \name Transaction Operations

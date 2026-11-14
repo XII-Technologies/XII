@@ -20,7 +20,7 @@ protected:
   friend class xiiMemoryUtils;
 
   xiiGALObject();
-  virtual ~xiiGALObject();
+  ~xiiGALObject() override;
 
   XII_ALWAYS_INLINE virtual void SetDebugNamePlatform(xiiStringView sName) const { XII_IGNORE_UNUSED(sName); };
 

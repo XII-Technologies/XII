@@ -13,7 +13,7 @@ XII_ALWAYS_INLINE xiiSimdTransform::xiiSimdTransform(const xiiSimdQuat& qRotatio
   m_Rotation(qRotation)
 {
   m_Position.SetZero();
-  m_Scale.Set(1.0f);
+  m_Scale.Set(1.0F);
 }
 
 inline xiiSimdTransform xiiSimdTransform::Make(const xiiSimdVec4f& vPosition, const xiiSimdQuat& qRotation /*= xiiSimdQuat::IdentityQuaternion()*/, const xiiSimdVec4f& vScale /*= xiiSimdVec4f(1.0f)*/)
@@ -30,7 +30,7 @@ XII_ALWAYS_INLINE xiiSimdTransform xiiSimdTransform::MakeIdentity()
   xiiSimdTransform res;
   res.m_Position.SetZero();
   res.m_Rotation = xiiSimdQuat::MakeIdentity();
-  res.m_Scale.Set(1.0f);
+  res.m_Scale.Set(1.0F);
   return res;
 }
 
@@ -95,7 +95,7 @@ XII_FORCE_INLINE xiiSimdMat4f xiiSimdTransform::GetAsMat4() const
   result.m_col1 *= m_Scale.y();
   result.m_col2 *= m_Scale.z();
   result.m_col3 = m_Position;
-  result.m_col3.SetW(1.0f);
+  result.m_col3.SetW(1.0F);
 
   return result;
 }

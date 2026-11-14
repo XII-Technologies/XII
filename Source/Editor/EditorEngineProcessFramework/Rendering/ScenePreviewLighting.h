@@ -26,10 +26,10 @@ struct XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiPreviewLightingSettings
 
   xiiQuat   m_Rotation              = xiiQuat::MakeFromEulerAngles(xiiAngle::MakeFromDegree(-15), xiiAngle::MakeFromDegree(43), xiiAngle::MakeFromDegree(93));
   xiiColor  m_Color                 = xiiColor::White;
-  float     m_fIlluminance          = 1000.0f;
-  float     m_fAmbientRadiance      = 10.0f;
-  float     m_fExposure             = 0.00314159265f;
-  float     m_fExposureCompensation = 0.0f;
+  float     m_fIlluminance          = 1000.0F;
+  float     m_fAmbientRadiance      = 10.0F;
+  float     m_fExposure             = 0.00314159265F;
+  float     m_fExposureCompensation = 0.0F;
   xiiUInt32 m_uiTemperature         = 6550;
   bool      m_bSky                  = false;
   bool      m_bShadows              = true;

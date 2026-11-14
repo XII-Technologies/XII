@@ -13,13 +13,13 @@ public:
   xiiSimdTransform(); // [tested]
 
   /// Sets position, rotation and scale.
-  explicit xiiSimdTransform(const xiiSimdVec4f& vPosition, const xiiSimdQuat& qRotation = xiiSimdQuat::MakeIdentity(), const xiiSimdVec4f& vScale = xiiSimdVec4f(1.0f)); // [tested]
+  explicit xiiSimdTransform(const xiiSimdVec4f& vPosition, const xiiSimdQuat& qRotation = xiiSimdQuat::MakeIdentity(), const xiiSimdVec4f& vScale = xiiSimdVec4f(1.0F)); // [tested]
 
   /// Sets rotation.
   explicit xiiSimdTransform(const xiiSimdQuat& qRotation); // [tested]
 
   /// Creates a transform from the given position, rotation and scale.
-  [[nodiscard]] static xiiSimdTransform Make(const xiiSimdVec4f& vPosition, const xiiSimdQuat& qRotation = xiiSimdQuat::MakeIdentity(), const xiiSimdVec4f& vScale = xiiSimdVec4f(1.0f)); // [tested]
+  [[nodiscard]] static xiiSimdTransform Make(const xiiSimdVec4f& vPosition, const xiiSimdQuat& qRotation = xiiSimdQuat::MakeIdentity(), const xiiSimdVec4f& vScale = xiiSimdVec4f(1.0F)); // [tested]
 
   /// Creates an identity transform.
   [[nodiscard]] static xiiSimdTransform MakeIdentity(); // [tested]

@@ -46,7 +46,7 @@ public:
     return XII_SUCCESS;
   }
 
-  virtual void AfterCoreSystemsStartup() override
+  void AfterCoreSystemsStartup() override
   {
     // Add the empty data directory to access files via absolute paths
     xiiFileSystem::AddDataDirectory("", "App", ":", xiiDataDirUsage::AllowWrites).IgnoreResult();
@@ -55,7 +55,7 @@ public:
     xiiGlobalLog::AddLogWriter(xiiLogWriter::VisualStudio::LogMessageHandler);
   }
 
-  virtual void BeforeCoreSystemsShutdown() override
+  void BeforeCoreSystemsShutdown() override
   {
     // prevent further output during shutdown
     xiiGlobalLog::RemoveLogWriter(xiiLogWriter::Console::LogMessageHandler);
@@ -64,7 +64,7 @@ public:
     SUPER::BeforeCoreSystemsShutdown();
   }
 
-  virtual Execution Run() override
+  Execution Run() override
   {
     {
       xiiStringBuilder cmdHelp;

@@ -5,7 +5,9 @@
 XII_STATICLINK_LIBRARY(Foundation)
 {
   if (bReturn)
+  {
     return;
+  }
 
   XII_STATICLINK_REFERENCE(Foundation_Application_Config_Implementation_FileSystemConfig);
   XII_STATICLINK_REFERENCE(Foundation_Application_Config_Implementation_PluginConfig);

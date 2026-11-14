@@ -11,7 +11,7 @@ XII_ALWAYS_INLINE xiiSimdQuat::xiiSimdQuat(const xiiSimdVec4f& v) :
 
 XII_ALWAYS_INLINE const xiiSimdQuat xiiSimdQuat::MakeIdentity()
 {
-  return xiiSimdQuat(xiiSimdVec4f(0.0f, 0.0f, 0.0f, 1.0f));
+  return xiiSimdQuat(xiiSimdVec4f(0.0F, 0.0F, 0.0F, 1.0F));
 }
 
 XII_ALWAYS_INLINE xiiSimdQuat xiiSimdQuat::MakeFromElements(xiiSimdFloat x, xiiSimdFloat y, xiiSimdFloat z, xiiSimdFloat w)
@@ -22,7 +22,7 @@ XII_ALWAYS_INLINE xiiSimdQuat xiiSimdQuat::MakeFromElements(xiiSimdFloat x, xiiS
 inline xiiSimdQuat xiiSimdQuat::MakeFromAxisAndAngle(const xiiSimdVec4f& vRotationAxis, const xiiSimdFloat& fAngle)
 {
   ///\todo optimize
-  const xiiAngle halfAngle = xiiAngle::MakeFromRadian(fAngle) * 0.5f;
+  const xiiAngle halfAngle = xiiAngle::MakeFromRadian(fAngle) * 0.5F;
   float          s         = xiiMath::Sin(halfAngle);
   float          c         = xiiMath::Cos(halfAngle);
 
@@ -45,14 +45,14 @@ inline xiiResult xiiSimdQuat::GetRotationAxisAndAngle(xiiSimdVec4f& ref_vAxis, x
 
   if (d < fEpsilon)
   {
-    ref_vAxis.Set(1.0f, 0.0f, 0.0f, 0.0f);
+    ref_vAxis.Set(1.0F, 0.0F, 0.0F, 0.0F);
   }
   else
   {
     ref_vAxis = m_v / d;
   }
 
-  ref_fAngle = acos * 2.0f;
+  ref_fAngle = acos * 2.0F;
 
   return XII_SUCCESS;
 }
@@ -69,7 +69,7 @@ XII_ALWAYS_INLINE xiiSimdMat4f xiiSimdQuat::GetAsMat4() const
   // 1 - (xx2 + yy2)
   const xiiSimdVec4f yy2_xx2_xx2 = xx2yy2zz2.Get<xiiSwizzle::YXXX>();
   const xiiSimdVec4f zz2_zz2_yy2 = xx2yy2zz2.Get<xiiSwizzle::ZZYX>();
-  xiiSimdVec4f       diagonal    = xiiSimdVec4f(1.0f) - (yy2_xx2_xx2 + zz2_zz2_yy2);
+  xiiSimdVec4f       diagonal    = xiiSimdVec4f(1.0F) - (yy2_xx2_xx2 + zz2_zz2_yy2);
   diagonal.SetW(xiiSimdFloat::MakeZero());
 
   // non diagonal terms

@@ -95,7 +95,7 @@ namespace
 
   private:
     // Inherited via xiiJSONParser
-    virtual bool OnVariable(xiiStringView sVarName) override
+    bool OnVariable(xiiStringView sVarName) override
     {
       bool needed = false;
 
@@ -119,7 +119,7 @@ namespace
       return needed;
     }
 
-    virtual void OnReadValue(xiiStringView sValue) override
+    void OnReadValue(xiiStringView sValue) override
     {
       if (m_pNextVar == nullptr)
       {
@@ -131,19 +131,19 @@ namespace
       m_pNextVar  = nullptr;
     }
 
-    virtual void OnReadValue(double fValue) override
+    void OnReadValue(double fValue) override
     {
     }
 
-    virtual void OnReadValue(bool bValue) override
+    void OnReadValue(bool bValue) override
     {
     }
 
-    virtual void OnReadValueNULL() override
+    void OnReadValueNULL() override
     {
     }
 
-    virtual void OnBeginObject() override
+    void OnBeginObject() override
     {
       if (!m_bOuterArrayOpen || m_bObjectOpen)
       {
@@ -155,7 +155,7 @@ namespace
       m_Command     = {};
     }
 
-    virtual void OnEndObject() override
+    void OnEndObject() override
     {
       if (!m_bObjectOpen)
       {
@@ -165,7 +165,7 @@ namespace
       m_bObjectOpen = false;
     }
 
-    virtual void OnBeginArray() override
+    void OnBeginArray() override
     {
       if (!m_bOuterArrayOpen)
       {
@@ -177,7 +177,7 @@ namespace
       }
     }
 
-    virtual void OnEndArray() override
+    void OnEndArray() override
     {
       if (m_bOuterArrayOpen)
       {
@@ -233,7 +233,7 @@ namespace
       m_sPath = sPath;
     }
 
-    virtual void Execute() override;
+    void Execute() override;
 
     xiiStringView           GetPath() const { return m_sPath; }
     xiiHashSet<xiiString>&& MoveOutDependencies() { return std::move(m_Dependencies); }
@@ -264,7 +264,7 @@ namespace
 
     void OnParsingFinished(xiiTaskGroupID taskGroupID);
 
-    virtual void Execute() override;
+    void Execute() override;
 
     bool HasWorkLeft() const { return m_LeftoverFiles.GetCount() > 0; }
 
@@ -370,7 +370,7 @@ public:
     return XII_SUCCESS;
   }
 
-  virtual void AfterCoreSystemsStartup() override
+  void AfterCoreSystemsStartup() override
   {
     xiiGlobalLog::AddLogWriter(xiiLogWriter::Console::LogMessageHandler);
     xiiGlobalLog::AddLogWriter(xiiLogWriter::VisualStudio::LogMessageHandler);
@@ -473,7 +473,9 @@ public:
     }
 
     if (!xiiPathUtils::IsAbsolutePath(sCompileCommandsPath.GetData()))
+    {
       xiiLog::Error("The given path is not absolute: '{0}'", sCompileCommandsPath);
+    }
 
     m_sCompileCommandsPath = sCompileCommandsPath;
 
@@ -483,7 +485,7 @@ public:
     }
   }
 
-  virtual void BeforeCoreSystemsShutdown() override
+  void BeforeCoreSystemsShutdown() override
   {
     SetReturnCode(0);
 
@@ -982,11 +984,13 @@ public:
     }
   }
 
-  virtual xiiApplication::Execution Run() override
+  xiiApplication::Execution Run() override
   {
     // something basic has gone wrong
     if (m_bHadSeriousWarnings || m_bHadErrors)
+    {
       return xiiApplication::Execution::Quit;
+    }
 
     auto start = xiiTimestamp::CurrentTimestamp();
 

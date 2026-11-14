@@ -67,9 +67,9 @@ public:
   {
   }
 
-  virtual ~xiiDocumentStorageObject() = default;
+  ~xiiDocumentStorageObject() override = default;
 
-  virtual const xiiIReflectedTypeAccessor& GetTypeAccessor() const override { return m_ObjectPropertiesAccessor; }
+  const xiiIReflectedTypeAccessor& GetTypeAccessor() const override { return m_ObjectPropertiesAccessor; }
 
 protected:
   xiiReflectedTypeStorageAccessor m_ObjectPropertiesAccessor;

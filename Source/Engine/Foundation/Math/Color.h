@@ -214,7 +214,7 @@ public:
   [[nodiscard]] static xiiColor MakeZero();
 
   /// Returns a color with the given r, g, b, a values. The values must be given in a linear color space.
-  [[nodiscard]] static xiiColor MakeRGBA(float fLinearRed, float fLinearGreen, float fLinearBlue, float fLinearAlpha = 1.0f);
+  [[nodiscard]] static xiiColor MakeRGBA(float fLinearRed, float fLinearGreen, float fLinearBlue, float fLinearAlpha = 1.0F);
 
   // *** Constructors ***
 public:
@@ -225,7 +225,7 @@ public:
   ///
   /// To initialize the color from a Gamma color space, e.g. when using a color value that was determined with a color picker,
   /// use the constructor that takes a xiiColorGammaUB object for initialization.
-  constexpr xiiColor(float fLinearRed, float fLinearGreen, float fLinearBlue, float fLinearAlpha = 1.0f); // [tested]
+  constexpr xiiColor(float fLinearRed, float fLinearGreen, float fLinearBlue, float fLinearAlpha = 1.0F); // [tested]
 
   /// Initializes this color from a xiiColorLinearUB object.
   ///
@@ -249,7 +249,7 @@ public:
   void SetRGB(float fLinearRed, float fLinearGreen, float fLinearBlue); // [tested]
 
   /// Sets all four RGBA components.
-  void SetRGBA(float fLinearRed, float fLinearGreen, float fLinearBlue, float fLinearAlpha = 1.0f); // [tested]
+  void SetRGBA(float fLinearRed, float fLinearGreen, float fLinearBlue, float fLinearAlpha = 1.0F); // [tested]
 
   // *** Conversion Operators/Functions ***
 public:
@@ -331,7 +331,7 @@ public:
   void NormalizeToLdrRange();
 
   /// Returns a darker color by converting the color to HSV, dividing the *value* by fFactor and converting it back.
-  xiiColor GetDarker(float fFactor = 2.0f) const;
+  xiiColor GetDarker(float fFactor = 2.0F) const;
 
   // *** Numeric properties ***
 public:

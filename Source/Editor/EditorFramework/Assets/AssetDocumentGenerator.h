@@ -28,7 +28,7 @@ class XII_EDITORFRAMEWORK_DLL xiiAssetDocumentGenerator : public xiiReflectedCla
 
 public:
   xiiAssetDocumentGenerator();
-  ~xiiAssetDocumentGenerator();
+  ~xiiAssetDocumentGenerator() override;
 
   /// Describes one option to import an asset.
   ///

@@ -62,7 +62,7 @@ template <xiiInt32 N>
 XII_ALWAYS_INLINE bool xiiSimdVec4f::IsNormalized(const xiiSimdFloat& fEpsilon) const
 {
   const xiiSimdFloat sqLength = GetLengthSquared<N>();
-  return sqLength.IsEqual(1.0f, fEpsilon);
+  return sqLength.IsEqual(1.0F, fEpsilon);
 }
 
 inline xiiSimdFloat xiiSimdVec4f::GetComponent(xiiInt32 i) const

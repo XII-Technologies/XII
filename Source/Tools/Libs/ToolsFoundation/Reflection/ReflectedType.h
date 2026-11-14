@@ -50,7 +50,7 @@ struct XII_TOOLSFOUNDATION_DLL xiiReflectedPropertyDescriptor : public xiiAttrib
   /// Initialize to a constant.
   xiiReflectedPropertyDescriptor(xiiStringView sName, const xiiVariant& constantValue, xiiArrayPtr<const xiiPropertyAttribute* const> attributes); // [tested]
   xiiReflectedPropertyDescriptor(const xiiReflectedPropertyDescriptor& rhs);
-  ~xiiReflectedPropertyDescriptor();
+  ~xiiReflectedPropertyDescriptor() override;
 
   void operator=(const xiiReflectedPropertyDescriptor& rhs);
 
@@ -80,7 +80,7 @@ struct XII_TOOLSFOUNDATION_DLL xiiReflectedFunctionDescriptor : public xiiAttrib
   xiiReflectedFunctionDescriptor(xiiStringView sName, xiiBitflags<xiiPropertyFlags> flags, xiiEnum<xiiFunctionType> type, xiiArrayPtr<const xiiPropertyAttribute* const> attributes);
 
   xiiReflectedFunctionDescriptor(const xiiReflectedFunctionDescriptor& rhs);
-  ~xiiReflectedFunctionDescriptor();
+  ~xiiReflectedFunctionDescriptor() override;
 
   void operator=(const xiiReflectedFunctionDescriptor& rhs);
 
@@ -96,7 +96,7 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_TOOLSFOUNDATION_DLL, xiiReflectedFunctionDescri
 /// Stores the description of a reflected type in a serializable form. Used by xiiPhantomRttiManager to add new types.
 struct XII_TOOLSFOUNDATION_DLL xiiReflectedTypeDescriptor : public xiiAttributeHolder
 {
-  ~xiiReflectedTypeDescriptor();
+  ~xiiReflectedTypeDescriptor() override;
 
   xiiString m_sTypeName;
   xiiString m_sPluginName;

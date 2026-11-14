@@ -17,9 +17,9 @@ public:
   xiiRenderPipelineTextureInputPin  m_InputColor{xiiGALResourceFormat::Unknown, false, xiiGALBindFlags::RenderTarget};
   xiiRenderPipelineTextureInputPin  m_InputDepth;
   xiiRenderPipelineTextureOutputPin m_OutputColor;
-  float                             m_fLineWidth    = 1.0f;
-  float                             m_fMinorOpacity = 0.28f;
-  float                             m_fMajorOpacity = 0.52f;
+  float                             m_fLineWidth    = 1.0F;
+  float                             m_fMinorOpacity = 0.28F;
+  float                             m_fMajorOpacity = 0.52F;
   xiiResult                         Build(xiiRenderPipelinePassContext& context) override;
 
   /// Camera-relative snapshot; computation and storage cost are independent of line count.

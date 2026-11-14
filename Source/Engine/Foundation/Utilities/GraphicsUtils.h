@@ -7,10 +7,10 @@
 namespace xiiGraphicsUtils
 {
   /// Converts a screen-space position from pixel coordinates to normalized coordinates.
-  XII_FOUNDATION_DLL void ConvertScreenPixelPosToNormalizedPos(const xiiUInt32 uiViewportX, const xiiUInt32 uiViewportY, const xiiUInt32 uiViewportWidth, const xiiUInt32 uiViewportHeight, xiiVec3& inout_vPixelPos);
+  XII_FOUNDATION_DLL void ConvertScreenPixelPosToNormalizedPos(xiiUInt32 uiViewportX, xiiUInt32 uiViewportY, xiiUInt32 uiViewportWidth, xiiUInt32 uiViewportHeight, xiiVec3& inout_vPixelPos);
 
   /// Converts a screen-space position from normalized coordinates to pixel coordinates.
-  XII_FOUNDATION_DLL void ConvertScreenNormalizedPosToPixelPos(const xiiUInt32 uiViewportX, const xiiUInt32 uiViewportY, const xiiUInt32 uiViewportWidth, const xiiUInt32 uiViewportHeight, xiiVec3& inout_vNormalizedPos);
+  XII_FOUNDATION_DLL void ConvertScreenNormalizedPosToPixelPos(xiiUInt32 uiViewportX, xiiUInt32 uiViewportY, xiiUInt32 uiViewportWidth, xiiUInt32 uiViewportHeight, xiiVec3& inout_vNormalizedPos);
 
   /// Projects the given point from 3D world space into screen space, if possible.
   ///
@@ -25,7 +25,7 @@ namespace xiiGraphicsUtils
   ///
   /// out_vScreenPos.z is the depth of the point in [0;1] range. The z value is always 'normalized' to this range
   /// (as long as the DepthRange parameter is correct), to make it easier to make subsequent code platform independent.
-  XII_FOUNDATION_DLL xiiResult ConvertWorldPosToScreenPos(const xiiMat4& mModelViewProjection, const xiiUInt32 uiViewportX, const xiiUInt32 uiViewportY, const xiiUInt32 uiViewportWidth, const xiiUInt32 uiViewportHeight, const xiiVec3& vPoint, xiiVec3& out_vScreenPos, xiiClipSpaceDepthRange::Enum depthRange = xiiClipSpaceDepthRange::Default); // [tested]
+  XII_FOUNDATION_DLL xiiResult ConvertWorldPosToScreenPos(const xiiMat4& mModelViewProjection, xiiUInt32 uiViewportX, xiiUInt32 uiViewportY, xiiUInt32 uiViewportWidth, xiiUInt32 uiViewportHeight, const xiiVec3& vPoint, xiiVec3& out_vScreenPos, xiiClipSpaceDepthRange::Enum depthRange = xiiClipSpaceDepthRange::Default); // [tested]
 
   /// Overload of ConvertWorldPosToScreenPos() that returns the screen position in normalized space ([0; 1] range) and therefore doesn't require the viewport dimensions.
   XII_FOUNDATION_DLL xiiResult ConvertWorldPosToScreenPos(const xiiMat4& mModelViewProjection, const xiiVec3& vPoint, xiiVec3& out_vScreenPosNormalized, xiiClipSpaceDepthRange::Enum depthRange = xiiClipSpaceDepthRange::Default); // [tested]
@@ -51,13 +51,13 @@ namespace xiiGraphicsUtils
   ///
   /// vScreenPixelPos is expected to be in range [viewport x/y; viewport width/height]. There is an overload below that takes just a normalized value
   /// in range [0; 1].
-  XII_FOUNDATION_DLL xiiResult ConvertScreenPosToWorldPos(const xiiMat4& mInverseModelViewProjection, const xiiUInt32 uiViewportX, const xiiUInt32 uiViewportY, const xiiUInt32 uiViewportWidth, const xiiUInt32 uiViewportHeight, const xiiVec3& vScreenPixelPos, xiiVec3& out_vPoint, xiiVec3* out_pDirection = nullptr, xiiClipSpaceDepthRange::Enum depthRange = xiiClipSpaceDepthRange::Default); // [tested]
+  XII_FOUNDATION_DLL xiiResult ConvertScreenPosToWorldPos(const xiiMat4& mInverseModelViewProjection, xiiUInt32 uiViewportX, xiiUInt32 uiViewportY, xiiUInt32 uiViewportWidth, xiiUInt32 uiViewportHeight, const xiiVec3& vScreenPixelPos, xiiVec3& out_vPoint, xiiVec3* out_pDirection = nullptr, xiiClipSpaceDepthRange::Enum depthRange = xiiClipSpaceDepthRange::Default); // [tested]
 
   /// Overload of ConvertScreenPosToWorldPos() that takes the coordinate in normalized space ([0; 1]) and therefore doesn't require the viewport dimensions.
   XII_FOUNDATION_DLL xiiResult ConvertScreenPosToWorldPos(const xiiMat4& mInverseModelViewProjection, const xiiVec3& vNormalizedScreenPos, xiiVec3& out_vPoint, xiiVec3* out_pDirection = nullptr, xiiClipSpaceDepthRange::Enum depthRange = xiiClipSpaceDepthRange::Default); // [tested]
 
   /// A double-precision version of ConvertScreenPosToWorldPos()
-  XII_FOUNDATION_DLL xiiResult ConvertScreenPosToWorldPos(const xiiMat4d& mInverseModelViewProjection, const xiiUInt32 uiViewportX, const xiiUInt32 uiViewportY, const xiiUInt32 uiViewportWidth, const xiiUInt32 uiViewportHeight, const xiiVec3& vScreenPixelPos, xiiVec3& out_vPoint, xiiVec3* out_pDirection = nullptr, xiiClipSpaceDepthRange::Enum depthRange = xiiClipSpaceDepthRange::Default); // [tested]
+  XII_FOUNDATION_DLL xiiResult ConvertScreenPosToWorldPos(const xiiMat4d& mInverseModelViewProjection, xiiUInt32 uiViewportX, xiiUInt32 uiViewportY, xiiUInt32 uiViewportWidth, xiiUInt32 uiViewportHeight, const xiiVec3& vScreenPixelPos, xiiVec3& out_vPoint, xiiVec3* out_pDirection = nullptr, xiiClipSpaceDepthRange::Enum depthRange = xiiClipSpaceDepthRange::Default); // [tested]
 
   /// Double-precision overload of ConvertScreenPosToWorldPos() that takes the coordinate in normalized space ([0; 1]) and therefore doesn't require the viewport dimensions.
   XII_FOUNDATION_DLL xiiResult ConvertScreenPosToWorldPos(const xiiMat4d& mInverseModelViewProjection, const xiiVec3& vNormalizedScreenPos, xiiVec3& out_vPoint, xiiVec3* out_pDirection = nullptr, xiiClipSpaceDepthRange::Enum depthRange = xiiClipSpaceDepthRange::Default); // [tested]
@@ -184,7 +184,7 @@ namespace xiiGraphicsUtils
   inline float CalculateSphereScreenCoverage(const xiiBoundingSphere& sphere, const xiiVec3& vCameraPosition, xiiAngle perspectiveCameraFov)
   {
     const float fDist       = (sphere.m_vCenter - vCameraPosition).GetLength();
-    const float fHalfHeight = xiiMath::Tan(perspectiveCameraFov * 0.5f) * fDist;
+    const float fHalfHeight = xiiMath::Tan(perspectiveCameraFov * 0.5F) * fDist;
     return sphere.m_fRadius / fHalfHeight;
   }
 
@@ -200,7 +200,7 @@ namespace xiiGraphicsUtils
   /// Typically the 'fixed' dimension is used (usually Y) since the other one depends on the window size.
   inline float CalculateSphereScreenCoverage(float fSphereRadius, float fOrthoCameraDimensions)
   {
-    const float fHalfHeight = fOrthoCameraDimensions * 0.5f;
+    const float fHalfHeight = fOrthoCameraDimensions * 0.5F;
     return fSphereRadius / fHalfHeight;
   }
 

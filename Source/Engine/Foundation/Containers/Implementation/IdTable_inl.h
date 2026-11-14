@@ -7,7 +7,9 @@ xiiIdTableBase<IdType, ValueType>::ConstIterator::ConstIterator(const xiiIdTable
   m_IdTable(idTable), m_CurrentIndex(0), m_CurrentCount(0)
 {
   if (m_IdTable.IsEmpty())
+  {
     return;
+  }
 
   while (m_IdTable.m_pEntries[m_CurrentIndex].id.m_InstanceIndex != m_CurrentIndex)
   {
@@ -44,7 +46,9 @@ void xiiIdTableBase<IdType, ValueType>::ConstIterator::Next()
 {
   ++m_CurrentCount;
   if (m_CurrentCount == m_IdTable.m_Count)
+  {
     return;
+  }
 
   do
   {
@@ -140,7 +144,9 @@ template <typename IdType, typename ValueType>
 void xiiIdTableBase<IdType, ValueType>::Reserve(IndexType capacity)
 {
   if (m_Capacity >= capacity + CAPACITY_ALIGNMENT)
+  {
     return;
+  }
 
   const xiiUInt64 uiCurCap64      = static_cast<xiiUInt64>(this->m_Capacity);
   xiiUInt64       uiNewCapacity64 = uiCurCap64 + (uiCurCap64 / 2);
@@ -148,7 +154,7 @@ void xiiIdTableBase<IdType, ValueType>::Reserve(IndexType capacity)
   uiNewCapacity64 = xiiMath::Max<xiiUInt64>(uiNewCapacity64, capacity + CAPACITY_ALIGNMENT);
 
   // the maximum value must leave room for the capacity alignment computation below (without overflowing the 32 bit range)
-  uiNewCapacity64 = xiiMath::Min<xiiUInt64>(uiNewCapacity64, 0xFFFFFFFFllu - (CAPACITY_ALIGNMENT - 1));
+  uiNewCapacity64 = xiiMath::Min<xiiUInt64>(uiNewCapacity64, 0xFFFFFFFFLLU - (CAPACITY_ALIGNMENT - 1));
 
   uiNewCapacity64 = (uiNewCapacity64 + (CAPACITY_ALIGNMENT - 1)) & ~(CAPACITY_ALIGNMENT - 1);
 
@@ -230,7 +236,9 @@ bool xiiIdTableBase<IdType, ValueType>::TryInsert(const ValueType& value, IndexT
   out_id.Invalidate();
   const auto index = AcquireBoundedIndex(uiIndexLimit);
   if (index == IndexType(-1))
+  {
     return false;
+  }
   Entry& entry = m_pEntries[index];
   xiiMemoryUtils::CopyConstruct(&entry.value, value, 1);
   ++m_Count;
@@ -244,7 +252,9 @@ bool xiiIdTableBase<IdType, ValueType>::TryInsert(ValueType&& value, IndexType u
   out_id.Invalidate();
   const auto index = AcquireBoundedIndex(uiIndexLimit);
   if (index == IndexType(-1))
+  {
     return false;
+  }
   Entry& entry = m_pEntries[index];
   xiiMemoryUtils::MoveConstruct<ValueType>(&entry.value, std::move(value));
   ++m_Count;
@@ -258,9 +268,13 @@ typename xiiIdTableBase<IdType, ValueType>::IndexType xiiIdTableBase<IdType, Val
   // Retain the free-list sentinel space without extending the usable ID range.
   const xiiUInt64 required = (static_cast<xiiUInt64>(uiIndexLimit) + CAPACITY_ALIGNMENT * 2U - 1U) & ~xiiUInt64(CAPACITY_ALIGNMENT - 1U);
   if (uiIndexLimit == 0U || required > IdType::INVALID_INSTANCE_INDEX)
+  {
     return IndexType(-1);
+  }
   if (m_Capacity < required)
+  {
     SetCapacity(static_cast<IndexType>(required));
+  }
 
   IndexType previous = IndexType(-1);
   IndexType index    = m_FreelistDequeue;
@@ -270,15 +284,23 @@ typename xiiIdTableBase<IdType, ValueType>::IndexType xiiIdTableBase<IdType, Val
     index    = m_pEntries[index].id.m_InstanceIndex;
   }
   if (index >= m_Capacity)
+  {
     return IndexType(-1);
+  }
   Entry&          entry = m_pEntries[index];
   const IndexType next  = entry.id.m_InstanceIndex;
   if (previous == IndexType(-1))
+  {
     m_FreelistDequeue = next;
+  }
   else
+  {
     m_pEntries[previous].id.m_InstanceIndex = static_cast<decltype(entry.id.m_InstanceIndex)>(next);
+  }
   if (m_FreelistEnqueue == index)
+  {
     m_FreelistEnqueue = previous;
+  }
   entry.id.m_InstanceIndex = static_cast<decltype(entry.id.m_InstanceIndex)>(index);
   return index;
 }
@@ -287,12 +309,16 @@ template <typename IdType, typename ValueType>
 bool xiiIdTableBase<IdType, ValueType>::Remove(const IdType id, ValueType* out_pOldValue /*= nullptr*/)
 {
   if (m_Capacity <= id.m_InstanceIndex)
+  {
     return false;
+  }
 
   const IndexType uiIndex = id.m_InstanceIndex;
   Entry&          entry   = m_pEntries[uiIndex];
   if (!entry.id.IsIndexAndGenerationEqual(id))
+  {
     return false;
+  }
 
   if (out_pOldValue != nullptr)
   {
@@ -344,11 +370,11 @@ XII_FORCE_INLINE bool xiiIdTableBase<IdType, ValueType>::TryGetValue(const IdTyp
 template <typename IdType, typename ValueType>
 XII_FORCE_INLINE const ValueType& xiiIdTableBase<IdType, ValueType>::operator[](const IdType id) const
 {
-  XII_ASSERT_DEBUG(id.m_InstanceIndex < m_Capacity, "Out of bounds access. Table has {0} elements, trying to access element at index {1}.", m_Capacity, id.m_InstanceIndex);
+  XII_ASSERT_DEBUG(id.m_InstanceIndex < m_Capacity, "Out of bounds access. Table has {0} elements, trying to access element at index {1}.", m_Capacity, static_cast<IndexType>(id.m_InstanceIndex));
 
   const Entry& entry = m_pEntries[id.m_InstanceIndex];
 
-  XII_ASSERT_DEBUG(entry.id.IsIndexAndGenerationEqual(id), "Stale access. Trying to access a value (generation: {0}) that has been removed and replaced by a new value (generation: {1})", entry.id.m_Generation, id.m_Generation);
+  XII_ASSERT_DEBUG(entry.id.IsIndexAndGenerationEqual(id), "Stale access. Trying to access a value (generation: {0}) that has been removed and replaced by a new value (generation: {1})", static_cast<IndexType>(entry.id.m_Generation), static_cast<IndexType>(id.m_Generation));
 
   return entry.value;
 }
@@ -356,11 +382,11 @@ XII_FORCE_INLINE const ValueType& xiiIdTableBase<IdType, ValueType>::operator[](
 template <typename IdType, typename ValueType>
 XII_FORCE_INLINE ValueType& xiiIdTableBase<IdType, ValueType>::operator[](const IdType id)
 {
-  XII_ASSERT_DEBUG(id.m_InstanceIndex < m_Capacity, "Out of bounds access. Table has {0} elements, trying to access element at index {1}.", m_Capacity, id.m_InstanceIndex);
+  XII_ASSERT_DEBUG(id.m_InstanceIndex < m_Capacity, "Out of bounds access. Table has {0} elements, trying to access element at index {1}.", m_Capacity, static_cast<IndexType>(id.m_InstanceIndex));
 
   Entry& entry = m_pEntries[id.m_InstanceIndex];
 
-  XII_ASSERT_DEBUG(entry.id.IsIndexAndGenerationEqual(id), "Stale access. Trying to access a value (generation: {0}) that has been removed and replaced by a new value (generation: {1})", static_cast<xiiInt32>(entry.id.m_Generation), id.m_Generation);
+  XII_ASSERT_DEBUG(entry.id.IsIndexAndGenerationEqual(id), "Stale access. Trying to access a value (generation: {0}) that has been removed and replaced by a new value (generation: {1})", static_cast<IndexType>(entry.id.m_Generation), static_cast<IndexType>(id.m_Generation));
 
   return entry.value;
 }
@@ -408,7 +434,9 @@ template <typename IdType, typename ValueType>
 bool xiiIdTableBase<IdType, ValueType>::IsFreelistValid() const
 {
   if (m_pEntries == nullptr)
+  {
     return true;
+  }
 
   IndexType    uiIndex = m_FreelistDequeue;
   const Entry* pEntry  = m_pEntries + uiIndex;

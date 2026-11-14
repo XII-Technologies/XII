@@ -47,7 +47,7 @@ public:
 
   /// Log events will be delegated to the given callback.
   xiiLogEntryDelegate(Callback callback, xiiLogMsgType::Enum logLevel = xiiLogMsgType::All);
-  virtual void HandleLogMessage(const xiiLoggingEventData& le) override;
+  void HandleLogMessage(const xiiLoggingEventData& le) override;
 
 private:
   Callback m_Callback;

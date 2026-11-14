@@ -29,9 +29,9 @@ public:
   xiiArrayPtr<const xiiGALPermutationVariable> GetFixedPermutationVariables() const { return m_FixedPermutationVariables; }
 
 private:
-  virtual xiiResourceLoadDescription UnloadData(Unload WhatToUnload) override;
-  virtual xiiResourceLoadDescription UpdateContent(xiiStreamReader* pStream) override;
-  virtual void                       UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage) override;
+  xiiResourceLoadDescription UnloadData(Unload WhatToUnload) override;
+  xiiResourceLoadDescription UpdateContent(xiiStreamReader* pStream) override;
+  void                       UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage) override;
 
 private:
   xiiHybridArray<xiiHashedString, 16>           m_PermutationVariablesUsed;

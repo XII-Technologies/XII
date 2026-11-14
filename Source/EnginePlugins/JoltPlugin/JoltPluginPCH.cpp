@@ -5,7 +5,9 @@
 XII_STATICLINK_LIBRARY(JoltPlugin)
 {
   if (bReturn)
+  {
     return;
+  }
 
   XII_STATICLINK_REFERENCE(JoltPlugin_Startup);
   XII_STATICLINK_REFERENCE(JoltPlugin_System_Implementation_JoltCollisionLayerConfig);

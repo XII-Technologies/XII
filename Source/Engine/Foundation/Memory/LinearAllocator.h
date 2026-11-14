@@ -38,10 +38,10 @@ class xiiLinearAllocator : public xiiAllocatorWithPolicy<xiiAllocationPolicyLine
 
 public:
   xiiLinearAllocator(xiiStringView sName, xiiAllocator* pParent, xiiUInt32 uiInitialSize);
-  ~xiiLinearAllocator();
+  ~xiiLinearAllocator() override;
 
-  virtual void* Allocate(size_t uiSize, size_t uiAlign, xiiMemoryUtils::DestructorFunction destructorFunc) override;
-  virtual void  Deallocate(void* pPtr) override;
+  void* Allocate(size_t uiSize, size_t uiAlign, xiiMemoryUtils::DestructorFunction destructorFunc) override;
+  void  Deallocate(void* pPtr) override;
 
   /// Resets the allocator, freeing all memory and calling destructors.
   ///

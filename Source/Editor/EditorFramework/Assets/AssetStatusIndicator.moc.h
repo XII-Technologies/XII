@@ -17,7 +17,7 @@ class XII_EDITORFRAMEWORK_DLL xiiQtAssetStatusIndicator : public QFrame
 
 public:
   xiiQtAssetStatusIndicator(xiiAssetDocument* pDoc, QWidget* pParent = nullptr);
-  ~xiiQtAssetStatusIndicator();
+  ~xiiQtAssetStatusIndicator() override;
 
 private Q_SLOTS:
   void onClick(bool);

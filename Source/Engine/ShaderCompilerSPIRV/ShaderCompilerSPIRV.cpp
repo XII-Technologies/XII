@@ -313,7 +313,9 @@ xiiResult xiiShaderCompilerSPIRV::Compile(xiiGALShaderProgramData& inout_data, x
     const auto& stageData = it.Value();
 
     if (stageData.m_uiSourceHash == 0)
+    {
       continue;
+    }
 
     if (stageData.m_bWriteToDisk == false)
     {
@@ -470,7 +472,9 @@ xiiResult xiiShaderCompilerSPIRV::ModifyShaderSource(xiiGALShaderProgramData& in
     auto& value = it.Value();
 
     if (value.m_sShaderSource.IsEmpty())
+    {
       continue;
+    }
 
     xiiGALShaderParser::ApplyShaderResourceBindings(inout_data.m_sPlatform, value.m_sShaderSource, value.m_Resources, bindings, xiiMakeDelegate(&xiiShaderCompilerSPIRV::CreateNewShaderResourceDeclaration, this), sNewShaderCode);
 
@@ -490,7 +494,9 @@ xiiResult xiiShaderCompilerSPIRV::DefineShaderResourceBindings(const xiiGALShade
   {
     xiiUInt32& uiDescriptorSet = it.Value().m_uiDescriptorSet;
     if (uiDescriptorSet == xiiInvalidIndex)
+    {
       uiDescriptorSet = 0;
+    }
 
     slotInUseInSet.EnsureCount(uiDescriptorSet + 1);
 
@@ -510,7 +516,9 @@ xiiResult xiiShaderCompilerSPIRV::DefineShaderResourceBindings(const xiiGALShade
     const auto& stageData = it.Value();
 
     if (stageData.m_sShaderSource.IsEmpty())
+    {
       continue;
+    }
 
     for (const auto& res : stageData.m_Resources)
     {
@@ -538,17 +546,23 @@ xiiResult xiiShaderCompilerSPIRV::DefineShaderResourceBindings(const xiiGALShade
       const auto& textureAndSampler = itSampler.Value();
 
       if (textureAndSampler.m_Type != xiiGALShaderResourceType::Sampler || !textureAndSampler.m_sName.GetView().EndsWith("_AutoSampler"))
+      {
         continue;
+      }
 
       xiiStringBuilder sb = textureAndSampler.m_sName.GetView();
       sb.TrimWordEnd("_AutoSampler");
 
       auto itTexture = inout_resourceBinding.Find(xiiTempHashedString(sb));
       if (!itTexture.IsValid())
+      {
         continue;
+      }
 
       if (textureAndSampler.m_uiDescriptorSet != itTexture.Value().m_uiDescriptorSet || textureAndSampler.m_uiBindIndex != itTexture.Value().m_uiBindIndex)
+      {
         continue;
+      }
 
       itSampler.Value().m_Type = xiiGALShaderResourceType::TextureAndSampler;
       itTexture.Value().m_Type = xiiGALShaderResourceType::TextureAndSampler;
@@ -744,7 +758,9 @@ xiiResult xiiShaderCompilerSPIRV::ReflectShaderStage(xiiGALShaderProgramData& in
       shaderResourceBinding.m_sName.Assign(descriptorBinding.name);
 
       if (FillResourceBinding(shaderResourceBinding, descriptorBinding).Failed())
+      {
         continue;
+      }
 
       XII_ASSERT_DEV(shaderResourceBinding.m_Type != xiiGALShaderResourceType::Unknown, "FillResourceBinding should have failed.");
 
@@ -960,9 +976,13 @@ xiiResult xiiShaderCompilerSPIRV::ReflectConstantBufferLayout(xiiGALShaderResour
       uiFlags &= ~SpvReflectTypeFlagBits::SPV_REFLECT_TYPE_FLAG_MATRIX;
 
       if (memberBlock.decoration_flags & SpvReflectDecorationFlagBits::SPV_REFLECT_DECORATION_ROW_MAJOR)
+      {
         memberDescription.m_Class = xiiGALShaderVariableClassType::MatrixRows;
+      }
       else if (memberBlock.decoration_flags & SpvReflectDecorationFlagBits::SPV_REFLECT_DECORATION_COLUMN_MAJOR)
+      {
         memberDescription.m_Class = xiiGALShaderVariableClassType::MatrixColumns;
+      }
 
       XII_ASSERT_DEV(memberDescription.m_PrimitiveType != xiiGALShaderPrimitiveType::Unknown, "Expected a known shader variable primitive type.");
 

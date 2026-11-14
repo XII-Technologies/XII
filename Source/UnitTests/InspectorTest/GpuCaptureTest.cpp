@@ -17,7 +17,9 @@ XII_CREATE_SIMPLE_TEST(Inspector, GpuExecutionAndGraphIsolation)
 {
   xiiGPUTestingEnvironment environment;
   if (!XII_TEST_RESULT(environment.Initialize()))
+  {
     return;
+  }
   auto* device = environment.GetDevice();
   XII_SCOPE_EXIT(environment.Shutdown());
   xiiRenderGraphResourceCache     cache(environment.GetDeviceShared());
@@ -27,7 +29,8 @@ XII_CREATE_SIMPLE_TEST(Inspector, GpuExecutionAndGraphIsolation)
   xiiRenderGraphBlackboard                                                          blackboard;
   xiiUInt32                                                                         eventCount     = 0;
   xiiUInt64                                                                         recordingFrame = 0;
-  xiiUInt32                                                                         resolvedPasses = 0, resolvedSubmissions = 0;
+  xiiUInt32                                                                         resolvedPasses      = 0;
+  xiiUInt32                                                                         resolvedSubmissions = 0;
   xiiEvent<const xiiRenderGraphTimestampProfiler::TimingSample&, xiiMutex>::Handler timingHandler = [&](const xiiRenderGraphTimestampProfiler::TimingSample& sample) {
     XII_TEST_BOOL(sample.m_uiFrameIndex < recordingFrame);
     XII_TEST_BOOL(sample.m_uiGraphId == graphs[0].GetInstanceId() || sample.m_uiGraphId == graphs[1].GetInstanceId());
@@ -41,7 +44,9 @@ XII_CREATE_SIMPLE_TEST(Inspector, GpuExecutionAndGraphIsolation)
         ++resolvedSubmissions;
       }
       else
+      {
         ++resolvedPasses;
+      }
     }
   };
   auto timingSubscription = xiiRenderGraphTimestampProfiler::s_TimingEvents.AddEventHandler(timingHandler);
@@ -91,7 +96,9 @@ XII_CREATE_SIMPLE_TEST(Inspector, GpuExecutionAndGraphIsolation)
   }
   XII_TEST_INT(eventCount, 16);
   if (device->GetFeatures().m_DurationQueries == xiiGALDeviceFeatureState::Enabled)
+  {
     XII_TEST_BOOL(resolvedPasses > 0 && resolvedSubmissions > 0);
+  }
   XII_TEST_BOOL(captures[0]["instance"] != captures[1]["instance"]);
   for (int i = 0; i < 2; ++i)
   {

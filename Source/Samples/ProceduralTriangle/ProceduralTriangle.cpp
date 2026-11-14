@@ -60,7 +60,7 @@ public:
   {
   }
 
-  virtual Execution Run() override
+  Execution Run() override
   {
     {
       xiiStringBuilder sCmdHelp;
@@ -94,7 +94,9 @@ public:
     xiiInputManager::Update(xiiClock::GetGlobalClock()->GetTimeDiff());
 
     if (WasQuitRequested() || xiiInputManager::GetInputActionState("Main", "CloseApp") == xiiKeyState::Pressed)
+    {
       return Execution::Quit;
+    }
 
     if (xiiInputManager::GetInputActionState("Main", "Pause") == xiiKeyState::Pressed)
     {
@@ -114,39 +116,39 @@ public:
     }
     if (xiiInputManager::GetInputActionState("Main", "ResetCamera") == xiiKeyState::Pressed)
     {
-      m_SceneState.m_fCameraYaw   = 0.0f;
-      m_SceneState.m_fCameraPitch = 0.0f;
+      m_SceneState.m_fCameraYaw   = 0.0F;
+      m_SceneState.m_fCameraPitch = 0.0F;
     }
 
     // Clamp giant debugging/resize deltas so a single stalled frame cannot jump the scene across several animation phases.
-    const float fDelta = (fFrameDelta < 0.1f) ? fFrameDelta : 0.1f;
+    const float fDelta = (fFrameDelta < 0.1F) ? fFrameDelta : 0.1F;
     if (!m_SceneState.m_bPaused)
     {
       m_SceneState.m_fSceneTime += fDelta;
     }
     if (xiiInputManager::GetInputActionState("Main", "OrbitLeft") == xiiKeyState::Down)
     {
-      m_SceneState.m_fCameraYaw -= fDelta * 0.85f;
+      m_SceneState.m_fCameraYaw -= fDelta * 0.85F;
     }
     if (xiiInputManager::GetInputActionState("Main", "OrbitRight") == xiiKeyState::Down)
     {
-      m_SceneState.m_fCameraYaw += fDelta * 0.85f;
+      m_SceneState.m_fCameraYaw += fDelta * 0.85F;
     }
     if (xiiInputManager::GetInputActionState("Main", "OrbitUp") == xiiKeyState::Down)
     {
-      m_SceneState.m_fCameraPitch += fDelta * 0.40f;
+      m_SceneState.m_fCameraPitch += fDelta * 0.40F;
     }
     if (xiiInputManager::GetInputActionState("Main", "OrbitDown") == xiiKeyState::Down)
     {
-      m_SceneState.m_fCameraPitch -= fDelta * 0.40f;
+      m_SceneState.m_fCameraPitch -= fDelta * 0.40F;
     }
-    if (m_SceneState.m_fCameraPitch > 0.9f)
+    if (m_SceneState.m_fCameraPitch > 0.9F)
     {
-      m_SceneState.m_fCameraPitch = 0.9f;
+      m_SceneState.m_fCameraPitch = 0.9F;
     }
-    if (m_SceneState.m_fCameraPitch < -0.9f)
+    if (m_SceneState.m_fCameraPitch < -0.9F)
     {
-      m_SceneState.m_fCameraPitch = -0.9f;
+      m_SceneState.m_fCameraPitch = -0.9F;
     }
 
     // Reload resources if modified
@@ -221,7 +223,7 @@ public:
     return Execution::Continue;
   }
 
-  virtual void AfterCoreSystemsStartup() override
+  void AfterCoreSystemsStartup() override
   {
     xiiStringBuilder sProjectDir = ">sdk/Data/Samples/ProceduralTriangle";
 
@@ -384,14 +386,14 @@ public:
     XII_ASSERT_DEV(!m_hRenderGraph.IsInvalidated(), "Failed to create procedural triangle render graph.");
   }
 
-  virtual void BeforeCoreSystemsShutdown() override
+  void BeforeCoreSystemsShutdown() override
   {
     xiiPlugin::UnloadAllPlugins();
 
     SUPER::BeforeCoreSystemsShutdown();
   }
 
-  virtual void BeforeHighLevelSystemsShutdown() override
+  void BeforeHighLevelSystemsShutdown() override
   {
     xiiTelemetry::CloseConnection();
 
@@ -434,7 +436,7 @@ public:
       swapChainDescription.m_UsageFlags            = xiiGALSwapChainUsageFlags::RenderTarget;
       swapChainDescription.m_PreTransform          = xiiGALSurfaceTransform::Optimal;
       swapChainDescription.m_uiBufferCount         = 2U;
-      swapChainDescription.m_fDefaultDepthValue    = 1.0f;
+      swapChainDescription.m_fDefaultDepthValue    = 1.0F;
       swapChainDescription.m_uiDefaultStencilValue = 0U;
 
       m_pSwapChain = m_pDevice->CreateSwapChain(swapChainDescription);
@@ -588,15 +590,15 @@ private:
         // Map the constant buffer and write the data for this frame. The render graph will ensure proper synchronization so that the GPU is not still reading from it when we write to it.
         xiiGALMapHelper<xiiProceduralTriangleConstants> pConstants(cmd, context.GetBuffer(data.m_hTriangleConstantBuffer), xiiGALMapType::Write, xiiGALMapFlags::Discard);
 
-        pConstants->fTime             = xiiMath::Mod(m_SceneState.m_fSceneTime, 1000.0f);
+        pConstants->fTime             = xiiMath::Mod(m_SceneState.m_fSceneTime, 1000.0F);
         pConstants->vResolution       = xiiVec2::Make((float)framebufferSize.width, (float)framebufferSize.height);
-        pConstants->fWireWidth        = 1.15f;
-        pConstants->vSceneParameters  = xiiVec4((float)m_SceneState.m_uiPalette, (float)m_SceneState.m_uiQuality, 1.20f, m_SceneState.m_bHUD ? 1.0f : 0.0f);
-        pConstants->vCameraParameters = xiiVec4(m_SceneState.m_fCameraYaw, m_SceneState.m_fCameraPitch, 5.4f, 0.0f);
+        pConstants->fWireWidth        = 1.15F;
+        pConstants->vSceneParameters  = xiiVec4((float)m_SceneState.m_uiPalette, (float)m_SceneState.m_uiQuality, 1.20F, m_SceneState.m_bHUD ? 1.0F : 0.0F);
+        pConstants->vCameraParameters = xiiVec4(m_SceneState.m_fCameraYaw, m_SceneState.m_fCameraPitch, 5.4F, 0.0F);
       }
       cmd.BeginRenderPass({data.m_pRenderPass.Borrow(), pFramebuffer}); // Begin a render pass on the offscreen framebuffer we created, which will also perform the necessary resource transitions for the offscreen texture and depth buffer.
       {
-        cmd.SetViewport(xiiRectFloat(0.0f, 0.0f, (float)framebufferSize.width, (float)framebufferSize.height)); // Set the viewport to cover the entire render target.
+        cmd.SetViewport(xiiRectFloat(0.0F, 0.0F, (float)framebufferSize.width, (float)framebufferSize.height)); // Set the viewport to cover the entire render target.
 
         if (pPipelineState)
         {
@@ -663,9 +665,9 @@ private:
 
   struct
   {
-    float     m_fSceneTime   = 0.0f;  ///< The scene time is used to animate the procedural triangle shader. It is updated every frame based on the delta time and can be paused with the space bar.
-    float     m_fCameraYaw   = 0.0f;  ///< The camera yaw is used to orbit the camera around the procedural triangle. It is updated every frame based on the input from the WASD keys and can be reset with the R key.
-    float     m_fCameraPitch = 0.0f;  ///< The camera pitch is used to orbit the camera around the procedural triangle. It is updated every frame based on the input from the WASD keys and can be reset with the R key.
+    float     m_fSceneTime   = 0.0F;  ///< The scene time is used to animate the procedural triangle shader. It is updated every frame based on the delta time and can be paused with the space bar.
+    float     m_fCameraYaw   = 0.0F;  ///< The camera yaw is used to orbit the camera around the procedural triangle. It is updated every frame based on the input from the WASD keys and can be reset with the R key.
+    float     m_fCameraPitch = 0.0F;  ///< The camera pitch is used to orbit the camera around the procedural triangle. It is updated every frame based on the input from the WASD keys and can be reset with the R key.
     xiiUInt32 m_uiPalette    = 0U;    ///< The palette index is used to select the color palette for the procedural triangle shader. It can be changed with the C key.
     xiiUInt32 m_uiQuality    = 1U;    ///< The quality index is used to select the quality level for the procedural triangle shader. It can be changed with the Q key.
     bool      m_bPaused      = false; ///< The paused flag is used to pause the scene time and the camera orbiting. It can be toggled with the space bar.

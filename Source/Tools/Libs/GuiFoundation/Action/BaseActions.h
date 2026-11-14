@@ -26,7 +26,9 @@ public:
     m_sAdditionalDisplayString = sString;
 
     if (bTriggerUpdate)
+    {
       TriggerUpdate();
+    }
   }
 
   xiiStringView GetIconPath() const { return m_sIconPath; }
@@ -49,7 +51,7 @@ public:
   {
   }
 
-  virtual void Execute(const xiiVariant& value) override {};
+  void Execute(const xiiVariant& value) override {};
 };
 
 /// An action that represents a sub-menu. Can be within a menu bar, or the menu of a tool button).
@@ -66,7 +68,7 @@ public:
   {
   }
 
-  virtual void Execute(const xiiVariant& value) override {};
+  void Execute(const xiiVariant& value) override {};
 };
 
 /// A menu action whose content is determined when opening the menu.
@@ -135,7 +137,9 @@ public:
   {
     m_bEnabled = bEnable;
     if (bTriggerUpdate)
+    {
       TriggerUpdate();
+    }
   }
 
   bool IsVisible() const { return m_bVisible; }
@@ -143,7 +147,9 @@ public:
   {
     m_bVisible = bVisible;
     if (bTriggerUpdate)
+    {
       TriggerUpdate();
+    }
   }
 
 protected:
@@ -159,7 +165,7 @@ class XII_GUIFOUNDATION_DLL xiiEnumerationMenuAction : public xiiDynamicMenuActi
 public:
   xiiEnumerationMenuAction(const xiiActionContext& context, xiiStringView sName, xiiStringView sIconPath);
   void             InitEnumerationType(const xiiRTTI* pEnumerationType);
-  virtual void     GetEntries(xiiDynamicArray<Item>& out_entries) override;
+  void             GetEntries(xiiDynamicArray<Item>& out_entries) override;
   virtual xiiInt64 GetValue() const = 0;
 
 protected:
@@ -179,7 +185,9 @@ public:
   {
     m_bEnabled = bEnable;
     if (bTriggerUpdate)
+    {
       TriggerUpdate();
+    }
   }
 
   bool IsCheckable() const { return m_bCheckable; }
@@ -187,7 +195,9 @@ public:
   {
     m_bCheckable = bCheckable;
     if (bTriggerUpdate)
+    {
       TriggerUpdate();
+    }
   }
 
   bool IsChecked() const { return m_bChecked; }
@@ -195,7 +205,9 @@ public:
   {
     m_bChecked = bChecked;
     if (bTriggerUpdate)
+    {
       TriggerUpdate();
+    }
   }
 
   bool IsVisible() const { return m_bVisible; }
@@ -203,7 +215,9 @@ public:
   {
     m_bVisible = bVisible;
     if (bTriggerUpdate)
+    {
       TriggerUpdate();
+    }
   }
 
 protected:
@@ -226,7 +240,9 @@ public:
   {
     m_bEnabled = bEnable;
     if (bTriggerUpdate)
+    {
       TriggerUpdate();
+    }
   }
 
   bool IsVisible() const { return m_bVisible; }
@@ -234,7 +250,9 @@ public:
   {
     m_bVisible = bVisible;
     if (bTriggerUpdate)
+    {
       TriggerUpdate();
+    }
   }
 
   void GetRange(xiiInt32& out_iMin, xiiInt32& out_iMax) const

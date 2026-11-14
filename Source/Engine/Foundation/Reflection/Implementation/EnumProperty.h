@@ -27,12 +27,12 @@ public:
   /// \note Make sure the property is not read-only before calling this, otherwise an assert will fire.
   virtual void SetValue(void* pInstance, xiiInt64 value) const = 0;
 
-  virtual void GetValuePtr(const void* pInstance, void* pObject) const override
+  void GetValuePtr(const void* pInstance, void* pObject) const override
   {
     *static_cast<xiiInt64*>(pObject) = GetValue(pInstance);
   }
 
-  virtual void SetValuePtr(void* pInstance, const void* pObject) const override
+  void SetValuePtr(void* pInstance, const void* pObject) const override
   {
     SetValue(pInstance, *static_cast<const xiiInt64*>(pObject));
   }
@@ -52,7 +52,7 @@ public:
 
   /// Returns the actual type of the property. You can then test whether it derives from xiiEnumBase or
   ///  xiiBitflagsBase to determine whether we are dealing with an enum or bitflags property.
-  virtual const xiiRTTI* GetSpecificType() const override // [tested]
+  const xiiRTTI* GetSpecificType() const override // [tested]
   {
     return xiiGetStaticRTTI<typename xiiTypeTraits<EnumType>::NonConstReferenceType>();
   }
@@ -79,10 +79,12 @@ public:
     m_Setter = setter;
 
     if (m_Setter == nullptr)
+    {
       xiiAbstractMemberProperty::m_Flags.Add(xiiPropertyFlags::ReadOnly);
+    }
   }
 
-  virtual void* GetPropertyPointer(const void* pInstance) const override
+  void* GetPropertyPointer(const void* pInstance) const override
   {
     XII_IGNORE_UNUSED(pInstance);
 
@@ -90,17 +92,19 @@ public:
     return nullptr;
   }
 
-  virtual xiiInt64 GetValue(const void* pInstance) const override // [tested]
+  xiiInt64 GetValue(const void* pInstance) const override // [tested]
   {
     xiiEnum<EnumType> enumTemp = (static_cast<const Class*>(pInstance)->*m_Getter)();
     return enumTemp.GetValue();
   }
 
-  virtual void SetValue(void* pInstance, xiiInt64 value) const override // [tested]
+  void SetValue(void* pInstance, xiiInt64 value) const override // [tested]
   {
     XII_ASSERT_DEV(m_Setter != nullptr, "The property '{0}' has no setter function, thus it is read-only.", xiiAbstractProperty::GetPropertyName());
     if (m_Setter)
+    {
       (static_cast<Class*>(pInstance)->*m_Setter)((typename EnumType::Enum)value);
+    }
   }
 
 private:
@@ -130,23 +134,27 @@ public:
     m_Pointer = pointer;
 
     if (m_Setter == nullptr)
+    {
       xiiAbstractMemberProperty::m_Flags.Add(xiiPropertyFlags::ReadOnly);
+    }
   }
 
-  virtual void* GetPropertyPointer(const void* pInstance) const override { return m_Pointer(static_cast<const Class*>(pInstance)); }
+  void* GetPropertyPointer(const void* pInstance) const override { return m_Pointer(static_cast<const Class*>(pInstance)); }
 
-  virtual xiiInt64 GetValue(const void* pInstance) const override // [tested]
+  xiiInt64 GetValue(const void* pInstance) const override // [tested]
   {
     xiiEnum<EnumType> enumTemp = m_Getter(static_cast<const Class*>(pInstance));
     return enumTemp.GetValue();
   }
 
-  virtual void SetValue(void* pInstance, xiiInt64 value) const override // [tested]
+  void SetValue(void* pInstance, xiiInt64 value) const override // [tested]
   {
     XII_ASSERT_DEV(m_Setter != nullptr, "The property '{0}' has no setter function, thus it is read-only.", xiiAbstractProperty::GetPropertyName());
 
     if (m_Setter)
+    {
       m_Setter(static_cast<Class*>(pInstance), (typename EnumType::Enum)value);
+    }
   }
 
 private:

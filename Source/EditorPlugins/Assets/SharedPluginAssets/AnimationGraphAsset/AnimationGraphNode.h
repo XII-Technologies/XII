@@ -50,7 +50,7 @@ struct XII_SHAREDPLUGINASSETS_DLL xiiAnimationGraphEditorTransition
   xiiString m_sFromNode;
   xiiString m_sToNode;
   xiiString m_sConditionParameter;
-  float     m_fConditionThreshold = 0.5f;
+  float     m_fConditionThreshold = 0.5F;
   xiiTime   m_BlendDuration       = xiiTime::MakeFromMilliseconds(150);
 };
 XII_DECLARE_REFLECTABLE_TYPE(XII_SHAREDPLUGINASSETS_DLL, xiiAnimationGraphEditorTransition);

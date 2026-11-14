@@ -19,10 +19,10 @@ public:
   [[nodiscard]] static xiiSimdMat4d MakeIdentity();
 
   /// Creates a matrix from 16 values that are in row-major layout.
-  [[nodiscard]] static xiiSimdMat4d MakeFromRowMajorArray(const double* const pData);
+  [[nodiscard]] static xiiSimdMat4d MakeFromRowMajorArray(const double* pData);
 
   /// Creates a matrix from 16 values that are in column-major layout.
-  [[nodiscard]] static xiiSimdMat4d MakeFromColumnMajorArray(const double* const pData);
+  [[nodiscard]] static xiiSimdMat4d MakeFromColumnMajorArray(const double* pData);
 
   /// Creates a matrix from 4 column vectors.
   [[nodiscard]] static xiiSimdMat4d MakeFromColumns(const xiiSimdVec4d& vCol0, const xiiSimdVec4d& vCol1, const xiiSimdVec4d& vCol2, const xiiSimdVec4d& vCol3);

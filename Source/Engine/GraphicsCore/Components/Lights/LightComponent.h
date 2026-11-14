@@ -33,15 +33,15 @@ class XII_GRAPHICSCORE_DLL xiiLightComponent : public xiiRenderComponent
 public:
   xiiBitflags<xiiRenderExtractionCategory> GetRenderExtractionCategories() const override { return xiiRenderExtractionCategory::Lights; }
   bool                                     IsRenderDataViewIndependent() const override { return true; }
-  virtual void                             SerializeComponent(xiiWorldWriter& inout_stream) const override;
-  virtual void                             DeserializeComponent(xiiWorldReader& inout_stream) override;
+  void                                     SerializeComponent(xiiWorldWriter& inout_stream) const override;
+  void                                     DeserializeComponent(xiiWorldReader& inout_stream) override;
 
   //////////////////////////////////////////////////////////////////////////
   // xiiLightComponent
 
 public:
   xiiLightComponent();
-  ~xiiLightComponent();
+  ~xiiLightComponent() override;
 
   void            SetLightColor(xiiColorGammaUB lightColor); // [ property ]
   xiiColorGammaUB GetLightColor() const;                     // [ property ]
@@ -71,7 +71,7 @@ public:
 
 protected:
   /// Converts the authored value to the canonical quantity consumed by a local-light shader.
-  float GetLuminousIntensity(float fEmissionSolidAngleSteradians, float fProjectedAreaSquareMeters = 0.0f) const;
+  float GetLuminousIntensity(float fEmissionSolidAngleSteradians, float fProjectedAreaSquareMeters = 0.0F) const;
 
   /// Converts the authored value to illuminance for an infinitely distant emitter.
   float GetIlluminance(float fSourceSolidAngleSteradians) const;
@@ -82,7 +82,7 @@ protected:
 protected:
   xiiColorGammaUB             m_LightColor    = xiiColor::White;
   xiiUInt32                   m_uiTemperature = 6550;
-  float                       m_fIntensity    = 1.0f;
+  float                       m_fIntensity    = 1.0F;
   xiiEnum<xiiPhotometricUnit> m_IntensityUnit = xiiPhotometricUnit::Candela;
   bool                        m_bCastShadows  = false;
 };

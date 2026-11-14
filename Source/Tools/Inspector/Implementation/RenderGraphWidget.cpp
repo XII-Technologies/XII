@@ -64,11 +64,15 @@ xiiQtRenderGraphWidget::xiiQtRenderGraphWidget(ads::CDockManager* manager) : xii
     connect(table, &QWidget::customContextMenuRequested, this, [table, this](QPoint point) {
       auto* item = table->itemAt(point);
       if (!item)
+      {
         return;
+      }
       QMenu menu;
       auto* copy = menu.addAction("Copy resource identifier");
       if (menu.exec(table->viewport()->mapToGlobal(point)) == copy)
+      {
         QApplication::clipboard()->setText(item->text(table == m_pResources ? 6 : 9));
+      }
     });
   }
   tabs->addTab(m_pVersions, "Versions");
@@ -82,11 +86,15 @@ xiiQtRenderGraphWidget::xiiQtRenderGraphWidget(ads::CDockManager* manager) : xii
   connect(m_pGraphScene, &QGraphicsScene::selectionChanged, this, [this] {
     const auto selected = m_pGraphScene->selectedItems();
     if (!selected.isEmpty())
+    {
       SelectPass(selected.front()->data(0).toInt());
+    }
   });
   connect(m_pPasses, &QTreeWidget::currentItemChanged, this, [this](QTreeWidgetItem* item) {
     if (item)
+    {
       SelectPass(item->data(0, Qt::UserRole).toInt());
+    }
   });
 }
 
@@ -94,18 +102,28 @@ xiiQtRenderGraphWidget::~xiiQtRenderGraphWidget() { s_pWidget = nullptr; }
 void xiiQtRenderGraphWidget::ProcessTelemetry(void*)
 {
   if (s_pWidget)
+  {
     s_pWidget->ReceiveMessages();
+  }
 }
 
 bool xiiQtRenderGraphWidget::ApplyCapture(const QJsonObject& object)
 {
   if (object["version"].toInt() != 1 || object["kind"] != "renderGraph" || !object["id"].isString() || !object["frame"].isString())
+  {
     return false;
+  }
   for (const auto* key : {"passes", "resources", "barriers", "versions", "submissions", "mergeGroups"})
+  {
     if (!object[key].isArray() || object[key].toArray().size() > 100000)
+    {
       return false;
+    }
+  }
   if (object["passes"].toArray().size() > 4096 || object["resources"].toArray().size() > 16384)
+  {
     return false;
+  }
   QSet<qint64>      indices;
   QMap<qint64, int> orders;
   for (const auto& value : object["passes"].toArray())
@@ -113,7 +131,9 @@ bool xiiQtRenderGraphWidget::ApplyCapture(const QJsonObject& object)
     const auto pass  = value.toObject();
     const auto index = pass["index"].toInteger(-1);
     if (!value.isObject() || !pass["name"].isString() || index < 0 || index >= object["passes"].toArray().size() || indices.contains(index) || pass["queue"].toInt(-1) < 0 || pass["queue"].toInt() > 2)
+    {
       return false;
+    }
     indices.insert(index);
     orders[index] = orders.size();
   }
@@ -124,46 +144,77 @@ bool xiiQtRenderGraphWidget::ApplyCapture(const QJsonObject& object)
   {
     const auto pass = value.toObject();
     for (const auto& dependency : pass["dependencies"].toArray())
+    {
       if (!indices.contains(dependency.toInteger(-1)) || orders.value(dependency.toInteger()) >= orders.value(pass["index"].toInteger()) || ++edges > 65536)
+      {
         return false;
+      }
+    }
     for (const auto* key : {"preBarriers", "postBarriers", "splitBegins"})
+    {
       for (const auto& barrier : pass[key].toArray())
+      {
         if (barrier.toInteger(-1) < 0 || barrier.toInteger() >= object["barriers"].toArray().size())
+        {
           return false;
+        }
+      }
+    }
   }
   for (const auto& value : resources)
   {
     if (!value.isObject())
+    {
       return false;
+    }
     const auto resource = value.toObject();
-    const auto first = resource["first"].toInteger(-1), last = resource["last"].toInteger(-1);
+    const auto first    = resource["first"].toInteger(-1);
+    const auto last     = resource["last"].toInteger(-1);
     if (first == 4294967295LL && last == 4294967295LL)
+    {
       continue;
+    }
     if (first < 0 || last < first || last >= passes.size())
+    {
       return false;
+    }
   }
   for (const auto& value : object["barriers"].toArray())
+  {
     if (!value.isObject() || value.toObject()["resource"].toInteger(-1) < 0 || value.toObject()["resource"].toInteger() >= resources.size())
+    {
       return false;
+    }
+  }
   for (const auto& value : object["submissions"].toArray())
   {
     if (!value.isObject())
+    {
       return false;
+    }
     for (const auto& pass : value.toObject()["passes"].toArray())
+    {
       if (pass.toInteger(-1) < 0 || pass.toInteger() >= passes.size())
+      {
         return false;
+      }
+    }
   }
   // Bound cached graphs by count and encoded size, including offline imports.
   const QString id = object["instance"].toString(object["id"].toString());
   m_Graphs.insert(id, object);
   qint64 total = 0;
   for (const auto& graph : m_Graphs)
+  {
     total += QJsonDocument(graph).toJson(QJsonDocument::Compact).size();
+  }
   while (m_Graphs.size() > 64 || (total > 64 * 1024 * 1024 && m_Graphs.size() > 1))
   {
     auto oldest = m_Graphs.begin();
     if (oldest.key() == id)
+    {
       ++oldest;
+    }
     total -= QJsonDocument(oldest.value()).toJson(QJsonDocument::Compact).size();
     m_Graphs.erase(oldest);
   }
@@ -172,7 +223,9 @@ bool xiiQtRenderGraphWidget::ApplyCapture(const QJsonObject& object)
   m_pGraphs->clear();
   QMap<quint64, QString> names;
   for (auto it = m_Graphs.begin(); it != m_Graphs.end(); ++it)
+  {
     names[it.key().toULongLong()] = (it.value()["view"].toString().isEmpty() ? QString{} : it.value()["view"].toString() + " / ") + it.value()["name"].toString("Render graph");
+  }
   for (auto it = m_Graphs.begin(); it != m_Graphs.end(); ++it)
   {
     m_pGraphs->addItem(GraphLabel(names, it.key().toULongLong()), it.key());
@@ -182,7 +235,9 @@ bool xiiQtRenderGraphWidget::ApplyCapture(const QJsonObject& object)
   m_pGraphs->setCurrentIndex(previous >= 0 ? previous : m_pGraphs->findData(id));
   Rebuild();
   if (xiiQtProfilingWidget::s_pRenderingWidget)
+  {
     xiiQtProfilingWidget::s_pRenderingWidget->ApplyGraphCapture(object);
+  }
   if (m_sPendingGraph == id)
   {
     const auto pending = m_iPendingPass;
@@ -214,7 +269,9 @@ void xiiQtRenderGraphWidget::Rebuild()
   const auto graph = m_Graphs.value(m_pGraphs->currentData().toString());
   SetDocument(graph);
   if (graph.isEmpty())
+  {
     return;
+  }
   const auto stats = graph["statistics"].toObject();
   m_pStatus->setText(QString("Frame %1 • %2 passes (%3 culled) • %4 barriers • %5 merge groups • %6 aliased resources • Compile cache: %7 • %8")
                        .arg(graph["frame"].toString())
@@ -239,7 +296,9 @@ void xiiQtRenderGraphWidget::Rebuild()
     queuesByIndex[index] = queue;
     int column           = 0;
     for (const auto& dependency : pass["dependencies"].toArray())
+    {
       column = qMax(column, depth.value(dependency.toInt(), -1) + 1);
+    }
     depth[index]     = column;
     const int row    = rows[{column, queue}]++;
     positions[index] = QPointF(180 + column * 260, 40 + queue * 300 + row * 76);
@@ -253,8 +312,12 @@ void xiiQtRenderGraphWidget::Rebuild()
   {
     int maxRows = 1;
     for (auto it = rows.begin(); it != rows.end(); ++it)
+    {
       if (it.key().second == queue - 1)
+      {
         maxRows = qMax(maxRows, it.value());
+      }
+    }
     queueY[queue] = queueY[queue - 1] + 70 + maxRows * 76;
   }
   for (auto it = positions.begin(); it != positions.end(); ++it)
@@ -277,8 +340,11 @@ void xiiQtRenderGraphWidget::Rebuild()
     for (const auto& dependency : pass["dependencies"].toArray())
     {
       if (!positions.contains(dependency.toInt()))
+      {
         continue;
-      const QPointF start = positions[dependency.toInt()] + QPointF(220, 28), end = position + QPointF(0, 28);
+      }
+      const QPointF start = positions[dependency.toInt()] + QPointF(220, 28);
+      const QPointF end   = position + QPointF(0, 28);
       QPainterPath  path(start);
       path.cubicTo(start + QPointF(35, 0), end - QPointF(35, 0), end);
       m_pGraphScene->addPath(path, QPen(QColor("#788392"), 1.5))->setZValue(-1);
@@ -291,10 +357,14 @@ void xiiQtRenderGraphWidget::Rebuild()
     node->setData(0, index);
     node->setData(1, pass["id"].toString());
     if (pass["id"].toString() == m_sSelectedPassId)
+    {
       node->setSelected(true);
+    }
     node->setOpacity(match ? 1 : 0.25);
     if (pass["culled"].toBool())
+    {
       node->setBrush(QColor("#484b50"));
+    }
     node->setToolTip(pass["name"].toString() + "\nID: " + pass["id"].toString() + "\nDependencies: " + Indices(pass["dependencies"].toArray()));
     const QString name = QFontMetrics(QApplication::font()).elidedText(pass["name"].toString(), Qt::ElideRight, 200);
     auto*         text = new QGraphicsSimpleTextItem(name + "\n" + (pass["timingAvailable"].toBool() ? QString::number(pass["gpuMs"].toDouble(), 'f', 3) + " GPU ms" : "GPU timing unavailable"), node);
@@ -312,18 +382,27 @@ void xiiQtRenderGraphWidget::Rebuild()
     const int   flags                        = resource["flags"].toInt();
     QStringList flagNames;
     if (flags & 1)
+    {
       flagNames << "Transient";
+    }
     if (flags & 2)
+    {
       flagNames << "External";
+    }
     if (flags & 4)
+    {
       flagNames << "Persistent";
+    }
     Row(m_pResources, {name, resource["texture"].toBool() ? "Texture" : "Buffer", flagNames.join(" | "), Index(resource["first"]), Index(resource["last"]), Index(resource["alias"]), resource["id"].toString(), resource["texture"].toBool() ? QString("%1 × %2 × %3").arg(resource["width"].toInt()).arg(resource["height"].toInt()).arg(resource["depthOrSlices"].toInt()) : Bytes(resource["bufferBytes"].toString().toULongLong()), resource["format"].toString(), resource["texture"].toBool() ? Index(resource["mips"]) : QString{}}, filter);
     if ((!filter.isEmpty() && !name.contains(filter, Qt::CaseInsensitive)) || resource["first"].toDouble() == 4294967295.0)
+    {
       continue;
+    }
     auto* label = m_pLifetimeScene->addSimpleText(QFontMetrics(QApplication::font()).elidedText(name, Qt::ElideRight, 250));
     label->setBrush(Qt::white);
     label->setPos(0, 30 + lifetimeRow * 26);
-    const double first = resource["first"].toDouble(), last = resource["last"].toDouble();
+    const double first = resource["first"].toDouble();
+    const double last  = resource["last"].toDouble();
     const QColor color = flags & 2 ? QColor("#d6a052") : QueueColor(resource["alias"].toInt() % 3);
     auto*        bar   = m_pLifetimeScene->addRect(270 + first * 28, 30 + lifetimeRow * 26, qMax(1.0, last - first + 1) * 28, 20, QPen(Qt::NoPen), color);
     bar->setToolTip(name + "\nCompiled pass range: " + Index(resource["first"]) + "–" + Index(resource["last"]) + "\nAlias group: " + Index(resource["alias"]));
@@ -349,7 +428,9 @@ void xiiQtRenderGraphWidget::Rebuild()
   }
   QMap<QString, QString> passNames;
   for (const auto& value : passes)
+  {
     passNames[value.toObject()["id"].toString()] = value.toObject()["name"].toString();
+  }
   for (const auto& value : graph["versions"].toArray())
   {
     const auto version = value.toObject();
@@ -361,22 +442,32 @@ void xiiQtRenderGraphWidget::Rebuild()
     const auto  submission = submissions[index].toObject();
     QStringList waits;
     for (const auto& wait : submission["waitValues"].toArray())
+    {
       waits << wait.toString();
+    }
     Row(m_pSubmissions, {QString::number(index), QueueName(submission["queue"].toInt()), Indices(submission["passes"].toArray()), Indices(submission["waits"].toArray()), submission["signal"].toString(), waits.join(", ")}, filter);
   }
   for (auto* table : {m_pPasses, m_pResources, m_pBarriers, m_pVersions, m_pSubmissions})
   {
     table->setSortingEnabled(true);
     for (int row = 0; row < table->topLevelItemCount(); ++row)
+    {
       for (int column = 0; column < table->columnCount(); ++column)
+      {
         table->topLevelItem(row)->setToolTip(column, table->topLevelItem(row)->text(0) + "\n" + table->topLevelItem(row)->text(table == m_pResources ? 6 : table == m_pVersions ? 9 :
                                                                                                                                                                                   0));
+      }
+    }
   }
   m_pGraphScene->setSceneRect(m_pGraphScene->itemsBoundingRect().adjusted(-15, -15, 15, 15));
   m_pLifetimeScene->setSceneRect(m_pLifetimeScene->itemsBoundingRect().adjusted(-15, -15, 15, 15));
   for (const auto& value : passes)
+  {
     if (value.toObject()["id"].toString() == m_sSelectedPassId)
+    {
       SelectPass(value.toObject()["index"].toInt());
+    }
+  }
 }
 
 void xiiQtRenderGraphWidget::SelectPass(int index)
@@ -406,10 +497,16 @@ void xiiQtRenderGraphWidget::LocatePass(const QString& graph, int pass)
   }
   m_pGraphs->setCurrentIndex(index);
   for (const auto& value : m_Document["passes"].toArray())
+  {
     if (value.toObject()["index"].toInt() == pass)
+    {
       m_sSelectedPassId = value.toObject()["id"].toString();
+    }
+  }
   Rebuild();
   SelectPass(pass);
   for (auto* item : m_pGraphScene->selectedItems())
+  {
     m_pGraphView->ensureVisible(item);
+  }
 }

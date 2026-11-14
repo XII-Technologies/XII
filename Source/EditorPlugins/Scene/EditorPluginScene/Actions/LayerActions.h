@@ -47,10 +47,10 @@ public:
   };
 
   xiiLayerAction(const xiiActionContext& context, const char* szName, ActionType type);
-  ~xiiLayerAction();
+  ~xiiLayerAction() override;
 
   static void  ToggleLayerLoaded(xiiScene2Document* pM_pSceneDocument, xiiUuid layerGuid);
-  virtual void Execute(const xiiVariant& value) override;
+  void         Execute(const xiiVariant& value) override;
 
 private:
   void    LayerEventHandler(const xiiScene2LayerEvent& e);

@@ -41,7 +41,7 @@ public:
   {
   }
 
-  virtual ~xiiMessage() = default;
+  ~xiiMessage() override = default;
 
   /// Derived message types can override this method to influence sorting order. Smaller keys are processed first.
   virtual xiiInt32 GetSortingKey() const { return 0; }

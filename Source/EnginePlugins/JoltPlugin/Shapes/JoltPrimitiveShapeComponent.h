@@ -56,7 +56,7 @@ public:
   void DeserializeComponent(xiiWorldReader& inout_stream) override;
 
 private:
-  xiiVec3 m_vDimensions = xiiVec3(1.0f);
+  xiiVec3 m_vDimensions = xiiVec3(1.0F);
 };
 
 using xiiJoltSphereShapeComponentManager = xiiComponentManager<class xiiJoltSphereShapeComponent, xiiBlockStorageType::Compact>;
@@ -76,7 +76,7 @@ public:
   void DeserializeComponent(xiiWorldReader& inout_stream) override;
 
 private:
-  float m_fRadius = 0.5f;
+  float m_fRadius = 0.5F;
 };
 
 using xiiJoltCapsuleShapeComponentManager = xiiComponentManager<class xiiJoltCapsuleShapeComponent, xiiBlockStorageType::Compact>;
@@ -96,8 +96,8 @@ public:
   void  DeserializeComponent(xiiWorldReader& inout_stream) override;
 
 private:
-  float m_fRadius = 0.5f;
-  float m_fHeight = 1.0f;
+  float m_fRadius = 0.5F;
+  float m_fHeight = 1.0F;
 };
 
 using xiiJoltCylinderShapeComponentManager = xiiComponentManager<class xiiJoltCylinderShapeComponent, xiiBlockStorageType::Compact>;
@@ -117,8 +117,8 @@ public:
   void  DeserializeComponent(xiiWorldReader& inout_stream) override;
 
 private:
-  float m_fRadius = 0.5f;
-  float m_fHeight = 1.0f;
+  float m_fRadius = 0.5F;
+  float m_fHeight = 1.0F;
 };
 
 using xiiJoltConvexHullShapeComponentManager = xiiComponentManager<class xiiJoltConvexHullShapeComponent, xiiBlockStorageType::Compact>;

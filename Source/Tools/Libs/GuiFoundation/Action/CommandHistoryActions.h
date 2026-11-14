@@ -34,10 +34,10 @@ public:
   };
 
   xiiCommandHistoryAction(const xiiActionContext& context, xiiStringView sName, ButtonType button);
-  ~xiiCommandHistoryAction();
+  ~xiiCommandHistoryAction() override;
 
-  virtual void Execute(const xiiVariant& value) override;
-  virtual void GetEntries(xiiDynamicArray<Item>& out_entries) override;
+  void Execute(const xiiVariant& value) override;
+  void GetEntries(xiiDynamicArray<Item>& out_entries) override;
 
 private:
   void UpdateState();

@@ -15,7 +15,7 @@ class XII_CORE_DLL xiiSpatialSystem : public xiiReflectedClass
 
 public:
   xiiSpatialSystem();
-  ~xiiSpatialSystem();
+  ~xiiSpatialSystem() override;
 
   virtual void StartNewFrame();
 

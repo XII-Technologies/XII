@@ -228,7 +228,7 @@ struct xiiArgDateTime
   ///
   /// \param dateTime The xiiDateTime instance to format.
   /// \param uiFormattingFlags The formatting flags to use.
-  inline explicit xiiArgDateTime(const xiiDateTime& dateTime, xiiUInt32 uiFormattingFlags = Default) :
+  explicit xiiArgDateTime(const xiiDateTime& dateTime, xiiUInt32 uiFormattingFlags = Default) :
     m_Value(dateTime), m_uiFormattingFlags(uiFormattingFlags)
   {
   }

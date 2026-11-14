@@ -21,7 +21,7 @@ namespace ozz
 
 struct XII_GRAPHICSCORE_DLL xiiAnimationKeyVec3
 {
-  float   m_fTime = 0.0f;
+  float   m_fTime = 0.0F;
   xiiVec3 m_Value = xiiVec3::MakeZero();
 
   xiiResult Serialize(xiiStreamWriter& inout_stream) const;
@@ -30,7 +30,7 @@ struct XII_GRAPHICSCORE_DLL xiiAnimationKeyVec3
 
 struct XII_GRAPHICSCORE_DLL xiiAnimationKeyQuat
 {
-  float   m_fTime = 0.0f;
+  float   m_fTime = 0.0F;
   xiiQuat m_Value = xiiQuat::MakeIdentity();
 
   xiiResult Serialize(xiiStreamWriter& inout_stream) const;
@@ -52,7 +52,7 @@ struct XII_GRAPHICSCORE_DLL xiiAnimationClipJointTrack
 
 struct XII_GRAPHICSCORE_DLL xiiAnimationClipEvent
 {
-  float           m_fTime = 0.0f;
+  float           m_fTime = 0.0F;
   xiiHashedString m_sEvent;
 
   xiiResult Serialize(xiiStreamWriter& inout_stream) const;
@@ -70,7 +70,7 @@ struct XII_GRAPHICSCORE_DLL xiiAnimationClipResourceDescriptor
   xiiResult Deserialize(xiiStreamReader& inout_stream);
 
   xiiTime   m_Duration          = xiiTime::MakeZero();
-  float     m_fSampleRate       = 30.0f;
+  float     m_fSampleRate       = 30.0F;
   bool      m_bLooping          = true;
   bool      m_bAdditive         = false;
   xiiUInt16 m_uiRootMotionJoint = xiiMath::MaxValue<xiiUInt16>();
@@ -89,7 +89,7 @@ class XII_GRAPHICSCORE_DLL xiiAnimationClipResource final : public xiiResource
 
 public:
   xiiAnimationClipResource();
-  ~xiiAnimationClipResource();
+  ~xiiAnimationClipResource() override;
 
   xiiTime                                   GetDuration() const;
   bool                                      IsLooping() const;
@@ -105,9 +105,9 @@ public:
 #endif
 
 private:
-  virtual xiiResourceLoadDescription UnloadData(Unload whatToUnload) override;
-  virtual xiiResourceLoadDescription UpdateContent(xiiStreamReader* pStream) override;
-  virtual void                       UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage) override;
+  xiiResourceLoadDescription UnloadData(Unload whatToUnload) override;
+  xiiResourceLoadDescription UpdateContent(xiiStreamReader* pStream) override;
+  void                       UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage) override;
 
   void LoadOzzAnimation(const xiiDynamicArray<xiiUInt8>& ozzData);
 

@@ -61,7 +61,9 @@ public:
   [[nodiscard]] static XII_ALWAYS_INLINE xiiUInt32 GetComponentCount(xiiEnum<xiiGALResourceFormat> format)
   {
     if (xiiGALResourceFormat::IsMultiplanar(format))
+    {
       return GetMultiPlanarFormatProperties(format).GetPlaneCount();
+    }
 
     return GetResourceFormatProperties(format).m_uiComponentCount;
   }
@@ -70,7 +72,9 @@ public:
   [[nodiscard]] static XII_ALWAYS_INLINE xiiUInt32 GetBitsPerComponent(xiiEnum<xiiGALResourceFormat> format, xiiUInt32 uiPlaneIndex = 0)
   {
     if (xiiGALResourceFormat::IsMultiplanar(format))
+    {
       return GetMultiPlanarFormatProperties(format).GetPlane(uiPlaneIndex).m_uiBytesPerElement * 8U;
+    }
 
     return GetResourceFormatProperties(format).m_uiComponentSize * 8U;
   }
@@ -79,7 +83,9 @@ public:
   [[nodiscard]] static XII_ALWAYS_INLINE xiiUInt32 GetBytesPerBlock(xiiEnum<xiiGALResourceFormat> format, xiiUInt32 uiPlaneIndex = 0)
   {
     if (xiiGALResourceFormat::IsMultiplanar(format))
+    {
       return GetMultiPlanarFormatProperties(format).GetPlane(uiPlaneIndex).m_uiBytesPerElement;
+    }
 
     XII_ASSERT_DEV(uiPlaneIndex == 0, "Single-plane formats only have plane 0.");
 
@@ -96,7 +102,9 @@ public:
   [[nodiscard]] static XII_ALWAYS_INLINE xiiUInt32 GetBitsPerPixel(xiiEnum<xiiGALResourceFormat> format)
   {
     if (xiiGALResourceFormat::IsMultiplanar(format))
+    {
       return GetMultiPlanarFormatProperties(format).GetPlane(0).m_uiBytesPerElement * 8U;
+    }
 
     const xiiGALResourceFormatDescription& properties = GetResourceFormatProperties(format);
 
@@ -107,7 +115,9 @@ public:
   [[nodiscard]] static XII_ALWAYS_INLINE float GetExactBitsPerPixel(xiiEnum<xiiGALResourceFormat> format)
   {
     if (xiiGALResourceFormat::IsMultiplanar(format))
+    {
       return static_cast<float>(GetBitsPerPixel(format));
+    }
 
     const xiiGALResourceFormatDescription& properties = GetResourceFormatProperties(format);
 
@@ -143,7 +153,9 @@ public:
   [[nodiscard]] static XII_ALWAYS_INLINE bool RequiresFirstLevelBlockAlignment(xiiEnum<xiiGALResourceFormat> format)
   {
     if (xiiGALResourceFormat::IsMultiplanar(format))
+    {
       return false;
+    }
 
     const xiiGALResourceFormatDescription& properties = GetResourceFormatProperties(format);
 
@@ -154,7 +166,9 @@ public:
   [[nodiscard]] static XII_ALWAYS_INLINE xiiEnum<xiiGALResourceFormat> GetPlaneSubFormat(xiiEnum<xiiGALResourceFormat> format, xiiUInt32 uiPlaneIndex)
   {
     if (xiiGALResourceFormat::IsMultiplanar(format))
+    {
       return GetMultiPlanarFormatProperties(format).GetPlane(uiPlaneIndex).m_SubFormat;
+    }
 
     XII_ASSERT_DEV(uiPlaneIndex == 0, "Single-plane formats only have plane 0.");
 
@@ -165,7 +179,9 @@ public:
   [[nodiscard]] static XII_ALWAYS_INLINE xiiEnum<xiiGALResourceFormatComponentType> GetComponentType(xiiEnum<xiiGALResourceFormat> format)
   {
     if (xiiGALResourceFormat::IsMultiplanar(format))
+    {
       return xiiGALResourceFormatComponentType::UnsignedInteger;
+    }
 
     return GetResourceFormatProperties(format).m_ComponentType;
   }
@@ -283,7 +299,7 @@ public:
   }
 
   /// Fills the out_subresourceData array with zero-initialized data pointers for all subresources of the given texture description.
-  [[nodiscard]] static xiiGALTextureData GetZeroMemoryInitialData(const xiiGALTextureCreationDescription description, xiiHybridArray<xiiGALTextureSubResourceData, 2U>& out_subresourceData, xiiDynamicArray<xiiUInt8>& out_Data);
+  [[nodiscard]] static xiiGALTextureData GetZeroMemoryInitialData(xiiGALTextureCreationDescription description, xiiHybridArray<xiiGALTextureSubResourceData, 2U>& out_subresourceData, xiiDynamicArray<xiiUInt8>& out_Data);
 
   static void CopySubresourceToMemory(const xiiGALTextureCreationDescription& description, const xiiGALMappedTextureSubresource& subresourceData, const xiiGALTextureMipLevelData& mipLevelData, xiiArrayPtr<xiiUInt8> pTargetData, xiiUInt32 uiTargetRowStride);
 };

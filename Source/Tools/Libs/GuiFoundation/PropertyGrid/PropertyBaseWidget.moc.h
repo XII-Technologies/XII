@@ -34,7 +34,7 @@ class XII_GUIFOUNDATION_DLL xiiQtPropertyWidget : public QWidget
 
 public:
   explicit xiiQtPropertyWidget();
-  virtual ~xiiQtPropertyWidget();
+  ~xiiQtPropertyWidget() override;
 
   void                       Init(xiiQtPropertyGridWidget* pGrid, xiiObjectAccessorBase* pObjectAccessor, const xiiRTTI* pType, const xiiAbstractProperty* pProp);
   const xiiAbstractProperty* GetProperty() const { return m_pProp; }
@@ -84,7 +84,7 @@ protected:
 protected:
   virtual void DoPrepareToDie() = 0;
 
-  virtual bool eventFilter(QObject* pWatched, QEvent* pEvent) override;
+  bool eventFilter(QObject* pWatched, QEvent* pEvent) override;
 
   xiiQtPropertyGridWidget*                m_pGrid           = nullptr;
   xiiObjectAccessorBase*                  m_pObjectAccessor = nullptr;
@@ -107,8 +107,8 @@ public:
   explicit xiiQtUnsupportedPropertyWidget(xiiStringView sMessage = {});
 
 protected:
-  virtual void OnInit() override;
-  virtual void DoPrepareToDie() override {}
+  void OnInit() override;
+  void DoPrepareToDie() override {}
 
   QHBoxLayout* m_pLayout;
   QLabel*      m_pWidget;
@@ -124,11 +124,11 @@ class XII_GUIFOUNDATION_DLL xiiQtStandardPropertyWidget : public xiiQtPropertyWi
 public:
   explicit xiiQtStandardPropertyWidget();
 
-  virtual void SetSelection(const xiiHybridArray<xiiPropertySelection, 8>& items) override;
+  void SetSelection(const xiiHybridArray<xiiPropertySelection, 8>& items) override;
 
 protected:
   void         BroadcastValueChanged(const xiiVariant& NewValue);
-  virtual void DoPrepareToDie() override {}
+  void         DoPrepareToDie() override {}
 
   const xiiVariant& GetOldValue() const { return m_OldValue; }
   virtual void      InternalSetValue(const xiiVariant& value) = 0;
@@ -146,15 +146,15 @@ class XII_GUIFOUNDATION_DLL xiiQtEmbeddedClassPropertyWidget : public xiiQtPrope
 
 public:
   explicit xiiQtEmbeddedClassPropertyWidget();
-  ~xiiQtEmbeddedClassPropertyWidget();
+  ~xiiQtEmbeddedClassPropertyWidget() override;
 
-  virtual void SetSelection(const xiiHybridArray<xiiPropertySelection, 8>& items) override;
+  void SetSelection(const xiiHybridArray<xiiPropertySelection, 8>& items) override;
 
 protected:
   void SetPropertyValue(const xiiAbstractProperty* pProperty, const xiiVariant& NewValue);
 
-  virtual void OnInit() override;
-  virtual void DoPrepareToDie() override;
+  void         OnInit() override;
+  void         DoPrepareToDie() override;
   virtual void OnPropertyChanged(const xiiString& sProperty) = 0;
 
 private:
@@ -180,15 +180,15 @@ class XII_GUIFOUNDATION_DLL xiiQtPropertyTypeWidget : public xiiQtPropertyWidget
 
 public:
   explicit xiiQtPropertyTypeWidget(bool bAddCollapsibleGroup = false);
-  virtual ~xiiQtPropertyTypeWidget();
+  ~xiiQtPropertyTypeWidget() override;
 
-  virtual void SetSelection(const xiiHybridArray<xiiPropertySelection, 8>& items) override;
-  virtual bool HasLabel() const override { return false; }
-  virtual void SetIsDefault(bool bIsDefault) override;
+  void SetSelection(const xiiHybridArray<xiiPropertySelection, 8>& items) override;
+  bool HasLabel() const override { return false; }
+  void SetIsDefault(bool bIsDefault) override;
 
 protected:
-  virtual void OnInit() override;
-  virtual void DoPrepareToDie() override;
+  void OnInit() override;
+  void DoPrepareToDie() override;
 
 protected:
   QVBoxLayout*       m_pLayout;
@@ -204,19 +204,19 @@ class XII_GUIFOUNDATION_DLL xiiQtPropertyPointerWidget : public xiiQtPropertyWid
 
 public:
   explicit xiiQtPropertyPointerWidget();
-  virtual ~xiiQtPropertyPointerWidget();
+  ~xiiQtPropertyPointerWidget() override;
 
-  virtual void SetSelection(const xiiHybridArray<xiiPropertySelection, 8>& items) override;
-  virtual bool HasLabel() const override { return false; }
+  void SetSelection(const xiiHybridArray<xiiPropertySelection, 8>& items) override;
+  bool HasLabel() const override { return false; }
 
 
 public Q_SLOTS:
   void OnDeleteButtonClicked();
 
 protected:
-  virtual void OnInit() override;
+  void         OnInit() override;
   void         StructureEventHandler(const xiiDocumentObjectStructureEvent& e);
-  virtual void DoPrepareToDie() override;
+  void         DoPrepareToDie() override;
   void         UpdateTitle(const xiiRTTI* pType = nullptr);
 
 protected:
@@ -236,11 +236,11 @@ class XII_GUIFOUNDATION_DLL xiiQtPropertyContainerWidget : public xiiQtPropertyW
 
 public:
   xiiQtPropertyContainerWidget();
-  virtual ~xiiQtPropertyContainerWidget();
+  ~xiiQtPropertyContainerWidget() override;
 
-  virtual void SetSelection(const xiiHybridArray<xiiPropertySelection, 8>& items) override;
-  virtual bool HasLabel() const override { return false; }
-  virtual void SetIsDefault(bool bIsDefault) override;
+  void SetSelection(const xiiHybridArray<xiiPropertySelection, 8>& items) override;
+  bool HasLabel() const override { return false; }
+  void SetIsDefault(bool bIsDefault) override;
 
 public Q_SLOTS:
   void OnElementButtonClicked();
@@ -275,17 +275,17 @@ protected:
   virtual xiiPropertyCategory::Enum GetContainerCategory() const;
 
   void         Clear();
-  virtual void OnInit() override;
+  void         OnInit() override;
 
   void         DeleteItems(xiiHybridArray<xiiPropertySelection, 8>& items);
   void         MoveItems(xiiHybridArray<xiiPropertySelection, 8>& items, xiiInt32 iMove);
-  virtual void DoPrepareToDie() override;
-  virtual void dragEnterEvent(QDragEnterEvent* event) override;
-  virtual void dragMoveEvent(QDragMoveEvent* event) override;
-  virtual void dragLeaveEvent(QDragLeaveEvent* event) override;
-  virtual void dropEvent(QDropEvent* event) override;
-  virtual void paintEvent(QPaintEvent* event) override;
-  virtual void showEvent(QShowEvent* event) override;
+  void         DoPrepareToDie() override;
+  void         dragEnterEvent(QDragEnterEvent* event) override;
+  void         dragMoveEvent(QDragMoveEvent* event) override;
+  void         dragLeaveEvent(QDragLeaveEvent* event) override;
+  void         dropEvent(QDropEvent* event) override;
+  void         paintEvent(QPaintEvent* event) override;
+  void         showEvent(QShowEvent* event) override;
 
 private:
   bool updateDropIndex(QDropEvent* pEvent);
@@ -310,14 +310,14 @@ class XII_GUIFOUNDATION_DLL xiiQtPropertyStandardTypeContainerWidget : public xi
 
 public:
   xiiQtPropertyStandardTypeContainerWidget();
-  virtual ~xiiQtPropertyStandardTypeContainerWidget();
+  ~xiiQtPropertyStandardTypeContainerWidget() override;
 
 protected:
-  virtual xiiQtGroupBoxBase*   CreateElement(QWidget* pParent) override;
-  virtual xiiQtPropertyWidget* CreateWidget(xiiUInt32 index) override;
-  virtual Element&             AddElement(xiiUInt32 index) override;
-  virtual void                 RemoveElement(xiiUInt32 index) override;
-  virtual void                 UpdateElement(xiiUInt32 index) override;
+  xiiQtGroupBoxBase*   CreateElement(QWidget* pParent) override;
+  xiiQtPropertyWidget* CreateWidget(xiiUInt32 index) override;
+  Element&             AddElement(xiiUInt32 index) override;
+  void                 RemoveElement(xiiUInt32 index) override;
+  void                 UpdateElement(xiiUInt32 index) override;
 };
 
 class XII_GUIFOUNDATION_DLL xiiQtPropertyTypeContainerWidget : public xiiQtPropertyContainerWidget
@@ -326,11 +326,11 @@ class XII_GUIFOUNDATION_DLL xiiQtPropertyTypeContainerWidget : public xiiQtPrope
 
 public:
   xiiQtPropertyTypeContainerWidget();
-  virtual ~xiiQtPropertyTypeContainerWidget();
+  ~xiiQtPropertyTypeContainerWidget() override;
 
 protected:
-  virtual void OnInit() override;
-  virtual void UpdateElement(xiiUInt32 index) override;
+  void OnInit() override;
+  void UpdateElement(xiiUInt32 index) override;
 
   void StructureEventHandler(const xiiDocumentObjectStructureEvent& e);
   void CommandHistoryEventHandler(const xiiCommandHistoryEvent& e);
@@ -345,12 +345,12 @@ class XII_GUIFOUNDATION_DLL xiiQtVariantPropertyWidget : public xiiQtStandardPro
 
 public:
   xiiQtVariantPropertyWidget();
-  virtual ~xiiQtVariantPropertyWidget();
+  ~xiiQtVariantPropertyWidget() override;
 
 protected:
-  virtual void OnInit() override;
-  virtual void InternalSetValue(const xiiVariant& value) override;
-  virtual void DoPrepareToDie() override;
+  void         OnInit() override;
+  void         InternalSetValue(const xiiVariant& value) override;
+  void         DoPrepareToDie() override;
   void         UpdateTypeListSelection(xiiVariantType::Enum type);
   void         ChangeVariantType(xiiVariantType::Enum type);
   void         EnableTypeSelection(bool bEnable);
@@ -371,12 +371,12 @@ class XII_GUIFOUNDATION_DLL xiiQtVariantContainerWidget : public xiiQtPropertySt
 
 public:
   xiiQtVariantContainerWidget(xiiVariantType::Enum variantType);
-  virtual ~xiiQtVariantContainerWidget() = default;
+  ~xiiQtVariantContainerWidget() override = default;
 
 protected:
-  virtual void                      OnInit() override;
-  virtual void                      SetSelection(const xiiHybridArray<xiiPropertySelection, 8>& items) override;
-  virtual xiiPropertyCategory::Enum GetContainerCategory() const override;
+  void                      OnInit() override;
+  void                      SetSelection(const xiiHybridArray<xiiPropertySelection, 8>& items) override;
+  xiiPropertyCategory::Enum GetContainerCategory() const override;
 
 private:
   xiiUniquePtr<xiiVariantSubAccessor> m_pVariantSubAccessor;

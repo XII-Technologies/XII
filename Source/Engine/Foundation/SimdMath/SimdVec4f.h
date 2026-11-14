@@ -17,7 +17,7 @@ public:
 
   explicit xiiSimdVec4f(const xiiSimdFloat& fXyzw); // [tested]
 
-  xiiSimdVec4f(float x, float y, float z, float w = 1.0f); // [tested]
+  xiiSimdVec4f(float x, float y, float z, float w = 1.0F); // [tested]
 
   xiiSimdVec4f(xiiInternal::QuadFloat v); // [tested]
 

@@ -35,7 +35,7 @@ xiiCommandLineOptionInt    opt_Height("_Player", "-height", "Window height in pi
 xiiCommandLineOptionInt    opt_Display("_Player", "-display", "Display index (-1 selects the primary display).", -1, -1, 127);
 xiiCommandLineOptionInt    opt_BackgroundFPS("_Player", "-background-fps", "Inactive instance frame cap.", 30, 1, 1000);
 xiiCommandLineOptionBool   opt_ShowFPS("_Player", "-show-fps", "Main-view FPS and frame-time overlay.", false);
-xiiCommandLineOptionFloat  opt_Volume("_Player", "-volume", "Master volume when a sound implementation is present.", 1.0f, 0.0f, 1.0f);
+xiiCommandLineOptionFloat  opt_Volume("_Player", "-volume", "Master volume when a sound implementation is present.", 1.0F, 0.0F, 1.0F);
 xiiCommandLineOptionString opt_Role("_Player", "-role", "Application role: standalone, server or client. Consumed by application networking plugins.", "standalone");
 xiiCommandLineOptionString opt_Connect("_Player", "-connect", "Application connection address; no gameplay networking stack is created by Player.", "127.0.0.1");
 xiiCommandLineOptionInt    opt_Port("_Player", "-port", "Application connection port; supplied to application networking plugins.", 0, 0, 65535);
@@ -61,11 +61,14 @@ void xiiPlayerApplication::AfterCoreSystemsStartup()
   auto* command = xiiCommandLineUtils::GetGlobalInstance();
   InitializeManagedSession();
   if (WasQuitRequested())
+  {
     return;
+  }
   if (m_sSession.IsEmpty() && m_sInstance.IsEmpty())
   {
     xiiStringBuilder identifier;
-    xiiUInt64        low, high;
+    xiiUInt64        low;
+    xiiUInt64        high;
     xiiUuid::MakeUuid().GetValues(low, high);
     identifier.SetFormat("standalone-{}{}", xiiArgU(high, 16, true, 16), xiiArgU(low, 16, true, 16));
     m_sInstance = identifier;
@@ -97,7 +100,9 @@ void xiiPlayerApplication::AfterCoreSystemsStartup()
   }
   m_pStartupWindow->GetWindowEvents().AddEventHandler([this](const xiiWindowEvent& e) {
     if (e.m_Type == xiiWindowEvent::CloseButtonClicked)
+    {
       RequestQuit();
+    }
   });
 }
 
@@ -105,13 +110,21 @@ xiiApplication::Execution xiiPlayerApplication::Run()
 {
   PumpSession();
   if (WasQuitRequested())
+  {
     return Execution::Quit;
+  }
   if (!m_bInitializing)
+  {
     return SUPER::Run();
+  }
   if (m_pStartupWindow)
+  {
     m_pStartupWindow->ProcessWindowMessages();
+  }
   if (WasQuitRequested())
+  {
     return Execution::Quit;
+  }
 
   // Thread-affine startup stages remain on the main thread, with OS/IPC pumping between stages.
   // Scene IO/description work is asynchronous; plugin initialization and GPU creation are not worker-safe.
@@ -172,7 +185,9 @@ void xiiPlayerApplication::Init_FileSystem_ConfigureDataDirs()
   xiiFileSystem::RemoveDataDirectoryGroup("PlayerBootstrap");
   SUPER::Init_FileSystem_ConfigureDataDirs();
   if (WasQuitRequested())
+  {
     return;
+  }
   if (!m_sSession.IsEmpty())
   {
     m_sWritableDirectory = m_sManagedWritableDirectory;
@@ -186,7 +201,9 @@ void xiiPlayerApplication::Init_FileSystem_ConfigureDataDirs()
   projectKey.SetFormat("{}", xiiArgU(xiiHashingUtils::StringHash(m_sAppProjectPath), 16, true, 16));
   xiiStringBuilder directory(xiiOSFile::GetUserDataFolder(), "/xiiPlayer/", projectKey);
   if (!m_sSession.IsEmpty())
+  {
     directory.AppendPath("Sessions", m_sInstance);
+  }
   if (xiiOSFile::CreateDirectoryStructure(directory).Failed())
   {
     ReportStatus("failed", "Cannot create the Player writable directory.");
@@ -256,14 +273,18 @@ void xiiPlayerApplication::Init_ConfigureTelemetry()
   for (xiiUInt32 attempt = 0; attempt < (explicitPort ? 1U : 64U); ++attempt)
   {
     if (attempt > 0)
+    {
       port = 1041 + (xiiHashingUtils::StringHashTo32(xiiHashingUtils::StringHash(m_sInstance)) + attempt) % 18000;
+    }
     if (m_sSession.IsEmpty())
     {
       m_TelemetryPortLease.Close();
       xiiStringBuilder path;
       path.SetFormat("{}/{}.lock", directory, port);
       if (m_TelemetryPortLease.Open(path, xiiFileOpenMode::Write, xiiFileShareMode::Exclusive).Failed())
+      {
         continue;
+      }
     }
     xiiTelemetry::s_uiPort = static_cast<xiiUInt16>(port);
     xiiTelemetry::SetServerName(m_sInstance);
@@ -285,7 +306,9 @@ void xiiPlayerApplication::Init_ConfigureCVars()
   // Keep the persisted layer separate from launch overrides. Startup never rewrites preferences.
   m_PersistedSettings.Load(":project/RuntimeConfigs/Presentation.ddl", true).IgnoreResult();
   if (!xiiCommandLineUtils::GetGlobalInstance()->GetBoolOption("-no-file-cvars", false))
+  {
     m_PersistedSettings.Load(":appdata/RuntimeConfigs/Presentation.ddl", m_PersistedSettings.m_bVSync).IgnoreResult();
+  }
   SUPER::Init_ConfigureCVars();
 }
 
@@ -298,9 +321,13 @@ xiiResult xiiPlayerApplication::ResolveLaunchConfiguration()
     xiiPlayerConfig  config;
     xiiStringBuilder path = command->GetStringOption("-launch-file");
     if (path.IsEmpty())
+    {
       path.Set(m_sAppProjectPath, "/RuntimeConfigs/Player.ddl");
+    }
     if (!path.IsAbsolutePath())
+    {
       path.Prepend(m_sAppProjectPath, "/");
+    }
     path.MakeCleanPath();
     XII_SUCCEED_OR_RETURN(config.Load(path));
     const auto* launch = config.FindLaunch(name);
@@ -313,7 +340,9 @@ xiiResult xiiPlayerApplication::ResolveLaunchConfiguration()
     {
       xiiStringBuilder project = launch->m_sProject;
       if (project.IsRelativePath())
+      {
         project.Prepend(m_sAppProjectPath, "/");
+      }
       project.MakeCleanPath();
       m_sAppProjectPath = project;
     }
@@ -325,10 +354,14 @@ xiiResult xiiPlayerApplication::ResolveLaunchConfiguration()
       xiiDynamicArray<const char*> argv;
       xiiCommandLineUtils::SplitCommandLineString(launch->m_InstanceArguments[index], false, instance, argv);
       for (const auto& arg : instance)
+      {
         effective.PushBack(arg);
+      }
     }
     for (const auto& arg : launch->m_Arguments)
+    {
       effective.PushBack(arg);
+    }
     if (!launch->m_sScene.IsEmpty())
     {
       effective.PushBack("-scene");
@@ -355,10 +388,14 @@ xiiResult xiiPlayerApplication::ResolveLaunchConfiguration()
   }
   const auto mode = command->GetStringOption("-window-mode");
   if (!mode.IsEmpty() && mode != "window" && mode != "borderless" && mode != "fullscreen")
+  {
     return XII_FAILURE;
+  }
   if (command->GetIntOption("-width", 1280) < 320 || command->GetIntOption("-width", 1280) > 16384 ||
       command->GetIntOption("-height", 720) < 200 || command->GetIntOption("-height", 720) > 16384)
+  {
     return XII_FAILURE;
+  }
   return XII_SUCCESS;
 }
 
@@ -388,7 +425,9 @@ void xiiPlayerApplication::LogMessage(const xiiLoggingEventData& e)
 xiiWindow* xiiPlayerApplication::GetPlayerWindow() const
 {
   if (!xiiGameState::GetActiveGameState())
+  {
     return nullptr;
+  }
   xiiHybridArray<xiiRegisteredWindowHandle, 4> windows;
   xiiWindowManager::GetSingleton()->GetRegistered(windows, GetActiveGameState());
   return windows.IsEmpty() ? nullptr : static_cast<xiiWindow*>(xiiWindowManager::GetSingleton()->GetWindow(windows[0]));
@@ -404,7 +443,9 @@ xiiResult xiiPlayerApplication::ApplyDisplayPreview()
 {
   auto* window = GetPlayerWindow();
   if (!window || m_PendingSettings.Validate().Failed())
+  {
     return XII_FAILURE;
+  }
   m_PreviousWindow          = window->GetCreationDescription();
   const bool displayChanged = m_PreviousWindow.m_WindowMode != m_PendingWindow.m_WindowMode ||
     m_PreviousWindow.m_iMonitor != m_PendingWindow.m_iMonitor || m_PreviousWindow.m_Resolution != m_PendingWindow.m_Resolution;
@@ -432,6 +473,7 @@ xiiResult xiiPlayerApplication::ApplyDisplayPreview()
 void xiiPlayerApplication::RevertDisplayPreview()
 {
   if (auto* window = GetPlayerWindow())
+  {
     if (window->ApplyWindowSettings(m_PreviousWindow).Failed())
     {
       // A monitor may have disappeared during preview. Recover to a window on the primary display.
@@ -439,8 +481,11 @@ void xiiPlayerApplication::RevertDisplayPreview()
       m_PreviousWindow.m_iMonitor   = 0;
       m_PreviousWindow.m_Resolution = xiiSizeU32(1280, 720);
       if (window->ApplyWindowSettings(m_PreviousWindow).Failed())
+      {
         xiiLog::Error("Cannot restore the display. Restart Player with -window-mode window -display 0.");
+      }
     }
+  }
   m_PendingWindow    = m_PreviousWindow;
   m_bDisplayPreview  = false;
   m_sSettingsMessage = "Display changes reverted; saved preferences were preserved.";
@@ -451,16 +496,22 @@ void xiiPlayerApplication::UpdateRuntimeSettings()
   auto* window = GetPlayerWindow();
   auto* state  = xiiGameState::GetActiveGameState();
   if (!window || !state || !state->GetMainWorld())
+  {
     return;
+  }
   auto pressed = [](const char* slot) {
     return xiiInputManager::GetInputSlotState(slot) == xiiKeyState::Pressed;
   };
   if (m_bDisplayPreview && (xiiTime::Now() >= m_DisplayPreviewDeadline || !window->HasFocus()))
+  {
     RevertDisplayPreview();
+  }
   if (pressed(xiiInputSlot_KeyF2))
   {
     if (m_bDisplayPreview)
+    {
       RevertDisplayPreview();
+    }
     m_bShowSettings = !m_bShowSettings;
     xiiInputManager::SetExclusiveInputSet(m_bShowSettings ? "PlayerSettings" : "");
     if (m_bShowSettings)
@@ -468,7 +519,9 @@ void xiiPlayerApplication::UpdateRuntimeSettings()
       m_bShowConsole = false;
       m_PendingSettings.Apply(GetSettings()).IgnoreResult();
       if (const auto* cap = static_cast<xiiCVarInt*>(xiiCVar::FindCVarByName("App.FrameLimit")))
+      {
         m_PendingSettings.m_uiFrameLimit = xiiMath::Clamp(cap->GetValue(), 0, 1000);
+      }
       m_PendingWindow = window->GetCreationDescription();
       m_sSettingsMessage.Clear();
     }
@@ -476,7 +529,9 @@ void xiiPlayerApplication::UpdateRuntimeSettings()
   if (m_bShowSettings && pressed(xiiInputSlot_KeyF1))
   {
     if (m_bDisplayPreview)
+    {
       RevertDisplayPreview();
+    }
     m_bShowSettings = false;
     m_bShowConsole  = true;
     xiiInputManager::SetExclusiveInputSet("Console");
@@ -494,7 +549,9 @@ void xiiPlayerApplication::UpdateRuntimeSettings()
   if (pressed(xiiInputSlot_KeyEscape))
   {
     if (m_bDisplayPreview)
+    {
       RevertDisplayPreview();
+    }
     else
     {
       m_bShowSettings = false;
@@ -506,9 +563,13 @@ void xiiPlayerApplication::UpdateRuntimeSettings()
   if (!m_bDisplayPreview)
   {
     if (pressed(xiiInputSlot_KeyDown))
+    {
       m_uiSelectedSetting = (m_uiSelectedSetting + 1) % count;
+    }
     if (pressed(xiiInputSlot_KeyUp))
+    {
       m_uiSelectedSetting = (m_uiSelectedSetting + count - 1) % count;
+    }
     const int direction = pressed(xiiInputSlot_KeyRight) ? 1 : pressed(xiiInputSlot_KeyLeft) ? -1 :
                                                                                                0;
     if (direction != 0)
@@ -528,7 +589,9 @@ void xiiPlayerApplication::UpdateRuntimeSettings()
         {
           xiiHybridArray<xiiScreenInfo, 2> screens;
           if (xiiScreen::EnumerateScreens(screens).Succeeded())
+          {
             m_PendingWindow.m_iMonitor = static_cast<xiiInt8>(xiiMath::Clamp(static_cast<int>(m_PendingWindow.m_iMonitor) + direction, 0, static_cast<int>(screens.GetCount()) - 1));
+          }
           break;
         }
         case 4:
@@ -544,7 +607,7 @@ void xiiPlayerApplication::UpdateRuntimeSettings()
           m_PendingSettings.m_bShowFrameStats = !m_PendingSettings.m_bShowFrameStats;
           break;
         case 8:
-          m_PendingSettings.m_fMasterVolume = xiiMath::Clamp(m_PendingSettings.m_fMasterVolume + direction * 0.05f, 0.0f, 1.0f);
+          m_PendingSettings.m_fMasterVolume = xiiMath::Clamp(m_PendingSettings.m_fMasterVolume + direction * 0.05F, 0.0F, 1.0F);
           break;
         case 9:
           m_PendingSettings.m_bMuteInBackground = !m_PendingSettings.m_bMuteInBackground;
@@ -571,7 +634,9 @@ void xiiPlayerApplication::UpdateRuntimeSettings()
     if (m_bDisplayPreview)
     {
       if (m_PendingWindow.SaveToDDL(":appdata/RuntimeConfigs/Window.ddl").Failed() || ApplySettings(m_PendingSettings).Failed())
+      {
         m_sSettingsMessage = "Cannot save settings. Check write access to the Player preferences directory.";
+      }
       else
       {
         ApplyViewSettings();
@@ -581,7 +646,9 @@ void xiiPlayerApplication::UpdateRuntimeSettings()
       m_bDisplayPreview = false;
     }
     else if (ApplyDisplayPreview().Failed())
+    {
       m_sSettingsMessage = "Cannot apply the requested settings. The previous display was restored.";
+    }
   }
   if (auto* input = window->GetInputDevice())
   {
@@ -608,13 +675,19 @@ void xiiPlayerApplication::UpdateRuntimeSettings()
   const xiiUInt32 visibleRows = xiiMath::Clamp(static_cast<xiiInt32>((height - 190) / 18), 1, static_cast<xiiInt32>(count));
   const xiiUInt32 firstRow    = m_uiSelectedSetting >= visibleRows ? m_uiSelectedSetting - visibleRows + 1 : 0;
   for (xiiUInt32 i = firstRow; i < xiiMath::Min(firstRow + visibleRows, count); ++i)
+  {
     text.AppendFormat("{} {}: {}\n", m_uiSelectedSetting == i ? ">" : " ", labels[i], values[i]);
+  }
   text.Append("\nArrows: select / change\nEnter: apply  Backspace: defaults\nF2/Escape: close  F1: advanced CVars\nRestart-marked CVars need a restart.\n");
   text.Append(m_sSettingsMessage);
   if (m_bDisplayPreview)
+  {
     text.AppendFormat("\nReverting in {} seconds.", xiiMath::Ceil(m_DisplayPreviewDeadline.GetSeconds() - xiiTime::Now().GetSeconds()));
+  }
   if (view)
-    xiiDebugRenderer::Draw2DRectangle(*view, xiiRectFloat(0, 0, xiiMath::Min(view->GetViewport().width, 760.0f), height), 0.0f, xiiColor(0.025f, 0.03f, 0.045f, 0.96f));
+  {
+    xiiDebugRenderer::Draw2DRectangle(*view, xiiRectFloat(0, 0, xiiMath::Min(view->GetViewport().width, 760.0F), height), 0.0F, xiiColor(0.025F, 0.03F, 0.045F, 0.96F));
+  }
   xiiDebugRenderer::DrawInfoText(state->GetMainWorld(), xiiDebugTextPlacement::TopLeft, "PlayerSettings", text, xiiColor::White);
 }
 
@@ -629,10 +702,16 @@ void xiiPlayerApplication::BeforeHighLevelSystemsShutdown()
     m_bSettingsInitialized = false;
     const auto* command    = xiiCommandLineUtils::GetGlobalInstance();
     if (command->HasOption("-App.VSync"))
+    {
       cvar_AppVSync = m_PersistedSettings.m_bVSync;
+    }
     if (command->HasOption("-App.FrameLimit"))
+    {
       if (auto* cap = static_cast<xiiCVarInt*>(xiiCVar::FindCVarByName("App.FrameLimit")))
+      {
         *cap = static_cast<xiiInt32>(m_PersistedSettings.m_uiFrameLimit);
+      }
+    }
   }
 }
 
@@ -649,7 +728,9 @@ void xiiPlayerApplication::AfterCoreSystemsShutdown()
   m_UserSettingsLock.Close();
   m_TelemetryPortLease.Close();
   if (!m_sOwnedTemporaryDirectory.IsEmpty() && xiiOSFile::DeleteFolder(m_sOwnedTemporaryDirectory).Failed())
+  {
     xiiLog::Warning("Cannot remove Player temporary directory '{}'.", m_sOwnedTemporaryDirectory);
+  }
   SUPER::AfterCoreSystemsShutdown();
 }
 
@@ -674,7 +755,9 @@ void xiiPlayerApplication::DetermineProjectPath()
     xiiStringBuilder packaged(xiiOSFile::GetApplicationDirectory(), "/../Data/project");
     packaged.MakeCleanPath();
     if (xiiOSFile::ExistsFile(xiiStringBuilder(packaged, "/xiiProject")))
+    {
       sProjectPath = packaged;
+    }
   }
 
   if (sProjectPath.IsEmpty())
@@ -704,9 +787,13 @@ void xiiPlayerApplication::DetermineProjectPath()
     xiiStringBuilder executableRelative(xiiOSFile::GetApplicationDirectory(), "/", sProjectPath);
     executableRelative.MakeCleanPath();
     if (xiiOSFile::ExistsDirectory(executableRelative))
+    {
       sProjectPath = executableRelative;
+    }
     else
+    {
       sProjectPath.Prepend(xiiFileSystem::GetSdkRootDirectory(), "/");
+    }
   }
 
   sProjectPath.MakeCleanPath();

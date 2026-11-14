@@ -143,7 +143,9 @@ bool xiiEngineProcessGameApplication::EditorAssertHandler(const char* szSourceFi
   xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(500));
 
   if (g_PreviousAssertHandler)
+  {
     return g_PreviousAssertHandler(szSourceFile, uiLine, szFunction, szExpression, szAssertMsg);
+  }
 
   return true;
 }
@@ -184,7 +186,9 @@ void xiiEngineProcessGameApplication::BeforeCoreSystemsShutdown()
 xiiApplication::Execution xiiEngineProcessGameApplication::Run()
 {
   if (WasQuitRequested())
+  {
     return xiiApplication::Execution::Quit;
+  }
   bool bPendingOpInProgress = false;
   do
   {
@@ -197,7 +201,9 @@ xiiApplication::Execution xiiEngineProcessGameApplication::Run()
   } while (!WasQuitRequested() && !bPendingOpInProgress && m_uiRedrawCountExecuted == m_uiRedrawCountReceived);
 
   if (WasQuitRequested())
+  {
     return xiiApplication::Execution::Quit;
+  }
 
   // If the editor enqueues a frame to be rendered, the loop above will break due to m_uiRedrawCountExecuted != m_uiRedrawCountReceived, and we will render a frame.
   // Alternatively, a pending operations is active at which point we render as fast as we can, ignoring the editor lock step.
@@ -220,7 +226,9 @@ void xiiEngineProcessGameApplication::Run_WorldUpdateAndRender()
   for (xiiUInt32 i = 0; i < xiiWorld::GetWorldCount(); ++i)
   {
     if (auto* world = xiiWorld::GetWorld(i))
+    {
       xiiTaskSystem::AddTaskToGroup(group, world->GetUpdateTask());
+    }
   }
   xiiTaskSystem::StartTaskGroup(group);
   xiiTaskSystem::WaitForGroup(group);
@@ -240,10 +248,14 @@ void xiiEngineProcessGameApplication::Run_PresentImage()
     auto* nativeWindow = manager->GetWindow(window);
     auto* output       = nativeWindow ? nativeWindow->GetOutputTarget() : nullptr;
     if (!output)
+    {
       continue;
+    }
     xiiStringBuilder context;
     if (windows.GetCount() > 1)
+    {
       context.Set(" - ", manager->GetName(window));
+    }
     ExecuteTakeScreenshot(output, context);
     if (!captured)
     {
@@ -267,17 +279,23 @@ void xiiEngineProcessGameApplication::InvalidateRenderData()
   {
     auto* world = xiiWorld::GetWorld(i);
     if (!world)
+    {
       continue;
+    }
     XII_LOCK(world->GetWriteMarker());
     if (auto* module = world->GetModule<xiiRenderWorldModule>())
+    {
       module->DeleteAllCachedRenderData();
+    }
   }
 }
 
 void xiiEngineProcessGameApplication::FreeGalResources()
 {
   if (!xiiGALDevice::HasDefaultDevice())
+  {
     return;
+  }
   auto device = xiiGALDevice::GetDefaultDevice();
   device->WaitIdle();
   device->BeginFrame();
@@ -291,10 +309,14 @@ void xiiEngineProcessGameApplication::LogWriter(const xiiLoggingEventData& e)
 
   // the editor does not care about flushing caches, so no need to send this over
   if (msg.m_Entry.m_Type == xiiLogMsgType::Flush)
+  {
     return;
+  }
 
   if (msg.m_Entry.m_sTag == "IPC")
+  {
     return;
+  }
 
   // Prevent infinite recursion by disabling logging until we are done sending the message
   XII_LOG_BLOCK_MUTE();
@@ -343,7 +365,9 @@ void xiiEngineProcessGameApplication::SendProjectReadyMessage()
 void xiiEngineProcessGameApplication::SendReflectionInformation()
 {
   if (xiiEditorEngineProcessApp::GetSingleton()->IsRemoteMode())
+  {
     return;
+  }
 
   xiiSet<const xiiRTTI*> types;
   xiiRTTI::ForEachType([&](const xiiRTTI* pRtti) {
@@ -391,7 +415,9 @@ void xiiEngineProcessGameApplication::EventHandlerIPC(const xiiEngineProcessComm
   {
     // In non-remote mode, the process needs to be properly killed, to prevent error messages this is taken care of by the editor process.
     if (xiiEditorEngineProcessApp::GetSingleton()->IsRemoteMode())
+    {
       RequestQuit();
+    }
 
     return;
   }
@@ -403,7 +429,9 @@ void xiiEngineProcessGameApplication::EventHandlerIPC(const xiiEngineProcessComm
     {
       // Ignore this message, if it is for the same project.
       if (m_sProjectDirectory == pMsg->m_sProjectDir)
+      {
         return;
+      }
 
       xiiLog::Error("Engine Process must restart to switch to another project ('{0}' -> '{1}').", m_sProjectDirectory, pMsg->m_sProjectDir);
       return;
@@ -529,7 +557,9 @@ void xiiEngineProcessGameApplication::EventHandlerIPC(const xiiEngineProcessComm
   else if (const auto* pMsg2b = xiiDynamicCast<const xiiGlobalSettingsMsgToEngine*>(e.m_pMessage))
   {
     if (xiiEngineGizmoHandle::SetGizmoScale(pMsg2b->m_fGizmoScale).Failed())
+    {
       xiiLog::Warning("Ignoring invalid Editor gizmo scale {0}.", pMsg2b->m_fGizmoScale);
+    }
   }
   else if (const auto* pMsg3 = xiiDynamicCast<const xiiChangeCVarMsgToEngine*>(e.m_pMessage))
   {
@@ -561,7 +591,9 @@ void xiiEngineProcessGameApplication::EventHandlerIPC(const xiiEngineProcessComm
       }
     }
     else
+    {
       xiiLog::Warning("xiiChangeCVarMsgToEngine: Unknown CVar '{0}'", pMsg3->m_sCVarName);
+    }
   }
   else if (const auto* pMsg4 = xiiDynamicCast<const xiiConsoleCmdMsgToEngine*>(e.m_pMessage))
   {
@@ -578,7 +610,9 @@ void xiiEngineProcessGameApplication::EventHandlerIPC(const xiiEngineProcessComm
         tmp.AppendFormat(";;00||<{}", s.m_sInput);
       }
       else
+      {
         m_pConsole->GetCommandInterpreter()->Interpret(s);
+      }
 
       for (auto l : s.m_sOutput)
       {
@@ -594,7 +628,9 @@ void xiiEngineProcessGameApplication::EventHandlerIPC(const xiiEngineProcessComm
 
   // Document Messages:
   if (!e.m_pMessage->GetDynamicRTTI()->IsDerivedFrom<xiiEditorEngineDocumentMsg>())
+  {
     return;
+  }
 
   const xiiEditorEngineDocumentMsg* pDocMsg = (const xiiEditorEngineDocumentMsg*)e.m_pMessage;
 
@@ -677,7 +713,9 @@ xiiEngineProcessDocumentContext* xiiEngineProcessGameApplication::CreateDocument
       pDocumentContext = nullptr;
     }
     else
+    {
       m.m_bSucceeded = true;
+    }
   }
 
   m_IPC.SendMessage(&m);

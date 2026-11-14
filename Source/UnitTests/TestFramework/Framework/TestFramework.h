@@ -47,8 +47,8 @@ public:
   void        ApplyTestOrderFromCommandLine(const xiiCommandLineUtils& cmd);
   void        LoadTestSettings();
   void        AutoSaveTestOrder();
-  void        SaveTestOrder(const char* const szFilePath);
-  void        SaveTestSettings(const char* const szFilePath);
+  void        SaveTestOrder(const char* szFilePath);
+  void        SaveTestSettings(const char* szFilePath);
   void        SetAllTestsEnabledStatus(bool bEnable);
   void        SetAllFailedTestsEnabledStatus();
   // Each function on a test must not take longer than the given time or the test process will be terminated.

@@ -118,12 +118,16 @@ template <typename T, bool Construct>
 bool xiiDequeBase<T, Construct>::operator==(const xiiDequeBase<T, Construct>& rhs) const
 {
   if (GetCount() != rhs.GetCount())
+  {
     return false;
+  }
 
   for (xiiUInt32 i = 0; i < GetCount(); ++i)
   {
     if ((*this)[i] != rhs[i])
+    {
       return false;
+    }
   }
 
   return true;
@@ -148,15 +152,25 @@ void xiiDequeBase<T, Construct>::Clear()
 
   // set the first element to a position that allows to add elements at the front
   if (m_uiChunks > 30)
+  {
     m_uiFirstElement = CHUNK_SIZE(T) * 16;
+  }
   else if (m_uiChunks > 8)
+  {
     m_uiFirstElement = CHUNK_SIZE(T) * 4;
+  }
   else if (m_uiChunks > 1)
+  {
     m_uiFirstElement = CHUNK_SIZE(T) * 1;
+  }
   else if (m_uiChunks > 0)
+  {
     m_uiFirstElement = 1; // with the current implementation this case should not be possible.
+  }
   else
+  {
     m_uiFirstElement = 0; // must also work, if Clear is called on a deallocated (not yet allocated) deque
+  }
 }
 
 template <typename T, bool Construct>
@@ -174,7 +188,9 @@ void xiiDequeBase<T, Construct>::Reserve(xiiUInt32 uiCount)
 
   // There is no need to change anything in this case.
   if (uiCount <= m_uiCount)
+  {
     return;
+  }
 
   // keeps track of the largest amount of used elements since the last memory reduction
   m_uiMaxCount = xiiMath::Max(m_uiMaxCount, uiCount);
@@ -182,7 +198,9 @@ void xiiDequeBase<T, Construct>::Reserve(xiiUInt32 uiCount)
   // if there is enough room to hold all requested elements AND one can prepend at least one element (PushFront)
   // do not reallocate
   if ((m_uiFirstElement > 0) && (GetCurMaxCount() >= uiCount))
+  {
     return;
+  }
 
   const xiiUInt32 uiCurFirstChunk  = GetFirstUsedChunk();
   const xiiUInt32 uiRequiredChunks = GetRequiredChunks(uiCount);
@@ -292,7 +310,9 @@ void xiiDequeBase<T, Construct>::CompactIndexArray(xiiUInt32 uiMinChunksToKeep)
 
   // only reduce the index array, if we can reduce its size at least to half (the +4 is for the very small cases)
   if (uiChunksToKeep + 4 >= m_uiChunks / 2)
+  {
     return;
+  }
 
   T** pNewChunkArray = XII_NEW_RAW_BUFFER(m_pAllocator, T*, uiChunksToKeep);
   xiiMemoryUtils::ZeroFill<T*>(pNewChunkArray, uiChunksToKeep);
@@ -669,7 +689,9 @@ xiiUInt32 xiiDequeBase<T, Construct>::IndexOf(const T& value, xiiUInt32 uiStartI
   for (xiiUInt32 i = uiStartIndex; i < m_uiCount; ++i)
   {
     if (xiiMemoryUtils::IsEqual(&operator[](i), &value))
+    {
       return i;
+    }
   }
 
   return xiiInvalidIndex;
@@ -681,7 +703,9 @@ xiiUInt32 xiiDequeBase<T, Construct>::LastIndexOf(const T& value, xiiUInt32 uiSt
   for (xiiUInt32 i = xiiMath::Min(uiStartIndex, m_uiCount); i-- > 0;)
   {
     if (xiiMemoryUtils::IsEqual(&operator[](i), &value))
+    {
       return i;
+    }
   }
   return xiiInvalidIndex;
 }
@@ -748,7 +772,9 @@ template <typename T, bool Construct>
 XII_FORCE_INLINE xiiUInt32 xiiDequeBase<T, Construct>::GetLastUsedChunk(xiiUInt32 uiAtSize) const
 {
   if (uiAtSize == 0)
+  {
     return GetFirstUsedChunk();
+  }
 
   return (m_uiFirstElement + uiAtSize - 1) / CHUNK_SIZE(T);
 }
@@ -763,7 +789,9 @@ template <typename T, bool Construct>
 XII_FORCE_INLINE xiiUInt32 xiiDequeBase<T, Construct>::GetRequiredChunks(xiiUInt32 uiAtSize) const
 {
   if (uiAtSize == 0)
+  {
     return 0;
+  }
 
   return GetLastUsedChunk(uiAtSize) - GetFirstUsedChunk() + 1;
 }
@@ -772,7 +800,9 @@ template <typename T, bool Construct>
 void xiiDequeBase<T, Construct>::DeallocateUnusedChunks(xiiUInt32 uiMaxChunks)
 {
   if (m_uiAllocatedChunks <= uiMaxChunks)
+  {
     return;
+  }
 
   // check all unused chunks at the end, deallocate all that are allocated
   for (xiiUInt32 i = GetLastUsedChunk() + 1; i < m_uiChunks; ++i)
@@ -783,7 +813,9 @@ void xiiDequeBase<T, Construct>::DeallocateUnusedChunks(xiiUInt32 uiMaxChunks)
       XII_DELETE_RAW_BUFFER(m_pAllocator, m_pChunks[i]);
 
       if (m_uiAllocatedChunks <= uiMaxChunks)
+      {
         return;
+      }
     }
   }
 
@@ -798,7 +830,9 @@ void xiiDequeBase<T, Construct>::DeallocateUnusedChunks(xiiUInt32 uiMaxChunks)
       XII_DELETE_RAW_BUFFER(m_pAllocator, m_pChunks[i]);
 
       if (m_uiAllocatedChunks <= uiMaxChunks)
+      {
         return;
+      }
     }
   }
 }
@@ -816,7 +850,9 @@ void xiiDequeBase<T, Construct>::ReduceSize(xiiInt32 iReduction)
 
   // only trigger the size reduction every once in a while (after enough size reduction that actually a few chunks might be unused)
   if (m_iReduceSizeTimer > 0)
+  {
     return;
+  }
 
   ResetReduceSizeCounter();
 
@@ -893,7 +929,9 @@ T& xiiDequeBase<T, Construct>::ElementAt(xiiUInt32 uiIndex)
   XII_ASSERT_DEBUG(uiChunkIndex < m_uiChunks, "");
 
   if (m_pChunks[uiChunkIndex] == nullptr)
+  {
     m_pChunks[uiChunkIndex] = GetUnusedChunk();
+  }
 
   return m_pChunks[uiChunkIndex][uiChunkOffset];
 }
@@ -943,7 +981,9 @@ bool xiiDequeBase<T, Construct>::RemoveAndCopy(const T& value)
   xiiUInt32 uiIndex = IndexOf(value);
 
   if (uiIndex == xiiInvalidIndex)
+  {
     return false;
+  }
 
   RemoveAtAndCopy(uiIndex);
   return true;
@@ -957,7 +997,9 @@ bool xiiDequeBase<T, Construct>::RemoveAndSwap(const T& value)
   xiiUInt32 uiIndex = IndexOf(value);
 
   if (uiIndex == xiiInvalidIndex)
+  {
     return false;
+  }
 
   RemoveAtAndSwap(uiIndex);
   return true;
@@ -986,21 +1028,27 @@ template <typename Comparer>
 void xiiDequeBase<T, Construct>::Sort(const Comparer& comparer)
 {
   if (m_uiCount > 1)
+  {
     xiiSorting::QuickSort(*this, comparer);
+  }
 }
 
 template <typename T, bool Construct>
 void xiiDequeBase<T, Construct>::Sort()
 {
   if (m_uiCount > 1)
+  {
     xiiSorting::QuickSort(*this, xiiCompareHelper<T>());
+  }
 }
 
 template <typename T, bool Construct>
 xiiUInt64 xiiDequeBase<T, Construct>::GetHeapMemoryUsage() const
 {
   if (m_pChunks == nullptr)
+  {
     return 0;
+  }
 
   xiiUInt64 res = m_uiChunks * sizeof(T*);
 

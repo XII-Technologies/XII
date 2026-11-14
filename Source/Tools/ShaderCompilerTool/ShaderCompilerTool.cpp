@@ -126,7 +126,9 @@ xiiResult xiiShaderCompilerApplication::CompileShader(xiiStringView sShaderFile)
   XII_LOG_BLOCK("Compiling Shader", sShaderFile);
 
   if (ExtractPermutationVarValues(sShaderFile).Failed())
+  {
     return XII_FAILURE;
+  }
 
   const xiiUInt32 uiMaxPerms = m_PermutationGenerator.GetPermutationCount();
 
@@ -136,7 +138,9 @@ xiiResult xiiShaderCompilerApplication::CompileShader(xiiStringView sShaderFile)
 
   xiiTaskSystem::ParallelForIndexed(0, uiMaxPerms, [&](xiiUInt32 uiIndex, xiiUInt32 uiCount) {
     if (!bContinue)
+    {
       return;
+    }
 
     xiiHybridArray<xiiGALPermutationVariable, 16> permutationVariables;
     xiiTokenizedFileCache                         fileCache;
@@ -228,7 +232,8 @@ xiiResult xiiShaderCompilerApplication::ExtractPermutationVarValues(xiiStringVie
   {
     for (auto it = m_FixedPermVars.GetIterator(); it.IsValid(); ++it)
     {
-      xiiHashedString sNameHash, sPermutationValue;
+      xiiHashedString sNameHash;
+      xiiHashedString sPermutationValue;
       sNameHash.Assign(it.Key().GetView());
       m_PermutationGenerator.RemovePermutations(sNameHash);
 
@@ -266,16 +271,21 @@ xiiApplication::Execution xiiShaderCompilerApplication::Run()
   xiiDynamicArray<xiiStringView> allFiles;
   if (m_sShaderFiles.IsEmpty())
   {
-    xiiStringBuilder sPath, sPath2;
+    xiiStringBuilder sPath;
+    xiiStringBuilder sPath2;
     for (xiiUInt32 dirIdx = 0; dirIdx < xiiFileSystem::GetNumDataDirectories(); ++dirIdx)
     {
       sPath = xiiFileSystem::GetDataDirectory(dirIdx)->GetDataDirectoryPath();
 
       if (sPath.IsEmpty())
+      {
         continue;
+      }
 
       if (xiiFileSystem::ResolveSpecialDirectory(sPath, sPath2).Failed())
+      {
         continue;
+      }
 
       files.AppendWithSeparator(";", sPath2);
     }
@@ -306,7 +316,8 @@ xiiApplication::Execution xiiShaderCompilerApplication::Run()
       continue;
     }
 
-    xiiStringBuilder relPath, absPath;
+    xiiStringBuilder relPath;
+    xiiStringBuilder absPath;
     if (stats.m_bIsDirectory)
     {
       xiiFileSystemIterator fsIt;

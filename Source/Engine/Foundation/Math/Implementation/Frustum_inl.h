@@ -9,7 +9,7 @@ XII_FORCE_INLINE bool xiiFrustum::Overlaps(const xiiSimdBBox& object) const
 
   // We're working with center and extents scaled by two - but the plane equation still works out
   // correctly since we set W = 2 here.
-  center2.SetW(xiiSimdFloat(2.0f));
+  center2.SetW(xiiSimdFloat(2.0F));
   extents.SetW(xiiSimdFloat::MakeZero());
 
 #if XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE

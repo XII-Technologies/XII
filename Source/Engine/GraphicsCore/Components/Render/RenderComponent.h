@@ -18,16 +18,16 @@ class XII_GRAPHICSCORE_DLL xiiRenderComponent : public xiiComponent
   // xiiComponent
 
 protected:
-  virtual void Deinitialize() override;
-  virtual void OnActivated() override;
-  virtual void OnDeactivated() override;
+  void Deinitialize() override;
+  void OnActivated() override;
+  void OnDeactivated() override;
 
   //////////////////////////////////////////////////////////////////////////
   // xiiRenderComponent
 
 public:
   xiiRenderComponent();
-  ~xiiRenderComponent();
+  ~xiiRenderComponent() override;
   virtual xiiBitflags<xiiRenderExtractionCategory> GetRenderExtractionCategories() const { return xiiRenderExtractionCategory::All; }
 
   /// Opt in only when packets are independent of cameras and extraction requirement sets.

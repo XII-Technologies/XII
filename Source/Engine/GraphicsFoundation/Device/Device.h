@@ -302,7 +302,7 @@ public:
 protected:
   xiiGALDevice(xiiAllocator* pAllocator, const xiiGALDeviceCreationDescription& creationDescription);
 
-  virtual ~xiiGALDevice();
+  ~xiiGALDevice() override;
 
   /// Initialization after device capabilities are known.
   xiiResult PostInitialize();

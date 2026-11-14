@@ -67,19 +67,19 @@ struct xiiMaterialResourceDescriptor
 
   xiiColor m_BaseColor           = xiiColor::White;
   xiiColor m_EmissiveColor       = xiiColor::Black; ///< Linear RGB surface luminance in nits. Non-zero emissive surfaces participate in mesh-light extraction.
-  float    m_fMetallic           = 0.0f;
-  float    m_fRoughness          = 0.5f;
-  float    m_fOcclusionStrength  = 1.0f;
-  float    m_fAlphaCutoff        = 0.5f;
-  float    m_fNormalScale        = 1.0f;
-  float    m_fDisplacementScale  = 0.0f;
-  float    m_fClearCoat          = 0.0f;
-  float    m_fClearCoatRoughness = 0.0f;
-  float    m_fTransmission       = 0.0f;
-  float    m_fThickness          = 0.0f;
-  float    m_fIndexOfRefraction  = 1.5f;
-  float    m_fAnisotropy         = 0.0f;
-  float    m_fSheenRoughness     = 0.5f;
+  float    m_fMetallic           = 0.0F;
+  float    m_fRoughness          = 0.5F;
+  float    m_fOcclusionStrength  = 1.0F;
+  float    m_fAlphaCutoff        = 0.5F;
+  float    m_fNormalScale        = 1.0F;
+  float    m_fDisplacementScale  = 0.0F;
+  float    m_fClearCoat          = 0.0F;
+  float    m_fClearCoatRoughness = 0.0F;
+  float    m_fTransmission       = 0.0F;
+  float    m_fThickness          = 0.0F;
+  float    m_fIndexOfRefraction  = 1.5F;
+  float    m_fAnisotropy         = 0.0F;
+  float    m_fSheenRoughness     = 0.5F;
   xiiInt16 m_iSortPriority       = 0;
 
   xiiTexture2DResourceHandle m_hBaseColorTexture;
@@ -114,7 +114,7 @@ class XII_GRAPHICSCORE_DLL xiiMaterialResource final : public xiiResource
 
 public:
   xiiMaterialResource();
-  ~xiiMaterialResource();
+  ~xiiMaterialResource() override;
 
   xiiHashedString GetPermutationValue(const xiiTempHashedString& sName);
   xiiHashedString GetSurface() const;
@@ -151,7 +151,7 @@ public:
 
   /// Copies current description to the loading description so the material is not modified on reset.
   void         PreserveCurrentDescription();
-  virtual void ResetResource() override;
+  void         ResetResource() override;
 
   const xiiMaterialResourceDescriptor& GetCurrentDescription() const;
 
@@ -166,9 +166,9 @@ public:
   static xiiMaterialResourceHandle GetDefaultMaterial(DefaultMaterialType type);
 
 private:
-  virtual xiiResourceLoadDescription UnloadData(Unload WhatToUnload) override;
-  virtual xiiResourceLoadDescription UpdateContent(xiiStreamReader* Stream) override;
-  virtual void                       UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage) override;
+  xiiResourceLoadDescription UnloadData(Unload WhatToUnload) override;
+  xiiResourceLoadDescription UpdateContent(xiiStreamReader* Stream) override;
+  void                       UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage) override;
 
 private:
   xiiMaterialResourceDescriptor m_LoadingDescription; // stores the state at loading, such that SetParameter etc. calls can be reset later

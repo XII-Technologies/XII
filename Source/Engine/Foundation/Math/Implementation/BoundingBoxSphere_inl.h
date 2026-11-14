@@ -81,7 +81,7 @@ xiiBoundingBoxSphereTemplate<Type> xiiBoundingBoxSphereTemplate<Type>::MakeFromP
   res.m_vCenter         = box.GetCenter();
   res.m_vBoxHalfExtents = box.GetHalfExtents();
 
-  xiiBoundingSphereTemplate<Type> sphere = xiiBoundingSphereTemplate<Type>::MakeFromCenterAndRadius(res.m_vCenter, 0.0f);
+  xiiBoundingSphereTemplate<Type> sphere = xiiBoundingSphereTemplate<Type>::MakeFromCenterAndRadius(res.m_vCenter, 0.0F);
   sphere.ExpandToInclude(pPoints, uiNumPoints, uiStride);
 
   res.m_fSphereRadius = sphere.m_fRadius;
@@ -121,7 +121,7 @@ xiiBoundingBoxSphereTemplate<Type> xiiBoundingBoxSphereTemplate<Type>::MakeFromB
 template <typename Type>
 XII_FORCE_INLINE bool xiiBoundingBoxSphereTemplate<Type>::IsValid() const
 {
-  return (m_vCenter.IsValid() && m_fSphereRadius >= 0.0f && m_vBoxHalfExtents.IsValid() && (m_vBoxHalfExtents.x >= 0) && (m_vBoxHalfExtents.y >= 0) && (m_vBoxHalfExtents.z >= 0));
+  return (m_vCenter.IsValid() && m_fSphereRadius >= 0.0F && m_vBoxHalfExtents.IsValid() && (m_vBoxHalfExtents.x >= 0) && (m_vBoxHalfExtents.y >= 0) && (m_vBoxHalfExtents.z >= 0));
 }
 
 template <typename Type>

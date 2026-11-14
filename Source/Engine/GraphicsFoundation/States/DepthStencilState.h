@@ -86,7 +86,7 @@ protected:
 
   xiiGALDepthStencilState(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALDepthStencilStateCreationDescription& creationDescription);
 
-  virtual ~xiiGALDepthStencilState();
+  ~xiiGALDepthStencilState() override;
 
   virtual xiiResult InitPlatform() = 0;
 

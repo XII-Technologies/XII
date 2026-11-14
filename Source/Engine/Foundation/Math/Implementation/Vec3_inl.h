@@ -56,7 +56,9 @@ template <typename Type>
 XII_IMPLEMENT_IF_FLOAT_TYPE xiiResult xiiVec3Template<Type>::SetLength(Type fNewLength, Type fEpsilon /* = xiiMath::DefaultEpsilon<Type>() */)
 {
   if (NormalizeIfNotZero(xiiVec3Template<Type>::MakeZero(), fEpsilon) == XII_FAILURE)
+  {
     return XII_FAILURE;
+  }
 
   *this *= fNewLength;
   return XII_SUCCESS;
@@ -125,7 +127,7 @@ XII_FORCE_INLINE bool xiiVec3Template<Type>::IsZero() const
 {
   XII_NAN_ASSERT(this);
 
-  return ((x == 0.0f) && (y == 0.0f) && (z == 0.0f));
+  return ((x == 0.0F) && (y == 0.0F) && (z == 0.0F));
 }
 
 template <typename Type>
@@ -140,11 +142,17 @@ template <typename Type>
 bool xiiVec3Template<Type>::IsNaN() const
 {
   if (xiiMath::IsNaN(x))
+  {
     return true;
+  }
   if (xiiMath::IsNaN(y))
+  {
     return true;
+  }
   if (xiiMath::IsNaN(z))
+  {
     return true;
+  }
 
   return false;
 }
@@ -153,11 +161,17 @@ template <typename Type>
 bool xiiVec3Template<Type>::IsValid() const
 {
   if (!xiiMath::IsFinite(x))
+  {
     return false;
+  }
   if (!xiiMath::IsFinite(y))
+  {
     return false;
+  }
   if (!xiiMath::IsFinite(z))
+  {
     return false;
+  }
 
   return true;
 }
@@ -286,8 +300,10 @@ XII_IMPLEMENT_IF_FLOAT_TYPE const xiiVec3Template<Type> xiiVec3Template<Type>::G
   XII_ASSERT_DEBUG(!IsZero(xiiMath::SmallEpsilon<Type>()), "The vector must not be zero to be able to compute an orthogonal vector.");
 
   Type fDot = xiiMath::Abs(this->Dot(xiiVec3Template<Type>(0, 1, 0)));
-  if (fDot < 0.999f)
+  if (fDot < 0.999F)
+  {
     return this->CrossRH(xiiVec3Template<Type>(0, 1, 0));
+  }
 
   return this->CrossRH(xiiVec3Template<Type>(1, 0, 0));
 }
@@ -463,13 +479,21 @@ XII_FORCE_INLINE bool operator<(const xiiVec3Template<Type>& v1, const xiiVec3Te
   XII_NAN_ASSERT(&v2);
 
   if (v1.x < v2.x)
+  {
     return true;
+  }
   if (v1.x > v2.x)
+  {
     return false;
+  }
   if (v1.y < v2.y)
+  {
     return true;
+  }
   if (v1.y > v2.y)
+  {
     return false;
+  }
 
   return (v1.z < v2.z);
 }
@@ -481,11 +505,13 @@ XII_IMPLEMENT_IF_FLOAT_TYPE const xiiVec3Template<Type> xiiVec3Template<Type>::G
 
   const Type n     = fRefIndex1 / fRefIndex2;
   const Type cosI  = this->Dot(vNormal);
-  const Type sinT2 = n * n * (1.0f - (cosI * cosI));
+  const Type sinT2 = n * n * (1.0F - (cosI * cosI));
 
   // invalid refraction
-  if (sinT2 > 1.0f)
+  if (sinT2 > 1.0F)
+  {
     return (*this);
+  }
 
-  return ((n * (*this)) - (n + xiiMath::Sqrt(1.0f - sinT2)) * vNormal);
+  return ((n * (*this)) - (n + xiiMath::Sqrt(1.0F - sinT2)) * vNormal);
 }

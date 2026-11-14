@@ -51,7 +51,9 @@ inline xiiResult DeserializeArray(xiiStreamReader& ref_stream, xiiUInt8* pArray,
 {
   const xiiUInt64 uiNumBytes = sizeof(xiiUInt8) * uiCount;
   if (ref_stream.ReadBytes(pArray, uiNumBytes) == uiNumBytes)
+  {
     return XII_SUCCESS;
+  }
 
   return XII_FAILURE;
 }
@@ -78,7 +80,9 @@ inline xiiResult DeserializeArray(xiiStreamReader& ref_stream, xiiUInt16* pArray
 {
   const xiiUInt64 uiNumBytes = sizeof(xiiUInt16) * uiCount;
   if (ref_stream.ReadBytes(pArray, uiNumBytes) == uiNumBytes)
+  {
     return XII_SUCCESS;
+  }
 
   return XII_FAILURE;
 }
@@ -105,7 +109,9 @@ inline xiiResult DeserializeArray(xiiStreamReader& ref_stream, xiiUInt32* pArray
 {
   const xiiUInt64 uiNumBytes = sizeof(xiiUInt32) * uiCount;
   if (ref_stream.ReadBytes(pArray, uiNumBytes) == uiNumBytes)
+  {
     return XII_SUCCESS;
+  }
 
   return XII_FAILURE;
 }
@@ -132,7 +138,9 @@ inline xiiResult DeserializeArray(xiiStreamReader& ref_stream, xiiUInt64* pArray
 {
   const xiiUInt64 uiNumBytes = sizeof(xiiUInt64) * uiCount;
   if (ref_stream.ReadBytes(pArray, uiNumBytes) == uiNumBytes)
+  {
     return XII_SUCCESS;
+  }
 
   return XII_FAILURE;
 }
@@ -160,7 +168,9 @@ inline xiiResult DeserializeArray(xiiStreamReader& ref_stream, xiiInt8* pArray, 
 {
   const xiiUInt64 uiNumBytes = sizeof(xiiInt8) * uiCount;
   if (ref_stream.ReadBytes(pArray, uiNumBytes) == uiNumBytes)
+  {
     return XII_SUCCESS;
+  }
 
   return XII_FAILURE;
 }
@@ -187,7 +197,9 @@ inline xiiResult DeserializeArray(xiiStreamReader& ref_stream, xiiInt16* pArray,
 {
   const xiiUInt64 uiNumBytes = sizeof(xiiInt16) * uiCount;
   if (ref_stream.ReadBytes(pArray, uiNumBytes) == uiNumBytes)
+  {
     return XII_SUCCESS;
+  }
 
   return XII_FAILURE;
 }
@@ -214,7 +226,9 @@ inline xiiResult DeserializeArray(xiiStreamReader& ref_stream, xiiInt32* pArray,
 {
   const xiiUInt64 uiNumBytes = sizeof(xiiInt32) * uiCount;
   if (ref_stream.ReadBytes(pArray, uiNumBytes) == uiNumBytes)
+  {
     return XII_SUCCESS;
+  }
 
   return XII_FAILURE;
 }
@@ -241,7 +255,9 @@ inline xiiResult DeserializeArray(xiiStreamReader& ref_stream, xiiInt64* pArray,
 {
   const xiiUInt64 uiNumBytes = sizeof(xiiInt64) * uiCount;
   if (ref_stream.ReadBytes(pArray, uiNumBytes) == uiNumBytes)
+  {
     return XII_SUCCESS;
+  }
 
   return XII_FAILURE;
 }
@@ -270,7 +286,9 @@ inline xiiResult DeserializeArray(xiiStreamReader& ref_stream, float* pArray, xi
 {
   const xiiUInt64 uiNumBytes = sizeof(float) * uiCount;
   if (ref_stream.ReadBytes(pArray, uiNumBytes) == uiNumBytes)
+  {
     return XII_SUCCESS;
+  }
 
   return XII_FAILURE;
 }
@@ -297,7 +315,9 @@ inline xiiResult DeserializeArray(xiiStreamReader& ref_stream, double* pArray, x
 {
   const xiiUInt64 uiNumBytes = sizeof(double) * uiCount;
   if (ref_stream.ReadBytes(pArray, uiNumBytes) == uiNumBytes)
+  {
     return XII_SUCCESS;
+  }
 
   return XII_FAILURE;
 }

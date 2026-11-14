@@ -21,7 +21,9 @@ namespace xiiInternal
       {
         xiiVisitorExecution::Enum execution = VISITOR::Visit(pCurrentData, pUserData);
         if (execution != xiiVisitorExecution::Continue)
+        {
           return execution;
+        }
 
         ++pCurrentData;
       }
@@ -198,7 +200,9 @@ namespace xiiInternal
   {
     // higher priority comes first
     if (m_fPriority != other.m_fPriority)
+    {
       return m_fPriority > other.m_fPriority;
+    }
 
     // sort by function name to ensure determinism
     xiiInt32 iNameComp = xiiStringUtils::Compare(m_sFunctionName, other.m_sFunctionName);

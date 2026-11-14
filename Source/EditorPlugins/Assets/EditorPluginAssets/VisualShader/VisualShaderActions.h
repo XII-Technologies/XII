@@ -22,7 +22,7 @@ class xiiVisualShaderAction : public xiiButtonAction
 
 public:
   xiiVisualShaderAction(const xiiActionContext& context, const char* szName);
-  ~xiiVisualShaderAction();
+  ~xiiVisualShaderAction() override;
 
-  virtual void Execute(const xiiVariant& value) override;
+  void Execute(const xiiVariant& value) override;
 };

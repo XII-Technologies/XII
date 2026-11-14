@@ -97,7 +97,7 @@ public:
   xiiUInt64 m_uiInstanceTopologyRevision = 0;               ///< Runtime identity epoch; index shifts must not reuse an earlier GPU identity.
   xiiUInt32 m_uiVisibilityMask           = 0xFFFFFFFFU;
 
-  float m_fLodBias = 0.0f; ///< Projected-coverage octaves for automatic GPU LOD selection; +1 doubles coverage and favors finer LODs.
+  float m_fLodBias = 0.0F; ///< Projected-coverage octaves for automatic GPU LOD selection; +1 doubles coverage and favors finer LODs.
 
   xiiBitflags<xiiMeshRenderDataFlags> m_Flags = xiiMeshRenderDataFlags::Default; ///< Flags specifying various properties of the mesh render data, used to determine how the mesh should be rendered.
 
@@ -122,21 +122,21 @@ class XII_GRAPHICSCORE_DLL xiiMeshComponentBase : public xiiRenderComponent
 public:
   xiiBitflags<xiiRenderExtractionCategory> GetRenderExtractionCategories() const override { return xiiRenderExtractionCategory::Geometry; }
   bool                                     IsRenderDataViewIndependent() const override { return true; }
-  virtual void                             SerializeComponent(xiiWorldWriter& inout_stream) const override;
-  virtual void                             DeserializeComponent(xiiWorldReader& inout_stream) override;
+  void                                     SerializeComponent(xiiWorldWriter& inout_stream) const override;
+  void                                     DeserializeComponent(xiiWorldReader& inout_stream) override;
 
   //////////////////////////////////////////////////////////////////////////
   // xiiRenderComponent
 
 public:
-  virtual xiiResult GetLocalBounds(xiiBoundingBoxSphere& ref_bounds, bool& ref_bAlwaysVisible, xiiMsgUpdateLocalBounds& ref_msg) override;
+  xiiResult GetLocalBounds(xiiBoundingBoxSphere& ref_bounds, bool& ref_bAlwaysVisible, xiiMsgUpdateLocalBounds& ref_msg) override;
 
   //////////////////////////////////////////////////////////////////////////
   // xiiMeshComponentBase
 
 public:
   xiiMeshComponentBase();
-  ~xiiMeshComponentBase();
+  ~xiiMeshComponentBase() override;
 
   /// Sets the mesh resource for this component, used to specify the geometry and materials to render.
   void SetMesh(const xiiMeshResourceHandle& hMesh); // [ property ]
@@ -233,15 +233,15 @@ class XII_GRAPHICSCORE_DLL xiiStaticMeshComponent : public xiiMeshComponentBase
 protected:
   void                                        OnActivated() override;
   void                                        OnDeactivated() override;
-  virtual xiiRenderData::Caching::Enum        GetRenderDataCaching() const override;
-  virtual xiiBitflags<xiiMeshRenderDataFlags> GetMeshRenderFlags() const override;
+  xiiRenderData::Caching::Enum                GetRenderDataCaching() const override;
+  xiiBitflags<xiiMeshRenderDataFlags>         GetMeshRenderFlags() const override;
 
   //////////////////////////////////////////////////////////////////////////
   // xiiStaticMeshComponent
 
 public:
   xiiStaticMeshComponent();
-  ~xiiStaticMeshComponent();
+  ~xiiStaticMeshComponent() override;
 };
 
 /// Default mesh component name used by scenes and tools.
@@ -254,7 +254,7 @@ class XII_GRAPHICSCORE_DLL xiiMeshComponent : public xiiStaticMeshComponent
 
 public:
   xiiMeshComponent();
-  ~xiiMeshComponent();
+  ~xiiMeshComponent() override;
 };
 
 /// Dynamic mesh component for frequently updated meshes and per-frame extraction.
@@ -266,14 +266,14 @@ class XII_GRAPHICSCORE_DLL xiiDynamicMeshComponent : public xiiMeshComponentBase
   // xiiMeshComponentBase
 
 protected:
-  virtual xiiBitflags<xiiMeshRenderDataFlags> GetMeshRenderFlags() const override;
+  xiiBitflags<xiiMeshRenderDataFlags> GetMeshRenderFlags() const override;
 
   //////////////////////////////////////////////////////////////////////////
   // xiiDynamicMeshComponent
 
 public:
   xiiDynamicMeshComponent();
-  ~xiiDynamicMeshComponent();
+  ~xiiDynamicMeshComponent() override;
 };
 
 /// Mesh component carrying palette skinning and morph target data.
@@ -285,23 +285,23 @@ class XII_GRAPHICSCORE_DLL xiiSkinnedMeshComponent : public xiiDynamicMeshCompon
   // xiiComponent
 
 public:
-  virtual void SerializeComponent(xiiWorldWriter& inout_stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& inout_stream) override;
+  void SerializeComponent(xiiWorldWriter& inout_stream) const override;
+  void DeserializeComponent(xiiWorldReader& inout_stream) override;
 
   //////////////////////////////////////////////////////////////////////////
   // xiiMeshComponentBase
 
 protected:
-  virtual xiiResult                           GetLocalBounds(xiiBoundingBoxSphere& ref_bounds, bool& ref_bAlwaysVisible, xiiMsgUpdateLocalBounds& ref_msg) override;
-  virtual void                                FillRenderData(xiiMeshRenderData& ref_renderData, const xiiMeshResource& mesh) const override;
-  virtual xiiBitflags<xiiMeshRenderDataFlags> GetMeshRenderFlags() const override;
+  xiiResult                           GetLocalBounds(xiiBoundingBoxSphere& ref_bounds, bool& ref_bAlwaysVisible, xiiMsgUpdateLocalBounds& ref_msg) override;
+  void                                FillRenderData(xiiMeshRenderData& ref_renderData, const xiiMeshResource& mesh) const override;
+  xiiBitflags<xiiMeshRenderDataFlags> GetMeshRenderFlags() const override;
 
   //////////////////////////////////////////////////////////////////////////
   // xiiSkinnedMeshComponent
 
 public:
   xiiSkinnedMeshComponent();
-  ~xiiSkinnedMeshComponent();
+  ~xiiSkinnedMeshComponent() override;
 
   /// Sets the skeleton resource for this skinned mesh component, used to specify the skeleton for skinning this mesh.
   void SetSkeleton(const xiiSkeletonResourceHandle& hSkeleton); // [ property ]
@@ -345,23 +345,23 @@ class XII_GRAPHICSCORE_DLL xiiInstancedMeshComponent : public xiiMeshComponentBa
   // xiiComponent
 
 public:
-  virtual void SerializeComponent(xiiWorldWriter& inout_stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& inout_stream) override;
+  void SerializeComponent(xiiWorldWriter& inout_stream) const override;
+  void DeserializeComponent(xiiWorldReader& inout_stream) override;
 
   //////////////////////////////////////////////////////////////////////////
   // xiiMeshComponentBase
 
 protected:
-  virtual void                                FillRenderData(xiiMeshRenderData& ref_renderData, const xiiMeshResource& mesh) const override;
-  virtual xiiBitflags<xiiMeshRenderDataFlags> GetMeshRenderFlags() const override;
-  virtual void                                UpdateLocalBoundsForInstances(xiiBoundingBoxSphere& ref_bounds) const override;
+  void                                FillRenderData(xiiMeshRenderData& ref_renderData, const xiiMeshResource& mesh) const override;
+  xiiBitflags<xiiMeshRenderDataFlags> GetMeshRenderFlags() const override;
+  void                                UpdateLocalBoundsForInstances(xiiBoundingBoxSphere& ref_bounds) const override;
 
   //////////////////////////////////////////////////////////////////////////
   // xiiInstancedMeshComponent
 
 public:
   xiiInstancedMeshComponent();
-  ~xiiInstancedMeshComponent();
+  ~xiiInstancedMeshComponent() override;
 
   /// Returns the number of instances for this instanced mesh component, used to determine how many instances of this mesh are being rendered.
   xiiUInt32 GetInstanceCount() const;
@@ -399,13 +399,13 @@ class XII_GRAPHICSCORE_DLL xiiLODMeshComponent : public xiiStaticMeshComponent
   // xiiMeshComponentBase
 
 protected:
-  virtual void                                FillRenderData(xiiMeshRenderData& ref_renderData, const xiiMeshResource& mesh) const override;
-  virtual xiiUInt32                           SelectLOD(const xiiMeshResource& mesh) const override;
-  virtual xiiBitflags<xiiMeshRenderDataFlags> GetMeshRenderFlags() const override;
+  void                                FillRenderData(xiiMeshRenderData& ref_renderData, const xiiMeshResource& mesh) const override;
+  xiiUInt32                           SelectLOD(const xiiMeshResource& mesh) const override;
+  xiiBitflags<xiiMeshRenderDataFlags> GetMeshRenderFlags() const override;
 
 public:
   xiiLODMeshComponent();
-  ~xiiLODMeshComponent();
+  ~xiiLODMeshComponent() override;
 
   /// Sets the forced LOD index for this mesh component, used to override the automatic LOD selection and force a specific LOD level to be rendered.
   void SetForcedLOD(xiiUInt32 uiLOD); // [ property ]
@@ -421,5 +421,5 @@ public:
 
 protected:
   xiiUInt32 m_uiForcedLOD = xiiInvalidIndex; ///< The forced LOD index for this mesh component, used to override the automatic LOD selection and force a specific LOD level to be rendered. If set to xiiInvalidIndex, no LOD is forced and the LOD selection will be automatic based on distance or performance requirements.
-  float     m_fLodBias    = 0.0f;            ///< The LOD bias for this mesh component, used to adjust the LOD selection for this mesh based on distance or performance requirements. A positive bias will make the LOD selection favor higher detail levels, while a negative bias will favor lower detail levels.
+  float     m_fLodBias    = 0.0F;            ///< The LOD bias for this mesh component, used to adjust the LOD selection for this mesh based on distance or performance requirements. A positive bias will make the LOD selection favor higher detail levels, while a negative bias will favor lower detail levels.
 };

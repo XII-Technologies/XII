@@ -74,7 +74,7 @@ struct XII_GRAPHICSCORE_DLL xiiRenderPipelineTextureResolution
   xiiEnum<xiiRenderPipelineTextureResolutionMode> m_Mode;
   xiiUInt32                                       m_uiWidth  = 0;
   xiiUInt32                                       m_uiHeight = 0;
-  float                                           m_fScale   = 1.0f;
+  float                                           m_fScale   = 1.0F;
   xiiString                                       m_sInput; ///< Optional input pin name; otherwise the pass supplies its reference texture.
 
   xiiResult Validate() const;

@@ -26,21 +26,21 @@ class XII_GRAPHICSCORE_DLL xiiDirectionalLightComponent : public xiiLightCompone
   // xiiComponent
 
 public:
-  virtual void SerializeComponent(xiiWorldWriter& inout_stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& inout_stream) override;
+  void SerializeComponent(xiiWorldWriter& inout_stream) const override;
+  void DeserializeComponent(xiiWorldReader& inout_stream) override;
 
   //////////////////////////////////////////////////////////////////////////
   // xiiRenderComponent
 
 public:
-  virtual xiiResult GetLocalBounds(xiiBoundingBoxSphere& ref_bounds, bool& ref_bAlwaysVisible, xiiMsgUpdateLocalBounds& ref_msg) override;
+  xiiResult GetLocalBounds(xiiBoundingBoxSphere& ref_bounds, bool& ref_bAlwaysVisible, xiiMsgUpdateLocalBounds& ref_msg) override;
 
   //////////////////////////////////////////////////////////////////////////
   // xiiDirectionalLightComponent
 
 public:
   xiiDirectionalLightComponent();
-  ~xiiDirectionalLightComponent();
+  ~xiiDirectionalLightComponent() override;
 
   /// Angular diameter of the emitter disc (the "sun disc") as seen from the ground.
   ///
@@ -53,7 +53,7 @@ protected:
   void OnMsgExtractRenderData(xiiMsgExtractRenderData& msg) const;
 
 protected:
-  xiiAngle m_SourceAngle = xiiAngle::MakeFromDegree(0.0f);
+  xiiAngle m_SourceAngle = xiiAngle::MakeFromDegree(0.0F);
 };
 
 /// Visualizer attribute for the angular size (source angle) of a directional light.

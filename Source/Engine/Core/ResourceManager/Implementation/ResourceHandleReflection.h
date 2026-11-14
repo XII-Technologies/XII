@@ -109,10 +109,12 @@ public:
     m_Setter = setter;
 
     if (m_Setter == nullptr)
+    {
       xiiAbstractMemberProperty::m_Flags.Add(xiiPropertyFlags::ReadOnly);
+    }
   }
 
-  virtual void* GetPropertyPointer(const void* pInstance) const override
+  void* GetPropertyPointer(const void* pInstance) const override
   {
     XII_IGNORE_UNUSED(pInstance);
 
@@ -120,12 +122,12 @@ public:
     return nullptr;
   }
 
-  virtual RealType GetValue(const void* pInstance) const override // [tested]
+  RealType GetValue(const void* pInstance) const override // [tested]
   {
     return (static_cast<const Class*>(pInstance)->*m_Getter)().GetResourceID();
   }
 
-  virtual void SetValue(void* pInstance, RealType value) const override // [tested]
+  void SetValue(void* pInstance, RealType value) const override // [tested]
   {
     XII_ASSERT_DEV(m_Setter != nullptr, "The property '{0}' has no setter function, thus it is read-only.", xiiAbstractProperty::GetPropertyName());
 

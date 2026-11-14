@@ -17,7 +17,7 @@ public:
   xiiUInt32 m_uiFrameLimit           = 0;
   xiiUInt32 m_uiBackgroundFrameLimit = 30;
   bool      m_bShowFrameStats        = false;
-  float     m_fMasterVolume          = 1.0f;
+  float     m_fMasterVolume          = 1.0F;
   bool      m_bMuteInBackground      = true;
 
   /// If no reflected file exists, adopts the legacy saved CVar value. Existing reflected data wins.

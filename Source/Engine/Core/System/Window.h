@@ -211,30 +211,32 @@ public:
   xiiWindow();
 
   /// Destroys the window if not already done.
-  virtual ~xiiWindow();
+  ~xiiWindow() override;
 
   /// Returns the currently active description struct.
-  inline const xiiWindowCreationDescription& GetCreationDescription() const { return m_CreationDescription; }
+  const xiiWindowCreationDescription& GetCreationDescription() const { return m_CreationDescription; }
 
-  virtual xiiSizeU32 GetClientAreaSize() const override { return m_CreationDescription.m_Resolution; }
+  xiiSizeU32 GetClientAreaSize() const override { return m_CreationDescription.m_Resolution; }
 
-  virtual xiiWindowHandle GetNativeWindowHandle() const override;
+  xiiWindowHandle GetNativeWindowHandle() const override;
 
-  virtual bool IsFullscreenWindow(bool bOnlyProperFullscreenMode = false) const override
+  bool IsFullscreenWindow(bool bOnlyProperFullscreenMode = false) const override
   {
     if (bOnlyProperFullscreenMode)
+    {
       return m_CreationDescription.m_WindowMode == xiiWindowMode::FullscreenFixedResolution;
+    }
 
     return xiiWindowMode::IsFullscreen(m_CreationDescription.m_WindowMode);
   }
 
-  virtual bool IsVisible() const override { return m_bVisible; }
+  bool IsVisible() const override { return m_bVisible; }
 
-  virtual void AddReference() override { m_iReferenceCount.Increment(); }
+  void AddReference() override { m_iReferenceCount.Increment(); }
 
-  virtual void RemoveReference() override { m_iReferenceCount.Decrement(); }
+  void RemoveReference() override { m_iReferenceCount.Decrement(); }
 
-  virtual void ProcessWindowMessages() override;
+  void ProcessWindowMessages() override;
 
   /// Creates a new platform specific window with the current settings
   ///
@@ -259,7 +261,7 @@ public:
   }
 
   /// Gets if the window is up and running.
-  inline bool IsInitialized() const { return m_bInitialized; }
+  bool IsInitialized() const { return m_bInitialized; }
 
   /// Destroys the window.
   xiiResult Destroy();
@@ -286,7 +288,7 @@ public:
   virtual void OnResize(const xiiSizeU32& newWindowSize);
 
   /// Called when the window position is changed. Not possible on all OSes.
-  virtual void OnWindowMove(const xiiInt32 iNewPosX, const xiiInt32 iNewPosY);
+  virtual void OnWindowMove(xiiInt32 iNewPosX, xiiInt32 iNewPosY);
 
   /// Called when the window gets focus or loses focus.
   virtual void OnFocus(bool bHasFocus);
@@ -300,9 +302,9 @@ public:
   /// Returns the input device that is attached to this window and typically provides mouse / keyboard input.
   xiiStandardInputDevice* GetInputDevice() const { return m_pInputDevice.Borrow(); }
 
-  virtual void SetOutputTarget(xiiUniquePtr<xiiWindowOutputTargetBase>&& pOutputTarget) override;
+  void SetOutputTarget(xiiUniquePtr<xiiWindowOutputTargetBase>&& pOutputTarget) override;
 
-  virtual xiiWindowOutputTargetBase* GetOutputTarget() const override;
+  xiiWindowOutputTargetBase* GetOutputTarget() const override;
 
   /// Allows to subscribe to window events.
   ///

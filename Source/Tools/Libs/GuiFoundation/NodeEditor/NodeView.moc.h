@@ -13,24 +13,24 @@ class XII_GUIFOUNDATION_DLL xiiQtNodeView : public QGraphicsView
   Q_OBJECT
 public:
   explicit xiiQtNodeView(QWidget* pParent = nullptr);
-  ~xiiQtNodeView();
+  ~xiiQtNodeView() override;
 
   void            SetScene(xiiQtNodeScene* pScene);
   xiiQtNodeScene* GetScene();
 
 protected:
-  virtual void mousePressEvent(QMouseEvent* event) override;
-  virtual void mouseMoveEvent(QMouseEvent* event) override;
-  virtual void mouseReleaseEvent(QMouseEvent* event) override;
-  virtual void wheelEvent(QWheelEvent* event) override;
-  virtual void contextMenuEvent(QContextMenuEvent* event) override;
-  virtual void resizeEvent(QResizeEvent*) override;
-  virtual void drawBackground(QPainter* painter, const QRectF& r) override;
+  void mousePressEvent(QMouseEvent* event) override;
+  void mouseMoveEvent(QMouseEvent* event) override;
+  void mouseReleaseEvent(QMouseEvent* event) override;
+  void wheelEvent(QWheelEvent* event) override;
+  void contextMenuEvent(QContextMenuEvent* event) override;
+  void resizeEvent(QResizeEvent*) override;
+  void drawBackground(QPainter* painter, const QRectF& r) override;
 
 private:
   void UpdateView();
 
-  void DrawGrid(QPainter* painter, const double gridStep);
+  void DrawGrid(QPainter* painter, double gridStep);
 
 private:
   xiiQtNodeScene* m_pScene      = nullptr;

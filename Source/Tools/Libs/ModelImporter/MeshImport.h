@@ -73,14 +73,14 @@ struct XII_MODELIMPORTER_DLL xiiModelMeshMaterial
   float                                    m_fMetallic           = 0;
   float                                    m_fRoughness          = 1;
   float                                    m_fOpacity            = 1; ///< Independent opacity multiplier; glTF alpha is already in m_BaseColor.a.
-  float                                    m_fAlphaCutoff        = 0.5f;
+  float                                    m_fAlphaCutoff        = 0.5F;
   float                                    m_fClearCoat          = 0;
   float                                    m_fClearCoatRoughness = 0;
   float                                    m_fTransmission       = 0;
   float                                    m_fThickness          = 0;
-  float                                    m_fIndexOfRefraction  = 1.5f;
+  float                                    m_fIndexOfRefraction  = 1.5F;
   float                                    m_fAnisotropy         = 0;
-  float                                    m_fSheenRoughness     = 0.5f;
+  float                                    m_fSheenRoughness     = 0.5F;
   bool                                     m_bTwoSided           = false;
   AlphaMode                                m_AlphaMode           = AlphaMode::Opaque;
   xiiDynamicArray<xiiModelMaterialTexture> m_Textures;
@@ -105,7 +105,7 @@ struct XII_MODELIMPORTER_DLL xiiModelMeshImportOptions
   bool                                   m_bFlipTextureV        = true; ///< Flip Assimp's canonical UVs; glTF is already flipped while decoding.
   xiiEnum<xiiModelVertexColorConversion> m_VertexColorConversion;
   float                                  m_fSimplification           = 0;     ///< Fraction of triangles to remove, in [0, 1). Zero disables simplification.
-  float                                  m_fMaxSimplificationError   = 0.05f; ///< Error relative to mesh extents, in [0, 1].
+  float                                  m_fMaxSimplificationError   = 0.05F; ///< Error relative to mesh extents, in [0, 1].
   bool                                   m_bAggressiveSimplification = false;
   xiiUInt8                               m_uiGeneratedLODs           = 0; ///< Additional native LODs (0-4), each targeting half as many triangles.
 };

@@ -133,7 +133,9 @@ public:
   static const xiiSystemInformation& Get()
   {
     if (!s_SystemInformation.m_bIsInitialized)
+    {
       Initialize();
+    }
 
     return s_SystemInformation;
   }

@@ -67,8 +67,12 @@ public:
   xiiResult BeginFrameFrom(const xiiRenderGraphBlackboard& parent)
   {
     for (auto* ancestor = &parent; ancestor; ancestor = ancestor->m_pParent)
+    {
       if (ancestor == this)
+      {
         return XII_FAILURE;
+      }
+    }
     ClearFrame();
     m_pParent = &parent;
     return XII_SUCCESS;

@@ -69,7 +69,9 @@ void xiiHybridStringBase<Size>::ReadAll(xiiStreamReader& ref_stream)
     const xiiUInt32 uiRead = (xiiUInt32)ref_stream.ReadBytes(Temp, 1024);
 
     if (uiRead == 0)
+    {
       break;
+    }
 
     Bytes.PushBackRange(xiiArrayPtr<xiiUInt8>(Temp, uiRead));
   }

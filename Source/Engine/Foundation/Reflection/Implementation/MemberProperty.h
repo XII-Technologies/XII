@@ -31,7 +31,7 @@ public:
 
   /// Returns the actual type of the property. You can then compare that with known types, eg. compare it to xiiGetStaticRTTI<int>()
   /// to see whether this is an int property.
-  virtual const xiiRTTI* GetSpecificType() const override // [tested]
+  const xiiRTTI* GetSpecificType() const override // [tested]
   {
     return xiiGetStaticRTTI<typename xiiTypeTraits<Type>::NonConstReferencePointerType>();
   }
@@ -44,8 +44,8 @@ public:
   /// \note Make sure the property is not read-only before calling this, otherwise an assert will fire.
   virtual void SetValue(void* pInstance, Type value) const = 0; // [tested]
 
-  virtual void GetValuePtr(const void* pInstance, void* pObject) const override { *static_cast<Type*>(pObject) = GetValue(pInstance); };
-  virtual void SetValuePtr(void* pInstance, const void* pObject) const override { SetValue(pInstance, *static_cast<const Type*>(pObject)); };
+  void GetValuePtr(const void* pInstance, void* pObject) const override { *static_cast<Type*>(pObject) = GetValue(pInstance); };
+  void SetValuePtr(void* pInstance, const void* pObject) const override { SetValue(pInstance, *static_cast<const Type*>(pObject)); };
 };
 
 /// Specialization of xiiTypedMemberProperty for const char*.
@@ -63,15 +63,15 @@ public:
     m_Flags = xiiPropertyFlags::GetParameterFlags<const char*>();
   }
 
-  virtual const xiiRTTI* GetSpecificType() const override // [tested]
+  const xiiRTTI* GetSpecificType() const override // [tested]
   {
     return xiiGetStaticRTTI<const char*>();
   }
 
   virtual const char* GetValue(const void* pInstance) const              = 0;
   virtual void        SetValue(void* pInstance, const char* value) const = 0;
-  virtual void        GetValuePtr(const void* pInstance, void* pObject) const override { *static_cast<const char**>(pObject) = GetValue(pInstance); };
-  virtual void        SetValuePtr(void* pInstance, const void* pObject) const override { SetValue(pInstance, *static_cast<const char* const*>(pObject)); };
+  void                GetValuePtr(const void* pInstance, void* pObject) const override { *static_cast<const char**>(pObject) = GetValue(pInstance); };
+  void                SetValuePtr(void* pInstance, const void* pObject) const override { SetValue(pInstance, *static_cast<const char* const*>(pObject)); };
 };
 
 
@@ -97,12 +97,14 @@ public:
     m_Setter = setter;
 
     if (m_Setter == nullptr)
+    {
       xiiAbstractMemberProperty::m_Flags.Add(xiiPropertyFlags::ReadOnly);
+    }
   }
 
   /// Always returns nullptr; once a property is modified through accessors, there is no point in giving more direct access to
   /// others.
-  virtual void* GetPropertyPointer(const void* pInstance) const override
+  void* GetPropertyPointer(const void* pInstance) const override
   {
     XII_IGNORE_UNUSED(pInstance);
 
@@ -111,7 +113,7 @@ public:
   }
 
   /// Returns the value of the property. Pass the instance pointer to the surrounding class along.
-  virtual RealType GetValue(const void* pInstance) const override // [tested]
+  RealType GetValue(const void* pInstance) const override // [tested]
   {
     return (static_cast<const Class*>(pInstance)->*m_Getter)();
   }
@@ -119,12 +121,14 @@ public:
   /// Modifies the value of the property. Pass the instance pointer to the surrounding class along.
   ///
   /// \note Make sure the property is not read-only before calling this, otherwise an assert will fire.
-  virtual void SetValue(void* pInstance, RealType value) const override // [tested]
+  void SetValue(void* pInstance, RealType value) const override // [tested]
   {
     XII_ASSERT_DEV(m_Setter != nullptr, "The property '{0}' has no setter function, thus it is read-only.", xiiAbstractProperty::GetPropertyName());
 
     if (m_Setter)
+    {
       (static_cast<Class*>(pInstance)->*m_Setter)(value);
+    }
   }
 
 private:
@@ -168,24 +172,28 @@ public:
     m_Pointer = pointer;
 
     if (m_Setter == nullptr)
+    {
       xiiAbstractMemberProperty::m_Flags.Add(xiiPropertyFlags::ReadOnly);
+    }
   }
 
   /// Returns a pointer to the member property.
-  virtual void* GetPropertyPointer(const void* pInstance) const override { return m_Pointer(static_cast<const Class*>(pInstance)); }
+  void* GetPropertyPointer(const void* pInstance) const override { return m_Pointer(static_cast<const Class*>(pInstance)); }
 
   /// Returns the value of the property. Pass the instance pointer to the surrounding class along.
-  virtual Type GetValue(const void* pInstance) const override { return m_Getter(static_cast<const Class*>(pInstance)); }
+  Type GetValue(const void* pInstance) const override { return m_Getter(static_cast<const Class*>(pInstance)); }
 
   /// Modifies the value of the property. Pass the instance pointer to the surrounding class along.
   ///
   /// \note Make sure the property is not read-only before calling this, otherwise an assert will fire.
-  virtual void SetValue(void* pInstance, Type value) const override
+  void SetValue(void* pInstance, Type value) const override
   {
     XII_ASSERT_DEV(m_Setter != nullptr, "The property '{0}' has no setter function, thus it is read-only.", xiiAbstractProperty::GetPropertyName());
 
     if (m_Setter)
+    {
       m_Setter(static_cast<Class*>(pInstance), value);
+    }
   }
 
 private:

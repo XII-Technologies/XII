@@ -23,7 +23,7 @@ const xiiRTTI* xiiGetStaticRTTI();
 
 struct xiiArgI
 {
-  inline explicit xiiArgI(xiiInt64 value, xiiUInt8 uiWidth = 1, bool bPadWithZeros = false, xiiUInt8 uiBase = 10) :
+  explicit xiiArgI(xiiInt64 value, xiiUInt8 uiWidth = 1, bool bPadWithZeros = false, xiiUInt8 uiBase = 10) :
     m_Value(value), m_uiWidth(uiWidth), m_bPadWithZeros(bPadWithZeros), m_uiBase(uiBase)
   {
   }
@@ -36,7 +36,7 @@ struct xiiArgI
 
 struct xiiArgU
 {
-  inline explicit xiiArgU(xiiUInt64 value, xiiUInt8 uiWidth = 1, bool bPadWithZeros = false, xiiUInt8 uiBase = 10, bool bUpperCase = false) :
+  explicit xiiArgU(xiiUInt64 value, xiiUInt8 uiWidth = 1, bool bPadWithZeros = false, xiiUInt8 uiBase = 10, bool bUpperCase = false) :
     m_Value(value), m_uiWidth(uiWidth), m_bPadWithZeros(bPadWithZeros), m_bUpperCase(bUpperCase), m_uiBase(uiBase)
   {
   }
@@ -50,7 +50,7 @@ struct xiiArgU
 
 struct xiiArgF
 {
-  inline explicit xiiArgF(double value, xiiInt8 iPrecision = -1, bool bScientific = false, xiiUInt8 uiWidth = 1, bool bPadWithZeros = false) :
+  explicit xiiArgF(double value, xiiInt8 iPrecision = -1, bool bScientific = false, xiiUInt8 uiWidth = 1, bool bPadWithZeros = false) :
     m_Value(value), m_uiWidth(uiWidth), m_bPadWithZeros(bPadWithZeros), m_bScientific(bScientific), m_iPrecision(iPrecision)
   {
   }
@@ -64,7 +64,7 @@ struct xiiArgF
 
 struct xiiArgC
 {
-  inline explicit xiiArgC(char value) :
+  explicit xiiArgC(char value) :
     m_Value(value)
   {
   }
@@ -74,7 +74,7 @@ struct xiiArgC
 
 struct xiiArgP
 {
-  inline explicit xiiArgP(const void* value) :
+  explicit xiiArgP(const void* value) :
     m_Value(value)
   {
   }
@@ -93,23 +93,23 @@ struct xiiArgP
 ///       end up being displayed as 1000.00K for base 1000 due to rounding.
 struct xiiArgHumanReadable
 {
-  inline xiiArgHumanReadable(const double value, const xiiUInt64 uiBase, const char* const* const pSuffixes, xiiUInt32 uiSuffixCount) :
+  xiiArgHumanReadable(const double value, const xiiUInt64 uiBase, const char* const* const pSuffixes, xiiUInt32 uiSuffixCount) :
     m_Value(value), m_Base(uiBase), m_Suffixes(pSuffixes), m_SuffixCount(uiSuffixCount)
   {
   }
 
-  inline xiiArgHumanReadable(const xiiInt64 value, const xiiUInt64 uiBase, const char* const* const pSuffixes, xiiUInt32 uiSuffixCount) :
+  xiiArgHumanReadable(const xiiInt64 value, const xiiUInt64 uiBase, const char* const* const pSuffixes, xiiUInt32 uiSuffixCount) :
     xiiArgHumanReadable(static_cast<double>(value), uiBase, pSuffixes, uiSuffixCount)
   {
   }
 
-  inline explicit xiiArgHumanReadable(const double value) :
-    xiiArgHumanReadable(value, 1000u, m_DefaultSuffixes, XII_ARRAY_SIZE(m_DefaultSuffixes))
+  explicit xiiArgHumanReadable(const double value) :
+    xiiArgHumanReadable(value, 1000U, m_DefaultSuffixes, XII_ARRAY_SIZE(m_DefaultSuffixes))
   {
   }
 
-  inline explicit xiiArgHumanReadable(const xiiInt64 value) :
-    xiiArgHumanReadable(static_cast<double>(value), 1000u, m_DefaultSuffixes, XII_ARRAY_SIZE(m_DefaultSuffixes))
+  explicit xiiArgHumanReadable(const xiiInt64 value) :
+    xiiArgHumanReadable(static_cast<double>(value), 1000U, m_DefaultSuffixes, XII_ARRAY_SIZE(m_DefaultSuffixes))
   {
   }
 
@@ -122,8 +122,8 @@ struct xiiArgHumanReadable
 
 struct xiiArgFileSize : public xiiArgHumanReadable
 {
-  inline explicit xiiArgFileSize(const xiiUInt64 value) :
-    xiiArgHumanReadable(static_cast<double>(value), 1024u, m_ByteSuffixes, XII_ARRAY_SIZE(m_ByteSuffixes))
+  explicit xiiArgFileSize(const xiiUInt64 value) :
+    xiiArgHumanReadable(static_cast<double>(value), 1024U, m_ByteSuffixes, XII_ARRAY_SIZE(m_ByteSuffixes))
   {
   }
 
@@ -154,7 +154,7 @@ XII_FOUNDATION_DLL xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, co
 /// \sa https://man7.org/linux/man-pages/man3/errno.3.html
 struct xiiArgErrno
 {
-  inline explicit xiiArgErrno(xiiInt32 iErrno) :
+  explicit xiiArgErrno(xiiInt32 iErrno) :
     m_iErrno(iErrno)
   {
   }
@@ -165,7 +165,7 @@ XII_FOUNDATION_DLL xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, co
 
 struct xiiArgErrorCode
 {
-  inline explicit xiiArgErrorCode(xiiUInt32 uiErrorCode) :
+  explicit xiiArgErrorCode(xiiUInt32 uiErrorCode) :
     m_ErrorCode(uiErrorCode)
   {
   }
@@ -186,7 +186,7 @@ XII_FOUNDATION_DLL xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, co
 ///        This may be passed through unmodified, or can guide the scrambling function to choose how to output the sensitive data.
 struct xiiArgSensitive
 {
-  inline explicit xiiArgSensitive(const xiiStringView& sSensitiveInfo, const char* szContext = nullptr) :
+  explicit xiiArgSensitive(const xiiStringView& sSensitiveInfo, const char* szContext = nullptr) :
     m_sSensitiveInfo(sSensitiveInfo), m_szContext(szContext)
   {
   }
@@ -208,13 +208,13 @@ struct xiiArgSensitive
 struct xiiArgEnum
 {
   template <typename T>
-  inline explicit xiiArgEnum(xiiEnum<T> value, bool bFullyQualifiedName = false) :
+  explicit xiiArgEnum(xiiEnum<T> value, bool bFullyQualifiedName = false) :
     m_pType(xiiGetStaticRTTI<T>()), m_iValue(static_cast<xiiInt64>(value.GetValue())), m_bFullyQualifiedName(bFullyQualifiedName)
   {
   }
 
   template <typename T>
-  inline explicit xiiArgEnum(xiiBitflags<T> value, bool bFullyQualifiedName = false) :
+  explicit xiiArgEnum(xiiBitflags<T> value, bool bFullyQualifiedName = false) :
     m_pType(xiiGetStaticRTTI<T>()), m_iValue(static_cast<xiiInt64>(value.GetValue())), m_bFullyQualifiedName(bFullyQualifiedName)
   {
   }

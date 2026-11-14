@@ -197,7 +197,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderVariableClassType
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALShaderVariableClassType);
 
 /// This describes shader code variable.
-struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderVariableDescription : public xiiHashableStruct<xiiGALShaderVariableDescription>
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderVariableDescription
 {
   XII_DECLARE_MEM_RELOCATABLE_TYPE();
 
@@ -215,7 +215,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderVariableDescription : public xiiHa
 };
 
 /// This describes shader resource.
-struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderResourceDescription : public xiiHashableStruct<xiiGALShaderResourceDescription>
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderResourceDescription
 {
   XII_DECLARE_MEM_RELOCATABLE_TYPE();
 
@@ -248,7 +248,9 @@ public:
   [[nodiscard]] XII_ALWAYS_INLINE const void* GetByteCode() const
   {
     if (m_ByteCode.IsEmpty())
+    {
       return nullptr;
+    }
 
     return m_ByteCode.GetData();
   };

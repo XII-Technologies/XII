@@ -321,7 +321,9 @@ template <typename T>
 bool xiiListBase<T>::operator==(const xiiListBase<T>& rhs) const
 {
   if (GetCount() != rhs.GetCount())
+  {
     return false;
+  }
 
   auto itLhs = GetIterator();
   auto itRhs = rhs.GetIterator();
@@ -329,7 +331,9 @@ bool xiiListBase<T>::operator==(const xiiListBase<T>& rhs) const
   while (itLhs.IsValid())
   {
     if (*itLhs != *itRhs)
+    {
       return false;
+    }
 
     ++itLhs;
     ++itRhs;

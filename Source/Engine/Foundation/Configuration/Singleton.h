@@ -34,14 +34,14 @@ public:
 
   /// Retrieves a singleton instance by type name. Returns nullptr if no singleton instance is available.
   template <typename Interface>
-  inline static Interface* GetSingletonInstance() // [tested]
+  static Interface* GetSingletonInstance() // [tested]
   {
     return static_cast<Interface*>(GetSingletons().GetValueOrDefault(GetHash<Interface>(), {"", nullptr}).m_pInstance);
   }
 
   /// Retrieves a singleton instance by type name. Asserts if no singleton instance is available.
   template <typename Interface>
-  inline static Interface* GetRequiredSingletonInstance() // [tested]
+  static Interface* GetRequiredSingletonInstance() // [tested]
   {
     auto value = GetSingletonInstance<Interface>();
     XII_ASSERT_ALWAYS(value, "No instance of singleton type \"{0}\" has been registered!", typeid(Interface).name());
@@ -53,7 +53,7 @@ public:
 
   /// Registers a singleton instance under a given type name. This is automatically called by xiiSingletonRegistrar.
   template <typename Interface>
-  inline static void Register(Interface* pSingletonInstance) // [tested]
+  static void Register(Interface* pSingletonInstance) // [tested]
   {
     XII_ASSERT_DEV(pSingletonInstance != nullptr, "Invalid singleton instance pointer");
     XII_ASSERT_DEV(GetSingletons()[GetHash<Interface>()].m_pInstance == nullptr, "Singleton for type '{0}' has already been registered", typeid(Interface).name());
@@ -63,7 +63,7 @@ public:
 
   /// Unregisters a singleton instance. This is automatically called by xiiSingletonRegistrar.
   template <typename Interface>
-  inline static void Unregister() // [tested]
+  static void Unregister() // [tested]
   {
     XII_ASSERT_DEV(GetSingletons()[GetHash<Interface>()].m_pInstance != nullptr, "Singleton for type '{0}' is currently not registered", typeid(Interface).name());
 
@@ -75,7 +75,7 @@ private:
   friend class xiiSingletonRegistrar;
 
   template <typename Interface>
-  inline static size_t GetHash()
+  static size_t GetHash()
   {
     static const size_t hash = typeid(Interface).hash_code();
     return hash;

@@ -89,16 +89,18 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALPipelineType
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALPipelineType);
 
 /// This describes the sample information.
-struct XII_GRAPHICSFOUNDATION_DLL xiiGALSampleDescription : public xiiHashableStruct<xiiGALSampleDescription>
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALSampleDescription
 {
   XII_DECLARE_POD_TYPE();
+
+  XII_ALWAYS_INLINE bool operator==(const xiiGALSampleDescription& rhs) const = default;
 
   xiiUInt8 m_uiCount   = 1U; ///< The sample count.
   xiiUInt8 m_uiQuality = 0U; ///< The sample quality.
 };
 
 /// This describes the shader variable information.
-struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderResourceVariableDescription : public xiiHashableStruct<xiiGALShaderResourceVariableDescription>
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderResourceVariableDescription
 {
   XII_DECLARE_POD_TYPE();
 
@@ -156,9 +158,11 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALRayTracingProceduralHitShaderGroupDescri
 };
 
 /// This describes the ray tracing pipeline information.
-struct XII_GRAPHICSFOUNDATION_DLL xiiGALRayTracingPipelineDescription : public xiiHashableStruct<xiiGALRayTracingPipelineDescription>
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALRayTracingPipelineDescription
 {
   XII_DECLARE_POD_TYPE();
+
+  XII_ALWAYS_INLINE bool operator==(const xiiGALRayTracingPipelineDescription& rhs) const = default;
 
   xiiUInt16 m_uiShaderRecordSize  = 0U; ///< Size of the additional data passed to the shader. Shader record size plus shader group size (32 bytes) must be aligned to 32 bytes. Shader record size plus shader group size (32 bytes) must not exceed 4096 bytes
   xiiUInt8  m_uiMaxRecursionDepth = 0U; ///< Maximum ray traversal recursion depth. Zero selects the backend minimum of one. See Device MaxRayTracingRecursionDepth.
@@ -176,9 +180,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTilePipelineDescription
 /// This describes the pipeline state creation description.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALPipelineStateCreationDescription
 {
-  xiiEnum<xiiGALPipelineType>                   m_PipelineType;               ///< The pipeline type. The default is xiiGALPipelineType::Graphics.
-  xiiSharedPtr<xiiGALPipelineResourceSignature> m_pPipelineResourceSignature; ///< The reference-counted pointer to the pipeline resource signature that contains the shader resource description.
-
   XII_ALWAYS_INLINE bool operator==(const xiiGALPipelineStateCreationDescription& rhs) const = default;
 
   /// Returns true if this pipeline state is a graphics pipeline.
@@ -192,6 +193,9 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALPipelineStateCreationDescription
 
   /// Returns true if this pipeline state is a tile pipeline.
   XII_ALWAYS_INLINE constexpr bool IsTilePipeline() const { return m_PipelineType == xiiGALPipelineType::Tile; }
+
+  xiiEnum<xiiGALPipelineType>                   m_PipelineType;               ///< The pipeline type. The default is xiiGALPipelineType::Graphics.
+  xiiSharedPtr<xiiGALPipelineResourceSignature> m_pPipelineResourceSignature; ///< The reference-counted pointer to the pipeline resource signature that contains the shader resource description.
 };
 
 /// This describes the graphics pipeline state creation description.
@@ -275,7 +279,7 @@ protected:
 
   xiiGALPipelineState(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALPipelineStateCreationDescription& creationDescription);
 
-  virtual ~xiiGALPipelineState();
+  ~xiiGALPipelineState() override;
 
 protected:
   xiiGALPipelineStateCreationDescription m_Description;
@@ -296,7 +300,7 @@ protected:
 
   xiiGALGraphicsPipelineState(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALGraphicsPipelineStateCreationDescription& creationDescription);
 
-  virtual ~xiiGALGraphicsPipelineState();
+  ~xiiGALGraphicsPipelineState() override;
 
   virtual xiiResult InitPlatform() = 0;
 
@@ -319,7 +323,7 @@ protected:
 
   xiiGALComputePipelineState(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALComputePipelineStateCreationDescription& creationDescription);
 
-  virtual ~xiiGALComputePipelineState();
+  ~xiiGALComputePipelineState() override;
 
   virtual xiiResult InitPlatform() = 0;
 
@@ -342,7 +346,7 @@ protected:
 
   xiiGALRayTracingPipelineState(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALRayTracingPipelineStateCreationDescription& creationDescription);
 
-  virtual ~xiiGALRayTracingPipelineState();
+  ~xiiGALRayTracingPipelineState() override;
 
   virtual xiiResult InitPlatform() = 0;
 
@@ -365,7 +369,7 @@ protected:
 
   xiiGALTilePipelineState(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALTilePipelineStateCreationDescription& creationDescription);
 
-  virtual ~xiiGALTilePipelineState();
+  ~xiiGALTilePipelineState() override;
 
   virtual xiiResult InitPlatform() = 0;
 

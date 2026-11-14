@@ -82,7 +82,7 @@ protected:
 
   xiiGALFence(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALFenceCreationDescription& creationDescription);
 
-  virtual ~xiiGALFence();
+  ~xiiGALFence() override;
 
   virtual xiiResult InitPlatform() = 0;
 

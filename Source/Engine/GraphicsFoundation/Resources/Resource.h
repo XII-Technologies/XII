@@ -44,7 +44,7 @@ protected:
   friend class xiiMemoryUtils;
 
   xiiGALResource(xiiSharedPtr<xiiGALDevice> pDevice);
-  virtual ~xiiGALResource();
+  ~xiiGALResource() override;
 
   xiiBitflags<xiiGALResourceStateFlags> m_ResourceState;
 };
@@ -59,5 +59,5 @@ protected:
   friend class xiiMemoryUtils;
 
   xiiGALResourceView(xiiSharedPtr<xiiGALDevice> pDevice);
-  virtual ~xiiGALResourceView();
+  ~xiiGALResourceView() override;
 };
