@@ -38,7 +38,6 @@ SAFE_FIX_CHECKS = (
     "modernize-redundant-void-arg",
     "modernize-use-nullptr",
     "modernize-use-override",
-    "misc-include-cleaner",
 )
 
 
