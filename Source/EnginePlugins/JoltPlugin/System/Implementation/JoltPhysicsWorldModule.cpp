@@ -2396,6 +2396,8 @@ namespace
   template <typename Native>
   struct QueryFilters final : JPH::BroadPhaseLayerFilter, JPH::ObjectLayerFilter, JPH::BodyFilter, JPH::ShapeFilter
   {
+    using JPH::BodyFilter::ShouldCollide;
+
     QueryFilters(const Native& native, const xiiWorld& world, const xiiPhysicsQueryParameters& params) :
       m_Native(native), m_World(world), m_Params(params)
     {
@@ -3373,11 +3375,20 @@ void xiiJoltPhysicsWorldModule::UpdateStaticCollision(const UpdateContext&)
     reloaded.Swap(native.m_StaticMeshReloads);
   }
   if (!reloaded.IsEmpty())
+  {
+
     for (auto it = native.m_StaticMeshCache.GetIterator(); it.IsValid();)
+    {
       if (reloaded.Contains(it.Value()->m_hMesh.GetResourceIDHash()))
+      {
         it = native.m_StaticMeshCache.Remove(it);
+      }
       else
+      {
         ++it;
+      }
+    }
+  }
   if (!changed.IsEmpty() || !reloaded.IsEmpty())
     for (auto it = native.m_StaticGroups.GetIterator(); it.IsValid(); ++it)
     {
