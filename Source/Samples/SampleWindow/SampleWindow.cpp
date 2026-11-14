@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <SampleWindow/SampleWindow.h>
 
 #include <Core/Graphics/Camera.h>
