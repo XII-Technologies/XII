@@ -28,7 +28,7 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-      - name: Repair copyright and format changed lines
+      - name: Repair copyright and format changed files
         id: format
         if: github.event_name == 'pull_request'
         env:
@@ -46,7 +46,7 @@ jobs:
             echo "head-changed=true" >> "$GITHUB_OUTPUT"
           fi
           # Format the actual integration tree, where the base may have edited
-          # lines adjacent to the PR changes.
+          # source files also modified by the PR.
           python3 Utilities/CI/format_changed_source.py --base "$BASE_SHA" --formatter clang-format-22 \
             --patch "$patch_dir/merge-style.patch"
           if [[ -f "$patch_dir/merge-style.patch" ]]; then
