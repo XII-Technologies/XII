@@ -23,6 +23,7 @@ xiiQtSharedTextureWidget::xiiQtSharedTextureWidget(QWidget* parent) : QWidget(pa
   ++s_uiWidgetCount;
   setAttribute(Qt::WA_DontCreateNativeAncestors);
   setAttribute(Qt::WA_NativeWindow);
+  setAttribute(Qt::WA_TransparentForMouseEvents);
   setAttribute(Qt::WA_PaintOnScreen);
   setAttribute(Qt::WA_NoSystemBackground);
   setAutoFillBackground(false);
@@ -116,6 +117,9 @@ xiiResult xiiQtSharedTextureWidget::EnsureSwapChain()
       return XII_FAILURE;
     description.m_NativeWindow.m_Type     = xiiGALNativeWindowDescription::Type::Wayland;
     description.m_NativeWindow.m_pDisplay = native->display();
+    // The owning view handles input. Keep pointer grabs on the Qt widget window
+    // instead of transferring them to the presentation-only Wayland subsurface.
+    windowHandle()->setFlag(Qt::WindowTransparentForInput);
 #  else
     return XII_FAILURE;
 #  endif

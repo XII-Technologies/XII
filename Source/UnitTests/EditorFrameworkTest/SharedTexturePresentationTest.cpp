@@ -29,6 +29,7 @@ XII_CREATE_SIMPLE_TEST(EditorViewportPresentation, NativeChildIsolation)
   viewport.setGeometry(10, 15, 160, 120);
 
   XII_TEST_BOOL(viewport.testAttribute(Qt::WA_DontCreateNativeAncestors));
+  XII_TEST_BOOL(viewport.testAttribute(Qt::WA_TransparentForMouseEvents));
   XII_TEST_BOOL(!panel.testAttribute(Qt::WA_NativeWindow));
   window.show();
   XII_TEST_BOOL(viewport.winId() != 0);
@@ -37,6 +38,7 @@ XII_CREATE_SIMPLE_TEST(EditorViewportPresentation, NativeChildIsolation)
   XII_TEST_BOOL(!panel.testAttribute(Qt::WA_NativeWindow));
   XII_TEST_BOOL(panel.windowHandle() == nullptr);
   XII_TEST_BOOL(viewport.window() == &window);
+  XII_TEST_BOOL(panel.childAt(viewport.geometry().center()) == nullptr);
 }
 
 XII_CREATE_SIMPLE_TEST(EditorViewportPresentation, SharedTexture)
