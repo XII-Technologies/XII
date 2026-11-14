@@ -87,10 +87,23 @@ XII_CREATE_SIMPLE_TEST(AssetBrowser, IndexedWorkspaceAndPickers)
   xiiQtAssetBrowserWidget browser(nullptr);
   browser.resize(1050, 510);
   browser.show();
-  auto* pFilter                    = browser.GetAssetBrowserFilter();
-  auto* pModel                     = browser.GetAssetBrowserModel();
-  using Model                      = xiiQtAssetBrowserModel;
-  using Scope                      = xiiQtAssetBrowserFilter::Scope;
+  auto* pFilter = browser.GetAssetBrowserFilter();
+  auto* pModel  = browser.GetAssetBrowserModel();
+  using Model   = xiiQtAssetBrowserModel;
+  using Scope   = xiiQtAssetBrowserFilter::Scope;
+
+  // A folder reset can arrive in a separate event batch from the file reset during startup.
+  QApplication::processEvents();
+  xiiUInt32                   uiModelResets    = 0;
+  const auto                  resetConnection  = QObject::connect(pModel, &QAbstractItemModel::modelReset, pModel, [&uiModelResets]() { ++uiModelResets; });
+  const xiiInt32              iRowsBeforeReset = pModel->rowCount();
+  const xiiFolderChangedEvent folderReset({}, xiiFolderChangedEvent::Type::ModelReset);
+  xiiFileSystemModel::GetSingleton()->m_FolderChangedEvents.Broadcast(folderReset);
+  QCoreApplication::sendPostedEvents(pModel, QEvent::MetaCall);
+  QObject::disconnect(resetConnection);
+  XII_TEST_INT(uiModelResets, 1);
+  XII_TEST_INT(pModel->rowCount(), iRowsBeforeReset);
+
   xiiStringBuilder sRelativeFolder = sFolder;
   if (!XII_TEST_BOOL(editor.MakePathDataDirectoryParentRelative(sRelativeFolder)))
     return;
