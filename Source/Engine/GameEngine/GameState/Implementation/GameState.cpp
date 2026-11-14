@@ -106,18 +106,18 @@ void xiiGameState::ProcessInput()
 {
   UpdateBackgroundSceneLoading();
 
-  if (m_pMainWorld && IsInLoadingScreen())
+  if (xiiView* pView = GetMainView(); pView && IsInLoadingScreen())
   {
     const auto  phase   = GetSceneLoadingPhase();
     const char* szPhase = phase == xiiSceneLoadUtility::LoadingPhase::Reading ? "Reading scene..." : "Preloading resources...";
     if (!m_sSceneLoadingError.IsEmpty())
-      xiiDebugRenderer::DrawInfoText(m_pMainWorld, xiiDebugTextPlacement::TopCenter, "Loading", xiiFmt("{}\nPress Escape to exit or select another scene.", m_sSceneLoadingError), xiiColor::OrangeRed);
+      xiiDebugRenderer::DrawInfoText(*pView, xiiDebugTextPlacement::TopCenter, "Loading", xiiFmt("{}\nPress Escape to exit or select another scene.", m_sSceneLoadingError), xiiColor::OrangeRed);
     else if (phase == xiiSceneLoadUtility::LoadingPhase::Instantiating)
-      xiiDebugRenderer::DrawInfoText(m_pMainWorld, xiiDebugTextPlacement::TopCenter, "Loading", xiiFmt("Activating scene: {}%%", xiiMath::RoundToInt(m_pBackgroundSceneLoad->GetLoadingProgress() * 100.0f)));
+      xiiDebugRenderer::DrawInfoText(*pView, xiiDebugTextPlacement::TopCenter, "Loading", xiiFmt("Activating scene: {}%%", xiiMath::RoundToInt(m_pBackgroundSceneLoad->GetLoadingProgress() * 100.0f)));
     else if (IsLoadingSceneInBackground() && HasMeasuredSceneLoadingProgress())
-      xiiDebugRenderer::DrawInfoText(m_pMainWorld, xiiDebugTextPlacement::TopCenter, "Loading", xiiFmt("Preloading resources: {}%%", xiiMath::RoundToInt(m_pBackgroundSceneLoad->GetLoadingProgress() * 100.0f)));
+      xiiDebugRenderer::DrawInfoText(*pView, xiiDebugTextPlacement::TopCenter, "Loading", xiiFmt("Preloading resources: {}%%", xiiMath::RoundToInt(m_pBackgroundSceneLoad->GetLoadingProgress() * 100.0f)));
     else if (IsLoadingSceneInBackground())
-      xiiDebugRenderer::DrawInfoText(m_pMainWorld, xiiDebugTextPlacement::TopCenter, "Loading", szPhase);
+      xiiDebugRenderer::DrawInfoText(*pView, xiiDebugTextPlacement::TopCenter, "Loading", szPhase);
   }
 }
 

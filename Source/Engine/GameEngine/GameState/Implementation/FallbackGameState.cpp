@@ -207,13 +207,6 @@ void xiiFallbackGameState::ProcessInput()
 
 
   {
-    float fProgress = 0.0f;
-    IsLoadingSceneInBackground(&fProgress);
-
-    xiiDebugRenderer::DrawInfoText(m_pMainWorld, xiiDebugTextPlacement::TopCenter, "Loading", xiiFmt("Loading: {}%%", xiiMath::RoundToInt(fProgress * 100.0f)));
-  }
-
-  {
     if (xiiInputManager::GetExclusiveInputSet().IsEmpty() || xiiInputManager::GetExclusiveInputSet() == "xiiPlayer")
     {
       if (DisplayMenu())
