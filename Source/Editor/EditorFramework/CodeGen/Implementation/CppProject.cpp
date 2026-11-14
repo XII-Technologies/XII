@@ -217,7 +217,9 @@ namespace
       }
       for (const auto& existing : inout_compilers)
       {
-        if (existing.m_Compiler == compiler && existing.m_sCCompiler == sCPath && existing.m_sCppCompiler == sCppPath)
+        if (existing.m_Compiler == compiler && !existing.m_bIsCustom &&
+            QFileInfo(xiiMakeQString(existing.m_sCCompiler)).canonicalFilePath() == QFileInfo(xiiMakeQString(sCPath)).canonicalFilePath() &&
+            QFileInfo(xiiMakeQString(existing.m_sCppCompiler)).canonicalFilePath() == QFileInfo(xiiMakeQString(sCppPath)).canonicalFilePath())
         {
           return;
         }
@@ -228,11 +230,11 @@ namespace
       inout_compilers.PushBack({sName, compiler, sCPath, sCppPath, false, bCompatible});
     };
 
-    AddPair(sCBase, sCppBase);
     if (!sRequiredMajorVersion.IsEmpty())
     {
       AddPair(xiiStringBuilder(sCBase, "-", sRequiredMajorVersion), xiiStringBuilder(sCppBase, "-", sRequiredMajorVersion));
     }
+    AddPair(sCBase, sCppBase);
   }
 
 } // namespace
@@ -308,7 +310,7 @@ xiiString xiiCppProject::GetPluginSourceDir(const xiiCppSettings& cfg, xiiString
 xiiString xiiCppProject::GetBuildDir(const xiiCppSettings& cfg)
 {
   xiiStringBuilder sBuildDir;
-  sBuildDir.SetFormat("{}/Build/{}", GetTargetSourceDir(), GetGeneratorFolderName(cfg));
+  sBuildDir.SetFormat("{}/Build/{}/{}", GetTargetSourceDir(), GetGeneratorFolderName(cfg), BUILDSYSTEM_BUILDTYPE);
   return sBuildDir;
 }
 
@@ -581,13 +583,70 @@ xiiResult xiiCppProject::CheckCMakeCache(const xiiCppSettings& cfg)
     return {};
   };
 
-  const bool bMultiConfig = GetCMakeGeneratorName(cfg).StartsWith("Visual Studio");
-  if (ReadCacheValue(bMultiConfig ? "CMAKE_CONFIGURATION_TYPES" : "CMAKE_BUILD_TYPE") != BUILDSYSTEM_BUILDTYPE)
+  const xiiString sGenerator = GetCMakeGeneratorName(cfg);
+  if (ReadCacheValue("CMAKE_GENERATOR") != sGenerator)
+  {
     return XII_FAILURE;
+  }
+  const xiiString sSdkDirectory = ReadCacheValue("XII_SDK_DIR");
+  if (sSdkDirectory.IsEmpty() || QFileInfo(xiiMakeQString(sSdkDirectory)).canonicalFilePath() != QFileInfo(xiiMakeQString(xiiFileSystem::GetSdkRootDirectory())).canonicalFilePath())
+  {
+    return XII_FAILURE;
+  }
+  if (sGenerator.StartsWith("Visual Studio"))
+  {
+    const xiiString                  sConfigurations = ReadCacheValue("CMAKE_CONFIGURATION_TYPES");
+    xiiHybridArray<xiiStringView, 4> configurations;
+    sConfigurations.Split(false, configurations, ";");
+    if (!configurations.Contains(BUILDSYSTEM_BUILDTYPE))
+    {
+      return XII_FAILURE;
+    }
+  }
+  else if (ReadCacheValue("CMAKE_BUILD_TYPE") != BUILDSYSTEM_BUILDTYPE)
+  {
+    return XII_FAILURE;
+  }
 
+#if XII_ENABLED(XII_COMPILER_CLANG)
+  const xiiStringView sSdkCompilerId = "Clang";
+#elif XII_ENABLED(XII_COMPILER_GCC)
+  const xiiStringView sSdkCompilerId = "GNU";
+#else
+  const xiiStringView sSdkCompilerId = "MSVC";
+#endif
+  const xiiString sCachedSdkVersion = ReadCacheValue("XII_PROJECT_SDK_COMPILER_VERSION");
+  if (ReadCacheValue("XII_PROJECT_SDK_COMPILER_ID") != sSdkCompilerId ||
+      (sCachedSdkVersion != GetSdkCompilerMajorVersion() && !sCachedSdkVersion.StartsWith(xiiStringBuilder(GetSdkCompilerMajorVersion(), "."))))
+  {
+    return XII_FAILURE;
+  }
+
+  const auto& compiler            = xiiEditorSettings::QuerySettings<xiiCppProject>()->m_CompilerPreferences;
+  bool        bNeedsCompilerPaths = true;
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+  bNeedsCompilerPaths = compiler.m_Compiler != xiiCompiler::Vs2026 && compiler.m_Compiler != xiiCompiler::Vs2022;
+#endif
+  if (bNeedsCompilerPaths)
+  {
+    const xiiString sC   = ResolveCompilerPath(compiler.m_sCCompiler);
+    const xiiString sCpp = ResolveCompilerPath(compiler.m_sCppCompiler);
+    if (sC.IsEmpty() || sCpp.IsEmpty() || ResolveCompilerPath(ReadCacheValue("CMAKE_C_COMPILER")) != sC || ResolveCompilerPath(ReadCacheValue("CMAKE_CXX_COMPILER")) != sCpp)
+    {
+      return XII_FAILURE;
+    }
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+    if (ResolveCompilerPath(ReadCacheValue("CMAKE_RC_COMPILER")) != ResolveCompilerPath(compiler.m_sRcCompiler))
+    {
+      return XII_FAILURE;
+    }
+#endif
+  }
   // Older generated projects placed their binaries in the SDK. Force regeneration once.
   if (ReadCacheValue("XII_PROJECT_OUTPUT_LAYOUT_VERSION") != "1")
+  {
     return XII_FAILURE;
+  }
 
   return XII_SUCCESS;
 }
@@ -816,6 +875,16 @@ xiiResult xiiCppProject::RunCMake(const xiiCppSettings& cfg)
     return XII_FAILURE;
   }
 
+  const xiiStringBuilder sCachePath(GetBuildDir(cfg), "/CMakeCache.txt");
+  if (xiiOSFile::ExistsFile(sCachePath) && CheckCMakeCache(cfg).Failed())
+  {
+    if (CleanBuildDir(cfg).Failed())
+    {
+      xiiLog::Error("Could not remove the stale C++ build directory '{}'. Close processes using its generated files and retry.", GetBuildDir(cfg));
+      return XII_FAILURE;
+    }
+  }
+
   if (CheckCMakeUserPresets(cfg, true) == ModifyResult::FAILURE)
   {
     return XII_FAILURE;
@@ -856,6 +925,13 @@ xiiResult xiiCppProject::RunCMakeIfNecessary(const xiiCppSettings& cfg)
   if (!xiiCppProject::ExistsProjectCMakeListsTxt())
     return XII_SUCCESS;
 
+  xiiStatus compilerStatus = TestCompiler();
+  if (compilerStatus.Failed())
+  {
+    compilerStatus.LogFailure();
+    return XII_FAILURE;
+  }
+
   auto userPresetResult = CheckCMakeUserPresets(cfg, false);
   if (userPresetResult == ModifyResult::FAILURE)
     return XII_FAILURE;
@@ -882,12 +958,6 @@ xiiResult xiiCppProject::CompileSolution(const xiiCppSettings& cfg)
   xiiStringBuilder sBuildOutput;
   xiiMutex         outputMutex;
   xiiInt32         iReturnCode = 0;
-#if XII_ENABLED(XII_PLATFORM_WINDOWS)
-  if (xiiSystemInformation::IsDebuggerAttached())
-  {
-    xiiQtUiServices::GetSingleton()->MessageBoxWarning("When a debugger is attached, MSBuild usually fails to compile the project.\n\nDetach the debugger now, then press OK to continue.");
-  }
-#endif
 
   xiiProcessOptions po;
 
@@ -896,15 +966,10 @@ xiiResult xiiCppProject::CompileSolution(const xiiCppSettings& cfg)
   po.m_sProcess = cmakePath;
   po.AddArgument("--build");
   po.AddArgument(GetBuildDir(cfg));
-#if XII_ENABLED(XII_PLATFORM_WINDOWS)
-  const xiiCppProject* pProjectPreferences = xiiEditorSettings::QuerySettings<xiiCppProject>();
-
-  if (pProjectPreferences->m_CompilerPreferences.m_Compiler == xiiCompiler::Vs2026 || pProjectPreferences->m_CompilerPreferences.m_Compiler == xiiCompiler::Vs2022)
-  {
-    po.AddArgument("--config");
-    po.AddArgument(BUILDSYSTEM_BUILDTYPE);
-  }
-#endif
+  po.AddArgument("--target");
+  po.AddArgument(xiiStringBuilder(cfg.m_sPluginName, "Plugin"));
+  po.AddArgument("--config");
+  po.AddArgument(BUILDSYSTEM_BUILDTYPE);
   po.m_sWorkingDirectory  = GetBuildDir(cfg);
   po.m_bHideConsoleWindow = true;
   po.m_onStdOut           = [&](xiiStringView sText) {
@@ -1119,8 +1184,11 @@ xiiCppProject::ModifyResult xiiCppProject::ModifyCMakeUserPresetsJson(const xiiC
 
     if (bNeedsCompilerPaths)
     {
-      Modify(*cacheVariables, "CMAKE_C_COMPILER", pProjectPreferences->m_CompilerPreferences.m_sCCompiler, result);
-      Modify(*cacheVariables, "CMAKE_CXX_COMPILER", pProjectPreferences->m_CompilerPreferences.m_sCppCompiler, result);
+      const auto&     compiler = pProjectPreferences->m_CompilerPreferences;
+      const xiiString sC       = ResolveCompilerPath(compiler.m_sCCompiler);
+      const xiiString sCpp     = ResolveCompilerPath(compiler.m_sCppCompiler);
+      Modify(*cacheVariables, "CMAKE_C_COMPILER", sC.IsEmpty() ? compiler.m_sCCompiler.GetView() : sC.GetView(), result);
+      Modify(*cacheVariables, "CMAKE_CXX_COMPILER", sCpp.IsEmpty() ? compiler.m_sCppCompiler.GetView() : sCpp.GetView(), result);
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
       Modify(*cacheVariables, "CMAKE_RC_COMPILER", pProjectPreferences->m_CompilerPreferences.m_sRcCompiler, result);
       Modify(*cacheVariables, "CMAKE_RC_COMPILER_INIT", "rc", result);

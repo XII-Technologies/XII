@@ -161,12 +161,6 @@ void xiiQtCppProjectDlg::on_GenerateSolution_clicked()
 
   m_OldCppSettings.Load().IgnoreResult();
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS)
-  if (xiiSystemInformation::IsDebuggerAttached())
-  {
-    xiiQtUiServices::GetSingleton()->MessageBoxWarning("When a debugger is attached, CMake usually fails with the error that no C/C++ compiler can be found.\n\nDetach the debugger now, then press OK to continue.");
-  }
-#endif
 
   OutputLog->clear();
 

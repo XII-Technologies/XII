@@ -1,5 +1,29 @@
 # Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+# Validate before importing targets selected by compiler-specific output names.
+function(xii_validate_sdk_toolchain)
+  foreach(LANGUAGE IN ITEMS C CXX)
+    if(DEFINED EXPINP_${LANGUAGE}_COMPILER_ID)
+      if(NOT "${CMAKE_${LANGUAGE}_COMPILER_ID}" STREQUAL "${EXPINP_${LANGUAGE}_COMPILER_ID}")
+        message(FATAL_ERROR "The XII SDK requires ${EXPINP_${LANGUAGE}_COMPILER_ID} for ${LANGUAGE}, but the project selected ${CMAKE_${LANGUAGE}_COMPILER_ID}. Select the SDK toolchain or use an SDK built with the selected compiler.")
+      endif()
+      string(REGEX MATCH "^[0-9]+" SDK_COMPILER_MAJOR "${EXPINP_${LANGUAGE}_COMPILER_VERSION}")
+      string(REGEX MATCH "^[0-9]+" PROJECT_COMPILER_MAJOR "${CMAKE_${LANGUAGE}_COMPILER_VERSION}")
+      if(SDK_COMPILER_MAJOR STREQUAL "" OR PROJECT_COMPILER_MAJOR STREQUAL "" OR NOT PROJECT_COMPILER_MAJOR STREQUAL SDK_COMPILER_MAJOR)
+        message(FATAL_ERROR "The XII SDK requires ${LANGUAGE} compiler major version ${SDK_COMPILER_MAJOR}, but the project selected ${CMAKE_${LANGUAGE}_COMPILER_VERSION}.")
+      endif()
+      if(NOT "${CMAKE_${LANGUAGE}_SIMULATE_ID}" STREQUAL "${EXPINP_${LANGUAGE}_COMPILER_SIMULATE_ID}")
+        message(FATAL_ERROR "The ${LANGUAGE} compiler's ABI target differs from the XII SDK. Select the SDK toolchain.")
+      endif()
+    endif()
+  endforeach()
+  if(DEFINED EXPINP_MSVC_VERSION AND NOT "${EXPINP_MSVC_VERSION}" STREQUAL "")
+    if(NOT "${MSVC_VERSION}" STREQUAL "${EXPINP_MSVC_VERSION}")
+      message(FATAL_ERROR "The XII SDK requires MSVC toolset version ${EXPINP_MSVC_VERSION}, but the project selected ${MSVC_VERSION}. Install and select the matching toolset.")
+    endif()
+  endif()
+endfunction()
+
 # #####################################
 # ## xii_include_xiiExport()
 # #####################################
@@ -8,12 +32,13 @@ macro(xii_include_xiiExport)
   # Create a modified version of the xiiExport.cmake file,
   # where the absolute paths to the original locations are replaced
   # with the absolute paths to this installation
-  xii_get_export_location(EXP_FILE)
   set(IMP_FILE "${CMAKE_BINARY_DIR}/xiiExport.cmake")
   set(EXPINFO_FILE "${XII_OUTPUT_DIRECTORY_DLL}/xiiExportInfo.cmake")
 
   # read the file that contains the original paths
-  include(${EXPINFO_FILE})
+  include("${EXPINFO_FILE}")
+  xii_validate_sdk_toolchain()
+  xii_get_export_location(EXP_FILE)
 
   # read the xiiExport file into a string
   file(READ ${EXP_FILE} IMP_CONTENT)
@@ -100,4 +125,6 @@ macro(xii_configure_external_project)
   set(XII_OUTPUT_DIRECTORY_LIB "${XII_PROJECT_OUTPUT_DIRECTORY}/Lib")
   set_property(GLOBAL PROPERTY XII_EXTERNAL_PROJECT_OUTPUT TRUE)
   set(XII_PROJECT_OUTPUT_LAYOUT_VERSION 1 CACHE INTERNAL "Project-local C++ plugin output layout" FORCE)
+  set(XII_PROJECT_SDK_COMPILER_ID "${EXPINP_CXX_COMPILER_ID}" CACHE INTERNAL "SDK compiler used to configure this project" FORCE)
+  set(XII_PROJECT_SDK_COMPILER_VERSION "${EXPINP_CXX_COMPILER_VERSION}" CACHE INTERNAL "SDK compiler version used to configure this project" FORCE)
 endmacro()
