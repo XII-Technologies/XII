@@ -11705,6 +11705,7 @@ o
 		Vec2 %Node::Pos{f{0x00002FC4,0}}
 		VarArray %Overrides
 		{
+			Uuid{u4{8458929792550036975,16434956564759194041}}
 			Uuid{u4{12225068943904722720,12116526729560039584}}
 		}
 		VarDict %ParameterOverrides{}
@@ -24429,6 +24430,24 @@ o
 		b %TemporalHistory{0}
 	}
 }
+o
+{
+	Uuid %id{u4{8458929792550036975,16434956564759194041}}
+	s %t{"xiiGraphPropertyOverride"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Path
+		{
+			Uuid{u4{9953345571184503407,3655008229826127097}}
+		}
+		VarDict %Properties
+		{
+			b %Enabled{0}
+		}
+	}
+}
+
 }
 Types
 {
