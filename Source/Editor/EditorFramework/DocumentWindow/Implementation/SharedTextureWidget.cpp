@@ -94,8 +94,7 @@ xiiResult xiiQtSharedTextureWidget::EnsureSwapChain()
     return XII_FAILURE;
   windowHandle()->installEventFilter(this);
   xiiGALSwapChainCreationDescription description;
-  description.m_SurfaceSize                   = size;
-  description.m_NativeWindow.m_uiWindowHandle = static_cast<xiiUInt64>(id);
+  description.m_SurfaceSize = size;
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
   description.m_NativeWindow.m_Type = xiiGALNativeWindowDescription::Type::Win32;
 #elif XII_ENABLED(XII_PLATFORM_LINUX)
@@ -133,7 +132,10 @@ xiiResult xiiQtSharedTextureWidget::EnsureSwapChain()
 #else
   return XII_FAILURE;
 #endif
-  m_pSwapChain = s_pDevice->CreateSwapChain(description);
+  // QWidget caches its WId. Wayland can replace the underlying surface when
+  // the native window's parent changes without updating that cached value.
+  description.m_NativeWindow.m_uiWindowHandle = static_cast<xiiUInt64>(windowHandle()->winId());
+  m_pSwapChain                                = s_pDevice->CreateSwapChain(description);
   if (m_pSwapChain)
     m_pSwapChain->SetPresentMode(m_bVSync ? xiiGALPresentMode::VSync : xiiGALPresentMode::Immediate);
   return m_pSwapChain ? XII_SUCCESS : XII_FAILURE;
@@ -242,8 +244,11 @@ void xiiQtSharedTextureWidget::DestroySwapChain()
 
 bool xiiQtSharedTextureWidget::eventFilter(QObject* object, QEvent* event)
 {
-  if (event->type() == QEvent::PlatformSurface && static_cast<QPlatformSurfaceEvent*>(event)->surfaceEventType() == QPlatformSurfaceEvent::SurfaceAboutToBeDestroyed)
+  if (event->type() == QEvent::ParentWindowAboutToChange ||
+      (event->type() == QEvent::PlatformSurface && static_cast<QPlatformSurfaceEvent*>(event)->surfaceEventType() == QPlatformSurfaceEvent::SurfaceAboutToBeDestroyed))
+  {
     DestroySwapChain();
+  }
   return QWidget::eventFilter(object, event);
 }
 
