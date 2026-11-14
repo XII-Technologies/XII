@@ -17,8 +17,32 @@
 #include <QPixmap>
 #include <QScreen>
 #include <QThread>
+#include <QWidget>
+#include <Qt>
 
 XII_CREATE_SIMPLE_TEST_GROUP(EditorViewportPresentation);
+XII_CREATE_SIMPLE_TEST(EditorViewportPresentation, NativeChildIsolation)
+{
+  QWidget window;
+  window.resize(400, 300);
+  QWidget panel(&window);
+  panel.setGeometry(20, 30, 300, 200);
+  xiiQtSharedTextureWidget viewport(&panel);
+  viewport.setGeometry(10, 15, 160, 120);
+
+  XII_TEST_BOOL(viewport.testAttribute(Qt::WA_DontCreateNativeAncestors));
+  XII_TEST_BOOL(viewport.testAttribute(Qt::WA_TransparentForMouseEvents));
+  XII_TEST_BOOL(!panel.testAttribute(Qt::WA_NativeWindow));
+  window.show();
+  XII_TEST_BOOL(viewport.winId() != 0);
+  QApplication::processEvents();
+  XII_TEST_BOOL(viewport.testAttribute(Qt::WA_NativeWindow));
+  XII_TEST_BOOL(!panel.testAttribute(Qt::WA_NativeWindow));
+  XII_TEST_BOOL(panel.windowHandle() == nullptr);
+  XII_TEST_BOOL(viewport.window() == &window);
+  XII_TEST_BOOL(panel.childAt(viewport.geometry().center()) == nullptr);
+}
+
 XII_CREATE_SIMPLE_TEST(EditorViewportPresentation, SharedTexture)
 {
   if (QGuiApplication::platformName() != "windows" && QGuiApplication::platformName() != "xcb")

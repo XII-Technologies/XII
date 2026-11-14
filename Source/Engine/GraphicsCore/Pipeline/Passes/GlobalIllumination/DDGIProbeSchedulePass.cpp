@@ -49,7 +49,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDDGIProbeSchedulePass,1,xiiRTTIDefaultAlloca
     XII_MEMBER_PROPERTY("Spacing",m_fSpacing)->AddAttributes(new xiiDefaultValueAttribute(4.0f),new xiiClampValueAttribute(0.001f,xiiVariant()),new xiiSuffixAttribute(" m")),
     XII_MEMBER_PROPERTY("Hysteresis",m_fHysteresis)->AddAttributes(new xiiDefaultValueAttribute(0.97f),new xiiClampValueAttribute(0.0f,0.9999f)),
     XII_MEMBER_PROPERTY("MaximumRelocationDistance",m_fRelocation)->AddAttributes(new xiiDefaultValueAttribute(1.8f),new xiiClampValueAttribute(0.0f,xiiVariant())),
-    XII_MEMBER_PROPERTY("TraceDistanceInProbeSpacings", m_fTraceDistanceInProbeSpacings)->AddAttributes(new xiiClampValueAttribute(0.1f, 64.0f)),
+    XII_MEMBER_PROPERTY("TraceDistanceInProbeSpacings", m_fTraceDistanceInProbeSpacings)->AddAttributes(new xiiDefaultValueAttribute(4.0f), new xiiClampValueAttribute(0.1f, 64.0f)),
     XII_MEMBER_PROPERTY("DirectionalAtlas", m_bDirectional)->AddAttributes(new xiiDefaultValueAttribute(false)),
     XII_MEMBER_PROPERTY("UseViewCamera",m_bUseViewCamera)->AddAttributes(new xiiDefaultValueAttribute(true)),
     XII_MEMBER_PROPERTY("CameraPosition",m_CameraPosition),

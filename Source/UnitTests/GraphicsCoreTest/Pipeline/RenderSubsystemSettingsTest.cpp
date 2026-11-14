@@ -4,11 +4,13 @@
 
 #include <Foundation/IO/ChunkStream.h>
 #include <Foundation/IO/MemoryStream.h>
+#include <Foundation/Reflection/ReflectionUtils.h>
 #include <Foundation/Serialization/DdlSerializer.h>
 #include <Foundation/Serialization/RttiConverter.h>
 #include <GraphicsCore/Lighting/DDGIRenderSettings.h>
 #include <GraphicsCore/Lighting/PostProcessRenderSettings.h>
 #include <GraphicsCore/Pipeline/DynamicResolutionSettings.h>
+#include <GraphicsCore/Pipeline/Passes/GlobalIllumination/DDGIProbeSchedulePass.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Streaming/RenderDeviceProfileConfig.h>
 
@@ -60,6 +62,31 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiContributedSettingsPass, 1, xiiRTTIDefaultAl
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
+
+XII_CREATE_SIMPLE_TEST(Pipeline, DDGIReflectedDefaults)
+{
+  xiiDDGIProbeSchedulePass pass;
+  const auto*              pProperty = pass.GetDynamicRTTI()->FindPropertyByName("TraceDistanceInProbeSpacings");
+  if (!XII_TEST_BOOL(pProperty != nullptr))
+  {
+    return;
+  }
+
+  const xiiVariant defaultValue = xiiReflectionUtils::GetDefaultValue(pProperty);
+  XII_TEST_FLOAT(defaultValue.ConvertTo<float>(), pass.m_fTraceDistanceInProbeSpacings, 0.001f);
+
+  xiiVariantDictionary properties;
+  properties.Insert("TraceDistanceInProbeSpacings", defaultValue);
+  XII_TEST_RESULT(pass.Configure(properties));
+  xiiRenderPipelinePass* passes[] = {&pass};
+  xiiRenderConfiguration defaults;
+  XII_TEST_RESULT(defaults.InitializeSubsystemDefaults(xiiMakeArrayPtr(passes)));
+  const auto* pSettings = defaults.FindSubsystem<xiiDDGIRenderSettings>();
+  if (XII_TEST_BOOL(pSettings != nullptr))
+  {
+    XII_TEST_FLOAT(pSettings->m_fTraceDistanceInProbeSpacings, 4.0f, 0.001f);
+  }
+}
 
 XII_CREATE_SIMPLE_TEST(Pipeline, TypedSubsystemInheritance)
 {

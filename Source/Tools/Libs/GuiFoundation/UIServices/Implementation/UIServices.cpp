@@ -10,11 +10,14 @@
 #include <GuiFoundation/UIServices/UIServices.moc.h>
 #include <QDesktopServices>
 #include <QDir>
+#include <QGuiApplication>
 #include <QIcon>
+#include <QKeyEvent>
 #include <QProcess>
 #include <QScreen>
 #include <QSettings>
 #include <QUrl>
+#include <Qt>
 
 XII_IMPLEMENT_SINGLETON(xiiQtUiServices);
 
@@ -364,60 +367,83 @@ namespace xiiQtUtils
 {
   bool IsEquivalentQtKey(const QKeyEvent* e, Qt::Key reference)
   {
+    xiiUInt32 uiScanCode = e->nativeScanCode();
+    if (uiScanCode == 0U)
+    {
+      return e->key() == reference;
+    }
+
+#if XII_ENABLED(XII_PLATFORM_LINUX)
+    const auto sPlatform = QGuiApplication::platformName();
+    if (sPlatform != "xcb" && !sPlatform.startsWith("wayland"))
+    {
+      return e->key() == reference;
+    }
+
+    // Qt's X11 and Wayland backends report XKB keycodes: evdev scan codes plus 8.
+    if (uiScanCode < 8U)
+    {
+      return e->key() == reference;
+    }
+    uiScanCode -= 8U;
+#elif XII_DISABLED(XII_PLATFORM_WINDOWS)
+    return e->key() == reference;
+#endif
+
     switch (reference)
     {
       case Qt::Key_A:
-        return e->nativeScanCode() == 30;
+        return uiScanCode == 30U;
       case Qt::Key_B:
-        return e->nativeScanCode() == 48;
+        return uiScanCode == 48U;
       case Qt::Key_C:
-        return e->nativeScanCode() == 46;
+        return uiScanCode == 46U;
       case Qt::Key_D:
-        return e->nativeScanCode() == 32;
+        return uiScanCode == 32U;
       case Qt::Key_E:
-        return e->nativeScanCode() == 18;
+        return uiScanCode == 18U;
       case Qt::Key_F:
-        return e->nativeScanCode() == 33;
+        return uiScanCode == 33U;
       case Qt::Key_G:
-        return e->nativeScanCode() == 34;
+        return uiScanCode == 34U;
       case Qt::Key_H:
-        return e->nativeScanCode() == 35;
+        return uiScanCode == 35U;
       case Qt::Key_I:
-        return e->nativeScanCode() == 23;
+        return uiScanCode == 23U;
       case Qt::Key_J:
-        return e->nativeScanCode() == 36;
+        return uiScanCode == 36U;
       case Qt::Key_K:
-        return e->nativeScanCode() == 37;
+        return uiScanCode == 37U;
       case Qt::Key_L:
-        return e->nativeScanCode() == 38;
+        return uiScanCode == 38U;
       case Qt::Key_M:
-        return e->nativeScanCode() == 50;
+        return uiScanCode == 50U;
       case Qt::Key_N:
-        return e->nativeScanCode() == 49;
+        return uiScanCode == 49U;
       case Qt::Key_O:
-        return e->nativeScanCode() == 24;
+        return uiScanCode == 24U;
       case Qt::Key_P:
-        return e->nativeScanCode() == 25;
+        return uiScanCode == 25U;
       case Qt::Key_Q:
-        return e->nativeScanCode() == 16;
+        return uiScanCode == 16U;
       case Qt::Key_R:
-        return e->nativeScanCode() == 19;
+        return uiScanCode == 19U;
       case Qt::Key_S:
-        return e->nativeScanCode() == 31;
+        return uiScanCode == 31U;
       case Qt::Key_T:
-        return e->nativeScanCode() == 20;
+        return uiScanCode == 20U;
       case Qt::Key_U:
-        return e->nativeScanCode() == 22;
+        return uiScanCode == 22U;
       case Qt::Key_V:
-        return e->nativeScanCode() == 47;
+        return uiScanCode == 47U;
       case Qt::Key_W:
-        return e->nativeScanCode() == 17;
+        return uiScanCode == 17U;
       case Qt::Key_X:
-        return e->nativeScanCode() == 45;
+        return uiScanCode == 45U;
       case Qt::Key_Y:
-        return e->nativeScanCode() == 21;
+        return uiScanCode == 21U;
       case Qt::Key_Z:
-        return e->nativeScanCode() == 44;
+        return uiScanCode == 44U;
 
       default:
         xiiLog::Dev("IsEquivalentQtKey: Undefined scancode mapping for key: {} (pressed: {})", (xiiInt32)reference, e->nativeScanCode());

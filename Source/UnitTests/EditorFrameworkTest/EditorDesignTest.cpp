@@ -3,14 +3,48 @@
 #include <EditorFrameworkTest/EditorFrameworkTestPCH.h>
 
 #include <GuiFoundation/Style/DarkEditorStyle.moc.h>
+#include <GuiFoundation/UIServices/UIServices.moc.h>
 #include <GuiFoundation/Widgets/SearchWidget.moc.h>
 #include <QApplication>
 #include <QKeyEvent>
 #include <QLineEdit>
 #include <QPushButton>
 #include <QVBoxLayout>
+#include <Qt>
 
 XII_CREATE_SIMPLE_TEST_GROUP(EditorDesign);
+
+XII_CREATE_SIMPLE_TEST(EditorDesign, PhysicalLetterKeys)
+{
+  const QKeyEvent synthetic(QEvent::KeyPress, Qt::Key_W, Qt::NoModifier);
+  XII_TEST_BOOL(xiiQtUtils::IsEquivalentQtKey(&synthetic, Qt::Key_W));
+  XII_TEST_BOOL(!xiiQtUtils::IsEquivalentQtKey(&synthetic, Qt::Key_A));
+
+  xiiUInt32 uiOffset = 0U;
+#if XII_ENABLED(XII_PLATFORM_LINUX)
+  const auto sPlatform = QGuiApplication::platformName();
+  if (sPlatform != "xcb" && !sPlatform.startsWith("wayland"))
+  {
+    return;
+  }
+  uiOffset = 8U;
+#elif XII_DISABLED(XII_PLATFORM_WINDOWS)
+  return;
+#endif
+
+  const xiiUInt32 uiScanCodes[] = {30U, 48U, 46U, 32U, 18U, 33U, 34U, 35U, 23U, 36U, 37U, 38U, 50U, 49U, 24U, 25U, 16U, 19U, 31U, 20U, 22U, 47U, 17U, 45U, 21U, 44U};
+  for (xiiUInt32 i = 0U; i < XII_ARRAY_SIZE(uiScanCodes); ++i)
+  {
+    const auto reference = static_cast<Qt::Key>(Qt::Key_A + i);
+    for (const auto type : {QEvent::KeyPress, QEvent::KeyRelease})
+    {
+      // Physical controls remain independent of the active keyboard layout.
+      const QKeyEvent event(type, Qt::Key_0, Qt::ShiftModifier, uiScanCodes[i] + uiOffset, 0U, 0U);
+      XII_TEST_BOOL(xiiQtUtils::IsEquivalentQtKey(&event, reference));
+      XII_TEST_BOOL(!xiiQtUtils::IsEquivalentQtKey(&event, static_cast<Qt::Key>(Qt::Key_A + (i + 1U) % 26U)));
+    }
+  }
+}
 
 XII_CREATE_SIMPLE_TEST(EditorDesign, SearchAndScaling)
 {
