@@ -10,7 +10,9 @@
 #include <GraphicsFoundation/Device/DeviceFactory.h>
 #include <QGuiApplication>
 #include <QPlatformSurfaceEvent>
+#include <QWidget>
 #include <QWindow>
+#include <Qt>
 #if XII_ENABLED(XII_PLATFORM_LINUX)
 #  include <QtGui/qguiapplication_platform.h>
 #endif

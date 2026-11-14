@@ -10,6 +10,7 @@
 #include <QLineEdit>
 #include <QPushButton>
 #include <QVBoxLayout>
+#include <Qt>
 
 XII_CREATE_SIMPLE_TEST_GROUP(EditorDesign);
 
@@ -23,7 +24,9 @@ XII_CREATE_SIMPLE_TEST(EditorDesign, PhysicalLetterKeys)
 #if XII_ENABLED(XII_PLATFORM_LINUX)
   const auto sPlatform = QGuiApplication::platformName();
   if (sPlatform != "xcb" && !sPlatform.startsWith("wayland"))
+  {
     return;
+  }
   uiOffset = 8U;
 #elif XII_DISABLED(XII_PLATFORM_WINDOWS)
   return;

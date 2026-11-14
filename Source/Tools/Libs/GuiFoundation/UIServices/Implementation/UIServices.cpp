@@ -12,10 +12,12 @@
 #include <QDir>
 #include <QGuiApplication>
 #include <QIcon>
+#include <QKeyEvent>
 #include <QProcess>
 #include <QScreen>
 #include <QSettings>
 #include <QUrl>
+#include <Qt>
 
 XII_IMPLEMENT_SINGLETON(xiiQtUiServices);
 
@@ -367,16 +369,22 @@ namespace xiiQtUtils
   {
     xiiUInt32 uiScanCode = e->nativeScanCode();
     if (uiScanCode == 0U)
+    {
       return e->key() == reference;
+    }
 
 #if XII_ENABLED(XII_PLATFORM_LINUX)
     const auto sPlatform = QGuiApplication::platformName();
     if (sPlatform != "xcb" && !sPlatform.startsWith("wayland"))
+    {
       return e->key() == reference;
+    }
 
     // Qt's X11 and Wayland backends report XKB keycodes: evdev scan codes plus 8.
     if (uiScanCode < 8U)
+    {
       return e->key() == reference;
+    }
     uiScanCode -= 8U;
 #elif XII_DISABLED(XII_PLATFORM_WINDOWS)
     return e->key() == reference;

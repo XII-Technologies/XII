@@ -17,6 +17,8 @@
 #include <QPixmap>
 #include <QScreen>
 #include <QThread>
+#include <QWidget>
+#include <Qt>
 
 XII_CREATE_SIMPLE_TEST_GROUP(EditorViewportPresentation);
 XII_CREATE_SIMPLE_TEST(EditorViewportPresentation, NativeChildIsolation)

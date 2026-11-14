@@ -68,7 +68,9 @@ XII_CREATE_SIMPLE_TEST(Pipeline, DDGIReflectedDefaults)
   xiiDDGIProbeSchedulePass pass;
   const auto*              pProperty = pass.GetDynamicRTTI()->FindPropertyByName("TraceDistanceInProbeSpacings");
   if (!XII_TEST_BOOL(pProperty != nullptr))
+  {
     return;
+  }
 
   const xiiVariant defaultValue = xiiReflectionUtils::GetDefaultValue(pProperty);
   XII_TEST_FLOAT(defaultValue.ConvertTo<float>(), pass.m_fTraceDistanceInProbeSpacings, 0.001f);
@@ -81,7 +83,9 @@ XII_CREATE_SIMPLE_TEST(Pipeline, DDGIReflectedDefaults)
   XII_TEST_RESULT(defaults.InitializeSubsystemDefaults(xiiMakeArrayPtr(passes)));
   const auto* pSettings = defaults.FindSubsystem<xiiDDGIRenderSettings>();
   if (XII_TEST_BOOL(pSettings != nullptr))
+  {
     XII_TEST_FLOAT(pSettings->m_fTraceDistanceInProbeSpacings, 4.0f, 0.001f);
+  }
 }
 
 XII_CREATE_SIMPLE_TEST(Pipeline, TypedSubsystemInheritance)
