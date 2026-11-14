@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) Theophilus Eriata. All Rights Reserved.
-"""Verify and run the pinned XII LLVM 23 Clang-Tidy profile safely.
+"""Verify and run the pinned XII LLVM 23 Clang-Tidy profile.
 
 Install as Utilities/CI/xii_clang_tidy_23.py. Run from XII's repository root.
 Requires: Python 3.10+, clang-tidy-23, a CMake compile_commands.json for analysis.
@@ -52,7 +52,7 @@ def verify_toolchain(root: Path, binary: str) -> None:
 
 def compile_units(root: Path, db_path: Path) -> set[Path]:
     if not db_path.is_file():
-        raise RuntimeError(f"Missing compilation database: {db_path}. Run cmake --preset linux-clang-debug first.")
+        raise RuntimeError(f"Missing compilation database: {db_path}. Run cmake --preset linux-clang-dev first.")
     try:
         records = json.loads(db_path.read_text(encoding="utf-8"))
     except (ValueError, UnicodeError) as ex:
@@ -129,13 +129,14 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", type=Path, default=Path.cwd(), help="XII repository root (default: CWD)")
     parser.add_argument("--clang-tidy", default="clang-tidy-23")
-    parser.add_argument("--build", type=Path, default=Path("Workspace/linux-clang-debug"))
+    parser.add_argument("--build", type=Path, default=Path("Workspace/linux-clang-dev"))
     parser.add_argument("--mode", choices=("verify", "changed", "all", "files"), default="verify")
     parser.add_argument("--base", default="origin/Development", help="Reference for changed-file analysis")
     parser.add_argument("--file", action="append", default=[], help="Source path, required for mode=files")
     parser.add_argument("--jobs", type=int, default=2)
     parser.add_argument("--dry-run", action="store_true", help="List selected source files without analysis")
-    parser.add_argument("--fix-braces", action="store_true", help="Only apply mandatory-braces fixes (no other autofixes)")
+    parser.add_argument("--fix-braces", action="store_true", help="Only apply mandatory-braces fixes (no other autofixes) in the selected mode, including all")
+    parser.add_argument("--allow-dirty", action="store_true", help="Permit autofixes with uncommitted tracked changes (local use; review resulting diff)")
     args = parser.parse_args(argv)
     root = args.root.resolve()
     build = args.build if args.build.is_absolute() else root / args.build
@@ -147,12 +148,16 @@ def main(argv: list[str] | None = None) -> int:
             raise RuntimeError("--jobs must be >= 1")
         if args.mode == "files" and not args.file:
             raise RuntimeError("--mode=files requires at least one --file")
-        if args.fix_braces:
-            if args.mode == "all":
-                raise RuntimeError("Bulk auto-fixing is disabled. Use --mode=files or --mode=changed.")
+        fix_braces = args.fix_braces
+        if args.allow_dirty and not fix_braces:
+            raise RuntimeError("--allow-dirty only applies to an autofix invocation.")
+        if fix_braces:
             if args.dry_run:
-                raise RuntimeError("--dry-run cannot be combined with --fix-braces")
-            check_clean_checkout(root)
+                raise RuntimeError("--dry-run cannot be combined with brace autofixing")
+            if args.allow_dirty:
+                print("WARNING: Autofixing with uncommitted tracked changes. Review the resulting diff carefully.")
+            else:
+                check_clean_checkout(root)
         available = compile_units(root, build / "compile_commands.json")
         selected, headers = select_units(root, available, args.mode, args.base, args.file)
         if headers:
@@ -169,9 +174,11 @@ def main(argv: list[str] | None = None) -> int:
                 print(source.relative_to(root).as_posix())
             return 0
         failures = []
-        workers = 1 if args.fix_braces else args.jobs
+        workers = 1 if fix_braces else args.jobs
+        if fix_braces and args.jobs != 1:
+            print("NOTICE: Brace fixing is sequential, regardless of --jobs, to avoid overlapping edits to shared headers.")
         with ThreadPoolExecutor(max_workers=workers) as pool:
-            results = pool.map(lambda p: analyze(root, args.clang_tidy, build, p, args.fix_braces), selected)
+            results = pool.map(lambda p: analyze(root, args.clang_tidy, build, p, fix_braces), selected)
             for name, code, output in results:
                 print(f"\n===== {name} (exit {code}) =====")
                 if output.strip():
