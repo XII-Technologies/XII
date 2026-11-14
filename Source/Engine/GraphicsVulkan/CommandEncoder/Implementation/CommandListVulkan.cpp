@@ -3099,10 +3099,10 @@ xiiResult xiiGALCommandListVulkan::BlitTexture(xiiGALTexture* source, xiiGALText
   TransitionImageLayout(destinationVulkan, vk::ImageLayout::eTransferDstOptimal);
   FlushBarriers();
   vk::ImageBlit region;
-  region.srcSubresource = {vk::ImageAspectFlagBits::eColor, 0, 0, 1};
-  region.dstSubresource = {vk::ImageAspectFlagBits::eColor, 0, 0, 1};
-  region.srcOffsets[1]  = {static_cast<xiiInt32>(sourceDescription.m_Size.width), static_cast<xiiInt32>(sourceDescription.m_Size.height), 1};
-  region.dstOffsets[1]  = {static_cast<xiiInt32>(destinationDescription.m_Size.width), static_cast<xiiInt32>(destinationDescription.m_Size.height), 1};
+  region.srcSubresource = vk::ImageSubresourceLayers{vk::ImageAspectFlagBits::eColor, 0, 0, 1};
+  region.dstSubresource = vk::ImageSubresourceLayers{vk::ImageAspectFlagBits::eColor, 0, 0, 1};
+  region.srcOffsets[1]  = vk::Offset3D{static_cast<xiiInt32>(sourceDescription.m_Size.width), static_cast<xiiInt32>(sourceDescription.m_Size.height), 1};
+  region.dstOffsets[1]  = vk::Offset3D{static_cast<xiiInt32>(destinationDescription.m_Size.width), static_cast<xiiInt32>(destinationDescription.m_Size.height), 1};
   m_vkCommandBuffer.blitImage(sourceVulkan->GetVulkanImage(), vk::ImageLayout::eTransferSrcOptimal, destinationVulkan->GetVulkanImage(), vk::ImageLayout::eTransferDstOptimal, 1, &region, vk::Filter::eNearest, device->GetVulkanDynamicDispatchLoader());
   return XII_SUCCESS;
 }

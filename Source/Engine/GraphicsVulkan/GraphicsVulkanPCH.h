@@ -26,6 +26,8 @@
 // Tell vk-hpp to generate only the plain C-style structs (aggregate init).
 #define VULKAN_HPP_NO_CONSTRUCTORS
 #define VULKAN_HPP_NO_SETTERS
+#define VULKAN_HPP_NO_STRUCT_CONSTRUCTORS
+#define VULKAN_HPP_NO_STRUCT_SETTERS
 
 // Disable all smart-handle/RAII wrappers and exceptions.
 #define VULKAN_HPP_NO_SMART_HANDLE
