@@ -15,11 +15,11 @@ class XII_EDITORFRAMEWORK_DLL xiiIPCObjectMirrorEditor : public xiiDocumentObjec
 {
 public:
   xiiIPCObjectMirrorEditor();
-  ~xiiIPCObjectMirrorEditor();
+  ~xiiIPCObjectMirrorEditor() override;
 
   void                       SetIPC(xiiEditorEngineConnection* pIPC);
   xiiEditorEngineConnection* GetIPC();
-  virtual void               ApplyOp(xiiObjectChange& ref_change) override;
+  void                       ApplyOp(xiiObjectChange& ref_change) override;
 
 private:
   void SendOp(xiiObjectChange& change);

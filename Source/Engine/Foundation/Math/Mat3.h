@@ -39,7 +39,7 @@ public:
   /// \param layout
   ///   The layout in which pData stores the matrix. The data will get transposed, if necessary.
   ///   The data should be in column-major format, if you want to prevent unnecessary transposes.
-  xiiMat3Template(const Type* const pData, xiiMatrixLayout::Enum layout); // [tested]
+  xiiMat3Template(const Type* pData, xiiMatrixLayout::Enum layout); // [tested]
 
   /// Sets each element manually: Naming is "column-n row-m"
   xiiMat3Template(Type c1r1, Type c2r1, Type c3r1, Type c1r2, Type c2r2, Type c3r2, Type c1r3, Type c2r3, Type c3r3); // [tested]
@@ -51,10 +51,10 @@ public:
   [[nodiscard]] static xiiMat3Template<Type> MakeIdentity();
 
   /// Creates a matrix from 9 values that are in row-major layout.
-  [[nodiscard]] static xiiMat3Template<Type> MakeFromRowMajorArray(const Type* const pData);
+  [[nodiscard]] static xiiMat3Template<Type> MakeFromRowMajorArray(const Type* pData);
 
   /// Creates a matrix from 9 values that are in column-major layout.
-  [[nodiscard]] static xiiMat3Template<Type> MakeFromColumnMajorArray(const Type* const pData);
+  [[nodiscard]] static xiiMat3Template<Type> MakeFromColumnMajorArray(const Type* pData);
 
   /// Creates a matrix from 9 values. Naming is "column-n row-m"
   [[nodiscard]] static xiiMat3Template<Type> MakeFromValues(Type c1r1, Type c2r1, Type c3r1, Type c1r2, Type c2r2, Type c3r2, Type c1r3, Type c2r3, Type c3r3);

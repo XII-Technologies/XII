@@ -39,10 +39,10 @@ public:
   XII_ALWAYS_INLINE xiiArrayPtr<const xiiGALPermutationVariable> GetPermutationVariables() const { return m_PermutationVariables; }
 
 private:
-  virtual xiiResourceLoadDescription UnloadData(Unload WhatToUnload) override;
-  virtual xiiResourceLoadDescription UpdateContent(xiiStreamReader* pStream) override;
-  virtual void                       UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage) override;
-  virtual xiiResourceTypeLoader*     GetDefaultResourceTypeLoader() const override;
+  xiiResourceLoadDescription UnloadData(Unload WhatToUnload) override;
+  xiiResourceLoadDescription UpdateContent(xiiStreamReader* pStream) override;
+  void                       UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage) override;
+  xiiResourceTypeLoader*     GetDefaultResourceTypeLoader() const override;
 
 private:
   friend class xiiShaderPermutationUtilities;
@@ -70,10 +70,10 @@ private:
 class xiiShaderPermutationResourceLoader : public xiiResourceTypeLoader
 {
 public:
-  virtual xiiResourceLoadData OpenDataStream(const xiiResource* pResource) override;
-  virtual void                CloseDataStream(const xiiResource* pResource, const xiiResourceLoadData& loaderData) override;
+  xiiResourceLoadData OpenDataStream(const xiiResource* pResource) override;
+  void                CloseDataStream(const xiiResource* pResource, const xiiResourceLoadData& loaderData) override;
 
-  virtual bool IsResourceOutdated(const xiiResource* pResource) const override;
+  bool IsResourceOutdated(const xiiResource* pResource) const override;
 
 private:
   xiiResult RunCompiler(const xiiResource* pResource, xiiGALShaderPermutationBinary& BinaryInfo, bool bForce);

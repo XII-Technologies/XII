@@ -51,7 +51,7 @@ public:
   {
   }
 
-  virtual void Execute(const xiiVariant& value) override {};
+  void Execute(const xiiVariant& value) override {};
 };
 
 /// An action that represents a sub-menu. Can be within a menu bar, or the menu of a tool button).
@@ -68,7 +68,7 @@ public:
   {
   }
 
-  virtual void Execute(const xiiVariant& value) override {};
+  void Execute(const xiiVariant& value) override {};
 };
 
 /// A menu action whose content is determined when opening the menu.
@@ -165,7 +165,7 @@ class XII_GUIFOUNDATION_DLL xiiEnumerationMenuAction : public xiiDynamicMenuActi
 public:
   xiiEnumerationMenuAction(const xiiActionContext& context, xiiStringView sName, xiiStringView sIconPath);
   void             InitEnumerationType(const xiiRTTI* pEnumerationType);
-  virtual void     GetEntries(xiiDynamicArray<Item>& out_entries) override;
+  void             GetEntries(xiiDynamicArray<Item>& out_entries) override;
   virtual xiiInt64 GetValue() const = 0;
 
 protected:

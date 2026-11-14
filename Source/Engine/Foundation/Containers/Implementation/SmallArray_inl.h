@@ -513,7 +513,7 @@ void xiiSmallArrayBase<T, Size>::Reserve(xiiUInt16 uiCapacity, xiiAllocator* pAl
 
   uiNewCapacity = xiiMath::Max<xiiUInt32>(uiNewCapacity, uiCapacity);
   uiNewCapacity = xiiMemoryUtils::AlignSize<xiiUInt32>(uiNewCapacity, CAPACITY_ALIGNMENT);
-  uiNewCapacity = xiiMath::Min<xiiUInt32>(uiNewCapacity, 0xFFFFu);
+  uiNewCapacity = xiiMath::Min<xiiUInt32>(uiNewCapacity, 0xFFFFU);
 
   SetCapacity(static_cast<xiiUInt16>(uiNewCapacity), pAllocator);
 }
@@ -535,7 +535,7 @@ void xiiSmallArrayBase<T, Size>::Compact(xiiAllocator* pAllocator)
   else if (m_uiCapacity > Size)
   {
     xiiUInt32 uiNewCapacity = xiiMemoryUtils::AlignSize<xiiUInt32>(m_uiCount, CAPACITY_ALIGNMENT);
-    uiNewCapacity           = xiiMath::Min<xiiUInt32>(uiNewCapacity, 0xFFFFu);
+    uiNewCapacity           = xiiMath::Min<xiiUInt32>(uiNewCapacity, 0xFFFFU);
 
     if (m_uiCapacity != uiNewCapacity)
     {

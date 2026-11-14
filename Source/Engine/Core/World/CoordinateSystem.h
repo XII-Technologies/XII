@@ -24,7 +24,7 @@ public:
   {
   }
 
-  virtual ~xiiCoordinateSystemProvider() = default;
+  ~xiiCoordinateSystemProvider() override = default;
 
   virtual void GetCoordinateSystem(const xiiVec3& vGlobalPosition, xiiCoordinateSystem& out_coordinateSystem) const = 0;
 
@@ -66,7 +66,7 @@ public:
 private:
   xiiMat3 m_mSourceToTarget;
   xiiMat3 m_mTargetToSource;
-  float   m_fWindingSwap         = 1.0f;
-  float   m_fSourceToTargetScale = 1.0f;
-  float   m_fTargetToSourceScale = 1.0f;
+  float   m_fWindingSwap         = 1.0F;
+  float   m_fSourceToTargetScale = 1.0F;
+  float   m_fTargetToSourceScale = 1.0F;
 };

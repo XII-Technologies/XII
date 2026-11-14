@@ -82,9 +82,11 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDepthResolveMode
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALDepthResolveMode);
 
 /// This describes the render pass attachment creation description.
-struct XII_GRAPHICSFOUNDATION_DLL xiiGALRenderPassAttachmentDescription : public xiiHashableStruct<xiiGALRenderPassAttachmentDescription>
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALRenderPassAttachmentDescription
 {
   XII_DECLARE_POD_TYPE();
+
+  XII_ALWAYS_INLINE bool operator==(const xiiGALRenderPassAttachmentDescription& rhs) const = default;
 
   xiiEnum<xiiGALResourceFormat>           m_Format                = xiiGALResourceFormat::Unknown;         ///< The format of the texture view that will be used for the attachment. The default is xiiGALResourceFormat::Unknown.
   xiiUInt8                                m_uiSampleCount         = 0U;                                    ///< The number of samples in the texture. The default is 0.
@@ -97,7 +99,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALRenderPassAttachmentDescription : public
 };
 
 /// This describes the render pass attachment reference.
-struct XII_GRAPHICSFOUNDATION_DLL xiiGALAttachmentReferenceDescription : public xiiHashableStruct<xiiGALAttachmentReferenceDescription>
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALAttachmentReferenceDescription
 {
   XII_DECLARE_POD_TYPE();
 
@@ -108,6 +110,8 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALAttachmentReferenceDescription : public 
   {
   }
 
+  XII_ALWAYS_INLINE bool operator==(const xiiGALAttachmentReferenceDescription& rhs) const = default;
+
   xiiUInt32                             m_uiAttachmentIndex  = XII_GAL_ATTACHMENT_UNUSED;         ///< Either an integer value identifying an attachment at the corresponding index in the xiiGALRenderPassCreationDescription, or XII_GAL_ATTACHMENT_UNUSED to signify that this attachment is not used. The default is 0.
   xiiBitflags<xiiGALResourceStateFlags> m_ResourceStateFlags = xiiGALResourceStateFlags::Unknown; ///< The state of the attachment during the sub pass.
 };
@@ -115,7 +119,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALAttachmentReferenceDescription : public 
 /// This describes the depth resolve attachment.
 ///
 /// Vulkan counterpart: [VkSubpassDescriptionDepthStencilResolve](https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#VkSubpassDescriptionDepthStencilResolve).
-struct XII_GRAPHICSFOUNDATION_DLL xiiGALDepthResolveDescription : public xiiHashableStruct<xiiGALDepthResolveDescription>
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALDepthResolveDescription
 {
   XII_DECLARE_POD_TYPE();
 
@@ -126,13 +130,15 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDepthResolveDescription : public xiiHash
   {
   }
 
+  XII_ALWAYS_INLINE bool operator==(const xiiGALDepthResolveDescription& rhs) const = default;
+
   xiiGALAttachmentReferenceDescription m_Attachment;  ///< The depth resolve attachment reference.
   xiiEnum<xiiGALDepthResolveMode>      m_DepthMode;   ///< The depth resolve mode.
   xiiEnum<xiiGALDepthResolveMode>      m_StencilMode; ///< The stencil resolve mode.
 };
 
 /// This describes the shading rate attachment.
-struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRateAttachmentDescription : public xiiHashableStruct<xiiGALShadingRateAttachmentDescription>
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRateAttachmentDescription
 {
   XII_DECLARE_POD_TYPE();
 
@@ -143,6 +149,8 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRateAttachmentDescription : publi
   {
   }
 
+  XII_ALWAYS_INLINE bool operator==(const xiiGALShadingRateAttachmentDescription& rhs) const = default;
+
   xiiGALAttachmentReferenceDescription m_AttachmentReference;           ///< The shading rate attachment reference.
   xiiSizeU32                           m_TileSize = xiiSizeU32(0U, 0U); ///< Each texel in the attachment contains shading rate for the whole tile. The size must be a power-of-two value between xiiGALShadingRateProperties::MinTileSize and xiiGALShadingRateProperties::MaxTileSize. Keep zero (default) to use the default tile size.
 };
@@ -150,6 +158,8 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRateAttachmentDescription : publi
 /// This describes the render pass sub pass.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALSubPassDescription
 {
+  XII_ALWAYS_INLINE bool operator==(const xiiGALSubPassDescription& rhs) const = default;
+
   xiiDynamicArray<xiiGALAttachmentReferenceDescription>      m_InputAttachments;        ///< An array of input attachments.
   xiiDynamicArray<xiiGALAttachmentReferenceDescription>      m_RenderTargetAttachments; ///< An array of color render target attachments. Each element of the m_RenderTargetAttachments array corresponds to an output in the pixel shader, i.e. if the shader declares an output variable decorated with a render target index X, then it uses the attachment provided in m_RenderTargetAttachments[X]. If the attachment index is XII_GAL_ATTACHMENT_UNUSED, writes to this render target are ignored.
   xiiDynamicArray<xiiGALAttachmentReferenceDescription>      m_ResolveAttachments;      ///< An array of resolve attachments. If m_ResolveAttachments is not empty, then each of its elements corresponds to a render target attachment (the element in m_RenderTargetAttachments at the same index), and a multi-sample resolve operation is defined for each attachment. At the end of each sub pass, multi-sample resolve operations read the sub pass's color attachments, and resolve the samples for each pixel within the render area to the same pixel location in the corresponding resolve attachments, unless the resolve attachment index is XII_GAL_ATTACHMENT_UNUSED.
@@ -157,14 +167,14 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSubPassDescription
   xiiStaticArray<xiiGALDepthResolveDescription, 1U>          m_DepthResolveAttachment;  ///< An array of depth resolve attachment. If m_DepthStencilAttachment is not empty, then each of its elements corresponds to a depth stencil attachment (the element in m_DepthStencilAttachment at the same index), and a multi-sample resolve operation is defined for each attachment. At the end of each sub pass, multi-sample resolve operations read the sub pass's depth-stencil attachments, and resolve the samples for each pixel within the render area to the same pixel location in the corresponding depth resolve attachments, unless the resolve attachment index is XII_GAL_ATTACHMENT_UNUSED.
   xiiDynamicArray<xiiUInt32>                                 m_PreserveAttachments;     ///< An array of preserve attachments.
   xiiStaticArray<xiiGALShadingRateAttachmentDescription, 1U> m_ShadingRateAttachment;   ///< An array of shading rate attachment. Note that this array can only hold a single shading rate attachment reference.
-
-  XII_ALWAYS_INLINE bool operator==(const xiiGALSubPassDescription& rhs) const = default;
 };
 
 /// This describes the sub pass dependency.
-struct XII_GRAPHICSFOUNDATION_DLL xiiGALSubPassDependencyDescription : public xiiHashableStruct<xiiGALSubPassDependencyDescription>
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALSubPassDependencyDescription
 {
   XII_DECLARE_POD_TYPE();
+
+  XII_ALWAYS_INLINE bool operator==(const xiiGALSubPassDependencyDescription& rhs) const = default;
 
   xiiUInt32                             m_uiSourceSubPass        = 0U;                                  ///< The sub pass index of the first sub pass in the dependency, or XII_GAL_SUBPASS_EXTERNAL. The default is 0.
   xiiUInt32                             m_uiDestinationSubPass   = 0U;                                  ///< The sub pass index of the second sub pass in the dependency, or XII_GAL_SUBPASS_EXTERNAL. The default is 0.
@@ -177,11 +187,11 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSubPassDependencyDescription : public xi
 /// This describes the render pass creation description.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALRenderPassCreationDescription
 {
+  XII_ALWAYS_INLINE bool operator==(const xiiGALRenderPassCreationDescription& rhs) const = default;
+
   xiiDynamicArray<xiiGALRenderPassAttachmentDescription> m_Attachments;  ///< An array of sub pass attachments.
   xiiDynamicArray<xiiGALSubPassDescription>              m_SubPasses;    ///< An array of sub pass descriptions.
   xiiDynamicArray<xiiGALSubPassDependencyDescription>    m_Dependencies; ///< An array of sub pass dependencies.
-
-  XII_ALWAYS_INLINE bool operator==(const xiiGALRenderPassCreationDescription& rhs) const = default;
 };
 
 /// Interface that defines methods to manipulate a render pass object.
@@ -199,7 +209,7 @@ protected:
 
   xiiGALRenderPass(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALRenderPassCreationDescription& creationDescription);
 
-  virtual ~xiiGALRenderPass();
+  ~xiiGALRenderPass() override;
 
   virtual xiiResult InitPlatform() = 0;
 

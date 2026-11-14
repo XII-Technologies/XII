@@ -18,7 +18,7 @@ public:
   xiiAtomicInteger(); // [tested]
 
   /// Initializes the object with a value.
-  xiiAtomicInteger(const T value); // [tested]
+  xiiAtomicInteger(T value); // [tested]
 
   /// Copy-constructor.
   xiiAtomicInteger(const xiiAtomicInteger<T>& value); // [tested]

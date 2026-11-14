@@ -184,7 +184,7 @@ XII_ALWAYS_INLINE bool xiiSimdFloat::operator<=(float f) const
 template <>
 XII_ALWAYS_INLINE xiiSimdFloat xiiSimdFloat::GetReciprocal<xiiMathFloatBits::FULL>() const
 {
-  return _mm_div_ps(_mm_set1_ps(1.0f), m_v);
+  return _mm_div_ps(_mm_set1_ps(1.0F), m_v);
 }
 
 template <>
@@ -193,7 +193,7 @@ XII_ALWAYS_INLINE xiiSimdFloat xiiSimdFloat::GetReciprocal<xiiMathFloatBits::BIT
   __m128 x0 = _mm_rcp_ps(m_v);
 
   // One iteration of Newton-Raphson
-  __m128 x1 = _mm_mul_ps(x0, _mm_sub_ps(_mm_set1_ps(2.0f), _mm_mul_ps(m_v, x0)));
+  __m128 x1 = _mm_mul_ps(x0, _mm_sub_ps(_mm_set1_ps(2.0F), _mm_mul_ps(m_v, x0)));
 
   return x1;
 }
@@ -207,7 +207,7 @@ XII_ALWAYS_INLINE xiiSimdFloat xiiSimdFloat::GetReciprocal<xiiMathFloatBits::BIT
 template <>
 XII_ALWAYS_INLINE xiiSimdFloat xiiSimdFloat::GetInvSqrt<xiiMathFloatBits::FULL>() const
 {
-  return _mm_div_ps(_mm_set1_ps(1.0f), _mm_sqrt_ps(m_v));
+  return _mm_div_ps(_mm_set1_ps(1.0F), _mm_sqrt_ps(m_v));
 }
 
 template <>
@@ -216,7 +216,7 @@ XII_ALWAYS_INLINE xiiSimdFloat xiiSimdFloat::GetInvSqrt<xiiMathFloatBits::BITS_2
   const __m128 x0 = _mm_rsqrt_ps(m_v);
 
   // One iteration of Newton-Raphson
-  return _mm_mul_ps(_mm_mul_ps(_mm_set1_ps(0.5f), x0), _mm_sub_ps(_mm_set1_ps(3.0f), _mm_mul_ps(_mm_mul_ps(m_v, x0), x0)));
+  return _mm_mul_ps(_mm_mul_ps(_mm_set1_ps(0.5F), x0), _mm_sub_ps(_mm_set1_ps(3.0F), _mm_mul_ps(_mm_mul_ps(m_v, x0), x0)));
 }
 
 template <>
@@ -255,5 +255,5 @@ XII_ALWAYS_INLINE xiiSimdFloat xiiSimdFloat::Min(const xiiSimdFloat& f) const
 
 XII_ALWAYS_INLINE xiiSimdFloat xiiSimdFloat::Abs() const
 {
-  return _mm_andnot_ps(_mm_set1_ps(-0.0f), m_v);
+  return _mm_andnot_ps(_mm_set1_ps(-0.0F), m_v);
 }

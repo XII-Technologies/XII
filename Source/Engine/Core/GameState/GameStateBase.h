@@ -20,7 +20,7 @@ class XII_CORE_DLL xiiGameStateBase : public xiiReflectedClass
 
 public:
   xiiGameStateBase()          = default;
-  virtual ~xiiGameStateBase() = default;
+  ~xiiGameStateBase() override = default;
 
   /// A game state gets activated through this function.
   ///

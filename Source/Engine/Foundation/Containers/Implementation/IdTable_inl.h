@@ -154,7 +154,7 @@ void xiiIdTableBase<IdType, ValueType>::Reserve(IndexType capacity)
   uiNewCapacity64 = xiiMath::Max<xiiUInt64>(uiNewCapacity64, capacity + CAPACITY_ALIGNMENT);
 
   // the maximum value must leave room for the capacity alignment computation below (without overflowing the 32 bit range)
-  uiNewCapacity64 = xiiMath::Min<xiiUInt64>(uiNewCapacity64, 0xFFFFFFFFllu - (CAPACITY_ALIGNMENT - 1));
+  uiNewCapacity64 = xiiMath::Min<xiiUInt64>(uiNewCapacity64, 0xFFFFFFFFLLU - (CAPACITY_ALIGNMENT - 1));
 
   uiNewCapacity64 = (uiNewCapacity64 + (CAPACITY_ALIGNMENT - 1)) & ~(CAPACITY_ALIGNMENT - 1);
 
@@ -370,11 +370,11 @@ XII_FORCE_INLINE bool xiiIdTableBase<IdType, ValueType>::TryGetValue(const IdTyp
 template <typename IdType, typename ValueType>
 XII_FORCE_INLINE const ValueType& xiiIdTableBase<IdType, ValueType>::operator[](const IdType id) const
 {
-  XII_ASSERT_DEBUG(id.m_InstanceIndex < m_Capacity, "Out of bounds access. Table has {0} elements, trying to access element at index {1}.", m_Capacity, id.m_InstanceIndex);
+  XII_ASSERT_DEBUG(id.m_InstanceIndex < m_Capacity, "Out of bounds access. Table has {0} elements, trying to access element at index {1}.", m_Capacity, static_cast<IndexType>(id.m_InstanceIndex));
 
   const Entry& entry = m_pEntries[id.m_InstanceIndex];
 
-  XII_ASSERT_DEBUG(entry.id.IsIndexAndGenerationEqual(id), "Stale access. Trying to access a value (generation: {0}) that has been removed and replaced by a new value (generation: {1})", entry.id.m_Generation, id.m_Generation);
+  XII_ASSERT_DEBUG(entry.id.IsIndexAndGenerationEqual(id), "Stale access. Trying to access a value (generation: {0}) that has been removed and replaced by a new value (generation: {1})", static_cast<IndexType>(entry.id.m_Generation), static_cast<IndexType>(id.m_Generation));
 
   return entry.value;
 }
@@ -382,11 +382,11 @@ XII_FORCE_INLINE const ValueType& xiiIdTableBase<IdType, ValueType>::operator[](
 template <typename IdType, typename ValueType>
 XII_FORCE_INLINE ValueType& xiiIdTableBase<IdType, ValueType>::operator[](const IdType id)
 {
-  XII_ASSERT_DEBUG(id.m_InstanceIndex < m_Capacity, "Out of bounds access. Table has {0} elements, trying to access element at index {1}.", m_Capacity, id.m_InstanceIndex);
+  XII_ASSERT_DEBUG(id.m_InstanceIndex < m_Capacity, "Out of bounds access. Table has {0} elements, trying to access element at index {1}.", m_Capacity, static_cast<IndexType>(id.m_InstanceIndex));
 
   Entry& entry = m_pEntries[id.m_InstanceIndex];
 
-  XII_ASSERT_DEBUG(entry.id.IsIndexAndGenerationEqual(id), "Stale access. Trying to access a value (generation: {0}) that has been removed and replaced by a new value (generation: {1})", static_cast<xiiInt32>(entry.id.m_Generation), id.m_Generation);
+  XII_ASSERT_DEBUG(entry.id.IsIndexAndGenerationEqual(id), "Stale access. Trying to access a value (generation: {0}) that has been removed and replaced by a new value (generation: {1})", static_cast<IndexType>(entry.id.m_Generation), static_cast<IndexType>(id.m_Generation));
 
   return entry.value;
 }

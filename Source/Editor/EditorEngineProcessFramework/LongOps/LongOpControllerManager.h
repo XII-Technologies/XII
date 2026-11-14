@@ -50,7 +50,7 @@ public:
                                                   ///< disappears as well.
     xiiTime m_StartOrDuration;                    ///< While m_bIsRunning is true, this is the time the long op started, once m_bIsRunning it holds the last
                                                   ///< duration of the long op execution.
-    float m_fCompletion      = 0.0f;              ///< [0; 1] range for the progress.
+    float m_fCompletion      = 0.0F;              ///< [0; 1] range for the progress.
     bool  m_bIsRunning       = false;             ///< Whether the long op is currently being executed.
     bool  m_bCancelRequested = false;
   };
@@ -81,7 +81,7 @@ public:
   const xiiDynamicArray<xiiUniquePtr<ProxyOpInfo>>& GetOperations() const { return m_ProxyOps; }
 
 private:
-  virtual void ProcessCommunicationChannelEventHandler(const xiiProcessCommunicationChannel::Event& e) override;
+  void ProcessCommunicationChannelEventHandler(const xiiProcessCommunicationChannel::Event& e) override;
 
   void ReplicateToWorkerProcess(ProxyOpInfo& opInfo);
   void BroadcastProgress(ProxyOpInfo& opInfo);

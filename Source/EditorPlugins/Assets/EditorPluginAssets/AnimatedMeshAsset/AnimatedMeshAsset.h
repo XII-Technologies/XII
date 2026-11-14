@@ -17,11 +17,11 @@ public:
   xiiAnimatedMeshAssetDocument(xiiStringView sDocumentPath);
 
 protected:
-  virtual xiiTransformStatus InternalTransformAsset(xiiStreamWriter& stream, xiiStringView sOutputTag, const xiiPlatformProfile* pAssetProfile, const xiiAssetFileHeader& AssetHeader, xiiBitflags<xiiTransformFlags> transformFlags) override;
+  xiiTransformStatus InternalTransformAsset(xiiStreamWriter& stream, xiiStringView sOutputTag, const xiiPlatformProfile* pAssetProfile, const xiiAssetFileHeader& AssetHeader, xiiBitflags<xiiTransformFlags> transformFlags) override;
 
   xiiTransformStatus CreateMeshFromFile(xiiAnimatedMeshAssetProperties* pProp, xiiMeshResourceDescriptor& desc, bool bAllowMaterialImport);
 
-  virtual xiiTransformStatus InternalCreateThumbnail(const ThumbnailInfo& ThumbnailInfo) override;
+  xiiTransformStatus InternalCreateThumbnail(const ThumbnailInfo& ThumbnailInfo) override;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -32,12 +32,12 @@ class xiiAnimatedMeshAssetDocumentGenerator : public xiiAssetDocumentGenerator
 
 public:
   xiiAnimatedMeshAssetDocumentGenerator();
-  ~xiiAnimatedMeshAssetDocumentGenerator();
+  ~xiiAnimatedMeshAssetDocumentGenerator() override;
 
-  virtual void          GetImportModes(xiiStringView sAbsInputFile, xiiDynamicArray<xiiAssetDocumentGenerator::ImportMode>& out_modes) const override;
-  virtual xiiStringView GetDocumentExtension() const override { return "xiiAnimatedMeshAsset"; }
-  virtual xiiStringView GetGeneratorGroup() const override { return "Meshes"; }
-  virtual xiiStatus     Generate(xiiStringView sInputFileAbs, xiiStringView sMode, xiiDynamicArray<xiiDocument*>& out_generatedDocuments) override;
+  void          GetImportModes(xiiStringView sAbsInputFile, xiiDynamicArray<xiiAssetDocumentGenerator::ImportMode>& out_modes) const override;
+  xiiStringView GetDocumentExtension() const override { return "xiiAnimatedMeshAsset"; }
+  xiiStringView GetGeneratorGroup() const override { return "Meshes"; }
+  xiiStatus     Generate(xiiStringView sInputFileAbs, xiiStringView sMode, xiiDynamicArray<xiiDocument*>& out_generatedDocuments) override;
 
 private:
   xiiStatus GenerateComplete(xiiStringView sInputFileAbs, xiiDynamicArray<xiiDocument*>& out_generatedDocuments);

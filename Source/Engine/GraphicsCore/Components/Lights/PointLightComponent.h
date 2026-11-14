@@ -29,21 +29,21 @@ class XII_GRAPHICSCORE_DLL xiiPointLightComponent : public xiiLightComponent
   // xiiComponent
 
 public:
-  virtual void SerializeComponent(xiiWorldWriter& inout_stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& inout_stream) override;
+  void SerializeComponent(xiiWorldWriter& inout_stream) const override;
+  void DeserializeComponent(xiiWorldReader& inout_stream) override;
 
   /////////////////////////////////////////////////////////////////////////
   // xiiRenderComponent
 
 public:
-  virtual xiiResult GetLocalBounds(xiiBoundingBoxSphere& ref_bounds, bool& ref_bAlwaysVisible, xiiMsgUpdateLocalBounds& ref_msg) override;
+  xiiResult GetLocalBounds(xiiBoundingBoxSphere& ref_bounds, bool& ref_bAlwaysVisible, xiiMsgUpdateLocalBounds& ref_msg) override;
 
   /////////////////////////////////////////////////////////////////////////
   // xiiPointLightComponent
 
 public:
   xiiPointLightComponent();
-  ~xiiPointLightComponent();
+  ~xiiPointLightComponent() override;
 
   /// Sets the radius of the light source. If zero, the radius is automatically determined from the intensity.
   void  SetRange(float fRange); // [ property ]
@@ -73,11 +73,11 @@ protected:
   void OnMsgExtractRenderData(xiiMsgExtractRenderData& msg) const;
 
 protected:
-  float                       m_fLength             = 0.0f;
-  float                       m_fRadius             = 0.0f;
-  float                       m_fRange              = 0.0f;
-  float                       m_fEffectiveRange     = 0.0f;
-  float                       m_fShadowFadeOutRange = 0.0f;
+  float                       m_fLength             = 0.0F;
+  float                       m_fRadius             = 0.0F;
+  float                       m_fRange              = 0.0F;
+  float                       m_fEffectiveRange     = 0.0F;
+  float                       m_fShadowFadeOutRange = 0.0F;
   xiiIESProfileResourceHandle m_hIESProfile;
 };
 

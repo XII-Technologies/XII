@@ -38,7 +38,7 @@ public:
 
   bool m_bIsTransforming = false;
 
-  virtual xiiManipulatorSearchStrategy GetManipulatorSearchStrategy() const override
+  xiiManipulatorSearchStrategy GetManipulatorSearchStrategy() const override
   {
     return xiiManipulatorSearchStrategy::SelectedObject;
   }
@@ -64,9 +64,9 @@ public:
   bool GetRenderPreviewMesh() const { return m_bRenderPreviewMesh; }
 
 protected:
-  virtual void               UpdateAssetDocumentInfo(xiiAssetDocumentInfo* pInfo) const override;
-  virtual xiiTransformStatus InternalTransformAsset(xiiStreamWriter& stream, xiiStringView sOutputTag, const xiiPlatformProfile* pAssetProfile, const xiiAssetFileHeader& AssetHeader, xiiBitflags<xiiTransformFlags> transformFlags) override;
-  virtual xiiTransformStatus InternalCreateThumbnail(const ThumbnailInfo& ThumbnailInfo) override;
+  void               UpdateAssetDocumentInfo(xiiAssetDocumentInfo* pInfo) const override;
+  xiiTransformStatus InternalTransformAsset(xiiStreamWriter& stream, xiiStringView sOutputTag, const xiiPlatformProfile* pAssetProfile, const xiiAssetFileHeader& AssetHeader, xiiBitflags<xiiTransformFlags> transformFlags) override;
+  xiiTransformStatus InternalCreateThumbnail(const ThumbnailInfo& ThumbnailInfo) override;
 
   xiiEvent<const xiiSkeletonAssetEvent&> m_Events;
   bool                                   m_bRenderBones       = true;
@@ -85,10 +85,10 @@ class xiiSkeletonAssetDocumentGenerator : public xiiAssetDocumentGenerator
 
 public:
   xiiSkeletonAssetDocumentGenerator();
-  ~xiiSkeletonAssetDocumentGenerator();
+  ~xiiSkeletonAssetDocumentGenerator() override;
 
-  virtual void          GetImportModes(xiiStringView sAbsInputFile, xiiDynamicArray<xiiAssetDocumentGenerator::ImportMode>& out_modes) const override;
-  virtual xiiStringView GetDocumentExtension() const override { return "xiiSkeletonAsset"; }
-  virtual xiiStringView GetGeneratorGroup() const override { return "AnimationSkeletonGroup"; }
-  virtual xiiStatus     Generate(xiiStringView sInputFileAbs, xiiStringView sMode, xiiDynamicArray<xiiDocument*>& out_generatedDocuments) override;
+  void          GetImportModes(xiiStringView sAbsInputFile, xiiDynamicArray<xiiAssetDocumentGenerator::ImportMode>& out_modes) const override;
+  xiiStringView GetDocumentExtension() const override { return "xiiSkeletonAsset"; }
+  xiiStringView GetGeneratorGroup() const override { return "AnimationSkeletonGroup"; }
+  xiiStatus     Generate(xiiStringView sInputFileAbs, xiiStringView sMode, xiiDynamicArray<xiiDocument*>& out_generatedDocuments) override;
 };

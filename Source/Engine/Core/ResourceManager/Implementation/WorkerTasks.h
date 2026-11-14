@@ -11,7 +11,7 @@
 class XII_CORE_DLL xiiResourceManagerWorkerDataLoad final : public xiiTask
 {
 public:
-  ~xiiResourceManagerWorkerDataLoad();
+  ~xiiResourceManagerWorkerDataLoad() override;
 
 private:
   friend class xiiResourceManager;
@@ -19,7 +19,7 @@ private:
 
   xiiResourceManagerWorkerDataLoad();
 
-  virtual void Execute() override;
+  void Execute() override;
 };
 
 /// [internal] Worker task for uploading resource data.
@@ -27,7 +27,7 @@ private:
 class XII_CORE_DLL xiiResourceManagerWorkerUpdateContent final : public xiiTask
 {
 public:
-  ~xiiResourceManagerWorkerUpdateContent();
+  ~xiiResourceManagerWorkerUpdateContent() override;
 
   xiiResourceLoadData    m_LoaderData;
   xiiResource*           m_pResourceToLoad = nullptr;
@@ -43,5 +43,5 @@ private:
 
   xiiResourceManagerWorkerUpdateContent();
 
-  virtual void Execute() override;
+  void Execute() override;
 };

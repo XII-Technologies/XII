@@ -97,10 +97,10 @@ struct XII_GRAPHICSCORE_DLL xiiMeshPackedVertex
   XII_DECLARE_POD_TYPE();
 
   xiiVec3          m_vPosition     = xiiVec3::MakeZero();                  ///< The position of this vertex in object space.
-  xiiVec3          m_vNormal       = xiiVec3(0.0f, 0.0f, 1.0f);            ///< The normal vector of this vertex.
-  xiiVec4          m_vTangent      = xiiVec4(1.0f, 0.0f, 0.0f, 1.0f);      ///< The tangent vector of this vertex.
-  xiiVec2          m_vTexCoord0    = xiiVec2(0.0f);                        ///< The first texture coordinate of this vertex.
-  xiiVec2          m_vTexCoord1    = xiiVec2(0.0f);                        ///< The second texture coordinate of this vertex.
+  xiiVec3          m_vNormal       = xiiVec3(0.0F, 0.0F, 1.0F);            ///< The normal vector of this vertex.
+  xiiVec4          m_vTangent      = xiiVec4(1.0F, 0.0F, 0.0F, 1.0F);      ///< The tangent vector of this vertex.
+  xiiVec2          m_vTexCoord0    = xiiVec2(0.0F);                        ///< The first texture coordinate of this vertex.
+  xiiVec2          m_vTexCoord1    = xiiVec2(0.0F);                        ///< The second texture coordinate of this vertex.
   xiiColorLinearUB m_Color0        = xiiColorLinearUB(255, 255, 255, 255); ///< The color of this vertex.
   xiiVec4U16       m_vBoneIndices0 = xiiVec4U16::MakeZero();               ///< The bone indices for skinning this vertex, where each component represents the index of a bone that influences this vertex.
   xiiColorLinearUB m_BoneWeights0  = xiiColorLinearUB(255, 0, 0, 0);       ///< The bone weights for skinning this vertex, where each component represents the weight of the corresponding bone index in m_vBoneIndices0, normalized to the [0, 1] range and packed into an unsigned byte format for compact storage.
@@ -142,12 +142,12 @@ struct XII_GRAPHICSCORE_DLL alignas(16) xiiMeshlet
   xiiUInt16         m_uiSectionIndex         = 0U;                            ///< The index of the section this meshlet belongs to, used to identify which section of the mesh this meshlet is part of for rendering and culling purposes.
   xiiUInt32         m_uiGpuPadding[2]        = {};                            ///< Prefix primitive end and hierarchy coverage count. The coverage count is serialized by the descriptor.
   xiiBoundingSphere m_Bounds                 = xiiBoundingSphere::MakeZero(); ///< The bounding sphere of this meshlet, used for frustum culling and other spatial queries during rendering.
-  xiiVec3           m_vConeAxis              = xiiVec3(0.0f, 0.0f, 1.0f);     ///< The axis of the normal cone for this meshlet, used for backface culling and other orientation-based culling techniques during rendering.
-  float             m_fConeCutoff            = -1.0f;                         ///< The cutoff angle for the normal cone of this meshlet, where values in the range [-1, 1] represent the cosine of the cutoff angle and are used for backface culling and other orientation-based culling techniques during rendering. A value of -1 means no normal cone culling, while a value of 0 means a 90-degree cutoff angle.
+  xiiVec3           m_vConeAxis              = xiiVec3(0.0F, 0.0F, 1.0F);     ///< The axis of the normal cone for this meshlet, used for backface culling and other orientation-based culling techniques during rendering.
+  float             m_fConeCutoff            = -1.0F;                         ///< The cutoff angle for the normal cone of this meshlet, where values in the range [-1, 1] represent the cosine of the cutoff angle and are used for backface culling and other orientation-based culling techniques during rendering. A value of -1 means no normal cone culling, while a value of 0 means a 90-degree cutoff angle.
 
   // Virtual cluster metadata. Serialized by the owning descriptor after the legacy meshlet stream.
   xiiVec4U32 m_Page      = xiiVec4U32(xiiInvalidIndex, 0U, 0U, 0U); // page, remap bytes, primitive bytes, page vertex count
-  xiiVec4    m_Hierarchy = xiiVec4(0.0f);                           // object-space error, detail page plus one, root flag, reserved
+  xiiVec4    m_Hierarchy = xiiVec4(0.0F);                           // object-space error, detail page plus one, root flag, reserved
 
   xiiResult Serialize(xiiStreamWriter& inout_stream) const;
   xiiResult Deserialize(xiiStreamReader& inout_stream);
@@ -163,7 +163,7 @@ struct XII_GRAPHICSCORE_DLL xiiGeometryPage
   xiiUInt32 m_uiFirstCluster = 0U, m_uiClusterCount = 0U;
   xiiUInt32 m_uiParent = xiiInvalidIndex, m_uiChildCount = 0U;
   xiiUInt32 m_Children[8]     = {};
-  float     m_fGeometricError = 0.0f;
+  float     m_fGeometricError = 0.0F;
   xiiResult Serialize(xiiStreamWriter& stream) const;
   xiiResult Deserialize(xiiStreamReader& stream);
 };
@@ -351,7 +351,7 @@ class XII_GRAPHICSCORE_DLL xiiMeshBufferResource final : public xiiResource
 
 public:
   xiiMeshBufferResource();
-  ~xiiMeshBufferResource();
+  ~xiiMeshBufferResource() override;
 
   /// Returns the mesh buffer resource descriptor for this mesh buffer resource, used to identify the properties and data of this mesh buffer resource for rendering and other operations. The mesh buffer resource descriptor contains information about the vertex stream layout, vertex and index data, meshlet data, and other properties of this mesh buffer resource that are essential for correctly interpreting the mesh data and for configuring the rendering pipeline for this mesh.
   const xiiMeshBufferResourceDescriptor& GetDescriptor() const;
@@ -404,9 +404,9 @@ public:
   xiiSharedPtr<xiiGALBuffer> GetDrawCommandBuffer() const;
 
 private:
-  virtual xiiResourceLoadDescription UnloadData(Unload whatToUnload) override;
-  virtual xiiResourceLoadDescription UpdateContent(xiiStreamReader* pStream) override;
-  virtual void                       UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage) override;
+  xiiResourceLoadDescription UnloadData(Unload whatToUnload) override;
+  xiiResourceLoadDescription UpdateContent(xiiStreamReader* pStream) override;
+  void                       UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage) override;
 
   void CreateGpuBuffer(xiiSharedPtr<xiiGALBuffer>& out_pBuffer, xiiArrayPtr<const xiiUInt8> pData, xiiUInt32 uiStride, xiiBitflags<xiiGALBindFlags> bindFlags, xiiStringView sDebugName);
   void CreateGpuBuffer(xiiSharedPtr<xiiGALBuffer>& out_pBuffer, xiiArrayPtr<const xiiMeshDrawCommand> pData, xiiUInt32 uiStride, xiiBitflags<xiiGALBindFlags> bindFlags, xiiStringView sDebugName);

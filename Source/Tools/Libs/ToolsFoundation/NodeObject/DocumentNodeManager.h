@@ -146,7 +146,7 @@ public:
   xiiEvent<const xiiDocumentNodeManagerEvent&> m_NodeEvents;
 
   xiiDocumentNodeManager();
-  virtual ~xiiDocumentNodeManager();
+  ~xiiDocumentNodeManager() override;
 
   /// For node documents this function is called instead of GetCreateableTypes to get a list for the node creation menu.
   ///

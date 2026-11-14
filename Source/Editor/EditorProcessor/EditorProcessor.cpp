@@ -45,7 +45,7 @@ public:
     m_pEditorApp = new xiiQtEditorApp;
   }
 
-  virtual xiiResult BeforeCoreSystemsStartup() override
+  xiiResult BeforeCoreSystemsStartup() override
   {
     xiiStartup::AddApplicationTag("tool");
     xiiStartup::AddApplicationTag("editor");
@@ -61,7 +61,7 @@ public:
     return XII_SUCCESS;
   }
 
-  virtual void AfterCoreSystemsShutdown() override
+  void AfterCoreSystemsShutdown() override
   {
     m_pEditorEngineProcessAppDummy = nullptr;
 
@@ -238,7 +238,7 @@ public:
     }
   }
 
-  virtual Execution Run() override
+  Execution Run() override
   {
     {
       xiiStringBuilder cmdHelp;

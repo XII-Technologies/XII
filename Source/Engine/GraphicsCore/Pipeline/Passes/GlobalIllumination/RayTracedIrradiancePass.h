@@ -48,7 +48,7 @@ public:
   xiiUInt32                         m_uiSampleCount = 8, m_uiMaximumHits = 2, m_uiSampleOffset = 0;
   xiiUInt32                         m_uiAnalyticLightSamples = 4;
   bool                              m_bPowerWeightedLights   = true;
-  float                             m_fRayLength = 20, m_fSurfaceBias = 0.02f;
+  float                             m_fRayLength = 20, m_fSurfaceBias = 0.02F;
   /// Explicitly permit absence so an authored graph can choose its own fallback.
   bool                                        m_bAllowUnsupportedHardware = false, m_bAsyncCompute = true;
   bool                                        m_bAnimateSamples = false;

@@ -18,7 +18,7 @@ public:
 
   xiiUInt32 GetNumParameters() const override { return ARG_COUNT; }
 
-  virtual xiiVariant::Type::Enum GetParameterType(xiiUInt32 uiParam) const override
+  xiiVariant::Type::Enum GetParameterType(xiiUInt32 uiParam) const override
   {
     XII_ASSERT_DEV(uiParam < GetNumParameters(), "Invalid Parameter Index {0}", uiParam);
 
@@ -57,7 +57,7 @@ public:
     return xiiVariant::Type::Invalid;
   }
 
-  virtual xiiResult Call(xiiArrayPtr<xiiVariant> params) override
+  xiiResult Call(xiiArrayPtr<xiiVariant> params) override
   {
     XII_IGNORE_UNUSED(params);
 

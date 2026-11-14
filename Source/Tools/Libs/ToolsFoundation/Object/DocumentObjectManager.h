@@ -38,8 +38,8 @@ public:
   }
 
 public:
-  virtual void InsertSubObject(xiiDocumentObject* pObject, xiiStringView sProperty, const xiiVariant& index) override;
-  virtual void RemoveSubObject(xiiDocumentObject* pObject) override;
+  void InsertSubObject(xiiDocumentObject* pObject, xiiStringView sProperty, const xiiVariant& index) override;
+  void RemoveSubObject(xiiDocumentObject* pObject) override;
 };
 
 /// Used by xiiDocumentObjectManager::m_StructureEvents.

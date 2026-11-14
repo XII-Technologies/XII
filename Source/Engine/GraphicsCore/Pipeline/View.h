@@ -59,7 +59,7 @@ class XII_GRAPHICSCORE_DLL xiiView : public xiiReflectedClass
 private:
   /// Use xiiRenderWorldModule::CreateView to create a view.
   xiiView(xiiWorld* pWorld);
-  ~xiiView();
+  ~xiiView() override;
 
 public:
   xiiWorld* GetWorld() const;
@@ -290,7 +290,7 @@ private:
 
   mutable xiiUInt32 m_uiLastCameraSettingsModification    = 0;
   mutable xiiUInt32 m_uiLastCameraOrientationModification = 0;
-  mutable float     m_fLastViewportAspectRatio            = 1.0f;
+  mutable float     m_fLastViewportAspectRatio            = 1.0F;
 
   mutable xiiViewData m_Data;
 
@@ -303,11 +303,11 @@ private:
   /// Camera-dependent resolution policy and feedback belong to this view, not a graph occurrence.
   struct DynamicResolution
   {
-    float m_fCurrentScale  = 1.0f;
-    float m_fErrorIntegral = 0.0f;
-    float m_fPreviousError = 0.0f;
-    float m_fSmoothedScale = 1.0f;
-    float m_fRenderScale   = 1.0f;
+    float m_fCurrentScale  = 1.0F;
+    float m_fErrorIntegral = 0.0F;
+    float m_fPreviousError = 0.0F;
+    float m_fSmoothedScale = 1.0F;
+    float m_fRenderScale   = 1.0F;
   } m_DynamicResolution;
 
   xiiRenderGraphHandle       m_hRenderGraph;

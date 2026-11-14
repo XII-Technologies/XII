@@ -43,7 +43,7 @@ xiiCompileTimeFalseType operator%(const T&, const xiiTypeIsPod&);
 
 /// If there is an % operator which takes a TypeIsPod and returns a CompileTimeTrueType T is Pod. Default % operator return false.
 template <typename T>
-struct xiiIsPodType : public xiiTraitInt<(sizeof(*((T*)0) % *((const xiiTypeIsPod*)0)) == sizeof(xiiCompileTimeTrueType)) ? 1 : 0>
+struct xiiIsPodType : public xiiTraitInt<(sizeof(*((T*)nullptr) % *((const xiiTypeIsPod*)nullptr)) == sizeof(xiiCompileTimeTrueType)) ? 1 : 0>
 {
 };
 
@@ -66,7 +66,7 @@ xiiCompileTimeFalseType operator%(const T&, const xiiTypeIsMemRelocatable&);
 /// If there is an % operator which takes a xiiTypeIsMemRelocatable and returns a CompileTimeTrueType T is Pod. Default % operator
 /// return false.
 template <typename T>
-struct xiiGetTypeClass : public xiiTraitInt<(sizeof(*((T*)0) % *((const xiiTypeIsMemRelocatable*)0)) == sizeof(xiiCompileTimeTrueType)) ? 2 : xiiIsPodType<T>::value>
+struct xiiGetTypeClass : public xiiTraitInt<(sizeof(*((T*)nullptr) % *((const xiiTypeIsMemRelocatable*)nullptr)) == sizeof(xiiCompileTimeTrueType)) ? 2 : xiiIsPodType<T>::value>
 {
 };
 

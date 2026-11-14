@@ -70,7 +70,7 @@ class XII_SHAREDPLUGINASSETS_DLL xiiEditableSkeletonJoint : public xiiReflectedC
 
 public:
   xiiEditableSkeletonJoint() = default;
-  ~xiiEditableSkeletonJoint();
+  ~xiiEditableSkeletonJoint() override;
   xiiEditableSkeletonJoint(const xiiEditableSkeletonJoint&) = delete;
   void operator=(const xiiEditableSkeletonJoint&)           = delete;
 
@@ -109,7 +109,7 @@ class XII_SHAREDPLUGINASSETS_DLL xiiEditableSkeleton : public xiiReflectedClass
 
 public:
   xiiEditableSkeleton() = default;
-  ~xiiEditableSkeleton();
+  ~xiiEditableSkeleton() override;
   xiiEditableSkeleton(const xiiEditableSkeleton&) = delete;
   void operator=(const xiiEditableSkeleton&)      = delete;
 

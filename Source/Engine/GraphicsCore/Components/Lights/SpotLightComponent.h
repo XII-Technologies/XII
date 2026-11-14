@@ -29,21 +29,21 @@ class XII_GRAPHICSCORE_DLL xiiSpotLightComponent : public xiiLightComponent
   // xiiComponent
 
 public:
-  virtual void SerializeComponent(xiiWorldWriter& inout_stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& inout_stream) override;
+  void SerializeComponent(xiiWorldWriter& inout_stream) const override;
+  void DeserializeComponent(xiiWorldReader& inout_stream) override;
 
   /////////////////////////////////////////////////////////////////////////
   // xiiRenderComponent
 
 public:
-  virtual xiiResult GetLocalBounds(xiiBoundingBoxSphere& ref_bounds, bool& ref_bAlwaysVisible, xiiMsgUpdateLocalBounds& ref_msg) override;
+  xiiResult GetLocalBounds(xiiBoundingBoxSphere& ref_bounds, bool& ref_bAlwaysVisible, xiiMsgUpdateLocalBounds& ref_msg) override;
 
   /////////////////////////////////////////////////////////////////////////
   // xiiSpotLightComponent
 
 public:
   xiiSpotLightComponent();
-  ~xiiSpotLightComponent();
+  ~xiiSpotLightComponent() override;
 
   /// Sets the radius (or length of the cone) of the lightsource. If zero, it is automatically determined from the intensity.
   void  SetRange(float fRange); // [ property ]
@@ -78,12 +78,12 @@ protected:
   xiiBoundingSphere CalculateBoundingSphere(const xiiTransform& transform, float fRange) const;
 
 protected:
-  float                       m_fRange              = 0.0f;
-  float                       m_fEffectiveRange     = 0.0f;
-  float                       m_fShadowFadeOutRange = 0.0f;
-  float                       m_fRadius             = 0.0f;
-  xiiAngle                    m_InnerSpotAngle      = xiiAngle::MakeFromDegree(15.0f);
-  xiiAngle                    m_OuterSpotAngle      = xiiAngle::MakeFromDegree(30.0f);
+  float                       m_fRange              = 0.0F;
+  float                       m_fEffectiveRange     = 0.0F;
+  float                       m_fShadowFadeOutRange = 0.0F;
+  float                       m_fRadius             = 0.0F;
+  xiiAngle                    m_InnerSpotAngle      = xiiAngle::MakeFromDegree(15.0F);
+  xiiAngle                    m_OuterSpotAngle      = xiiAngle::MakeFromDegree(30.0F);
   xiiIESProfileResourceHandle m_hIESProfile;
 };
 

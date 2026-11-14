@@ -111,7 +111,7 @@ protected:
 
   xiiGALQuery(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALQueryCreationDescription& creationDescription);
 
-  virtual ~xiiGALQuery();
+  ~xiiGALQuery() override;
 
   virtual xiiResult InitPlatform() = 0;
 

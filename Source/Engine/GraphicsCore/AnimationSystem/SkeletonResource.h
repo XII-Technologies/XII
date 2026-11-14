@@ -65,7 +65,7 @@ class XII_GRAPHICSCORE_DLL xiiSkeletonResource final : public xiiResource
 
 public:
   xiiSkeletonResource();
-  ~xiiSkeletonResource();
+  ~xiiSkeletonResource() override;
 
   xiiUInt32                           GetJointCount() const;
   xiiUInt16                           FindJointByName(const xiiTempHashedString& sName) const;
@@ -79,9 +79,9 @@ public:
 #endif
 
 private:
-  virtual xiiResourceLoadDescription UnloadData(Unload whatToUnload) override;
-  virtual xiiResourceLoadDescription UpdateContent(xiiStreamReader* pStream) override;
-  virtual void                       UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage) override;
+  xiiResourceLoadDescription UnloadData(Unload whatToUnload) override;
+  xiiResourceLoadDescription UpdateContent(xiiStreamReader* pStream) override;
+  void                       UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage) override;
 
   void BuildJointLookup();
   void LoadOzzSkeleton(const xiiDynamicArray<xiiUInt8>& ozzData);

@@ -25,7 +25,7 @@ class XII_CORE_DLL xiiComponentManagerBase : public xiiWorldModule
 
 protected:
   xiiComponentManagerBase(xiiWorld* pWorld);
-  virtual ~xiiComponentManagerBase();
+  ~xiiComponentManagerBase() override;
 
 public:
   /// Checks whether the given handle references a valid component.
@@ -67,7 +67,7 @@ protected:
   friend class xiiWorld;
   friend class xiiInternal::WorldData;
 
-  virtual void Deinitialize() override;
+  void Deinitialize() override;
 
 protected:
   friend class xiiWorldReader;
@@ -94,7 +94,7 @@ public:
 
   /// Although the constructor is public always use xiiWorld::CreateComponentManager to create an instance.
   xiiComponentManager(xiiWorld* pWorld);
-  virtual ~xiiComponentManager();
+  ~xiiComponentManager() override;
 
   /// Returns if a component with the given handle exists and if so writes out the corresponding pointer to out_pComponent.
   bool TryGetComponent(const xiiComponentHandle& hComponent, ComponentType*& out_pComponent);
@@ -111,15 +111,15 @@ public:
   /// Returns the type id corresponding to the component type managed by this manager.
   static xiiWorldModuleTypeId TypeId();
 
-  virtual void CollectAllComponents(xiiDynamicArray<xiiComponentHandle>& out_allComponents, bool bOnlyActive) override;
-  virtual void CollectAllComponents(xiiDynamicArray<xiiComponent*>& out_allComponents, bool bOnlyActive) override;
+  void CollectAllComponents(xiiDynamicArray<xiiComponentHandle>& out_allComponents, bool bOnlyActive) override;
+  void CollectAllComponents(xiiDynamicArray<xiiComponent*>& out_allComponents, bool bOnlyActive) override;
 
 protected:
   friend ComponentType;
   friend class xiiComponentManagerFactory;
 
-  virtual xiiComponent* CreateComponentStorage() override;
-  virtual void          DeleteComponentStorage(xiiComponent* pComponent, xiiComponent*& out_pMovedComponent) override;
+  xiiComponent* CreateComponentStorage() override;
+  void          DeleteComponentStorage(xiiComponent* pComponent, xiiComponent*& out_pMovedComponent) override;
 
   void RegisterUpdateFunction(UpdateFunctionDesc& desc);
 
@@ -145,7 +145,7 @@ class xiiComponentManagerSimple final : public xiiComponentManager<ComponentType
 public:
   xiiComponentManagerSimple(xiiWorld* pWorld);
 
-  virtual void Initialize() override;
+  void Initialize() override;
 
   /// A simple update function that iterates over all components and calls Update() on every component
   void SimpleUpdate(const xiiWorldModule::UpdateContext& context);

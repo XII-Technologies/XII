@@ -163,7 +163,8 @@ XII_CREATE_SIMPLE_TEST(Inspector, CaptureLimitsAndUnavailableTiming)
   passes.append(passes[0]);
   capture["passes"] = passes;
   XII_TEST_BOOL(!graph.ApplyCapture(capture));
-  const auto first = MakeGraphCapture(), second = MakeGraphCapture();
+  const auto first  = MakeGraphCapture();
+  const auto second = MakeGraphCapture();
   XII_TEST_BOOL(first["id"] != second["id"] && first["instance"] != second["instance"]);
   XII_TEST_BOOL(graph.ApplyCapture(first));
   XII_TEST_BOOL(graph.ApplyCapture(second));

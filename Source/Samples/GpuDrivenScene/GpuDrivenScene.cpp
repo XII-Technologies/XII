@@ -51,7 +51,7 @@ xiiCommandLineOptionString opt_GpuDrivenMesh("GpuDrivenScene", "-mesh", "Compile
 xiiCommandLineOptionString opt_GpuDrivenExportMesh("GpuDrivenScene", "-export-mesh", "Export the generated sphere as a compiled native mesh asset.", "");
 xiiCommandLineOptionBool   opt_GpuDrivenAuthoredMaterials("GpuDrivenScene", "-authored-materials", "Render through the authored default material shader.", false);
 xiiCommandLineOptionBool   opt_GpuDrivenMeshShaders("GpuDrivenScene", "-mesh-shaders", "Use mesh shaders when supported.", true);
-xiiCommandLineOptionFloat  opt_GpuDrivenCameraDistance("GpuDrivenScene", "-camera-distance", "Imported mesh camera distance in mesh radii.", 2.5f, 0.25f, 32.0f);
+xiiCommandLineOptionFloat  opt_GpuDrivenCameraDistance("GpuDrivenScene", "-camera-distance", "Imported mesh camera distance in mesh radii.", 2.5F, 0.25F, 32.0F);
 xiiCommandLineOptionString opt_GpuDrivenCapture("GpuDrivenScene", "-capture-dir", "Save rendered geometry inspection frames in this directory.", "");
 xiiCommandLineOptionBool   opt_GpuDrivenCameraTour("GpuDrivenScene", "-camera-tour", "Move between near and distant geometry to exercise page demand.", false);
 xiiCommandLineOptionInt    opt_GpuDrivenCameraTourPeriod("GpuDrivenScene", "-camera-tour-period", "Frames per near/far camera cycle.", 720, 120, 14400);
@@ -141,19 +141,19 @@ public:
         if (tour)
         {
           const float phase   = static_cast<float>(step) / static_cast<float>(period);
-          const float outward = xiiMath::Saturate((phase - 0.2f) * 5.0f);
-          const float inward  = xiiMath::Saturate((phase - 0.75f) * 5.0f);
-          distance *= 1.0f + 15.0f * (outward - inward);
+          const float outward = xiiMath::Saturate((phase - 0.2F) * 5.0F);
+          const float inward  = xiiMath::Saturate((phase - 0.75F) * 5.0F);
+          distance *= 1.0F + 15.0F * (outward - inward);
         }
-        const xiiVec3 center = m_ImportedBounds.m_vCenter + xiiVec3(6.0f, 0.0f, 0.0f);
-        const xiiVec3 offset = xiiVec3(-1.0f, -1.0f, 0.65f).GetNormalized() * (distance * m_ImportedBounds.m_fSphereRadius);
+        const xiiVec3 center = m_ImportedBounds.m_vCenter + xiiVec3(6.0F, 0.0F, 0.0F);
+        const xiiVec3 offset = xiiVec3(-1.0F, -1.0F, 0.65F).GetNormalized() * (distance * m_ImportedBounds.m_fSphereRadius);
         m_Camera.LookAt(center + offset, center, xiiVec3::MakeAxisZ());
       }
       else if (tour)
       {
         const float phase    = static_cast<float>(m_uiFrameIndex % period) / static_cast<float>(period);
-        const float distance = 4.0f + 90.0f * (1.0f - xiiMath::Cos(xiiAngle::MakeFromRadian(phase * xiiMath::Pi<float>() * 2.0f)));
-        m_Camera.LookAt(xiiVec3(25.0f - distance, -2.0f, 1.0f + distance * 0.1f), xiiVec3(25.0f, 0.0f, 0.0f), xiiVec3(0.0f, 0.0f, 1.0f));
+        const float distance = 4.0F + 90.0F * (1.0F - xiiMath::Cos(xiiAngle::MakeFromRadian(phase * xiiMath::Pi<float>() * 2.0F)));
+        m_Camera.LookAt(xiiVec3(25.0F - distance, -2.0F, 1.0F + distance * 0.1F), xiiVec3(25.0F, 0.0F, 0.0F), xiiVec3(0.0F, 0.0F, 1.0F));
       }
       m_World.Update(xiiClock::GetGlobalClock()->GetTimeDiff());
       if (view->GetLastRenderResult().Failed() || view->GetRenderPipelineInstance().GetResourceAcquireResult() != xiiResourceAcquireResult::Final)
@@ -366,14 +366,14 @@ public:
     }
     xiiStartup::StartupHighLevelSystems();
 
-    m_Camera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovY, 60.0f, 0.1f, 250.0f);
-    m_Camera.LookAt(xiiVec3(-12.0f, -2.0f, 12.0f), xiiVec3(25.0f, 0.0f, 0.0f), xiiVec3(0.0f, 0.0f, 1.0f));
+    m_Camera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovY, 60.0F, 0.1F, 250.0F);
+    m_Camera.LookAt(xiiVec3(-12.0F, -2.0F, 12.0F), xiiVec3(25.0F, 0.0F, 0.0F), xiiVec3(0.0F, 0.0F, 1.0F));
 
     m_World.Initialize(m_pDevice.Borrow(), m_Configuration).AssertSuccess();
     m_ImportedBounds = m_World.GetImportedMeshBounds();
     if (m_ImportedBounds.IsValid())
     {
-      m_Camera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovY, 60.0f, xiiMath::Max(0.001f, m_ImportedBounds.m_fSphereRadius * 0.0001f), m_ImportedBounds.m_fSphereRadius * 40.0f);
+      m_Camera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovY, 60.0F, xiiMath::Max(0.001F, m_ImportedBounds.m_fSphereRadius * 0.0001F), m_ImportedBounds.m_fSphereRadius * 40.0F);
     }
     xiiLog::Info("Vulkan mesh shaders enabled: {}.", m_pDevice->GetFeatures().m_MeshShaders == xiiGALDeviceFeatureState::Enabled);
     auto* view = m_World.GetRenderView();

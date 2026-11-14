@@ -57,7 +57,8 @@ namespace
 
 XII_CREATE_SIMPLE_TEST(DearImgui, OwnershipAndActivation)
 {
-  xiiImguiContextHandle a, b;
+  xiiImguiContextHandle a;
+  xiiImguiContextHandle b;
   XII_TEST_RESULT(xiiImguiSubsystem::CreateContext(a));
   XII_TEST_RESULT(xiiImguiSubsystem::CreateContext(b));
   XII_TEST_BOOL(a != b);
@@ -70,7 +71,7 @@ XII_CREATE_SIMPLE_TEST(DearImgui, OwnershipAndActivation)
     {
       xiiImguiScopedContext inner(b);
       XII_TEST_BOOL(ImGui::GetCurrentContext() != first);
-      ImGui::GetStyle().Alpha = 0.25f;
+      ImGui::GetStyle().Alpha = 0.25F;
       xiiImguiScopedContext invalid({});
       XII_TEST_BOOL(!invalid.IsValid());
     }
@@ -134,7 +135,8 @@ XII_CREATE_SIMPLE_TEST(DearImgui, FrameStateAndImmutableLifetime)
 
 XII_CREATE_SIMPLE_TEST(DearImgui, InputIsolationAndDisable)
 {
-  xiiImguiContextHandle a, b;
+  xiiImguiContextHandle a;
+  xiiImguiContextHandle b;
   XII_TEST_RESULT(xiiImguiSubsystem::CreateContext(a));
   XII_TEST_RESULT(xiiImguiSubsystem::CreateContext(b));
   XII_TEST_RESULT(xiiImguiInput::Focus(a, true));
@@ -147,7 +149,9 @@ XII_CREATE_SIMPLE_TEST(DearImgui, InputIsolationAndDisable)
   XII_TEST_BOOL(xiiImguiInput::Key({}, ImGuiKey_A, true).Failed());
   {
     xiiImguiScopedContext scope(a);
-    bool                  keySeen = false, textSeen = false, mouseSeen = false;
+    bool                  keySeen   = false;
+    bool                  textSeen  = false;
+    bool                  mouseSeen = false;
     // The default ImGui event queue deliberately trickles different input categories across frames.
     for (xiiUInt32 i = 0; i < 4; ++i)
     {
@@ -203,8 +207,8 @@ XII_CREATE_SIMPLE_TEST(DearImgui, SourceLocalQuickClickAndTextBurst)
   };
   draw();
   draw();
-  source.Slot(xiiInputSlot_MousePositionX, 75.0f / 640);
-  source.Slot(xiiInputSlot_MousePositionY, 75.0f / 480);
+  source.Slot(xiiInputSlot_MousePositionX, 75.0F / 640);
+  source.Slot(xiiInputSlot_MousePositionY, 75.0F / 480);
   // Both transitions occur before the next frame. Polling only the final state would lose this click.
   source.Slot(xiiInputSlot_MouseButton0, 1);
   source.Slot(xiiInputSlot_MouseButton0, 0);

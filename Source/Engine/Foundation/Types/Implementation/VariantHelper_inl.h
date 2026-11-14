@@ -446,7 +446,7 @@ class xiiVariantHelper
       double        tmp = result;
       if (xiiConversionUtils::StringToFloat(s, tmp) == XII_FAILURE)
       {
-        result      = 0.0f;
+        result      = 0.0F;
         bSuccessful = false;
       }
       else
@@ -459,7 +459,7 @@ class xiiVariantHelper
       double tmp = result;
       if (xiiConversionUtils::StringToFloat(value.Cast<xiiStringView>(), tmp) == XII_FAILURE)
       {
-        result      = 0.0f;
+        result      = 0.0F;
         bSuccessful = false;
       }
       else

@@ -17,21 +17,21 @@ class XII_CORE_DLL xiiStandardInputDevice : public xiiInputDeviceMouseKeyboard
 
 public:
   xiiStandardInputDevice(xiiUInt32 uiWindowNumber, SDL_Window* windowHandle);
-  ~xiiStandardInputDevice();
+  ~xiiStandardInputDevice() override;
 
   /// This function needs to be called by all Windows functions, to pass the input information through to this input device.
   void WindowMessage(void* pMessage);
 
-  virtual void                         SetShowMouseCursor(bool bShow) override;
-  virtual bool                         GetShowMouseCursor() const override;
-  virtual void                         SetClipMouseCursor(xiiMouseCursorClipMode::Enum mode) override;
-  virtual xiiMouseCursorClipMode::Enum GetClipMouseCursor() const override;
+  void                         SetShowMouseCursor(bool bShow) override;
+  bool                         GetShowMouseCursor() const override;
+  void                         SetClipMouseCursor(xiiMouseCursorClipMode::Enum mode) override;
+  xiiMouseCursorClipMode::Enum GetClipMouseCursor() const override;
 
 private:
-  virtual void InitializeDevice() override;
-  virtual void RegisterInputSlots() override;
-  virtual void ResetInputSlotValues() override;
-  virtual void UpdateInputSlotValues() override;
+  void InitializeDevice() override;
+  void RegisterInputSlots() override;
+  void ResetInputSlotValues() override;
+  void UpdateInputSlotValues() override;
 
 private:
   void OnFocusLost();

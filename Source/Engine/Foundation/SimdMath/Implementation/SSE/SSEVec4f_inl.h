@@ -134,7 +134,7 @@ XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::GetReciprocal<xiiMathFloatBits::BIT
   __m128 x0 = _mm_rcp_ps(m_v);
 
   // One Newton-Raphson iteration
-  __m128 x1 = _mm_mul_ps(x0, _mm_sub_ps(_mm_set1_ps(2.0f), _mm_mul_ps(m_v, x0)));
+  __m128 x1 = _mm_mul_ps(x0, _mm_sub_ps(_mm_set1_ps(2.0F), _mm_mul_ps(m_v, x0)));
 
   return x1;
 }
@@ -142,7 +142,7 @@ XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::GetReciprocal<xiiMathFloatBits::BIT
 template <>
 XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::GetReciprocal<xiiMathFloatBits::FULL>() const
 {
-  return _mm_div_ps(_mm_set1_ps(1.0f), m_v);
+  return _mm_div_ps(_mm_set1_ps(1.0F), m_v);
 }
 
 template <>
@@ -157,7 +157,7 @@ XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::GetSqrt<xiiMathFloatBits::BITS_23>(
   __m128 x0 = _mm_rsqrt_ps(m_v);
 
   // One iteration of Newton-Raphson
-  __m128 x1 = _mm_mul_ps(_mm_mul_ps(_mm_set1_ps(0.5f), x0), _mm_sub_ps(_mm_set1_ps(3.0f), _mm_mul_ps(_mm_mul_ps(m_v, x0), x0)));
+  __m128 x1 = _mm_mul_ps(_mm_mul_ps(_mm_set1_ps(0.5F), x0), _mm_sub_ps(_mm_set1_ps(3.0F), _mm_mul_ps(_mm_mul_ps(m_v, x0), x0)));
 
   return _mm_mul_ps(m_v, x1);
 }
@@ -171,7 +171,7 @@ XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::GetSqrt<xiiMathFloatBits::FULL>() c
 template <>
 XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::GetInvSqrt<xiiMathFloatBits::FULL>() const
 {
-  return _mm_div_ps(_mm_set1_ps(1.0f), _mm_sqrt_ps(m_v));
+  return _mm_div_ps(_mm_set1_ps(1.0F), _mm_sqrt_ps(m_v));
 }
 
 template <>
@@ -180,7 +180,7 @@ XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::GetInvSqrt<xiiMathFloatBits::BITS_2
   const __m128 x0 = _mm_rsqrt_ps(m_v);
 
   // One iteration of Newton-Raphson
-  return _mm_mul_ps(_mm_mul_ps(_mm_set1_ps(0.5f), x0), _mm_sub_ps(_mm_set1_ps(3.0f), _mm_mul_ps(_mm_mul_ps(m_v, x0), x0)));
+  return _mm_mul_ps(_mm_mul_ps(_mm_set1_ps(0.5F), x0), _mm_sub_ps(_mm_set1_ps(3.0F), _mm_mul_ps(_mm_mul_ps(m_v, x0), x0)));
 }
 
 template <>
@@ -328,7 +328,7 @@ XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::CompDiv<xiiMathFloatBits::BITS_23>(
   __m128 x0 = _mm_rcp_ps(v.m_v);
 
   // One iteration of Newton-Raphson
-  __m128 x1 = _mm_mul_ps(x0, _mm_sub_ps(_mm_set1_ps(2.0f), _mm_mul_ps(v.m_v, x0)));
+  __m128 x1 = _mm_mul_ps(x0, _mm_sub_ps(_mm_set1_ps(2.0F), _mm_mul_ps(v.m_v, x0)));
 
   return _mm_mul_ps(m_v, x1);
 }
@@ -351,7 +351,7 @@ XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::CompMax(const xiiSimdVec4f& v) cons
 
 XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::Abs() const
 {
-  return _mm_andnot_ps(_mm_set1_ps(-0.0f), m_v);
+  return _mm_andnot_ps(_mm_set1_ps(-0.0F), m_v);
 }
 
 XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::Round() const
@@ -392,7 +392,7 @@ XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::Trunc() const
 
 XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::FlipSign(const xiiSimdVec4b& vCmp) const
 {
-  return _mm_xor_ps(m_v, _mm_and_ps(vCmp.m_v, _mm_set1_ps(-0.0f)));
+  return _mm_xor_ps(m_v, _mm_and_ps(vCmp.m_v, _mm_set1_ps(-0.0F)));
 }
 
 // static
@@ -625,6 +625,6 @@ XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::MulSub(const xiiSimdVec4f& a, const
 // static
 XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::CopySign(const xiiSimdVec4f& vMagnitude, const xiiSimdVec4f& vSign)
 {
-  __m128 minusZero = _mm_set1_ps(-0.0f);
+  __m128 minusZero = _mm_set1_ps(-0.0F);
   return _mm_or_ps(_mm_andnot_ps(minusZero, vMagnitude.m_v), _mm_and_ps(minusZero, vSign.m_v));
 }

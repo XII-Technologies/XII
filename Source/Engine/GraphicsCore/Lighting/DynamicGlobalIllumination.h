@@ -17,10 +17,10 @@ struct XII_GRAPHICSCORE_DLL xiiDDGISettings
   xiiUInt32 m_uiProbeCountX              = 24U;
   xiiUInt32 m_uiProbeCountY              = 12U;
   xiiUInt32 m_uiProbeCountZ              = 24U;
-  float     m_fProbeSpacing              = 4.0f;
+  float     m_fProbeSpacing              = 4.0F;
   xiiUInt32 m_uiProbeUpdateBudget        = 128U;
-  float     m_fTemporalHysteresis        = 0.97f;
-  float     m_fMaximumRelocationDistance = 1.8f;
+  float     m_fTemporalHysteresis        = 0.97F;
+  float     m_fMaximumRelocationDistance = 1.8F;
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiDDGISettings);
@@ -71,7 +71,7 @@ struct XII_GRAPHICSCORE_DLL xiiDDGIProbeUpdate
 {
   xiiUInt32 m_uiPhysicalProbe = xiiInvalidIndex;
   xiiVec3   m_vWorldPosition  = xiiVec3::MakeZero();
-  float     m_fHistoryWeight  = 0.0f;
+  float     m_fHistoryWeight  = 0.0F;
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiDDGIProbeUpdate);

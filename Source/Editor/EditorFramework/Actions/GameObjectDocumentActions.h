@@ -52,10 +52,10 @@ public:
     PickTransparent,
   };
 
-  xiiGameObjectDocumentAction(const xiiActionContext& context, const char* szName, ActionType type, float fSimSpeed = 1.0f);
-  ~xiiGameObjectDocumentAction();
+  xiiGameObjectDocumentAction(const xiiActionContext& context, const char* szName, ActionType type, float fSimSpeed = 1.0F);
+  ~xiiGameObjectDocumentAction() override;
 
-  virtual void Execute(const xiiVariant& value) override;
+  void Execute(const xiiVariant& value) override;
 
 private:
   void SceneEventHandler(const xiiGameObjectEvent& e);
@@ -78,9 +78,9 @@ public:
   };
 
   xiiCameraSpeedSliderAction(const xiiActionContext& context, const char* szName, ActionType type);
-  ~xiiCameraSpeedSliderAction();
+  ~xiiCameraSpeedSliderAction() override;
 
-  virtual void Execute(const xiiVariant& value) override;
+  void Execute(const xiiVariant& value) override;
 
 private:
   void OnPreferenceChange(xiiSettings* pref);

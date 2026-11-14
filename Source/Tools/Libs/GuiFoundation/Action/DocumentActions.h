@@ -51,9 +51,9 @@ public:
     CopyAssetGuid,
   };
   xiiDocumentAction(const xiiActionContext& context, xiiStringView sName, ButtonType button);
-  ~xiiDocumentAction();
+  ~xiiDocumentAction() override;
 
-  virtual void Execute(const xiiVariant& value) override;
+  void Execute(const xiiVariant& value) override;
 
 private:
   void DocumentEventHandler(const xiiDocumentEvent& e);

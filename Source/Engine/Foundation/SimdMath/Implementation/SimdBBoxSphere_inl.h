@@ -26,7 +26,7 @@ XII_ALWAYS_INLINE xiiSimdBBoxSphere xiiSimdBBoxSphere::MakeZero()
 XII_ALWAYS_INLINE xiiSimdBBoxSphere xiiSimdBBoxSphere::MakeInvalid()
 {
   xiiSimdBBoxSphere res;
-  res.m_CenterAndRadius.Set(0.0f, 0.0f, 0.0f, -xiiMath::SmallEpsilon<float>());
+  res.m_CenterAndRadius.Set(0.0F, 0.0F, 0.0F, -xiiMath::SmallEpsilon<float>());
   res.m_BoxHalfExtents.Set(-xiiMath::MaxValue<float>());
   return res;
 }

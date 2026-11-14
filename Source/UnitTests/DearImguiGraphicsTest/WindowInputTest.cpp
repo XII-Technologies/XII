@@ -10,7 +10,8 @@
 
 XII_CREATE_SIMPLE_TEST(DearImguiGraphics, IndependentWindowInput)
 {
-  xiiWindow                    first, second;
+  xiiWindow                    first;
+  xiiWindow                    second;
   xiiWindowCreationDescription description;
   description.m_Title                = "XII input source one";
   description.m_uiWindowNumber       = xiiWindow::GetNextUnusedWindowNumber();
@@ -30,7 +31,8 @@ XII_CREATE_SIMPLE_TEST(DearImguiGraphics, IndependentWindowInput)
   first.ProcessWindowMessages();
   int          count;
   auto**       windows = SDL_GetWindows(&count);
-  SDL_WindowID firstId = 0, secondId = 0;
+  SDL_WindowID firstId  = 0;
+  SDL_WindowID secondId = 0;
   for (int i = 0; i < count; ++i)
   {
     const xiiStringView title(SDL_GetWindowTitle(windows[i]));

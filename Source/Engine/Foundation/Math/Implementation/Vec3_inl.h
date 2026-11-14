@@ -127,7 +127,7 @@ XII_FORCE_INLINE bool xiiVec3Template<Type>::IsZero() const
 {
   XII_NAN_ASSERT(this);
 
-  return ((x == 0.0f) && (y == 0.0f) && (z == 0.0f));
+  return ((x == 0.0F) && (y == 0.0F) && (z == 0.0F));
 }
 
 template <typename Type>
@@ -300,7 +300,7 @@ XII_IMPLEMENT_IF_FLOAT_TYPE const xiiVec3Template<Type> xiiVec3Template<Type>::G
   XII_ASSERT_DEBUG(!IsZero(xiiMath::SmallEpsilon<Type>()), "The vector must not be zero to be able to compute an orthogonal vector.");
 
   Type fDot = xiiMath::Abs(this->Dot(xiiVec3Template<Type>(0, 1, 0)));
-  if (fDot < 0.999f)
+  if (fDot < 0.999F)
   {
     return this->CrossRH(xiiVec3Template<Type>(0, 1, 0));
   }
@@ -505,13 +505,13 @@ XII_IMPLEMENT_IF_FLOAT_TYPE const xiiVec3Template<Type> xiiVec3Template<Type>::G
 
   const Type n     = fRefIndex1 / fRefIndex2;
   const Type cosI  = this->Dot(vNormal);
-  const Type sinT2 = n * n * (1.0f - (cosI * cosI));
+  const Type sinT2 = n * n * (1.0F - (cosI * cosI));
 
   // invalid refraction
-  if (sinT2 > 1.0f)
+  if (sinT2 > 1.0F)
   {
     return (*this);
   }
 
-  return ((n * (*this)) - (n + xiiMath::Sqrt(1.0f - sinT2)) * vNormal);
+  return ((n * (*this)) - (n + xiiMath::Sqrt(1.0F - sinT2)) * vNormal);
 }

@@ -14,23 +14,23 @@ class xiiCamera;
 struct XII_GRAPHICSCORE_DLL xiiShadowCascadeSettings
 {
   xiiUInt32 m_uiCascadeCount         = 4U;
-  float     m_fSplitLambda           = 0.65f; ///< 0 = uniform splits, 1 = logarithmic splits.
-  float     m_fMaximumShadowDistance = 250.0f;
-  float     m_fDepthPadding          = 50.0f; ///< Extra light-space depth for off-frustum casters.
+  float     m_fSplitLambda           = 0.65F; ///< 0 = uniform splits, 1 = logarithmic splits.
+  float     m_fMaximumShadowDistance = 250.0F;
+  float     m_fDepthPadding          = 50.0F; ///< Extra light-space depth for off-frustum casters.
   xiiUInt32 m_uiShadowMapResolution  = 4096U;
-  float     m_fCascadeBlendFraction  = 0.1f;  ///< Fraction of each logical cascade interval blended into the next cascade.
-  float     m_fFilterRadius          = 1.0f;  ///< PCF kernel offset in shadow texels; zero selects bilinear comparison filtering.
+  float     m_fCascadeBlendFraction  = 0.1F;  ///< Fraction of each logical cascade interval blended into the next cascade.
+  float     m_fFilterRadius          = 1.0F;  ///< PCF kernel offset in shadow texels; zero selects bilinear comparison filtering.
   bool      m_bSoftShadows           = false; ///< PCSS uses the selected world light's angular radius; zero-radius sources retain PCF.
-  float     m_fMaximumPenumbraTexels = 16.0f; ///< Bounds blocker search and PCSS filter footprints.
+  float     m_fMaximumPenumbraTexels = 16.0F; ///< Bounds blocker search and PCSS filter footprints.
 };
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiShadowCascadeSettings);
 
 struct XII_GRAPHICSCORE_DLL xiiShadowCascadeDescription
 {
   xiiMat4 m_mViewProjection = xiiMat4::MakeIdentity();
-  float   m_fSplitNear      = 0.0f;
-  float   m_fSplitFar       = 0.0f;
-  float   m_fWorldRadius    = 0.0f; ///< Half-extent of the stabilized orthographic projection in metres.
+  float   m_fSplitNear      = 0.0F;
+  float   m_fSplitFar       = 0.0F;
+  float   m_fWorldRadius    = 0.0F; ///< Half-extent of the stabilized orthographic projection in metres.
 };
 
 /// CPU cascade construction shared by the renderer and deterministic tests.

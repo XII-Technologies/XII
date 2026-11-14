@@ -185,7 +185,7 @@ protected:
 
   xiiGALBuffer(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALBufferCreationDescription& creationDescription);
 
-  virtual ~xiiGALBuffer();
+  ~xiiGALBuffer() override;
 
   virtual xiiResult InitPlatform(const xiiGALBufferData* pInitialData, xiiBitflags<xiiGALExternalMemoryKind> externalMemoryKind) = 0;
 

@@ -29,13 +29,13 @@ void OnLoadPlugin();
 void OnUnloadPlugin();
 
 xiiCVarInt    CVar_TestInt("test1_Int", 11, xiiCVarFlags::Save, "Desc: test1_Int");
-xiiCVarFloat  CVar_TestFloat("test1_Float", 1.1f, xiiCVarFlags::RequiresRestart, "Desc: test1_Float");
+xiiCVarFloat  CVar_TestFloat("test1_Float", 1.1F, xiiCVarFlags::RequiresRestart, "Desc: test1_Float");
 xiiCVarDouble CVar_TestDouble("test1_Double", 12.12, xiiCVarFlags::RequiresRestart, "Desc: test1_Double");
 xiiCVarBool   CVar_TestBool("test1_Bool", false, xiiCVarFlags::None, "Desc: test1_Bool");
 xiiCVarString CVar_TestString("test1_String", "test1", xiiCVarFlags::Default, "Desc: test1_String");
 
 xiiCVarInt    CVar_TestInt2("test1_Int2", 21, xiiCVarFlags::Default, "Desc: test1_Int2");
-xiiCVarFloat  CVar_TestFloat2("test1_Float2", 2.1f, xiiCVarFlags::Default, "Desc: test1_Float2");
+xiiCVarFloat  CVar_TestFloat2("test1_Float2", 2.1F, xiiCVarFlags::Default, "Desc: test1_Float2");
 xiiCVarDouble CVar_TestDouble2("test1_Double2", 122.122, xiiCVarFlags::Default, "Desc: test1_Double2");
 xiiCVarBool   CVar_TestBool2("test1_Bool2", true, xiiCVarFlags::Default, "Desc: test1_Bool2");
 xiiCVarString CVar_TestString2("test1_String2", "test1b", xiiCVarFlags::Default, "Desc: test1_String2");
@@ -112,7 +112,7 @@ struct xiiTestStruct2
 {
   float m_fFloat2;
 
-  xiiTestStruct2() { m_fFloat2 = 42.0f; }
+  xiiTestStruct2() { m_fFloat2 = 42.0F; }
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_NO_LINKAGE, xiiTestStruct2);

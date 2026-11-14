@@ -20,10 +20,10 @@ class XII_GRAPHICSCORE_DLL xiiCameraComponentManager : public xiiComponentManage
 {
 public:
   xiiCameraComponentManager(xiiWorld* pWorld);
-  ~xiiCameraComponentManager();
+  ~xiiCameraComponentManager() override;
 
-  virtual void Initialize() override;
-  virtual void Deinitialize() override;
+  void Initialize() override;
+  void Deinitialize() override;
 
   void Update(const xiiWorldModule::UpdateContext& context);
 
@@ -54,19 +54,19 @@ class XII_GRAPHICSCORE_DLL xiiCameraComponent : public xiiComponent
   // xiiComponent
 
 public:
-  virtual void SerializeComponent(xiiWorldWriter& inout_stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& inout_stream) override;
+  void SerializeComponent(xiiWorldWriter& inout_stream) const override;
+  void DeserializeComponent(xiiWorldReader& inout_stream) override;
 
 protected:
-  virtual void OnActivated() override;
-  virtual void OnDeactivated() override;
+  void OnActivated() override;
+  void OnDeactivated() override;
 
   //////////////////////////////////////////////////////////////////////////
   // xiiCameraComponent
 
 public:
   xiiCameraComponent();
-  ~xiiCameraComponent();
+  ~xiiCameraComponent() override;
 
   xiiEnum<xiiCameraUsageHint> GetUsageHint() const { return m_UsageHint; }   // [ property ]
   void                        SetUsageHint(xiiEnum<xiiCameraUsageHint> val); // [ property ]
@@ -129,16 +129,16 @@ private:
 
   xiiEnum<xiiCameraUsageHint> m_UsageHint;
   xiiEnum<xiiCameraMode>      m_Mode;
-  float                       m_fNearPlane              = 0.25f;
-  float                       m_fFarPlane               = 1000.0f;
-  float                       m_fPerspectiveFieldOfView = 60.0f;
-  float                       m_fOrthoDimension         = 10.0f;
+  float                       m_fNearPlane              = 0.25F;
+  float                       m_fFarPlane               = 1000.0F;
+  float                       m_fPerspectiveFieldOfView = 60.0F;
+  float                       m_fOrthoDimension         = 10.0F;
   bool                        m_bShowFrameStats         = false;
 
-  float   m_fAperture             = 1.0f;
-  xiiTime m_ShutterTime           = xiiTime::MakeFromSeconds(1.0f);
-  float   m_fISO                  = 100.0f;
-  float   m_fExposureCompensation = 0.0f;
+  float   m_fAperture             = 1.0F;
+  xiiTime m_ShutterTime           = xiiTime::MakeFromSeconds(1.0F);
+  float   m_fISO                  = 100.0F;
+  float   m_fExposureCompensation = 0.0F;
 
   void MarkAsModified();
   void MarkAsModified(xiiCameraComponentManager* pCameraManager);
@@ -154,7 +154,7 @@ private:
   void DeactivateRenderToTexture();
 
   xiiViewHandle m_hRenderTargetView;
-  xiiVec2       m_vRenderTargetRectOffset = xiiVec2(0.0f);
-  xiiVec2       m_vRenderTargetRectSize   = xiiVec2(1.0f);
+  xiiVec2       m_vRenderTargetRectOffset = xiiVec2(0.0F);
+  xiiVec2       m_vRenderTargetRectSize   = xiiVec2(1.0F);
   xiiCamera     m_RenderTargetCamera;
 };

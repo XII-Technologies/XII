@@ -1,7 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 template <typename Type>
-inline constexpr Type xiiAngleTemplate<Type>::Pi()
+constexpr Type xiiAngleTemplate<Type>::Pi()
 {
   return static_cast<Type>(3.1415926535897932384626433832795);
 }
@@ -31,7 +31,7 @@ constexpr Type xiiAngleTemplate<Type>::RadToDeg(Type f)
 }
 
 template <typename Type>
-constexpr inline xiiAngleTemplate<Type> xiiAngleTemplate<Type>::MakeFromDegree(Type fDegree)
+constexpr xiiAngleTemplate<Type> xiiAngleTemplate<Type>::MakeFromDegree(Type fDegree)
 {
   return xiiAngleTemplate<Type>(DegToRad(fDegree));
 }
@@ -43,7 +43,7 @@ constexpr XII_ALWAYS_INLINE xiiAngleTemplate<Type> xiiAngleTemplate<Type>::MakeF
 }
 
 template <typename Type>
-constexpr inline Type xiiAngleTemplate<Type>::GetDegree() const
+constexpr Type xiiAngleTemplate<Type>::GetDegree() const
 {
   return RadToDeg(m_fRadian);
 }
@@ -77,7 +77,7 @@ inline void xiiAngleTemplate<Type>::NormalizeRange()
     m_fRadian -= fTwoPi;
   }
 
-  while (m_fRadian < 0.0f)
+  while (m_fRadian < 0.0F)
   {
     m_fRadian += fTwoPi;
   }
@@ -128,13 +128,13 @@ XII_ALWAYS_INLINE void xiiAngleTemplate<Type>::operator-=(xiiAngleTemplate<Type>
 }
 
 template <typename Type>
-constexpr inline xiiAngleTemplate<Type> xiiAngleTemplate<Type>::operator+(xiiAngleTemplate<Type> r) const
+constexpr xiiAngleTemplate<Type> xiiAngleTemplate<Type>::operator+(xiiAngleTemplate<Type> r) const
 {
   return xiiAngleTemplate<Type>(m_fRadian + r.m_fRadian);
 }
 
 template <typename Type>
-constexpr inline xiiAngleTemplate<Type> xiiAngleTemplate<Type>::operator-(xiiAngleTemplate<Type> r) const
+constexpr xiiAngleTemplate<Type> xiiAngleTemplate<Type>::operator-(xiiAngleTemplate<Type> r) const
 {
   return xiiAngleTemplate<Type>(m_fRadian - r.m_fRadian);
 }
@@ -152,25 +152,25 @@ constexpr XII_ALWAYS_INLINE std::partial_ordering xiiAngleTemplate<Type>::operat
 }
 
 template <typename Type>
-constexpr inline xiiAngleTemplate<Type> operator*(const xiiAngleTemplate<Type>& a, Type f)
+constexpr xiiAngleTemplate<Type> operator*(const xiiAngleTemplate<Type>& a, Type f)
 {
   return xiiAngleTemplate<Type>::MakeFromRadian(a.GetRadian() * f);
 }
 
 template <typename Type>
-constexpr inline xiiAngleTemplate<Type> operator*(Type f, const xiiAngleTemplate<Type>& a)
+constexpr xiiAngleTemplate<Type> operator*(Type f, const xiiAngleTemplate<Type>& a)
 {
   return xiiAngleTemplate<Type>::MakeFromRadian(a.GetRadian() * f);
 }
 
 template <typename Type>
-constexpr inline xiiAngleTemplate<Type> operator/(const xiiAngleTemplate<Type>& a, Type f)
+constexpr xiiAngleTemplate<Type> operator/(const xiiAngleTemplate<Type>& a, Type f)
 {
   return xiiAngleTemplate<Type>::MakeFromRadian(a.GetRadian() / f);
 }
 
 template <typename Type>
-constexpr inline Type operator/(const xiiAngleTemplate<Type>& a, const xiiAngleTemplate<Type>& b)
+constexpr Type operator/(const xiiAngleTemplate<Type>& a, const xiiAngleTemplate<Type>& b)
 {
   return a.GetRadian() / b.GetRadian();
 }

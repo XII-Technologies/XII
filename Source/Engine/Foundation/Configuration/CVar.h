@@ -291,8 +291,8 @@ public:
   /// In that case only the 'DelayedSync' value is modified.
   void operator=(const Type& value); // [tested]
 
-  virtual xiiCVarType::Enum GetType() const override;
-  virtual void              SetToDelayedSyncValue() override;
+  xiiCVarType::Enum GetType() const override;
+  void              SetToDelayedSyncValue() override;
 
   /// Checks whether a new value was set and now won't be visible until SetToDelayedSyncValue() is called.
   bool HasDelayedSyncValueChanged() const

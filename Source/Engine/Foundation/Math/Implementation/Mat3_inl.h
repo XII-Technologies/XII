@@ -72,7 +72,7 @@ xiiMat3Template<Type> xiiMat3Template<Type>::MakeZero()
 
   for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(res.m_fElementsCM); ++i)
   {
-    res.m_fElementsCM[i] = 0.0f;
+    res.m_fElementsCM[i] = 0.0F;
   }
 
   return res;
@@ -82,15 +82,15 @@ template <typename Type>
 xiiMat3Template<Type> xiiMat3Template<Type>::MakeIdentity()
 {
   xiiMat3Template<Type> res;
-  res.m_fElementsCM[0] = 1.0f;
-  res.m_fElementsCM[1] = 0.0f;
-  res.m_fElementsCM[2] = 0.0f;
-  res.m_fElementsCM[3] = 0.0f;
-  res.m_fElementsCM[4] = 1.0f;
-  res.m_fElementsCM[5] = 0.0f;
-  res.m_fElementsCM[6] = 0.0f;
-  res.m_fElementsCM[7] = 0.0f;
-  res.m_fElementsCM[8] = 1.0f;
+  res.m_fElementsCM[0] = 1.0F;
+  res.m_fElementsCM[1] = 0.0F;
+  res.m_fElementsCM[2] = 0.0F;
+  res.m_fElementsCM[3] = 0.0F;
+  res.m_fElementsCM[4] = 1.0F;
+  res.m_fElementsCM[5] = 0.0F;
+  res.m_fElementsCM[6] = 0.0F;
+  res.m_fElementsCM[7] = 0.0F;
+  res.m_fElementsCM[8] = 1.0F;
   return res;
 }
 
@@ -153,7 +153,7 @@ xiiMat3Template<Type> xiiMat3Template<Type>::MakeRotationX(xiiAngleTemplate<Type
   const Type fSin = xiiMath::Sin(angle);
   const Type fCos = xiiMath::Cos(angle);
 
-  return xiiMat3Template<Type>::MakeFromValues(1.0f, 0.0f, 0.0f, 0.0f, fCos, -fSin, 0.0f, fSin, fCos);
+  return xiiMat3Template<Type>::MakeFromValues(1.0F, 0.0F, 0.0F, 0.0F, fCos, -fSin, 0.0F, fSin, fCos);
 }
 
 template <typename Type>
@@ -162,7 +162,7 @@ xiiMat3Template<Type> xiiMat3Template<Type>::MakeRotationY(xiiAngleTemplate<Type
   const Type fSin = xiiMath::Sin(angle);
   const Type fCos = xiiMath::Cos(angle);
 
-  return xiiMat3Template<Type>::MakeFromValues(fCos, 0.0f, fSin, 0.0f, 1.0f, 0.0f, -fSin, 0.0f, fCos);
+  return xiiMat3Template<Type>::MakeFromValues(fCos, 0.0F, fSin, 0.0F, 1.0F, 0.0F, -fSin, 0.0F, fCos);
 }
 
 template <typename Type>
@@ -171,7 +171,7 @@ xiiMat3Template<Type> xiiMat3Template<Type>::MakeRotationZ(xiiAngleTemplate<Type
   const Type fSin = xiiMath::Sin(angle);
   const Type fCos = xiiMath::Cos(angle);
 
-  return xiiMat3Template<Type>::MakeFromValues(fCos, -fSin, 0.0f, fSin, fCos, 0.0f, 0.0f, 0.0f, 1.0f);
+  return xiiMat3Template<Type>::MakeFromValues(fCos, -fSin, 0.0F, fSin, fCos, 0.0F, 0.0F, 0.0F, 1.0F);
 }
 
 template <typename Type>
@@ -410,7 +410,7 @@ bool xiiMat3Template<Type>::IsEqual(const xiiMat3Template<Type>& rhs, Type fEpsi
   XII_NAN_ASSERT(this);
   XII_NAN_ASSERT(&rhs);
 
-  XII_ASSERT_DEBUG(fEpsilon >= 0.0f, "Epsilon may not be negative.");
+  XII_ASSERT_DEBUG(fEpsilon >= 0.0F, "Epsilon may not be negative.");
 
   for (xiiUInt32 i = 0; i < 9; ++i)
   {

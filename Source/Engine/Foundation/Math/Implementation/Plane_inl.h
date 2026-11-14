@@ -267,7 +267,7 @@ xiiResult xiiPlaneTemplate<Type>::FindSupportPoints(const xiiVec3Template<Type>*
   xiiInt32 i = 1;
   while (i < iMaxVertices)
   {
-    if (pVertices[i].IsEqual(v1, 0.001f) == false)
+    if (pVertices[i].IsEqual(v1, 0.001F) == false)
     {
       bFoundSecond = true;
       break;
@@ -293,7 +293,7 @@ xiiResult xiiPlaneTemplate<Type>::FindSupportPoints(const xiiVec3Template<Type>*
   while (i < iMaxVertices)
   {
     // check for inequality, then for non-collinearity
-    if ((pVertices[i].IsEqual(v2, 0.001f) == false) && (xiiMath::Abs((pVertices[i] - v2).GetNormalized().Dot(vDir1)) < (Type)0.999))
+    if ((pVertices[i].IsEqual(v2, 0.001F) == false) && (xiiMath::Abs((pVertices[i] - v2).GetNormalized().Dot(vDir1)) < (Type)0.999))
     {
       out_i3 = i;
       return XII_SUCCESS;

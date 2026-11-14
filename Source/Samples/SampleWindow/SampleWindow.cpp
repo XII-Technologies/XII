@@ -27,9 +27,9 @@ public:
     m_bCloseRequested = false;
   }
 
-  virtual void       OnClickClose() override { m_bCloseRequested = true; }
-  virtual xiiSizeU32 GetClientAreaSize() const override { return xiiSizeU32(g_uiWindowWidth, g_uiWindowHeight); }
-  virtual void       OnResize(const xiiSizeU32& newWindowSize) override
+  void       OnClickClose() override { m_bCloseRequested = true; }
+  xiiSizeU32 GetClientAreaSize() const override { return xiiSizeU32(g_uiWindowWidth, g_uiWindowHeight); }
+  void       OnResize(const xiiSizeU32& newWindowSize) override
   {
     xiiWindow::OnResize(newWindowSize);
 
@@ -81,10 +81,10 @@ xiiApplication::Execution xiiSampleWindowApp::Run()
     m_pWindow->GetInputDevice()->SetShowMouseCursor(false);
     m_pWindow->GetInputDevice()->SetClipMouseCursor(xiiMouseCursorClipMode::ClipToPosition);
 
-    float       fInputValue = 0.0f;
-    const float fMouseSpeed = 0.01f;
+    float       fInputValue = 0.0F;
+    const float fMouseSpeed = 0.01F;
 
-    xiiVec3 mouseMotion(0.0f);
+    xiiVec3 mouseMotion(0.0F);
 
     if (xiiInputManager::GetInputActionState("Main", "LookPosX", &fInputValue) != xiiKeyState::Up)
     {
@@ -111,10 +111,10 @@ xiiApplication::Execution xiiSampleWindowApp::Run()
 
   // Turn camera with arrow keys
   {
-    float       fInputValue = 0.0f;
-    const float fTurnSpeed  = 1.0f;
+    float       fInputValue = 0.0F;
+    const float fTurnSpeed  = 1.0F;
 
-    xiiVec3 mouseMotion(0.0f);
+    xiiVec3 mouseMotion(0.0F);
 
     if (xiiInputManager::GetInputActionState("Main", "TurnPosX", &fInputValue) != xiiKeyState::Up)
     {
@@ -136,8 +136,8 @@ xiiApplication::Execution xiiSampleWindowApp::Run()
 
   // Apply translation
   {
-    float   fInputValue = 0.0f;
-    xiiVec3 cameraMotion(0.0f);
+    float   fInputValue = 0.0F;
+    xiiVec3 cameraMotion(0.0F);
 
     if (xiiInputManager::GetInputActionState("Main", "MovePosX", &fInputValue) != xiiKeyState::Up)
     {

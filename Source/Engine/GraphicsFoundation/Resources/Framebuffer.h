@@ -33,7 +33,7 @@ protected:
 
   xiiGALFramebuffer(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALFramebufferCreationDescription& creationDescription);
 
-  virtual ~xiiGALFramebuffer();
+  ~xiiGALFramebuffer() override;
 
   virtual xiiResult InitPlatform() = 0;
 

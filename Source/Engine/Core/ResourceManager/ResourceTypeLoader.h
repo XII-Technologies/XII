@@ -71,9 +71,9 @@ public:
 class XII_CORE_DLL xiiResourceLoaderFromFile : public xiiResourceTypeLoader
 {
 public:
-  virtual xiiResourceLoadData OpenDataStream(const xiiResource* pResource) override;
-  virtual void                CloseDataStream(const xiiResource* pResource, const xiiResourceLoadData& loaderData) override;
-  virtual bool                IsResourceOutdated(const xiiResource* pResource) const override;
+  xiiResourceLoadData OpenDataStream(const xiiResource* pResource) override;
+  void                CloseDataStream(const xiiResource* pResource, const xiiResourceLoadData& loaderData) override;
+  bool                IsResourceOutdated(const xiiResource* pResource) const override;
 };
 
 
@@ -90,9 +90,9 @@ public:
 class XII_CORE_DLL xiiResourceLoaderFromMemory : public xiiResourceTypeLoader
 {
 public:
-  virtual xiiResourceLoadData OpenDataStream(const xiiResource* pResource) override;
-  virtual void                CloseDataStream(const xiiResource* pResource, const xiiResourceLoadData& loaderData) override;
-  virtual bool                IsResourceOutdated(const xiiResource* pResource) const override;
+  xiiResourceLoadData OpenDataStream(const xiiResource* pResource) override;
+  void                CloseDataStream(const xiiResource* pResource, const xiiResourceLoadData& loaderData) override;
+  bool                IsResourceOutdated(const xiiResource* pResource) const override;
 
   xiiString                     m_sResourceDescription;
   xiiTimestamp                  m_ModificationTimestamp;

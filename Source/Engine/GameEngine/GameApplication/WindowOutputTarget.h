@@ -28,17 +28,17 @@ public:
 
   xiiWindowOutputTargetGAL(const xiiGALSwapChainCreationDescription& description, OnSwapChainChanged onSwapChainChanged = {});
 
-  ~xiiWindowOutputTargetGAL();
+  ~xiiWindowOutputTargetGAL() override;
 
-  virtual bool GetVSyncEnabled() const override;
+  bool GetVSyncEnabled() const override;
 
-  virtual void SetVSyncEnabled(bool bEnableVSync) override;
+  void SetVSyncEnabled(bool bEnableVSync) override;
 
-  virtual void PresentImage() override;
+  void PresentImage() override;
 
-  virtual void Resize(const xiiSizeU32& newSize) override;
+  void Resize(const xiiSizeU32& newSize) override;
 
-  virtual xiiResult CaptureImage(xiiImage& out_image) override;
+  xiiResult CaptureImage(xiiImage& out_image) override;
 
   /// Saves the next rendered image before presentation acquires another backbuffer.
   void RequestScreenshot(xiiStringView sOutputFile);

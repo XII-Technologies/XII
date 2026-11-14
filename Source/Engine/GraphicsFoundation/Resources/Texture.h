@@ -236,7 +236,7 @@ protected:
 
   xiiGALTexture(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALTextureCreationDescription& creationDescription);
 
-  virtual ~xiiGALTexture();
+  ~xiiGALTexture() override;
 
   virtual xiiResult InitPlatform(const xiiGALTextureData* pInitialData, xiiBitflags<xiiGALExternalMemoryKind> externalMemoryKind) = 0;
 

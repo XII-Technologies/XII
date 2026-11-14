@@ -83,8 +83,8 @@ private:
   bool      m_bCancelClicked = false;
   bool      m_bEnableCancel  = true;
 
-  float m_fLastReportedCompletion = 0.0f;
-  float m_fCurrentCompletion      = 0.0f;
+  float m_fLastReportedCompletion = 0.0F;
+  float m_fCurrentCompletion      = 0.0F;
 };
 
 /// xiiProgressRange is the preferred method to inform the system of progress.

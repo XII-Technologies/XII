@@ -81,7 +81,7 @@ public:
   bool operator==(std::nullptr_t) const;
 
   /// Compares the unique ptr against nullptr.
-  std::strong_ordering operator<=>(const std::nullptr_t) const;
+  std::strong_ordering operator<=>(std::nullptr_t) const;
 
 private:
   template <typename U>

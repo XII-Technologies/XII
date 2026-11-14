@@ -17,7 +17,7 @@ public:
   static void RegisterActions();
   static void UnregisterActions();
 
-  static void MapActions(xiiStringView sMapping, const xiiBitflags<xiiStandardMenuTypes> menus = xiiStandardMenuTypes::Default);
+  static void MapActions(xiiStringView sMapping, xiiBitflags<xiiStandardMenuTypes> menus = xiiStandardMenuTypes::Default);
 
   static xiiActionDescriptorHandle s_hCatProjectGeneral;
   static xiiActionDescriptorHandle s_hCatProjectAssets;
@@ -84,8 +84,8 @@ public:
     xiiDynamicMenuAction(context, szName, szIconPath)
   {
   }
-  virtual void GetEntries(xiiDynamicArray<Item>& out_entries) override;
-  virtual void Execute(const xiiVariant& value) override;
+  void GetEntries(xiiDynamicArray<Item>& out_entries) override;
+  void Execute(const xiiVariant& value) override;
 };
 
 ///
@@ -98,8 +98,8 @@ public:
     xiiDynamicMenuAction(context, szName, szIconPath)
   {
   }
-  virtual void GetEntries(xiiDynamicArray<Item>& out_entries) override;
-  virtual void Execute(const xiiVariant& value) override;
+  void GetEntries(xiiDynamicArray<Item>& out_entries) override;
+  void Execute(const xiiVariant& value) override;
 };
 
 ///
@@ -145,9 +145,9 @@ public:
   };
 
   xiiProjectAction(const xiiActionContext& context, const char* szName, ButtonType button);
-  ~xiiProjectAction();
+  ~xiiProjectAction() override;
 
-  virtual void Execute(const xiiVariant& value) override;
+  void Execute(const xiiVariant& value) override;
 
 private:
   void ProjectEventHandler(const xiiToolsProjectEvent& e);

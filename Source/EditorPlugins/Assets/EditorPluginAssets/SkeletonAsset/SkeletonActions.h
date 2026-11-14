@@ -42,9 +42,9 @@ public:
   };
 
   xiiSkeletonAction(const xiiActionContext& context, const char* szName, ActionType type);
-  ~xiiSkeletonAction();
+  ~xiiSkeletonAction() override;
 
-  virtual void Execute(const xiiVariant& value) override;
+  void Execute(const xiiVariant& value) override;
 
 private:
   void AssetEventHandler(const xiiSkeletonAssetEvent& e);

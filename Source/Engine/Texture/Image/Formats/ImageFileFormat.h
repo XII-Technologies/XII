@@ -72,7 +72,7 @@ template <class TYPE>
 class xiiImageFileFormatRegistrator : public xiiRegisteredImageFileFormat
 {
 public:
-  virtual const xiiImageFileFormat& GetFormatType() const override
+  const xiiImageFileFormat& GetFormatType() const override
   {
     return m_Format;
   }

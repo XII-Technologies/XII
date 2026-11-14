@@ -27,11 +27,11 @@ public:
   bool                              m_bEnabled = true;
   /// Spatial-only filtering requires no motion producer or retained images.
   bool  m_bUseHistory      = true;
-  float m_fHistoryWeight   = 0.92f;
-  float m_fDepthThreshold  = 0.08f;
-  float m_fNormalThreshold = 0.82f;
-  float m_fSpatialWeight   = 0.35f;
-  ~xiiTemporalSignalDenoisePass();
+  float m_fHistoryWeight   = 0.92F;
+  float m_fDepthThreshold  = 0.08F;
+  float m_fNormalThreshold = 0.82F;
+  float m_fSpatialWeight   = 0.35F;
+  ~xiiTemporalSignalDenoisePass() override;
   xiiResult                                   Configure(const xiiVariantDictionary& properties) override;
   xiiBitflags<xiiRenderPipelineDeviceFeature> GetRequiredDeviceFeatures() const override { return xiiRenderPipelineDeviceFeature::Compute; }
   xiiResult                                   BuildTemporalHistory(xiiRenderPipelinePassContext& context) override;

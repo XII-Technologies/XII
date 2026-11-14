@@ -15,9 +15,9 @@ class XII_SHADERCOMPILERSPIRV_DLL xiiShaderCompilerSPIRV : xiiGALShaderProgramCo
   XII_ADD_DYNAMIC_REFLECTION(xiiShaderCompilerSPIRV, xiiGALShaderProgramCompiler);
 
 public:
-  virtual void      GetSupportedPlatforms(xiiHybridArray<xiiString, 4>& out_platforms) override;
-  virtual xiiResult ModifyShaderSource(xiiGALShaderProgramData& inout_data, xiiLogInterface* pLog) override;
-  virtual xiiResult Compile(xiiGALShaderProgramData& inout_data, xiiLogInterface* pLog) override;
+  void      GetSupportedPlatforms(xiiHybridArray<xiiString, 4>& out_platforms) override;
+  xiiResult ModifyShaderSource(xiiGALShaderProgramData& inout_data, xiiLogInterface* pLog) override;
+  xiiResult Compile(xiiGALShaderProgramData& inout_data, xiiLogInterface* pLog) override;
 
 protected:
   virtual bool PermitCombinedImageSamplers() const { return true; }

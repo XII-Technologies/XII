@@ -50,7 +50,7 @@ protected:
   xiiGameState();
 
 public:
-  virtual ~xiiGameState();
+  ~xiiGameState() override;
 
   /// Returns the active xiiGameState. Only one xiiGameState is allowed to exist.
   static xiiGameState* GetActiveGameState();
@@ -78,21 +78,21 @@ public:
   /// Finally switches to pWorld (if available) or starts loading the scene that GetStartupOptions() returns.
   ///
   /// Override any of the above functions to customize them.
-  virtual void OnActivation(xiiWorld* pWorld, xiiStringView sStartPosition, const xiiTransform& startPositionOffset) override;
+  void OnActivation(xiiWorld* pWorld, xiiStringView sStartPosition, const xiiTransform& startPositionOffset) override;
 
   /// Cleans up the main window before the game is shut down.
-  virtual void OnDeactivation() override;
+  void OnDeactivation() override;
 
   /// Simply stores that the game should stop.
   ///
   /// Override this to add more elaborate logic, if necessary.
-  virtual void RequestQuit(xiiStringView sRequestedBy) override;
+  void RequestQuit(xiiStringView sRequestedBy) override;
 
   /// Whether WasQuitRequested() was called before.
-  virtual bool WasQuitRequested() const override;
+  bool WasQuitRequested() const override;
 
   /// The xiiGameState doesn't implement any input logic, but it forwards to UpdateBackgroundSceneLoading().
-  virtual void ProcessInput() override;
+  void ProcessInput() override;
 
   /// Starts a transition while keeping the current world usable. A newer request replaces the pending one.
   /// An empty request fails without replacing the running world. Completion/activation occurs in ProcessInput(),
@@ -177,7 +177,7 @@ protected:
   /// Searches for a "Main View" xiiCameraComponent in the world and uses that for the camera position, if available.
   ///
   /// Override this for custom camera logic.
-  virtual void ConfigureMainCamera() override;
+  void ConfigureMainCamera() override;
 
   /// Override this to modify the default window creation behavior. Called by CreateWindows().
   virtual xiiUniquePtr<xiiWindow> CreateMainWindow();

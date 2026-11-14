@@ -22,14 +22,14 @@ class XII_GUIFOUNDATION_DLL xiiQtToolBarActionMapView : public QToolBar
 
 public:
   explicit xiiQtToolBarActionMapView(QString sTitle, QWidget* pParent);
-  ~xiiQtToolBarActionMapView();
+  ~xiiQtToolBarActionMapView() override;
 
   void SetActionContext(const xiiActionContext& context);
 
   /// Keep primary buttons compact while making menu choices readable.
   void SetShowMenuLabels(bool bShow);
 
-  virtual void setVisible(bool bVisible) override;
+  void setVisible(bool bVisible) override;
 
 private:
   void TreeEventHandler(const xiiDocumentObjectStructureEvent& e);

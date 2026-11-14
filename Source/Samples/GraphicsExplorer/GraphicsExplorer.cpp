@@ -49,7 +49,7 @@ public:
   {
   }
 
-  virtual Execution Run() override
+  Execution Run() override
   {
     m_pWindow->ProcessWindowMessages();
 
@@ -83,10 +83,10 @@ public:
       m_pWindow->GetInputDevice()->SetShowMouseCursor(false);
       m_pWindow->GetInputDevice()->SetClipMouseCursor(xiiMouseCursorClipMode::ClipToPosition);
 
-      float       fInputValue = 0.0f;
-      const float fMouseSpeed = 0.01f;
+      float       fInputValue = 0.0F;
+      const float fMouseSpeed = 0.01F;
 
-      xiiVec3 mouseMotion(0.0f);
+      xiiVec3 mouseMotion(0.0F);
 
       if (xiiInputManager::GetInputActionState("Main", "LookPosX", &fInputValue) != xiiKeyState::Up)
       {
@@ -113,10 +113,10 @@ public:
 
     // Turn camera with arrow keys
     {
-      float       fInputValue = 0.0f;
-      const float fTurnSpeed  = 1.0f;
+      float       fInputValue = 0.0F;
+      const float fTurnSpeed  = 1.0F;
 
-      xiiVec3 mouseMotion(0.0f);
+      xiiVec3 mouseMotion(0.0F);
 
       if (xiiInputManager::GetInputActionState("Main", "TurnPosX", &fInputValue) != xiiKeyState::Up)
       {
@@ -138,8 +138,8 @@ public:
 
     // Apply translation
     {
-      float   fInputValue = 0.0f;
-      xiiVec3 cameraMotion(0.0f);
+      float   fInputValue = 0.0F;
+      xiiVec3 cameraMotion(0.0F);
 
       if (xiiInputManager::GetInputActionState("Main", "MovePosX", &fInputValue) != xiiKeyState::Up)
       {
@@ -209,7 +209,7 @@ public:
     return Execution::Continue;
   }
 
-  virtual void AfterCoreSystemsStartup() override
+  void AfterCoreSystemsStartup() override
   {
     //#if XII_ENABLED(USE_FILESERVE)
     //    xiiPlugin::LoadPlugin("xiiFileservePlugin").AssertSuccess("Failed to load FileServe plugin.");
@@ -379,7 +379,7 @@ public:
     XII_ASSERT_DEV(!m_hRenderGraph.IsInvalidated(), "Failed to create the graphics explorer render graph.");
   }
 
-  virtual void BeforeCoreSystemsShutdown() override
+  void BeforeCoreSystemsShutdown() override
   {
     xiiPlugin::UnloadAllPlugins();
 
@@ -391,7 +391,7 @@ public:
     SUPER::BeforeCoreSystemsShutdown();
   }
 
-  virtual void BeforeHighLevelSystemsShutdown() override
+  void BeforeHighLevelSystemsShutdown() override
   {
     xiiRenderGraphManager::DestroyGraph(m_hRenderGraph).AssertSuccess("Failed to destroy the graphics explorer render graph.");
 
@@ -423,7 +423,7 @@ public:
       swapChainDescription.m_UsageFlags            = xiiGALSwapChainUsageFlags::RenderTarget;
       swapChainDescription.m_PreTransform          = xiiGALSurfaceTransform::Optimal;
       swapChainDescription.m_uiBufferCount         = 2U;
-      swapChainDescription.m_fDefaultDepthValue    = 1.0f;
+      swapChainDescription.m_fDefaultDepthValue    = 1.0F;
       swapChainDescription.m_uiDefaultStencilValue = 0U;
 
       m_pSwapChain = m_pDevice->CreateSwapChain(swapChainDescription);
@@ -453,7 +453,7 @@ private:
   {
     xiiRenderGraphTextureHandle m_hOffScreenTexture;
     xiiRenderGraphTextureHandle m_hDepthTexture;
-    float                       m_fGlobalTime = 0.0f;
+    float                       m_fGlobalTime = 0.0F;
   };
 
   void SetupOffscreenPass(OffscreenPassData& data, xiiRenderGraphBuilder& builder)
@@ -482,7 +482,7 @@ private:
 
     cmd.BeginDebugGroup("Offscreen Clear");
     {
-      cmd.ClearDepthStencilView(context.GetTexture(data.m_hDepthTexture)->GetDefaultView(xiiGALTextureViewType::DepthStencil), true, true, 1.0f, 0U);
+      cmd.ClearDepthStencilView(context.GetTexture(data.m_hDepthTexture)->GetDefaultView(xiiGALTextureViewType::DepthStencil), true, true, 1.0F, 0U);
       // cmd.ClearRenderTargetView(context.GetTexture(data.m_hOffScreenTexture)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::MakeHSV(data.m_fGlobalTime, 1.0f, 0.5f + 0.5f * sinf(data.m_fGlobalTime * 0.5f)));
       cmd.ClearRenderTargetView(context.GetTexture(data.m_hOffScreenTexture)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::Black);
     }
@@ -573,7 +573,7 @@ private:
     {
       cmd.BeginRenderPass({data.m_pRenderPass.Borrow(), pFramebuffer}); // Begin a render pass on the offscreen framebuffer we created, which will also perform the necessary resource transitions for the offscreen texture and depth buffer.
       {
-        cmd.SetViewport(xiiRectFloat(0.0f, 0.0f, (float)framebufferSize.width, (float)framebufferSize.height)); // Set the viewport to cover the entire render target.
+        cmd.SetViewport(xiiRectFloat(0.0F, 0.0F, (float)framebufferSize.width, (float)framebufferSize.height)); // Set the viewport to cover the entire render target.
         cmd.SetPipelineState(pPipelineState);                                                                   // Set the pipeline state we created in the setup function. This will also bind the shaders and their resources (none in this case).
         cmd.CommitShaderResources().IgnoreResult();                                                             // This will bind the offscreen texture as render target, as well as any other resources used by the shader (none in this case).
         cmd.Draw({3});                                                                                          // We will draw a single triangle with 3 vertices, generated procedurally in the vertex shader.

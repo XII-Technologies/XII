@@ -37,14 +37,14 @@ class XII_GUIFOUNDATION_DLL xiiQtPropertyEditorCheckboxWidget : public xiiQtStan
 public:
   xiiQtPropertyEditorCheckboxWidget();
 
-  virtual void mousePressEvent(QMouseEvent* pEv) override;
+  void mousePressEvent(QMouseEvent* pEv) override;
 
 private Q_SLOTS:
   void on_StateChanged_triggered(Qt::CheckState state);
 
 protected:
-  virtual void OnInit() override {}
-  virtual void InternalSetValue(const xiiVariant& value) override;
+  void OnInit() override {}
+  void InternalSetValue(const xiiVariant& value) override;
 
   QHBoxLayout* m_pLayout;
   QCheckBox*   m_pWidget;
@@ -64,8 +64,8 @@ private Q_SLOTS:
   void SlotValueChanged();
 
 protected:
-  virtual void OnInit() override;
-  virtual void InternalSetValue(const xiiVariant& value) override;
+  void OnInit() override;
+  void InternalSetValue(const xiiVariant& value) override;
 
   bool                    m_bUseTemporaryTransaction = false;
   bool                    m_bTemporaryCommand        = false;
@@ -89,8 +89,8 @@ private Q_SLOTS:
   void SlotValueChanged();
 
 protected:
-  virtual void OnInit() override;
-  virtual void InternalSetValue(const xiiVariant& value) override;
+  void OnInit() override;
+  void InternalSetValue(const xiiVariant& value) override;
 
   bool                    m_bUseTemporaryTransaction = false;
   bool                    m_bTemporaryCommand        = false;
@@ -114,8 +114,8 @@ private Q_SLOTS:
   void SlotValueChanged();
 
 protected:
-  virtual void OnInit() override;
-  virtual void InternalSetValue(const xiiVariant& value) override;
+  void OnInit() override;
+  void InternalSetValue(const xiiVariant& value) override;
 
   bool                m_bTemporaryCommand;
   QHBoxLayout*        m_pLayout;
@@ -136,8 +136,8 @@ private Q_SLOTS:
   void SlotValueChanged();
 
 protected:
-  virtual void OnInit() override;
-  virtual void InternalSetValue(const xiiVariant& value) override;
+  void OnInit() override;
+  void InternalSetValue(const xiiVariant& value) override;
 
   bool                m_bTemporaryCommand;
   QHBoxLayout*        m_pLayout;
@@ -158,8 +158,8 @@ private Q_SLOTS:
   void SlotValueChanged();
 
 protected:
-  virtual void OnInit() override;
-  virtual void InternalSetValue(const xiiVariant& value) override;
+  void OnInit() override;
+  void InternalSetValue(const xiiVariant& value) override;
 
   bool                m_bTemporaryCommand;
   QHBoxLayout*        m_pLayout;
@@ -174,7 +174,7 @@ class XII_GUIFOUNDATION_DLL xiiQtPropertyEditorIntSpinboxWidget : public xiiQtSt
 
 public:
   xiiQtPropertyEditorIntSpinboxWidget(xiiInt8 iNumComponents, xiiInt32 iMinValue, xiiInt32 iMaxValue);
-  ~xiiQtPropertyEditorIntSpinboxWidget();
+  ~xiiQtPropertyEditorIntSpinboxWidget() override;
 
   void SetReadOnly(bool bReadOnly = true) override;
 
@@ -186,8 +186,8 @@ private Q_SLOTS:
   void onEndTemporary();
 
 protected:
-  virtual void OnInit() override;
-  virtual void InternalSetValue(const xiiVariant& value) override;
+  void OnInit() override;
+  void InternalSetValue(const xiiVariant& value) override;
 
   bool                    m_bUseTemporaryTransaction = false;
   bool                    m_bTemporaryCommand        = false;
@@ -206,7 +206,7 @@ class XII_GUIFOUNDATION_DLL xiiQtPropertyEditorUIntSpinboxWidget : public xiiQtS
 
 public:
   xiiQtPropertyEditorUIntSpinboxWidget(xiiInt8 iNumComponents, xiiUInt32 uiMinValue, xiiUInt32 uiMaxValue);
-  ~xiiQtPropertyEditorUIntSpinboxWidget();
+  ~xiiQtPropertyEditorUIntSpinboxWidget() override;
 
   void SetReadOnly(bool bReadOnly = true) override;
 
@@ -218,8 +218,8 @@ private Q_SLOTS:
   void onEndTemporary();
 
 protected:
-  virtual void OnInit() override;
-  virtual void InternalSetValue(const xiiVariant& value) override;
+  void OnInit() override;
+  void InternalSetValue(const xiiVariant& value) override;
 
   bool                    m_bUseTemporaryTransaction = false;
   bool                    m_bTemporaryCommand        = false;
@@ -251,10 +251,10 @@ Q_SIGNALS:
   void sliderReleased();
 
 protected:
-  virtual void paintEvent(QPaintEvent*) override;
-  virtual void mouseMoveEvent(QMouseEvent*) override;
-  virtual void mousePressEvent(QMouseEvent*) override;
-  virtual void mouseReleaseEvent(QMouseEvent*) override;
+  void paintEvent(QPaintEvent*) override;
+  void mouseMoveEvent(QMouseEvent*) override;
+  void mousePressEvent(QMouseEvent*) override;
+  void mouseReleaseEvent(QMouseEvent*) override;
 
   void UpdateImage();
 
@@ -271,7 +271,7 @@ class XII_GUIFOUNDATION_DLL xiiQtPropertyEditorSliderWidget : public xiiQtStanda
 
 public:
   xiiQtPropertyEditorSliderWidget();
-  ~xiiQtPropertyEditorSliderWidget();
+  ~xiiQtPropertyEditorSliderWidget() override;
 
 private Q_SLOTS:
   void SlotSliderValueChanged(double fValue);
@@ -280,8 +280,8 @@ private Q_SLOTS:
   void onEndTemporary();
 
 protected:
-  virtual void OnInit() override;
-  virtual void InternalSetValue(const xiiVariant& value) override;
+  void OnInit() override;
+  void InternalSetValue(const xiiVariant& value) override;
 
   bool                    m_bTemporaryCommand = false;
   xiiEnum<xiiVariantType> m_OriginalType;
@@ -306,8 +306,8 @@ private Q_SLOTS:
   void SlotValueChanged();
 
 protected:
-  virtual void OnInit() override;
-  virtual void InternalSetValue(const xiiVariant& value) override;
+  void OnInit() override;
+  void InternalSetValue(const xiiVariant& value) override;
 
 protected:
   bool                m_bTemporaryCommand;
@@ -329,8 +329,8 @@ private Q_SLOTS:
   void SlotValueChanged();
 
 protected:
-  virtual void OnInit() override;
-  virtual void InternalSetValue(const xiiVariant& value) override;
+  void OnInit() override;
+  void InternalSetValue(const xiiVariant& value) override;
 
 protected:
   bool                m_bTemporaryCommand;
@@ -354,8 +354,8 @@ protected Q_SLOTS:
   void on_TextFinished_triggered();
 
 protected:
-  virtual void OnInit() override;
-  virtual void InternalSetValue(const xiiVariant& value) override;
+  void OnInit() override;
+  void InternalSetValue(const xiiVariant& value) override;
 
 protected:
   QHBoxLayout*            m_pLayout;
@@ -378,11 +378,11 @@ Q_SIGNALS:
   void clicked();
 
 protected:
-  virtual void showEvent(QShowEvent* event) override;
-  virtual void mouseReleaseEvent(QMouseEvent* event) override;
+  void showEvent(QShowEvent* event) override;
+  void mouseReleaseEvent(QMouseEvent* event) override;
 
-  virtual QSize sizeHint() const override;
-  virtual QSize minimumSizeHint() const override;
+  QSize sizeHint() const override;
+  QSize minimumSizeHint() const override;
 
 private:
   QPalette m_Pal;
@@ -402,8 +402,8 @@ private Q_SLOTS:
   void on_Color_accepted();
 
 protected:
-  virtual void OnInit() override;
-  virtual void InternalSetValue(const xiiVariant& value) override;
+  void OnInit() override;
+  void InternalSetValue(const xiiVariant& value) override;
 
 protected:
   bool                    m_bExposeAlpha = false;
@@ -428,8 +428,8 @@ private Q_SLOTS:
   void on_ButtonClicked_changed(bool checked);
 
 protected:
-  virtual void OnInit() override;
-  virtual void InternalSetValue(const xiiVariant& value) override;
+  void OnInit() override;
+  void InternalSetValue(const xiiVariant& value) override;
 
 protected:
   QHBoxLayout* m_pLayout      = nullptr;
@@ -447,15 +447,15 @@ class XII_GUIFOUNDATION_DLL xiiQtPropertyEditorBitflagsWidget : public xiiQtStan
 
 public:
   xiiQtPropertyEditorBitflagsWidget();
-  virtual ~xiiQtPropertyEditorBitflagsWidget();
+  ~xiiQtPropertyEditorBitflagsWidget() override;
 
 private Q_SLOTS:
   void on_Menu_aboutToShow();
   void on_Menu_aboutToHide();
 
 protected:
-  virtual void OnInit() override;
-  virtual void InternalSetValue(const xiiVariant& value) override;
+  void         OnInit() override;
+  void         InternalSetValue(const xiiVariant& value) override;
   void         SetAllChecked(bool bChecked);
 
 protected:
@@ -484,7 +484,7 @@ Q_SIGNALS:
   void clicked();
 
 protected:
-  virtual void mouseReleaseEvent(QMouseEvent* event) override;
+  void mouseReleaseEvent(QMouseEvent* event) override;
 };
 
 class XII_GUIFOUNDATION_DLL xiiQtPropertyEditorCurve1DWidget : public xiiQtPropertyWidget
@@ -498,9 +498,9 @@ private Q_SLOTS:
   void on_Button_triggered();
 
 protected:
-  virtual void SetSelection(const xiiHybridArray<xiiPropertySelection, 8>& items) override;
-  virtual void OnInit() override;
-  virtual void DoPrepareToDie() override;
+  void         SetSelection(const xiiHybridArray<xiiPropertySelection, 8>& items) override;
+  void         OnInit() override;
+  void         DoPrepareToDie() override;
   void         UpdatePreview();
 
 protected:

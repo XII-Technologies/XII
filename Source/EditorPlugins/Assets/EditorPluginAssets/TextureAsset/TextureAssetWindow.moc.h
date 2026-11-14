@@ -21,10 +21,10 @@ class xiiQtTextureAssetDocumentWindow : public xiiQtEngineDocumentWindow
 public:
   xiiQtTextureAssetDocumentWindow(xiiTextureAssetDocument* pDocument);
 
-  virtual xiiStringView GetWindowLayoutGroupName() const override { return "TextureAsset"; }
+  xiiStringView GetWindowLayoutGroupName() const override { return "TextureAsset"; }
 
 private:
-  virtual void InternalRedraw() override;
+  void         InternalRedraw() override;
   void         SendRedrawMsg();
 
   xiiEngineViewConfig      m_ViewConfig;
@@ -37,8 +37,8 @@ class XII_EDITORPLUGINASSETS_DLL xiiTextureChannelModeAction : public xiiEnumera
 
 public:
   xiiTextureChannelModeAction(const xiiActionContext& context, const char* szName, const char* szIconPath);
-  virtual xiiInt64 GetValue() const override;
-  virtual void     Execute(const xiiVariant& value) override;
+  xiiInt64 GetValue() const override;
+  void     Execute(const xiiVariant& value) override;
 
 private:
   const xiiAbstractMemberProperty* m_pValueProperty = nullptr;
@@ -51,7 +51,7 @@ class XII_EDITORPLUGINASSETS_DLL xiiTextureLodSliderAction : public xiiSliderAct
 public:
   xiiTextureLodSliderAction(const xiiActionContext& context, const char* szName);
 
-  virtual void Execute(const xiiVariant& value) override;
+  void Execute(const xiiVariant& value) override;
 
 private:
   const xiiAbstractMemberProperty* m_pValueProperty = nullptr;

@@ -36,7 +36,7 @@ public:
     m_bErrorEncountered = false;
   }
 
-  virtual void AfterCoreSystemsStartup() override
+  void AfterCoreSystemsStartup() override
   {
     // The console log writer will pass all log messages to the standard console window
     xiiGlobalLog::AddLogWriter(xiiLogWriter::Console::LogMessageHandler);
@@ -95,7 +95,7 @@ public:
     xiiFileSystem::AddDataDirectory("", "", ":", xiiDataDirUsage::AllowWrites).IgnoreResult();
   }
 
-  virtual xiiApplication::Execution Run() override
+  xiiApplication::Execution Run() override
   {
     const xiiTime t0 = xiiTime::Now();
 
@@ -142,7 +142,8 @@ public:
 
     if (it.IsValid())
     {
-      xiiStringBuilder sPath, sExt;
+      xiiStringBuilder sPath;
+      xiiStringBuilder sExt;
 
       // While there are additional files / folders
       for (; it.IsValid(); it.Next())

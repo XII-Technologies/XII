@@ -132,6 +132,6 @@ inline xiiUInt32 xiiDateTime::GetMicroseconds() const
 
 inline void xiiDateTime::SetMicroseconds(xiiUInt32 uiMicroSeconds)
 {
-  XII_ASSERT_DEBUG(uiMicroSeconds <= 999999u, "Invalid micro-second value");
+  XII_ASSERT_DEBUG(uiMicroSeconds <= 999999U, "Invalid micro-second value");
   m_uiMicroseconds = uiMicroSeconds;
 }

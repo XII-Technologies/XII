@@ -151,7 +151,9 @@ xiiUniquePtr<xiiWindowBase> xiiGPUTestingEnvironment::CreateWindow(xiiUInt32 uiW
   xiiUniquePtr<xiiWindow> pWindow    = XII_DEFAULT_NEW(xiiWindow);
 
   if (pWindow->Initialize(description).Failed())
+  {
     return {};
+  }
 
   return pWindow;
 }

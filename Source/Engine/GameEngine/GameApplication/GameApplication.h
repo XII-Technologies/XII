@@ -55,7 +55,7 @@ public:
 
   /// sProjectPath may be empty, if FindProjectDirectory() is overridden.
   xiiGameApplication(xiiStringView sAppName, xiiStringView sProjectPath = {});
-  ~xiiGameApplication();
+  ~xiiGameApplication() override;
 
   /// Returns the xiiGameApplication singleton
   static xiiGameApplication* GetGameApplicationInstance() { return s_pGameApplicationInstance; }
@@ -79,7 +79,7 @@ public:
   /// m_sAppProjectPath must be set either via the xiiGameApplication constructor or manually set before project.
   ///
   /// Alternatively, xiiGameApplication::FindProjectDirectory() must be overwritten.
-  virtual xiiString FindProjectDirectory() const override;
+  xiiString FindProjectDirectory() const override;
 
   /// Used at runtime (by the editor) to reload input maps. Forwards to Init_ConfigureInput()
   void ReinitializeInputConfig();
@@ -101,7 +101,7 @@ protected:
   /// Custom staged startup calls this after core startup, before its first initialization stage.
   void         InitializeManagedSession();
   void         PumpSession();
-  virtual void ReportStatus(xiiStringView sStage, xiiStringView sDetail, float fProgress = -1.0f);
+  virtual void ReportStatus(xiiStringView sStage, xiiStringView sDetail, float fProgress = -1.0F);
 
   xiiString                                  m_sInstance;
   xiiString                                  m_sSession;
@@ -115,18 +115,18 @@ protected:
   bool                                       m_bSessionConnected = false;
   xiiOSFile                                  m_ManagedPreferencesLock;
 
-  virtual void Init_ConfigureInput() override;
-  virtual void Init_ConfigureCVars() override;
-  virtual void Init_ConfigureAssetManagement() override;
-  virtual void Init_LoadRequiredPlugins() override;
-  virtual void Init_SetupDefaultResources() override;
-  virtual void Init_SetupGraphicsDevice() override;
-  virtual void Deinit_ShutdownGraphicsDevice() override;
+  void Init_ConfigureInput() override;
+  void Init_ConfigureCVars() override;
+  void Init_ConfigureAssetManagement() override;
+  void Init_LoadRequiredPlugins() override;
+  void Init_SetupDefaultResources() override;
+  void Init_SetupGraphicsDevice() override;
+  void Deinit_ShutdownGraphicsDevice() override;
 
-  virtual bool Run_ProcessApplicationInput() override;
-  virtual void Run_WorldUpdateAndRender() override;
-  virtual void Run_PresentImage() override;
-  virtual void Run_FinishFrame() override;
+  bool Run_ProcessApplicationInput() override;
+  void Run_WorldUpdateAndRender() override;
+  void Run_PresentImage() override;
+  void Run_FinishFrame() override;
 
   /// Stores what is given to the constructor
   xiiString m_sAppProjectPath;

@@ -67,11 +67,11 @@ public:
 
 private:
   void    OnAddImpulse(xiiMsgPhysicsAddImpulse& ref_msg);
-  float   m_fMass                   = 0.0f;
-  float   m_fDensity                = 1000.0f;
-  float   m_fGravityFactor          = 1.0f;
-  float   m_fLinearDamping          = 0.05f;
-  float   m_fAngularDamping         = 0.05f;
+  float   m_fMass                   = 0.0F;
+  float   m_fDensity                = 1000.0F;
+  float   m_fGravityFactor          = 1.0F;
+  float   m_fLinearDamping          = 0.05F;
+  float   m_fAngularDamping         = 0.05F;
   xiiVec3 m_vInitialLinearVelocity  = xiiVec3::MakeZero();
   xiiVec3 m_vInitialAngularVelocity = xiiVec3::MakeZero();
   bool    m_bAllowSleeping          = true;

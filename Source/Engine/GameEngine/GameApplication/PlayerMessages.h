@@ -17,7 +17,7 @@ public:
   xiiString m_sStage;
   xiiString m_sDetail;
   xiiUInt64 m_uiSceneRevision = 0;
-  float     m_fProgress       = -1.0f; ///< Negative is indeterminate (IO/initialization).
+  float     m_fProgress       = -1.0F; ///< Negative is indeterminate (IO/initialization).
 };
 
 class XII_GAMEENGINE_DLL xiiPlayerStopMessage : public xiiProcessMessage

@@ -832,7 +832,9 @@ void xiiQtProfilingWidget::Refresh()
     m_pHistory->update();
     return;
   }
-  const QSignalBlocker first(m_pFrames), last(m_pLastFrame), lanes(m_pLanes);
+  const QSignalBlocker first(m_pFrames);
+  const QSignalBlocker last(m_pLastFrame);
+  const QSignalBlocker lanes(m_pLanes);
   QSet<QString>        ids;
   for (const auto& frame : data.m_Frames)
   {
@@ -923,7 +925,8 @@ void xiiQtProfilingWidget::Refresh()
     m_pOverview->setText("Application CPU frame timing unavailable. Connect to a profiling-enabled application, or open a capture.");
   }
   m_pHistory->update();
-  double begin = 0, end = 0;
+  double begin = 0;
+  double end   = 0;
   if (!data.m_Frames.isEmpty())
   {
     auto       frame = data.m_Frames.back();
@@ -966,7 +969,8 @@ void xiiQtProfilingWidget::Refresh()
 void xiiQtProfilingWidget::RebuildCpu(double begin, double end, bool updateTables)
 {
   const auto&    data = m_pSession->Display();
-  const QString  lane = m_pLanes->currentData().toString(), filter = m_pFilter->text();
+  const QString  lane   = m_pLanes->currentData().toString();
+  const QString  filter = m_pFilter->text();
   QVector<Scope> scopes;
   for (const auto& scope : data.m_Scopes)
   {
@@ -1020,7 +1024,8 @@ void xiiQtProfilingWidget::RebuildCpu(double begin, double end, bool updateTable
     double          m_fInclusive = 0, m_fSelf = 0;
   };
   QMap<QString, Aggregate>   aggregates;
-  QMap<QString, QStringList> rows, totals;
+  QMap<QString, QStringList> rows;
+  QMap<QString, QStringList> totals;
   QMap<QString, QString>     details;
   QMap<QString, int>         laneIndices;
   m_pTimeline->m_Lanes.clear();
@@ -1239,7 +1244,8 @@ void xiiQtProfilingWidget::UpdateGpuHistory()
   {
     const quint64                                           graph      = parts[0].toULongLong();
     const bool                                              submission = parts[1] == "1";
-    const auto                                              pass = parts[2].toUInt(), queue = parts[3].toUInt();
+    const auto                                              pass       = parts[2].toUInt();
+    const auto                                              queue      = parts[3].toUInt();
     QVector<const xiiInspectorProfilingSession::GpuSample*> samples;
     for (const auto& sample : m_pSession->Display().m_Gpu)
     {

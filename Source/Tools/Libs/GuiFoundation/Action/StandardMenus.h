@@ -74,9 +74,9 @@ public:
   };
 
   xiiHelpActions(const xiiActionContext& context, xiiStringView sName, ButtonType button);
-  ~xiiHelpActions();
+  ~xiiHelpActions() override;
 
-  virtual void Execute(const xiiVariant& value) override;
+  void Execute(const xiiVariant& value) override;
 
 private:
   ButtonType m_ButtonType;

@@ -106,16 +106,16 @@ class XII_FOUNDATION_DLL xiiCommandLineOptionDoc : public xiiCommandLineOption
 public:
   xiiCommandLineOptionDoc(xiiStringView sSortingGroup, xiiStringView sArgument, xiiStringView sParamShortDesc, xiiStringView sLongDesc, xiiStringView sDefaultValue, bool bCaseSensitive = false);
 
-  virtual void GetOptions(xiiStringBuilder& ref_sOut) const override; // [tested]
+  void GetOptions(xiiStringBuilder& ref_sOut) const override; // [tested]
 
-  virtual void GetParamShortDesc(xiiStringBuilder& ref_sOut) const override; // [tested]
+  void GetParamShortDesc(xiiStringBuilder& ref_sOut) const override; // [tested]
 
-  virtual void GetParamDefaultValueDesc(xiiStringBuilder& ref_sOut) const override; // [tested]
+  void GetParamDefaultValueDesc(xiiStringBuilder& ref_sOut) const override; // [tested]
 
-  virtual void GetLongDesc(xiiStringBuilder& ref_sOut) const override; // [tested]
+  void GetLongDesc(xiiStringBuilder& ref_sOut) const override; // [tested]
 
   /// Returns "Doc"
-  virtual xiiStringView GetType() override { return "Doc"; }
+  xiiStringView GetType() override { return "Doc"; }
 
   /// Checks whether any of the option variants is set on the command line, and returns which one. For example '-h' or '-help'.
   bool IsOptionSpecified(xiiStringBuilder* out_pWhich = nullptr, const xiiCommandLineUtils* pUtils = xiiCommandLineUtils::GetGlobalInstance()) const; // [tested]
@@ -155,7 +155,7 @@ public:
   bool GetDefaultValue() const { return m_bDefaultValue; }
 
   /// Returns "Bool"
-  virtual xiiStringView GetType() override { return "Bool"; }
+  xiiStringView GetType() override { return "Bool"; }
 
 protected:
   bool m_bDefaultValue = false;
@@ -174,9 +174,9 @@ class XII_FOUNDATION_DLL xiiCommandLineOptionInt : public xiiCommandLineOptionDo
 public:
   xiiCommandLineOptionInt(xiiStringView sSortingGroup, xiiStringView sArgument, xiiStringView sLongDesc, xiiInt32 iDefaultValue, xiiInt32 iMinValue = xiiMath::MinValue<xiiInt32>(), xiiInt32 iMaxValue = xiiMath::MaxValue<xiiInt32>(), bool bCaseSensitive = false);
 
-  virtual void GetParamDefaultValueDesc(xiiStringBuilder& ref_sOut) const override; // [tested]
+  void GetParamDefaultValueDesc(xiiStringBuilder& ref_sOut) const override; // [tested]
 
-  virtual void GetParamShortDesc(xiiStringBuilder& ref_sOut) const override; // [tested]
+  void GetParamShortDesc(xiiStringBuilder& ref_sOut) const override; // [tested]
 
   /// Returns the value of this option. Either what was specified on the command line, or the default value.
   xiiInt32 GetOptionValue(LogMode logMode, const xiiCommandLineUtils* pUtils = xiiCommandLineUtils::GetGlobalInstance()) const; // [tested]
@@ -188,7 +188,7 @@ public:
   }
 
   /// Returns "Int"
-  virtual xiiStringView GetType() override { return "Int"; }
+  xiiStringView GetType() override { return "Int"; }
 
   /// Returns the minimum value.
   xiiInt32 GetMinValue() const { return m_iMinValue; }
@@ -218,9 +218,9 @@ class XII_FOUNDATION_DLL xiiCommandLineOptionFloat : public xiiCommandLineOption
 public:
   xiiCommandLineOptionFloat(xiiStringView sSortingGroup, xiiStringView sArgument, xiiStringView sLongDesc, float fDefaultValue, float fMinValue = xiiMath::MinValue<float>(), float fMaxValue = xiiMath::MaxValue<float>(), bool bCaseSensitive = false);
 
-  virtual void GetParamDefaultValueDesc(xiiStringBuilder& ref_sOut) const override; // [tested]
+  void GetParamDefaultValueDesc(xiiStringBuilder& ref_sOut) const override; // [tested]
 
-  virtual void GetParamShortDesc(xiiStringBuilder& ref_sOut) const override; // [tested]
+  void GetParamShortDesc(xiiStringBuilder& ref_sOut) const override; // [tested]
 
   /// Returns the value of this option. Either what was specified on the command line, or the default value.
   float GetOptionValue(LogMode logMode, const xiiCommandLineUtils* pUtils = xiiCommandLineUtils::GetGlobalInstance()) const; // [tested]
@@ -232,7 +232,7 @@ public:
   }
 
   /// Returns "Float"
-  virtual xiiStringView GetType() override { return "Float"; }
+  xiiStringView GetType() override { return "Float"; }
 
   /// Returns the minimum value.
   float GetMinValue() const { return m_fMinValue; }
@@ -272,7 +272,7 @@ public:
   xiiStringView GetDefaultValue() const { return m_sDefaultValue; }
 
   /// Returns "String"
-  virtual xiiStringView GetType() override { return "String"; }
+  xiiStringView GetType() override { return "String"; }
 
 protected:
   xiiStringView m_sDefaultValue;
@@ -301,7 +301,7 @@ public:
   xiiStringView GetDefaultValue() const { return m_sDefaultValue; }
 
   /// Returns "Path"
-  virtual xiiStringView GetType() override { return "Path"; }
+  xiiStringView GetType() override { return "Path"; }
 
 protected:
   xiiStringView m_sDefaultValue;
@@ -328,9 +328,9 @@ public:
   /// Returns the value of this option. Either what was specified on the command line, or the default value.
   xiiInt32 GetOptionValue(LogMode logMode, const xiiCommandLineUtils* pUtils = xiiCommandLineUtils::GetGlobalInstance()) const; // [tested]
 
-  virtual void GetParamShortDesc(xiiStringBuilder& ref_sOut) const override; // [tested]
+  void GetParamShortDesc(xiiStringBuilder& ref_sOut) const override; // [tested]
 
-  virtual void GetParamDefaultValueDesc(xiiStringBuilder& ref_sOut) const override; // [tested]
+  void GetParamDefaultValueDesc(xiiStringBuilder& ref_sOut) const override; // [tested]
 
   struct EnumKeyValue
   {
@@ -351,7 +351,7 @@ public:
   xiiInt32 GetDefaultValue() const { return m_iDefaultValue; }
 
   /// Returns "Enum"
-  virtual xiiStringView GetType() override { return "Enum"; }
+  xiiStringView GetType() override { return "Enum"; }
 
 protected:
   xiiInt32      m_iDefaultValue = 0;

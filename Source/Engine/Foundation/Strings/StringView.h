@@ -49,12 +49,12 @@ public:
   xiiStringView(char* pStart);
 
   /// Creates a string view starting at the given position, ending at the next '\0' terminator.
-  template <typename T>                                                                                                 // T is always const char*
-  constexpr xiiStringView(T pStart, typename std::enable_if<std::is_same<T, const char*>::value, xiiInt32>::type* = 0); // [tested]
+  template <typename T>                                                                                                       // T is always const char*
+  constexpr xiiStringView(T pStart, typename std::enable_if<std::is_same<T, const char*>::value, xiiInt32>::type* = nullptr); // [tested]
 
   /// Creates a string view from any class / struct which is implicitly convertible to const char *
   template <typename T>
-  constexpr XII_ALWAYS_INLINE xiiStringView(const T&& str, typename std::enable_if<std::is_same<T, const char*>::value == false && std::is_convertible<T, const char*>::value, xiiInt32>::type* = 0); // [tested]
+  constexpr XII_ALWAYS_INLINE xiiStringView(const T&& str, typename std::enable_if<std::is_same<T, const char*>::value == false && std::is_convertible<T, const char*>::value, xiiInt32>::type* = nullptr); // [tested]
 
   /// Creates a string view for the range from pStart to pEnd.
   constexpr xiiStringView(const char* pStart, const char* pEnd); // [tested]

@@ -15,9 +15,9 @@ class xiiQtAnimationGraphAssetDocumentWindow : public xiiQtDocumentWindow
 
 public:
   xiiQtAnimationGraphAssetDocumentWindow(xiiDocument* pDocument);
-  ~xiiQtAnimationGraphAssetDocumentWindow();
+  ~xiiQtAnimationGraphAssetDocumentWindow() override;
 
-  virtual xiiStringView GetWindowLayoutGroupName() const override { return "AnimationGraphAsset"; }
+  xiiStringView GetWindowLayoutGroupName() const override { return "AnimationGraphAsset"; }
 
 private Q_SLOTS:
 

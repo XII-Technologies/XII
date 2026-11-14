@@ -214,7 +214,7 @@ void xiiHashSetBase<K, H>::Reserve(xiiUInt32 uiCapacity)
   const xiiUInt64 uiCap64         = static_cast<xiiUInt64>(uiCapacity);
   xiiUInt64       uiNewCapacity64 = uiCap64 + (uiCap64 * 2 / 3); // ensure a maximum load of 60%
 
-  uiNewCapacity64 = xiiMath::Min<xiiUInt64>(uiNewCapacity64, 0x80000000llu); // the largest power-of-two in 32 bit
+  uiNewCapacity64 = xiiMath::Min<xiiUInt64>(uiNewCapacity64, 0x80000000LLU); // the largest power-of-two in 32 bit
 
   xiiUInt32 uiNewCapacity32 = static_cast<xiiUInt32>(uiNewCapacity64 & 0xFFFFFFFF);
   XII_ASSERT_DEBUG(uiCapacity <= uiNewCapacity32, "xiiHashSet/Map do not support more than 2 billion entries.");

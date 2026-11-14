@@ -42,10 +42,10 @@ public:
     Visualizers,
   };
 
-  xiiCommonAssetAction(const xiiActionContext& context, const char* szName, ActionType type, float fSimSpeed = 1.0f);
-  ~xiiCommonAssetAction();
+  xiiCommonAssetAction(const xiiActionContext& context, const char* szName, ActionType type, float fSimSpeed = 1.0F);
+  ~xiiCommonAssetAction() override;
 
-  virtual void Execute(const xiiVariant& value) override;
+  void Execute(const xiiVariant& value) override;
 
 private:
   void CommonUiEventHandler(const xiiCommonAssetUiState& e);

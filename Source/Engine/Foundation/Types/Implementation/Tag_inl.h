@@ -21,5 +21,5 @@ const xiiString& xiiTag::GetTagString() const
 
 bool xiiTag::IsValid() const
 {
-  return m_uiBlockIndex != 0xFFFFFFFEu;
+  return m_uiBlockIndex != 0xFFFFFFFEU;
 }

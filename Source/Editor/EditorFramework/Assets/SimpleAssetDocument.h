@@ -19,7 +19,7 @@ template <typename ObjectProperties>
 class xiiSimpleDocumentObjectManager : public xiiDocumentObjectManager
 {
 public:
-  virtual void GetCreateableTypes(xiiHybridArray<const xiiRTTI*, 32>& ref_types) const override { ref_types.PushBack(xiiGetStaticRTTI<ObjectProperties>()); }
+  void GetCreateableTypes(xiiHybridArray<const xiiRTTI*, 32>& ref_types) const override { ref_types.PushBack(xiiGetStaticRTTI<ObjectProperties>()); }
 };
 
 template <typename PropertyType, typename BaseClass = xiiAssetDocument>
@@ -66,7 +66,7 @@ public:
   const xiiDocumentObject* GetPropertyObject() const { return this->GetObjectManager()->GetRootObject()->GetChildren()[0]; }
 
 protected:
-  virtual void InitializeAfterLoading(bool bFirstTimeCreation) override
+  void InitializeAfterLoading(bool bFirstTimeCreation) override
   {
     EnsureSettingsObjectExist();
 
@@ -79,7 +79,7 @@ protected:
     this->AddSyncObject(&m_LightSettings);
   }
 
-  virtual xiiStatus InternalLoadDocument() override
+  xiiStatus InternalLoadDocument() override
   {
     this->GetObjectManager()->DestroyAllObjects();
 
@@ -160,7 +160,7 @@ private:
   }
 
 protected:
-  virtual xiiDocumentInfo* CreateDocumentInfo() override { return XII_DEFAULT_NEW(xiiAssetDocumentInfo); }
+  xiiDocumentInfo* CreateDocumentInfo() override { return XII_DEFAULT_NEW(xiiAssetDocumentInfo); }
 
   xiiDocumentObjectMirror    m_ObjectMirror;
   xiiRttiConverterContext    m_Context;

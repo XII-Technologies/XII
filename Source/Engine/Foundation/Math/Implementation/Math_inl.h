@@ -173,7 +173,7 @@ namespace xiiMath
   XII_ALWAYS_INLINE xiiUInt32 CountTrailingZeros(xiiUInt64 uiBitmask)
   {
     const xiiUInt32 uiLow  = CountTrailingZeros(static_cast<xiiUInt32>(uiBitmask & 0xFFFFFFFF));
-    const xiiUInt32 uiHigh = CountTrailingZeros(static_cast<xiiUInt32>((uiBitmask >> 32u) & 0xFFFFFFFF));
+    const xiiUInt32 uiHigh = CountTrailingZeros(static_cast<xiiUInt32>((uiBitmask >> 32U) & 0xFFFFFFFF));
 
     return (uiLow == 32U) ? (32U + uiHigh) : uiLow;
   }
@@ -230,7 +230,7 @@ namespace xiiMath
   XII_FORCE_INLINE T Lerp(T f1, T f2, float fFactor)
   {
     // value is not included in format string, to prevent requirement on FormatString.h, to break #include cycles
-    XII_ASSERT_DEBUG((fFactor >= -0.00001f) && (fFactor <= 1.0f + 0.00001f), "lerp: factor is not in the range [0, 1]");
+    XII_ASSERT_DEBUG((fFactor >= -0.00001F) && (fFactor <= 1.0F + 0.00001F), "lerp: factor is not in the range [0, 1]");
 
     return (T)(f1 + (fFactor * (f2 - f1)));
   }
@@ -290,7 +290,7 @@ namespace xiiMath
   }
 
   template <typename T>
-  constexpr inline bool IsInRange(T value, T minVal, T maxVal)
+  constexpr bool IsInRange(T value, T minVal, T maxVal)
   {
     return minVal < maxVal ? (value >= minVal) && (value <= maxVal) : (value <= minVal) && (value >= maxVal);
   }
@@ -363,7 +363,7 @@ namespace xiiMath
     }
     else
     {
-      return static_cast<xiiUInt32>(Saturate(value) * fMaxValue + 0.5f);
+      return static_cast<xiiUInt32>(Saturate(value) * fMaxValue + 0.5F);
     }
   }
 
@@ -387,14 +387,14 @@ namespace xiiMath
     }
     else
     {
-      value = Clamp(value, -1.0f, 1.0f) * 127.0f;
-      if (value >= 0.0f)
+      value = Clamp(value, -1.0F, 1.0F) * 127.0F;
+      if (value >= 0.0F)
       {
-        value += 0.5f;
+        value += 0.5F;
       }
       else
       {
-        value -= 0.5f;
+        value -= 0.5F;
       }
       return static_cast<xiiInt8>(value);
     }
@@ -410,45 +410,45 @@ namespace xiiMath
     }
     else
     {
-      value = Clamp(value, -1.0f, 1.0f) * 32767.0f;
-      if (value >= 0.0f)
+      value = Clamp(value, -1.0F, 1.0F) * 32767.0F;
+      if (value >= 0.0F)
       {
-        value += 0.5f;
+        value += 0.5F;
       }
       else
       {
-        value -= 0.5f;
+        value -= 0.5F;
       }
       return static_cast<xiiInt16>(value);
     }
   }
 
-  constexpr inline float ColorByteToFloat(xiiUInt8 value)
+  constexpr float ColorByteToFloat(xiiUInt8 value)
   {
     // Implemented according to
     // https://docs.microsoft.com/windows/desktop/direct3d10/d3d10-graphics-programming-guide-resources-data-conversion
-    return value * (1.0f / 255.0f);
+    return value * (1.0F / 255.0F);
   }
 
-  constexpr inline float ColorShortToFloat(xiiUInt16 value)
+  constexpr float ColorShortToFloat(xiiUInt16 value)
   {
     // Implemented according to
     // https://docs.microsoft.com/windows/desktop/direct3d10/d3d10-graphics-programming-guide-resources-data-conversion
-    return value * (1.0f / 65535.0f);
+    return value * (1.0F / 65535.0F);
   }
 
-  constexpr inline float ColorSignedByteToFloat(xiiInt8 value)
+  constexpr float ColorSignedByteToFloat(xiiInt8 value)
   {
     // Implemented according to
     // https://docs.microsoft.com/windows/desktop/direct3d10/d3d10-graphics-programming-guide-resources-data-conversion
-    return (value == -128) ? -1.0f : value * (1.0f / 127.0f);
+    return (value == -128) ? -1.0F : value * (1.0F / 127.0F);
   }
 
-  constexpr inline float ColorSignedShortToFloat(xiiInt16 value)
+  constexpr float ColorSignedShortToFloat(xiiInt16 value)
   {
     // Implemented according to
     // https://docs.microsoft.com/windows/desktop/direct3d10/d3d10-graphics-programming-guide-resources-data-conversion
-    return (value == -32768) ? -1.0f : value * (1.0f / 32767.0f);
+    return (value == -32768) ? -1.0F : value * (1.0F / 32767.0F);
   }
 
   template <typename T, typename T2>
@@ -527,13 +527,13 @@ XII_ALWAYS_INLINE constexpr xiiInt32 xiiMath::WrapInt(xiiInt32 iValue, xiiInt32 
 
 XII_ALWAYS_INLINE float xiiMath::WrapFloat01(float fValue)
 {
-  if (fValue < 0.0f)
+  if (fValue < 0.0F)
   {
     return fValue + Ceil(-fValue);
   }
-  else if (fValue > 1.0f)
+  else if (fValue > 1.0F)
   {
-    return fValue - Ceil(fValue - 1.0f);
+    return fValue - Ceil(fValue - 1.0F);
   }
 
   return fValue;

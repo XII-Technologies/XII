@@ -21,7 +21,7 @@ class XII_GUIFOUNDATION_DLL xiiQtTypeWidget : public QWidget
   Q_OBJECT
 public:
   xiiQtTypeWidget(QWidget* pParent, xiiQtPropertyGridWidget* pGrid, xiiObjectAccessorBase* pObjectAccessor, const xiiRTTI* pType, xiiStringView sIncludeProperties, xiiStringView sExcludeProperties);
-  ~xiiQtTypeWidget();
+  ~xiiQtTypeWidget() override;
   void                                           SetSelection(const xiiHybridArray<xiiPropertySelection, 8>& items);
   const xiiHybridArray<xiiPropertySelection, 8>& GetSelection() const { return m_Items; }
   const xiiRTTI*                                 GetType() const { return m_pType; }
@@ -37,15 +37,15 @@ private:
         m_sGroup    = pAttr->GetGroup();
         m_sIconName = pAttr->GetIconName();
         m_fOrder    = pAttr->GetOrder();
-        if (m_fOrder == -1.0f)
+        if (m_fOrder == -1.0F)
         {
-          ref_fOrder += 1.0f;
+          ref_fOrder += 1.0F;
           m_fOrder = ref_fOrder;
         }
       }
       else
       {
-        ref_fOrder += 1.0f;
+        ref_fOrder += 1.0F;
         m_fOrder = ref_fOrder;
       }
     }
@@ -56,7 +56,7 @@ private:
       {
         m_sGroup    = pAttr->GetGroup();
         m_sIconName = pAttr->GetIconName();
-        if (pAttr->GetOrder() != -1.0f)
+        if (pAttr->GetOrder() != -1.0F)
         {
           m_fOrder = pAttr->GetOrder();
         }
@@ -68,7 +68,7 @@ private:
 
     xiiString                                     m_sGroup;
     xiiString                                     m_sIconName;
-    float                                         m_fOrder = -1.0f;
+    float                                         m_fOrder = -1.0F;
     xiiHybridArray<const xiiAbstractProperty*, 8> m_Properties;
   };
 
@@ -84,7 +84,7 @@ private:
   void UpdatePropertyMetaState();
 
 protected:
-  virtual void showEvent(QShowEvent* event) override;
+  void showEvent(QShowEvent* event) override;
 
 private:
   bool                                    m_bUndead         = false;

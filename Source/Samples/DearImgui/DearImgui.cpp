@@ -263,7 +263,7 @@ private:
     xiiSharedPtr<const xiiImguiFrame> m_pFrame;
     xiiRenderGraphHandle              m_hGraph;
     xiiRenderPipelineInstance         m_Pipeline;
-    float                             m_fValue           = 0.5f;
+    float                             m_fValue           = 0.5F;
     char                              m_Text[128]        = "Type here";
     xiiUInt32                         m_uiClicks         = 0;
     xiiEventSubscriptionID            m_TextSubscription = 0;
@@ -302,7 +302,7 @@ private:
     xiiRenderGraphTextureHandle color;
     graph.AddPass<xiiRenderGraphTextureHandle>("Clear UI background", xiiGALCommandQueueFlags::Graphics, [&](auto& data, xiiRenderGraphBuilder& builder) {
         color = data = builder.WriteTexture(builder.ImportTexture("UI target", texture, texture->GetResourceState()), xiiGALResourceStateFlags::RenderTarget);
-        builder.SetPassRenderPassManaged(); }, [](const auto& data, xiiRenderGraphPassContext& execution) { execution.GetCommandList().ClearRenderTargetView(execution.GetTexture(data)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor(0.025f, 0.04f, 0.065f)); });
+        builder.SetPassRenderPassManaged(); }, [](const auto& data, xiiRenderGraphPassContext& execution) { execution.GetCommandList().ClearRenderTargetView(execution.GetTexture(data)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor(0.025F, 0.04F, 0.065F)); });
     xiiRenderPipelineBinding binding;
     binding.m_pFrameData                         = XII_DEFAULT_NEW(xiiImguiFrameData, graph.GetSetupSerial(), std::move(frame));
     const xiiRenderPipelineInputBinding inputs[] = {

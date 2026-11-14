@@ -13,13 +13,13 @@ public:
 
   xiiSampleWindowApp();
 
-  virtual Execution Run() override;
+  Execution Run() override;
 
-  virtual void AfterCoreSystemsStartup() override;
+  void AfterCoreSystemsStartup() override;
 
-  virtual void BeforeHighLevelSystemsShutdown() override;
+  void BeforeHighLevelSystemsShutdown() override;
 
-  virtual void BeforeCoreSystemsShutdown() override;
+  void BeforeCoreSystemsShutdown() override;
 
 private:
   xiiSampleWindow* m_pWindow = nullptr;

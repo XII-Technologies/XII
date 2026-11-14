@@ -11,7 +11,7 @@ struct XII_FOUNDATION_DLL xiiEndianHelper
   /// Returns true if called on a big endian system, false otherwise.
   ///
   /// \note Note that usually the compile time decisions with the defines XII_PLATFORM_LITTLE_ENDIAN, XII_PLATFORM_BIG_ENDIAN is preferred.
-  static inline bool IsBigEndian()
+  static bool IsBigEndian()
   {
     const int i = 1;
     return (*(char*)&i) == 0;
@@ -20,10 +20,10 @@ struct XII_FOUNDATION_DLL xiiEndianHelper
   /// Returns true if called on a little endian system, false otherwise.
   ///
   /// \note Note that usually the compile time decisions with the defines XII_PLATFORM_LITTLE_ENDIAN, XII_PLATFORM_BIG_ENDIAN is preferred.
-  static inline bool IsLittleEndian() { return !IsBigEndian(); }
+  static bool IsLittleEndian() { return !IsBigEndian(); }
 
   /// Switches endianness of the given array of words (16 bit values).
-  static inline void SwitchWords(xiiUInt16* pWords, xiiUInt32 uiCount) // [tested]
+  static void SwitchWords(xiiUInt16* pWords, xiiUInt32 uiCount) // [tested]
   {
     for (xiiUInt32 i = 0; i < uiCount; ++i)
     {
@@ -32,7 +32,7 @@ struct XII_FOUNDATION_DLL xiiEndianHelper
   }
 
   /// Switches endianness of the given array of double words (32 bit values).
-  static inline void SwitchDWords(xiiUInt32* pDWords, xiiUInt32 uiCount) // [tested]
+  static void SwitchDWords(xiiUInt32* pDWords, xiiUInt32 uiCount) // [tested]
   {
     for (xiiUInt32 i = 0; i < uiCount; ++i)
     {
@@ -41,7 +41,7 @@ struct XII_FOUNDATION_DLL xiiEndianHelper
   }
 
   /// Switches endianness of the given array of quad words (64 bit values).
-  static inline void SwitchQWords(xiiUInt64* pQWords, xiiUInt32 uiCount) // [tested]
+  static void SwitchQWords(xiiUInt64* pQWords, xiiUInt32 uiCount) // [tested]
   {
     for (xiiUInt32 i = 0; i < uiCount; ++i)
     {

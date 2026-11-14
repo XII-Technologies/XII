@@ -22,7 +22,7 @@ class xiiQtImageDataAssetDocumentWindow : public xiiQtDocumentWindow
 public:
   xiiQtImageDataAssetDocumentWindow(xiiImageDataAssetDocument* pDocument);
 
-  virtual xiiStringView GetWindowLayoutGroupName() const override { return "ImageDataAsset"; }
+  xiiStringView GetWindowLayoutGroupName() const override { return "ImageDataAsset"; }
 
 private:
   void                                                  ImageDataAssetEventHandler(const xiiImageDataAssetEvent& e);

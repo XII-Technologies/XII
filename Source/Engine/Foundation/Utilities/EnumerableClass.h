@@ -45,7 +45,7 @@ public:
     ++Derived::s_uiInstances;
   }
 
-  virtual ~xiiEnumerable()
+  ~xiiEnumerable()
   {
     --Derived::s_uiInstances;
     xiiEnumerable* pPrev = nullptr;

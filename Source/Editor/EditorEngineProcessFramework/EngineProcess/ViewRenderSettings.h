@@ -42,7 +42,7 @@ struct XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiEngineViewConfig
   xiiCamera            m_Camera;
   xiiEngineViewConfig* m_pLinkedViewConfig = nullptr; // This is used to store which other view config this is linked to, for resetting values when switching views.
 
-  void ApplyPerspectiveSetting(float fFov = 0.0f, float fNearPlane = 0.1f, float fFarPlane = 1000.0f);
+  void ApplyPerspectiveSetting(float fFov = 0.0F, float fNearPlane = 0.1F, float fFarPlane = 1000.0F);
 };
 struct XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiEngineViewLightSettingsEvent
 {
@@ -64,7 +64,7 @@ class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiEngineViewLightSettings : public x
 
 public:
   xiiEngineViewLightSettings(bool bEnable = true);
-  ~xiiEngineViewLightSettings();
+  ~xiiEngineViewLightSettings() override;
 
   bool GetDirectionalLight() const;
   void SetDirectionalLight(bool bVal);
@@ -80,16 +80,16 @@ public:
 
   mutable xiiEvent<const xiiEngineViewLightSettingsEvent&> m_EngineViewLightSettingsEvents;
 
-  virtual bool SetupForEngine(xiiWorld* pWorld, xiiUInt32 uiNextComponentPickingID) override;
-  virtual void UpdateForEngine(xiiWorld* pWorld) override;
+  bool SetupForEngine(xiiWorld* pWorld, xiiUInt32 uiNextComponentPickingID) override;
+  void UpdateForEngine(xiiWorld* pWorld) override;
 
 private:
   void SetModifiedInternal(xiiEngineViewLightSettingsEvent::Type type);
 
   bool     m_bDirectionalLight          = true;
-  xiiAngle m_DirectionalLightAngle      = xiiAngle::MakeFromDegree(70.0f);
+  xiiAngle m_DirectionalLightAngle      = xiiAngle::MakeFromDegree(70.0F);
   bool     m_bDirectionalLightShadows   = false;
-  float    m_fDirectionalLightIntensity = 10.0f;
+  float    m_fDirectionalLightIntensity = 10.0F;
 
   // Engine side data
   xiiWorld*           m_pWorld = nullptr;

@@ -41,7 +41,7 @@ public:
     }
   }
 
-  virtual ~xiiSubSystem() = default;
+  ~xiiSubSystem() = default;
 
   /// Returns the name of the subsystem. Must be overridden.
   virtual xiiStringView GetSubSystemName() const = 0;

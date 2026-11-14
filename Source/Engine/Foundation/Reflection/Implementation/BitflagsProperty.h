@@ -32,19 +32,19 @@ public:
     }
   }
 
-  virtual void* GetPropertyPointer(const void* pInstance) const override
+  void* GetPropertyPointer(const void* pInstance) const override
   {
     // No access to sub-properties, if we have accessors for this property
     return nullptr;
   }
 
-  virtual xiiInt64 GetValue(const void* pInstance) const override // [tested]
+  xiiInt64 GetValue(const void* pInstance) const override // [tested]
   {
     typename EnumType::StorageType enumTemp = (static_cast<const Class*>(pInstance)->*m_Getter)().GetValue();
     return (xiiInt64)enumTemp;
   }
 
-  virtual void SetValue(void* pInstance, xiiInt64 value) const override // [tested]
+  void SetValue(void* pInstance, xiiInt64 value) const override // [tested]
   {
     XII_ASSERT_DEV(m_Setter != nullptr, "The property '{0}' has no setter function, thus it is read-only.", xiiAbstractProperty::GetPropertyName());
 
@@ -86,15 +86,15 @@ public:
     }
   }
 
-  virtual void* GetPropertyPointer(const void* pInstance) const override { return m_Pointer(static_cast<const Class*>(pInstance)); }
+  void* GetPropertyPointer(const void* pInstance) const override { return m_Pointer(static_cast<const Class*>(pInstance)); }
 
-  virtual xiiInt64 GetValue(const void* pInstance) const override // [tested]
+  xiiInt64 GetValue(const void* pInstance) const override // [tested]
   {
     typename EnumType::StorageType enumTemp = m_Getter(static_cast<const Class*>(pInstance)).GetValue();
     return (xiiInt64)enumTemp;
   }
 
-  virtual void SetValue(void* pInstance, xiiInt64 value) const override // [tested]
+  void SetValue(void* pInstance, xiiInt64 value) const override // [tested]
   {
     XII_ASSERT_DEV(m_Setter != nullptr, "The property '{0}' has no setter function, thus it is read-only.", xiiAbstractProperty::GetPropertyName());
 

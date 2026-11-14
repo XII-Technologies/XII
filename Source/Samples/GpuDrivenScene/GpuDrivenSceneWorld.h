@@ -23,7 +23,7 @@ struct xiiGpuDrivenSceneConfiguration
   bool      m_bAuthoredMaterials   = false;
   xiiUInt32 m_uiGridWidth          = 24U;
   xiiUInt32 m_uiGridHeight         = 16U;
-  float     m_fObjectSpacing       = 2.4f;
+  float     m_fObjectSpacing       = 2.4F;
   xiiUInt32 m_uiMaxVisibleMeshlets = 262144U;
   xiiUInt32 m_uiFramesInFlight     = 3U;
 };
@@ -33,9 +33,9 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_NO_LINKAGE, xiiGpuDrivenSceneConfiguration);
 /// Shader constants derived from the world's directional light component.
 struct xiiGpuDrivenSceneLight
 {
-  xiiVec3  m_vDirection = xiiVec3(-0.4f, 0.6f, -0.7f);
-  xiiColor m_Color      = xiiColor(1.0f, 0.92f, 0.78f);
-  float    m_fIntensity = 1.35f;
+  xiiVec3  m_vDirection = xiiVec3(-0.4F, 0.6F, -0.7F);
+  xiiColor m_Color      = xiiColor(1.0F, 0.92F, 0.78F);
+  float    m_fIntensity = 1.35F;
 };
 
 /// Owns authoring/runtime scene state used by the sample. The class intentionally exercises the
@@ -76,5 +76,5 @@ private:
   xiiGameObjectHandle                        m_hAssemblyRoot;
   xiiDynamicArray<xiiGameObjectHandle>       m_Objects;
   xiiDynamicArray<xiiVec3>                   m_BasePositions;
-  float                                      m_fAnimationTime = 0.0f;
+  float                                      m_fAnimationTime = 0.0F;
 };

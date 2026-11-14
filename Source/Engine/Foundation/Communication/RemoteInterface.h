@@ -276,5 +276,5 @@ public:
   volatile bool       m_bKeepRunning     = true;
 
 private:
-  virtual xiiUInt32 Run();
+  xiiUInt32 Run() override;
 };

@@ -33,9 +33,9 @@ public:
   };
 
   xiiQuadViewAction(const xiiActionContext& context, const char* szName, ButtonType button);
-  ~xiiQuadViewAction();
+  ~xiiQuadViewAction() override;
 
-  virtual void Execute(const xiiVariant& value) override;
+  void Execute(const xiiVariant& value) override;
 
 private:
   ButtonType m_ButtonType;

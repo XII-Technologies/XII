@@ -30,7 +30,7 @@ namespace xiiMath
     // INF -> (exponent = all 1, mantissa = zero)
 
     xiiInt64DoubleUnion i2f(value);
-    return ((i2f.i & 0x7FF0000000000000ull) != 0x7FF0000000000000ull);
+    return ((i2f.i & 0x7FF0000000000000ULL) != 0x7FF0000000000000ULL);
   }
 
   XII_ALWAYS_INLINE bool IsNaN(double value)
@@ -40,7 +40,7 @@ namespace xiiMath
     // INF -> (exponent = all 1, mantissa = zero)
 
     xiiInt64DoubleUnion i2f(value);
-    return (((i2f.i & 0x7FF0000000000000ull) == 0x7FF0000000000000ull) && ((i2f.i & 0xFFFFFFFFFFFFFull) != 0));
+    return (((i2f.i & 0x7FF0000000000000ULL) == 0x7FF0000000000000ULL) && ((i2f.i & 0xFFFFFFFFFFFFFULL) != 0));
   }
 
   XII_ALWAYS_INLINE double Floor(double f)
@@ -55,7 +55,7 @@ namespace xiiMath
 
   XII_ALWAYS_INLINE double Round(double f)
   {
-    return Floor(f + 0.5f);
+    return Floor(f + 0.5F);
   }
 
   inline double RoundDown(double f, double fMultiple)

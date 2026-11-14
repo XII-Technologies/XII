@@ -55,7 +55,7 @@ public:
   using SUPER = xiiApplication;
 
   xiiGameApplicationBase(xiiStringView sAppName);
-  ~xiiGameApplicationBase();
+  ~xiiGameApplicationBase() override;
 
   /// \name Basics
   ///@{
@@ -177,8 +177,8 @@ protected:
   /// \name Application Startup
   ///@{
 protected:
-  virtual xiiResult BeforeCoreSystemsStartup() override;
-  virtual void      AfterCoreSystemsStartup() override;
+  xiiResult BeforeCoreSystemsStartup() override;
+  void      AfterCoreSystemsStartup() override;
 
   /// Returns the target of the 'project' special data directory.
   ///
@@ -229,8 +229,8 @@ protected:
   /// \name Application Shutdown
   ///@{
 protected:
-  virtual void BeforeHighLevelSystemsShutdown() override;
-  virtual void BeforeCoreSystemsShutdown() override;
+  void BeforeHighLevelSystemsShutdown() override;
+  void BeforeCoreSystemsShutdown() override;
 
   virtual void Deinit_ShutdownGraphicsDevice() = 0;
   virtual void Deinit_UnloadPlugins();
@@ -241,7 +241,7 @@ protected:
   ///@{
 
 public:
-  virtual xiiApplication::Execution Run() override;
+  xiiApplication::Execution Run() override;
 
   void RunOneFrame();
 

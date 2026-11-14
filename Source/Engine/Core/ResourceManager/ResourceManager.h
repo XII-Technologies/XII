@@ -372,7 +372,7 @@ public:
 
   /// \sa SetResourceTypeLoadingFallback()
   template <typename RESOURCE_TYPE>
-  static inline const xiiTypedResourceHandle<RESOURCE_TYPE>& GetResourceTypeLoadingFallback()
+  static const xiiTypedResourceHandle<RESOURCE_TYPE>& GetResourceTypeLoadingFallback()
   {
     return RESOURCE_TYPE::GetResourceTypeLoadingFallback();
   }
@@ -388,7 +388,7 @@ public:
 
   /// \sa SetResourceTypeMissingFallback()
   template <typename RESOURCE_TYPE>
-  static inline const xiiTypedResourceHandle<RESOURCE_TYPE>& GetResourceTypeMissingFallback()
+  static const xiiTypedResourceHandle<RESOURCE_TYPE>& GetResourceTypeMissingFallback()
   {
     return RESOURCE_TYPE::GetResourceTypeMissingFallback();
   }
@@ -463,7 +463,7 @@ private:
     XII_ALWAYS_INLINE bool operator==(const LoadingInfo& rhs) const { return m_pResource == rhs.m_pResource; }
     XII_ALWAYS_INLINE bool operator<(const LoadingInfo& rhs) const { return m_fPriority < rhs.m_fPriority; }
   };
-  static void EnsureResourceLoadingState(xiiResource* pResource, const xiiResourceState RequestedState);
+  static void EnsureResourceLoadingState(xiiResource* pResource, xiiResourceState RequestedState);
   static void PreloadResource(xiiResource* pResource);
   static void InternalPreloadResource(xiiResource* pResource, bool bHighestPriority);
 

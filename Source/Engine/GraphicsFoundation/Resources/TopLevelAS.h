@@ -77,9 +77,9 @@ struct XII_GRAPHICSFOUNDATION_DLL alignas(16) xiiGALTLASInstanceData
     SetFlags(flags);
   }
 
-  xiiVec4   m_TransformRow0                  = xiiVec4(1.0f, 0.0f, 0.0f, 0.0f);
-  xiiVec4   m_TransformRow1                  = xiiVec4(0.0f, 1.0f, 0.0f, 0.0f);
-  xiiVec4   m_TransformRow2                  = xiiVec4(0.0f, 0.0f, 1.0f, 0.0f);
+  xiiVec4   m_TransformRow0                  = xiiVec4(1.0F, 0.0F, 0.0F, 0.0F);
+  xiiVec4   m_TransformRow1                  = xiiVec4(0.0F, 1.0F, 0.0F, 0.0F);
+  xiiVec4   m_TransformRow2                  = xiiVec4(0.0F, 0.0F, 1.0F, 0.0F);
   xiiUInt32 m_uiInstanceIDAndMask            = 0xFF000000U;
   xiiUInt32 m_uiHitGroupContributionAndFlags = 0U;
   xiiUInt64 m_uiBottomLevelASDeviceAddress   = 0U;
@@ -143,7 +143,7 @@ protected:
 
   xiiGALTopLevelAS(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALTopLevelASCreationDescription& creationDescription);
 
-  virtual ~xiiGALTopLevelAS();
+  ~xiiGALTopLevelAS() override;
 
   virtual xiiResult InitPlatform() = 0;
 

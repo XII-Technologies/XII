@@ -50,7 +50,7 @@ struct XII_GRAPHICSCORE_DLL xiiGeometryLodSource
   void                    SetMeshBufferResourceId(xiiString sResourceId);
 
   xiiMeshBufferResourceHandle m_hMeshBuffer;
-  float                       m_fMinimumScreenCoverage = 0.0f;
+  float                       m_fMinimumScreenCoverage = 0.0F;
   /// First compiled cluster in this authored LOD. Static geometry resolves independently resident pages.
   /// Deformable geometry shares a direct topology binding across authored ranges.
   xiiUInt32 m_uiFirstMeshlet = 0U;
@@ -81,7 +81,7 @@ struct XII_GRAPHICSCORE_DLL alignas(16) xiiGpuGeometryLod
   xiiUInt32 m_uiVertexCount                = 0U;
   xiiUInt32 m_uiIndexCount                 = 0U;
   xiiUInt32 m_uiMeshletCount               = 0U;
-  float     m_fMinimumScreenCoverage       = 0.0f;
+  float     m_fMinimumScreenCoverage       = 0.0F;
   xiiUInt32 m_uiIndexType                  = 0U;
   xiiUInt32 m_uiMeshletMetadataOffset      = 0U;
   xiiUInt32 m_uiMeshletRangesOrdered       = 0U; ///< Primitive-sorted arena metadata with UInt32 prefix ends in GPU padding[0].

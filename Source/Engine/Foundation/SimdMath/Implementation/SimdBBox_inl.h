@@ -48,7 +48,7 @@ XII_ALWAYS_INLINE bool xiiSimdBBox::IsNaN() const
 
 XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdBBox::GetCenter() const
 {
-  return (m_Min + m_Max) * xiiSimdFloat(0.5f);
+  return (m_Min + m_Max) * xiiSimdFloat(0.5F);
 }
 
 XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdBBox::GetExtents() const
@@ -58,7 +58,7 @@ XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdBBox::GetExtents() const
 
 XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdBBox::GetHalfExtents() const
 {
-  return (m_Max - m_Min) * xiiSimdFloat(0.5f);
+  return (m_Max - m_Min) * xiiSimdFloat(0.5F);
 }
 
 XII_ALWAYS_INLINE void xiiSimdBBox::ExpandToInclude(const xiiSimdVec4f& vPoint)

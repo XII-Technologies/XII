@@ -168,7 +168,7 @@ public:
   xiiResult WriteHashTable(const xiiHashTableBase<KeyType, ValueType, Hasher>& hashTable); // [tested]
 
   /// Writes a string
-  xiiResult WriteString(const xiiStringView sStringView); // [tested]
+  xiiResult WriteString(xiiStringView sStringView); // [tested]
 };
 
 // Contains the helper methods of both interfaces

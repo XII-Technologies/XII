@@ -46,11 +46,11 @@ xiiQtAnimatedMeshAssetDocumentWindow::xiiQtAnimatedMeshAssetDocumentWindow(xiiAn
   {
     SetTargetFrameRate(25);
 
-    m_ViewConfig.m_Camera.LookAt(xiiVec3(-1.6f, 0, 0), xiiVec3(0, 0, 0), xiiVec3(0, 0, 1));
+    m_ViewConfig.m_Camera.LookAt(xiiVec3(-1.6F, 0, 0), xiiVec3(0, 0, 0), xiiVec3(0, 0, 1));
     m_ViewConfig.ApplyPerspectiveSetting(90);
 
     m_pViewWidget = new xiiQtOrbitCamViewWidget(this, &m_ViewConfig);
-    m_pViewWidget->ConfigureRelative(xiiVec3(0, 0, 1), xiiVec3(10.0f), xiiVec3(5, -2, 3), 2.0f);
+    m_pViewWidget->ConfigureRelative(xiiVec3(0, 0, 1), xiiVec3(10.0F), xiiVec3(5, -2, 3), 2.0F);
     AddViewWidget(m_pViewWidget);
     pContainer = new xiiQtViewWidgetContainer(GetContainerWindow()->GetDockManager(), this, m_pViewWidget, "AnimatedMeshAssetViewToolBar");
     m_pDockManager->setCentralWidget(pContainer);
@@ -107,7 +107,9 @@ void xiiQtAnimatedMeshAssetDocumentWindow::SendRedrawMsg()
 {
   // do not try to redraw while the process is crashed, it is obviously futile
   if (xiiEditorEngineProcessConnection::GetSingleton()->IsProcessCrashed())
+  {
     return;
+  }
 
   for (auto pView : m_ViewWidgets)
   {
@@ -138,10 +140,14 @@ void xiiQtAnimatedMeshAssetDocumentWindow::PropertyEventHandler(const xiiDocumen
 bool xiiQtAnimatedMeshAssetDocumentWindow::UpdatePreview()
 {
   if (xiiEditorEngineProcessConnection::GetSingleton()->IsProcessCrashed())
+  {
     return false;
+  }
 
   if (GetMeshDocument()->GetProperties() == nullptr)
+  {
     return false;
+  }
 
   const auto& materials = GetMeshDocument()->GetProperties()->m_Slots;
 
@@ -187,7 +193,7 @@ void xiiQtAnimatedMeshAssetDocumentWindow::ProcessMessageEventHandler(const xiiE
 
     if (pMessage->m_vCenter.IsValid() && pMessage->m_vHalfExtents.IsValid())
     {
-      m_pViewWidget->SetOrbitVolume(pMessage->m_vCenter, pMessage->m_vHalfExtents.CompMax(xiiVec3(0.1f)));
+      m_pViewWidget->SetOrbitVolume(pMessage->m_vCenter, pMessage->m_vHalfExtents.CompMax(xiiVec3(0.1F)));
     }
     else
     {
@@ -204,9 +210,13 @@ void xiiQtAnimatedMeshAssetDocumentWindow::ProcessMessageEventHandler(const xiiE
 void xiiQtAnimatedMeshAssetDocumentWindow::HighlightTimer()
 {
   if (m_uiHighlightSlots & XII_BIT(31))
+  {
     m_uiHighlightSlots &= ~XII_BIT(31);
+  }
   else
+  {
     m_uiHighlightSlots |= XII_BIT(31);
+  }
 
   if (m_uiHighlightSlots & XII_BIT(31))
   {

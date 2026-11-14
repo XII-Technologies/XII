@@ -13,7 +13,7 @@ class xiiAnimatedMeshAssetProperties : public xiiReflectedClass
 
 public:
   xiiAnimatedMeshAssetProperties();
-  ~xiiAnimatedMeshAssetProperties();
+  ~xiiAnimatedMeshAssetProperties() override;
 
   static void PropertyMetaStateEventHandler(xiiPropertyMetaStateEvent& e);
 

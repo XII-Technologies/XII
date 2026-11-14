@@ -232,7 +232,8 @@ xiiResult xiiShaderCompilerApplication::ExtractPermutationVarValues(xiiStringVie
   {
     for (auto it = m_FixedPermVars.GetIterator(); it.IsValid(); ++it)
     {
-      xiiHashedString sNameHash, sPermutationValue;
+      xiiHashedString sNameHash;
+      xiiHashedString sPermutationValue;
       sNameHash.Assign(it.Key().GetView());
       m_PermutationGenerator.RemovePermutations(sNameHash);
 
@@ -270,7 +271,8 @@ xiiApplication::Execution xiiShaderCompilerApplication::Run()
   xiiDynamicArray<xiiStringView> allFiles;
   if (m_sShaderFiles.IsEmpty())
   {
-    xiiStringBuilder sPath, sPath2;
+    xiiStringBuilder sPath;
+    xiiStringBuilder sPath2;
     for (xiiUInt32 dirIdx = 0; dirIdx < xiiFileSystem::GetNumDataDirectories(); ++dirIdx)
     {
       sPath = xiiFileSystem::GetDataDirectory(dirIdx)->GetDataDirectoryPath();
@@ -314,7 +316,8 @@ xiiApplication::Execution xiiShaderCompilerApplication::Run()
       continue;
     }
 
-    xiiStringBuilder relPath, absPath;
+    xiiStringBuilder relPath;
+    xiiStringBuilder absPath;
     if (stats.m_bIsDirectory)
     {
       xiiFileSystemIterator fsIt;

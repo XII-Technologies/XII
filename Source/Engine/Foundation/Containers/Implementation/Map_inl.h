@@ -55,7 +55,6 @@ void xiiMapBaseConstIteratorBase<KeyType, ValueType, Comparer, REVERSE>::Advance
   }
 
   m_pElement = nullptr;
-  return;
 }
 
 template <typename KeyType, typename ValueType, typename Comparer, bool REVERSE>

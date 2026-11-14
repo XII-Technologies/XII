@@ -168,7 +168,8 @@ bool xiiQtRenderGraphWidget::ApplyCapture(const QJsonObject& object)
       return false;
     }
     const auto resource = value.toObject();
-    const auto first = resource["first"].toInteger(-1), last = resource["last"].toInteger(-1);
+    const auto first    = resource["first"].toInteger(-1);
+    const auto last     = resource["last"].toInteger(-1);
     if (first == 4294967295LL && last == 4294967295LL)
     {
       continue;
@@ -342,7 +343,8 @@ void xiiQtRenderGraphWidget::Rebuild()
       {
         continue;
       }
-      const QPointF start = positions[dependency.toInt()] + QPointF(220, 28), end = position + QPointF(0, 28);
+      const QPointF start = positions[dependency.toInt()] + QPointF(220, 28);
+      const QPointF end   = position + QPointF(0, 28);
       QPainterPath  path(start);
       path.cubicTo(start + QPointF(35, 0), end - QPointF(35, 0), end);
       m_pGraphScene->addPath(path, QPen(QColor("#788392"), 1.5))->setZValue(-1);
@@ -399,7 +401,8 @@ void xiiQtRenderGraphWidget::Rebuild()
     auto* label = m_pLifetimeScene->addSimpleText(QFontMetrics(QApplication::font()).elidedText(name, Qt::ElideRight, 250));
     label->setBrush(Qt::white);
     label->setPos(0, 30 + lifetimeRow * 26);
-    const double first = resource["first"].toDouble(), last = resource["last"].toDouble();
+    const double first = resource["first"].toDouble();
+    const double last  = resource["last"].toDouble();
     const QColor color = flags & 2 ? QColor("#d6a052") : QueueColor(resource["alias"].toInt() % 3);
     auto*        bar   = m_pLifetimeScene->addRect(270 + first * 28, 30 + lifetimeRow * 26, qMax(1.0, last - first + 1) * 28, 20, QPen(Qt::NoPen), color);
     bar->setToolTip(name + "\nCompiled pass range: " + Index(resource["first"]) + "–" + Index(resource["last"]) + "\nAlias group: " + Index(resource["alias"]));

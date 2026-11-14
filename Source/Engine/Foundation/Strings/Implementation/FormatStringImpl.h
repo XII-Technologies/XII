@@ -36,7 +36,7 @@ public:
   ///
   /// Requires a xiiStringBuilder as storage, ie. writes the formatted text into it. Additionally it returns a xiiStringView to that
   /// string builder data for convenience.
-  virtual xiiStringView GetText(xiiStringBuilder& ref_sStorage) const override
+  xiiStringView GetText(xiiStringBuilder& ref_sStorage) const override
   {
     if (m_sString.IsEmpty())
     {
@@ -51,7 +51,7 @@ public:
     return BuildFormattedText(ref_sStorage, param, MaxNumParameters);
   }
 
-  virtual const char* GetTextCStr(xiiStringBuilder& out_sString) const override
+  const char* GetTextCStr(xiiStringBuilder& out_sString) const override
   {
     xiiStringView param[MaxNumParameters];
 

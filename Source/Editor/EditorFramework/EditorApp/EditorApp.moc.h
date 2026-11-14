@@ -89,7 +89,7 @@ public:
 
 public:
   xiiQtEditorApp();
-  ~xiiQtEditorApp();
+  ~xiiQtEditorApp() override;
 
   static xiiEvent<const xiiEditorAppEvent&> m_Events;
 

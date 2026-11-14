@@ -7,12 +7,9 @@
 #include <GraphicsFoundation/Shader/ShaderByteCode.h>
 
 /// This describes the shader creation description.
-struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderCreationDescription : public xiiHashableStruct<xiiGALShaderCreationDescription>
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderCreationDescription
 {
-  xiiGALShaderCreationDescription() :
-    xiiHashableStruct()
-  {
-  }
+  xiiGALShaderCreationDescription() = default;
 
   ~xiiGALShaderCreationDescription()
   {
@@ -34,6 +31,8 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderCreationDescription : public xiiHa
 
     return m_ByteCode != nullptr && m_ByteCode->IsValid();
   }
+
+  XII_ALWAYS_INLINE bool operator==(const xiiGALShaderCreationDescription& rhs) const = default;
 
   xiiBitflags<xiiGALShaderType>             m_ShaderType = xiiGALShaderType::Unknown; ///< The shader type. The default is xiiGALShaderType::Unknown.
   xiiScopedRefPointer<xiiGALShaderByteCode> m_ByteCode;                               ///< The shader byte code. See xiiGALShaderByteCode.
@@ -71,7 +70,7 @@ protected:
 
   xiiGALShader(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALShaderCreationDescription& creationDescription);
 
-  virtual ~xiiGALShader();
+  ~xiiGALShader() override;
 
   virtual xiiResult InitPlatform() = 0;
 

@@ -141,35 +141,33 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALStateTransitionMode
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALStateTransitionMode);
 
 /// This describes the viewport. A viewport defines the rendering area within a graphical output. It specifies the position, size, and depth range of the viewport to control how the scene is displayed.
-struct XII_GRAPHICSFOUNDATION_DLL xiiGALViewport : public xiiHashableStruct<xiiGALViewport>
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALViewport
 {
   XII_DECLARE_POD_TYPE();
 
   XII_ALWAYS_INLINE xiiGALViewport() = default;
 
-  XII_ALWAYS_INLINE xiiGALViewport(float fX, float fY, float fWidth, float fHeight, float fMinDepth = 0.0f, float fMaxDepth = 1.0f) :
+  XII_ALWAYS_INLINE xiiGALViewport(float fX, float fY, float fWidth, float fHeight, float fMinDepth = 0.0F, float fMaxDepth = 1.0F) :
     m_fTopLeftX(fX), m_fTopLeftY(fY), m_fWidth(fWidth), m_fHeight(fHeight), m_fMinDepth(fMinDepth), m_fMaxDepth(fMaxDepth)
   {
   }
 
-  XII_ALWAYS_INLINE xiiGALViewport(xiiRectFloat viewport, float fMinDepth = 0.0f, float fMaxDepth = 1.0f) :
+  XII_ALWAYS_INLINE xiiGALViewport(xiiRectFloat viewport, float fMinDepth = 0.0F, float fMaxDepth = 1.0F) :
     m_fTopLeftX(viewport.x), m_fTopLeftY(viewport.y), m_fWidth(viewport.width), m_fHeight(viewport.height), m_fMinDepth(fMinDepth), m_fMaxDepth(fMaxDepth)
   {
   }
 
-  float m_fTopLeftX = 0.0f; ///< X-coordinate of the top-left corner of the viewport.
-  float m_fTopLeftY = 0.0f; ///< Y-coordinate of the top-left corner of the viewport.
-  float m_fWidth    = 0.0f; ///< Width of the viewport.
-  float m_fHeight   = 0.0f; ///< Height of the viewport.
-  float m_fMinDepth = 0.0f; ///< Minimum depth of the viewport range. The near clipping plane's depth value. Typically set to 0.0.
-  float m_fMaxDepth = 1.0f; ///< Maximum depth of the viewport range. The far clipping plane's depth value. Typically set to 1.0.
+  float m_fTopLeftX = 0.0F; ///< X-coordinate of the top-left corner of the viewport.
+  float m_fTopLeftY = 0.0F; ///< Y-coordinate of the top-left corner of the viewport.
+  float m_fWidth    = 0.0F; ///< Width of the viewport.
+  float m_fHeight   = 0.0F; ///< Height of the viewport.
+  float m_fMinDepth = 0.0F; ///< Minimum depth of the viewport range. The near clipping plane's depth value. Typically set to 0.0.
+  float m_fMaxDepth = 1.0F; ///< Maximum depth of the viewport range. The far clipping plane's depth value. Typically set to 1.0.
 };
 
 /// This describes the viewport.
-struct XII_GRAPHICSFOUNDATION_DLL xiiGALBeginRenderPassDescription : public xiiHashableStruct<xiiGALBeginRenderPassDescription>
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALBeginRenderPassDescription
 {
-  XII_DECLARE_POD_TYPE();
-
   XII_ALWAYS_INLINE xiiGALBeginRenderPassDescription() = default;
 
   XII_ALWAYS_INLINE xiiGALBeginRenderPassDescription(xiiGALRenderPass* pRenderPass, xiiGALFramebuffer* pFramebuffer) :
@@ -178,8 +176,14 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALBeginRenderPassDescription : public xiiH
   }
 
   XII_ALWAYS_INLINE xiiGALBeginRenderPassDescription(xiiGALRenderPass* pRenderPass, xiiGALFramebuffer* pFramebuffer, xiiArrayPtr<const xiiGALOptimizedClearValue> pClearValues) :
-    m_pRenderPass(pRenderPass), m_pFramebuffer(pFramebuffer), m_ClearValues(pClearValues)
+    m_pRenderPass(pRenderPass), m_pFramebuffer(pFramebuffer)
   {
+    m_ClearValues.SetCount(pClearValues.GetCount());
+
+    for (xiiUInt32 i = 0; i < pClearValues.GetCount(); ++i)
+    {
+      m_ClearValues[i] = pClearValues[i];
+    }
   }
 
   xiiGALRenderPass*                             m_pRenderPass;
@@ -942,7 +946,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandListStatistics
 /// It defines which queue capabilities this command list targets and how it behaves in terms of submission and encoding.
 ///
 /// The queue flags represent the functional domains this command list is allowed to access (e.g., graphics, compute, copy), which are used to validate command recording.
-struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandListCreationDescription : public xiiHashableStruct<xiiGALCommandListCreationDescription>
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandListCreationDescription
 {
   XII_DECLARE_POD_TYPE();
 
@@ -1574,7 +1578,7 @@ protected:
 
   xiiGALCommandList(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALCommandListCreationDescription& creationDescription);
 
-  virtual ~xiiGALCommandList();
+  ~xiiGALCommandList() override;
 
   virtual xiiResult InitPlatform() = 0;
 

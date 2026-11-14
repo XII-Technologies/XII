@@ -190,7 +190,7 @@ namespace xiiInternal
 
     struct UpdateTask final : public xiiTask
     {
-      virtual void Execute() override;
+      void Execute() override;
 
       xiiWorldModule::UpdateFunction m_Function;
       xiiUInt32                      m_uiStartIndex;

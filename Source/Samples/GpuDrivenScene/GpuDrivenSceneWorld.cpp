@@ -24,7 +24,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGpuDrivenSceneConfiguration, xiiNoBase, 1, xi
       XII_MEMBER_PROPERTY("PopulateScene", m_bPopulateScene),
       XII_MEMBER_PROPERTY("GridWidth", m_uiGridWidth)->AddAttributes(new xiiDefaultValueAttribute(24U), new xiiClampValueAttribute(1U, 512U)),
       XII_MEMBER_PROPERTY("GridHeight", m_uiGridHeight)->AddAttributes(new xiiDefaultValueAttribute(16U), new xiiClampValueAttribute(1U, 512U)),
-      XII_MEMBER_PROPERTY("ObjectSpacing", m_fObjectSpacing)->AddAttributes(new xiiDefaultValueAttribute(2.4f), new xiiClampValueAttribute(0.25f, 20.0f)),
+      XII_MEMBER_PROPERTY("ObjectSpacing", m_fObjectSpacing)->AddAttributes(new xiiDefaultValueAttribute(2.4F), new xiiClampValueAttribute(0.25F, 20.0F)),
       XII_MEMBER_PROPERTY("MaxVisibleMeshlets", m_uiMaxVisibleMeshlets)->AddAttributes(new xiiDefaultValueAttribute(262144U)),
       XII_MEMBER_PROPERTY("FramesInFlight", m_uiFramesInFlight)->AddAttributes(new xiiDefaultValueAttribute(3U), new xiiClampValueAttribute(2U, 8U)),
     } XII_END_PROPERTIES;
@@ -122,10 +122,10 @@ xiiView* xiiGpuDrivenSceneWorld::GetRenderView() const
 xiiResult xiiGpuDrivenSceneWorld::CreateMaterials()
 {
   const xiiColor colors[] = {
-    xiiColor(0.10f, 0.55f, 1.0f),
-    xiiColor(1.0f, 0.28f, 0.08f),
-    xiiColor(0.18f, 0.95f, 0.42f),
-    xiiColor(0.85f, 0.18f, 0.95f),
+    xiiColor(0.10F, 0.55F, 1.0F),
+    xiiColor(1.0F, 0.28F, 0.08F),
+    xiiColor(0.18F, 0.95F, 0.42F),
+    xiiColor(0.85F, 0.18F, 0.95F),
   };
 
   for (xiiUInt32 i = 0U; i < XII_ARRAY_SIZE(colors); ++i)
@@ -182,11 +182,11 @@ xiiResult xiiGpuDrivenSceneWorld::CreateGeometry()
     xiiGeometry geometry;
     if (i == 0)
     {
-      geometry.AddStackedSphere(0.8f, m_Configuration.m_uiMeshDetail, m_Configuration.m_uiMeshDetail / 2U);
+      geometry.AddStackedSphere(0.8F, m_Configuration.m_uiMeshDetail, m_Configuration.m_uiMeshDetail / 2U);
     }
     else
     {
-      geometry.AddBox(xiiVec3(1.5f), true);
+      geometry.AddBox(xiiVec3(1.5F), true);
     }
     geometry.TriangulatePolygons();
     xiiMeshResourceDescriptor descriptor;
@@ -239,7 +239,7 @@ xiiResult xiiGpuDrivenSceneWorld::CreateSceneObjects()
     for (xiiUInt32 x = 0; x < m_Configuration.m_uiGridWidth; ++x)
     {
       const auto               index = m_Objects.GetCount();
-      const xiiVec3            position(6 + y * m_Configuration.m_fObjectSpacing, (float(x) - float(m_Configuration.m_uiGridWidth - 1) * 0.5f) * m_Configuration.m_fObjectSpacing, m_Configuration.m_sMesh.IsEmpty() ? (float(index % 5) - 2) * 0.32f : 0.0f);
+      const xiiVec3            position(6 + y * m_Configuration.m_fObjectSpacing, (float(x) - float(m_Configuration.m_uiGridWidth - 1) * 0.5F) * m_Configuration.m_fObjectSpacing, m_Configuration.m_sMesh.IsEmpty() ? (float(index % 5) - 2) * 0.32F : 0.0F);
       xiiGameObjectDescription description;
       description.m_bDynamic      = true;
       description.m_LocalPosition = position;
@@ -291,11 +291,11 @@ void xiiGpuDrivenSceneWorld::Update(xiiTime deltaTime)
     }
     xiiTransform transform = xiiTransform::MakeIdentity();
     transform.m_vPosition  = m_BasePositions[i];
-    transform.m_vPosition.z += 0.45f * xiiMath::Sin(xiiAngle::MakeFromRadian(m_fAnimationTime * 1.7f + float(i) * 0.31f));
-    transform.m_qRotation = xiiQuat::MakeFromAxisAndAngle(xiiVec3::MakeAxisZ(), xiiAngle::MakeFromRadian(m_fAnimationTime * 0.3f + float(i) * 0.01f));
+    transform.m_vPosition.z += 0.45F * xiiMath::Sin(xiiAngle::MakeFromRadian(m_fAnimationTime * 1.7F + float(i) * 0.31F));
+    transform.m_qRotation = xiiQuat::MakeFromAxisAndAngle(xiiVec3::MakeAxisZ(), xiiAngle::MakeFromRadian(m_fAnimationTime * 0.3F + float(i) * 0.01F));
     if (i == 0)
     {
-      transform.m_vScale = xiiVec3(1, 0.65f, 1.35f);
+      transform.m_vScale = xiiVec3(1, 0.65F, 1.35F);
     }
     object->SetLocalPosition(transform.m_vPosition);
     object->SetLocalRotation(transform.m_qRotation);
@@ -304,8 +304,8 @@ void xiiGpuDrivenSceneWorld::Update(xiiTime deltaTime)
   xiiGameObject* root = nullptr;
   if (m_World->TryGetObject(m_hAssemblyRoot, root))
   {
-    root->SetLocalPosition(xiiVec3(0, 0, 0.15f * xiiMath::Sin(xiiAngle::MakeFromRadian(m_fAnimationTime * 0.5f))));
-    root->SetLocalRotation(xiiQuat::MakeFromAxisAndAngle(xiiVec3::MakeAxisZ(), xiiAngle::MakeFromRadian(0.035f * xiiMath::Sin(xiiAngle::MakeFromRadian(m_fAnimationTime * 0.25f)))));
+    root->SetLocalPosition(xiiVec3(0, 0, 0.15F * xiiMath::Sin(xiiAngle::MakeFromRadian(m_fAnimationTime * 0.5F))));
+    root->SetLocalRotation(xiiQuat::MakeFromAxisAndAngle(xiiVec3::MakeAxisZ(), xiiAngle::MakeFromRadian(0.035F * xiiMath::Sin(xiiAngle::MakeFromRadian(m_fAnimationTime * 0.25F)))));
   }
   m_World->Update();
 }

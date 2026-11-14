@@ -251,7 +251,7 @@ public:
   }
 
   /// Returns xiiPropertyCategory::Constant.
-  virtual xiiPropertyCategory::Enum GetCategory() const override { return xiiPropertyCategory::Constant; } // [tested]
+  xiiPropertyCategory::Enum GetCategory() const override { return xiiPropertyCategory::Constant; } // [tested]
 
   /// Returns a pointer to the constant data or nullptr. See xiiAbstractMemberProperty::GetPropertyPointer for more information.
   virtual void* GetPropertyPointer() const = 0;
@@ -275,7 +275,7 @@ public:
   }
 
   /// Returns xiiPropertyCategory::Member.
-  virtual xiiPropertyCategory::Enum GetCategory() const override { return xiiPropertyCategory::Member; }
+  xiiPropertyCategory::Enum GetCategory() const override { return xiiPropertyCategory::Member; }
 
   /// Returns a pointer to the property data or nullptr. If a valid pointer is returned, that pointer and the information from
   /// GetSpecificType() can be used to step deeper into the type (if required).
@@ -311,7 +311,7 @@ public:
   }
 
   /// Returns xiiPropertyCategory::Array.
-  virtual xiiPropertyCategory::Enum GetCategory() const override { return xiiPropertyCategory::Array; }
+  xiiPropertyCategory::Enum GetCategory() const override { return xiiPropertyCategory::Array; }
 
   /// Returns number of elements.
   virtual xiiUInt32 GetCount(const void* pInstance) const = 0;
@@ -356,7 +356,7 @@ public:
   }
 
   /// Returns xiiPropertyCategory::Set.
-  virtual xiiPropertyCategory::Enum GetCategory() const override { return xiiPropertyCategory::Set; }
+  xiiPropertyCategory::Enum GetCategory() const override { return xiiPropertyCategory::Set; }
 
   /// Returns whether the set is empty.
   virtual bool IsEmpty(const void* pInstance) const = 0;
@@ -391,7 +391,7 @@ public:
   }
 
   /// Returns xiiPropertyCategory::Map.
-  virtual xiiPropertyCategory::Enum GetCategory() const override { return xiiPropertyCategory::Map; }
+  xiiPropertyCategory::Enum GetCategory() const override { return xiiPropertyCategory::Map; }
 
   /// Returns whether the set is empty.
   virtual bool IsEmpty(const void* pInstance) const = 0;
@@ -578,7 +578,7 @@ public:
   {
   }
 
-  virtual xiiPropertyCategory::Enum GetCategory() const override { return xiiPropertyCategory::Function; }
+  xiiPropertyCategory::Enum GetCategory() const override { return xiiPropertyCategory::Function; }
 
   /// Returns the type of function, see xiiFunctionPropertyType::Enum.
   virtual xiiFunctionType::Enum GetFunctionType() const = 0;
@@ -611,7 +611,7 @@ public:
   /// it is impossible to pass along a nullptr.
   virtual void Execute(void* pInstance, xiiArrayPtr<xiiVariant> arguments, xiiVariant& out_returnValue) const = 0;
 
-  virtual const xiiRTTI* GetSpecificType() const override { return GetReturnType(); }
+  const xiiRTTI* GetSpecificType() const override { return GetReturnType(); }
 
   /// Adds flags to the property. Returns itself to allow to be called during initialization.
   xiiAbstractFunctionProperty* AddFlags(xiiBitflags<xiiPropertyFlags> flags)

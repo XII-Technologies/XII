@@ -15,14 +15,14 @@ class XII_TOOLSFOUNDATION_DLL xiiCommandTransaction : public xiiCommand
 
 public:
   xiiCommandTransaction();
-  ~xiiCommandTransaction();
+  ~xiiCommandTransaction() override;
 
   xiiString m_sDisplayString;
 
 private:
-  virtual xiiStatus DoInternal(bool bRedo) override;
-  virtual xiiStatus UndoInternal(bool bFireEvents) override;
-  virtual void      CleanupInternal(CommandState state) override;
+  xiiStatus         DoInternal(bool bRedo) override;
+  xiiStatus         UndoInternal(bool bFireEvents) override;
+  void              CleanupInternal(CommandState state) override;
   xiiStatus         AddCommandTransaction(xiiCommand* command);
 
 private:

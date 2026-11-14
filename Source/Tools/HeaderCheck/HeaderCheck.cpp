@@ -175,7 +175,7 @@ public:
     return XII_SUCCESS;
   }
 
-  virtual void AfterCoreSystemsStartup() override
+  void AfterCoreSystemsStartup() override
   {
     xiiGlobalLog::AddLogWriter(xiiLogWriter::Console::LogMessageHandler);
     xiiGlobalLog::AddLogWriter(xiiLogWriter::VisualStudio::LogMessageHandler);
@@ -275,7 +275,7 @@ public:
     // ':abs/C:/some/file.txt"
   }
 
-  virtual void BeforeCoreSystemsShutdown() override
+  void BeforeCoreSystemsShutdown() override
   {
     if (m_bHadWarnings || m_bHadSeriousWarnings || m_bHadErrors)
     {
@@ -355,7 +355,8 @@ public:
 
     if (it.IsValid())
     {
-      xiiStringBuilder currentFile, sExt;
+      xiiStringBuilder currentFile;
+      xiiStringBuilder sExt;
 
       // while there are additional files / folders
       for (; it.IsValid(); it.Next())
@@ -569,7 +570,7 @@ public:
     }
   }
 
-  virtual xiiApplication::Execution Run() override
+  xiiApplication::Execution Run() override
   {
     // something basic has gone wrong
     if (m_bHadSeriousWarnings || m_bHadErrors)

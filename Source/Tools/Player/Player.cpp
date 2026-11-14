@@ -35,7 +35,7 @@ xiiCommandLineOptionInt    opt_Height("_Player", "-height", "Window height in pi
 xiiCommandLineOptionInt    opt_Display("_Player", "-display", "Display index (-1 selects the primary display).", -1, -1, 127);
 xiiCommandLineOptionInt    opt_BackgroundFPS("_Player", "-background-fps", "Inactive instance frame cap.", 30, 1, 1000);
 xiiCommandLineOptionBool   opt_ShowFPS("_Player", "-show-fps", "Main-view FPS and frame-time overlay.", false);
-xiiCommandLineOptionFloat  opt_Volume("_Player", "-volume", "Master volume when a sound implementation is present.", 1.0f, 0.0f, 1.0f);
+xiiCommandLineOptionFloat  opt_Volume("_Player", "-volume", "Master volume when a sound implementation is present.", 1.0F, 0.0F, 1.0F);
 xiiCommandLineOptionString opt_Role("_Player", "-role", "Application role: standalone, server or client. Consumed by application networking plugins.", "standalone");
 xiiCommandLineOptionString opt_Connect("_Player", "-connect", "Application connection address; no gameplay networking stack is created by Player.", "127.0.0.1");
 xiiCommandLineOptionInt    opt_Port("_Player", "-port", "Application connection port; supplied to application networking plugins.", 0, 0, 65535);
@@ -67,7 +67,8 @@ void xiiPlayerApplication::AfterCoreSystemsStartup()
   if (m_sSession.IsEmpty() && m_sInstance.IsEmpty())
   {
     xiiStringBuilder identifier;
-    xiiUInt64        low, high;
+    xiiUInt64        low;
+    xiiUInt64        high;
     xiiUuid::MakeUuid().GetValues(low, high);
     identifier.SetFormat("standalone-{}{}", xiiArgU(high, 16, true, 16), xiiArgU(low, 16, true, 16));
     m_sInstance = identifier;
@@ -606,7 +607,7 @@ void xiiPlayerApplication::UpdateRuntimeSettings()
           m_PendingSettings.m_bShowFrameStats = !m_PendingSettings.m_bShowFrameStats;
           break;
         case 8:
-          m_PendingSettings.m_fMasterVolume = xiiMath::Clamp(m_PendingSettings.m_fMasterVolume + direction * 0.05f, 0.0f, 1.0f);
+          m_PendingSettings.m_fMasterVolume = xiiMath::Clamp(m_PendingSettings.m_fMasterVolume + direction * 0.05F, 0.0F, 1.0F);
           break;
         case 9:
           m_PendingSettings.m_bMuteInBackground = !m_PendingSettings.m_bMuteInBackground;
@@ -685,7 +686,7 @@ void xiiPlayerApplication::UpdateRuntimeSettings()
   }
   if (view)
   {
-    xiiDebugRenderer::Draw2DRectangle(*view, xiiRectFloat(0, 0, xiiMath::Min(view->GetViewport().width, 760.0f), height), 0.0f, xiiColor(0.025f, 0.03f, 0.045f, 0.96f));
+    xiiDebugRenderer::Draw2DRectangle(*view, xiiRectFloat(0, 0, xiiMath::Min(view->GetViewport().width, 760.0F), height), 0.0F, xiiColor(0.025F, 0.03F, 0.045F, 0.96F));
   }
   xiiDebugRenderer::DrawInfoText(state->GetMainWorld(), xiiDebugTextPlacement::TopLeft, "PlayerSettings", text, xiiColor::White);
 }

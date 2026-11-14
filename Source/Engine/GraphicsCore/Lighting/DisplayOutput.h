@@ -82,15 +82,15 @@ struct XII_GRAPHICSCORE_DLL xiiExposureSettings
   bool                     operator==(const xiiExposureSettings&) const = default;
   xiiEnum<xiiExposureMode> m_Mode;
 
-  float m_fMinimumEV100          = -8.0f;
-  float m_fMaximumEV100          = 16.0f;
-  float m_fExposureCompensation  = 0.0f;
-  float m_fLowPercentile         = 0.005f;
-  float m_fHighPercentile        = 0.98f;
-  float m_fAdaptationSpeedBright = 3.0f;
-  float m_fAdaptationSpeedDark   = 1.0f;
-  float m_fMinimumLogLuminance   = -12.0f;
-  float m_fMaximumLogLuminance   = 20.0f;
+  float m_fMinimumEV100          = -8.0F;
+  float m_fMaximumEV100          = 16.0F;
+  float m_fExposureCompensation  = 0.0F;
+  float m_fLowPercentile         = 0.005F;
+  float m_fHighPercentile        = 0.98F;
+  float m_fAdaptationSpeedBright = 3.0F;
+  float m_fAdaptationSpeedDark   = 1.0F;
+  float m_fMinimumLogLuminance   = -12.0F;
+  float m_fMaximumLogLuminance   = 20.0F;
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiExposureSettings);
@@ -99,11 +99,11 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiExposureSettings);
 struct XII_GRAPHICSCORE_DLL xiiColorGradingSettings
 {
   bool  operator==(const xiiColorGradingSettings&) const = default;
-  float m_fSaturation        = 1.0f;
-  float m_fContrast          = 1.0f;
-  float m_fVignetteStrength  = 0.0f;
-  float m_fVignetteRoundness = 1.0f;
-  float m_fFilmGrainStrength = 0.0f;
+  float m_fSaturation                                    = 1.0F;
+  float m_fContrast                                      = 1.0F;
+  float m_fVignetteStrength                              = 0.0F;
+  float m_fVignetteRoundness                             = 1.0F;
+  float m_fFilmGrainStrength                             = 0.0F;
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiColorGradingSettings);
@@ -120,12 +120,12 @@ struct XII_GRAPHICSCORE_DLL xiiDisplayOutputSettings
   xiiEnum<xiiToneMappingOperator> m_ToneMappingOperator;
   xiiEnum<xiiDisplayOutputMode>   m_OutputMode;
 
-  float m_fBloomStrength      = 0.05f;
-  float m_fBloomThreshold     = 1.0f;
-  float m_fBloomKnee          = 0.5f;
-  float m_fBloomRadius        = 1.0f;
-  float m_fPaperWhiteNits     = 203.0f;
-  float m_fMaximumDisplayNits = 1000.0f;
+  float m_fBloomStrength      = 0.05F;
+  float m_fBloomThreshold     = 1.0F;
+  float m_fBloomKnee          = 0.5F;
+  float m_fBloomRadius        = 1.0F;
+  float m_fPaperWhiteNits     = 203.0F;
+  float m_fMaximumDisplayNits = 1000.0F;
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiDisplayOutputSettings);

@@ -14,7 +14,7 @@ class XII_FOUNDATION_DLL xiiTask : public xiiRefCounted
 
 public:
   xiiTask();
-  virtual ~xiiTask();
+  ~xiiTask() override;
 
   /// Sets the most important task properties. This has to be done before the task is added to a task group for the first time.
   ///

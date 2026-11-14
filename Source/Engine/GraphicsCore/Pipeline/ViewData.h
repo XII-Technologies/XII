@@ -14,10 +14,10 @@ struct XII_GRAPHICSCORE_DLL xiiViewData
 {
   xiiViewData()
   {
-    m_ViewPortRect             = xiiRectFloat(0.0f, 0.0f);
+    m_ViewPortRect             = xiiRectFloat(0.0F, 0.0F);
     m_ViewRenderMode           = xiiViewRenderMode::None;
     m_RenderPath               = xiiRenderPath::Default;
-    m_fRenderResolutionScale   = 1.0f;
+    m_fRenderResolutionScale   = 1.0F;
     m_uiRenderResolutionWidth  = 1U;
     m_uiRenderResolutionHeight = 1U;
 

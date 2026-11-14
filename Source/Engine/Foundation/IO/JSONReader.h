@@ -39,33 +39,33 @@ public:
 
 private:
   /// This function can be overridden to skip certain variables, however the overriding function must still call this.
-  virtual bool OnVariable(xiiStringView sVarName) override;
+  bool OnVariable(xiiStringView sVarName) override;
 
   /// [internal] Do not override further.
-  virtual void OnReadValue(xiiStringView sValue) override;
+  void OnReadValue(xiiStringView sValue) override;
 
   /// [internal] Do not override further.
-  virtual void OnReadValue(double fValue) override;
+  void OnReadValue(double fValue) override;
 
   /// [internal] Do not override further.
-  virtual void OnReadValue(bool bValue) override;
+  void OnReadValue(bool bValue) override;
 
   /// [internal] Do not override further.
-  virtual void OnReadValueNULL() override;
+  void OnReadValueNULL() override;
 
   /// [internal] Do not override further.
-  virtual void OnBeginObject() override;
+  void OnBeginObject() override;
 
   /// [internal] Do not override further.
-  virtual void OnEndObject() override;
+  void OnEndObject() override;
 
   /// [internal] Do not override further.
-  virtual void OnBeginArray() override;
+  void OnBeginArray() override;
 
   /// [internal] Do not override further.
-  virtual void OnEndArray() override;
+  void OnEndArray() override;
 
-  virtual void OnParsingError(xiiStringView sMessage, bool bFatal, xiiUInt32 uiLine, xiiUInt32 uiColumn) override;
+  void OnParsingError(xiiStringView sMessage, bool bFatal, xiiUInt32 uiLine, xiiUInt32 uiColumn) override;
 
 protected:
   struct Element

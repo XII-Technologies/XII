@@ -57,16 +57,16 @@ public:
   xiiThread(xiiStringView sName = "xiiThread", xiiUInt32 uiStackSize = 128 * 1024);
 
   /// Destructor checks if the thread is deleted while still running, which is not allowed as this is a data hazard
-  virtual ~xiiThread();
+  ~xiiThread() override;
 
   /// Returns the thread status
-  inline xiiThreadStatus GetThreadStatus() const { return m_ThreadStatus; }
+  xiiThreadStatus GetThreadStatus() const { return m_ThreadStatus; }
 
   /// Helper function to determine if the thread is running
-  inline bool IsRunning() const { return m_ThreadStatus == Running; }
+  bool IsRunning() const { return m_ThreadStatus == Running; }
 
   /// Returns the thread name
-  inline xiiStringView GetThreadName() const { return m_sName; }
+  xiiStringView GetThreadName() const { return m_sName; }
 
   /// These events inform about threads starting and finishing.
   ///

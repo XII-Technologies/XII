@@ -71,9 +71,9 @@ struct XII_GRAPHICSCORE_DLL xiiAnimGraphNode
 
   xiiAnimationClipResourceHandle m_hClip;
   xiiHashedString                m_sParameter;
-  float                          m_fPlaybackSpeed = 1.0f;
-  float                          m_fWeight        = 1.0f;
-  float                          m_fThreshold     = 0.0f;
+  float                          m_fPlaybackSpeed = 1.0F;
+  float                          m_fWeight        = 1.0F;
+  float                          m_fThreshold     = 0.0F;
   xiiUInt16                      m_uiTargetJoint  = xiiMath::MaxValue<xiiUInt16>();
 
   xiiHybridArray<xiiUInt16, 4> m_Inputs;
@@ -89,7 +89,7 @@ struct XII_GRAPHICSCORE_DLL xiiAnimGraphTransition
   xiiUInt16       m_uiFromNode = xiiMath::MaxValue<xiiUInt16>();
   xiiUInt16       m_uiToNode   = xiiMath::MaxValue<xiiUInt16>();
   xiiHashedString m_sConditionParameter;
-  float           m_fConditionThreshold = 0.5f;
+  float           m_fConditionThreshold = 0.5F;
   xiiTime         m_BlendDuration       = xiiTime::MakeFromMilliseconds(150.0);
 
   xiiResult Serialize(xiiStreamWriter& inout_stream) const;
@@ -102,11 +102,11 @@ struct XII_GRAPHICSCORE_DLL xiiAnimGraphResourceDescriptor
   void ComputeRuntimeHash();
 
   xiiUInt16 AddNode(const xiiAnimGraphNode& node);
-  xiiUInt16 AddClipNode(xiiStringView sName, const xiiAnimationClipResourceHandle& hClip, float fSpeed = 1.0f);
+  xiiUInt16 AddClipNode(xiiStringView sName, const xiiAnimationClipResourceHandle& hClip, float fSpeed = 1.0F);
   xiiUInt16 AddBlend1DNode(xiiStringView sName, xiiStringView sParameter, xiiArrayPtr<const xiiUInt16> inputs, xiiArrayPtr<const float> thresholds);
-  xiiUInt16 AddLayeredBlendNode(xiiStringView sName, xiiUInt16 uiBaseNode, xiiUInt16 uiLayerNode, xiiUInt16 uiRootJoint, xiiStringView sWeightParameter = {}, float fWeight = 1.0f);
+  xiiUInt16 AddLayeredBlendNode(xiiStringView sName, xiiUInt16 uiBaseNode, xiiUInt16 uiLayerNode, xiiUInt16 uiRootJoint, xiiStringView sWeightParameter = {}, float fWeight = 1.0F);
   xiiUInt16 AddStateMachineNode(xiiStringView sName, xiiArrayPtr<const xiiUInt16> states);
-  void      AddTransition(xiiUInt16 uiFromNode, xiiUInt16 uiToNode, xiiStringView sConditionParameter, float fThreshold = 0.5f, xiiTime blendDuration = xiiTime::MakeFromMilliseconds(150.0));
+  void      AddTransition(xiiUInt16 uiFromNode, xiiUInt16 uiToNode, xiiStringView sConditionParameter, float fThreshold = 0.5F, xiiTime blendDuration = xiiTime::MakeFromMilliseconds(150.0));
   void      SetOutputNode(xiiUInt16 uiNodeIndex);
 
   xiiResult Serialize(xiiStreamWriter& inout_stream) const;
@@ -126,15 +126,15 @@ class XII_GRAPHICSCORE_DLL xiiAnimGraphResource final : public xiiResource
 
 public:
   xiiAnimGraphResource();
-  ~xiiAnimGraphResource();
+  ~xiiAnimGraphResource() override;
 
   const xiiAnimGraphResourceDescriptor& GetDescriptor() const;
   xiiUInt32                             GetRuntimeHash() const;
 
 private:
-  virtual xiiResourceLoadDescription UnloadData(Unload whatToUnload) override;
-  virtual xiiResourceLoadDescription UpdateContent(xiiStreamReader* pStream) override;
-  virtual void                       UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage) override;
+  xiiResourceLoadDescription UnloadData(Unload whatToUnload) override;
+  xiiResourceLoadDescription UpdateContent(xiiStreamReader* pStream) override;
+  void                       UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage) override;
 
 private:
   xiiAnimGraphResourceDescriptor m_Descriptor;
@@ -153,7 +153,7 @@ public:
   const xiiAnimGraphResourceHandle& GetGraph() const;
 
   void  SetFloat(xiiStringView sName, float fValue);
-  float GetFloat(const xiiTempHashedString& sName, float fFallback = 0.0f) const;
+  float GetFloat(const xiiTempHashedString& sName, float fFallback = 0.0F) const;
 
   void SetBool(xiiStringView sName, bool bValue);
   bool GetBool(const xiiTempHashedString& sName, bool bFallback = false) const;

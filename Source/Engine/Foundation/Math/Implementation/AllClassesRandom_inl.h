@@ -7,7 +7,9 @@
 template <typename Type>
 XII_IMPLEMENT_IF_FLOAT_TYPE xiiVec3Template<Type> xiiVec3Template<Type>::MakeRandomPointInSphere(xiiRandom& inout_rng)
 {
-  double px, py, pz;
+  double px;
+  double py;
+  double pz;
   double len = 0.0;
 
   do

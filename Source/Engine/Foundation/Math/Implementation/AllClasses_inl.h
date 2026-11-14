@@ -198,7 +198,7 @@ Type xiiPlaneTemplate<Type>::GetMaximumDistanceTo(const xiiBoundingBoxTemplate<T
 template <typename Type>
 xiiMat3Template<Type> xiiMat3Template<Type>::MakeAxisRotation(const xiiVec3Template<Type>& vAxis, xiiAngleTemplate<Type> angle)
 {
-  XII_ASSERT_DEBUG(vAxis.IsNormalized(0.1f), "vAxis must be normalized.");
+  XII_ASSERT_DEBUG(vAxis.IsNormalized(0.1F), "vAxis must be normalized.");
 
   const Type cos         = xiiMath::Cos(angle);
   const Type sin         = xiiMath::Sin(angle);

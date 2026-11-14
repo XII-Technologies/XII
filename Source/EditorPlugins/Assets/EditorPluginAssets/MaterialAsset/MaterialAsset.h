@@ -135,9 +135,9 @@ public:
 
   static xiiUuid GetNeutralNormalMap();
 
-  virtual void GetSupportedMimeTypesForPasting(xiiHybridArray<xiiString, 4>& out_mimeTypes) const override;
-  virtual bool CopySelectedObjects(xiiAbstractObjectGraph& out_objectGraph, xiiStringBuilder& out_sMimeType) const override;
-  virtual bool Paste(const xiiArrayPtr<PasteInfo>& info, const xiiAbstractObjectGraph& objectGraph, bool bAllowPickedPosition, xiiStringView sMimeType) override;
+  void GetSupportedMimeTypesForPasting(xiiHybridArray<xiiString, 4>& out_mimeTypes) const override;
+  bool CopySelectedObjects(xiiAbstractObjectGraph& out_objectGraph, xiiStringBuilder& out_sMimeType) const override;
+  bool Paste(const xiiArrayPtr<PasteInfo>& info, const xiiAbstractObjectGraph& objectGraph, bool bAllowPickedPosition, xiiStringView sMimeType) override;
 
   xiiEvent<const xiiMaterialVisualShaderEvent&> m_VisualShaderEvents;
   xiiEnum<xiiMaterialAssetPreview>              m_PreviewModel;
@@ -145,18 +145,18 @@ public:
 protected:
   xiiUuid        GetSeedFromBaseMaterial(const xiiAbstractObjectGraph* pBaseGraph);
   static xiiUuid GetMaterialNodeGuid(const xiiAbstractObjectGraph& graph);
-  virtual void   UpdatePrefabObject(xiiDocumentObject* pObject, const xiiUuid& PrefabAsset, const xiiUuid& PrefabSeed, xiiStringView sBasePrefab) override;
-  virtual void   InitializeAfterLoading(bool bFirstTimeCreation) override;
+  void           UpdatePrefabObject(xiiDocumentObject* pObject, const xiiUuid& PrefabAsset, const xiiUuid& PrefabSeed, xiiStringView sBasePrefab) override;
+  void           InitializeAfterLoading(bool bFirstTimeCreation) override;
 
-  virtual xiiTransformStatus InternalTransformAsset(xiiStringView sTargetFile, xiiStringView sOutputTag, const xiiPlatformProfile* pAssetProfile, const xiiAssetFileHeader& AssetHeader, xiiBitflags<xiiTransformFlags> transformFlags) override;
-  virtual xiiTransformStatus InternalTransformAsset(xiiStreamWriter& stream, xiiStringView sOutputTag, const xiiPlatformProfile* pAssetProfile, const xiiAssetFileHeader& AssetHeader, xiiBitflags<xiiTransformFlags> transformFlags) override;
-  virtual xiiTransformStatus InternalCreateThumbnail(const ThumbnailInfo& ThumbnailInfo) override;
+  xiiTransformStatus InternalTransformAsset(xiiStringView sTargetFile, xiiStringView sOutputTag, const xiiPlatformProfile* pAssetProfile, const xiiAssetFileHeader& AssetHeader, xiiBitflags<xiiTransformFlags> transformFlags) override;
+  xiiTransformStatus InternalTransformAsset(xiiStreamWriter& stream, xiiStringView sOutputTag, const xiiPlatformProfile* pAssetProfile, const xiiAssetFileHeader& AssetHeader, xiiBitflags<xiiTransformFlags> transformFlags) override;
+  xiiTransformStatus InternalCreateThumbnail(const ThumbnailInfo& ThumbnailInfo) override;
 
-  virtual void InternalGetMetaDataHash(const xiiDocumentObject* pObject, xiiUInt64& inout_uiHash) const override;
-  virtual void AttachMetaDataBeforeSaving(xiiAbstractObjectGraph& graph) const override;
-  virtual void RestoreMetaDataAfterLoading(const xiiAbstractObjectGraph& graph, bool bUndoable) override;
+  void InternalGetMetaDataHash(const xiiDocumentObject* pObject, xiiUInt64& inout_uiHash) const override;
+  void AttachMetaDataBeforeSaving(xiiAbstractObjectGraph& graph) const override;
+  void RestoreMetaDataAfterLoading(const xiiAbstractObjectGraph& graph, bool bUndoable) override;
 
-  virtual void UpdateAssetDocumentInfo(xiiAssetDocumentInfo* pInfo) const override;
+  void UpdateAssetDocumentInfo(xiiAssetDocumentInfo* pInfo) const override;
 
   void InvalidateCachedShader();
   void EditorEventHandler(const xiiEditorAppEvent& e);

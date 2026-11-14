@@ -31,7 +31,7 @@ public:
   };
 
   explicit xiiQtNodeScene(QObject* pParent = nullptr);
-  ~xiiQtNodeScene();
+  ~xiiQtNodeScene() override;
 
   virtual void                  InitScene(const xiiDocumentNodeManager* pManager);
   const xiiDocumentNodeManager* GetDocumentNodeManager() const;
@@ -122,11 +122,11 @@ public:
   xiiBitflags<ConnectionDecorationFlags> GetConnectionDecorationFlags() const { return m_ConnectionDecorationFlags; }
 
 protected:
-  virtual void mouseMoveEvent(QGraphicsSceneMouseEvent* event) override;
-  virtual void mousePressEvent(QGraphicsSceneMouseEvent* event) override;
-  virtual void mouseReleaseEvent(QGraphicsSceneMouseEvent* event) override;
-  virtual void contextMenuEvent(QGraphicsSceneContextMenuEvent* contextMenuEvent) override;
-  virtual void keyPressEvent(QKeyEvent* event) override;
+  void mouseMoveEvent(QGraphicsSceneMouseEvent* event) override;
+  void mousePressEvent(QGraphicsSceneMouseEvent* event) override;
+  void mouseReleaseEvent(QGraphicsSceneMouseEvent* event) override;
+  void contextMenuEvent(QGraphicsSceneContextMenuEvent* contextMenuEvent) override;
+  void keyPressEvent(QKeyEvent* event) override;
 
 private:
   void Clear();

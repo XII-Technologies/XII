@@ -24,7 +24,7 @@ inline xiiTransformTemplate<Type> xiiTransformTemplate<Type>::MakeIdentity()
   xiiTransformTemplate<Type> res;
   res.m_vPosition.SetZero();
   res.m_qRotation = xiiQuatTemplate<Type>::MakeIdentity();
-  res.m_vScale.Set(1.0f);
+  res.m_vScale.Set(1.0F);
   return res;
 }
 
@@ -76,7 +76,7 @@ XII_ALWAYS_INLINE Type xiiTransformTemplate<Type>::GetMaxScale() const
 template <typename Type>
 XII_ALWAYS_INLINE bool xiiTransformTemplate<Type>::ContainsNegativeScale() const
 {
-  return (m_vScale.x * m_vScale.y * m_vScale.z) < 0.0f;
+  return (m_vScale.x * m_vScale.y * m_vScale.z) < 0.0F;
 }
 
 template <typename Type>
@@ -101,7 +101,7 @@ inline bool xiiTransformTemplate<Type>::IsEqual(const xiiTransformTemplate<Type>
 template <typename Type>
 inline bool xiiTransformTemplate<Type>::IsValid() const
 {
-  return m_vPosition.IsValid() && m_qRotation.IsValid(0.005f) && m_vScale.IsValid();
+  return m_vPosition.IsValid() && m_qRotation.IsValid(0.005F) && m_vScale.IsValid();
 }
 
 template <typename Type>

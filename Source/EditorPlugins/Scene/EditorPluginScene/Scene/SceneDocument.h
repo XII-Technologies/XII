@@ -34,7 +34,7 @@ public:
 
 public:
   xiiSceneDocument(xiiStringView sDocumentPath, DocumentType documentType);
-  ~xiiSceneDocument();
+  ~xiiSceneDocument() override;
 
   enum class ShowOrHide
   {
@@ -91,37 +91,37 @@ public:
   bool IsObjectEnginePrefab(const xiiUuid& object, xiiUuid* out_pPrefabAssetGuid = nullptr) const;
 
   /// Nested prefabs are not allowed
-  virtual bool ArePrefabsAllowed() const override { return !IsPrefab(); }
+  bool ArePrefabsAllowed() const override { return !IsPrefab(); }
 
 
-  virtual void GetSupportedMimeTypesForPasting(xiiHybridArray<xiiString, 4>& out_mimeTypes) const override;
-  virtual bool CopySelectedObjects(xiiAbstractObjectGraph& out_objectGraph, xiiStringBuilder& out_sMimeType) const override;
-  virtual bool Paste(const xiiArrayPtr<PasteInfo>& info, const xiiAbstractObjectGraph& objectGraph, bool bAllowPickedPosition, xiiStringView sMimeType) override;
+  void         GetSupportedMimeTypesForPasting(xiiHybridArray<xiiString, 4>& out_mimeTypes) const override;
+  bool         CopySelectedObjects(xiiAbstractObjectGraph& out_objectGraph, xiiStringBuilder& out_sMimeType) const override;
+  bool         Paste(const xiiArrayPtr<PasteInfo>& info, const xiiAbstractObjectGraph& objectGraph, bool bAllowPickedPosition, xiiStringView sMimeType) override;
   bool         DuplicateSelectedObjects(const xiiArrayPtr<PasteInfo>& info, const xiiAbstractObjectGraph& objectGraph, bool bSetSelected);
   bool         CopySelectedObjects(xiiAbstractObjectGraph& ref_graph, xiiMap<xiiUuid, xiiUuid>* out_pParents) const;
   bool         PasteAt(const xiiArrayPtr<PasteInfo>& info, const xiiAbstractObjectGraph& objectGraph, const xiiVec3& vPos);
   bool         PasteAtOrignalPosition(const xiiArrayPtr<PasteInfo>& info, const xiiAbstractObjectGraph& objectGraph);
 
-  virtual void UpdatePrefabs() override;
+  void UpdatePrefabs() override;
 
   /// Removes the link to the prefab template, making the editor prefab a simple object
-  virtual void UnlinkPrefabs(xiiArrayPtr<const xiiDocumentObject*> selection) override;
+  void UnlinkPrefabs(xiiArrayPtr<const xiiDocumentObject*> selection) override;
 
-  virtual xiiUuid ReplaceByPrefab(const xiiDocumentObject* pRootObject, xiiStringView sPrefabFile, const xiiUuid& prefabAsset, const xiiUuid& prefabSeed, bool bEnginePrefab) override;
+  xiiUuid ReplaceByPrefab(const xiiDocumentObject* pRootObject, xiiStringView sPrefabFile, const xiiUuid& prefabAsset, const xiiUuid& prefabSeed, bool bEnginePrefab) override;
 
   /// Reverts all selected editor prefabs to their original template state
-  virtual xiiUuid RevertPrefab(const xiiDocumentObject* pObject) override;
+  xiiUuid RevertPrefab(const xiiDocumentObject* pObject) override;
 
   /// Converts all objects in the selection that are engine prefabs to their respective editor prefab representation
   virtual void ConvertToEditorPrefab(xiiArrayPtr<const xiiDocumentObject*> selection);
   /// Converts all objects in the selection that are editor prefabs to their respective engine prefab representation
   virtual void ConvertToEnginePrefab(xiiArrayPtr<const xiiDocumentObject*> selection);
 
-  virtual xiiStatus CreatePrefabDocumentFromSelection(xiiStringView sFile, const xiiRTTI* pRootType, xiiDelegate<void(xiiAbstractObjectNode*)> adjustGraphNodeCB = {}, xiiDelegate<void(xiiDocumentObject*)> adjustNewNodesCB = {}, xiiDelegate<void(xiiAbstractObjectGraph& graph, xiiDynamicArray<xiiAbstractObjectNode*>& graphRootNodes)> finalizeGraphCB = {}) override;
+  xiiStatus CreatePrefabDocumentFromSelection(xiiStringView sFile, const xiiRTTI* pRootType, xiiDelegate<void(xiiAbstractObjectNode*)> adjustGraphNodeCB = {}, xiiDelegate<void(xiiDocumentObject*)> adjustNewNodesCB = {}, xiiDelegate<void(xiiAbstractObjectGraph& graph, xiiDynamicArray<xiiAbstractObjectNode*>& graphRootNodes)> finalizeGraphCB = {}) override;
 
   GameMode::Enum GetGameMode() const { return m_GameMode; }
 
-  virtual bool CanEngineProcessBeRestarted() const override;
+  bool CanEngineProcessBeRestarted() const override;
 
   void StartSimulateWorld();
   void TriggerGameModePlay(bool bUsePickedPositionAsStart);
@@ -135,7 +135,7 @@ public:
   xiiTransformStatus ExportScene(bool bCreateThumbnail);
   void               ExportSceneGeometry(xiiStringView sFile, bool bOnlySelection, int iExtractionMode /* xiiSceneGeometryExportMode */, const xiiMat3& mTransform);
 
-  virtual void HandleEngineMessage(const xiiEditorEngineDocumentMsg* pMsg) override;
+  void         HandleEngineMessage(const xiiEditorEngineDocumentMsg* pMsg) override;
   void         HandleGameModeMsg(const xiiGameModeMsgToEditor* pMsg);
   void         HandleObjectStateFromEngineMsg(const xiiPushObjectStateMsgToEditor* pMsg);
 
@@ -178,7 +178,7 @@ public:
   /// Creates an object with a xiiCameraComponent at the current editor camera position and sets the 'EditorShortcut' property to \a uiSlot.
   xiiResult CreateLevelCamera(xiiUInt8 uiSlot);
 
-  virtual xiiManipulatorSearchStrategy GetManipulatorSearchStrategy() const override
+  xiiManipulatorSearchStrategy GetManipulatorSearchStrategy() const override
   {
     return xiiManipulatorSearchStrategy::ChildrenOfSelectedObject;
   }
@@ -191,9 +191,9 @@ public:
 protected:
   void SetGameMode(GameMode::Enum mode);
 
-  virtual void InitializeAfterLoading(bool bFirstTimeCreation) override;
-  virtual void UpdatePrefabObject(xiiDocumentObject* pObject, const xiiUuid& PrefabAsset, const xiiUuid& PrefabSeed, xiiStringView sBasePrefab) override;
-  virtual void UpdateAssetDocumentInfo(xiiAssetDocumentInfo* pInfo) const override;
+  void InitializeAfterLoading(bool bFirstTimeCreation) override;
+  void UpdatePrefabObject(xiiDocumentObject* pObject, const xiiUuid& PrefabAsset, const xiiUuid& PrefabSeed, xiiStringView sBasePrefab) override;
+  void UpdateAssetDocumentInfo(xiiAssetDocumentInfo* pInfo) const override;
 
   template <typename Func>
   void ApplyRecursive(const xiiDocumentObject* pObject, Func f)
@@ -214,8 +214,8 @@ protected:
 
   xiiStatus RequestExportScene(xiiStringView sTargetFile, const xiiAssetFileHeader& header);
 
-  virtual xiiTransformStatus InternalTransformAsset(xiiStringView sTargetFile, xiiStringView sOutputTag, const xiiPlatformProfile* pAssetProfile, const xiiAssetFileHeader& AssetHeader, xiiBitflags<xiiTransformFlags> transformFlags) override;
-  virtual xiiTransformStatus InternalTransformAsset(xiiStreamWriter& stream, xiiStringView sOutputTag, const xiiPlatformProfile* pAssetProfile, const xiiAssetFileHeader& AssetHeader, xiiBitflags<xiiTransformFlags> transformFlags) override;
+  xiiTransformStatus         InternalTransformAsset(xiiStringView sTargetFile, xiiStringView sOutputTag, const xiiPlatformProfile* pAssetProfile, const xiiAssetFileHeader& AssetHeader, xiiBitflags<xiiTransformFlags> transformFlags) override;
+  xiiTransformStatus         InternalTransformAsset(xiiStreamWriter& stream, xiiStringView sOutputTag, const xiiPlatformProfile* pAssetProfile, const xiiAssetFileHeader& AssetHeader, xiiBitflags<xiiTransformFlags> transformFlags) override;
   xiiTransformStatus         InternalCreateThumbnail(const ThumbnailInfo& ThumbnailInfo) override;
 
   void SyncObjectHiddenState();
@@ -256,6 +256,6 @@ protected:
 
   //////////////////////////////////////////////////////////////////////////
   /// Communication with other document types
-  virtual void OnInterDocumentMessage(xiiReflectedClass* pMessage, xiiDocument* pSender) override;
+  void         OnInterDocumentMessage(xiiReflectedClass* pMessage, xiiDocument* pSender) override;
   void         GatherObjectsOfType(xiiDocumentObject* pRoot, xiiGatherObjectsOfTypeMsgInterDoc* pMsg) const;
 };

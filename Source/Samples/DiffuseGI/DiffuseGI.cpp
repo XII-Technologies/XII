@@ -82,7 +82,8 @@ namespace
       return {};
     }
     const auto& workload = library->GetAuthoring()->m_Descriptor;
-    xiiUuid     ray, trace;
+    xiiUuid     ray;
+    xiiUuid     trace;
     for (const auto& edge : workload.m_Connections)
     {
       if (edge.m_sInput == "Depth" && workload.m_Passes[edge.m_uiTarget].m_pType == xiiGetStaticRTTI<xiiRayTracedIrradiancePass>())
@@ -157,7 +158,8 @@ namespace
       return {};
     }
     const auto& source = scene->GetAuthoring()->m_Descriptor;
-    xiiUuid     lightPass, reconstructionPass;
+    xiiUuid     lightPass;
+    xiiUuid     reconstructionPass;
     for (const auto& pass : source.m_Passes)
     {
       if (pass.m_pType == xiiGetStaticRTTI<xiiClusteredLocalSurfaceLightingPass>())
@@ -208,13 +210,13 @@ namespace
       for (xiiUInt32 column = 0; column < 6; ++column)
       {
         xiiGameObjectDescription description;
-        description.m_LocalPosition = xiiVec3(-1.3f + float(row) * 0.78f, -1.65f + float(column) * 0.66f, 2.88f);
+        description.m_LocalPosition = xiiVec3(-1.3F + float(row) * 0.78F, -1.65F + float(column) * 0.66F, 2.88F);
         xiiGameObject* owner        = nullptr;
         world.CreateObject(description, owner);
         xiiPointLightComponent* light = nullptr;
         xiiPointLightComponent::CreateComponent(owner, light);
-        light->SetRange(5.5f);
-        light->SetIntensity(2.5f + float((row + 3U * column) % 4U) * 0.55f);
+        light->SetRange(5.5F);
+        light->SetIntensity(2.5F + float((row + 3U * column) % 4U) * 0.55F);
         light->SetLightColor(colors[(row + column) % XII_ARRAY_SIZE(colors)]);
       }
     }
@@ -225,7 +227,7 @@ namespace
     xiiMaterialResourceDescriptor material;
     material.m_BaseColor     = color;
     material.m_EmissiveColor = emission;
-    material.m_fRoughness    = 0.9f;
+    material.m_fRoughness    = 0.9F;
     material.m_FeatureFlags  = xiiMaterialFeatureFlags::ReceivesLighting | xiiMaterialFeatureFlags::CastsShadows;
     return xiiResourceManager::CreateResource<xiiMaterialResource>(sName, std::move(material));
   }
@@ -250,9 +252,9 @@ namespace
 
   void MakeRoom(xiiWorld& world, bool bSkyOnly, bool bLocalLights, bool bOffscreenEmitter, bool bOffscreenLight)
   {
-    const auto white    = Material("GI.White", xiiColor(0.75f, 0.75f, 0.75f), xiiColor::Black);
-    const auto red      = Material("GI.Red", xiiColor(0.7f, 0.06f, 0.04f), xiiColor::Black);
-    const auto green    = Material("GI.Green", xiiColor(0.06f, 0.62f, 0.14f), xiiColor::Black);
+    const auto white    = Material("GI.White", xiiColor(0.75F, 0.75F, 0.75F), xiiColor::Black);
+    const auto red      = Material("GI.Red", xiiColor(0.7F, 0.06F, 0.04F), xiiColor::Black);
+    const auto green    = Material("GI.Green", xiiColor(0.06F, 0.62F, 0.14F), xiiColor::Black);
     const auto emission = bOffscreenLight ? xiiColor::Black : (bOffscreenEmitter ? xiiColor(96, 60, 24) : (bSkyOnly || bLocalLights ? xiiColor::Black : xiiColor(12, 9, 6)));
     const auto emitter  = Material("GI.Emitter", xiiColor::White, emission);
     const auto box      = [&](xiiStringView sName, xiiVec3 vPosition, xiiVec3 vExtent, const xiiMaterialResourceHandle& material) {
@@ -260,11 +262,11 @@ namespace
       geometry.AddBox(vExtent, true);
       AddMesh(world, sName, vPosition, geometry, material);
     };
-    box("GI.Floor", {0.4f, 0, -0.1f}, {4.2f, 4.3f, 0.2f}, white);
-    box("GI.Ceiling", {0.4f, 0, 3.4f}, {4.2f, 4.3f, 0.2f}, white);
-    box("GI.Back", {2.5f, 0, 1.65f}, {0.2f, 4.3f, 3.3f}, white);
-    box("GI.Left", {0.4f, 2.15f, 1.65f}, {4.2f, 0.2f, 3.3f}, red);
-    box("GI.Right", {0.4f, -2.15f, 1.65f}, {4.2f, 0.2f, 3.3f}, green);
+    box("GI.Floor", {0.4F, 0, -0.1F}, {4.2F, 4.3F, 0.2F}, white);
+    box("GI.Ceiling", {0.4F, 0, 3.4F}, {4.2F, 4.3F, 0.2F}, white);
+    box("GI.Back", {2.5F, 0, 1.65F}, {0.2F, 4.3F, 3.3F}, white);
+    box("GI.Left", {0.4F, 2.15F, 1.65F}, {4.2F, 0.2F, 3.3F}, red);
+    box("GI.Right", {0.4F, -2.15F, 1.65F}, {4.2F, 0.2F, 3.3F}, green);
     if (bOffscreenEmitter)
     {
       if (opt_DenseEmitter.GetOptionValue(xiiCommandLineOption::LogMode::Never))
@@ -272,12 +274,12 @@ namespace
         xiiGeometry             panel;
         xiiGeometry::GeoOptions options;
         options.m_MainAxis = xiiBasisAxis::NegativeZ;
-        panel.AddRect({0.7f, 3.8f}, 48, 48, options);
-        AddMesh(world, "GI.DensePanel", {-2.65f, 0, 3.2f}, panel, emitter);
+        panel.AddRect({0.7F, 3.8F}, 48, 48, options);
+        AddMesh(world, "GI.DensePanel", {-2.65F, 0, 3.2F}, panel, emitter);
       }
       else
       {
-        box("GI.Panel", {-2.65f, 0, 3.26f}, {0.7f, 3.8f, 0.12f}, emitter);
+        box("GI.Panel", {-2.65F, 0, 3.26F}, {0.7F, 3.8F, 0.12F}, emitter);
       }
       if (bOffscreenLight)
       {
@@ -285,23 +287,23 @@ namespace
         const bool  castShadows = !opt_NoLightShadows.GetOptionValue(xiiCommandLineOption::LogMode::Never);
         const auto  cover       = blocked ? Material("GI.LightCover", xiiColor::Black, xiiColor::Black) : xiiMaterialResourceHandle();
         xiiGeometry covers;
-        for (float y : {-1.35f, -0.45f, 0.45f, 1.35f})
+        for (float y : {-1.35F, -0.45F, 0.45F, 1.35F})
         {
           xiiGameObjectDescription description;
-          description.m_LocalPosition = {-2.65f, y, 3.04f};
+          description.m_LocalPosition = {-2.65F, y, 3.04F};
           xiiGameObject* owner        = nullptr;
           world.CreateObject(description, owner);
           xiiPointLightComponent* light = nullptr;
           xiiPointLightComponent::CreateComponent(owner, light);
-          light->SetRange(0.90f);
-          light->SetIntensity(480.0f);
+          light->SetRange(0.90F);
+          light->SetIntensity(480.0F);
           light->SetLightColor(xiiColorGammaUB(255, 183, 100));
           light->SetCastShadows(castShadows);
           if (blocked)
           {
             xiiGeometry::GeoOptions options;
-            options.m_Transform.SetTranslationVector({-2.65f, y, 3.075f});
-            covers.AddBox({0.24f, 0.28f, 0.02f}, true, options);
+            options.m_Transform.SetTranslationVector({-2.65F, y, 3.075F});
+            covers.AddBox({0.24F, 0.28F, 0.02F}, true, options);
           }
         }
         if (blocked)
@@ -311,17 +313,17 @@ namespace
       }
       else if (opt_BlockEmitter.GetOptionValue(xiiCommandLineOption::LogMode::Never))
       {
-        box("GI.EmitterCover", {-2.65f, 0, 3.15f}, {0.94f, 4.1f, 0.1f}, white);
+        box("GI.EmitterCover", {-2.65F, 0, 3.15F}, {0.94F, 4.1F, 0.1F}, white);
       }
     }
     else
     {
-      box("GI.Panel", {0.55f, 0, 3.21f}, {1.2f, 1.25f, 0.12f}, emitter);
+      box("GI.Panel", {0.55F, 0, 3.21F}, {1.2F, 1.25F, 0.12F}, emitter);
     }
-    box("GI.Pedestal", {1.1f, 0.95f, 0.64f}, {0.95f, 0.95f, 1.28f}, white);
+    box("GI.Pedestal", {1.1F, 0.95F, 0.64F}, {0.95F, 0.95F, 1.28F}, white);
     xiiGeometry sphere;
-    sphere.AddStackedSphere(0.65f, 32, 16);
-    AddMesh(world, "GI.Sphere", {0.05f, -0.8f, 0.66f}, sphere, white);
+    sphere.AddStackedSphere(0.65F, 32, 16);
+    AddMesh(world, "GI.Sphere", {0.05F, -0.8F, 0.66F}, sphere, white);
 
     if (bLocalLights)
     {
@@ -340,7 +342,7 @@ namespace
     sky.m_TextureDescription.m_uiArraySizeOrDepth = 6;
     sky.m_TextureDescription.m_Format             = xiiGALResourceFormat::RGBA32Float;
     sky.m_TextureDescription.m_BindFlags          = xiiGALBindFlags::ShaderResource;
-    const xiiVec4                skyPixel         = bSkyOnly ? xiiVec4(0.3f, 0.65f, 1.25f, 1) : xiiVec4(0.02f, 0.04f, 0.08f, 1);
+    const xiiVec4                skyPixel         = bSkyOnly ? xiiVec4(0.3F, 0.65F, 1.25F, 1) : xiiVec4(0.02F, 0.04F, 0.08F, 1);
     xiiGALTextureSubResourceData faces[6];
     for (auto& face : faces)
     {
@@ -432,7 +434,8 @@ private:
     constexpr const char* defaultRenderer = "";
 #endif
     const auto    renderer = xiiCommandLineUtils::GetGlobalInstance()->GetStringOption("-renderer", 0, defaultRenderer);
-    xiiStringView model, compiler;
+    xiiStringView model;
+    xiiStringView compiler;
     xiiGALDeviceFactory::GetShaderModelAndCompiler(renderer, model, compiler);
     if (model.IsEmpty() || compiler.IsEmpty())
     {
@@ -487,15 +490,16 @@ private:
     world.SetWorldSimulationEnabled(false);
     MakeRoom(world, opt_SkyOnly.GetOptionValue(xiiCommandLineOption::LogMode::Never), localLights, offscreenEmitter, offscreenLight);
     xiiCamera camera;
-    camera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovY, 48, 0.1f, 40);
-    camera.LookAt({-5.5f, 0, 1.65f}, {1.6f, 0, 1.6f}, {0, 0, 1});
+    camera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovY, 48, 0.1F, 40);
+    camera.LookAt({-5.5F, 0, 1.65F}, {1.6F, 0, 1.6F}, {0, 0, 1});
     xiiView* view = nullptr;
     world.GetOrCreateModule<xiiRenderWorldModule>()->CreateView("Diffuse GI capture", view);
     view->SetCamera(&camera);
     xiiDisplayOutputSettings display = view->GetDisplayOutputSettings();
     display.m_Exposure.m_Mode        = xiiExposureMode::Manual;
     XII_SUCCEED_OR_RETURN(view->SetDisplayOutputSettings(display));
-    constexpr xiiUInt32 width = 640, height = 400;
+    constexpr xiiUInt32 width  = 640;
+    constexpr xiiUInt32 height = 400;
     view->SetViewport({0, 0, float(width), float(height)});
     const auto render = [&](const xiiRenderPipelineResourceHandle& resource, xiiViewRenderMode::Enum mode, xiiStringView sFilename) -> xiiResult {
       xiiGALTextureCreationDescription targetDescription;

@@ -22,8 +22,8 @@ struct XII_GRAPHICSCORE_DLL xiiIESProfileResourceDescriptor
   static constexpr xiiUInt32 s_uiHorizontalSampleCount = 32U;
   static constexpr xiiUInt32 s_uiSampleCount           = s_uiVerticalSampleCount * s_uiHorizontalSampleCount;
 
-  float                  m_fMaximumCandela = 0.0f;
-  float                  m_fReportedLumens = 0.0f;
+  float                  m_fMaximumCandela = 0.0F;
+  float                  m_fReportedLumens = 0.0F;
   xiiDynamicArray<float> m_NormalizedCandela;
 
   [[nodiscard]] bool IsValid() const;
@@ -55,9 +55,9 @@ public:
   [[nodiscard]] const xiiIESProfileResourceDescriptor& GetDescriptor() const { return m_Descriptor; }
 
 protected:
-  virtual xiiResourceLoadDescription UnloadData(Unload whatToUnload) override;
-  virtual xiiResourceLoadDescription UpdateContent(xiiStreamReader* pStream) override;
-  virtual void                       UpdateMemoryUsage(MemoryUsage& out_memoryUsage) override;
+  xiiResourceLoadDescription UnloadData(Unload whatToUnload) override;
+  xiiResourceLoadDescription UpdateContent(xiiStreamReader* pStream) override;
+  void                       UpdateMemoryUsage(MemoryUsage& out_memoryUsage) override;
 
 private:
   xiiIESProfileResourceDescriptor m_Descriptor;

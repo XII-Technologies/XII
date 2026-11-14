@@ -198,7 +198,7 @@ public:
     m_sSearchDir = "";
   }
 
-  virtual void AfterCoreSystemsStartup() override
+  void AfterCoreSystemsStartup() override
   {
     auto pCmd = xiiCommandLineUtils::GetGlobalInstance();
 
@@ -241,7 +241,7 @@ public:
     xiiGlobalLog::AddLogWriter(xiiLoggingEvent::Handler(&xiiLogWriter::HTML::LogMessageHandler, &g_HtmlLog));
   }
 
-  virtual void BeforeCoreSystemsShutdown() override
+  void BeforeCoreSystemsShutdown() override
   {
     xiiPlugin::UnloadAllPlugins();
 
@@ -249,7 +249,7 @@ public:
     g_HtmlLog.EndLog();
   }
 
-  virtual xiiApplication::Execution Run() override
+  xiiApplication::Execution Run() override
   {
 #if XII_ENABLED(XII_SUPPORTS_FILE_ITERATORS) || defined(XII_DOCS)
 
@@ -263,7 +263,8 @@ public:
 
     if (it.IsValid())
     {
-      xiiStringBuilder b, sExt;
+      xiiStringBuilder b;
+      xiiStringBuilder sExt;
 
       // While there are additional files / folders
       for (; it.IsValid(); it.Next())

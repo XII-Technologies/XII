@@ -43,7 +43,7 @@ public:
 public:
   xiiQtDocumentWindow(xiiDocument* pDocument);
   xiiQtDocumentWindow(xiiStringView sUniqueName);
-  virtual ~xiiQtDocumentWindow();
+  ~xiiQtDocumentWindow() override;
 
   ads::CDockManager* m_pDockManager = nullptr;
 
@@ -93,10 +93,10 @@ public:
   static bool s_bAllowRestoreWindowLayout;
 
 protected:
-  virtual void showEvent(QShowEvent* event) override;
-  virtual void hideEvent(QHideEvent* event) override;
-  virtual bool event(QEvent* event) override;
-  virtual bool eventFilter(QObject* obj, QEvent* e) override;
+  void showEvent(QShowEvent* event) override;
+  void hideEvent(QHideEvent* event) override;
+  bool event(QEvent* event) override;
+  bool eventFilter(QObject* obj, QEvent* e) override;
 
   void FinishWindowCreation();
 

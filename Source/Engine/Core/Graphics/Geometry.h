@@ -93,22 +93,22 @@ public:
   void Clear();
 
   /// Adds a vertex, returns the index to the added vertex.
-  xiiUInt32 AddVertex(const xiiVec3& vPos, const xiiVec3& vNormal, const xiiVec2& vTexCoord = xiiVec2(0.0f), const xiiColor& color = xiiColor::White, const xiiVec4U16& vBoneIndices = xiiVec4U16::MakeZero(), const xiiColorLinearUB& boneWeights = xiiColorLinearUB(255, 0, 0, 0));
+  xiiUInt32 AddVertex(const xiiVec3& vPos, const xiiVec3& vNormal, const xiiVec2& vTexCoord = xiiVec2(0.0F), const xiiColor& color = xiiColor::White, const xiiVec4U16& vBoneIndices = xiiVec4U16::MakeZero(), const xiiColorLinearUB& boneWeights = xiiColorLinearUB(255, 0, 0, 0));
 
   /// Overload that transforms position and normal with the given matrix.
-  xiiUInt32 AddVertex(const xiiMat4& mTransform, const xiiVec3& vPos, const xiiVec3& vNormal, const xiiVec2& vTexCoord = xiiVec2(0.0f), const xiiColor& color = xiiColor::White, const xiiVec4U16& vBoneIndices = xiiVec4U16::MakeZero(), const xiiColorLinearUB& boneWeights = xiiColorLinearUB(255, 0, 0, 0))
+  xiiUInt32 AddVertex(const xiiMat4& mTransform, const xiiVec3& vPos, const xiiVec3& vNormal, const xiiVec2& vTexCoord = xiiVec2(0.0F), const xiiColor& color = xiiColor::White, const xiiVec4U16& vBoneIndices = xiiVec4U16::MakeZero(), const xiiColorLinearUB& boneWeights = xiiColorLinearUB(255, 0, 0, 0))
   {
     return AddVertex(mTransform.TransformPosition(vPos), mTransform.TransformDirection(vNormal).GetNormalized(), vTexCoord, color, vBoneIndices, boneWeights);
   }
 
   /// Overload that uses the options for color and to transform position and normal and uses a single bone.
-  xiiUInt32 AddVertex(const GeoOptions& options, const xiiVec3& vPos, const xiiVec3& vNormal, const xiiVec2& vTexCoord = xiiVec2(0.0f))
+  xiiUInt32 AddVertex(const GeoOptions& options, const xiiVec3& vPos, const xiiVec3& vNormal, const xiiVec2& vTexCoord = xiiVec2(0.0F))
   {
     return AddVertex(options.m_Transform, vPos, vNormal, vTexCoord, options.m_Color, xiiVec4U16(options.m_uiBoneIndex, 0, 0, 0), xiiColorLinearUB(255, 0, 0, 0));
   }
 
   /// Overload that uses the options for color and a single bone and transforms position and normal by a separately provided matrix.
-  xiiUInt32 AddVertex(const xiiMat4& mTransform, const GeoOptions& options, const xiiVec3& vPos, const xiiVec3& vNormal, const xiiVec2& vTexCoord = xiiVec2(0.0f))
+  xiiUInt32 AddVertex(const xiiMat4& mTransform, const GeoOptions& options, const xiiVec3& vPos, const xiiVec3& vNormal, const xiiVec2& vTexCoord = xiiVec2(0.0F))
   {
     return AddVertex(mTransform, vPos, vNormal, vTexCoord, options.m_Color, xiiVec4U16(options.m_uiBoneIndex, 0, 0, 0), xiiColorLinearUB(255, 0, 0, 0));
   }
@@ -144,7 +144,7 @@ public:
   /// Checks if the tangents are approximately orthogonal to the vertex normal and
   /// of unit length. If this is not the case the respective tangent will be zeroed.
   /// The caller can provide a comparison epsilon.
-  void ValidateTangents(float fEpsilon = 0.01f);
+  void ValidateTangents(float fEpsilon = 0.01F);
 
   /// Returns the number of triangles that the polygons are made up of.
   xiiUInt32 CalculateTriangleCount() const;
@@ -211,7 +211,7 @@ public:
   /// uiSegments is the detail around the up axis, must be at least 3.
   /// The top or bottom caps can be removed using \a bCapTop and \a bCapBottom.
   /// When \a fraction is set to any value below 360 degree, a pie / PacMan-shaped cylinder is created.
-  void AddCylinder(float fRadiusTop, float fRadiusBottom, float fPositiveLength, float fNegativeLength, bool bCapTop, bool bCapBottom, xiiUInt16 uiSegments, const GeoOptions& options = GeoOptions(), xiiAngle fraction = xiiAngle::MakeFromDegree(360.0f));
+  void AddCylinder(float fRadiusTop, float fRadiusBottom, float fPositiveLength, float fNegativeLength, bool bCapTop, bool bCapBottom, xiiUInt16 uiSegments, const GeoOptions& options = GeoOptions(), xiiAngle fraction = xiiAngle::MakeFromDegree(360.0F));
 
   /// Same as AddCylinder(), but always adds caps and does not generate separate vertices for the caps.
   ///

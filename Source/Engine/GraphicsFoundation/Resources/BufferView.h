@@ -37,7 +37,7 @@ protected:
 
   xiiGALBufferView(xiiSharedPtr<xiiGALDevice> pDevice, xiiSharedPtr<xiiGALBuffer> pBuffer, const xiiGALBufferViewCreationDescription& creationDescription);
 
-  virtual ~xiiGALBufferView();
+  ~xiiGALBufferView() override;
 
   virtual xiiResult InitPlatform() = 0;
 

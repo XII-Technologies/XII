@@ -25,7 +25,7 @@ XII_PLUGIN_ON_UNLOADED()
 }
 
 xiiCVarInt    CVar_TestInt("test2_Int", 22, xiiCVarFlags::None, "Desc: test2_Int");
-xiiCVarFloat  CVar_TestFloat("test2_Float", 2.2f, xiiCVarFlags::Default, "Desc: test2_Float");
+xiiCVarFloat  CVar_TestFloat("test2_Float", 2.2F, xiiCVarFlags::Default, "Desc: test2_Float");
 xiiCVarDouble CVar_TestDouble("test2_Double", 22.22, xiiCVarFlags::Default, "Desc: test2_Double");
 xiiCVarBool   CVar_TestBool("test2_Bool", true, xiiCVarFlags::Save, "Desc: test2_Bool");
 xiiCVarString CVar_TestString("test2_String", "test2", xiiCVarFlags::RequiresRestart, "Desc: test2_String");

@@ -37,7 +37,7 @@ protected:
   xiiResource(DoUpdate resourceUpdateThread, xiiUInt8 uiQualityLevelsLoadable);
 
   /// virtual destructor.
-  virtual ~xiiResource();
+  ~xiiResource() override;
 
 public:
   struct MemoryUsage

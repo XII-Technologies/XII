@@ -109,28 +109,28 @@ public:
   bool TryInsert(ValueType&& value, IndexType uiIndexLimit, IdType& out_id);
 
   /// Removes the entry with the given id. Returns if an entry was removed and optionally writes out the old value to out_oldValue.
-  bool Remove(const IdType id, ValueType* out_pOldValue = nullptr); // [tested]
+  bool Remove(IdType id, ValueType* out_pOldValue = nullptr); // [tested]
 
   /// Returns if an entry with the given id was found and if found writes out the corresponding value to out_value.
-  bool TryGetValue(const IdType id, ValueType& out_value) const; // [tested]
+  bool TryGetValue(IdType id, ValueType& out_value) const; // [tested]
 
   /// Returns if an entry with the given id was found and if found writes out the pointer to the corresponding value to out_pValue.
-  bool TryGetValue(const IdType id, ValueType*& out_pValue) const; // [tested]
+  bool TryGetValue(IdType id, ValueType*& out_pValue) const; // [tested]
 
   /// Returns the value to the given id. Does bounds checks in debug builds.
-  const ValueType& operator[](const IdType id) const; // [tested]
+  const ValueType& operator[](IdType id) const; // [tested]
 
   /// Returns the value to the given id. Does bounds checks in debug builds.
-  ValueType& operator[](const IdType id); // [tested]
+  ValueType& operator[](IdType id); // [tested]
 
   /// Returns the value at the given index. Does bounds checks in debug builds but does not check for stale access.
-  const ValueType& GetValueUnchecked(const IndexType index) const;
+  const ValueType& GetValueUnchecked(IndexType index) const;
 
   /// Returns the value at the given index. Does bounds checks in debug builds but does not check for stale access.
-  ValueType& GetValueUnchecked(const IndexType index);
+  ValueType& GetValueUnchecked(IndexType index);
 
   /// Returns if the table contains an entry corresponding to the given id.
-  bool Contains(const IdType id) const; // [tested]
+  bool Contains(IdType id) const; // [tested]
 
   /// Returns an Iterator to the very first element.
   Iterator GetIterator(); // [tested]

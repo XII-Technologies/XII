@@ -199,10 +199,10 @@ private:
   {
   public:
     InstantiationContext(xiiWorldReader& ref_worldReader, xiiWorld* pWorld, bool bUseTransform, const xiiTransform& rootTransform, const xiiPrefabInstantiationOptions& options, xiiAllocator* pAllocator);
-    ~InstantiationContext();
+    ~InstantiationContext() override;
 
-    virtual StepResult Step() override;
-    virtual void       Cancel() override;
+    StepResult Step() override;
+    void       Cancel() override;
 
     template <bool UseTransform>
     bool CreateGameObjects(const xiiDynamicArray<GameObjectToCreate>& objects, xiiGameObjectHandle hParent, xiiDynamicArray<xiiGameObject*>* out_pCreatedObjects, xiiTime endTime);

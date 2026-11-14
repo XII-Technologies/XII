@@ -16,7 +16,7 @@ class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiEditorEngineSyncObject : public xi
 
 public:
   xiiEditorEngineSyncObject();
-  ~xiiEditorEngineSyncObject();
+  ~xiiEditorEngineSyncObject() override;
 
   void Configure(xiiUuid ownerGuid, xiiDelegate<void(xiiEditorEngineSyncObject*)> onDestruction);
 

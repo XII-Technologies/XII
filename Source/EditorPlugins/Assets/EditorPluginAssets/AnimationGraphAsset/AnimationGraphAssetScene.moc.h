@@ -14,5 +14,5 @@ class xiiQtAnimationGraphAssetScene : public xiiQtNodeScene
 
 public:
   xiiQtAnimationGraphAssetScene(QObject* pParent = nullptr);
-  ~xiiQtAnimationGraphAssetScene();
+  ~xiiQtAnimationGraphAssetScene() override;
 };

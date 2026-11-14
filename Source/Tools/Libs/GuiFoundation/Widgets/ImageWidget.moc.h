@@ -26,11 +26,11 @@ class XII_GUIFOUNDATION_DLL xiiQtImageWidget : public QWidget, public Ui_ImageWi
 
 public:
   xiiQtImageWidget(QWidget* pParent, bool bShowButtons = true);
-  ~xiiQtImageWidget();
+  ~xiiQtImageWidget() override;
 
   void SetImage(QPixmap pixmap);
 
-  void SetImageSize(float fScale = 1.0f);
+  void SetImageSize(float fScale = 1.0F);
   void ScaleImage(float fFactor);
 
 private Q_SLOTS:

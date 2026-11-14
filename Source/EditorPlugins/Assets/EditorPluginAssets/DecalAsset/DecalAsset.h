@@ -59,9 +59,9 @@ public:
   xiiDecalAssetDocument(xiiStringView sDocumentPath);
 
 protected:
-  virtual xiiTransformStatus InternalTransformAsset(xiiStreamWriter& stream, xiiStringView sOutputTag, const xiiPlatformProfile* pAssetProfile, const xiiAssetFileHeader& AssetHeader, xiiBitflags<xiiTransformFlags> transformFlags) override;
+  xiiTransformStatus InternalTransformAsset(xiiStreamWriter& stream, xiiStringView sOutputTag, const xiiPlatformProfile* pAssetProfile, const xiiAssetFileHeader& AssetHeader, xiiBitflags<xiiTransformFlags> transformFlags) override;
 
-  virtual xiiTransformStatus InternalCreateThumbnail(const ThumbnailInfo& ThumbnailInfo) override;
+  xiiTransformStatus InternalCreateThumbnail(const ThumbnailInfo& ThumbnailInfo) override;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -72,10 +72,10 @@ class xiiDecalAssetDocumentGenerator : public xiiAssetDocumentGenerator
 
 public:
   xiiDecalAssetDocumentGenerator();
-  ~xiiDecalAssetDocumentGenerator();
+  ~xiiDecalAssetDocumentGenerator() override;
 
-  virtual void          GetImportModes(xiiStringView sAbsInputFile, xiiDynamicArray<xiiAssetDocumentGenerator::ImportMode>& out_modes) const override;
-  virtual xiiStringView GetDocumentExtension() const override { return "xiiDecalAsset"; }
-  virtual xiiStringView GetGeneratorGroup() const override { return "Images"; }
-  virtual xiiStatus     Generate(xiiStringView sInputFileAbs, xiiStringView sMode, xiiDynamicArray<xiiDocument*>& out_generatedDocuments) override;
+  void          GetImportModes(xiiStringView sAbsInputFile, xiiDynamicArray<xiiAssetDocumentGenerator::ImportMode>& out_modes) const override;
+  xiiStringView GetDocumentExtension() const override { return "xiiDecalAsset"; }
+  xiiStringView GetGeneratorGroup() const override { return "Images"; }
+  xiiStatus     Generate(xiiStringView sInputFileAbs, xiiStringView sMode, xiiDynamicArray<xiiDocument*>& out_generatedDocuments) override;
 };

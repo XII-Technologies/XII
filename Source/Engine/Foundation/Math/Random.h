@@ -103,7 +103,7 @@ public:
   /// with more emphasis around zero, whereas values above 1 result in a flatter curve with more equally distributed results.
   ///
   /// For more details, look here: https://en.wikipedia.org/wiki/Normal_distribution
-  void Initialize(xiiUInt64 uiRandomSeed, xiiUInt32 uiMaxValue, float fVariance = 1.0f); // [tested]
+  void Initialize(xiiUInt64 uiRandomSeed, xiiUInt32 uiMaxValue, float fVariance = 1.0F); // [tested]
 
   /// Returns a value in range [0; uiMaxValue - 1] with a Gaussian distribution. Ie. 0 is much more probable than uiMaxValue.
   xiiUInt32 UnsignedValue(); // [tested]

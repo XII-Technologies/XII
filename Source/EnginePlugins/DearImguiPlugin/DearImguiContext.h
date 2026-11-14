@@ -22,7 +22,7 @@ class xiiImguiContext;
 struct xiiImguiFrameDescription
 {
   xiiVec2 m_vDisplaySize      = xiiVec2::MakeZero(); ///< Logical pixels, independent of the rendering target's viewport offset.
-  xiiVec2 m_vFramebufferScale = xiiVec2(1.0f);
+  xiiVec2 m_vFramebufferScale = xiiVec2(1.0F);
   xiiTime m_DeltaTime         = xiiTime::MakeFromSeconds(1.0 / 60.0);
 };
 

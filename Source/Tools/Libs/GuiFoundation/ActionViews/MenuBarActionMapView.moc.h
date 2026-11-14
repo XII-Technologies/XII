@@ -20,7 +20,7 @@ class XII_GUIFOUNDATION_DLL xiiQtMenuBarActionMapView : public QMenuBar
 
 public:
   explicit xiiQtMenuBarActionMapView(QWidget* pParent);
-  ~xiiQtMenuBarActionMapView();
+  ~xiiQtMenuBarActionMapView() override;
 
   void SetActionContext(const xiiActionContext& context);
 

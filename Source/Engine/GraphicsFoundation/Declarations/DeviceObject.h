@@ -22,7 +22,7 @@ protected:
   friend class xiiMemoryUtils;
 
   xiiGALDeviceObject(xiiSharedPtr<xiiGALDevice> pDevice);
-  virtual ~xiiGALDeviceObject();
+  ~xiiGALDeviceObject() override;
 
 protected:
   xiiSharedPtr<xiiGALDevice> m_pDevice;

@@ -84,7 +84,9 @@ xiiQtImageDataAssetDocumentWindow::xiiQtImageDataAssetDocumentWindow(xiiImageDat
 void xiiQtImageDataAssetDocumentWindow::ImageDataAssetEventHandler(const xiiImageDataAssetEvent& e)
 {
   if (e.m_Type != xiiImageDataAssetEvent::Type::Transformed)
+  {
     return;
+  }
 
   UpdatePreview();
 }
@@ -95,11 +97,15 @@ void xiiQtImageDataAssetDocumentWindow::UpdatePreview()
 
   xiiStringBuilder path = pImageDoc->GetProperties()->m_sInputFile;
   if (!xiiQtEditorApp::GetSingleton()->MakeDataDirectoryRelativePathAbsolute(path))
+  {
     return;
+  }
 
   QPixmap pixmap;
   if (!pixmap.load(path.GetData(), nullptr, Qt::AutoColor))
+  {
     return;
+  }
 
   m_pImageWidget->SetImage(pixmap);
 }

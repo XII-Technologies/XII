@@ -267,8 +267,8 @@ class XII_FOUNDATION_DLL xiiGroupAttribute : public xiiPropertyAttribute
 
 public:
   xiiGroupAttribute();
-  xiiGroupAttribute(xiiStringView sGroup, float fOrder = -1.0f);
-  xiiGroupAttribute(xiiStringView sGroup, xiiStringView sIconName, float fOrder = -1.0f);
+  xiiGroupAttribute(xiiStringView sGroup, float fOrder = -1.0F);
+  xiiGroupAttribute(xiiStringView sGroup, xiiStringView sIconName, float fOrder = -1.0F);
 
   xiiStringView GetGroup() const { return m_sGroup; }
   xiiStringView GetIconName() const { return m_sIconName; }
@@ -277,7 +277,7 @@ public:
 private:
   xiiUntrackedString m_sGroup;
   xiiUntrackedString m_sIconName;
-  float              m_fOrder = -1.0f;
+  float              m_fOrder = -1.0F;
 };
 
 /// Derive from this class if you want to define an attribute that replaces the property type widget.
@@ -673,7 +673,7 @@ public:
   xiiBoxManipulatorAttribute(xiiStringView sSizeProperty, float fSizeScale, bool bRecenterParent, xiiStringView sOffsetProperty = {}, xiiStringView sRotationProperty = {});
 
   bool  m_bRecenterParent = false;
-  float m_fSizeScale      = 1.0f;
+  float m_fSizeScale      = 1.0F;
 
   const xiiUntrackedString& GetSizeProperty() const { return m_sProperty1; }
   const xiiUntrackedString& GetOffsetProperty() const { return m_sProperty2; }
@@ -726,12 +726,12 @@ class XII_FOUNDATION_DLL xiiConeAngleManipulatorAttribute : public xiiManipulato
 
 public:
   xiiConeAngleManipulatorAttribute();
-  xiiConeAngleManipulatorAttribute(xiiStringView sAngleProperty, float fScale = 1.0f, xiiStringView sRadiusProperty = {});
+  xiiConeAngleManipulatorAttribute(xiiStringView sAngleProperty, float fScale = 1.0F, xiiStringView sRadiusProperty = {});
 
   const xiiUntrackedString& GetAngleProperty() const { return m_sProperty1; }
   const xiiUntrackedString& GetRadiusProperty() const { return m_sProperty2; }
 
-  float m_fScale = 1.0f;
+  float m_fScale = 1.0F;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -821,14 +821,14 @@ class XII_FOUNDATION_DLL xiiBoxVisualizerAttribute : public xiiVisualizerAttribu
 
 public:
   xiiBoxVisualizerAttribute();
-  xiiBoxVisualizerAttribute(xiiStringView sSizeProperty, float fSizeScale = 1.0f, const xiiColor& fixedColor = xiiColorScheme::LightUI(xiiColorScheme::Grape), xiiStringView sColorProperty = {}, xiiBitflags<xiiVisualizerAnchor> anchor = xiiVisualizerAnchor::Center, xiiVec3 vOffsetOrScale = xiiVec3::MakeZero(), xiiStringView sOffsetProperty = {}, xiiStringView sRotationProperty = {});
+  xiiBoxVisualizerAttribute(xiiStringView sSizeProperty, float fSizeScale = 1.0F, const xiiColor& fixedColor = xiiColorScheme::LightUI(xiiColorScheme::Grape), xiiStringView sColorProperty = {}, xiiBitflags<xiiVisualizerAnchor> anchor = xiiVisualizerAnchor::Center, xiiVec3 vOffsetOrScale = xiiVec3::MakeZero(), xiiStringView sOffsetProperty = {}, xiiStringView sRotationProperty = {});
 
   const xiiUntrackedString& GetSizeProperty() const { return m_sProperty1; }
   const xiiUntrackedString& GetColorProperty() const { return m_sProperty2; }
   const xiiUntrackedString& GetOffsetProperty() const { return m_sProperty3; }
   const xiiUntrackedString& GetRotationProperty() const { return m_sProperty4; }
 
-  float    m_fSizeScale = 1.0f;
+  float    m_fSizeScale = 1.0F;
   xiiColor m_Color;
   xiiVec3  m_vOffsetOrScale;
 };
@@ -1065,7 +1065,7 @@ class XII_FOUNDATION_DLL xiiFunctionArgumentAttributes : public xiiPropertyAttri
 
   xiiFunctionArgumentAttributes() = default;
   xiiFunctionArgumentAttributes(xiiUInt32 uiArgIndex, const xiiPropertyAttribute* pAttribute1, const xiiPropertyAttribute* pAttribute2 = nullptr, const xiiPropertyAttribute* pAttribute3 = nullptr, const xiiPropertyAttribute* pAttribute4 = nullptr);
-  ~xiiFunctionArgumentAttributes();
+  ~xiiFunctionArgumentAttributes() override;
 
   xiiUInt32                                      GetArgumentIndex() const { return m_uiArgIndex; }
   xiiArrayPtr<const xiiPropertyAttribute* const> GetArgumentAttributes() const { return m_ArgAttributes; }

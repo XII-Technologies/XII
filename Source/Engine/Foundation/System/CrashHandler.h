@@ -76,7 +76,7 @@ public:
   /// Sets the dump-file path to "{xiiOSFile::GetApplicationDirectory()}/{szAppName}_{cur-date}.tmp"
   void SetDumpFilePath(xiiStringView sAppName, xiiBitflags<PathFlags> flags = PathFlags::Default);
 
-  virtual void HandleCrash(void* pOsSpecificData) override;
+  void HandleCrash(void* pOsSpecificData) override;
 
 protected:
   virtual bool WriteOwnProcessMiniDump(void* pOsSpecificData);

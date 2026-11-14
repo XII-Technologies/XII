@@ -17,10 +17,10 @@ public:
   {
   }
 
-  virtual const xiiRTTI*                GetReturnType() const override { return xiiGetStaticRTTI<typename xiiCleanType<R>::RttiType>(); }
-  virtual xiiBitflags<xiiPropertyFlags> GetReturnFlags() const override { return xiiPropertyFlags::GetParameterFlags<R>(); }
+  const xiiRTTI*                GetReturnType() const override { return xiiGetStaticRTTI<typename xiiCleanType<R>::RttiType>(); }
+  xiiBitflags<xiiPropertyFlags> GetReturnFlags() const override { return xiiPropertyFlags::GetParameterFlags<R>(); }
 
-  virtual xiiUInt32 GetArgumentCount() const override { return sizeof...(Args); }
+  xiiUInt32 GetArgumentCount() const override { return sizeof...(Args); }
 
   template <std::size_t... I>
   const xiiRTTI* GetParameterTypeImpl(xiiUInt32 uiParamIndex, std::index_sequence<I...>) const
@@ -30,7 +30,7 @@ public:
     return params[uiParamIndex];
   }
 
-  virtual const xiiRTTI* GetArgumentType(xiiUInt32 uiParamIndex) const override
+  const xiiRTTI* GetArgumentType(xiiUInt32 uiParamIndex) const override
   {
     return GetParameterTypeImpl(uiParamIndex, std::make_index_sequence<sizeof...(Args)>{});
   }
@@ -43,7 +43,7 @@ public:
     return params[uiParamIndex];
   }
 
-  virtual xiiBitflags<xiiPropertyFlags> GetArgumentFlags(xiiUInt32 uiParamIndex) const override
+  xiiBitflags<xiiPropertyFlags> GetArgumentFlags(xiiUInt32 uiParamIndex) const override
   {
     return GetParameterFlagsImpl(uiParamIndex, std::make_index_sequence<sizeof...(Args)>{});
   }
@@ -66,7 +66,7 @@ public:
     m_Function = func;
   }
 
-  virtual xiiFunctionType::Enum GetFunctionType() const override
+  xiiFunctionType::Enum GetFunctionType() const override
   {
     return xiiFunctionType::Member;
   }
@@ -87,7 +87,7 @@ public:
     }
   }
 
-  virtual void Execute(void* pInstance, xiiArrayPtr<xiiVariant> arguments, xiiVariant& out_returnValue) const override
+  void Execute(void* pInstance, xiiArrayPtr<xiiVariant> arguments, xiiVariant& out_returnValue) const override
   {
     ExecuteImpl(pInstance, out_returnValue, arguments, std::make_index_sequence<sizeof...(Args)>{});
   }
@@ -109,7 +109,7 @@ public:
     this->AddFlags(xiiPropertyFlags::Const);
   }
 
-  virtual xiiFunctionType::Enum GetFunctionType() const override
+  xiiFunctionType::Enum GetFunctionType() const override
   {
     return xiiFunctionType::Member;
   }
@@ -130,7 +130,7 @@ public:
     }
   }
 
-  virtual void Execute(void* pInstance, xiiArrayPtr<xiiVariant> arguments, xiiVariant& out_returnValue) const override
+  void Execute(void* pInstance, xiiArrayPtr<xiiVariant> arguments, xiiVariant& out_returnValue) const override
   {
     ExecuteImpl(pInstance, out_returnValue, arguments, std::make_index_sequence<sizeof...(Args)>{});
   }
@@ -151,7 +151,7 @@ public:
     m_Function = func;
   }
 
-  virtual xiiFunctionType::Enum GetFunctionType() const override { return xiiFunctionType::StaticMember; }
+  xiiFunctionType::Enum GetFunctionType() const override { return xiiFunctionType::StaticMember; }
 
   template <std::size_t... I>
   void ExecuteImpl(xiiTraitInt<1>, xiiVariant& out_returnValue, xiiArrayPtr<xiiVariant> arguments, std::index_sequence<I...>) const
@@ -167,7 +167,7 @@ public:
     returnWrapper = (*m_Function)(xiiVariantAdapter<typename getArgument<I, Args...>::Type>(arguments[I])...);
   }
 
-  virtual void Execute(void* pInstance, xiiArrayPtr<xiiVariant> arguments, xiiVariant& out_returnValue) const override
+  void Execute(void* pInstance, xiiArrayPtr<xiiVariant> arguments, xiiVariant& out_returnValue) const override
   {
     XII_IGNORE_UNUSED(pInstance);
 
@@ -188,7 +188,7 @@ public:
   {
   }
 
-  virtual xiiFunctionType::Enum GetFunctionType() const override { return xiiFunctionType::Constructor; }
+  xiiFunctionType::Enum GetFunctionType() const override { return xiiFunctionType::Constructor; }
 
   template <std::size_t... I>
   void ExecuteImpl(xiiTraitInt<1>, xiiVariant& out_returnValue, xiiArrayPtr<xiiVariant> arguments, std::index_sequence<I...>) const
@@ -205,7 +205,7 @@ public:
     out_returnValue = pInstance;
   }
 
-  virtual void Execute(void* pInstance, xiiArrayPtr<xiiVariant> arguments, xiiVariant& out_returnValue) const override
+  void Execute(void* pInstance, xiiArrayPtr<xiiVariant> arguments, xiiVariant& out_returnValue) const override
   {
     XII_IGNORE_UNUSED(pInstance);
 

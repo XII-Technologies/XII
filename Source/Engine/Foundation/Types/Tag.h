@@ -33,8 +33,8 @@ private:
 
   xiiHashedString m_sTagString;
 
-  xiiUInt32 m_uiBitIndex   = 0xFFFFFFFEu;
-  xiiUInt32 m_uiBlockIndex = 0xFFFFFFFEu;
+  xiiUInt32 m_uiBitIndex   = 0xFFFFFFFEU;
+  xiiUInt32 m_uiBlockIndex = 0xFFFFFFFEU;
 };
 
 #include <Foundation/Types/TagSet.h>

@@ -21,7 +21,8 @@ namespace xiiInspectorUi
   inline QString GraphLabel(const QMap<quint64, QString>& graphs, quint64 id)
   {
     const auto name       = graphs.value(id, "Render graph");
-    int        duplicates = 0, ordinal = 0;
+    int        duplicates = 0;
+    int        ordinal    = 0;
     for (auto it = graphs.begin(); it != graphs.end(); ++it)
     {
       if (it.value() == name)
@@ -83,8 +84,10 @@ namespace xiiInspectorUi
     bool operator<(const QTreeWidgetItem& other) const override
     {
       const int    column      = treeWidget()->sortColumn();
-      bool         leftNumeric = false, rightNumeric = false;
-      const double left = text(column).toDouble(&leftNumeric), right = other.text(column).toDouble(&rightNumeric);
+      bool         leftNumeric  = false;
+      bool         rightNumeric = false;
+      const double left         = text(column).toDouble(&leftNumeric);
+      const double right        = other.text(column).toDouble(&rightNumeric);
       if (leftNumeric != rightNumeric)
       {
         return !leftNumeric;

@@ -85,7 +85,7 @@ private:
 
   LoadingState m_LoadingState     = LoadingState::NotStarted;
   LoadingPhase m_LoadingPhase     = LoadingPhase::Preloading;
-  float        m_fLoadingProgress = 0.0f;
+  float        m_fLoadingProgress = 0.0F;
   xiiString    m_sFailureReason;
 
   xiiString                                              m_sRequestedFile;

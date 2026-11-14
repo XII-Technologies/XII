@@ -201,7 +201,7 @@ inline bool xiiVec4Template<Type>::IsZero() const
 {
   XII_NAN_ASSERT(this);
 
-  return ((x == 0.0f) && (y == 0.0f) && (z == 0.0f) && (w == 0.0f));
+  return ((x == 0.0F) && (y == 0.0F) && (z == 0.0F) && (w == 0.0F));
 }
 
 template <typename Type>

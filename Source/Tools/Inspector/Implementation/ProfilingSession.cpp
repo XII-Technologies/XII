@@ -41,8 +41,10 @@ namespace
 
 bool xiiInspectorProfilingSession::Receive(xiiStreamReader& reader)
 {
-  xiiUInt32 version = 0, count = 0;
-  xiiUInt64 session = 0, sequence = 0;
+  xiiUInt32 version  = 0;
+  xiiUInt32 count    = 0;
+  xiiUInt64 session  = 0;
+  xiiUInt64 sequence = 0;
   Data      batch;
   reader >> version >> session >> sequence >> batch.m_fReceivedUs >> batch.m_uiDroppedScopes >> batch.m_uiDroppedFrames >> batch.m_uiDroppedGpu;
   if (version != 1 || session != m_uiSession || sequence != m_uiSequence + 1 || !std::isfinite(batch.m_fReceivedUs))
@@ -122,7 +124,8 @@ bool xiiInspectorProfilingSession::Receive(xiiStreamReader& reader)
   {
     Scope     scope;
     xiiUInt64 thread = 0;
-    xiiUInt32 name = 0, function = 0;
+    xiiUInt32 name     = 0;
+    xiiUInt32 function = 0;
     reader >> scope.m_uiId >> thread >> name >> function >> scope.m_fBeginUs >> scope.m_fEndUs;
     if (!validName(name) || !validName(function) || !std::isfinite(scope.m_fBeginUs) || !std::isfinite(scope.m_fEndUs) || scope.m_fBeginUs < 0 || scope.m_fEndUs < scope.m_fBeginUs)
     {
@@ -143,7 +146,8 @@ bool xiiInspectorProfilingSession::Receive(xiiStreamReader& reader)
   for (xiiUInt32 i = 0; i < count; ++i)
   {
     Scope     scope;
-    xiiUInt32 gpu = 0, name = 0;
+    xiiUInt32 gpu  = 0;
+    xiiUInt32 name = 0;
     reader >> gpu >> name >> scope.m_fBeginUs >> scope.m_fEndUs;
     if (!validName(name) || !std::isfinite(scope.m_fBeginUs) || !std::isfinite(scope.m_fEndUs) || scope.m_fEndUs < scope.m_fBeginUs)
     {
@@ -163,7 +167,8 @@ bool xiiInspectorProfilingSession::Receive(xiiStreamReader& reader)
   for (xiiUInt32 i = 0; i < count; ++i)
   {
     xiiUInt64 graph = 0;
-    xiiUInt32 name = 0, view = 0;
+    xiiUInt32 name  = 0;
+    xiiUInt32 view  = 0;
     reader >> graph >> name >> view;
     if (!validName(name) || !validName(view))
     {
@@ -569,7 +574,9 @@ bool xiiInspectorProfilingSession::Decode(const QJsonObject& object, QVector<Sco
       return false;
     }
     const auto    event = value.toObject();
-    const QString phase = event["ph"].toString(), lane = TraceId(event["pid"]) + ":" + TraceId(event["tid"]), name = event["name"].toString();
+    const QString phase = event["ph"].toString();
+    const QString lane  = TraceId(event["pid"]) + ":" + TraceId(event["tid"]);
+    const QString name  = event["name"].toString();
     if (phase == "M" && name == "thread_name")
     {
       names[lane] = event["args"].toObject()["name"].toString();
@@ -717,7 +724,8 @@ bool xiiInspectorProfilingSession::Import(const QJsonObject& object)
       const auto    frame = value.toObject();
       bool          valid = false;
       const quint64 id    = frame["id"].toString().toULongLong(&valid);
-      const double  begin = frame["beginUs"].toDouble(-1), end = frame["endUs"].toDouble(-1);
+      const double  begin = frame["beginUs"].toDouble(-1);
+      const double  end   = frame["endUs"].toDouble(-1);
       if (!valid || !std::isfinite(begin) || !std::isfinite(end) || begin < 0 || end < begin)
       {
         return false;
@@ -727,8 +735,10 @@ bool xiiInspectorProfilingSession::Import(const QJsonObject& object)
     for (const auto& value : extension["gpu"].toArray())
     {
       const auto   sample     = value.toObject();
-      bool         graphValid = false, frameValid = false;
-      const auto   graph = sample["graph"].toString().toULongLong(&graphValid), frame = sample["frame"].toString().toULongLong(&frameValid);
+      bool         graphValid = false;
+      bool         frameValid = false;
+      const auto   graph      = sample["graph"].toString().toULongLong(&graphValid);
+      const auto   frame      = sample["frame"].toString().toULongLong(&frameValid);
       const double ms = sample["ms"].toDouble(-1);
       if (!graphValid || !frameValid || sample["pass"].toInt(-1) < 0 || sample["queue"].toInt(-1) < 0 || sample["queue"].toInt() > 2 || !std::isfinite(ms) || ms < 0)
       {

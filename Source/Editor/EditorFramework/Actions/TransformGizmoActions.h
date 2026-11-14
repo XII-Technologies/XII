@@ -44,9 +44,9 @@ class XII_EDITORFRAMEWORK_DLL xiiGizmoAction : public xiiButtonAction
 
 public:
   xiiGizmoAction(const xiiActionContext& context, const char* szName, const xiiRTTI* pGizmoType);
-  ~xiiGizmoAction();
+  ~xiiGizmoAction() override;
 
-  virtual void Execute(const xiiVariant& value) override;
+  void Execute(const xiiVariant& value) override;
 
 protected:
   void UpdateState();
@@ -61,7 +61,7 @@ class XII_EDITORFRAMEWORK_DLL xiiToggleWorldSpaceGizmo : public xiiGizmoAction
 {
 public:
   xiiToggleWorldSpaceGizmo(const xiiActionContext& context, const char* szName, const xiiRTTI* pGizmoType);
-  virtual void Execute(const xiiVariant& value) override;
+  void Execute(const xiiVariant& value) override;
 };
 
 ///
@@ -78,9 +78,9 @@ public:
   };
 
   xiiTransformGizmoAction(const xiiActionContext& context, const char* szName, ActionType type);
-  ~xiiTransformGizmoAction();
+  ~xiiTransformGizmoAction() override;
 
-  virtual void Execute(const xiiVariant& value) override;
+  void         Execute(const xiiVariant& value) override;
   void         GameObjectEventHandler(const xiiGameObjectEvent& e);
 
 private:
@@ -115,7 +115,7 @@ public:
 
   xiiTranslateGizmoAction(const xiiActionContext& context, const char* szName, ActionType type);
 
-  virtual void Execute(const xiiVariant& value) override;
+  void Execute(const xiiVariant& value) override;
 
 private:
   const xiiGameObjectDocument* m_pSceneDocument;

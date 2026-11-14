@@ -332,7 +332,7 @@ private:
     {
     }
 
-    virtual SharedData* Clone() const override
+    SharedData* Clone() const override
     {
       return XII_DEFAULT_NEW(TypedSharedData<T>, m_t, m_pType);
     }
@@ -343,9 +343,9 @@ private:
   public:
     RTTISharedData(void* pData, const xiiRTTI* pType);
 
-    ~RTTISharedData();
+    ~RTTISharedData() override;
 
-    virtual SharedData* Clone() const override;
+    SharedData* Clone() const override;
   };
 
   struct InlinedStruct

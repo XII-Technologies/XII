@@ -35,7 +35,7 @@ class XII_GUIFOUNDATION_DLL xiiQtPropertyGridWidget : public QWidget
   Q_OBJECT
 public:
   xiiQtPropertyGridWidget(QWidget* pParent, xiiDocument* pDocument = nullptr, bool bBindToSelectionManager = true);
-  ~xiiQtPropertyGridWidget();
+  ~xiiQtPropertyGridWidget() override;
 
   void SetDocument(xiiDocument* pDocument, bool bBindToSelectionManager = true);
 

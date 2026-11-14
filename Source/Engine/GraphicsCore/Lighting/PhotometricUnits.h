@@ -55,7 +55,7 @@ public:
   /// Converts an authored local-light value to canonical luminous intensity.
   /// Lux is interpreted as illuminance measured at one metre. Nits require the
   /// projected emitter area; a zero-area emitter therefore produces zero cd.
-  [[nodiscard]] static float ToLuminousIntensity(float fValue, xiiEnum<xiiPhotometricUnit> unit, float fEmissionSolidAngleSteradians, float fProjectedAreaSquareMeters = 0.0f);
+  [[nodiscard]] static float ToLuminousIntensity(float fValue, xiiEnum<xiiPhotometricUnit> unit, float fEmissionSolidAngleSteradians, float fProjectedAreaSquareMeters = 0.0F);
 
   /// Converts an authored distant-light value to canonical illuminance.
   /// Nits are integrated over the apparent source solid angle. Candela and

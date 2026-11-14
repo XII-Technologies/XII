@@ -15,7 +15,7 @@ class XII_EDITORFRAMEWORK_DLL xiiQtOrbitCamViewWidget : public xiiQtEngineViewWi
   Q_OBJECT
 public:
   xiiQtOrbitCamViewWidget(xiiQtEngineDocumentWindow* pOwnerWindow, xiiEngineViewConfig* pViewConfig, bool bPicking = false);
-  ~xiiQtOrbitCamViewWidget();
+  ~xiiQtOrbitCamViewWidget() override;
 
   void ConfigureFixed(const xiiVec3& vCenterPos, const xiiVec3& vHalfBoxSize, const xiiVec3& vCamPosition);
   void ConfigureRelative(const xiiVec3& vCenterPos, const xiiVec3& vHalfBoxSize, const xiiVec3& vCamDirection, float fCamDistanceScale);
@@ -24,7 +24,7 @@ public:
 
   xiiOrbitCameraContext* GetOrbitCamera();
 
-  virtual void SyncToEngine() override;
+  void         SyncToEngine() override;
   xiiVec3      GetCameraOrbitPoint() const override;
   void         OrbitCamera(const xiiVec2& vRadians) override;
 

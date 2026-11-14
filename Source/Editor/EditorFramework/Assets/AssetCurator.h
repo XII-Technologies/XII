@@ -366,7 +366,7 @@ public:
   /// Generates one transitive hull for all the dependencies that are enabled. The set will contain dependencies that are reachable via any combination of enabled reference types.
   /// Resolves asset paths and sub-assets to their owners for traversal. Unresolved references remain
   /// in the output as leaves. Existing output does not suppress traversal. Cycles are visited once per owner.
-  void GenerateTransitiveHull(const xiiStringView sAssetOrPath, xiiSet<xiiString>& inout_deps, bool bIncludeTransformDeps = false, bool bIncludeThumbnailDeps = false, bool bIncludePackageDeps = false) const;
+  void GenerateTransitiveHull(xiiStringView sAssetOrPath, xiiSet<xiiString>& inout_deps, bool bIncludeTransformDeps = false, bool bIncludeThumbnailDeps = false, bool bIncludePackageDeps = false) const;
 
   /// Generates one inverse transitive hull for all the types dependencies that are enabled. The set will contain inverse dependencies that can reach the given asset (pAssetInfo) via any combination of the enabled reference types. As only assets can have dependencies, the inverse hull is always just asset GUIDs.
   void GenerateInverseTransitiveHull(const xiiAssetInfo* pAssetInfo, xiiSet<xiiUuid>& inout_inverseDeps, bool bIncludeTransformDeps = false, bool bIncludeThumbnailDeps = false, bool bIncludePackageDeps = false) const;
@@ -522,10 +522,10 @@ class xiiUpdateTask final : public xiiTask
 {
 public:
   xiiUpdateTask(xiiOnTaskFinishedCallback onTaskFinished);
-  ~xiiUpdateTask();
+  ~xiiUpdateTask() override;
 
 private:
   xiiStringBuilder m_sAssetPath;
 
-  virtual void Execute() override;
+  void Execute() override;
 };

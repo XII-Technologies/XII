@@ -68,11 +68,11 @@ public:
   xiiResult SetFromPoints(const xiiVec3Template<Type>& v1, const xiiVec3Template<Type>& v2, const xiiVec3Template<Type>& v3); // [tested]
 
   /// Creates the plane-equation from three points on the plane, given as an array.
-  xiiResult SetFromPoints(const xiiVec3Template<Type>* const pVertices); // [tested]
+  xiiResult SetFromPoints(const xiiVec3Template<Type>* pVertices); // [tested]
 
   /// Creates the plane-equation from a set of unreliable points lying on the same plane. Some points might be equal or too close to each other
   /// for the typical algorithm. Returns false, if no reliable set of points could be found. Does try to create a plane anyway.
-  xiiResult SetFromPoints(const xiiVec3Template<Type>* const pVertices, xiiUInt32 uiMaxVertices); // [tested]
+  xiiResult SetFromPoints(const xiiVec3Template<Type>* pVertices, xiiUInt32 uiMaxVertices); // [tested]
 
   /// Creates a plane from two direction vectors that span the plane, and one point on it.
   xiiResult SetFromDirections(const xiiVec3Template<Type>& vTangent1, const xiiVec3Template<Type>& vTangent2, const xiiVec3Template<Type>& vPointOnPlane); // [tested]
@@ -107,10 +107,10 @@ public:
   xiiPositionOnPlane::Enum GetPointPosition(const xiiVec3Template<Type>& vPoint, Type fPlaneHalfWidth) const; // [tested]
 
   /// Returns on which side of the plane the set of points lies. Might be on both sides.
-  xiiPositionOnPlane::Enum GetObjectPosition(const xiiVec3Template<Type>* const pPoints, xiiUInt32 uiVertices) const; // [tested]
+  xiiPositionOnPlane::Enum GetObjectPosition(const xiiVec3Template<Type>* pPoints, xiiUInt32 uiVertices) const; // [tested]
 
   /// Returns on which side of the plane the set of points lies. Might be on both sides.
-  xiiPositionOnPlane::Enum GetObjectPosition(const xiiVec3Template<Type>* const pPoints, xiiUInt32 uiVertices, Type fPlaneHalfWidth) const; // [tested]
+  xiiPositionOnPlane::Enum GetObjectPosition(const xiiVec3Template<Type>* pPoints, xiiUInt32 uiVertices, Type fPlaneHalfWidth) const; // [tested]
 
   /// Returns on which side of the plane the sphere is located.
   xiiPositionOnPlane::Enum GetObjectPosition(const xiiBoundingSphereTemplate<Type>& sphere) const; // [tested]
@@ -184,7 +184,7 @@ public:
   // *** Helper Functions ***
 public:
   /// Returns three points from an unreliable set of points, that reliably form a plane. Returns false, if there are none.
-  static xiiResult FindSupportPoints(const xiiVec3Template<Type>* const pVertices, xiiInt32 iMaxVertices, xiiInt32& out_i1, xiiInt32& out_i2, xiiInt32& out_i3); // [tested]
+  static xiiResult FindSupportPoints(const xiiVec3Template<Type>* pVertices, xiiInt32 iMaxVertices, xiiInt32& out_i1, xiiInt32& out_i2, xiiInt32& out_i3); // [tested]
 };
 
 /// Checks whether this plane and the other are identical.

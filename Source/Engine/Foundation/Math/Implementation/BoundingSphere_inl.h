@@ -18,7 +18,7 @@ XII_FORCE_INLINE xiiBoundingSphereTemplate<Type> xiiBoundingSphereTemplate<Type>
 {
   xiiBoundingSphereTemplate<Type> res;
   res.m_vCenter.SetZero();
-  res.m_fRadius = 0.0f;
+  res.m_fRadius = 0.0F;
   return res;
 }
 
@@ -50,7 +50,7 @@ XII_FORCE_INLINE xiiBoundingSphereTemplate<Type> xiiBoundingSphereTemplate<Type>
 
   const xiiVec3Template<Type>* pCur = &pPoints[0];
 
-  xiiVec3Template<Type> vCenter(0.0f);
+  xiiVec3Template<Type> vCenter(0.0F);
 
   for (xiiUInt32 i = 0; i < uiNumPoints; ++i)
   {
@@ -60,7 +60,7 @@ XII_FORCE_INLINE xiiBoundingSphereTemplate<Type> xiiBoundingSphereTemplate<Type>
 
   vCenter /= (Type)uiNumPoints;
 
-  Type fMaxDistSQR = 0.0f;
+  Type fMaxDistSQR = 0.0F;
 
   pCur = &pPoints[0];
   for (xiiUInt32 i = 0; i < uiNumPoints; ++i)
@@ -89,7 +89,7 @@ bool xiiBoundingSphereTemplate<Type>::IsZero(Type fEpsilon /* = xiiMath::Default
 template <typename Type>
 bool xiiBoundingSphereTemplate<Type>::IsValid() const
 {
-  return (m_vCenter.IsValid() && m_fRadius >= 0.0f);
+  return (m_vCenter.IsValid() && m_fRadius >= 0.0F);
 }
 
 template <typename Type>
@@ -160,7 +160,7 @@ XII_ALWAYS_INLINE void xiiBoundingSphereTemplate<Type>::Translate(const xiiVec3T
 template <typename Type>
 XII_FORCE_INLINE void xiiBoundingSphereTemplate<Type>::ScaleFromCenter(Type fScale)
 {
-  XII_ASSERT_DEBUG(fScale >= 0.0f, "Cannot invert the sphere.");
+  XII_ASSERT_DEBUG(fScale >= 0.0F, "Cannot invert the sphere.");
 
   m_fRadius *= fScale;
 
@@ -170,9 +170,9 @@ XII_FORCE_INLINE void xiiBoundingSphereTemplate<Type>::ScaleFromCenter(Type fSca
 template <typename Type>
 void xiiBoundingSphereTemplate<Type>::ScaleFromOrigin(const xiiVec3Template<Type>& vScale)
 {
-  XII_ASSERT_DEBUG(vScale.x >= 0.0f, "Cannot invert the sphere.");
-  XII_ASSERT_DEBUG(vScale.y >= 0.0f, "Cannot invert the sphere.");
-  XII_ASSERT_DEBUG(vScale.z >= 0.0f, "Cannot invert the sphere.");
+  XII_ASSERT_DEBUG(vScale.x >= 0.0F, "Cannot invert the sphere.");
+  XII_ASSERT_DEBUG(vScale.y >= 0.0F, "Cannot invert the sphere.");
+  XII_ASSERT_DEBUG(vScale.z >= 0.0F, "Cannot invert the sphere.");
 
   m_vCenter = m_vCenter.CompMul(vScale);
 
@@ -304,7 +304,7 @@ void xiiBoundingSphereTemplate<Type>::ExpandToInclude(const xiiVec3Template<Type
 
   const xiiVec3Template<Type>* pCur = &pPoints[0];
 
-  Type fMaxDistSQR = 0.0f;
+  Type fMaxDistSQR = 0.0F;
 
   for (xiiUInt32 i = 0; i < uiNumPoints; ++i)
   {
@@ -356,7 +356,7 @@ bool xiiBoundingSphereTemplate<Type>::GetRayIntersection(const xiiVec3Template<T
   const Type d             = vRelPos.Dot(vRayDirNormalized);
   const Type fRelPosLenSQR = vRelPos.GetLengthSquared();
 
-  if (d < 0.0f && fRelPosLenSQR > fRadiusSQR)
+  if (d < 0.0F && fRelPosLenSQR > fRadiusSQR)
   {
     return false;
   }
@@ -396,7 +396,7 @@ bool xiiBoundingSphereTemplate<Type>::GetRayIntersection(const xiiVec3Template<T
 template <typename Type>
 bool xiiBoundingSphereTemplate<Type>::GetLineSegmentIntersection(const xiiVec3Template<Type>& vLineStartPos, const xiiVec3Template<Type>& vLineEndPos, Type* out_pHitFraction /* = nullptr */, xiiVec3Template<Type>* out_pIntersection /* = nullptr */) const
 {
-  Type fIntersection = 0.0f;
+  Type fIntersection = 0.0F;
 
   const xiiVec3Template<Type> vDir     = vLineEndPos - vLineStartPos;
   xiiVec3Template<Type>       vDirNorm = vDir;

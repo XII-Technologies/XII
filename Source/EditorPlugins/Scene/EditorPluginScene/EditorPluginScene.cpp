@@ -145,7 +145,7 @@ void OnLoadPlugin()
   {
     xiiActionMap* pMap = xiiActionMapManager::GetActionMap(MenuBars[1]);
     pMap->HideAction(xiiDocumentActions::s_hSave, "G.File.Common");
-    pMap->MapAction(xiiLayerActions::s_hSaveActiveLayer, "G.File.Common", 6.5f);
+    pMap->MapAction(xiiLayerActions::s_hSaveActiveLayer, "G.File.Common", 6.5F);
   }
 
 
@@ -163,7 +163,7 @@ void OnLoadPlugin()
   {
     xiiActionMap* pMap = xiiActionMapManager::GetActionMap(ToolBars[1]);
     pMap->HideAction(xiiDocumentActions::s_hSave, "SaveCategory");
-    pMap->MapAction(xiiLayerActions::s_hSaveActiveLayer, "SaveCategory", 1.0f);
+    pMap->MapAction(xiiLayerActions::s_hSaveActiveLayer, "SaveCategory", 1.0F);
     pMap->HideAction(xiiAssetActions::s_hTransformAsset, "AssetCategory");
   }
 

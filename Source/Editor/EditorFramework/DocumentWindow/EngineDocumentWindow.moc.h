@@ -41,7 +41,7 @@ class XII_EDITORFRAMEWORK_DLL xiiQtEngineDocumentWindow : public xiiQtDocumentWi
 
 public:
   xiiQtEngineDocumentWindow(xiiAssetDocument* pDocument);
-  virtual ~xiiQtEngineDocumentWindow();
+  ~xiiQtEngineDocumentWindow() override;
 
   xiiEditorEngineConnection*    GetEditorEngineConnection() const;
   const xiiObjectPickingResult& PickObject(xiiUInt16 uiScreenPosX, xiiUInt16 uiScreenPosY, xiiQtEngineViewWidget* pView) const;
@@ -60,7 +60,7 @@ public:
 
   void AddViewWidget(xiiQtEngineViewWidget* pView);
 
-  virtual void CreateImageCapture(xiiStringView sOutputPath) override;
+  void CreateImageCapture(xiiStringView sOutputPath) override;
 
 public:
   mutable xiiEvent<const xiiEngineWindowEvent&> m_EngineWindowEvent;
@@ -75,5 +75,5 @@ protected:
   virtual void ProcessMessageEventHandler(const xiiEditorEngineDocumentMsg* pMsg);
   void         RemoveViewWidget(xiiQtEngineViewWidget* pView);
   void         DestroyAllViews();
-  virtual void InternalRedraw() override;
+  void         InternalRedraw() override;
 };

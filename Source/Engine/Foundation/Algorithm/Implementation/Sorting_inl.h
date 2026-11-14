@@ -591,7 +591,9 @@ void xiiSorting::MergeSort(xiiArrayPtr<T>& pArray, xiiUInt32 uiStartIndex, xiiUI
 template <typename Container, typename Comparer>
 void xiiSorting::Merge(Container& container, xiiUInt32 uiStartIndex, xiiUInt32 uiMiddleIndex, xiiUInt32 uiEndIndex, const Comparer& comparer)
 {
-  xiiUInt32 i{}, j{}, k{};
+  xiiUInt32 i{};
+  xiiUInt32 j{};
+  xiiUInt32 k{};
   xiiUInt32 uiRightSideSize = uiEndIndex - uiMiddleIndex;
   xiiUInt32 uiLeftSideSize  = uiMiddleIndex - uiStartIndex + 1;
 
@@ -657,7 +659,9 @@ void xiiSorting::Merge(xiiArrayPtr<T>& pArray, xiiUInt32 uiStartIndex, xiiUInt32
 {
   T* pPtr = pArray.GetPtr();
 
-  xiiUInt32 i{}, j{}, k{};
+  xiiUInt32 i{};
+  xiiUInt32 j{};
+  xiiUInt32 k{};
   xiiUInt32 uiRightSideSize = uiEndIndex - uiMiddleIndex;
   xiiUInt32 uiLeftSideSize  = uiMiddleIndex - uiStartIndex + 1;
 

@@ -56,7 +56,7 @@ protected:
 
   xiiGALCommandQueue(xiiGALDevice* pDevice, const xiiGALCommandQueueCreationDescription& creationDescription);
 
-  virtual ~xiiGALCommandQueue();
+  ~xiiGALCommandQueue() override;
 
   virtual xiiUInt64 SubmitPlatform(xiiGALCommandList* pCommandList) = 0;
 

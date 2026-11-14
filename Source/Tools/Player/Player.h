@@ -29,7 +29,7 @@ protected:
 
 private:
   void       DetermineProjectPath();
-  void       ReportStatus(xiiStringView sStage, xiiStringView sDetail, float fProgress = -1.0f) override;
+  void       ReportStatus(xiiStringView sStage, xiiStringView sDetail, float fProgress = -1.0F) override;
   void       LogMessage(const xiiLoggingEventData& e);
   void       UpdateRuntimeSettings();
   xiiWindow* GetPlayerWindow() const;

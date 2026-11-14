@@ -61,7 +61,7 @@ struct xiiMapBaseConstIteratorBase
   XII_ALWAYS_INLINE void operator--() { Prev(); } // [tested]
 
 protected:
-  void Advance(const xiiInt32 dir0, const xiiInt32 dir1);
+  void Advance(xiiInt32 dir0, xiiInt32 dir1);
 
   friend class xiiMapBase<KeyType, ValueType, Comparer>;
 

@@ -20,10 +20,10 @@ class xiiQtTextureCubeAssetDocumentWindow : public xiiQtEngineDocumentWindow
 public:
   xiiQtTextureCubeAssetDocumentWindow(xiiTextureCubeAssetDocument* pDocument);
 
-  virtual xiiStringView GetWindowLayoutGroupName() const override { return "TextureCubeAsset"; }
+  xiiStringView GetWindowLayoutGroupName() const override { return "TextureCubeAsset"; }
 
 private:
-  virtual void InternalRedraw() override;
+  void         InternalRedraw() override;
   void         SendRedrawMsg();
 
   xiiEngineViewConfig      m_ViewConfig;

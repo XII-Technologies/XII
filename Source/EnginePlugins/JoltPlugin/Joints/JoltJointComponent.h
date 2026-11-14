@@ -66,8 +66,8 @@ protected:
 private:
   friend class xiiJoltPhysicsWorldModule;
   xiiPhysicsWorldModuleInterface::JointConfig m_Config;
-  float                                       m_fBreakForce  = 0.0f;
-  float                                       m_fBreakTorque = 0.0f;
+  float                                       m_fBreakForce  = 0.0F;
+  float                                       m_fBreakTorque = 0.0F;
   bool                                        m_bBroken      = false;
 };
 
@@ -127,14 +127,14 @@ public:
 
 private:
   bool                           m_bLimitsEnabled  = true;
-  xiiAngle                       m_LowerLimit      = xiiAngle::MakeFromDegree(-90.0f);
-  xiiAngle                       m_UpperLimit      = xiiAngle::MakeFromDegree(90.0f);
+  xiiAngle                       m_LowerLimit      = xiiAngle::MakeFromDegree(-90.0F);
+  xiiAngle                       m_UpperLimit      = xiiAngle::MakeFromDegree(90.0F);
   xiiEnum<xiiJoltJointMotorMode> m_MotorMode       = xiiJoltJointMotorMode::Off;
-  float                          m_fTargetVelocity = 0.0f;
-  xiiAngle                       m_TargetAngle     = xiiAngle::MakeFromRadian(0.0f);
-  float                          m_fMaxMotorTorque = 100.0f;
-  float                          m_fMotorFrequency = 2.0f;
-  float                          m_fMotorDamping   = 1.0f;
+  float                          m_fTargetVelocity = 0.0F;
+  xiiAngle                       m_TargetAngle     = xiiAngle::MakeFromRadian(0.0F);
+  float                          m_fMaxMotorTorque = 100.0F;
+  float                          m_fMotorFrequency = 2.0F;
+  float                          m_fMotorDamping   = 1.0F;
 };
 
 using xiiJoltSliderJointComponentManager = xiiComponentManager<class xiiJoltSliderJointComponent, xiiBlockStorageType::Compact>;
@@ -171,14 +171,14 @@ public:
 
 private:
   bool                           m_bLimitsEnabled  = true;
-  float                          m_fLowerLimit     = -1.0f;
-  float                          m_fUpperLimit     = 1.0f;
+  float                          m_fLowerLimit     = -1.0F;
+  float                          m_fUpperLimit     = 1.0F;
   xiiEnum<xiiJoltJointMotorMode> m_MotorMode       = xiiJoltJointMotorMode::Off;
-  float                          m_fTargetVelocity = 0.0f;
-  float                          m_fTargetPosition = 0.0f;
-  float                          m_fMaxMotorForce  = 100.0f;
-  float                          m_fMotorFrequency = 2.0f;
-  float                          m_fMotorDamping   = 1.0f;
+  float                          m_fTargetVelocity = 0.0F;
+  float                          m_fTargetPosition = 0.0F;
+  float                          m_fMaxMotorForce  = 100.0F;
+  float                          m_fMotorFrequency = 2.0F;
+  float                          m_fMotorDamping   = 1.0F;
 };
 
 using xiiJoltDistanceJointComponentManager = xiiComponentManager<class xiiJoltDistanceJointComponent, xiiBlockStorageType::Compact>;
@@ -202,8 +202,8 @@ public:
   void  DeserializeComponent(xiiWorldReader& inout_stream) override;
 
 private:
-  float m_fMinDistance     = 1.0f;
-  float m_fMaxDistance     = 1.0f;
-  float m_fSpringFrequency = 0.0f;
-  float m_fSpringDamping   = 1.0f;
+  float m_fMinDistance     = 1.0F;
+  float m_fMaxDistance     = 1.0F;
+  float m_fSpringFrequency = 0.0F;
+  float m_fSpringDamping   = 1.0F;
 };

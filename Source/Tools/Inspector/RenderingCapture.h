@@ -18,7 +18,7 @@ class xiiQtRenderingCapture : public ads::CDockWidget
 {
 public:
   xiiQtRenderingCapture(ads::CDockManager* manager, const char* title, xiiUInt32 system);
-  virtual ~xiiQtRenderingCapture() = default;
+  ~xiiQtRenderingCapture() override = default;
   void         ResetStats();
   void         RequestCapture();
   void         ReceiveMessages();

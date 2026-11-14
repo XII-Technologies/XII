@@ -108,7 +108,7 @@ public:
     SetLogLevel(xiiLogMsgType::None);
   }
 
-  virtual void HandleLogMessage(const xiiLoggingEventData&) override {}
+  void HandleLogMessage(const xiiLoggingEventData&) override {}
 };
 
 
@@ -119,7 +119,7 @@ public:
 class XII_FOUNDATION_DLL xiiGlobalLog : public xiiLogInterface
 {
 public:
-  virtual void HandleLogMessage(const xiiLoggingEventData& le) override;
+  void HandleLogMessage(const xiiLoggingEventData& le) override;
 
   /// Allows to register a function as an event receiver.
   static xiiEventSubscriptionID AddLogWriter(xiiLoggingEvent::Handler handler);
@@ -447,7 +447,7 @@ private:
 class xiiLogSystemToBuffer : public xiiLogInterface
 {
 public:
-  virtual void HandleLogMessage(const xiiLoggingEventData& le) override
+  void HandleLogMessage(const xiiLoggingEventData& le) override
   {
     switch (le.m_EventType)
     {

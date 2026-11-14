@@ -399,7 +399,7 @@ XII_ALWAYS_INLINE void xiiGameObject::SetGlobalTransform(const xiiSimdTransform&
   // xiiTransformTemplate<Type>::SetLocalTransform will produce NaNs in w components
   // of pos and scale if scale.w is not set to 1 here. This only affects builds that
   // use XII_SIMD_IMPLEMENTATION_FPU, e.g. arm atm.
-  m_pTransformationData->m_globalTransform.m_Scale.SetW(1.0f);
+  m_pTransformationData->m_globalTransform.m_Scale.SetW(1.0F);
   m_pTransformationData->UpdateLocalTransform();
 
   if (IsStatic())

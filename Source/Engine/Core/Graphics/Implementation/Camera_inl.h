@@ -6,7 +6,7 @@ inline xiiVec3 xiiCamera::GetCenterPosition() const
 {
   if (m_Mode == xiiCameraMode::Stereo)
   {
-    return (GetPosition(xiiCameraEye::Left) + GetPosition(xiiCameraEye::Right)) * 0.5f;
+    return (GetPosition(xiiCameraEye::Left) + GetPosition(xiiCameraEye::Right)) * 0.5F;
   }
   else
   {

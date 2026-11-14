@@ -186,18 +186,20 @@ bool xiiQuatTemplate<Type>::IsEqualRotation(const xiiQuatTemplate<Type>& qOther,
     return true;
   }
 
-  xiiVec3Template<Type>  vA1, vA2;
-  xiiAngleTemplate<Type> A1, A2;
+  xiiVec3Template<Type>  vA1;
+  xiiVec3Template<Type>  vA2;
+  xiiAngleTemplate<Type> A1;
+  xiiAngleTemplate<Type> A2;
 
   GetRotationAxisAndAngle(vA1, A1);
   qOther.GetRotationAxisAndAngle(vA2, A2);
 
-  if ((A1.IsEqualSimple(A2, xiiAngleTemplate<Type>::MakeFromDegree(static_cast<Type>(360.0f * fEpsilon)))) && (vA1.IsEqual(vA2, fEpsilon)))
+  if ((A1.IsEqualSimple(A2, xiiAngleTemplate<Type>::MakeFromDegree(static_cast<Type>(360.0F * fEpsilon)))) && (vA1.IsEqual(vA2, fEpsilon)))
   {
     return true;
   }
 
-  if ((A1.IsEqualSimple(-A2, xiiAngleTemplate<Type>::MakeFromDegree(static_cast<Type>(360.0f * fEpsilon)))) && (vA1.IsEqual(-vA2, fEpsilon)))
+  if ((A1.IsEqualSimple(-A2, xiiAngleTemplate<Type>::MakeFromDegree(static_cast<Type>(360.0F * fEpsilon)))) && (vA1.IsEqual(-vA2, fEpsilon)))
   {
     return true;
   }
@@ -400,7 +402,7 @@ xiiQuatTemplate<Type> xiiQuatTemplate<Type>::MakeShortestRotation(const xiiVec3T
 
   XII_ASSERT_DEBUG(c.IsValid(), "SetShortestRotation failed.");
 
-  const Type fOneDivS = 1.0f / s;
+  const Type fOneDivS = 1.0F / s;
 
   xiiQuatTemplate<Type> q;
   q.x = c.x * fOneDivS;
@@ -431,7 +433,8 @@ xiiQuatTemplate<Type> xiiQuatTemplate<Type>::MakeSlerp(const xiiQuatTemplate<Typ
     cosTheta  = -cosTheta;
   }
 
-  Type t0, t1;
+  Type t0;
+  Type t1;
 
   if (cosTheta < qdelta)
   {
@@ -499,14 +502,14 @@ void xiiQuatTemplate<Type>::GetAsEulerAngles(xiiAngleTemplate<Type>& out_x, xiiA
   if (fSingularityTest > fSingularityThreshold) // singularity at north pole
   {
     yaw   = -static_cast<Type>(2) * xiiMath::ATan2(x, w);
-    pitch = xiiAngleTemplate<Type>::MakeFromDegree(90.0f);
-    roll  = xiiAngleTemplate<Type>::MakeFromDegree(0.0f);
+    pitch = xiiAngleTemplate<Type>::MakeFromDegree(90.0F);
+    roll  = xiiAngleTemplate<Type>::MakeFromDegree(0.0F);
   }
   else if (fSingularityTest < -fSingularityThreshold) // singularity at south pole
   {
     yaw   = static_cast<Type>(2) * xiiMath::ATan2(x, w);
-    pitch = xiiAngleTemplate<Type>::MakeFromDegree(-90.0f);
-    roll  = xiiAngleTemplate<Type>::MakeFromDegree(0.0f);
+    pitch = xiiAngleTemplate<Type>::MakeFromDegree(-90.0F);
+    roll  = xiiAngleTemplate<Type>::MakeFromDegree(0.0F);
   }
   else
   {
