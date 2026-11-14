@@ -1,2 +1,260 @@
+# XII Engine - Clang-Tidy profile (LLVM 22)
+# Source of truth: Coding-Standards.md, .clang-format, .editorconfig.
+# LLVM's clang-tidy cannot enforce every XII policy: see XII-ClangTidy-Coverage.md.
+# Run over XII-owned C/C++ translation units using compile_commands.json.
+# Do not run automatic fixes across generated, third-party, or unchanged legacy code.
+
+---
+Checks: >-
+  -*,
+  clang-analyzer-core.*,
+  clang-analyzer-cplusplus.*,
+  clang-analyzer-deadcode.*,
+  clang-analyzer-nullability.*,
+  clang-analyzer-optin.core.EnumCastOutOfRange,
+  clang-analyzer-optin.cplusplus.VirtualCall,
+  bugprone-argument-comment,
+  bugprone-assert-side-effect,
+  bugprone-assignment-in-if-condition,
+  bugprone-bitwise-pointer-cast,
+  bugprone-bool-pointer-implicit-conversion,
+  bugprone-branch-clone,
+  bugprone-capturing-this-in-member-variable,
+  bugprone-casting-through-void,
+  bugprone-chained-comparison,
+  bugprone-copy-constructor-init,
+  bugprone-copy-constructor-mutates-argument,
+  bugprone-dangling-handle,
+  bugprone-default-operator-new-on-overaligned-type,
+  bugprone-derived-method-shadowing-base-method,
+  bugprone-dynamic-static-initializers,
+  bugprone-float-loop-counter,
+  bugprone-fold-init-type,
+  bugprone-forward-declaration-namespace,
+  bugprone-forwarding-reference-overload,
+  bugprone-implicit-widening-of-multiplication-result,
+  bugprone-inaccurate-erase,
+  bugprone-inc-dec-in-conditions,
+  bugprone-incorrect-enable-if,
+  bugprone-incorrect-roundings,
+  bugprone-infinite-loop,
+  bugprone-integer-division,
+  bugprone-invalid-enum-default-initialization,
+  bugprone-lambda-function-name,
+  bugprone-macro-parentheses,
+  bugprone-macro-repeated-side-effects,
+  bugprone-misplaced-widening-cast,
+  bugprone-move-forwarding-reference,
+  bugprone-multiple-statement-macro,
+  bugprone-narrowing-conversions,
+  bugprone-nondeterministic-pointer-iteration-order,
+  bugprone-not-null-terminated-result,
+  bugprone-optional-value-conversion,
+  bugprone-parent-virtual-call,
+  bugprone-pointer-arithmetic-on-polymorphic-object,
+  bugprone-raw-memory-call-on-non-trivial-type,
+  bugprone-redundant-branch-condition,
+  bugprone-reserved-identifier,
+  bugprone-return-const-ref-from-parameter,
+  bugprone-shared-ptr-array-mismatch,
+  bugprone-signed-char-misuse,
+  bugprone-sizeof-container,
+  bugprone-sizeof-expression,
+  bugprone-spuriously-wake-up-functions,
+  bugprone-standalone-empty,
+  bugprone-std-namespace-modification,
+  bugprone-string-constructor,
+  bugprone-string-integer-assignment,
+  bugprone-string-literal-with-embedded-nul,
+  bugprone-stringview-nullptr,
+  bugprone-suspicious-enum-usage,
+  bugprone-suspicious-include,
+  bugprone-suspicious-memory-comparison,
+  bugprone-suspicious-memset-usage,
+  bugprone-suspicious-missing-comma,
+  bugprone-suspicious-semicolon,
+  bugprone-suspicious-string-compare,
+  bugprone-suspicious-stringview-data-usage,
+  bugprone-swapped-arguments,
+  bugprone-terminating-continue,
+  bugprone-too-small-loop-variable,
+  bugprone-unchecked-optional-access,
+  bugprone-unchecked-string-to-number-conversion,
+  bugprone-undefined-memory-manipulation,
+  bugprone-undelegated-constructor,
+  bugprone-unhandled-self-assignment,
+  bugprone-unique-ptr-array-mismatch,
+  bugprone-unsafe-functions,
+  bugprone-unused-raii,
+  bugprone-unused-return-value,
+  bugprone-use-after-move,
+  bugprone-virtual-near-miss,
+  cppcoreguidelines-avoid-capturing-lambda-coroutines,
+  cppcoreguidelines-avoid-reference-coroutine-parameters,
+  cppcoreguidelines-init-variables,
+  cppcoreguidelines-interfaces-global-init,
+  cppcoreguidelines-misleading-capture-default-by-value,
+  cppcoreguidelines-no-suspend-with-lock,
+  cppcoreguidelines-prefer-member-initializer,
+  cppcoreguidelines-pro-type-cstyle-cast,
+  cppcoreguidelines-pro-type-member-init,
+  cppcoreguidelines-rvalue-reference-param-not-moved,
+  cppcoreguidelines-slicing,
+  cppcoreguidelines-special-member-functions,
+  cppcoreguidelines-virtual-class-destructor,
+  misc-anonymous-namespace-in-header,
+  misc-confusable-identifiers,
+  misc-const-correctness,
+  misc-coroutine-hostile-raii,
+  misc-definitions-in-headers,
+  misc-header-include-cycle,
+  misc-include-cleaner,
+  misc-misplaced-const,
+  misc-new-delete-overloads,
+  misc-non-copyable-objects,
+  misc-override-with-different-visibility,
+  misc-redundant-expression,
+  misc-static-assert,
+  misc-unconventional-assign-operator,
+  misc-unused-alias-decls,
+  misc-unused-using-decls,
+  misc-use-internal-linkage,
+  modernize-avoid-bind,
+  modernize-avoid-c-style-cast,
+  modernize-avoid-setjmp-longjmp,
+  modernize-deprecated-headers,
+  modernize-redundant-void-arg,
+  modernize-use-default-member-init,
+  modernize-use-equals-default,
+  modernize-use-equals-delete,
+  modernize-use-integer-sign-comparison,
+  modernize-use-nodiscard,
+  modernize-use-nullptr,
+  modernize-use-override,
+  modernize-use-using,
+  performance-for-range-copy,
+  performance-implicit-conversion-in-loop,
+  performance-inefficient-algorithm,
+  performance-inefficient-string-concatenation,
+  performance-move-const-arg,
+  performance-move-constructor-init,
+  performance-no-automatic-move,
+  performance-noexcept-destructor,
+  performance-noexcept-move-constructor,
+  performance-noexcept-swap,
+  performance-type-promotion-in-math-fn,
+  performance-unnecessary-copy-initialization,
+  performance-unnecessary-value-param,
+  portability-std-allocator-const,
+  portability-template-virtual-member-function,
+  readability-avoid-const-params-in-decls,
+  readability-avoid-nested-conditional-operator,
+  readability-avoid-unconditional-preprocessor-if,
+  readability-braces-around-statements,
+  readability-const-return-type,
+  readability-delete-null-pointer,
+  readability-duplicate-include,
+  readability-else-after-return,
+  readability-enum-initial-value,
+  readability-identifier-naming,
+  readability-inconsistent-ifelse-braces,
+  readability-isolate-declaration,
+  readability-make-member-function-const,
+  readability-misleading-indentation,
+  readability-misplaced-array-index,
+  readability-qualified-auto,
+  readability-redundant-access-specifiers,
+  readability-redundant-casting,
+  readability-redundant-control-flow,
+  readability-redundant-declaration,
+  readability-redundant-function-ptr-dereference,
+  readability-redundant-inline-specifier,
+  readability-redundant-member-init,
+  readability-redundant-parentheses,
+  readability-redundant-preprocessor,
+  readability-redundant-smartptr-get,
+  readability-redundant-string-cstr,
+  readability-redundant-string-init,
+  readability-redundant-typename,
+  readability-reference-to-constructed-temporary,
+  readability-simplify-boolean-expr,
+  readability-simplify-subscript-expr,
+  readability-static-accessed-through-instance,
+  readability-string-compare,
+  readability-suspicious-call-argument,
+  readability-uppercase-literal-suffix
+
+# The root configuration is strict. For a legacy rollout, gate newly introduced
+# diagnostics in CI before making a full-repository scan a required check.
+WarningsAsErrors: '*'
+HeaderFilterRegex: '(^|.*/)Source/.*'
+ExcludeHeaderFilterRegex: '(^|/)(ThirdParty|External|Generated|_deps)(/|$)'
+FormatStyle: file
+SystemHeaders: false
+
 CheckOptions:
-  - { key: modernize-use-default-member-init.UseAssignment, value: true }
+  # XII policy change required: Coding-Standards.md §2.2 currently ALLOWS
+  # braces to be omitted in simple control flow. This enforces the requested
+  # STRICTER new policy; update the document and its examples in the same PR.
+  - key: readability-braces-around-statements.ShortStatementLines
+    value: '0'
+
+  # XII assertions should not perform side effects that vanish in Shipping.
+  - key: bugprone-assert-side-effect.AssertMacros
+    value: 'assert,XII_ASSERT_DEV,XII_ASSERT_RELEASE,XII_ASSERT_DEBUG,XII_ASSERT_ALWAYS'
+  - key: bugprone-assert-side-effect.CheckFunctionCalls
+    value: 'false'
+
+  # A returned xiiResult is failure-sensitive (Coding-Standards.md §7.6-7.7).
+  # Intentional discards use XII's established .IgnoreResult() contract.
+  - key: bugprone-unused-return-value.CheckedReturnTypes
+    value: '^::xiiResult$;^::std::error_code$;^::std::error_condition$;^::std::expected$'
+  - key: bugprone-unused-return-value.AllowCastToVoid
+    value: 'false'
+
+  # Existing option in XII's .clang-tidy.
+  - key: modernize-use-default-member-init.UseAssignment
+    value: 'true'
+
+  # Clang-Tidy cannot selectively implement all XII naming rules via these
+  # keys: e.g., m_ui, m_h, m_v, m_p, s_ui and fixed-array exceptions.
+  # Enforce only reliably expressible parts; write an XII-specific AST check
+  # for the remaining type-dependent and top-level-class naming requirements.
+  - key: readability-identifier-naming.GetConfigPerFile
+    value: 'true'
+  - key: readability-identifier-naming.IgnoreMainLikeFunctions
+    value: 'true'
+  - key: readability-identifier-naming.FunctionCase
+    value: CamelCase
+  - key: readability-identifier-naming.MethodCase
+    value: CamelCase
+  - key: readability-identifier-naming.ScopedEnumConstantCase
+    value: CamelCase
+  - key: readability-identifier-naming.TemplateParameterCase
+    value: CamelCase
+  - key: readability-identifier-naming.TypeTemplateParameterCase
+    value: CamelCase
+  - key: readability-identifier-naming.ConceptCase
+    value: CamelCase
+  - key: readability-identifier-naming.PrivateMemberCase
+    value: aNy_CasE
+  - key: readability-identifier-naming.PrivateMemberPrefix
+    value: 'm_'
+  - key: readability-identifier-naming.PrivateMemberIgnoredRegexp
+    value: '^(s_.*|m[A-Z].*)$'
+  - key: readability-identifier-naming.ProtectedMemberCase
+    value: aNy_CasE
+  - key: readability-identifier-naming.ProtectedMemberPrefix
+    value: 'm_'
+  - key: readability-identifier-naming.ProtectedMemberIgnoredRegexp
+    value: '^(s_.*|m[A-Z].*)$'
+  - key: readability-identifier-naming.MacroDefinitionCase
+    value: UPPER_CASE
+
+  # Avoid overbroad include modifications in PCH-oriented source; custom
+  # header self-sufficiency builds remain required, and fixes need review.
+  - key: misc-include-cleaner.UnusedIncludes
+    value: 'false'
+  - key: misc-include-cleaner.MissingIncludes
+    value: 'true'
+...
