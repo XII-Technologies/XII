@@ -28,6 +28,18 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+      - name: Install ClangFormat 23
+        if: github.event_name == 'pull_request'
+        run: |
+          curl --fail --silent --show-error --location https://apt.llvm.org/llvm-snapshot.gpg.key \
+            -o "$RUNNER_TEMP/llvm-snapshot.asc"
+          sudo install -m 644 "$RUNNER_TEMP/llvm-snapshot.asc" /usr/share/keyrings/llvm-snapshot.asc
+          echo 'deb [signed-by=/usr/share/keyrings/llvm-snapshot.asc] https://apt.llvm.org/resolute/ llvm-toolchain-resolute-23 main' | \
+            sudo tee /etc/apt/sources.list.d/llvm-23.list
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y clang-format-23
+          clang-format-23 --version
+          clang-format-23 --dump-config --style=file > /dev/null
       - name: Repair copyright and format changed files
         id: format
         if: github.event_name == 'pull_request'
@@ -39,7 +51,7 @@ jobs:
           git worktree add --detach "$RUNNER_TEMP/pr-head" "$HEAD_SHA"
           (
             cd "$RUNNER_TEMP/pr-head"
-            python3 "$GITHUB_WORKSPACE/Utilities/CI/format_changed_source.py" --base "$BASE_SHA" --formatter clang-format-22 \
+            python3 "$GITHUB_WORKSPACE/Utilities/CI/format_changed_source.py" --base "$BASE_SHA" --formatter clang-format-23 \
               --patch "$patch_dir/source-style.patch"
           )
           if [[ -f "$patch_dir/source-style.patch" ]]; then
@@ -47,7 +59,7 @@ jobs:
           fi
           # Format the actual integration tree, where the base may have edited
           # source files also modified by the PR.
-          python3 Utilities/CI/format_changed_source.py --base "$BASE_SHA" --formatter clang-format-22 \
+          python3 Utilities/CI/format_changed_source.py --base "$BASE_SHA" --formatter clang-format-23 \
             --patch "$patch_dir/merge-style.patch"
           if [[ -f "$patch_dir/merge-style.patch" ]]; then
             echo "merge-changed=true" >> "$GITHUB_OUTPUT"

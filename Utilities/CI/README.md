@@ -4,13 +4,13 @@
 with the repository's `.clang-format` on entire selected C/C++ files. CMake
 files (`CMakeLists.txt`, `.cmake`, and `.BuildFilter`) receive copyright repairs
 only. It requires Python 3.8 or newer, Git, and a compatible ClangFormat executable
-(CI currently uses `clang-format-22`).
+(CI currently uses `clang-format-23`).
 
 To repair all tracked repository sources manually, run from anywhere inside the
 checkout:
 
 ```sh
-python3 Utilities/CI/format_changed_source.py --all --formatter clang-format-22
+python3 Utilities/CI/format_changed_source.py --all --formatter clang-format-23
 ```
 
 The example path is relative to the repository root; from another directory,
@@ -32,7 +32,7 @@ For CI or a branch-specific repair, select files added, modified, renamed, or
 changed in type since the merge base of a full commit SHA and `HEAD`:
 
 ```sh
-python3 Utilities/CI/format_changed_source.py --base FULL_COMMIT_SHA --formatter clang-format-22
+python3 Utilities/CI/format_changed_source.py --base FULL_COMMIT_SHA --formatter clang-format-23
 ```
 
 `--base` and `--all` are mutually exclusive. Both modes format complete selected
