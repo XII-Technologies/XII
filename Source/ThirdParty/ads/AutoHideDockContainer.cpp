@@ -506,15 +506,11 @@ void CAutoHideDockContainer::collapseView(bool Enable)
 	{
 		updateSize();
 		d->updateResizeHandleSizeLimitMax();
-		// If the parent dock container has native child windows (e.g. because
-		// an OpenGL or VTK content widget called winId()), this panel is an
-		// alien (non-native) widget and will always be obscured by those native
-		// sibling windows regardless of Qt's paint order. Native OS windows are
-		// rendered above the parent's painted (alien) content by the windowing
-		// system. To allow raise() to use OS-level Z-order and appear on top,
-		// this panel must first be promoted to a native window itself.
-		if (parentWidget() && parentWidget()->internalWinId() && !internalWinId())
+		// A native viewport can have non-native dock ancestors. Use the nearest
+		// native ancestor for stacking, and keep the drawer's own ancestors alien.
+		if (parentWidget() && parentWidget()->effectiveWinId() && !internalWinId())
 		{
+			setAttribute(Qt::WA_DontCreateNativeAncestors);
 			winId();
 		}
 		raise();

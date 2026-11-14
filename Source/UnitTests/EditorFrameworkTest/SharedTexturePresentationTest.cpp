@@ -12,13 +12,105 @@
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 #include <GraphicsFoundation/Device/DeviceFactory.h>
 #include <QApplication>
+#include <QCoreApplication>
 #include <QElapsedTimer>
 #include <QImage>
+#include <QLabel>
 #include <QPixmap>
 #include <QScreen>
 #include <QThread>
+#include <QVBoxLayout>
 #include <QWidget>
+#include <QWindow>
 #include <Qt>
+#include <ads/AutoHideDockContainer.h>
+#include <ads/DockManager.h>
+#include <ads/DockWidget.h>
+
+XII_CREATE_SIMPLE_TEST_GROUP(EditorDockViewportStacking);
+XII_CREATE_SIMPLE_TEST(EditorDockViewportStacking, AutoHideAboveNativeViewport)
+{
+#if XII_DISABLED(XII_PLATFORM_LINUX)
+  return;
+#endif
+
+  XII_TEST_BOOL(QCoreApplication::testAttribute(Qt::AA_DontCreateNativeWidgetSiblings));
+  const auto previousFlags = ads::CDockManager::autoHideConfigFlags();
+  ads::CDockManager::setAutoHideConfigFlags(previousFlags | ads::CDockManager::AutoHideFeatureEnabled);
+  XII_SCOPE_EXIT(ads::CDockManager::setAutoHideConfigFlags(previousFlags));
+
+  QWidget window;
+  window.resize(640, 480);
+  auto* pLayout  = new QVBoxLayout(&window);
+  auto* pManager = new ads::CDockManager(&window);
+  pLayout->addWidget(pManager);
+  auto* pCentral = new ads::CDockWidget(pManager, "Viewport");
+  auto* pContent = new QWidget;
+  pCentral->setWidget(pContent);
+  pManager->setCentralWidget(pCentral);
+  auto* pContentLayout = new QVBoxLayout(pContent);
+  auto* pViewport      = new xiiQtSharedTextureWidget(pContent);
+  pContentLayout->addWidget(pViewport);
+  auto* pPanel = new ads::CDockWidget(pManager, "Auto-hide panel");
+  pPanel->setWidget(new QLabel(QStringLiteral("Panel content")));
+  auto* pDrawer = pManager->addAutoHideDockWidget(ads::SideBarRight, pPanel);
+
+  window.show();
+  QApplication::processEvents();
+  XII_TEST_BOOL(pViewport->winId() != 0);
+  XII_TEST_BOOL(pManager->internalWinId() == 0);
+
+  xiiViewFrameMsgToEditor frame;
+  frame.m_uiWidth  = 2U;
+  frame.m_uiHeight = 2U;
+  frame.m_Pixels.SetCount(16U, 255U);
+  bool bConsumed               = false;
+  pViewport->m_OnFrameConsumed = [&](xiiUInt64, bool) {
+    bConsumed = true;
+  };
+  pViewport->SetVSyncEnabled(false);
+  pViewport->SetFrame(frame);
+  XII_TEST_BOOL(bConsumed);
+
+  for (xiiUInt32 i = 0U; i < 2U; ++i)
+  {
+    pDrawer->collapseView(false);
+    QApplication::processEvents();
+    XII_TEST_BOOL(pDrawer->isVisible());
+    XII_TEST_BOOL(pDrawer->internalWinId() != 0);
+    XII_TEST_BOOL(pManager->internalWinId() == 0);
+    if (XII_TEST_BOOL(pDrawer->windowHandle() != nullptr))
+    {
+      XII_TEST_BOOL(pDrawer->windowHandle()->parent() == pViewport->windowHandle()->parent());
+    }
+    pDrawer->collapseView(true);
+    QApplication::processEvents();
+    XII_TEST_BOOL(!pDrawer->isVisible());
+    bConsumed = false;
+    pViewport->SetFrame(frame);
+    XII_TEST_BOOL(bConsumed);
+  }
+
+  QWidget reparentHost;
+  reparentHost.resize(320, 240);
+  reparentHost.show();
+  pViewport->setParent(&reparentHost);
+  pViewport->resize(320, 240);
+  pViewport->show();
+  QApplication::processEvents();
+  bConsumed = false;
+  pViewport->SetFrame(frame);
+  XII_TEST_BOOL(bConsumed);
+
+  pViewport->setParent(pContent);
+  pContentLayout->addWidget(pViewport);
+  pViewport->show();
+  QApplication::processEvents();
+  bConsumed = false;
+  pViewport->SetFrame(frame);
+  XII_TEST_BOOL(bConsumed);
+  pViewport->m_OnFrameConsumed.Invalidate();
+}
 
 XII_CREATE_SIMPLE_TEST_GROUP(EditorViewportPresentation);
 XII_CREATE_SIMPLE_TEST(EditorViewportPresentation, NativeChildIsolation)

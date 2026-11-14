@@ -11,7 +11,9 @@
 
 #include <GuiFoundation/Style/DarkEditorStyle.moc.h>
 
+#include <QCoreApplication>
 #include <QIcon>
+#include <Qt>
 
 #ifdef BUILDSYSTEM_ENABLE_LUA_SUPPORT
 
@@ -97,6 +99,11 @@ static void xiiQtDebugMessageHandler(QtMsgType type, const QMessageLogContext& c
 
 void xiiQtEditorApp::InitQt(xiiInt32 iArgc, char** pArgv)
 {
+#if XII_ENABLED(XII_PLATFORM_LINUX)
+  // Native viewport and drawer surfaces must not promote the surrounding dock widgets.
+  QCoreApplication::setAttribute(Qt::AA_DontCreateNativeWidgetSiblings);
+#endif
+
   qInstallMessageHandler(xiiQtDebugMessageHandler);
 
   if (qApp != nullptr)
