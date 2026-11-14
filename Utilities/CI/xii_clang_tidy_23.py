@@ -30,7 +30,6 @@ SAFE_FIX_CHECKS = (
     "readability-braces-around-statements",
     "readability-inconsistent-ifelse-braces",
     "readability-isolate-declaration",
-    "readability-duplicate-include",
     "readability-uppercase-literal-suffix",
     "readability-avoid-const-params-in-decls",
     "readability-redundant-inline-specifier",
