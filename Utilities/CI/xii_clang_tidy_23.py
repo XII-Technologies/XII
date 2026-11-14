@@ -52,7 +52,7 @@ def verify_toolchain(root: Path, binary: str) -> None:
 
 def compile_units(root: Path, db_path: Path) -> set[Path]:
     if not db_path.is_file():
-        raise RuntimeError(f"Missing compilation database: {db_path}. Run cmake --preset linux-clang-dev first.")
+        raise RuntimeError(f"Missing compilation database: {db_path}. Run cmake --preset linux-clang-debug first.")
     try:
         records = json.loads(db_path.read_text(encoding="utf-8"))
     except (ValueError, UnicodeError) as ex:
@@ -129,7 +129,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", type=Path, default=Path.cwd(), help="XII repository root (default: CWD)")
     parser.add_argument("--clang-tidy", default="clang-tidy-23")
-    parser.add_argument("--build", type=Path, default=Path("Workspace/linux-clang-dev"))
+    parser.add_argument("--build", type=Path, default=Path("Workspace/linux-clang-debug"))
     parser.add_argument("--mode", choices=("verify", "changed", "all", "files"), default="verify")
     parser.add_argument("--base", default="origin/Development", help="Reference for changed-file analysis")
     parser.add_argument("--file", action="append", default=[], help="Source path, required for mode=files")
