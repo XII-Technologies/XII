@@ -17,7 +17,8 @@ The example path is relative to the repository root; from another directory,
 provide the appropriate path to the script. Both file discovery and relative
 patch paths are resolved from the repository root. Third-party trees under
 `Source/ThirdParty/`, `Source/Engine/Foundation/ThirdParty/`, and `Data/Tools/`,
-symbolic links, missing files, and untracked files are excluded.
+all other `ThirdParty` directories, symbolic links, missing files, and untracked
+files are excluded.
 
 Commit or stash tracked local changes before running the tool. It modifies files
 in place and writes a reusable binary Git patch to

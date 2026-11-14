@@ -92,7 +92,7 @@ class ChangedSourceTests(unittest.TestCase):
         cmake = Path("CMakeLists.txt")
         cmake.write_bytes(b"project(Test)\n")
         excluded = []
-        for directory in style.EXCLUDED:
+        for directory in (*style.EXCLUDED, "Source/EnginePlugins/RenderDocPlugin/ThirdParty/"):
             path = Path(directory) / "library.cpp"
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes(b"int library=0;\n")
@@ -163,6 +163,14 @@ class ChangedSourceTests(unittest.TestCase):
         self.format(commands.append)
         self.assertEqual(len(commands), 1)
         self.assertEqual(commands[0][-1], str(self.source))
+
+    def test_empty_source_notice_has_no_trailing_blank_line(self):
+        self.source.write_bytes(b"")
+        style.fix_notice(self.source, b"///")
+        expected = b"/// " + style.COPYRIGHT + b"\n"
+        self.assertEqual(self.source.read_bytes(), expected)
+        style.fix_notice(self.source, b"///")
+        self.assertEqual(self.source.read_bytes(), expected)
 
     def test_failed_formatter_does_not_emit_patch(self):
         self.source.write_bytes(self.source.read_bytes().replace(b"a = 1", b"a=2"))

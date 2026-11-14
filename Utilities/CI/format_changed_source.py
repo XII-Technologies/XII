@@ -38,7 +38,9 @@ def fix_notice(path, prefix):
     contents = contents.lstrip(b"\r\n")
     while match := NOTICE.match(contents):
         contents = contents[match.end():].lstrip(b"\r\n")
-    updated = bom + prefix + b" " + COPYRIGHT + newline + newline + contents
+    updated = bom + prefix + b" " + COPYRIGHT + newline
+    if contents:
+        updated += newline + contents
     if updated != original:
         path.write_bytes(updated)
 
@@ -66,7 +68,7 @@ def main():
     files = []
     for current in paths:
         path = Path(current)
-        if current.startswith(EXCLUDED) or path.is_symlink() or not path.is_file():
+        if current.startswith(EXCLUDED) or "ThirdParty" in path.parts or path.is_symlink() or not path.is_file():
             continue
         is_cpp = path.suffix in CPP_SUFFIXES
         if is_cpp or path.suffix in CMAKE_SUFFIXES or path.name == "CMakeLists.txt":
