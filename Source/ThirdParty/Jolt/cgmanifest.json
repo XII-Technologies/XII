@@ -1,0 +1,14 @@
+{
+  "Registrations": [
+    {
+      "component": {
+        "type": "git",
+        "git": {
+          "Name": "JoltPhysics",
+          "repositoryUrl": "https://github.com/jrouwe/JoltPhysics",
+          "commitHash": "dc2afef0554e90d6e7e8c318634dba650c6c2c7e"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
+#include <JoltPlugin/JoltPluginPCH.h>
+
+XII_STATICLINK_LIBRARY(JoltPlugin)
+{
+  if (bReturn)
+    return;
+
+  XII_STATICLINK_REFERENCE(JoltPlugin_Startup);
+  XII_STATICLINK_REFERENCE(JoltPlugin_System_Implementation_JoltCollisionLayerConfig);
+  XII_STATICLINK_REFERENCE(JoltPlugin_System_Implementation_JoltPhysicsProfileConfig);
+  XII_STATICLINK_REFERENCE(JoltPlugin_Shapes_Implementation_JoltAuthoringAttributes);
+  XII_STATICLINK_REFERENCE(JoltPlugin_Actors_Implementation_JoltActorComponent);
+  XII_STATICLINK_REFERENCE(JoltPlugin_Actors_Implementation_JoltStaticCollisionComponent);
+  XII_STATICLINK_REFERENCE(JoltPlugin_Actors_Implementation_JoltDynamicActorComponent);
+  XII_STATICLINK_REFERENCE(JoltPlugin_Actors_Implementation_JoltKinematicActorComponent);
+  XII_STATICLINK_REFERENCE(JoltPlugin_Character_Implementation_JoltCharacterControllerComponent);
+  XII_STATICLINK_REFERENCE(JoltPlugin_Shapes_Implementation_JoltPrimitiveShapeComponent);
+  XII_STATICLINK_REFERENCE(JoltPlugin_Resources_Implementation_JoltCollisionMeshResource);
+  XII_STATICLINK_REFERENCE(JoltPlugin_Resources_Implementation_JoltSceneCollisionCook);
+  XII_STATICLINK_REFERENCE(JoltPlugin_Joints_Implementation_JoltJointComponent);
+  XII_STATICLINK_REFERENCE(JoltPlugin_System_Implementation_JoltJobSystem);
+  XII_STATICLINK_REFERENCE(JoltPlugin_System_Implementation_JoltPhysicsWorldModule);
+}

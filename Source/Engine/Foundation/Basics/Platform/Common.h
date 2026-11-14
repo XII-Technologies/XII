@@ -93,6 +93,8 @@ struct xiiStaticLinkHelper
   xiiStaticLinkHelper(Func f) { f(true); }
 };
 
+class xiiStringView;
+
 /// Helper struct to register the existence of statically linked plugins.
 /// The macro XII_STATICLINK_LIBRARY will register a the given library name prepended with `xii` to the xiiPlugin system.
 /// Implemented in Plugin.cpp.

@@ -308,6 +308,7 @@ public:
 
 public:
   /// Registers which resource type to use to load an asset with the given type name
+  /// Pass nullptr to remove a registration before unloading its resource type.
   static void RegisterResourceForAssetType(xiiStringView sAssetTypeName, const xiiRTTI* pResourceType);
 
   /// Returns the resource type that was registered to handle the given asset type for loading. nullptr if no resource type was

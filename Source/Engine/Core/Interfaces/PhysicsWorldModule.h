@@ -11,11 +11,9 @@
 struct xiiGameObjectHandle;
 struct xiiSkeletonResourceDescriptor;
 
-/// Interface for physics world modules that provide physics simulation and queries.
-///
-/// Physics world modules implement physics functionality for a world, including
-/// collision detection, raycasting, and shape queries. Different physics engines
-/// can provide their own implementations of this interface.
+/// Generic rigid-body simulation and query interface. The world-module factory resolves this
+/// interface to its registered implementation, with project overrides in WorldModules.ddl.
+/// Model-based simulators may expose a separate concrete module in the same world.
 class XII_CORE_DLL xiiPhysicsWorldModuleInterface : public xiiWorldModule
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiPhysicsWorldModuleInterface, xiiWorldModule);
@@ -42,6 +40,7 @@ public:
   /// Returns xiiImpulseTypeConfig::InvalidKey if no such category exists.
   virtual xiiUInt8 GetImpulseTypeByName(xiiStringView sName) const = 0;
 
+  /// Casts along vDir for fDistance world units.
   virtual bool Raycast(xiiPhysicsCastResult& out_result, const xiiVec3& vStart, const xiiVec3& vDir, float fDistance, const xiiPhysicsQueryParameters& params, xiiPhysicsHitCollection collection = xiiPhysicsHitCollection::Closest) const = 0;
 
   virtual bool RaycastAll(xiiPhysicsCastResultArray& out_results, const xiiVec3& vStart, const xiiVec3& vDir, float fDistance, const xiiPhysicsQueryParameters& params) const = 0;
@@ -170,18 +169,31 @@ struct XII_CORE_DLL xiiMsgPhysicCharacterContact : public xiiMessage
   float              m_fImpact;
 };
 
-/// Sent to physics components that have contact reporting enabled (see xiiOnJoltContact::SendContactMsg).
-///
-/// Only sent for certain physics object combinations, e.g. debris doesn't trigger this.
-/// The reported contact position and normal is an average of the contact manifold.
-/// This is mainly meant for less important interactions, like breaking decorative things.
+struct XII_CORE_DLL xiiPhysicsContactPhase
+{
+  using StorageType = xiiUInt8;
+  enum Enum
+  {
+    Added,
+    Persisted,
+    Removed,
+    Default = Added
+  };
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_CORE_DLL, xiiPhysicsContactPhase);
+
+/// Sent to objects with contact reporting enabled. Removed contacts use the last known
+/// manifold position and normal, with zero impact. The normal points toward the other actor.
 struct XII_CORE_DLL xiiMsgPhysicContact : public xiiMessage
 {
   XII_DECLARE_MESSAGE_TYPE(xiiMsgPhysicContact, xiiMessage);
 
-  xiiVec3 m_vGlobalPosition;
-  xiiVec3 m_vNormal;
-  float   m_fImpactSqr;
+  xiiVec3                         m_vGlobalPosition;
+  xiiVec3                         m_vNormal;
+  float                           m_fImpactSqr = 0.0f; ///< Squared closing speed before the solver runs.
+  xiiEnum<xiiPhysicsContactPhase> m_Phase;
+  xiiGameObjectHandle             m_hOtherObject;
 };
 
 
@@ -217,4 +229,12 @@ struct XII_CORE_DLL xiiMsgBuildStaticMesh : public xiiMessage
 
   /// Append data to this description to add meshes to the automatic static mesh generation
   xiiSmcDescription* m_pStaticMeshDescription = nullptr;
+};
+
+/// Static geometry providers send this to their object and its ancestors when their contribution changes.
+struct XII_CORE_DLL xiiMsgStaticMeshChanged : public xiiMessage
+{
+  XII_DECLARE_MESSAGE_TYPE(xiiMsgStaticMeshChanged, xiiMessage);
+
+  static void Notify(xiiGameObject& ref_object);
 };

@@ -48,7 +48,7 @@ void xiiQtPluginSelectionWidget::SetPluginSet(xiiPluginBundleSet* pPluginSet)
     state.m_sID       = plugin.Key();
     state.m_pInfo     = &pi;
     state.m_bSelected = pi.m_bSelected || pi.m_bMandatory;
-    state.m_bLoadCopy = pi.m_bLoadCopy;
+    state.m_bLoadCopy = pi.m_bLoadCopy && pi.m_bSupportsLoadCopy;
 
     tmp = pi.m_sDisplayName;
 
@@ -133,7 +133,7 @@ void xiiQtPluginSelectionWidget::on_PluginsList_currentItemChanged(QListWidgetIt
     append(tr("Requires: "), info.m_RequiredBundles);
     DescriptionText->setPlainText(metadata);
     LoadCopy->setChecked(state.m_bLoadCopy);
-    LoadCopy->setEnabled(!m_bReadOnly && state.m_bSelected && !info.m_bMandatory && !info.m_RuntimePlugins.IsEmpty() && !info.m_bMissing);
+    LoadCopy->setEnabled(!m_bReadOnly && state.m_bSelected && !info.m_bMandatory && !info.m_RuntimePlugins.IsEmpty() && !info.m_bMissing && info.m_bSupportsLoadCopy);
   }
   else
   {

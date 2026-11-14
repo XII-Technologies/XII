@@ -75,6 +75,13 @@ void xiiWorldModuleConfig::Load()
     const xiiOpenDdlReaderElement* pInterface      = pInterfaceImpl->FindChildOfType(xiiOpenDdlPrimitiveType::String, "Interface");
     const xiiOpenDdlReaderElement* pImplementation = pInterfaceImpl->FindChildOfType(xiiOpenDdlPrimitiveType::String, "Implementation");
 
+    if (!pInterface || !pImplementation || pInterface->GetNumPrimitives() != 1 || pImplementation->GetNumPrimitives() != 1 ||
+        pInterface->GetPrimitivesString()[0].IsEmpty() || pImplementation->GetPrimitivesString()[0].IsEmpty())
+    {
+      xiiLog::Error("Invalid InterfaceImpl entry in '{}'. Expected one nonempty Interface and Implementation string.", szPath);
+      continue;
+    }
+
     // this prevents duplicates
     AddInterfaceImplementation(pInterface->GetPrimitivesString()[0], pImplementation->GetPrimitivesString()[0]);
   }

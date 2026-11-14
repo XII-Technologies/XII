@@ -1,0 +1,14 @@
+{
+  "Registrations": [
+    {
+      "component": {
+        "type": "git",
+        "git": {
+          "Name": "libqhull_r",
+          "repositoryUrl": "https://github.com/qhull/qhull",
+          "commitHash": "d1c2fc0caa5f644f3a0f220290d4a868c68ed4f6"
+        }
+      }
+    }
+  ]
+}

@@ -134,7 +134,11 @@ void xiiResourceManager::RegisterResourceForAssetType(xiiStringView sAssetTypeNa
   xiiStringBuilder s = sAssetTypeName;
   s.ToLower();
 
-  s_pState->m_AssetToResourceType[s] = pResourceType;
+  XII_LOCK(s_ResourceMutex);
+  if (pResourceType)
+    s_pState->m_AssetToResourceType[s] = pResourceType;
+  else
+    s_pState->m_AssetToResourceType.Remove(s);
 }
 
 const xiiRTTI* xiiResourceManager::FindResourceForAssetType(xiiStringView sAssetTypeName)
@@ -142,6 +146,7 @@ const xiiRTTI* xiiResourceManager::FindResourceForAssetType(xiiStringView sAsset
   xiiStringBuilder s = sAssetTypeName;
   s.ToLower();
 
+  XII_LOCK(s_ResourceMutex);
   return s_pState->m_AssetToResourceType.GetValueOrDefault(s, nullptr);
 }
 

@@ -85,7 +85,8 @@ bool xiiScriptExtensionClass_Physics::Raycast(xiiVec3& out_vHitPosition, xiiVec3
     params.m_uiIgnoreObjectFilterID = uiIgnoreObjectID;
     params.m_bIgnoreInitialOverlap  = true;
 
-    if (pModule->Raycast(res, vStart, vDirection, 1.0f, params))
+    const float fDistance = vDirection.GetLength();
+    if (pModule->Raycast(res, vStart, vDirection, fDistance, params))
     {
       // res.m_hSurface
       out_vHitPosition = res.m_vPosition;
@@ -199,7 +200,8 @@ bool xiiScriptExtensionClass_Physics::RaycastSurfaceInteraction(xiiWorld* pWorld
     params.m_uiIgnoreObjectFilterID = uiIgnoreObjectID;
     params.m_bIgnoreInitialOverlap  = true;
 
-    if (pModule->Raycast(res, vRayStart, vRayDirection, 1.0f, params))
+    const float fDistance = vRayDirection.GetLength();
+    if (pModule->Raycast(res, vRayStart, vRayDirection, fDistance, params))
     {
       xiiSurfaceResourceHandle hSurface = res.m_hSurface;
       if (!hSurface.IsValid() && !sFallbackSurface.IsEmpty())

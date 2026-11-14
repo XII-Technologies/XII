@@ -3,6 +3,7 @@
 #include <Core/CorePCH.h>
 
 #include <Core/Interfaces/PhysicsWorldModule.h>
+#include <Core/World/GameObject.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiPhysicsWorldModuleInterface, 1, xiiRTTINoAllocator)
@@ -48,14 +49,20 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMsgPhysicCharacterContact, 1, xiiRTTIDefault
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
+XII_BEGIN_STATIC_REFLECTED_ENUM(xiiPhysicsContactPhase, 1)
+  XII_ENUM_CONSTANTS(xiiPhysicsContactPhase::Added, xiiPhysicsContactPhase::Persisted, xiiPhysicsContactPhase::Removed)
+XII_END_STATIC_REFLECTED_ENUM;
+
 XII_IMPLEMENT_MESSAGE_TYPE(xiiMsgPhysicContact);
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMsgPhysicContact, 1, xiiRTTIDefaultAllocator<xiiMsgPhysicContact>)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMsgPhysicContact, 2, xiiRTTIDefaultAllocator<xiiMsgPhysicContact>)
 {
   XII_BEGIN_PROPERTIES
   {
     XII_MEMBER_PROPERTY("GlobalPosition", m_vGlobalPosition),
     XII_MEMBER_PROPERTY("Normal", m_vNormal),
     XII_MEMBER_PROPERTY("ImpactSqr", m_fImpactSqr),
+    XII_ENUM_MEMBER_PROPERTY("Phase", xiiPhysicsContactPhase, m_Phase),
+    XII_MEMBER_PROPERTY("OtherObject", m_hOtherObject),
   }
   XII_END_PROPERTIES;
 }
@@ -107,6 +114,17 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMsgBuildStaticMesh, 1, xiiRTTIDefaultAllocat
   XII_END_ATTRIBUTES;
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
+
+XII_IMPLEMENT_MESSAGE_TYPE(xiiMsgStaticMeshChanged);
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMsgStaticMeshChanged, 1, xiiRTTIDefaultAllocator<xiiMsgStaticMeshChanged>)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
+void xiiMsgStaticMeshChanged::Notify(xiiGameObject& ref_object)
+{
+  xiiMsgStaticMeshChanged msg;
+  for (auto* pObject = &ref_object; pObject != nullptr; pObject = pObject->GetParent())
+    pObject->SendMessage(msg);
+}
 // clang-format on
 
 XII_STATICLINK_FILE(Core, Core_Interfaces_Implementation_PhysicsWorldModule);

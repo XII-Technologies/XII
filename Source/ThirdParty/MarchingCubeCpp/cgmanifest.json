@@ -1,0 +1,14 @@
+{
+  "Registrations": [
+    {
+      "component": {
+        "type": "git",
+        "git": {
+          "Name": "MarchingCubeCpp",
+          "repositoryUrl": "https://github.com/aparis69/MarchingCubeCpp",
+          "commitHash": "0e980cc9ed2309ace816622e7877a51330b54aec"
+        }
+      }
+    }
+  ]
+}

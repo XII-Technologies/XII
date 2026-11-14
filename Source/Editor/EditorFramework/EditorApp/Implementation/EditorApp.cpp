@@ -317,7 +317,7 @@ xiiResult xiiQtEditorApp::AddBundlesInOrder(xiiDynamicArray<xiiApplicationPlugin
       {
         xiiApplicationPluginConfig::PluginConfig& p = order.ExpandAndGetRef();
         p.m_sAppDirRelativePath                     = dll;
-        p.m_bLoadCopy                               = bundle.m_bLoadCopy;
+        p.m_bLoadCopy                               = bundle.m_bLoadCopy && bundle.m_bSupportsLoadCopy;
       }
     }
   }
@@ -330,7 +330,7 @@ xiiResult xiiQtEditorApp::AddBundlesInOrder(xiiDynamicArray<xiiApplicationPlugin
       {
         xiiApplicationPluginConfig::PluginConfig& p = order.ExpandAndGetRef();
         p.m_sAppDirRelativePath                     = dll;
-        p.m_bLoadCopy                               = bundle.m_bLoadCopy;
+        p.m_bLoadCopy                               = bundle.m_bLoadCopy && bundle.m_bSupportsLoadCopy;
       }
     }
   }
@@ -343,7 +343,7 @@ xiiResult xiiQtEditorApp::AddBundlesInOrder(xiiDynamicArray<xiiApplicationPlugin
       {
         xiiApplicationPluginConfig::PluginConfig& p = order.ExpandAndGetRef();
         p.m_sAppDirRelativePath                     = dll;
-        p.m_bLoadCopy                               = bundle.m_bLoadCopy;
+        p.m_bLoadCopy                               = bundle.m_bLoadCopy && bundle.m_bSupportsLoadCopy;
       }
     }
   }

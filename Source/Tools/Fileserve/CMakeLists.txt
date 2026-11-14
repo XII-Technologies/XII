@@ -4,7 +4,7 @@ xii_cmake_init()
 
 xii_requires_qt()
 
-xii_requires(XII_CMAKE_PLATFORM_WINDOWS_DESKTOP)
+xii_requires(XII_CMAKE_PLATFORM_WINDOWS)
 
 xii_requires(XII_3RDPARTY_ENET_SUPPORT)
 

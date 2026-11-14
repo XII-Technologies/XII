@@ -296,6 +296,9 @@ xiiTransformStatus xiiAssetDocument::DoTransformAsset(const xiiPlatformProfile* 
   if (state == xiiAssetInfo::TransformState::UpToDate && !transformFlags.IsSet(xiiTransformFlags::ForceTransform))
     return xiiStatus(XII_SUCCESS);
 
+  if (state == xiiAssetInfo::NeedsImport && uiHash == 0 && GetAssetFlags().IsSet(xiiAssetDocumentFlags::RefreshSourceDependencies))
+    return xiiTransformStatus(xiiTransformResult::NeedsImport);
+
   if (uiHash == 0)
     return xiiStatus("Computing the hash for this asset or any dependency failed");
 
@@ -309,11 +312,8 @@ xiiTransformStatus xiiAssetDocument::DoTransformAsset(const xiiPlatformProfile* 
       const xiiString    sTargetFile = GetAssetDocumentManager()->GetAbsoluteOutputFileName(GetAssetDocumentTypeDescriptor(), GetDocumentPath(), sOutputTag, pAssetProfile);
       xiiTransformStatus ret         = InternalTransformAsset(sTargetFile, sOutputTag, pAssetProfile, AssetHeader, transformFlags);
 
-      // if writing failed, make sure the output file does not exist
-      if (ret.m_Result == xiiTransformResult::Failure)
-      {
+      if (ret.m_Result == xiiTransformResult::Failure && !GetAssetFlags().IsSet(xiiAssetDocumentFlags::RefreshSourceDependencies))
         xiiFileSystem::DeleteFile(sTargetFile);
-      }
       xiiAssetCurator::GetSingleton()->NotifyOfFileChange(sTargetFile);
       return ret;
     };
@@ -322,12 +322,12 @@ xiiTransformStatus xiiAssetDocument::DoTransformAsset(const xiiPlatformProfile* 
     for (auto it = outputs.GetIterator(); it.IsValid(); ++it)
     {
       res = GenerateOutput(it.Key());
-      if (res.Failed())
+      if (!res.Succeeded())
         return res;
     }
 
     res = GenerateOutput("");
-    if (res.Failed())
+    if (!res.Succeeded())
       return res;
 
     xiiAssetCurator::GetSingleton()->NotifyOfAssetChange(GetGuid());
@@ -361,7 +361,19 @@ xiiTransformStatus xiiAssetDocument::TransformAsset(xiiBitflags<xiiTransformFlag
     }
   }
 
-  const xiiTransformStatus res = DoTransformAsset(pAssetProfile, transformFlags);
+  xiiTransformStatus res = DoTransformAsset(pAssetProfile, transformFlags);
+  if (res.m_Result == xiiTransformResult::NeedsImport && !transformFlags.IsSet(xiiTransformFlags::BackgroundProcessing) &&
+      GetAssetFlags().IsSet(xiiAssetDocumentFlags::RefreshSourceDependencies))
+  {
+    if (!IsModified())
+    {
+      res = TransformAssetForImport(pAssetProfile);
+      if (!res.Succeeded())
+        return res;
+    }
+    XII_SUCCEED_OR_RETURN(SaveDocument());
+    res = DoTransformAsset(pAssetProfile, transformFlags);
+  }
 
   if (transformFlags.IsSet(xiiTransformFlags::TriggeredManually) && !transformFlags.IsSet(xiiTransformFlags::BackgroundProcessing))
   {
@@ -374,7 +386,8 @@ xiiTransformStatus xiiAssetDocument::TransformAsset(xiiBitflags<xiiTransformFlag
 
 xiiTransformStatus xiiAssetDocument::TransformAssetForImport(const xiiPlatformProfile* pAssetProfile)
 {
-  XII_ASSERT_DEV(xiiQtEditorApp::GetSingleton()->IsBackgroundMode(), "Import source changes in an isolated EditorProcessor.");
+  XII_ASSERT_DEV(xiiQtEditorApp::GetSingleton()->IsBackgroundMode() || GetAssetFlags().IsSet(xiiAssetDocumentFlags::RefreshSourceDependencies),
+                 "Import source changes in an isolated EditorProcessor unless the asset supports synchronous dependency refresh.");
   // Import computes graph changes only. Publishing a resource with the pre-import
   // source hash could make uncommitted material references appear up to date.
   class ImportStream final : public xiiStreamWriter
@@ -383,7 +396,7 @@ xiiTransformStatus xiiAssetDocument::TransformAssetForImport(const xiiPlatformPr
   } stream;
   xiiAssetFileHeader header;
   header.SetFileHashAndVersion(0, GetAssetTypeVersion());
-  return InternalTransformAsset(stream, "", pAssetProfile, header, xiiTransformFlags::TriggeredManually | xiiTransformFlags::ForceTransform);
+  return InternalTransformAsset(stream, "", pAssetProfile, header, xiiTransformFlags::TriggeredManually | xiiTransformFlags::ForceTransform | xiiTransformFlags::ImportSource);
 }
 
 xiiTransformStatus xiiAssetDocument::CreateThumbnail()
@@ -415,8 +428,17 @@ xiiTransformStatus xiiAssetDocument::CreateThumbnail()
 
 xiiTransformStatus xiiAssetDocument::InternalTransformAsset(xiiStringView sTargetFile, xiiStringView sOutputTag, const xiiPlatformProfile* pAssetProfile, const xiiAssetFileHeader& AssetHeader, xiiBitflags<xiiTransformFlags> transformFlags)
 {
+  const bool       bKeepPreviousOutput = GetAssetFlags().IsSet(xiiAssetDocumentFlags::RefreshSourceDependencies);
+  xiiStringBuilder sStagedFile;
+  if (bKeepPreviousOutput)
+  {
+    xiiStringBuilder sSuffix;
+    xiiConversionUtils::ToString(xiiUuid::MakeUuid(), sSuffix);
+    sStagedFile.Set(sTargetFile, ".", sSuffix, ".tmp");
+  }
+  XII_SCOPE_EXIT(if (!sStagedFile.IsEmpty()) xiiFileSystem::DeleteFile(sStagedFile));
   xiiDeferredFileWriter file;
-  file.SetOutput(sTargetFile);
+  file.SetOutput(bKeepPreviousOutput ? sStagedFile.GetView() : sTargetFile);
 
   if (AssetHeader.Write(file) == XII_FAILURE)
   {
@@ -437,6 +459,9 @@ xiiTransformStatus xiiAssetDocument::InternalTransformAsset(xiiStringView sTarge
     xiiLog::Error("Could not open file for writing: '{0}'", sTargetFile);
     return xiiStatus("Opening the asset output file failed");
   }
+
+  if (bKeepPreviousOutput && xiiOSFile::AtomicReplaceFile(sStagedFile, sTargetFile).Failed())
+    return xiiTransformStatus(xiiFmt("Could not replace asset output '{}'.", sTargetFile));
 
   return xiiStatus(XII_SUCCESS);
 }

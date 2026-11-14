@@ -2,7 +2,7 @@
 
 if (TARGET Editor AND TARGET DearImguiPlugin)
 
-    # Make sure this project is built when the Editor is built
-    add_dependencies(Editor DearImguiPlugin)
+  # Ensure this project is built when the Editor is built.
+  add_dependencies(Editor DearImguiPlugin)
 
 endif()

@@ -26,16 +26,17 @@ struct XII_EDITORFRAMEWORK_DLL xiiPluginBundle
   xiiTimestamp m_LastModificationTime;
 
   // General Bundle Description
-  bool                         m_bMandatory = false;  ///< If set, the bundle is always used and shown as a fixed requirement in the UI.
-  xiiString                    m_sDisplayName;        ///< The string for displaying the bundle in UI
-  xiiString                    m_sDescription;        ///< A proper description what this bundle is for, so that users know when to use it.
-  xiiHybridArray<xiiString, 1> m_EditorPlugins;       ///< List of all the DLLs (without extension) to load into the editor process.
-  xiiHybridArray<xiiString, 1> m_EditorEnginePlugins; ///< List of all the DLLs to load into the editor's engine process.
-  xiiHybridArray<xiiString, 1> m_RuntimePlugins;      ///< List of all the DLLs to load into the runtime. These will also get packaged.
-  xiiHybridArray<xiiString, 1> m_PackageDependencies; ///< Additional files to include in packages. E.g. indirect DLL dependencies.
-  xiiHybridArray<xiiString, 1> m_RequiredBundles;     ///< The file names (without path or extension) of other bundles that are required for this bundle to work.
-  xiiHybridArray<xiiString, 1> m_ExclusiveFeatures;   ///< If two bundles have the same string in this list, they can't be activated at the same time. So for example only one bundle with the feature 'Sound' or 'Physics' may be activated simultaneously. Only enforced by the UI.
-  xiiHybridArray<xiiString, 1> m_EnabledInTemplates;  ///< In which project templates this plugin should be active by default.
+  bool                         m_bMandatory        = false; ///< If set, the bundle is always used and shown as a fixed requirement in the UI.
+  bool                         m_bSupportsLoadCopy = true;  ///< False for bundles whose modules import one another by their original library names.
+  xiiString                    m_sDisplayName;              ///< The string for displaying the bundle in UI
+  xiiString                    m_sDescription;              ///< A proper description what this bundle is for, so that users know when to use it.
+  xiiHybridArray<xiiString, 1> m_EditorPlugins;             ///< List of all the DLLs (without extension) to load into the editor process.
+  xiiHybridArray<xiiString, 1> m_EditorEnginePlugins;       ///< List of all the DLLs to load into the editor's engine process.
+  xiiHybridArray<xiiString, 1> m_RuntimePlugins;            ///< List of all the DLLs to load into the runtime. These will also get packaged.
+  xiiHybridArray<xiiString, 1> m_PackageDependencies;       ///< Additional files to include in packages. E.g. indirect DLL dependencies.
+  xiiHybridArray<xiiString, 1> m_RequiredBundles;           ///< The file names (without path or extension) of other bundles that are required for this bundle to work.
+  xiiHybridArray<xiiString, 1> m_ExclusiveFeatures;         ///< If two bundles have the same string in this list, they can't be activated at the same time. So for example only one bundle with the feature 'Sound' or 'Physics' may be activated simultaneously. Only enforced by the UI.
+  xiiHybridArray<xiiString, 1> m_EnabledInTemplates;        ///< In which project templates this plugin should be active by default.
 
   /// Reads the bundle description, but not the state.
   xiiResult ReadBundleFromDDL(xiiOpenDdlReader& ref_ddl);

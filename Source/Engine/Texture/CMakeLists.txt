@@ -14,7 +14,7 @@ target_link_libraries(${PROJECT_NAME}
   GraphicsFoundation
 
   PRIVATE
-  DirectX-Headers
+  DirectXHeaders
   DirectXTex
   DirectXMath
   stb

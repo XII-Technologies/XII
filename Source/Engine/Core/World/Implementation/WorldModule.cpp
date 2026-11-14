@@ -94,7 +94,8 @@ xiiWorldModule* xiiWorldModuleFactory::CreateWorldModule(xiiWorldModuleTypeId ty
   if (typeId < m_CreatorFuncs.GetCount())
   {
     CreatorFunc func = m_CreatorFuncs[typeId].m_Func;
-    return (*func)(pWorld->GetAllocator(), pWorld);
+    if (func)
+      return (*func)(pWorld->GetAllocator(), pWorld);
   }
 
   return nullptr;
@@ -103,28 +104,33 @@ xiiWorldModule* xiiWorldModuleFactory::CreateWorldModule(xiiWorldModuleTypeId ty
 void xiiWorldModuleFactory::RegisterInterfaceImplementation(xiiStringView sInterfaceName, xiiStringView sImplementationName)
 {
   m_InterfaceImplementations.Insert(sInterfaceName, sImplementationName);
+  ApplyInterfaceImplementation(sInterfaceName, sImplementationName);
+}
 
-  xiiStringBuilder sTemp          = sInterfaceName;
-  const xiiRTTI*   pInterfaceRtti = xiiRTTI::FindTypeByName(sTemp);
-
-  sTemp                              = sImplementationName;
-  const xiiRTTI* pImplementationRtti = xiiRTTI::FindTypeByName(sTemp);
-
-  if (pInterfaceRtti != nullptr && pImplementationRtti != nullptr)
+void xiiWorldModuleFactory::ApplyInterfaceImplementation(xiiStringView sInterfaceName, xiiStringView sImplementationName)
+{
+  const auto* pInterface = xiiRTTI::FindTypeByName(sInterfaceName);
+  if (!pInterface)
+    return;
+  if (pInterface == xiiGetStaticRTTI<xiiWorldModule>() ||
+      !pInterface->IsDerivedFrom<xiiWorldModule>() || !pInterface->GetTypeFlags().IsSet(xiiTypeFlags::Abstract))
   {
-    m_TypeToId[pInterfaceRtti] = m_TypeToId[pImplementationRtti];
+    xiiLog::Error("'{}' is not a world module interface.", sInterfaceName);
     return;
   }
 
-  // Clear existing mapping if it maps to the wrong type
-  xiiUInt16 uiTypeId;
-  if (pInterfaceRtti != nullptr && m_TypeToId.TryGetValue(pInterfaceRtti, uiTypeId))
+  const auto* pImplementation = xiiRTTI::FindTypeByName(sImplementationName);
+  const auto  uiTypeId        = GetTypeId(pImplementation);
+  if (pImplementation && pImplementation->IsDerivedFrom(pInterface) &&
+      uiTypeId != s_InvalidWorldModuleTypeId && m_CreatorFuncs[uiTypeId].m_pRtti == pImplementation)
   {
-    if (m_CreatorFuncs[uiTypeId].m_pRtti->GetTypeName() != sImplementationName)
-    {
-      XII_ASSERT_DEV(pImplementationRtti == nullptr, "Implementation error");
-      m_TypeToId.Remove(pInterfaceRtti);
-    }
+    m_TypeToId.Insert(pInterface, uiTypeId);
+  }
+  else
+  {
+    m_TypeToId.Remove(pInterface);
+    if (pImplementation)
+      xiiLog::Error("World module '{}' is not a registered implementation of '{}'.", sImplementationName, sInterfaceName);
   }
 }
 xiiWorldModuleTypeId xiiWorldModuleFactory::RegisterWorldModule(const xiiRTTI* pRtti, CreatorFunc creatorFunc)
@@ -239,15 +245,7 @@ void xiiWorldModuleFactory::FillBaseTypeIds()
 
   // explicit mappings
   for (auto it = m_InterfaceImplementations.GetIterator(); it.IsValid(); ++it)
-  {
-    const xiiRTTI* pInterfaceRtti      = xiiRTTI::FindTypeByName(it.Key());
-    const xiiRTTI* pImplementationRtti = xiiRTTI::FindTypeByName(it.Value());
-
-    if (pInterfaceRtti != nullptr && pImplementationRtti != nullptr)
-    {
-      m_TypeToId[pInterfaceRtti] = m_TypeToId[pImplementationRtti];
-    }
-  }
+    ApplyInterfaceImplementation(it.Key(), it.Value());
 
   // automatic mappings
   for (auto it = m_TypeToId.GetIterator(); it.IsValid(); ++it)
@@ -339,6 +337,7 @@ void xiiWorldModuleFactory::ClearUnloadedTypeToIDs()
   // Finally, adding all invalid typeIds to the free list for reusing later
   for (xiiWorldModuleTypeId removedId : mappedIdsToRemove)
   {
+    m_CreatorFuncs[removedId] = {};
     s_freeTypeIds.PushBack(removedId);
   }
 }

@@ -9,5 +9,5 @@ xii_create_target(STATIC_LIBRARY ${PROJECT_NAME} NO_XII_PREFIX)
 
 target_link_libraries(${PROJECT_NAME}
   PRIVATE
-  Vulkan-Headers
+  VulkanHeaders
 )

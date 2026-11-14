@@ -53,6 +53,18 @@ void xiiActionMap::HideAction(xiiActionDescriptorHandle hAction, xiiStringView s
   m_uiEditCounter++;
 }
 
+void xiiActionMap::RemoveActionMapping(xiiActionDescriptorHandle hAction)
+{
+  const auto remove = [hAction](auto& entries) {
+    for (xiiUInt32 i = entries.GetCount(); i > 0; --i)
+      if (entries[i - 1].m_hAction == hAction)
+        entries.RemoveAtAndCopy(i - 1);
+  };
+  remove(m_TempActions);
+  remove(m_TempHiddenActions);
+  ++m_uiEditCounter;
+}
+
 void xiiActionMap::MapActionInternal(xiiActionDescriptorHandle hAction, xiiStringView sPath, xiiStringView sSubPath, float fOrder)
 {
   xiiStringBuilder sFullPath = sPath;

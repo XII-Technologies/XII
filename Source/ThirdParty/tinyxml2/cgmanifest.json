@@ -1,0 +1,14 @@
+{
+  "Registrations": [
+    {
+      "component": {
+        "type": "git",
+        "git": {
+          "Name": "tinyxml2",
+          "repositoryUrl": "https://github.com/leethomason/tinyxml2",
+          "commitHash": "8224e427b655b83dae5e2298f1e6919523a78737"
+        }
+      }
+    }
+  ]
+}

@@ -291,6 +291,16 @@
           - "Source/UnitTests/InspectorTest/**"
           - "Data/UnitTests/InspectorTest/**"
 
+"Module: JoltPlugin":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "Source/EnginePlugins/JoltPlugin/**"
+
+"Module: MujocoPlugin":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "Source/EnginePlugins/MujocoPlugin/**"
+
 "Module: RenderDocPlugin":
   - changed-files:
       - any-glob-to-any-file:
@@ -310,6 +320,16 @@
   - changed-files:
       - any-glob-to-any-file:
           - "Source/EditorPlugins/Fileserve/**"
+
+"Module: EditorPlugins/Jolt":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "Source/EditorPlugins/Jolt/**"
+
+"Module: EditorPlugins/Mujoco":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "Source/EditorPlugins/Mujoco/**"
 
 "Module: EditorPlugins/Scene":
   - changed-files:
