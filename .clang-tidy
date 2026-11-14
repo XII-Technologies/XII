@@ -2,16 +2,6 @@
 
 # Authoritative policies: Coding-Standards.md, .clang-format, .editorconfig
 
-# Reviewed source: XII-Technologies/XII / Development (November 2026)
-
-# Update §2.2 to require ALL control-flow braces before gating this profile
-
-# No automatic renaming of public/reflected/serialized interfaces
-
-# Type-specific XII prefixes and architecture contracts require custom AST checks
-
-# This YAML is not a formatter. Run pinned clang-format-23 independently
-
 # Exclude third-party and generated translation units in the invocation script
 
 # Validate with clang-tidy-23 --verify-config before enabling in CI
@@ -244,16 +234,17 @@ CheckOptions:
 
   bugprone-unused-return-value.CheckedReturnTypes: '^::xiiResult$;^::std::error_code$;^::std::error_condition$;^::std::errc$;^::std::expected$;^::boost::system::error_code$'
 
-# §2.5: enforce direct dependencies but avoid mass deleting PCH-dependent includes
+# §2.5: analyze direct/unused includes; centrally preserve structural headers
 
-  misc-include-cleaner.IgnoreHeaders: '.*PCH\.h;.*DLL\.h'
   misc-include-cleaner.MissingIncludes: 'true'
   misc-include-cleaner.UnusedIncludes: 'true'
+  misc-include-cleaner.IgnoreHeaders: '.*PCH\.h;.*DLL\.h;.*StaticLink\.h'
   misc-include-cleaner.DeduplicateFindings: 'true'
 
 # Preserve XII existing assignment-style default member initialization
 
   modernize-use-default-member-init.UseAssignment: 'true'
+  modernize-use-nullptr.UseNullptrT: 'false'
 
 # §2.2 proposed change: all branches and loops must have braces
 

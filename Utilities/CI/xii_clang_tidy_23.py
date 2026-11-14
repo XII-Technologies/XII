@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) Theophilus Eriata. All Rights Reserved.
-"""Verify and run the pinned XII LLVM 23 Clang-Tidy profile.
+"""Verify, analyze, and apply curated LLVM 23 fixes to XII-owned C++ code.
 
 Install as Utilities/CI/xii_clang_tidy_23.py. Run from XII's repository root.
 Requires: Python 3.10+, clang-tidy-23, a CMake compile_commands.json for analysis.
@@ -21,6 +21,25 @@ import sys
 CPP_EXTENSIONS = {".cpp", ".cc", ".cxx"}
 HEADER_EXTENSIONS = {".h", ".hh", ".hpp", ".hxx", ".inl"}
 EXCLUDED_COMPONENTS = {"ThirdParty", "External", "Generated", "_deps", "Workspace", "Vendored"}
+
+# Only checks whose automatic fixes are narrowly scoped, mechanical, and
+# compatible with XII's published conventions belong here. The --fix-safe
+# option deliberately does NOT apply fixes from the entire .clang-tidy file.
+# Clang-Tidy fix-its are not proof of semantic equivalence: review and build.
+SAFE_FIX_CHECKS = (
+    "readability-braces-around-statements",
+    "readability-inconsistent-ifelse-braces",
+    "readability-isolate-declaration",
+    "readability-duplicate-include",
+    "readability-uppercase-literal-suffix",
+    "readability-avoid-const-params-in-decls",
+    "readability-redundant-inline-specifier",
+    "readability-redundant-control-flow",
+    "modernize-redundant-void-arg",
+    "modernize-use-nullptr",
+    "modernize-use-override",
+    "misc-include-cleaner",
+)
 
 
 def call(command: list[str], cwd: Path) -> subprocess.CompletedProcess[str]:
@@ -113,14 +132,22 @@ def select_units(root: Path, available: set[Path], mode: str, base: str, explici
 def check_clean_checkout(root: Path) -> None:
     status = call(["git", "status", "--porcelain", "--untracked-files=no"], root)
     if status.returncode != 0 or status.stdout.strip():
-        raise RuntimeError("--fix-braces requires a clean tracked working tree; commit/stash changes first.")
+        raise RuntimeError("--fix-safe requires a clean tracked working tree; commit/stash changes first.")
 
 
-def analyze(root: Path, binary: str, build: Path, source: Path, fix_braces: bool) -> tuple[str, int, str]:
+def analyze(root: Path, binary: str, build: Path, source: Path, fix_safe: bool) -> tuple[str, int, str]:
     command = [binary, f"--config-file={root / '.clang-tidy'}", "-p", str(build), str(source)]
-    if fix_braces:
-        # Append semantics of --checks: reset all and enable only a known safe fix.
-        command.extend(["--checks=-*,readability-braces-around-statements", "--fix"])
+    if fix_safe:
+        # Reset the full diagnostic profile and run ONLY the reviewed fix allowlist.
+        # The repository profile sets WarningsAsErrors: '*'; suppress that policy
+        # for the remediation pass so fixed warnings do not fail the invocation.
+        # Compiler errors still fail, and --fix-errors is intentionally omitted.
+        command.extend([
+            "--checks=-*," + ",".join(SAFE_FIX_CHECKS),
+            "--warnings-as-errors=-*",
+            "--fix",
+            "--format-style=file",
+        ])
     result = call(command, root)
     return source.relative_to(root).as_posix(), result.returncode, result.stdout
 
@@ -135,7 +162,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--file", action="append", default=[], help="Source path, required for mode=files")
     parser.add_argument("--jobs", type=int, default=os.cpu_count() or 1, help="Parallel analysis jobs (default: CPU count)")
     parser.add_argument("--dry-run", action="store_true", help="List selected source files without analysis")
-    parser.add_argument("--fix-braces", action="store_true", help="Only apply mandatory-braces fixes (no other autofixes) in the selected mode, including all")
+    parser.add_argument("--fix-safe", action="store_true", help="Apply the curated safe-fix allowlist in files, changed, or all mode")
     parser.add_argument("--allow-dirty", action="store_true", help="Permit autofixes with uncommitted tracked changes (local use; review resulting diff)")
     args = parser.parse_args(argv)
     root = args.root.resolve()
@@ -143,17 +170,17 @@ def main(argv: list[str] | None = None) -> int:
     try:
         verify_toolchain(root, args.clang_tidy)
         if args.mode == "verify":
+            if args.fix_safe or args.allow_dirty:
+                raise RuntimeError("--fix-safe requires --mode=files, changed, or all")
             return 0
         if args.jobs < 1:
             raise RuntimeError("--jobs must be >= 1")
         if args.mode == "files" and not args.file:
             raise RuntimeError("--mode=files requires at least one --file")
-        fix_braces = args.fix_braces
-        if args.allow_dirty and not fix_braces:
-            raise RuntimeError("--allow-dirty only applies to an autofix invocation.")
-        if fix_braces:
-            if args.dry_run:
-                raise RuntimeError("--dry-run cannot be combined with brace autofixing")
+        fix_safe = args.fix_safe and not args.dry_run
+        if args.allow_dirty and not args.fix_safe:
+            raise RuntimeError("--allow-dirty only applies to --fix-safe")
+        if fix_safe:
             if args.allow_dirty:
                 print("WARNING: Autofixing with uncommitted tracked changes. Review the resulting diff carefully.")
             else:
@@ -174,11 +201,13 @@ def main(argv: list[str] | None = None) -> int:
                 print(source.relative_to(root).as_posix())
             return 0
         failures = []
-        workers = 1 if fix_braces else args.jobs
-        if fix_braces and args.jobs != 1:
-            print("NOTICE: Brace fixing is sequential, regardless of --jobs, to avoid overlapping edits to shared headers.")
+        workers = 1 if fix_safe else args.jobs
+        if fix_safe:
+            print(f"Applying {len(SAFE_FIX_CHECKS)} curated Clang-Tidy fix checks with .clang-format.")
+            if args.jobs != 1:
+                print("NOTICE: --fix-safe runs sequentially, regardless of --jobs, to avoid overlapping edits to shared headers.")
         with ThreadPoolExecutor(max_workers=workers) as pool:
-            results = pool.map(lambda p: analyze(root, args.clang_tidy, build, p, fix_braces), selected)
+            results = pool.map(lambda p: analyze(root, args.clang_tidy, build, p, fix_safe), selected)
             for name, code, output in results:
                 print(f"\n===== {name} (exit {code}) =====")
                 if output.strip():
@@ -188,7 +217,10 @@ def main(argv: list[str] | None = None) -> int:
         if failures:
             print(f"FAILED {len(failures)} unit(s): " + ", ".join(failures), file=sys.stderr)
             return 1
-        print("Clang-Tidy completed without reported errors in selected units.")
+        if fix_safe:
+            print("Safe-fix pass completed. Review the Git diff, then build and rerun analysis without --fix-safe.")
+        else:
+            print("Clang-Tidy completed without reported errors in selected units.")
         return 0
     except (OSError, RuntimeError, subprocess.CalledProcessError) as ex:
         print(f"ERROR: {ex}", file=sys.stderr)
