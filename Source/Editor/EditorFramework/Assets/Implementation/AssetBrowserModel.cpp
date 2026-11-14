@@ -582,7 +582,7 @@ void xiiQtAssetBrowserModel::OnFileSystemUpdate()
 
   for (const auto& e : events)
   {
-    if (e.m_FileEvent.m_Type == xiiFileChangedEvent::Type::ModelReset)
+    if (e.m_FileEvent.m_Type == xiiFileChangedEvent::Type::ModelReset || e.m_FolderEvent.m_Type == xiiFolderChangedEvent::Type::ModelReset)
     {
       resetModel();
       return;
