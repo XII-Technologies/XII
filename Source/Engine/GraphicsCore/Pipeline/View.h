@@ -259,10 +259,10 @@ private:
   void UpdateRenderResolutionState() const;
   void UpdateFrameStats();
 
-  xiiResult SynchronizeRenderPipeline();
+  xiiResult                                 SynchronizeRenderPipeline();
   const class xiiDynamicResolutionSettings& GetDynamicResolutionSettings() const;
   const xiiRenderConfiguration&             ResolveRenderConfiguration();
-  void      ApplyRenderScale(float fRenderScale);
+  void                                      ApplyRenderScale(float fRenderScale);
 
   /// Instantiates the selected resource and emits its frame-specific render graph.
   ///        Called by xiiRenderWorldModule::ExecuteRenderGraphs each frame.

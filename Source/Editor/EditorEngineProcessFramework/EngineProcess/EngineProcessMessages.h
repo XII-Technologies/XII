@@ -276,8 +276,8 @@ public:
   xiiUInt32                       m_uiRenderHeight = 0;
   xiiRenderConfiguration          m_EffectiveRenderConfiguration;
   xiiString                       m_sRenderConfigurationError;
-  xiiUInt16                       m_uiWidth        = 0;
-  xiiUInt16                       m_uiHeight       = 0;
+  xiiUInt16                       m_uiWidth  = 0;
+  xiiUInt16                       m_uiHeight = 0;
   xiiGALExternalMemoryDescription m_Memory;
   xiiDataBuffer                   m_Pixels; ///< Packed RGBA8, only used when GPU interoperability is unavailable.
 };
@@ -297,19 +297,19 @@ class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiViewRedrawMsgToEngine : public xii
   XII_ADD_DYNAMIC_REFLECTION(xiiViewRedrawMsgToEngine, xiiEditorEngineViewMsg);
 
 public:
-  bool      m_bShowFrameStats   = false;
+  bool                   m_bShowFrameStats = false;
   xiiRenderConfiguration m_RenderConfiguration;
-  bool      m_bUseSharedTexture = false;
-  xiiUInt16 m_uiWindowWidth;
-  xiiUInt16 m_uiWindowHeight;
+  bool                   m_bUseSharedTexture = false;
+  xiiUInt16              m_uiWindowWidth;
+  xiiUInt16              m_uiWindowHeight;
   float                  m_fDevicePixelRatio = 1.0F;
-  bool      m_bUpdatePickingData;
-  bool      m_bEnablePickingSelected;
-  bool      m_bEnablePickTransparent;
-  bool      m_bUseCameraTransformOnDevice = true;
-  bool      m_bShowNavigationGizmo        = false;
-  bool      m_bNavigationHovered          = false;
-  xiiInt32  m_iNavigationHoveredAxis      = -1;
+  bool                   m_bUpdatePickingData;
+  bool                   m_bEnablePickingSelected;
+  bool                   m_bEnablePickTransparent;
+  bool                   m_bUseCameraTransformOnDevice = true;
+  bool                   m_bShowNavigationGizmo        = false;
+  bool                   m_bNavigationHovered          = false;
+  xiiInt32               m_iNavigationHoveredAxis      = -1;
 
   float                      m_fNearPlane;
   float                      m_fFarPlane;

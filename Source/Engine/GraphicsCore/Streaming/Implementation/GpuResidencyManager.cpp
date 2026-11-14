@@ -363,7 +363,7 @@ xiiSharedPtr<xiiGpuResidencyManager::State> xiiGpuResidencyManager::s_pState;
 
 namespace
 {
-  constexpr float     s_fLodReferenceViewportHeight = 1080.0f;
+  constexpr float s_fLodReferenceViewportHeight = 1080.0f;
 
   void RetireBufferBinding(xiiGALBindlessResourceHandle handle, xiiUInt64 uiLastUseFrame)
   {

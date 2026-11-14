@@ -40,9 +40,9 @@ class XII_EDITORFRAMEWORK_DLL xiiRenderModeAction : public xiiEnumerationMenuAct
 
 public:
   xiiRenderModeAction(const xiiActionContext& context, const char* szName, const char* szIconPath);
-  void             GetEntries(xiiDynamicArray<Item>& out_entries) override;
-  xiiInt64         GetValue() const override;
-  void             Execute(const xiiVariant& value) override;
+  void     GetEntries(xiiDynamicArray<Item>& out_entries) override;
+  xiiInt64 GetValue() const override;
+  void     Execute(const xiiVariant& value) override;
 };
 
 ///

@@ -202,7 +202,7 @@ void xiiGALDevice::BeginFrame()
     XII_ASSERT_DEV(!m_bBeginFrameCalled, "You must call xiiGALDevice::EndFrame before you can call xiiGALDevice::BeginFrame again");
 
     m_StreamingMemorySettings = m_PendingStreamingMemorySettings;
-    m_bBeginFrameCalled = true;
+    m_bBeginFrameCalled       = true;
 
     BeginFramePlatform();
   }

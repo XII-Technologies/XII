@@ -1,3 +1,5 @@
+# Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 set_property(GLOBAL PROPERTY XII_BUILD_FILTER_PrecompiledTools
   ArchiveTool
   enet

@@ -80,8 +80,8 @@ public:
   xiiTransformGizmoAction(const xiiActionContext& context, const char* szName, ActionType type);
   ~xiiTransformGizmoAction() override;
 
-  void         Execute(const xiiVariant& value) override;
-  void         GameObjectEventHandler(const xiiGameObjectEvent& e);
+  void Execute(const xiiVariant& value) override;
+  void GameObjectEventHandler(const xiiGameObjectEvent& e);
 
 private:
   void UpdateState();

@@ -18,7 +18,7 @@ public:
   static constexpr const char* s_szScenePipeline  = "{ d83bb009-7ef8-315a-1f96-12e7df0c90f7 }";
   static constexpr const char* s_szEditorPipeline = "{ 7e79df72-9ebd-674a-bcd5-ca4405549c82 }";
 
-  xiiString m_sMainRenderPipeline = s_szScenePipeline;
+  xiiString              m_sMainRenderPipeline = s_szScenePipeline;
   xiiRenderConfiguration m_RenderConfiguration;
 
   xiiResult     Validate() const override;

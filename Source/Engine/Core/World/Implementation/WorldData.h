@@ -35,8 +35,10 @@ namespace xiiInternal
 
     enum
     {
-      GAME_OBJECTS_PER_BLOCK        = xiiDataBlock<xiiGameObject, xiiInternal::DEFAULT_BLOCK_SIZE>::CAPACITY,
-      TRANSFORMATION_DATA_PER_BLOCK = xiiDataBlock<xiiGameObject::TransformationData, xiiInternal::DEFAULT_BLOCK_SIZE>::CAPACITY
+      GAME_OBJECTS_PER_BLOCK = xiiDataBlock < xiiGameObject,
+      xiiInternal::DEFAULT_BLOCK_SIZE > ::CAPACITY,
+      TRANSFORMATION_DATA_PER_BLOCK = xiiDataBlock < xiiGameObject::TransformationData,
+      xiiInternal::DEFAULT_BLOCK_SIZE > ::CAPACITY
     };
 
     // Object Storage

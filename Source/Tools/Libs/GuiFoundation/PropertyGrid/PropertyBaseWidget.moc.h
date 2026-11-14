@@ -127,8 +127,8 @@ public:
   void SetSelection(const xiiHybridArray<xiiPropertySelection, 8>& items) override;
 
 protected:
-  void         BroadcastValueChanged(const xiiVariant& NewValue);
-  void         DoPrepareToDie() override {}
+  void BroadcastValueChanged(const xiiVariant& NewValue);
+  void DoPrepareToDie() override {}
 
   const xiiVariant& GetOldValue() const { return m_OldValue; }
   virtual void      InternalSetValue(const xiiVariant& value) = 0;
@@ -214,10 +214,10 @@ public Q_SLOTS:
   void OnDeleteButtonClicked();
 
 protected:
-  void         OnInit() override;
-  void         StructureEventHandler(const xiiDocumentObjectStructureEvent& e);
-  void         DoPrepareToDie() override;
-  void         UpdateTitle(const xiiRTTI* pType = nullptr);
+  void OnInit() override;
+  void StructureEventHandler(const xiiDocumentObjectStructureEvent& e);
+  void DoPrepareToDie() override;
+  void UpdateTitle(const xiiRTTI* pType = nullptr);
 
 protected:
   QHBoxLayout*              m_pLayout       = nullptr;
@@ -274,18 +274,18 @@ protected:
   /// Some containers like xiiVariant can be both a map or an array so we can't reply on the property type alone. For these containers, this method can be overwritten to retrieve the category from something other than `m_pProp->GetCategory()`.
   virtual xiiPropertyCategory::Enum GetContainerCategory() const;
 
-  void         Clear();
-  void         OnInit() override;
+  void Clear();
+  void OnInit() override;
 
-  void         DeleteItems(xiiHybridArray<xiiPropertySelection, 8>& items);
-  void         MoveItems(xiiHybridArray<xiiPropertySelection, 8>& items, xiiInt32 iMove);
-  void         DoPrepareToDie() override;
-  void         dragEnterEvent(QDragEnterEvent* event) override;
-  void         dragMoveEvent(QDragMoveEvent* event) override;
-  void         dragLeaveEvent(QDragLeaveEvent* event) override;
-  void         dropEvent(QDropEvent* event) override;
-  void         paintEvent(QPaintEvent* event) override;
-  void         showEvent(QShowEvent* event) override;
+  void DeleteItems(xiiHybridArray<xiiPropertySelection, 8>& items);
+  void MoveItems(xiiHybridArray<xiiPropertySelection, 8>& items, xiiInt32 iMove);
+  void DoPrepareToDie() override;
+  void dragEnterEvent(QDragEnterEvent* event) override;
+  void dragMoveEvent(QDragMoveEvent* event) override;
+  void dragLeaveEvent(QDragLeaveEvent* event) override;
+  void dropEvent(QDropEvent* event) override;
+  void paintEvent(QPaintEvent* event) override;
+  void showEvent(QShowEvent* event) override;
 
 private:
   bool updateDropIndex(QDropEvent* pEvent);
@@ -348,12 +348,12 @@ public:
   ~xiiQtVariantPropertyWidget() override;
 
 protected:
-  void         OnInit() override;
-  void         InternalSetValue(const xiiVariant& value) override;
-  void         DoPrepareToDie() override;
-  void         UpdateTypeListSelection(xiiVariantType::Enum type);
-  void         ChangeVariantType(xiiVariantType::Enum type);
-  void         EnableTypeSelection(bool bEnable);
+  void OnInit() override;
+  void InternalSetValue(const xiiVariant& value) override;
+  void DoPrepareToDie() override;
+  void UpdateTypeListSelection(xiiVariantType::Enum type);
+  void ChangeVariantType(xiiVariantType::Enum type);
+  void EnableTypeSelection(bool bEnable);
 
   virtual xiiResult GetVariantTypeDisplayName(xiiVariantType::Enum type, xiiStringBuilder& out_sName) const;
 

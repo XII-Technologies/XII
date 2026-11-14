@@ -375,7 +375,7 @@ private:
 
   xiiGALStreamingMemorySettings m_StreamingMemorySettings;
   xiiGALStreamingMemorySettings m_PendingStreamingMemorySettings;
-  bool m_bBeginFrameCalled = false;
+  bool                          m_bBeginFrameCalled = false;
 };
 
 #include <GraphicsFoundation/Device/Implementation/Device_inl.h>

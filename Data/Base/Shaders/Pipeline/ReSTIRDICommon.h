@@ -222,8 +222,8 @@ float ReSTIREstimateEmissiveTarget(xiiGpuEmissiveTriangle emissiveTriangle, floa
   const float  solidAngle    = ReSTIREmissiveSolidAngle(emissiveTriangle, worldPosition, directionToLight);
   const float3 viewDirection = ReSTIRGetViewDirection(worldPosition, normal);
   const float3 contribution  = BRDFLayered(
-                                surface.Albedo, surface.Roughness, surface.Metallic, surface.DielectricSpecular, surface.Transmission,
-                                0.0f, 0.1f, normal, directionToLight, viewDirection) *
+                                 surface.Albedo, surface.Roughness, surface.Metallic, surface.DielectricSpecular, surface.Transmission,
+                                 0.0f, 0.1f, normal, directionToLight, viewDirection) *
     emissiveTriangle.RadianceAndLuminance.rgb * solidAngle;
   return ReSTIRContributionLuminance(contribution);
 }

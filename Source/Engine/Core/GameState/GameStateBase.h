@@ -19,7 +19,7 @@ class XII_CORE_DLL xiiGameStateBase : public xiiReflectedClass
   XII_ADD_DYNAMIC_REFLECTION(xiiGameStateBase, xiiReflectedClass)
 
 public:
-  xiiGameStateBase()          = default;
+  xiiGameStateBase()           = default;
   ~xiiGameStateBase() override = default;
 
   /// A game state gets activated through this function.

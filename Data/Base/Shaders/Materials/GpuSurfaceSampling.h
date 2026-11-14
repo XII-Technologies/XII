@@ -1,4 +1,5 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #pragma once
 
 SamplerState      g_MaterialSamplers[];
@@ -81,8 +82,8 @@ float4 xiiSampleVirtualTexture(uint index, uint samplerIndex, SamplerState fallb
       float2 physicalUV = (texel - tile * 128u + 2.0f) / 132.0f;
       uint   physical   = NonUniformResourceIndex(mapping.x);
       value             = samplerIndex != 0xffffffffu ?
-                    g_VirtualTextureTiles[physical].SampleLevel(g_MaterialSamplers[NonUniformResourceIndex(samplerIndex)], physicalUV, 0.0f) :
-                    g_VirtualTextureTiles[physical].SampleLevel(fallbackSampler, physicalUV, 0.0f);
+        g_VirtualTextureTiles[physical].SampleLevel(g_MaterialSamplers[NonUniformResourceIndex(samplerIndex)], physicalUV, 0.0f) :
+        g_VirtualTextureTiles[physical].SampleLevel(fallbackSampler, physicalUV, 0.0f);
     }
     if (hasFineSample)
       return lerp(fineSample, value, frac(mipLevel));

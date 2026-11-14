@@ -173,9 +173,9 @@ void xiiSceneViewContext::MarqueePickObjects(const xiiViewMarqueePickingMsgToEng
   const auto* view = GetView();
   if (!view || !view->IsValid())
     return;
-  const auto* meshes = FindScenePass<xiiSceneMeshPickingPass>(*view);
-  const xiiUInt32                      left = xiiMath::Min(message->m_uiPickPosX0, message->m_uiPickPosX1);
-  const xiiUInt32                      top  = xiiMath::Min(message->m_uiPickPosY0, message->m_uiPickPosY1);
+  const auto*                          meshes = FindScenePass<xiiSceneMeshPickingPass>(*view);
+  const xiiUInt32                      left   = xiiMath::Min(message->m_uiPickPosX0, message->m_uiPickPosX1);
+  const xiiUInt32                      top    = xiiMath::Min(message->m_uiPickPosY0, message->m_uiPickPosY1);
   const xiiRectU32                     rectangle(left, top, xiiMath::Max(message->m_uiPickPosX0, message->m_uiPickPosX1) - left + 1, xiiMath::Max(message->m_uiPickPosY0, message->m_uiPickPosY1) - top + 1);
   xiiDynamicArray<xiiGameObjectHandle> objects;
   const bool                           captured = meshes && meshes->PickObjectsInRect(*view, rectangle, objects).Succeeded();

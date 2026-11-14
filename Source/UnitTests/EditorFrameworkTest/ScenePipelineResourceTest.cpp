@@ -61,9 +61,9 @@ void xiiCheckAuthoredSceneContract(const xiiRenderPipelineResource& scene)
       spotlightTransparent |= type == "xiiTransparentRasterPass";
     }
   XII_TEST_BOOL(spotlightOpaque && spotlightTransparent);
-  const auto ao     = xiiFindPipelineTestPass(descriptor, "xiiAmbientOcclusionPass");
-  const auto filter = xiiFindPipelineTestPass(descriptor, "xiiAmbientOcclusionTemporalPass");
-  const auto trace  = xiiFindPipelineTestPass(descriptor, "xiiScreenIrradianceTracePass");
+  const auto ao                = xiiFindPipelineTestPass(descriptor, "xiiAmbientOcclusionPass");
+  const auto filter            = xiiFindPipelineTestPass(descriptor, "xiiAmbientOcclusionTemporalPass");
+  const auto trace             = xiiFindPipelineTestPass(descriptor, "xiiScreenIrradianceTracePass");
   const auto probes            = xiiFindPipelineTestPass(descriptor, "xiiDDGIProbeGatherPass");
   const auto blend             = xiiFindPipelineTestPass(descriptor, "xiiConfidenceBlendPass");
   bool       bScreenBackground = false, bProbeLayer = false;
@@ -74,8 +74,8 @@ void xiiCheckAuthoredSceneContract(const xiiRenderPipelineResource& scene)
       bProbeLayer |= descriptor.m_Passes[connection.m_uiSource].m_Id == probes && connection.m_sInput == "Layer";
     }
   XII_TEST_BOOL(bScreenBackground && bProbeLayer);
-  xiiUuid    selected;
-  bool       screenFallback = false, rayPrimary = false;
+  xiiUuid selected;
+  bool    screenFallback = false, rayPrimary = false;
   for (const auto& connection : descriptor.m_Connections)
     if (descriptor.m_Passes[connection.m_uiSource].m_Id == blend && connection.m_sOutput == "Radiance" && connection.m_sInput == "Fallback" && descriptor.m_Passes[connection.m_uiTarget].m_pType->GetTypeName() == "xiiTextureSelectionPass")
     {

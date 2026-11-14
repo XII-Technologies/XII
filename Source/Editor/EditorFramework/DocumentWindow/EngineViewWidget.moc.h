@@ -50,11 +50,11 @@ public:
   xiiHybridArray<xiiEditorInputContext*, 8> m_InputContexts;
 
   /// Returns the ID of this view
-  xiiSizeU32                 GetRenderResolution() const { return m_RenderResolution; }
+  xiiSizeU32                    GetRenderResolution() const { return m_RenderResolution; }
   const xiiRenderConfiguration& GetEffectiveRenderConfiguration() const { return m_EffectiveRenderConfiguration; }
   xiiStringView                 GetRenderConfigurationError() const { return m_sRenderConfigurationError; }
-  xiiUInt32                  GetViewID() const { return m_uiViewID; }
-  xiiQtEngineDocumentWindow* GetDocumentWindow() const { return m_pDocumentWindow; }
+  xiiUInt32                     GetViewID() const { return m_uiViewID; }
+  xiiQtEngineDocumentWindow*    GetDocumentWindow() const { return m_pDocumentWindow; }
 
   /// Sends the redraw message to the engine
   virtual void SyncToEngine();
@@ -135,17 +135,17 @@ protected:
 
   void resizeEvent(QResizeEvent* event) override;
 
-  void         keyPressEvent(QKeyEvent* e) override;
-  void         keyReleaseEvent(QKeyEvent* e) override;
-  void         mousePressEvent(QMouseEvent* e) override;
-  void         mouseReleaseEvent(QMouseEvent* e) override;
-  void         mouseDoubleClickEvent(QMouseEvent* e) override;
-  void         mouseMoveEvent(QMouseEvent* e) override;
-  void         wheelEvent(QWheelEvent* e) override;
-  void         focusOutEvent(QFocusEvent* e) override;
-  void         dragEnterEvent(QDragEnterEvent* e) override;
-  void         dragLeaveEvent(QDragLeaveEvent* e) override;
-  void         dropEvent(QDropEvent* e) override;
+  void keyPressEvent(QKeyEvent* e) override;
+  void keyReleaseEvent(QKeyEvent* e) override;
+  void mousePressEvent(QMouseEvent* e) override;
+  void mouseReleaseEvent(QMouseEvent* e) override;
+  void mouseDoubleClickEvent(QMouseEvent* e) override;
+  void mouseMoveEvent(QMouseEvent* e) override;
+  void wheelEvent(QWheelEvent* e) override;
+  void focusOutEvent(QFocusEvent* e) override;
+  void dragEnterEvent(QDragEnterEvent* e) override;
+  void dragLeaveEvent(QDragLeaveEvent* e) override;
+  void dropEvent(QDropEvent* e) override;
 
 protected:
   void         InitializeNavigationGizmo();
@@ -165,10 +165,10 @@ protected:
   xiiUInt32                  m_uiViewID;
   xiiQtEngineDocumentWindow* m_pDocumentWindow = nullptr;
 
-  xiiSizeU32       m_RenderResolution = xiiSizeU32(0, 0);
+  xiiSizeU32             m_RenderResolution = xiiSizeU32(0, 0);
   xiiRenderConfiguration m_EffectiveRenderConfiguration;
   xiiString              m_sRenderConfigurationError;
-  static xiiUInt32 s_uiNextViewID;
+  static xiiUInt32       s_uiNextViewID;
 
   // Owned by this view; removed before the view is destroyed.
   xiiEditorViewportNavigationGizmo* m_pNavigationGizmo    = nullptr;

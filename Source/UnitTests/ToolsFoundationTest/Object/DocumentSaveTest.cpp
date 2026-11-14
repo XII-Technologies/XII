@@ -85,7 +85,7 @@ XII_CREATE_SIMPLE_TEST(DocumentPersistence, SkippedObjectsAreNotOverwritten)
             ++callbacks;
             status = result;
           },
-                                                       force);
+                                                            force);
           XII_TEST_BOOL(!task.IsValid());
           XII_TEST_INT(callbacks, 1);
           // Drain the old implementation's real write when running the negative control.
@@ -141,7 +141,7 @@ XII_CREATE_SIMPLE_TEST(DocumentPersistence, ReadOnlySaveAndRecovery)
     XII_TEST_BOOL(saved == &document && result.Failed());
     ++callbacks;
   },
-                                                   true);
+                                                    true);
   XII_TEST_BOOL(!rejected.IsValid());
   XII_TEST_INT(callbacks, 1);
   if (rejected.IsValid())

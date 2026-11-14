@@ -106,7 +106,7 @@ void xiiQtEngineViewWidget::SyncToEngine()
       (xiiViewRenderMode::IsRayTracingVisualizationMode(m_pViewConfig->m_RenderMode) && xiiEditorEngineProcessConnection::GetSingleton()->IsEngineSetup() &&
        !xiiEditorEngineProcessConnection::GetSingleton()->IsProcessCrashed() && !xiiEditorEngineProcessConnection::GetSingleton()->SupportsRayTracingModes()))
     m_pViewConfig->m_RenderMode = xiiViewRenderMode::Default;
-  cam.m_bShowFrameStats = m_pViewConfig->m_bShowFrameStats;
+  cam.m_bShowFrameStats     = m_pViewConfig->m_bShowFrameStats;
   cam.m_RenderConfiguration = m_pViewConfig->m_RenderConfiguration;
   static_cast<xiiQtSharedTextureWidget*>(m_pViewportWidget)->SetVSyncEnabled(m_pViewConfig->m_bVSync);
   cam.m_RenderMode           = m_pViewConfig->m_RenderMode;
@@ -394,7 +394,7 @@ void xiiQtEngineViewWidget::HandleViewMessage(const xiiEditorEngineViewMsg* pMsg
 {
   if (const auto* frame = xiiDynamicCast<const xiiViewFrameMsgToEditor*>(pMsg))
   {
-    m_RenderResolution = xiiSizeU32(frame->m_uiRenderWidth, frame->m_uiRenderHeight);
+    m_RenderResolution             = xiiSizeU32(frame->m_uiRenderWidth, frame->m_uiRenderHeight);
     m_EffectiveRenderConfiguration = frame->m_EffectiveRenderConfiguration;
     m_sRenderConfigurationError    = frame->m_sRenderConfigurationError;
     if (m_pViewportWidget)

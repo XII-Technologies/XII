@@ -338,7 +338,7 @@ void xiiGALCommandList::SetStencilRef(xiiUInt32 uiStencilRef)
 
   if (!m_bStencilRefValid || m_uiStencilRef != uiStencilRef)
   {
-    m_uiStencilRef = uiStencilRef;
+    m_uiStencilRef     = uiStencilRef;
     m_bStencilRefValid = true;
 
     ++m_CommandListStatistics.m_CommandListCounters.m_uiSetStencilRef;
@@ -354,7 +354,7 @@ void xiiGALCommandList::SetBlendFactor(const xiiColor& blendFactor)
 
   if (!m_bBlendFactorsValid || blendFactor != m_BlendFactors)
   {
-    m_BlendFactors = blendFactor;
+    m_BlendFactors       = blendFactor;
     m_bBlendFactorsValid = true;
 
     ++m_CommandListStatistics.m_CommandListCounters.m_uiSetBlendFactors;
@@ -993,8 +993,8 @@ void xiiGALCommandList::BeginRenderPassInternal(const xiiGALBeginRenderPassDescr
   XII_ASSERT_DEV(beginRenderPass.m_ClearValues.GetCount() >= uiRequiredClearValueCount, "BeginRenderPass: At least {0} clear values are required, but only {1} are provided.", uiRequiredClearValueCount, beginRenderPass.m_ClearValues.GetCount());
 #endif
 
-  m_pRenderPass  = beginRenderPass.m_pRenderPass;
-  m_pFramebuffer = beginRenderPass.m_pFramebuffer;
+  m_pRenderPass          = beginRenderPass.m_pRenderPass;
+  m_pFramebuffer         = beginRenderPass.m_pFramebuffer;
   m_bSecondaryRenderPass = bSecondaryCommands;
 
   ++m_CommandListStatistics.m_CommandListCounters.m_uiBeginRenderPass;
@@ -1025,8 +1025,8 @@ void xiiGALCommandList::EndRenderPass()
 
   EndRenderPassPlatform();
 
-  m_pRenderPass  = nullptr;
-  m_pFramebuffer = nullptr;
+  m_pRenderPass          = nullptr;
+  m_pFramebuffer         = nullptr;
   m_bSecondaryRenderPass = false;
 }
 
@@ -2490,8 +2490,8 @@ void xiiGALCommandList::InvalidateBindings()
   m_pIndexBuffer      = nullptr;
   m_uiIndexDataOffset = 0;
 
-  m_BlendFactors = xiiColor::Black;
-  m_uiStencilRef = 0;
+  m_BlendFactors       = xiiColor::Black;
+  m_uiStencilRef       = 0;
   m_bBlendFactorsValid = false;
   m_bStencilRefValid   = false;
 

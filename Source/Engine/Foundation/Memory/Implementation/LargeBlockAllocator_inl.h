@@ -76,7 +76,8 @@ XII_FORCE_INLINE xiiDataBlock<T, BlockSize> xiiLargeBlockAllocator<BlockSize>::A
   {
     enum
     {
-      BLOCK_CAPACITY = xiiDataBlock<T, BlockSize>::CAPACITY
+      BLOCK_CAPACITY = xiiDataBlock < T,
+      BlockSize > ::CAPACITY
     };
   };
 

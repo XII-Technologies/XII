@@ -390,7 +390,7 @@ void xiiQtEditorApp::ProjectEventHandler(const xiiToolsProjectEvent& r)
         // Core collections do not necessarily include the Editor's own viewport pipeline.
         const auto*     pipelineConfig = curator->GetActiveAssetProfile()->GetTypeConfig<xiiRenderPipelineProfileConfig>();
         const xiiString references[]   = {xiiRenderPipelineProfileConfig::s_szEditorPipeline,
-                                        pipelineConfig ? pipelineConfig->GetResourceReference() : xiiStringView()};
+                                          pipelineConfig ? pipelineConfig->GetResourceReference() : xiiStringView()};
         for (const auto& reference : references)
         {
           if (reference.IsEmpty())

@@ -578,7 +578,7 @@ namespace
     const auto resource = object->GetTypeAccessor().GetValue("Resource");
     if (!resource.IsA<xiiString>() || resource.Get<xiiString>().IsEmpty())
       return true;
-    const auto resolved = ResolvePipelineResource(resource.Get<xiiString>());
+    const auto                          resolved = ResolvePipelineResource(resource.Get<xiiString>());
     xiiRenderPipelineResourceDescriptor descriptor;
     if (xiiFileSystem::ExistsFile(resolved))
     {

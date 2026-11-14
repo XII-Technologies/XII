@@ -18,7 +18,7 @@ namespace
     VariantRole      = Qt::UserRole + 2,
     SortRole         = Qt::UserRole + 3,
   };
-}
+} // namespace
 
 class QNullWidget : public QWidget
 {

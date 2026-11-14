@@ -8,10 +8,10 @@
 class XII_SHAREDPLUGINASSETS_DLL xiiAnimationGraphNodeManager : public xiiDocumentNodeManager
 {
 public:
-  void         GetNodeCreationTemplates(xiiDynamicArray<xiiNodeCreationTemplate>& out_templates) const override;
-  bool         InternalIsNode(const xiiDocumentObject* pObject) const override;
-  void         InternalCreatePins(const xiiDocumentObject* pObject, NodeInternal& ref_node) override;
-  void         GetCreateableTypes(xiiHybridArray<const xiiRTTI*, 32>& ref_types) const override;
+  void GetNodeCreationTemplates(xiiDynamicArray<xiiNodeCreationTemplate>& out_templates) const override;
+  bool InternalIsNode(const xiiDocumentObject* pObject) const override;
+  void InternalCreatePins(const xiiDocumentObject* pObject, NodeInternal& ref_node) override;
+  void GetCreateableTypes(xiiHybridArray<const xiiRTTI*, 32>& ref_types) const override;
 
   xiiStatus InternalCanConnect(const xiiPin& source, const xiiPin& target, CanConnectResult& out_result) const override;
 

@@ -33,9 +33,9 @@ struct XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiEngineViewConfig
   xiiCameraUsageHint::Enum      m_CameraUsageHint             = xiiCameraUsageHint::EditorView;
   bool                          m_bUseCameraTransformOnDevice = true;
 
-  bool  m_bShowFrameStats = false;
+  bool                   m_bShowFrameStats = false;
   xiiRenderConfiguration m_RenderConfiguration;
-  bool  m_bVSync          = true; ///< Presentation preference for this viewport window/swapchain.
+  bool                   m_bVSync = true; ///< Presentation preference for this viewport window/swapchain.
 
   bool m_bShowNavigationGizmo = true; ///< Per-viewport editor UI state, preserved across projection changes.
 

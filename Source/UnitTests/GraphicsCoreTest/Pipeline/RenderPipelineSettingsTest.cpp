@@ -77,7 +77,7 @@ XII_CREATE_SIMPLE_TEST(Pipeline, RenderConfigurationProfileMigration)
   XII_TEST_STRING(pDefaults->GetResourceReference(), xiiRenderPipelineProfileConfig::s_szScenePipeline);
 
   xiiRenderPipelineProfileConfig saved;
-  saved.m_sMainRenderPipeline                              = "CustomPipeline";
+  saved.m_sMainRenderPipeline = "CustomPipeline";
   XII_TEST_RESULT(saved.m_RenderConfiguration.SetOverride<xiiGlobalIlluminationRenderSettings>("Technique", xiiInt64(xiiRenderGlobalIllumination::DDGI)));
   XII_TEST_RESULT(saved.m_RenderConfiguration.SetOverride<xiiDDGIRenderSettings>("Probes/ProbeUpdateBudget", 64U));
   XII_TEST_RESULT(saved.m_RenderConfiguration.SetOverride<xiiShadowRenderSettings>("Enabled", false));

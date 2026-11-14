@@ -78,8 +78,8 @@ public Q_SLOTS:
   void ShowCommandPalette();
 
 protected:
-  bool         eventFilter(QObject* obj, QEvent* e) override;
-  bool         nativeEvent(const QByteArray& eventType, void* pMessage, qintptr* pResult) override;
+  bool eventFilter(QObject* obj, QEvent* e) override;
+  bool nativeEvent(const QByteArray& eventType, void* pMessage, qintptr* pResult) override;
 
 private:
   friend class xiiQtDocumentWindow;

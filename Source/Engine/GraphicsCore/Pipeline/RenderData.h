@@ -31,7 +31,7 @@ public:
     };
   };
 
-  xiiRenderData()          = default;
+  xiiRenderData()           = default;
   ~xiiRenderData() override = default;
 
 public:

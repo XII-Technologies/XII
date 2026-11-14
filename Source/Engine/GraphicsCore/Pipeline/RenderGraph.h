@@ -686,9 +686,9 @@ private:
 
     xiiHashedString                      m_sName;
     xiiBitflags<xiiGALCommandQueueFlags> m_QueueFlags;
-    bool                                 m_bHasSideEffects    = false;
-    bool                                 m_bAllowMerge        = true;
-    bool                                 m_bManagedRenderPass = false;
+    bool                                 m_bHasSideEffects      = false;
+    bool                                 m_bAllowMerge          = true;
+    bool                                 m_bManagedRenderPass   = false;
     xiiUInt32                            m_uiRecordingItemCount = 0U;
     xiiHybridArray<ResourceUsage, 8U>    m_Reads;
     xiiHybridArray<ResourceUsage, 8U>    m_Writes;

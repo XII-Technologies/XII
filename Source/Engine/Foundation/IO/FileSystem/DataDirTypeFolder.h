@@ -48,15 +48,15 @@ namespace xiiDataDirectory
 
     xiiDataDirectoryReader* OpenFileToRead(xiiStringView sFile, xiiFileShareMode::Enum FileShareMode, bool bSpecificallyThisDataDir) override;
 
-    bool                            ResolveAssetRedirection(xiiStringView sPathOrAssetGuid, xiiStringBuilder& out_sRedirection) override;
-    bool                            ResolveAssetIdentifier(xiiStringView sPath, xiiStringBuilder& out_sGuid) override;
-    xiiDataDirectoryWriter*         OpenFileToWrite(xiiStringView sFile, xiiFileShareMode::Enum FileShareMode) override;
-    void                            RemoveDataDirectory() override;
-    void                            DeleteFile(xiiStringView sFile) override;
-    bool                            ExistsFile(xiiStringView sFile, bool bOneSpecificDataDir) override;
-    xiiResult                       GetFileStats(xiiStringView sFileOrFolder, bool bOneSpecificDataDir, xiiFileStats& out_Stats) override;
-    virtual FolderReader*           CreateFolderReader() const;
-    virtual FolderWriter*           CreateFolderWriter() const;
+    bool                    ResolveAssetRedirection(xiiStringView sPathOrAssetGuid, xiiStringBuilder& out_sRedirection) override;
+    bool                    ResolveAssetIdentifier(xiiStringView sPath, xiiStringBuilder& out_sGuid) override;
+    xiiDataDirectoryWriter* OpenFileToWrite(xiiStringView sFile, xiiFileShareMode::Enum FileShareMode) override;
+    void                    RemoveDataDirectory() override;
+    void                    DeleteFile(xiiStringView sFile) override;
+    bool                    ExistsFile(xiiStringView sFile, bool bOneSpecificDataDir) override;
+    xiiResult               GetFileStats(xiiStringView sFileOrFolder, bool bOneSpecificDataDir, xiiFileStats& out_Stats) override;
+    virtual FolderReader*   CreateFolderReader() const;
+    virtual FolderWriter*   CreateFolderWriter() const;
 
     /// Called by 'xiiDataDirectoryType_Folder::Factory'
     xiiResult InternalInitializeDataDirectory(xiiStringView sDirectory) override;

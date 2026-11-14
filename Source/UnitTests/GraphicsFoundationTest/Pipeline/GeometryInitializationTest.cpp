@@ -257,7 +257,7 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, SharedTopologyRetirement)
   xiiGALBufferCreationDescription pressureDescription;
   pressureDescription.m_uiSize    = 2U * 1024U * 1024U;
   pressureDescription.m_BindFlags = xiiGALBindFlags::VertexBuffer;
-  auto  pPressureBuffer           = pDevice->CreateBuffer(pressureDescription);
+  auto pPressureBuffer            = pDevice->CreateBuffer(pressureDescription);
   if (!XII_TEST_BOOL(pPressureBuffer != nullptr))
     return;
   auto       policy         = pDevice->GetStreamingMemorySettings();

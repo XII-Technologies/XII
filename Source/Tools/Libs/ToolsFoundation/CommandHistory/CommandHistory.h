@@ -20,10 +20,10 @@ public:
   xiiString m_sDisplayString;
 
 private:
-  xiiStatus         DoInternal(bool bRedo) override;
-  xiiStatus         UndoInternal(bool bFireEvents) override;
-  void              CleanupInternal(CommandState state) override;
-  xiiStatus         AddCommandTransaction(xiiCommand* command);
+  xiiStatus DoInternal(bool bRedo) override;
+  xiiStatus UndoInternal(bool bFireEvents) override;
+  void      CleanupInternal(CommandState state) override;
+  xiiStatus AddCommandTransaction(xiiCommand* command);
 
 private:
   friend class xiiCommandHistory;

@@ -762,7 +762,7 @@ QVariant xiiQtAssetBrowserModel::data(const QModelIndex& index, int iRole) const
       {
         xiiStringBuilder sExt = entry.m_sAbsFilePath.GetAbsolutePath().GetFileExtension();
         sExt.ToLower();
-        const bool bImportable   = m_ImportExtensions.Contains(sExt);
+        const bool bImportable = m_ImportExtensions.Contains(sExt);
         if (bImportable)
         {
           const bool bIsReferenced = xiiAssetCurator::GetSingleton()->IsReferenced(entry.m_sAbsFilePath.GetAbsolutePath());

@@ -968,7 +968,7 @@ void xiiQtProfilingWidget::Refresh()
 
 void xiiQtProfilingWidget::RebuildCpu(double begin, double end, bool updateTables)
 {
-  const auto&    data = m_pSession->Display();
+  const auto&    data   = m_pSession->Display();
   const QString  lane   = m_pLanes->currentData().toString();
   const QString  filter = m_pFilter->text();
   QVector<Scope> scopes;
@@ -1058,10 +1058,10 @@ void xiiQtProfilingWidget::RebuildCpu(double begin, double end, bool updateTable
     // The identity is independent of clipped timestamps and display names.
     const QString key = sample.m_Key;
     details[key]      = QString("%1\n%2\nInclusive %3 ms • Self %4 ms\nThread identity: %5\n%6")
-                     .arg(scope.m_Name, ThreadName(data, scope.m_Lane))
-                     .arg(ms, 0, 'f', 3)
-                     .arg(sample.m_fSelf / 1000, 0, 'f', 3)
-                     .arg(scope.m_Lane, scope.m_Function);
+                          .arg(scope.m_Name, ThreadName(data, scope.m_Lane))
+                          .arg(ms, 0, 'f', 3)
+                          .arg(sample.m_fSelf / 1000, 0, 'f', 3)
+                          .arg(scope.m_Lane, scope.m_Function);
     if (visible < 20000)
     {
       rows[key] = {scope.m_Name, ThreadName(data, scope.m_Lane), QString::number((scope.m_fBeginUs - begin) / 1000, 'f', 3), QString::number(ms, 'f', 3), QString::number(sample.m_fSelf / 1000, 'f', 3), QString::number(sample.m_iDepth), scope.m_Function};
@@ -1205,13 +1205,13 @@ void xiiQtProfilingWidget::RebuildGpu()
     const auto&  durations = value.m_Durations;
     const double mean      = durations.isEmpty() ? -1 : std::accumulate(durations.begin(), durations.end(), 0.0) / durations.size();
     rows[it.key()]         = {graph, duplicates.value({sample.m_uiGraph, sample.m_Name}) > 1 ? sample.m_Name + QString(" · %1 %2").arg(sample.m_bSubmission ? "Submission" : "Pass").arg(sample.m_uiPass + 1) : sample.m_Name, QueueName(sample.m_uiQueue), sample.m_bAvailable ? QString::number(sample.m_fMs, 'f', 3) : "Unavailable", QString::number(sample.m_uiFrame), QString::number(durations.size()), mean < 0 ? "Unavailable" : QString::number(mean, 'f', 3), durations.isEmpty() ? "Unavailable" : QString::number(Percentile(durations, 0), 'f', 3), durations.isEmpty() ? "Unavailable" : QString::number(Percentile(durations, 0.95), 'f', 3), durations.isEmpty() ? "Unavailable" : QString::number(Percentile(durations, 1), 'f', 3)};
-    details[it.key()] = QString("%1 / %2\nGraph instance: %3\n%4 index: %5\nGPU recording frame: %6\nUnavailable samples: %7\nDurations have no absolute GPU timestamps. Submission costs may overlap across queues; their sum is not GPU frame wall time.")
-                          .arg(graph, sample.m_Name)
-                          .arg(sample.m_uiGraph)
-                          .arg(sample.m_bSubmission ? "Submission" : "Pass")
-                          .arg(sample.m_uiPass)
-                          .arg(sample.m_uiFrame)
-                          .arg(value.m_iUnavailable);
+    details[it.key()]      = QString("%1 / %2\nGraph instance: %3\n%4 index: %5\nGPU recording frame: %6\nUnavailable samples: %7\nDurations have no absolute GPU timestamps. Submission costs may overlap across queues; their sum is not GPU frame wall time.")
+                               .arg(graph, sample.m_Name)
+                               .arg(sample.m_uiGraph)
+                               .arg(sample.m_bSubmission ? "Submission" : "Pass")
+                               .arg(sample.m_uiPass)
+                               .arg(sample.m_uiFrame)
+                               .arg(value.m_iUnavailable);
   }
   UpdateRows(m_pGpuPasses, rows, details);
   if (m_SelectedGpu.isEmpty() && !values.isEmpty())

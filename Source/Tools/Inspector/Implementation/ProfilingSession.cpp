@@ -123,7 +123,7 @@ bool xiiInspectorProfilingSession::Receive(xiiStreamReader& reader)
   for (xiiUInt32 i = 0; i < count; ++i)
   {
     Scope     scope;
-    xiiUInt64 thread = 0;
+    xiiUInt64 thread   = 0;
     xiiUInt32 name     = 0;
     xiiUInt32 function = 0;
     reader >> scope.m_uiId >> thread >> name >> function >> scope.m_fBeginUs >> scope.m_fEndUs;
@@ -739,7 +739,7 @@ bool xiiInspectorProfilingSession::Import(const QJsonObject& object)
       bool         frameValid = false;
       const auto   graph      = sample["graph"].toString().toULongLong(&graphValid);
       const auto   frame      = sample["frame"].toString().toULongLong(&frameValid);
-      const double ms = sample["ms"].toDouble(-1);
+      const double ms         = sample["ms"].toDouble(-1);
       if (!graphValid || !frameValid || sample["pass"].toInt(-1) < 0 || sample["queue"].toInt(-1) < 0 || sample["queue"].toInt() > 2 || !std::isfinite(ms) || ms < 0)
       {
         return false;

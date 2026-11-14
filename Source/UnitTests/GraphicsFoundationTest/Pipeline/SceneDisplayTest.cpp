@@ -393,7 +393,7 @@ XII_CREATE_SIMPLE_TEST(SceneDisplay, BloomAndMeteredExposureAffectProductionOutp
   {
     const bool  automatic                        = (phase & 1U) != 0;
     const float luminance                        = phase == 0 ? 0.25f : phase == 1 ? 8.0f :
-                             phase == 2                                            ? 1024.0f :
+      phase == 2                                                                   ? 1024.0f :
                                                                                      0.5f;
     auto        settings                         = views[1]->GetDisplayOutputSettings();
     settings.m_Exposure.m_Mode                   = automatic ? xiiExposureMode::Automatic : xiiExposureMode::Manual;
