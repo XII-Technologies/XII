@@ -58,7 +58,9 @@ void OnLoadPlugin()
   xiiCVarInt* pCVar = (xiiCVarInt*)xiiCVar::FindCVarByName("TestPlugin1InitCount");
 
   if (pCVar)
+  {
     *pCVar = *pCVar + 1;
+  }
 
   xiiCVarBool* pCVarPlugin2Inited = (xiiCVarBool*)xiiCVar::FindCVarByName("test2_Inited");
   if (pCVarPlugin2Inited)
@@ -75,7 +77,9 @@ void OnUnloadPlugin()
   xiiCVarInt* pCVar = (xiiCVarInt*)xiiCVar::FindCVarByName("TestPlugin1UninitCount");
 
   if (pCVar)
+  {
     *pCVar = *pCVar + 1;
+  }
 }
 
 // clang-format off

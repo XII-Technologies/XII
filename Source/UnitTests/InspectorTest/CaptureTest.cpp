@@ -38,7 +38,9 @@ namespace
     graph.AddPass<Data>("Consume", xiiGALCommandQueueFlags::Graphics, [buffer](Data& data, xiiRenderGraphBuilder& builder) { data.m_Buffer = builder.ReadBuffer(buffer, xiiGALResourceStateFlags::ShaderResource); }, [](const Data&, xiiRenderGraphPassContext&) {}, true);
     graph.EndSetup();
     if (!XII_TEST_RESULT(graph.Compile()))
+    {
       return {};
+    }
     xiiContiguousMemoryStreamStorage storage;
     xiiMemoryStreamWriter            writer(&storage);
     XII_TEST_RESULT(xiiRenderGraphDebug::WriteSnapshot({graph, nullptr, graph.GetFrameIndex(), true, {}}, writer));
@@ -76,7 +78,9 @@ XII_CREATE_SIMPLE_TEST(Inspector, GraphCaptureAndOfflineUi)
   auto* resources = widget.findChild<QTreeWidget*>("Graph resources");
   XII_TEST_BOOL(passes && resources);
   if (!passes || !resources)
+  {
     return;
+  }
   XII_TEST_INT(passes->topLevelItemCount(), 2);
   XII_TEST_INT(resources->topLevelItemCount(), 1);
   XII_TEST_BOOL(resources->isColumnHidden(6));
@@ -85,7 +89,9 @@ XII_CREATE_SIMPLE_TEST(Inspector, GraphCaptureAndOfflineUi)
   widget.findChild<QLineEdit*>()->setText("Consume");
   int visible = 0;
   for (int i = 0; i < passes->topLevelItemCount(); ++i)
+  {
     visible += !passes->topLevelItem(i)->isHidden();
+  }
   XII_TEST_INT(visible, 1);
   XII_TEST_BOOL(!widget.LoadCapture("{broken"));
   auto invalid       = capture;
@@ -118,7 +124,9 @@ XII_CREATE_SIMPLE_TEST(Inspector, ProfilingScopesAndSelfTime)
   auto* hotspots = widget.findChild<QTreeWidget*>("Profiling hotspots");
   XII_TEST_BOOL(hotspots != nullptr);
   if (!hotspots)
+  {
     return;
+  }
   bool found = false;
   for (int i = 0; i < hotspots->topLevelItemCount(); ++i)
   {

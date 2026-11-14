@@ -11,7 +11,9 @@ xiiTypedCVar<Type, CVarType>::xiiTypedCVar(xiiStringView sName, const Type& valu
   XII_ASSERT_DEBUG(sName.FindSubString(" ") == nullptr, "CVar names must not contain whitespace");
 
   for (xiiUInt32 i = 0; i < xiiCVarValue::ENUM_COUNT; ++i)
+  {
     m_Values[i] = value;
+  }
 }
 
 template <typename Type, xiiCVarType::Enum CVarType>
@@ -30,7 +32,9 @@ template <typename Type, xiiCVarType::Enum CVarType>
 void xiiTypedCVar<Type, CVarType>::SetToDelayedSyncValue()
 {
   if (m_Values[xiiCVarValue::Current] == m_Values[xiiCVarValue::DelayedSync])
+  {
     return;
+  }
 
   // This will NOT trigger a 'restart value changed' event.
   m_Values[xiiCVarValue::Current] = m_Values[xiiCVarValue::DelayedSync];
@@ -56,15 +60,19 @@ void xiiTypedCVar<Type, CVarType>::operator=(const Type& value)
 
   if (GetFlags().IsAnySet(xiiCVarFlags::RequiresDelayedSync))
   {
-    if (value == m_Values[xiiCVarValue::DelayedSync]) // No change
+    if (value == m_Values[xiiCVarValue::DelayedSync])
+    { // No change
       return;
+    }
 
     e.m_EventType = xiiCVarEvent::DelayedSyncValueChanged;
   }
   else
   {
-    if (m_Values[xiiCVarValue::Current] == value) // No change
+    if (m_Values[xiiCVarValue::Current] == value)
+    { // No change
       return;
+    }
 
     m_Values[xiiCVarValue::Current] = value;
     e.m_EventType                   = xiiCVarEvent::ValueChanged;

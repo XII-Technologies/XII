@@ -81,7 +81,9 @@ public:
     }
     m_pWindow->ProcessWindowMessages();
     if (WasQuitRequested() || xiiInputManager::GetInputActionState("Main", "CloseApp") == xiiKeyState::Pressed)
+    {
       return Execution::Quit;
+    }
     if (!m_pWindow->IsVisible())
     {
       xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(16));
@@ -98,7 +100,9 @@ public:
     m_bFileModified = false;
     m_pDirectoryWatcher->EnumerateChanges(xiiMakeDelegate(&xiiGpuDrivenSceneApp::OnFileChanged, this));
     if (m_bFileModified)
+    {
       xiiResourceManager::ReloadAllResources(false);
+    }
 #endif
     const auto scenePeriod = static_cast<xiiUInt32>(opt_GpuDrivenSceneCycle.GetOptionValue(xiiCommandLineOption::LogMode::Never));
     const bool populated   = scenePeriod == 0U || (m_uiFrameIndex / scenePeriod) % 2U == 0U;
@@ -119,7 +123,9 @@ public:
       xiiLog::Info("Scene transition at frame {}: populated={}", m_uiFrameIndex, populated);
     }
     if (scenePeriod != 0U && !populated && m_uiFrameIndex % 30U == 0U)
+    {
       xiiResourceManager::FreeUnusedResources(xiiTime::MakeFromMilliseconds(2), xiiTime::MakeFromSeconds(0.25));
+    }
     m_pDevice->BeginFrame();
     if (m_pSwapChain && m_pSwapChain->GetCurrentSize().HasNonZeroArea() && m_pSwapChain->GetBackBufferTexture())
     {
@@ -170,7 +176,9 @@ public:
         {
           xiiGALMemoryCategoryStatistics ownership;
           if (m_pDevice->GetMemoryCategoryStatistics(category, ownership))
+          {
             xiiLog::Info("Native {}: {} allocated bytes, {} retiring bytes, {} allocations.", xiiGALMemoryCategory::Names[category], ownership.m_uiAllocatedBytes, ownership.m_uiRetiringBytes, ownership.m_uiAllocationCount);
+          }
         }
         xiiLog::Info("Residency frame {}: {} geometry pages / {} bytes, {} texture pages / {} bytes, {} requests / {} misses.",
                      m_uiFrameIndex, residency.m_uiGeometryPages, residency.m_uiGeometryPageBytes, residency.m_uiTexturePages,
@@ -185,16 +193,26 @@ public:
         if (tour)
         {
           if (step == period / 5U - 1U)
+          {
             szCapture = "Near";
+          }
           if (step == period * 3U / 10U - 1U)
+          {
             szCapture = "Medium";
+          }
           if (step == period * 3U / 4U - 1U)
+          {
             szCapture = "Far";
+          }
           if (step == period - 1U)
+          {
             szCapture = "Return";
+          }
         }
         else if (frameLimit > 0 && m_uiFrameIndex == static_cast<xiiUInt64>(frameLimit))
+        {
           szCapture = "Scene";
+        }
         if (szCapture != nullptr)
         {
           xiiStringBuilder filename(m_sCaptureDir);
@@ -234,7 +252,9 @@ public:
 
     m_sCaptureDir = opt_GpuDrivenCapture.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified);
     if (!m_sCaptureDir.IsEmpty())
+    {
       xiiFileSystem::AddDataDirectory("", "Screenshots", ":", xiiDataDirUsage::AllowWrites).AssertSuccess();
+    }
 
     xiiGlobalLog::AddLogWriter(xiiLogWriter::Console::LogMessageHandler);
     xiiGlobalLog::AddLogWriter(xiiLogWriter::VisualStudio::LogMessageHandler);
@@ -338,8 +358,12 @@ public:
     xiiDynamicArray<xiiCVar*> overrides;
     xiiCVar::LoadCVarsFromCommandLine(false, true, &overrides);
     for (auto* value : overrides)
+    {
       if (value->GetType() == xiiCVarType::Int)
+      {
         xiiLog::Info("CVar {} = {}", value->GetName(), static_cast<xiiCVarInt*>(value)->GetValue());
+      }
+    }
     xiiStartup::StartupHighLevelSystems();
 
     m_Camera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovY, 60.0f, 0.1f, 250.0f);
@@ -348,7 +372,9 @@ public:
     m_World.Initialize(m_pDevice.Borrow(), m_Configuration).AssertSuccess();
     m_ImportedBounds = m_World.GetImportedMeshBounds();
     if (m_ImportedBounds.IsValid())
+    {
       m_Camera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovY, 60.0f, xiiMath::Max(0.001f, m_ImportedBounds.m_fSphereRadius * 0.0001f), m_ImportedBounds.m_fSphereRadius * 40.0f);
+    }
     xiiLog::Info("Vulkan mesh shaders enabled: {}.", m_pDevice->GetFeatures().m_MeshShaders == xiiGALDeviceFeatureState::Enabled);
     auto* view = m_World.GetRenderView();
     view->SetCamera(&m_Camera);
@@ -382,7 +408,9 @@ public:
     m_pDirectoryWatcher.Clear();
 #endif
     if (m_pDevice)
+    {
       m_pDevice->WaitIdle();
+    }
     xiiFrameAllocator::Reset();
     m_World.Shutdown();
     m_hPipeline.Invalidate();
@@ -392,7 +420,9 @@ public:
     xiiGALDevice::SetDefaultDevice(nullptr);
     m_pDevice.Clear();
     if (m_pWindow)
+    {
       m_pWindow->Destroy().IgnoreResult();
+    }
     m_pWindow.Clear();
   }
   void BeforeCoreSystemsShutdown() override
@@ -416,7 +446,9 @@ private:
       {
         raster.m_Properties.Insert("UseMeshShaders", true);
         if (!commands.Contains(connection.m_uiSource))
+        {
           commands.PushBack(connection.m_uiSource);
+        }
       }
     }
     if (commands.IsEmpty())
@@ -432,13 +464,19 @@ private:
       command.m_Properties.Insert("MeshGroupCountX", meshGroupCount);
     }
     for (auto& pass : definition.m_Passes)
+    {
       if (pass.m_pType == xiiGetStaticRTTI<xiiSurfaceRasterConstantsPass>())
+      {
         pass.m_Properties.Insert("MeshGroupCountX", meshGroupCount);
+      }
+    }
     for (xiiUInt32 i = definition.m_Connections.GetCount(); i-- > 0U;)
     {
       const auto& connection = definition.m_Connections[i];
       if (commands.Contains(connection.m_uiTarget) && connection.m_sInput != "VisibleMeshlets" && connection.m_sInput != "VisibleMeshletCount")
+      {
         definition.m_Connections.RemoveAtAndCopy(i);
+      }
     }
     return xiiResourceManager::CreateResource<xiiRenderPipelineResource>("GpuDrivenScene.MeshCapture", std::move(definition));
   }
@@ -464,7 +502,9 @@ private:
       m_pDevice->WaitIdle();
       m_pSwapChain->Resize(m_pWindow->GetClientAreaSize()).AssertSuccess();
       if (auto* view = m_World.GetRenderView())
+      {
         view->InvalidateTemporalHistory();
+      }
     }
   }
 

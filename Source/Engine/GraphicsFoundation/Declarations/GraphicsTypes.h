@@ -955,7 +955,9 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALPrimitiveTopology
   XII_ALWAYS_INLINE static xiiUInt32 GetIndexCount(xiiGALPrimitiveTopology::Enum e, xiiUInt32 uiPrimitiveCount)
   {
     if (uiPrimitiveCount == 0)
+    {
       return 0;
+    }
 
     if (e >= xiiGALPrimitiveTopology::ControlPointPatchList1 && e <= xiiGALPrimitiveTopology::ControlPointPatchList32)
     {
@@ -1973,7 +1975,9 @@ namespace xiiGAL
     XII_FORCE_INLINE bool HasIncludeValue(xiiUInt32 uiValue)
     {
       if (!IsValid())
+      {
         return false;
+      }
 
       return uiValue >= m_uiMin && uiValue <= m_uiMax;
     }

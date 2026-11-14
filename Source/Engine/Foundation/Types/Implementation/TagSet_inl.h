@@ -312,14 +312,18 @@ bool xiiTagSetTemplate<BlockStorageAllocator>::IsAnySet(const xiiTagSetTemplate&
 {
   // If any of the sets is empty nothing can match
   if (IsEmpty() || otherSet.IsEmpty())
+  {
     return false;
+  }
 
   // Calculate range to compare
   const xiiUInt32 uiMaxBlockStart = xiiMath::Max(GetTagBlockStart(), otherSet.GetTagBlockStart());
   const xiiUInt32 uiMinBlockEnd   = xiiMath::Min(GetTagBlockEnd(), otherSet.GetTagBlockEnd());
 
   if (uiMaxBlockStart > uiMinBlockEnd)
+  {
     return false;
+  }
 
   for (xiiUInt32 i = uiMaxBlockStart; i < uiMinBlockEnd; ++i)
   {
@@ -327,7 +331,9 @@ bool xiiTagSetTemplate<BlockStorageAllocator>::IsAnySet(const xiiTagSetTemplate&
     const xiiUInt32 uiOtherBlockStorageIndex = i - otherSet.GetTagBlockStart();
 
     if ((m_TagBlocks[uiThisBlockStorageIndex] & otherSet.m_TagBlocks[uiOtherBlockStorageIndex]) != 0)
+    {
       return true;
+    }
   }
   return false;
 }

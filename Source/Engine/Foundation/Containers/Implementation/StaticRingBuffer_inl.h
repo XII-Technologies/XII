@@ -39,12 +39,16 @@ template <typename T, xiiUInt32 C>
 bool xiiStaticRingBuffer<T, C>::operator==(const xiiStaticRingBuffer<T, C>& rhs) const
 {
   if (GetCount() != rhs.GetCount())
+  {
     return false;
+  }
 
   for (xiiUInt32 i = 0; i < m_uiCount; ++i)
   {
     if ((*this)[i] != rhs[i])
+    {
       return false;
+    }
   }
 
   return true;
@@ -160,7 +164,9 @@ template <typename T, xiiUInt32 C>
 void xiiStaticRingBuffer<T, C>::Clear()
 {
   while (!IsEmpty())
+  {
     PopFront();
+  }
 }
 
 template <typename T, xiiUInt32 C>

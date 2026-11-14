@@ -38,7 +38,9 @@ template <typename T>
 XII_ALWAYS_INLINE void xiiStringUtils::UpdateStringEnd(const T* pStringStart, const T*& ref_pStringEnd)
 {
   if (ref_pStringEnd != xiiUnicodeUtils::GetMaxStringEnd<T>())
+  {
     return;
+  }
 
   ref_pStringEnd = pStringStart + GetStringElementCount(pStringStart, xiiUnicodeUtils::GetMaxStringEnd<T>());
 }
@@ -49,7 +51,9 @@ constexpr xiiUInt32 xiiStringUtils::GetStringElementCount(const T* pString)
   // can't use strlen here as long as it's not constexpr (C++ 23)
 
   if (pString == nullptr)
+  {
     return 0;
+  }
 
   xiiUInt32 uiCount = 0;
   while (*pString != '\0')
@@ -65,10 +69,14 @@ template <typename T>
 xiiUInt32 xiiStringUtils::GetStringElementCount(const T* pString, const T* pStringEnd)
 {
   if (IsNullOrEmpty(pString))
+  {
     return 0;
+  }
 
   if (pStringEnd != xiiUnicodeUtils::GetMaxStringEnd<T>())
+  {
     return (xiiUInt32)(pStringEnd - pString);
+  }
 
   xiiUInt32 uiCount = 0;
   while ((pString < pStringEnd) && (*pString != '\0'))
@@ -83,7 +91,9 @@ xiiUInt32 xiiStringUtils::GetStringElementCount(const T* pString, const T* pStri
 inline xiiUInt32 xiiStringUtils::GetCharacterCount(const char* szUtf8, const char* pStringEnd)
 {
   if (IsNullOrEmpty(szUtf8))
+  {
     return 0;
+  }
 
   xiiUInt32 uiCharacters = 0;
 
@@ -91,7 +101,9 @@ inline xiiUInt32 xiiStringUtils::GetCharacterCount(const char* szUtf8, const cha
   {
     // skip all the Utf8 continuation bytes
     if (!xiiUnicodeUtils::IsUtf8ContinuationByte(*szUtf8))
+    {
       ++uiCharacters;
+    }
 
     ++szUtf8;
   }
@@ -105,7 +117,9 @@ inline void xiiStringUtils::GetCharacterAndElementCount(const char* szUtf8, xiiU
   ref_uiElementCount   = 0;
 
   if (IsNullOrEmpty(szUtf8))
+  {
     return;
+  }
 
   while (szUtf8 < pStringEnd)
   {
@@ -117,7 +131,9 @@ inline void xiiStringUtils::GetCharacterAndElementCount(const char* szUtf8, xiiU
 
     // skip all the Utf8 continuation bytes
     if (!xiiUnicodeUtils::IsUtf8ContinuationByte(uiByte))
+    {
       ++ref_uiCharacterCount;
+    }
 
     ++szUtf8;
     ++ref_uiElementCount;

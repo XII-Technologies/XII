@@ -7,7 +7,9 @@ xiiIdTableBase<IdType, ValueType>::ConstIterator::ConstIterator(const xiiIdTable
   m_IdTable(idTable), m_CurrentIndex(0), m_CurrentCount(0)
 {
   if (m_IdTable.IsEmpty())
+  {
     return;
+  }
 
   while (m_IdTable.m_pEntries[m_CurrentIndex].id.m_InstanceIndex != m_CurrentIndex)
   {
@@ -44,7 +46,9 @@ void xiiIdTableBase<IdType, ValueType>::ConstIterator::Next()
 {
   ++m_CurrentCount;
   if (m_CurrentCount == m_IdTable.m_Count)
+  {
     return;
+  }
 
   do
   {
@@ -140,7 +144,9 @@ template <typename IdType, typename ValueType>
 void xiiIdTableBase<IdType, ValueType>::Reserve(IndexType capacity)
 {
   if (m_Capacity >= capacity + CAPACITY_ALIGNMENT)
+  {
     return;
+  }
 
   const xiiUInt64 uiCurCap64      = static_cast<xiiUInt64>(this->m_Capacity);
   xiiUInt64       uiNewCapacity64 = uiCurCap64 + (uiCurCap64 / 2);
@@ -230,7 +236,9 @@ bool xiiIdTableBase<IdType, ValueType>::TryInsert(const ValueType& value, IndexT
   out_id.Invalidate();
   const auto index = AcquireBoundedIndex(uiIndexLimit);
   if (index == IndexType(-1))
+  {
     return false;
+  }
   Entry& entry = m_pEntries[index];
   xiiMemoryUtils::CopyConstruct(&entry.value, value, 1);
   ++m_Count;
@@ -244,7 +252,9 @@ bool xiiIdTableBase<IdType, ValueType>::TryInsert(ValueType&& value, IndexType u
   out_id.Invalidate();
   const auto index = AcquireBoundedIndex(uiIndexLimit);
   if (index == IndexType(-1))
+  {
     return false;
+  }
   Entry& entry = m_pEntries[index];
   xiiMemoryUtils::MoveConstruct<ValueType>(&entry.value, std::move(value));
   ++m_Count;
@@ -258,9 +268,13 @@ typename xiiIdTableBase<IdType, ValueType>::IndexType xiiIdTableBase<IdType, Val
   // Retain the free-list sentinel space without extending the usable ID range.
   const xiiUInt64 required = (static_cast<xiiUInt64>(uiIndexLimit) + CAPACITY_ALIGNMENT * 2U - 1U) & ~xiiUInt64(CAPACITY_ALIGNMENT - 1U);
   if (uiIndexLimit == 0U || required > IdType::INVALID_INSTANCE_INDEX)
+  {
     return IndexType(-1);
+  }
   if (m_Capacity < required)
+  {
     SetCapacity(static_cast<IndexType>(required));
+  }
 
   IndexType previous = IndexType(-1);
   IndexType index    = m_FreelistDequeue;
@@ -270,15 +284,23 @@ typename xiiIdTableBase<IdType, ValueType>::IndexType xiiIdTableBase<IdType, Val
     index    = m_pEntries[index].id.m_InstanceIndex;
   }
   if (index >= m_Capacity)
+  {
     return IndexType(-1);
+  }
   Entry&          entry = m_pEntries[index];
   const IndexType next  = entry.id.m_InstanceIndex;
   if (previous == IndexType(-1))
+  {
     m_FreelistDequeue = next;
+  }
   else
+  {
     m_pEntries[previous].id.m_InstanceIndex = static_cast<decltype(entry.id.m_InstanceIndex)>(next);
+  }
   if (m_FreelistEnqueue == index)
+  {
     m_FreelistEnqueue = previous;
+  }
   entry.id.m_InstanceIndex = static_cast<decltype(entry.id.m_InstanceIndex)>(index);
   return index;
 }
@@ -287,12 +309,16 @@ template <typename IdType, typename ValueType>
 bool xiiIdTableBase<IdType, ValueType>::Remove(const IdType id, ValueType* out_pOldValue /*= nullptr*/)
 {
   if (m_Capacity <= id.m_InstanceIndex)
+  {
     return false;
+  }
 
   const IndexType uiIndex = id.m_InstanceIndex;
   Entry&          entry   = m_pEntries[uiIndex];
   if (!entry.id.IsIndexAndGenerationEqual(id))
+  {
     return false;
+  }
 
   if (out_pOldValue != nullptr)
   {
@@ -408,7 +434,9 @@ template <typename IdType, typename ValueType>
 bool xiiIdTableBase<IdType, ValueType>::IsFreelistValid() const
 {
   if (m_pEntries == nullptr)
+  {
     return true;
+  }
 
   IndexType    uiIndex = m_FreelistDequeue;
   const Entry* pEntry  = m_pEntries + uiIndex;

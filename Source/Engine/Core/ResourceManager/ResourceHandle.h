@@ -234,7 +234,9 @@ public:
   void AssignFromTypelessHandle(const xiiTypelessResourceHandle& hHandle)
   {
     if (!hHandle.IsValid())
+    {
       return;
+    }
 
     XII_ASSERT_DEV(hHandle.GetResourceType()->IsDerivedFrom<RESOURCE_TYPE>(), "Type '{}' does not match resource type '{}' in typeless handle.", xiiGetStaticRTTI<RESOURCE_TYPE>()->GetTypeName(), hHandle.GetResourceType()->GetTypeName());
 

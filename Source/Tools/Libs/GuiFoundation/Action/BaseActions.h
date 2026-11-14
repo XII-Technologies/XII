@@ -26,7 +26,9 @@ public:
     m_sAdditionalDisplayString = sString;
 
     if (bTriggerUpdate)
+    {
       TriggerUpdate();
+    }
   }
 
   xiiStringView GetIconPath() const { return m_sIconPath; }
@@ -135,7 +137,9 @@ public:
   {
     m_bEnabled = bEnable;
     if (bTriggerUpdate)
+    {
       TriggerUpdate();
+    }
   }
 
   bool IsVisible() const { return m_bVisible; }
@@ -143,7 +147,9 @@ public:
   {
     m_bVisible = bVisible;
     if (bTriggerUpdate)
+    {
       TriggerUpdate();
+    }
   }
 
 protected:
@@ -179,7 +185,9 @@ public:
   {
     m_bEnabled = bEnable;
     if (bTriggerUpdate)
+    {
       TriggerUpdate();
+    }
   }
 
   bool IsCheckable() const { return m_bCheckable; }
@@ -187,7 +195,9 @@ public:
   {
     m_bCheckable = bCheckable;
     if (bTriggerUpdate)
+    {
       TriggerUpdate();
+    }
   }
 
   bool IsChecked() const { return m_bChecked; }
@@ -195,7 +205,9 @@ public:
   {
     m_bChecked = bChecked;
     if (bTriggerUpdate)
+    {
       TriggerUpdate();
+    }
   }
 
   bool IsVisible() const { return m_bVisible; }
@@ -203,7 +215,9 @@ public:
   {
     m_bVisible = bVisible;
     if (bTriggerUpdate)
+    {
       TriggerUpdate();
+    }
   }
 
 protected:
@@ -226,7 +240,9 @@ public:
   {
     m_bEnabled = bEnable;
     if (bTriggerUpdate)
+    {
       TriggerUpdate();
+    }
   }
 
   bool IsVisible() const { return m_bVisible; }
@@ -234,7 +250,9 @@ public:
   {
     m_bVisible = bVisible;
     if (bTriggerUpdate)
+    {
       TriggerUpdate();
+    }
   }
 
   void GetRange(xiiInt32& out_iMin, xiiInt32& out_iMax) const

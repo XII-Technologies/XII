@@ -92,12 +92,18 @@ namespace xiiInternal
     xiiVariantType::Enum      type =
       static_cast<xiiVariantType::Enum>(xiiVariantTypeDeduction<typename xiiTypeTraits<Type>::NonConstReferenceType>::value);
     if ((type >= xiiVariantType::FirstStandardType && type <= xiiVariantType::LastStandardType) || XII_IS_SAME_TYPE(xiiVariant, Type))
+    {
       flags.Add(xiiTypeFlags::StandardType);
+    }
     else
+    {
       flags.Add(xiiTypeFlags::Class);
+    }
 
     if (std::is_abstract<Type>::value)
+    {
       flags.Add(xiiTypeFlags::Abstract);
+    }
 
     return flags;
   }

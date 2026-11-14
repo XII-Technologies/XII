@@ -22,8 +22,10 @@ const VALUE* xiiObjectMetaData<KEY, VALUE>::BeginReadMetaData(const KEY objectKe
   m_pMetaStorage->m_AcessingKey = objectKey;
 
   const VALUE* pRes = nullptr;
-  if (m_pMetaStorage->m_MetaData.TryGetValue(objectKey, pRes)) // TryGetValue is not const correct with the second parameter
+  if (m_pMetaStorage->m_MetaData.TryGetValue(objectKey, pRes))
+  { // TryGetValue is not const correct with the second parameter
     return pRes;
+  }
 
   return &m_DefaultValue;
 }
@@ -111,7 +113,9 @@ void xiiObjectMetaData<KEY, VALUE>::AttachMetaDataToAbstractGraph(xiiAbstractObj
     for (const auto& pProp : m_DefaultValue.GetDynamicRTTI()->GetProperties())
     {
       if (pProp->GetCategory() != xiiPropertyCategory::Member)
+      {
         continue;
+      }
 
       defaultValues[pProp->GetPropertyName()] = xiiReflectionUtils::GetMemberPropertyValue(static_cast<const xiiAbstractMemberProperty*>(pProp), &m_DefaultValue);
     }
@@ -127,13 +131,17 @@ void xiiObjectMetaData<KEY, VALUE>::AttachMetaDataToAbstractGraph(xiiAbstractObj
       const xiiUuid& guid  = pNode->GetGuid();
 
       const VALUE* pMeta = nullptr;
-      if (!m_pMetaStorage->m_MetaData.TryGetValue(guid, pMeta)) // TryGetValue is not const correct with the second parameter
-        continue;                                               // it is the default object, so all values are default -> skip
+      if (!m_pMetaStorage->m_MetaData.TryGetValue(guid, pMeta))
+      {           // TryGetValue is not const correct with the second parameter
+        continue; // it is the default object, so all values are default -> skip
+      }
 
       for (const auto& pProp : pMeta->GetDynamicRTTI()->GetProperties())
       {
         if (pProp->GetCategory() != xiiPropertyCategory::Member)
+        {
           continue;
+        }
 
         value = xiiReflectionUtils::GetMemberPropertyValue(static_cast<const xiiAbstractMemberProperty*>(pProp), pMeta);
 
@@ -159,7 +167,9 @@ void xiiObjectMetaData<KEY, VALUE>::RestoreMetaDataFromAbstractGraph(const xiiAb
     for (const auto& pProp : m_DefaultValue.GetDynamicRTTI()->GetProperties())
     {
       if (pProp->GetCategory() != xiiPropertyCategory::Member)
+      {
         continue;
+      }
 
       PropertyNames.PushBack(pProp->GetPropertyName());
     }

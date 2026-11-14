@@ -307,7 +307,9 @@ namespace xiiMath
   XII_ALWAYS_INLINE Type Trunc(Type f)
   {
     if (f > 0)
+    {
       return Floor(f);
+    }
 
     return Ceil(f);
   }

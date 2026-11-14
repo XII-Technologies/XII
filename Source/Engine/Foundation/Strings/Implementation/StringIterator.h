@@ -209,9 +209,13 @@ struct xiiStringReverseIterator
   XII_FORCE_INLINE xiiStringReverseIterator& operator++() // [tested]
   {
     if (m_pCurPtr != nullptr && m_pStartPtr < m_pCurPtr)
+    {
       xiiUnicodeUtils::MoveToPriorUtf8(m_pCurPtr, m_pStartPtr).AssertSuccess();
+    }
     else
+    {
       m_pCurPtr = nullptr;
+    }
 
     return *this;
   }
@@ -225,7 +229,9 @@ struct xiiStringReverseIterator
       xiiUnicodeUtils::MoveToNextUtf8(m_pCurPtr).AssertSuccess();
 
       if (m_pCurPtr == m_pEndPtr)
+      {
         m_pCurPtr = szOldPos;
+      }
     }
     else
     {

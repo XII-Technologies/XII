@@ -32,9 +32,13 @@ public:
   xiiEnumerable()
   {
     if (Derived::s_pFirstInstance == nullptr)
+    {
       Derived::s_pFirstInstance = this;
+    }
     else
+    {
       Derived::s_pLastInstance->m_pNextInstance = this;
+    }
 
     Derived::s_pLastInstance = this;
     m_pNextInstance          = nullptr;
@@ -52,12 +56,18 @@ public:
       if (pCur == this)
       {
         if (pPrev == nullptr)
+        {
           Derived::s_pFirstInstance = m_pNextInstance;
+        }
         else
+        {
           pPrev->m_pNextInstance = m_pNextInstance;
+        }
 
         if (Derived::s_pLastInstance == this)
+        {
           Derived::s_pLastInstance = pPrev;
+        }
 
         break;
       }

@@ -185,7 +185,9 @@ bool xiiBoundingBoxTemplate<Type>::Contains(const xiiVec3Template<Type>* pPoints
   for (xiiUInt32 i = 0; i < uiNumPoints; ++i)
   {
     if (!Contains(*pCur))
+    {
       return false;
+    }
 
     pCur = xiiMemoryUtils::AddByteOffset(pCur, uiStride);
   }
@@ -200,18 +202,30 @@ bool xiiBoundingBoxTemplate<Type>::Overlaps(const xiiBoundingBoxTemplate<Type>& 
   XII_NAN_ASSERT(&rhs);
 
   if (rhs.m_vMin.x >= m_vMax.x)
+  {
     return false;
+  }
   if (rhs.m_vMin.y >= m_vMax.y)
+  {
     return false;
+  }
   if (rhs.m_vMin.z >= m_vMax.z)
+  {
     return false;
+  }
 
   if (m_vMin.x >= rhs.m_vMax.x)
+  {
     return false;
+  }
   if (m_vMin.y >= rhs.m_vMax.y)
+  {
     return false;
+  }
   if (m_vMin.z >= rhs.m_vMax.z)
+  {
     return false;
+  }
 
   return true;
 }
@@ -227,7 +241,9 @@ bool xiiBoundingBoxTemplate<Type>::Overlaps(const xiiVec3Template<Type>* pPoints
   for (xiiUInt32 i = 0; i < uiNumPoints; ++i)
   {
     if (Contains(*pCur))
+    {
       return true;
+    }
 
     pCur = xiiMemoryUtils::AddByteOffset(pCur, uiStride);
   }
@@ -293,7 +309,9 @@ void xiiBoundingBoxTemplate<Type>::TransformFromCenter(const xiiMat4Template<Typ
   *this                               = MakeInvalid();
 
   for (xiiUInt32 i = 0; i < 8; ++i)
+  {
     ExpandToInclude(vCenter + mTransform.TransformPosition(vCorners[i] - vCenter));
+  }
 }
 
 template <typename Type>
@@ -428,12 +446,18 @@ bool xiiBoundingBoxTemplate<Type>::GetRayIntersection(const xiiVec3Template<Type
     }
 
     if (tMin > tMaxY || tMinY > tMax)
+    {
       return false;
+    }
 
     if (tMinY > tMin)
+    {
       tMin = tMinY;
+    }
     if (tMaxY < tMax)
+    {
       tMax = tMaxY;
+    }
   }
 
   // Compare along Z axis and previous result, find intersection point
@@ -454,23 +478,35 @@ bool xiiBoundingBoxTemplate<Type>::GetRayIntersection(const xiiVec3Template<Type
     }
 
     if (tMin > tMaxZ || tMinZ > tMax)
+    {
       return false;
+    }
 
     if (tMinZ > tMin)
+    {
       tMin = tMinZ;
+    }
     if (tMaxZ < tMax)
+    {
       tMax = tMaxZ;
+    }
   }
 
   // rays that start inside the box are considered as not hitting the box
   if (tMax <= 0.0f)
+  {
     return false;
+  }
 
   if (out_pIntersectionDistance)
+  {
     *out_pIntersectionDistance = tMin;
+  }
 
   if (out_pIntersection)
+  {
     *out_pIntersection = vStartPos + tMin * vRayDir;
+  }
 
   return true;
 }
@@ -482,10 +518,14 @@ bool xiiBoundingBoxTemplate<Type>::GetLineSegmentIntersection(const xiiVec3Templ
 
   Type fIntersection = 0.0f;
   if (!GetRayIntersection(vStartPos, vRayDir, &fIntersection, out_pIntersection))
+  {
     return false;
+  }
 
   if (out_pLineFraction)
+  {
     *out_pLineFraction = fIntersection;
+  }
 
   return fIntersection <= 1.0f;
 }

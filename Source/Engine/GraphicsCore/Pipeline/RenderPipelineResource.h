@@ -131,8 +131,12 @@ public:
   xiiBitflags<xiiRenderPipelineFeature>           GetRootRuntimeFeatures() const
   {
     for (xiiUInt32 i = 0; i < m_ResourceScopes.GetCount(); ++i)
+    {
       if (m_ResourceScopes[i].IsEmpty())
+      {
         return m_GroupFeatures[i];
+      }
+    }
     return {};
   }
   /// Inclusive CPU memory estimate, including topology, compiled bindings and nested configuration.

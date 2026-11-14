@@ -136,7 +136,9 @@ public:
           {
             auto* document = xiiDynamicCast<xiiAssetDocument*>(xiiQtEditorApp::GetSingleton()->OpenDocument(pMsg->m_sAssetPath, xiiDocumentFlags::None));
             if (document == nullptr)
+            {
               msg.m_Status = xiiTransformStatus("Could not open asset for background import.");
+            }
             else
             {
               XII_SCOPE_EXIT(document->GetDocumentManager()->CloseDocument(document));
@@ -161,7 +163,9 @@ public:
                 {
                   const xiiString path(event.m_Path.GetAbsolutePath());
                   if (path != pMsg->m_sAssetPath && !msg.m_ImportFiles.Contains(path))
+                  {
                     msg.m_ImportFiles.PushBack(path);
+                  }
                 }
               },
                                                                                       importFiles);
@@ -177,12 +181,16 @@ public:
                   xiiSet<xiiString> dependencies;
                   curator->GenerateTransitiveHull(msg.m_ImportFiles[i], dependencies, true, true, true);
                   for (const auto& dependency : dependencies)
+                  {
                     if (const auto asset = curator->FindSubAsset(dependency))
                     {
                       const xiiString path(asset->m_pAssetInfo->m_Path.GetAbsolutePath());
                       if (path != pMsg->m_sAssetPath && !msg.m_ImportFiles.Contains(path))
+                      {
                         msg.m_ImportFiles.PushBack(path);
+                      }
                     }
+                  }
                 }
               }
             }
@@ -300,7 +308,9 @@ public:
       {
         xiiQtEditorApp::GetSingleton()->connect(xiiQtEditorApp::GetSingleton(), &xiiQtEditorApp::IdleEvent, xiiQtEditorApp::GetSingleton(), [this, &sTransformProfile, &sAssets, bTransform = true]() mutable -> void {
           if (!bTransform)
+          {
             return;
+          }
 
           bTransform = false;
 
@@ -324,7 +334,9 @@ public:
             if (sAssets.IsEmpty())
             {
               if (curator->TransformAllAssets(xiiTransformFlags::TriggeredManually, profile).LogFailure())
+              {
                 SetReturnCode(1);
+              }
             }
             else
             {
@@ -370,13 +382,17 @@ public:
 
       const xiiInt32 iReturnCode = xiiQtEditorApp::GetSingleton()->RunEditor();
       if (iReturnCode != 0)
+      {
         SetReturnCode(iReturnCode);
+      }
     }
     else if (opt_Resave.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified))
     {
       xiiQtEditorApp::GetSingleton()->connect(xiiQtEditorApp::GetSingleton(), &xiiQtEditorApp::IdleEvent, xiiQtEditorApp::GetSingleton(), [this]() {
         if (xiiAssetCurator::GetSingleton()->ResaveAllAssets({}).LogFailure())
+        {
           SetReturnCode(1);
+        }
 
         if (opt_SaveProfilingData.GetOptionValue(xiiCommandLineOption::LogMode::Always))
         {
@@ -389,7 +405,9 @@ public:
 
       const xiiInt32 iReturnCode = xiiQtEditorApp::GetSingleton()->RunEditor();
       if (iReturnCode != 0)
+      {
         SetReturnCode(iReturnCode);
+      }
     }
     else
     {
@@ -401,11 +419,15 @@ public:
         xiiQtEditorApp::GetSingleton()->connect(xiiQtEditorApp::GetSingleton(), &xiiQtEditorApp::IdleEvent, xiiQtEditorApp::GetSingleton(), [this]() {
           static bool bRecursionBlock = false;
           if (bRecursionBlock)
+          {
             return;
+          }
           bRecursionBlock = true;
 
           if (!m_IPC.IsHostAlive())
+          {
             QApplication::quit();
+          }
 
           m_IPC.WaitForMessages();
 

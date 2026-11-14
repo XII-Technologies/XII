@@ -234,10 +234,14 @@ public:
   inline bool operator==(const xiiArrayPtr<const T>& other) const // [tested]
   {
     if (GetCount() != other.GetCount())
+    {
       return false;
+    }
 
     if (GetPtr() == other.GetPtr())
+    {
       return true;
+    }
 
     return xiiMemoryUtils::IsEqual(static_cast<const ValueType*>(GetPtr()), static_cast<const ValueType*>(other.GetPtr()), GetCount());
   }
@@ -246,10 +250,14 @@ public:
   inline bool operator==(const xiiArrayPtr<T>& other) const // [tested]
   {
     if (GetCount() != other.GetCount())
+    {
       return false;
+    }
 
     if (GetPtr() == other.GetPtr())
+    {
       return true;
+    }
 
     return xiiMemoryUtils::IsEqual(static_cast<const ValueType*>(GetPtr()), static_cast<const ValueType*>(other.GetPtr()), GetCount());
   }
@@ -258,15 +266,21 @@ public:
   inline bool operator<(const xiiArrayPtr<const T>& other) const // [tested]
   {
     if (GetCount() != other.GetCount())
+    {
       return GetCount() < other.GetCount();
+    }
 
     for (xiiUInt32 i = 0; i < GetCount(); ++i)
     {
       if (GetPtr()[i] < other.GetPtr()[i])
+      {
         return true;
+      }
 
       if (other.GetPtr()[i] < GetPtr()[i])
+      {
         return false;
+      }
     }
 
     return false;
@@ -298,7 +312,9 @@ public:
     for (xiiUInt32 i = uiStartIndex; i < m_uiCount; ++i)
     {
       if (xiiMemoryUtils::IsEqual(m_pPtr + i, &value))
+      {
         return i;
+      }
     }
 
     return xiiInvalidIndex;
@@ -310,7 +326,9 @@ public:
     for (xiiUInt32 i = ::xiiMath::Min(uiStartIndex, m_uiCount); i-- > 0;)
     {
       if (xiiMemoryUtils::IsEqual(m_pPtr + i, &value))
+      {
         return i;
+      }
     }
     return xiiInvalidIndex;
   }

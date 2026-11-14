@@ -52,7 +52,9 @@ XII_ALWAYS_INLINE xiiGALTexture* xiiRenderGraphPassContext::GetTexture(xiiRender
 {
   XII_ASSERT_DEV(m_pGraph != nullptr && m_pGraph->GetTextureDescription(hTexture) != nullptr, "Texture handle belongs to another graph setup or resource domain.");
   if (m_pGraph == nullptr || m_pGraph->GetTextureDescription(hTexture) == nullptr)
+  {
     return nullptr;
+  }
   const xiiUInt32 uiResourceIndex = hTexture.GetInternalID().m_InstanceIndex;
   XII_ASSERT_DEV(uiResourceIndex < static_cast<xiiUInt32>(m_ResolvedTextures.GetCount()), "Texture handle index {} is out of range (max {}).", uiResourceIndex, m_ResolvedTextures.GetCount());
 
@@ -66,7 +68,9 @@ XII_ALWAYS_INLINE xiiGALBuffer* xiiRenderGraphPassContext::GetBuffer(xiiRenderGr
 {
   XII_ASSERT_DEV(m_pGraph != nullptr && m_pGraph->GetBufferDescription(hBuffer) != nullptr, "Buffer handle belongs to another graph setup or resource domain.");
   if (m_pGraph == nullptr || m_pGraph->GetBufferDescription(hBuffer) == nullptr)
+  {
     return nullptr;
+  }
   const xiiUInt32 uiResourceIndex = hBuffer.GetInternalID().m_InstanceIndex;
   XII_ASSERT_DEV(uiResourceIndex < static_cast<xiiUInt32>(m_ResolvedBuffers.GetCount()), "Buffer handle index {} is out of range (max {}).", uiResourceIndex, m_ResolvedBuffers.GetCount());
 
@@ -167,7 +171,9 @@ XII_ALWAYS_INLINE xiiArrayPtr<const xiiRenderGraphResourceVersionDescription> xi
 XII_ALWAYS_INLINE xiiSharedPtr<xiiGALTexture> xiiRenderGraph::GetExportedTexture(xiiRenderGraphTextureHandle hTexture) const
 {
   if (GetTextureDescription(hTexture) == nullptr)
+  {
     return {};
+  }
   xiiSharedPtr<xiiGALTexture> pTexture;
   m_ExportedTextures.TryGetValue(hTexture.GetResourceId().m_Data, pTexture);
   return pTexture;
@@ -176,7 +182,9 @@ XII_ALWAYS_INLINE xiiSharedPtr<xiiGALTexture> xiiRenderGraph::GetExportedTexture
 XII_ALWAYS_INLINE xiiSharedPtr<xiiGALBuffer> xiiRenderGraph::GetExportedBuffer(xiiRenderGraphBufferHandle hBuffer) const
 {
   if (GetBufferDescription(hBuffer) == nullptr)
+  {
     return {};
+  }
   xiiSharedPtr<xiiGALBuffer> pBuffer;
   m_ExportedBuffers.TryGetValue(hBuffer.GetResourceId().m_Data, pBuffer);
   return pBuffer;

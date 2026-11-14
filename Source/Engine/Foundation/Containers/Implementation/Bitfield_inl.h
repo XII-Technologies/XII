@@ -32,7 +32,9 @@ template <class Container>
 void xiiBitfield<Container>::SetCount(xiiUInt32 uiBitCount, bool bSetNew)
 {
   if (m_uiCount == uiBitCount)
+  {
     return;
+  }
 
   const xiiUInt32 uiOldBits = m_uiCount;
 
@@ -62,7 +64,9 @@ template <class Container>
 bool xiiBitfield<Container>::IsAnyBitSet(xiiUInt32 uiFirstBit /*= 0*/, xiiUInt32 uiNumBits /*= 0xFFFFFFFF*/) const
 {
   if (m_uiCount == 0 || uiNumBits == 0)
+  {
     return false;
+  }
 
   XII_ASSERT_DEBUG(uiFirstBit < m_uiCount, "Cannot access bit {0}, the bitfield only has {1} bits.", uiFirstBit, m_uiCount);
 
@@ -77,7 +81,9 @@ bool xiiBitfield<Container>::IsAnyBitSet(xiiUInt32 uiFirstBit /*= 0*/, xiiUInt32
     for (xiiUInt32 i = uiFirstBit; i <= uiLastBit; ++i)
     {
       if (IsBitSet(i))
+      {
         return true;
+      }
     }
   }
   else
@@ -89,21 +95,27 @@ bool xiiBitfield<Container>::IsAnyBitSet(xiiUInt32 uiFirstBit /*= 0*/, xiiUInt32
     for (xiiUInt32 i = uiFirstBit; i < uiNextIntBit; ++i)
     {
       if (IsBitSet(i))
+      {
         return true;
+      }
     }
 
     // check the bits in the ints in between with one operation
     for (xiiUInt32 i = uiFirstInt + 1; i < uiLastInt; ++i)
     {
       if ((m_Container[i] & 0xFFFFFFFF) != 0)
+      {
         return true;
+      }
     }
 
     // check the bits in the last int individually
     for (xiiUInt32 i = uiPrevIntBit; i <= uiLastBit; ++i)
     {
       if (IsBitSet(i))
+      {
         return true;
+      }
     }
   }
 
@@ -120,7 +132,9 @@ template <class Container>
 bool xiiBitfield<Container>::AreAllBitsSet(xiiUInt32 uiFirstBit /*= 0*/, xiiUInt32 uiNumBits /*= 0xFFFFFFFF*/) const
 {
   if (m_uiCount == 0 || uiNumBits == 0)
+  {
     return false;
+  }
 
   XII_ASSERT_DEBUG(uiFirstBit < m_uiCount, "Cannot access bit {0}, the bitfield only has {1} bits.", uiFirstBit, m_uiCount);
 
@@ -135,7 +149,9 @@ bool xiiBitfield<Container>::AreAllBitsSet(xiiUInt32 uiFirstBit /*= 0*/, xiiUInt
     for (xiiUInt32 i = uiFirstBit; i <= uiLastBit; ++i)
     {
       if (!IsBitSet(i))
+      {
         return false;
+      }
     }
   }
   else
@@ -147,21 +163,27 @@ bool xiiBitfield<Container>::AreAllBitsSet(xiiUInt32 uiFirstBit /*= 0*/, xiiUInt
     for (xiiUInt32 i = uiFirstBit; i < uiNextIntBit; ++i)
     {
       if (!IsBitSet(i))
+      {
         return false;
+      }
     }
 
     // check the bits in the ints in between with one operation
     for (xiiUInt32 i = uiFirstInt + 1; i < uiLastInt; ++i)
     {
       if (m_Container[i] != 0xFFFFFFFF)
+      {
         return false;
+      }
     }
 
     // check the bits in the last int individually
     for (xiiUInt32 i = uiPrevIntBit; i <= uiLastBit; ++i)
     {
       if (!IsBitSet(i))
+      {
         return false;
+      }
     }
   }
 
@@ -242,7 +264,9 @@ template <class Container>
 void xiiBitfield<Container>::SetBitRange(xiiUInt32 uiFirstBit, xiiUInt32 uiNumBits)
 {
   if (m_uiCount == 0 || uiNumBits == 0)
+  {
     return;
+  }
 
   XII_ASSERT_DEBUG(uiFirstBit < m_uiCount, "Cannot access bit {0}, the bitfield only has {1} bits.", uiFirstBit, m_uiCount);
 
@@ -288,7 +312,9 @@ template <class Container>
 void xiiBitfield<Container>::ClearBitRange(xiiUInt32 uiFirstBit, xiiUInt32 uiNumBits)
 {
   if (m_uiCount == 0 || uiNumBits == 0)
+  {
     return;
+  }
 
   XII_ASSERT_DEBUG(uiFirstBit < m_uiCount, "Cannot access bit {0}, the bitfield only has {1} bits.", uiFirstBit, m_uiCount);
 
@@ -334,7 +360,9 @@ template <class Container>
 void xiiBitfield<Container>::FlipBitRange(xiiUInt32 uiFirstBit, xiiUInt32 uiNumBits)
 {
   if (m_uiCount == 0 || uiNumBits == 0)
+  {
     return;
+  }
 
   XII_ASSERT_DEBUG(uiFirstBit < m_uiCount, "Cannot access bit {0}, the bitfield only has {1} bits.", uiFirstBit, m_uiCount);
 

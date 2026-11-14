@@ -223,7 +223,9 @@ public:
   virtual bool IsFullscreenWindow(bool bOnlyProperFullscreenMode = false) const override
   {
     if (bOnlyProperFullscreenMode)
+    {
       return m_CreationDescription.m_WindowMode == xiiWindowMode::FullscreenFixedResolution;
+    }
 
     return xiiWindowMode::IsFullscreen(m_CreationDescription.m_WindowMode);
   }

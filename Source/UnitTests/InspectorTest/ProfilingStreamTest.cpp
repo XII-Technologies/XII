@@ -77,7 +77,9 @@ XII_CREATE_SIMPLE_TEST(Inspector, RollingPauseCaptureAndRoundTrip)
 {
   Session session;
   for (int i = 1; i <= 1250; ++i)
+  {
     session.Append(Batch(i, i * 10000));
+  }
   XII_TEST_INT(session.m_Live.m_Frames.size(), 1200);
   XII_TEST_BOOL(session.m_Live.m_iBytes <= 64 * 1024 * 1024);
   session.SetPaused(true);
@@ -117,7 +119,9 @@ XII_CREATE_SIMPLE_TEST(Inspector, RollingPauseCaptureAndRoundTrip)
   auto large = Batch(1256, 12560000);
   large.m_Scopes.clear();
   for (int i = 0; i < 8192; ++i)
+  {
     large.m_Scopes.push_back({QString(300, 'A'), "77", QString(300, 'B'), 12560000, 12568000, quint64(i + 1)});
+  }
   session.Append(large);
   XII_TEST_BOOL(!session.m_bRecording && session.Display().m_bTruncated);
   XII_TEST_BOOL(session.Display().m_iBytes <= 1024 * 1024);
@@ -127,7 +131,9 @@ XII_CREATE_SIMPLE_TEST(Inspector, RollingPauseCaptureAndRoundTrip)
   Session duration;
   duration.StartRecording(1000, 0.1, 1024 * 1024);
   for (int i = 1; i <= 15; ++i)
+  {
     duration.Append(Batch(i, i * 10000));
+  }
   XII_TEST_BOOL(duration.m_bFinishing);
   duration.StopRecording(false);
   XII_TEST_BOOL(!duration.m_bRecording && duration.m_bPaused);
@@ -184,9 +190,13 @@ XII_CREATE_SIMPLE_TEST(Inspector, GpuHistoryAndMetadataBudgets)
   batch.m_fReceivedUs = 10000;
   const QString name(4096, 'G');
   for (int i = 0; i < 60000; ++i)
+  {
     batch.m_Gpu.push_back({quint64(i % 500), quint64(i), 0, 0, false, true, 1.0, name, 10000});
+  }
   for (quint64 graph = 0; graph < 500; ++graph)
+  {
     batch.m_Graphs[graph] = "Graph metadata";
+  }
   session.Append(batch);
   XII_TEST_BOOL(session.m_Live.m_iBytes <= 64 * 1024 * 1024);
   XII_TEST_BOOL(session.m_Live.m_Gpu.size() < 60000);

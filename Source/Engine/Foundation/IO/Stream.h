@@ -94,7 +94,9 @@ public:
 
       // Terminate early if the stream didn't read as many bytes as we requested (EOF for example)
       if (uiBytesRead < uiBytesToRead)
+      {
         break;
+      }
     }
 
     return uiBytesSkipped;

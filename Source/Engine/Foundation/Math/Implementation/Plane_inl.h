@@ -53,7 +53,9 @@ template <typename Type>
 xiiResult xiiPlaneTemplate<Type>::SetFromPoints(const xiiVec3Template<Type>& v1, const xiiVec3Template<Type>& v2, const xiiVec3Template<Type>& v3)
 {
   if (m_vNormal.CalculateNormal(v1, v2, v3) == XII_FAILURE)
+  {
     return XII_FAILURE;
+  }
 
   m_fNegDistance = -m_vNormal.Dot(v1);
   return XII_SUCCESS;
@@ -63,7 +65,9 @@ template <typename Type>
 xiiResult xiiPlaneTemplate<Type>::SetFromPoints(const xiiVec3Template<Type>* const pVertices)
 {
   if (m_vNormal.CalculateNormal(pVertices[0], pVertices[1], pVertices[2]) == XII_FAILURE)
+  {
     return XII_FAILURE;
+  }
 
   m_fNegDistance = -m_vNormal.Dot(pVertices[0]);
   return XII_SUCCESS;
@@ -155,10 +159,14 @@ xiiPositionOnPlane::Enum xiiPlaneTemplate<Type>::GetPointPosition(const xiiVec3T
   const Type f = m_vNormal.Dot(vPoint);
 
   if (f + fPlaneHalfWidth < -m_fNegDistance)
+  {
     return xiiPositionOnPlane::Back;
+  }
 
   if (f - fPlaneHalfWidth > -m_fNegDistance)
+  {
     return xiiPositionOnPlane::Front;
+  }
 
   return xiiPositionOnPlane::OnPlane;
 }
@@ -269,7 +277,9 @@ xiiResult xiiPlaneTemplate<Type>::FindSupportPoints(const xiiVec3Template<Type>*
   }
 
   if (!bFoundSecond)
+  {
     return XII_FAILURE;
+  }
 
   const xiiVec3Template<Type> v2 = pVertices[i];
 
@@ -307,12 +317,16 @@ xiiPositionOnPlane::Enum xiiPlaneTemplate<Type>::GetObjectPosition(const xiiVec3
     {
       case xiiPositionOnPlane::Front:
         if (bBack)
+        {
           return (xiiPositionOnPlane::Spanning);
+        }
         bFront = true;
         break;
       case xiiPositionOnPlane::Back:
         if (bFront)
+        {
           return (xiiPositionOnPlane::Spanning);
+        }
         bBack = true;
         break;
 
@@ -336,12 +350,16 @@ xiiPositionOnPlane::Enum xiiPlaneTemplate<Type>::GetObjectPosition(const xiiVec3
     {
       case xiiPositionOnPlane::Front:
         if (bBack)
+        {
           return (xiiPositionOnPlane::Spanning);
+        }
         bFront = true;
         break;
       case xiiPositionOnPlane::Back:
         if (bFront)
+        {
           return (xiiPositionOnPlane::Spanning);
+        }
         bBack = true;
         break;
 
@@ -351,9 +369,13 @@ xiiPositionOnPlane::Enum xiiPlaneTemplate<Type>::GetObjectPosition(const xiiVec3
   }
 
   if (bFront)
+  {
     return (xiiPositionOnPlane::Front);
+  }
   if (bBack)
+  {
     return (xiiPositionOnPlane::Back);
+  }
 
   return (xiiPositionOnPlane::OnPlane);
 }
@@ -367,19 +389,27 @@ bool xiiPlaneTemplate<Type>::GetRayIntersection(const xiiVec3Template<Type>& vRa
   const Type fPlaneSide = GetDistanceTo(vRayStartPos);
   const Type fCosAlpha  = m_vNormal.Dot(vRayDir);
 
-  if (fCosAlpha == 0) // ray is orthogonal to plane
+  if (fCosAlpha == 0)
+  { // ray is orthogonal to plane
     return false;
+  }
 
-  if (xiiMath::Sign(fPlaneSide) == xiiMath::Sign(fCosAlpha)) // ray points away from the plane
+  if (xiiMath::Sign(fPlaneSide) == xiiMath::Sign(fCosAlpha))
+  { // ray points away from the plane
     return false;
+  }
 
   const Type fTime = -fPlaneSide / fCosAlpha;
 
   if (out_pIntersectionDistance)
+  {
     *out_pIntersectionDistance = fTime;
+  }
 
   if (out_pIntersection)
+  {
     *out_pIntersection = vRayStartPos + fTime * vRayDir;
+  }
 
   return true;
 }
@@ -393,16 +423,22 @@ bool xiiPlaneTemplate<Type>::GetRayIntersectionBiDirectional(const xiiVec3Templa
   const Type fPlaneSide = GetDistanceTo(vRayStartPos);
   const Type fCosAlpha  = m_vNormal.Dot(vRayDir);
 
-  if (fCosAlpha == 0) // ray is orthogonal to plane
+  if (fCosAlpha == 0)
+  { // ray is orthogonal to plane
     return false;
+  }
 
   const Type fTime = -fPlaneSide / fCosAlpha;
 
   if (out_pIntersectionDistance)
+  {
     *out_pIntersectionDistance = fTime;
+  }
 
   if (out_pIntersection)
+  {
     *out_pIntersection = vRayStartPos + fTime * vRayDir;
+  }
 
   return true;
 }
@@ -413,10 +449,14 @@ bool xiiPlaneTemplate<Type>::GetLineSegmentIntersection(const xiiVec3Template<Ty
   Type fTime = 0;
 
   if (!GetRayIntersection(vLineStartPos, vLineEndPos - vLineStartPos, &fTime, out_pIntersection))
+  {
     return false;
+  }
 
   if (out_pHitFraction)
+  {
     *out_pHitFraction = fTime;
+  }
 
   return (fTime <= 1);
 }
@@ -478,7 +518,9 @@ xiiResult xiiPlaneTemplate<Type>::GetPlanesIntersectionPoint(const xiiPlaneTempl
   const Type det = n1.Dot(n2.CrossRH(n3));
 
   if (xiiMath::IsZero<Type>(det, xiiMath::LargeEpsilon<Type>()))
+  {
     return XII_FAILURE;
+  }
 
   out_vResult = (-p0.m_fNegDistance * n2.CrossRH(n3) + -p1.m_fNegDistance * n3.CrossRH(n1) + -p2.m_fNegDistance * n1.CrossRH(n2)) / det;
 

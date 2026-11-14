@@ -36,7 +36,9 @@ public:
   xiiSubSystem()
   {
     for (xiiInt32 i = 0; i < xiiStartupStage::ENUM_COUNT; ++i)
+    {
       m_bStartupDone[i] = false;
+    }
   }
 
   virtual ~xiiSubSystem() = default;

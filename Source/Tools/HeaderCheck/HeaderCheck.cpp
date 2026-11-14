@@ -128,7 +128,9 @@ public:
     }
 
     if (jsonReader.Parse(reader).Failed())
+    {
       return XII_FAILURE;
+    }
 
     const xiiStringView includeTarget = "includeTarget";
     const xiiStringView includeSource = "includeSource";
@@ -234,7 +236,9 @@ public:
         argi++;
         ignoreFile.MakeCleanPath();
         if (ParseIgnoreFile(ignoreFile.GetView()).Failed())
+        {
           return;
+        }
       }
       else
       {
@@ -251,7 +255,9 @@ public:
     }
 
     if (!xiiPathUtils::IsAbsolutePath(sSearchDir.GetData()))
+    {
       xiiLog::Error("The given path is not absolute: '{0}'", sSearchDir);
+    }
 
     m_sSearchDir = sSearchDir;
 
@@ -277,11 +283,17 @@ public:
     }
 
     if (m_bHadErrors || m_bHadSeriousWarnings)
+    {
       SetReturnCode(2);
+    }
     else if (m_bHadWarnings)
+    {
       SetReturnCode(1);
+    }
     else
+    {
       SetReturnCode(0);
+    }
 
     m_pLinearAllocator = nullptr;
 
@@ -331,7 +343,9 @@ public:
   void IterateOverFiles()
   {
     if (m_bHadSeriousWarnings || m_bHadErrors)
+    {
       return;
+    }
 
     const xiiUInt32 uiSearchDirLength = m_sSearchDir.GetElementCount() + 1;
 
@@ -364,7 +378,9 @@ public:
       }
     }
     else
+    {
       xiiLog::Error("Could not search the directory '{0}'", m_sSearchDir);
+    }
   }
 
   void CheckInclude(const xiiStringBuilder& sCurrentFile, const xiiStringBuilder& sIncludePath, xiiUInt32 uiLine)
@@ -557,7 +573,9 @@ public:
   {
     // something basic has gone wrong
     if (m_bHadSeriousWarnings || m_bHadErrors)
+    {
       return xiiApplication::Execution::Quit;
+    }
 
     IterateOverFiles();
 

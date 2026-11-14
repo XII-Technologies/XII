@@ -71,7 +71,9 @@ xiiMat3Template<Type> xiiMat3Template<Type>::MakeZero()
   xiiMat3Template<Type> res;
 
   for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(res.m_fElementsCM); ++i)
+  {
     res.m_fElementsCM[i] = 0.0f;
+  }
 
   return res;
 }
@@ -288,7 +290,9 @@ template <typename Type>
 XII_FORCE_INLINE void xiiMat3Template<Type>::operator*=(Type f)
 {
   for (xiiInt32 i = 0; i < 9; ++i)
+  {
     m_fElementsCM[i] *= f;
+  }
 
   XII_NAN_ASSERT(this);
 }
@@ -338,7 +342,9 @@ const xiiMat3Template<Type> operator*(const xiiMat3Template<Type>& m1, Type f)
   xiiMat3Template<Type> r;
 
   for (xiiUInt32 i = 0; i < 9; ++i)
+  {
     r.m_fElementsCM[i] = m1.m_fElementsCM[i] * f;
+  }
 
   XII_NAN_ASSERT(&r);
 
@@ -357,7 +363,9 @@ const xiiMat3Template<Type> operator+(const xiiMat3Template<Type>& m1, const xii
   xiiMat3Template<Type> r;
 
   for (xiiUInt32 i = 0; i < 9; ++i)
+  {
     r.m_fElementsCM[i] = m1.m_fElementsCM[i] + m2.m_fElementsCM[i];
+  }
 
   XII_NAN_ASSERT(&r);
 
@@ -370,7 +378,9 @@ const xiiMat3Template<Type> operator-(const xiiMat3Template<Type>& m1, const xii
   xiiMat3Template<Type> r;
 
   for (xiiUInt32 i = 0; i < 9; ++i)
+  {
     r.m_fElementsCM[i] = m1.m_fElementsCM[i] - m2.m_fElementsCM[i];
+  }
 
   XII_NAN_ASSERT(&r);
 
@@ -386,7 +396,9 @@ bool xiiMat3Template<Type>::IsIdentical(const xiiMat3Template<Type>& rhs) const
   for (xiiUInt32 i = 0; i < 9; ++i)
   {
     if (m_fElementsCM[i] != rhs.m_fElementsCM[i])
+    {
       return false;
+    }
   }
 
   return true;
@@ -403,7 +415,9 @@ bool xiiMat3Template<Type>::IsEqual(const xiiMat3Template<Type>& rhs, Type fEpsi
   for (xiiUInt32 i = 0; i < 9; ++i)
   {
     if (!xiiMath::IsEqual(m_fElementsCM[i], rhs.m_fElementsCM[i], fEpsilon))
+    {
       return false;
+    }
   }
 
   return true;
@@ -423,7 +437,9 @@ bool xiiMat3Template<Type>::IsZero(Type fEpsilon) const
   for (xiiUInt32 i = 0; i < 9; ++i)
   {
     if (!xiiMath::IsZero(m_fElementsCM[i], fEpsilon))
+    {
       return false;
+    }
   }
 
   return true;
@@ -435,25 +451,43 @@ bool xiiMat3Template<Type>::IsIdentity(Type fEpsilon) const
   XII_NAN_ASSERT(this);
 
   if (!xiiMath::IsEqual(Element(0, 0), (Type)1, fEpsilon))
+  {
     return false;
+  }
   if (!xiiMath::IsEqual(Element(0, 1), (Type)0, fEpsilon))
+  {
     return false;
+  }
   if (!xiiMath::IsEqual(Element(0, 2), (Type)0, fEpsilon))
+  {
     return false;
+  }
 
   if (!xiiMath::IsEqual(Element(1, 0), (Type)0, fEpsilon))
+  {
     return false;
+  }
   if (!xiiMath::IsEqual(Element(1, 1), (Type)1, fEpsilon))
+  {
     return false;
+  }
   if (!xiiMath::IsEqual(Element(1, 2), (Type)0, fEpsilon))
+  {
     return false;
+  }
 
   if (!xiiMath::IsEqual(Element(2, 0), (Type)0, fEpsilon))
+  {
     return false;
+  }
   if (!xiiMath::IsEqual(Element(2, 1), (Type)0, fEpsilon))
+  {
     return false;
+  }
   if (!xiiMath::IsEqual(Element(2, 2), (Type)1, fEpsilon))
+  {
     return false;
+  }
 
   return true;
 }
@@ -464,7 +498,9 @@ bool xiiMat3Template<Type>::IsValid() const
   for (xiiUInt32 i = 0; i < 9; ++i)
   {
     if (!xiiMath::IsFinite(m_fElementsCM[i]))
+    {
       return false;
+    }
   }
 
   return true;
@@ -476,7 +512,9 @@ bool xiiMat3Template<Type>::IsNaN() const
   for (xiiUInt32 i = 0; i < 9; ++i)
   {
     if (xiiMath::IsNaN(m_fElementsCM[i]))
+    {
       return true;
+    }
   }
 
   return false;
@@ -503,11 +541,17 @@ xiiResult xiiMat3Template<Type>::SetScalingFactors(const xiiVec3Template<Type>& 
   xiiVec3Template<Type> tz(Element(2, 0), Element(2, 1), Element(2, 2));
 
   if (tx.SetLength(vXYZ.x, fEpsilon) == XII_FAILURE)
+  {
     return XII_FAILURE;
+  }
   if (ty.SetLength(vXYZ.y, fEpsilon) == XII_FAILURE)
+  {
     return XII_FAILURE;
+  }
   if (tz.SetLength(vXYZ.z, fEpsilon) == XII_FAILURE)
+  {
     return XII_FAILURE;
+  }
 
 
   Element(0, 0) = tx.x;

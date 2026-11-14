@@ -104,7 +104,9 @@ XII_ALWAYS_INLINE bool xiiRectTemplate<Type>::Contains(const xiiVec2Template<Typ
   if (vPoint.x >= x && vPoint.x <= Right())
   {
     if (vPoint.y >= y && vPoint.y <= Bottom())
+    {
       return true;
+    }
   }
 
   return false;
@@ -120,7 +122,9 @@ template <typename Type>
 XII_ALWAYS_INLINE bool xiiRectTemplate<Type>::Overlaps(const xiiRectTemplate<Type>& other) const
 {
   if (x < other.Right() && Right() > other.x && y < other.Bottom() && Bottom() > other.y)
+  {
     return true;
+  }
 
   return false;
 }
@@ -132,20 +136,32 @@ void xiiRectTemplate<Type>::ExpandToInclude(const xiiRectTemplate<Type>& other)
   Type thisBottom = Bottom();
 
   if (other.x < x)
+  {
     x = other.x;
+  }
 
   if (other.y < y)
+  {
     y = other.y;
+  }
 
   if (other.Right() > thisRight)
+  {
     width = other.Right() - x;
+  }
   else
+  {
     width = thisRight - x;
+  }
 
   if (other.Bottom() > thisBottom)
+  {
     height = other.Bottom() - y;
+  }
   else
+  {
     height = thisBottom - y;
+  }
 }
 
 template <typename Type>
@@ -155,20 +171,32 @@ void xiiRectTemplate<Type>::ExpandToInclude(const xiiVec2Template<Type>& other)
   Type thisBottom = Bottom();
 
   if (other.x < x)
+  {
     x = other.x;
+  }
 
   if (other.y < y)
+  {
     y = other.y;
+  }
 
   if (other.x > thisRight)
+  {
     width = other.x - x;
+  }
   else
+  {
     width = thisRight - x;
+  }
 
   if (other.y > thisBottom)
+  {
     height = other.y - y;
+  }
   else
+  {
     height = thisBottom - y;
+  }
 }
 
 template <typename Type>

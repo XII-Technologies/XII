@@ -234,7 +234,9 @@ template <typename KeyType, typename ValueType, typename Comparer>
 typename xiiMapBase<KeyType, ValueType, Comparer>::Node* xiiMapBase<KeyType, ValueType, Comparer>::GetLeftMost() const
 {
   if (IsEmpty())
+  {
     return nullptr;
+  }
 
   Node* pNode = m_pRoot;
 
@@ -250,7 +252,9 @@ template <typename KeyType, typename ValueType, typename Comparer>
 typename xiiMapBase<KeyType, ValueType, Comparer>::Node* xiiMapBase<KeyType, ValueType, Comparer>::GetRightMost() const
 {
   if (IsEmpty())
+  {
     return nullptr;
+  }
 
   Node* pNode = m_pRoot;
 
@@ -274,13 +278,17 @@ typename xiiMapBase<KeyType, ValueType, Comparer>::Node* xiiMapBase<KeyType, Val
     const xiiInt32 dir2 = (xiiInt32)m_Comparer.Less(key, pNode->m_Key);
 
     if (dir == dir2)
+    {
       break;
+    }
 
     pNode = pNode->m_pLink[dir];
   }
 
   if ((const void*)pNode == (const void*)&m_NilNode)
+  {
     return nullptr;
+  }
 
   return pNode;
 }
@@ -385,7 +393,9 @@ typename xiiMapBase<KeyType, ValueType, Comparer>::Node* xiiMapBase<KeyType, Val
     const xiiInt32 dir2 = (xiiInt32)m_Comparer.Less(key, pNode->m_Key);
 
     if (dir == dir2)
+    {
       return pNode;
+    }
 
     if (dir == 0)
     {
@@ -499,7 +509,9 @@ typename xiiMapBase<KeyType, ValueType, Comparer>::Iterator xiiMapBase<KeyType, 
         up[top++] = it;
 
         if (it->m_pLink[dir] == pNilNode)
+        {
           break;
+        }
 
         it = it->m_pLink[dir];
       }
@@ -510,7 +522,9 @@ typename xiiMapBase<KeyType, ValueType, Comparer>::Iterator xiiMapBase<KeyType, 
       while (--top >= 0)
       {
         if (top != 0)
+        {
           dir = (up[top - 1]->m_pLink[1] == up[top]) ? 1 : 0;
+        }
 
         up[top] = SkewNode(up[top]);
         up[top] = SplitNode(up[top]);
@@ -680,10 +694,14 @@ typename xiiMapBase<KeyType, ValueType, Comparer>::Node* xiiMapBase<KeyType, Val
       up[top++] = it;
 
       if (it == &m_NilNode)
+      {
         return root;
+      }
 
       if (m_Comparer.Equal(it->m_Key, key))
+      {
         break;
+      }
 
       dir = m_Comparer.Less(it->m_Key, key) ? 1 : 0;
 
@@ -826,7 +844,9 @@ template <typename KeyType, typename ValueType, typename Comparer>
 bool xiiMapBase<KeyType, ValueType, Comparer>::operator==(const xiiMapBase<KeyType, ValueType, Comparer>& rhs) const
 {
   if (GetCount() != rhs.GetCount())
+  {
     return false;
+  }
 
   auto itLhs = GetIterator();
   auto itRhs = rhs.GetIterator();
@@ -834,10 +854,14 @@ bool xiiMapBase<KeyType, ValueType, Comparer>::operator==(const xiiMapBase<KeyTy
   while (itLhs.IsValid())
   {
     if (!m_Comparer.Equal(itLhs.Key(), itRhs.Key()))
+    {
       return false;
+    }
 
     if (itLhs.Value() != itRhs.Value())
+    {
       return false;
+    }
 
     ++itLhs;
     ++itRhs;

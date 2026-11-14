@@ -32,16 +32,22 @@ inline xiiUInt32 xiiUnicodeUtils::GetUtf8SequenceLength(char iFirstByte)
   const xiiUInt32 uiBit5 = iFirstByte & XII_BIT(5);
   const xiiUInt32 uiBit4 = iFirstByte & XII_BIT(4);
 
-  if (uiBit7 == 0) // ASCII character '0xxxxxxx'
+  if (uiBit7 == 0)
+  { // ASCII character '0xxxxxxx'
     return 1;
+  }
 
   XII_IGNORE_UNUSED(uiBit6);
   XII_ASSERT_DEV(uiBit6 != 0, "Invalid Leading UTF-8 Byte.");
 
-  if (uiBit5 == 0) // '110xxxxx'
+  if (uiBit5 == 0)
+  { // '110xxxxx'
     return 2;
-  if (uiBit4 == 0) // '1110xxxx'
+  }
+  if (uiBit4 == 0)
+  { // '1110xxxx'
     return 3;
+  }
 
   // '1111xxxx'
   return 4;
@@ -133,13 +139,19 @@ inline xiiUInt32 xiiUnicodeUtils::GetSizeForCharacterInUtf8(xiiUInt32 uiCharacte
   // Basically implements this: http://en.wikipedia.org/wiki/Utf8#Description
 
   if (uiCharacter <= 0x0000007f)
+  {
     return 1;
+  }
 
   if (uiCharacter <= 0x000007ff)
+  {
     return 2;
+  }
 
   if (uiCharacter <= 0x0000ffff)
+  {
     return 3;
+  }
 
   // UTF-8 can use up to 6 bytes to encode a code point
   // however some committee agreed that never more than 4 bytes are used (no need for more than 21 Bits)
@@ -153,7 +165,9 @@ XII_ALWAYS_INLINE bool xiiUnicodeUtils::IsValidUtf8(const char* szString, const 
 {
 #if XII_ENABLED(XII_USE_STRING_VALIDATION)
   if (szStringEnd == GetMaxStringEnd<char>())
+  {
     szStringEnd = szString + strlen(szString);
+  }
 
   return utf8::is_valid(szString, szStringEnd);
 #else
@@ -209,7 +223,9 @@ inline xiiResult xiiUnicodeUtils::MoveToNextUtf8(const char*& ref_szUtf8, xiiUIn
   while (uiNumCharacters > 0)
   {
     if (*ref_szUtf8 == '\0')
+    {
       return XII_FAILURE;
+    }
 
     do
     {
@@ -229,7 +245,9 @@ inline xiiResult xiiUnicodeUtils::MoveToNextUtf8(const char*& ref_szUtf8, const 
   while (uiNumCharacters > 0)
   {
     if (ref_szUtf8 >= szUtf8End || *ref_szUtf8 == '\0')
+    {
       return XII_FAILURE;
+    }
 
     do
     {
@@ -249,7 +267,9 @@ inline xiiResult xiiUnicodeUtils::MoveToPriorUtf8(const char*& ref_szUtf8, const
   while (uiNumCharacters > 0)
   {
     if (ref_szUtf8 <= szUtf8Start)
+    {
       return XII_FAILURE;
+    }
 
     do
     {

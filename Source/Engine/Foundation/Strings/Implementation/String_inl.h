@@ -97,7 +97,9 @@ template <xiiUInt16 Size>
 void xiiHybridStringBase<Size>::operator=(const xiiHybridStringBase& rhs)
 {
   if (this == &rhs)
+  {
     return;
+  }
 
   m_Data = rhs.m_Data;
 }
@@ -106,7 +108,9 @@ template <xiiUInt16 Size>
 void xiiHybridStringBase<Size>::operator=(xiiHybridStringBase&& rhs)
 {
   if (this == &rhs)
+  {
     return;
+  }
 
   m_Data = std::move(rhs.m_Data);
 }
@@ -132,7 +136,9 @@ xiiStringView xiiHybridStringBase<Size>::GetSubString(xiiUInt32 uiFirstCharacter
 {
   const char* szStart = GetData();
   if (xiiUnicodeUtils::MoveToNextUtf8(szStart, uiFirstCharacter).Failed())
+  {
     return {}; // szStart was moved too far, the result is just an empty string
+  }
 
   const char* szEnd = szStart;
   xiiUnicodeUtils::MoveToNextUtf8(szEnd, uiNumCharacters).IgnoreResult(); // if it fails, szEnd just points to the end of this string

@@ -186,7 +186,9 @@ public:
           }
 
           if (bShouldSkip)
+          {
             continue;
+          }
 
           // Strip current source path and append the export path
           xiiStringBuilder sExportDirectoryPath = sPath;

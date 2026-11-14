@@ -53,7 +53,9 @@ template <typename Type>
 XII_IMPLEMENT_IF_FLOAT_TYPE xiiResult xiiVec2Template<Type>::SetLength(Type fNewLength, Type fEpsilon /* = xiiMath::DefaultEpsilon<Type>() */)
 {
   if (NormalizeIfNotZero(xiiVec2Template<Type>::MakeZero(), fEpsilon) == XII_FAILURE)
+  {
     return XII_FAILURE;
+  }
 
   *this *= fNewLength;
   return XII_SUCCESS;
@@ -133,9 +135,13 @@ template <typename Type>
 inline bool xiiVec2Template<Type>::IsNaN() const
 {
   if (xiiMath::IsNaN(x))
+  {
     return true;
+  }
   if (xiiMath::IsNaN(y))
+  {
     return true;
+  }
 
   return false;
 }
@@ -144,9 +150,13 @@ template <typename Type>
 inline bool xiiVec2Template<Type>::IsValid() const
 {
   if (!xiiMath::IsFinite(x))
+  {
     return false;
+  }
   if (!xiiMath::IsFinite(y))
+  {
     return false;
+  }
 
   return true;
 }
@@ -404,9 +414,13 @@ XII_FORCE_INLINE bool operator<(const xiiVec2Template<Type>& v1, const xiiVec2Te
   XII_NAN_ASSERT(&v2);
 
   if (v1.x < v2.x)
+  {
     return true;
+  }
   if (v1.x > v2.x)
+  {
     return false;
+  }
 
   return (v1.y < v2.y);
 }

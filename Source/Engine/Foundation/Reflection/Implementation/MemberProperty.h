@@ -97,7 +97,9 @@ public:
     m_Setter = setter;
 
     if (m_Setter == nullptr)
+    {
       xiiAbstractMemberProperty::m_Flags.Add(xiiPropertyFlags::ReadOnly);
+    }
   }
 
   /// Always returns nullptr; once a property is modified through accessors, there is no point in giving more direct access to
@@ -124,7 +126,9 @@ public:
     XII_ASSERT_DEV(m_Setter != nullptr, "The property '{0}' has no setter function, thus it is read-only.", xiiAbstractProperty::GetPropertyName());
 
     if (m_Setter)
+    {
       (static_cast<Class*>(pInstance)->*m_Setter)(value);
+    }
   }
 
 private:
@@ -168,7 +172,9 @@ public:
     m_Pointer = pointer;
 
     if (m_Setter == nullptr)
+    {
       xiiAbstractMemberProperty::m_Flags.Add(xiiPropertyFlags::ReadOnly);
+    }
   }
 
   /// Returns a pointer to the member property.
@@ -185,7 +191,9 @@ public:
     XII_ASSERT_DEV(m_Setter != nullptr, "The property '{0}' has no setter function, thus it is read-only.", xiiAbstractProperty::GetPropertyName());
 
     if (m_Setter)
+    {
       m_Setter(static_cast<Class*>(pInstance), value);
+    }
   }
 
 private:

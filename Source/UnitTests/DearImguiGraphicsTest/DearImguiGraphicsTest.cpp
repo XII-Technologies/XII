@@ -21,7 +21,9 @@ XII_CREATE_SIMPLE_TEST(DearImguiGraphics, NativeCompositionAndDeferredLifetime)
 {
   xiiGPUTestingEnvironment environment;
   if (!XII_TEST_RESULT(environment.Initialize(false)))
+  {
     return;
+  }
   auto* device = environment.GetDevice();
   xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
   xiiStartup::StartupHighLevelSystems();
@@ -58,7 +60,9 @@ XII_CREATE_SIMPLE_TEST(DearImguiGraphics, NativeCompositionAndDeferredLifetime)
     XII_TEST_RESULT(scope.BeginFrame(frame));
     auto* background = ImGui::GetBackgroundDrawList();
     for (xiiUInt32 i = 0; i < 17000; ++i)
+    {
       background->AddRectFilled({-20, -20}, {-10, -10}, IM_COL32_WHITE);
+    }
     auto* draw = ImGui::GetForegroundDrawList();
     draw->PushClipRect({12, 12}, {28, 28});
     draw->AddRectFilled({10, 10}, {30, 30}, IM_COL32(255, 0, 0, 128));
@@ -71,7 +75,9 @@ XII_CREATE_SIMPLE_TEST(DearImguiGraphics, NativeCompositionAndDeferredLifetime)
   XII_TEST_BOOL(snapshot->GetVertices().GetCount() > 65536);
   bool offsetSeen = false;
   for (const auto& command : snapshot->GetCommands())
+  {
     offsetSeen |= command.m_uiBaseVertex > 65535;
+  }
   XII_TEST_BOOL(offsetSeen);
   XII_TEST_RESULT(xiiImguiSubsystem::UnregisterTexture(context, textureId));
   XII_TEST_BOOL(xiiImguiSubsystem::UnregisterTexture(context, textureId).Failed());
@@ -137,7 +143,9 @@ XII_CREATE_SIMPLE_TEST(DearImguiGraphics, NativeCompositionAndDeferredLifetime)
     XII_TEST_FLOAT(value.w, 1, 0.001f);
   }
   if (xiiGpuTestReadback::ReadTexturePixel(*device, target, 28, 48, value))
+  {
     XII_TEST_FLOAT(value.x, 0.25f, 0.001f); // Outside the command clip, inside its un-clipped rectangle.
+  }
   if (xiiGpuTestReadback::ReadTexturePixel(*device, target, 98, 38, value))
   {
     XII_TEST_FLOAT(value.x, 0, 0.001f);
@@ -145,7 +153,9 @@ XII_CREATE_SIMPLE_TEST(DearImguiGraphics, NativeCompositionAndDeferredLifetime)
     XII_TEST_FLOAT(value.z, 0, 0.001f);
   }
   if (xiiGpuTestReadback::ReadTexturePixel(*device, target, 2, 2, value))
+  {
     XII_TEST_FLOAT(value.x, 0.25f, 0.001f); // Viewport offset preserves unrelated target contents.
+  }
 
   // Font glyphs occupy this region. At least one covered pixel must be brighter than the scene.
   xiiGALTextureReadback readback(device);
@@ -168,7 +178,9 @@ XII_CREATE_SIMPLE_TEST(DearImguiGraphics, NativeCompositionAndDeferredLifetime)
       {
         const auto* row = xiiMemoryUtils::AddByteOffset(static_cast<const xiiVec4*>(mapped.m_pData), y * mapped.m_uiStride);
         for (xiiUInt32 x = 0; x < capture.m_uiWidth; ++x)
+        {
           glyphSeen |= row[x].x > 0.3f && row[x].y > 0.3f && row[x].z > 0.3f;
+        }
       }
       XII_TEST_BOOL(glyphSeen);
       XII_TEST_RESULT(commands->UnmapTextureSubresource(capture.m_pStagingTexture, {}));

@@ -184,7 +184,9 @@ const char* xiiStringBase<Derived>::ComputeCharacterPosition(xiiUInt32 uiCharact
 {
   const char* pPosition = InternalGetData();
   if (xiiUnicodeUtils::MoveToNextUtf8(pPosition, InternalGetDataEnd(), uiCharacterIndex).Failed())
+  {
     return nullptr;
+  }
 
   return pPosition;
 }

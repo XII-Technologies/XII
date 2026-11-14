@@ -38,7 +38,9 @@ namespace
     xiiSharedPtr<const xiiImguiFrame> frame;
     xiiImguiScopedContext             scope(context);
     if (!XII_TEST_BOOL(scope.IsValid()) || !XII_TEST_RESULT(scope.BeginFrame(Description())))
+    {
       return {};
+    }
     if (widgets)
     {
       ImGui::SetNextWindowPos({20, 20});
@@ -110,7 +112,9 @@ XII_CREATE_SIMPLE_TEST(DearImgui, FrameStateAndImmutableLifetime)
   const auto count    = retained->GetVertices().GetCount();
   const auto position = retained->GetVertices()[0].pos;
   for (xiiUInt32 i = 0; i < 5; ++i)
+  {
     Draw(context);
+  }
   const auto empty = Draw(context, false);
   XII_TEST_BOOL(empty && empty->GetCommands().IsEmpty());
   {
@@ -205,7 +209,9 @@ XII_CREATE_SIMPLE_TEST(DearImgui, SourceLocalQuickClickAndTextBurst)
   source.Slot(xiiInputSlot_MouseButton0, 1);
   source.Slot(xiiInputSlot_MouseButton0, 0);
   for (xiiUInt32 i = 0; i < 4; ++i)
+  {
     draw();
+  }
   XII_TEST_BOOL(clicked);
   source.Character(0x03A9);
   source.Character(0x1F642);
@@ -276,7 +282,9 @@ XII_CREATE_SIMPLE_TEST(DearImgui, ReflectedPinsAndSharedViewBindings)
   xiiSharedPtr<const xiiRenderPipeline> pipeline;
   xiiStringBuilder                      error;
   if (!XII_TEST_RESULT_MSG(xiiRenderPipeline::Compile(descriptor, pipeline, &error), "%s", error.GetData()))
+  {
     return;
+  }
   // Two independent pipeline instances bind the same owned UI frame, with distinct setup-local wrappers.
   for (xiiUInt32 i = 0; i < 2; ++i)
   {

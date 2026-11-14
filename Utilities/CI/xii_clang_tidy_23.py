@@ -133,7 +133,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--mode", choices=("verify", "changed", "all", "files"), default="verify")
     parser.add_argument("--base", default="origin/Development", help="Reference for changed-file analysis")
     parser.add_argument("--file", action="append", default=[], help="Source path, required for mode=files")
-    parser.add_argument("--jobs", type=int, default=2)
+    parser.add_argument("--jobs", type=int, default=os.cpu_count() or 1, help="Parallel analysis jobs (default: CPU count)")
     parser.add_argument("--dry-run", action="store_true", help="List selected source files without analysis")
     parser.add_argument("--fix-braces", action="store_true", help="Only apply mandatory-braces fixes (no other autofixes) in the selected mode, including all")
     parser.add_argument("--allow-dirty", action="store_true", help="Permit autofixes with uncommitted tracked changes (local use; review resulting diff)")

@@ -27,7 +27,9 @@ public:
     m_Setter = setter;
 
     if (m_Setter == nullptr)
+    {
       xiiAbstractMemberProperty::m_Flags.Add(xiiPropertyFlags::ReadOnly);
+    }
   }
 
   virtual void* GetPropertyPointer(const void* pInstance) const override
@@ -47,7 +49,9 @@ public:
     XII_ASSERT_DEV(m_Setter != nullptr, "The property '{0}' has no setter function, thus it is read-only.", xiiAbstractProperty::GetPropertyName());
 
     if (m_Setter)
+    {
       (static_cast<Class*>(pInstance)->*m_Setter)((typename EnumType::Enum)value);
+    }
   }
 
 private:
@@ -77,7 +81,9 @@ public:
     m_Pointer = pointer;
 
     if (m_Setter == nullptr)
+    {
       xiiAbstractMemberProperty::m_Flags.Add(xiiPropertyFlags::ReadOnly);
+    }
   }
 
   virtual void* GetPropertyPointer(const void* pInstance) const override { return m_Pointer(static_cast<const Class*>(pInstance)); }
@@ -93,7 +99,9 @@ public:
     XII_ASSERT_DEV(m_Setter != nullptr, "The property '{0}' has no setter function, thus it is read-only.", xiiAbstractProperty::GetPropertyName());
 
     if (m_Setter)
+    {
       m_Setter(static_cast<Class*>(pInstance), (typename EnumType::Enum)value);
+    }
   }
 
 private:

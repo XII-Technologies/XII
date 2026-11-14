@@ -63,7 +63,9 @@ public:
     m_Remove   = remove;
 
     if (m_Setter == nullptr)
+    {
       xiiAbstractArrayProperty::m_Flags.Add(xiiPropertyFlags::ReadOnly);
+    }
   }
 
   virtual xiiUInt32 GetCount(const void* pInstance) const override { return (static_cast<const Class*>(pInstance)->*m_GetCount)(); }
@@ -155,7 +157,9 @@ public:
     m_Getter      = getter;
 
     if (m_Getter == nullptr)
+    {
       xiiAbstractArrayProperty::m_Flags.Add(xiiPropertyFlags::ReadOnly);
+    }
   }
 
   virtual xiiUInt32 GetCount(const void* pInstance) const override { return m_ConstGetter(static_cast<const Class*>(pInstance)).GetCount(); }

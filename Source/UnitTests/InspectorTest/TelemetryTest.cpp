@@ -22,7 +22,9 @@
 int RunInspectorCaptureServer()
 {
   if (xiiPlugin::LoadPlugin("xiiInspectorPlugin").Failed())
+  {
     return 1;
+  }
   xiiTelemetry::s_uiPort = static_cast<xiiUInt16>(xiiCommandLineUtils::GetGlobalInstance()->GetIntOption("-capture-port", 24731));
   xiiTelemetry::CreateServer();
   xiiRenderGraph graph("Telemetry fixture");
@@ -36,7 +38,9 @@ int RunInspectorCaptureServer()
     graph.AddPass<Data>("Telemetry rendering pass", xiiGALCommandQueueFlags::Graphics, [](Data&, xiiRenderGraphBuilder&) {}, [](const Data&, xiiRenderGraphPassContext&) {}, true);
     graph.EndSetup();
     if (graph.Compile().Failed())
+    {
       return 2;
+    }
     xiiProfilingSystem::StartNewFrame();
     const auto now = xiiTime::Now();
     xiiProfilingSystem::AddCPUScope("Rendering telemetry fixture", "RunInspectorCaptureServer", now - xiiTime::MakeFromMilliseconds(1), now, {});
@@ -60,7 +64,9 @@ XII_CREATE_SIMPLE_TEST(Inspector, PluginTelemetryRoundTrip)
   options.AddArgument("{}", port);
   xiiProcess server;
   if (!XII_TEST_RESULT(server.Launch(options)))
+  {
     return;
+  }
   ads::CDockManager      manager;
   xiiQtRenderGraphWidget graph(&manager);
   xiiQtProfilingWidget   profile(&manager);
@@ -78,7 +84,9 @@ XII_CREATE_SIMPLE_TEST(Inspector, PluginTelemetryRoundTrip)
     xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(10));
   }
   if (!XII_TEST_BOOL(xiiTelemetry::IsConnectedToServer()))
+  {
     return;
+  }
   auto* passes   = graph.findChild<QTreeWidget*>("Graph passes");
   auto* hotspots = profile.findChild<QTreeWidget*>("Profiling hotspots");
   XII_TEST_INT(passes->topLevelItemCount(), 0); // Producer sends no graph data before a request.
@@ -109,7 +117,9 @@ XII_CREATE_SIMPLE_TEST(Inspector, PluginTelemetryRoundTrip)
   XII_TEST_BOOL(session->m_uiSequence >= 10); // Several incremental updates within a second.
   XII_TEST_BOOL(session->m_Live.m_Frames.size() >= 20);
   if (session->m_Live.m_Frames.isEmpty())
+  {
     return;
+  }
   XII_TEST_BOOL(session->m_Live.m_Frames.back().m_uiIndex > session->m_Live.m_Frames.front().m_uiIndex);
   const auto previousSession = session->m_uiSession;
   xiiTelemetry::CloseConnection();

@@ -161,10 +161,14 @@ public:
   inline bool operator==(const xiiBlobPtr<const T>& other) const // [tested]
   {
     if (GetCount() != other.GetCount())
+    {
       return false;
+    }
 
     if (GetPtr() == other.GetPtr())
+    {
       return true;
+    }
 
     return xiiMemoryUtils::IsEqual(static_cast<const ValueType*>(GetPtr()), static_cast<const ValueType*>(other.GetPtr()), static_cast<size_t>(GetCount()));
   }

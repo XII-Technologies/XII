@@ -178,7 +178,9 @@ template <typename T>
 void xiiDynamicArrayBase<T>::Reserve(xiiUInt32 uiCapacity)
 {
   if (this->m_uiCapacity >= uiCapacity)
+  {
     return;
+  }
 
   const xiiUInt64 uiCurCap64      = static_cast<xiiUInt64>(this->m_uiCapacity);
   xiiUInt64       uiNewCapacity64 = uiCurCap64 + (uiCurCap64 / 2);
@@ -201,7 +203,9 @@ template <typename T>
 void xiiDynamicArrayBase<T>::Compact()
 {
   if (m_pAllocator.GetFlags() == Storage::External)
+  {
     return;
+  }
 
   if (this->IsEmpty())
   {
@@ -235,7 +239,9 @@ template <typename T>
 xiiUInt64 xiiDynamicArrayBase<T>::GetHeapMemoryUsage() const
 {
   if (this->m_pAllocator.GetFlags() == Storage::External)
+  {
     return 0;
+  }
 
   return (xiiUInt64)this->m_uiCapacity * (xiiUInt64)sizeof(T);
 }

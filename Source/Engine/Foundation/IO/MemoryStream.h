@@ -107,7 +107,9 @@ public:
   virtual xiiArrayPtr<const xiiUInt8> GetContiguousMemoryRange(xiiUInt64 uiStartByte) const override
   {
     if (uiStartByte >= m_Storage.GetCount())
+    {
       return {};
+    }
 
     return xiiArrayPtr<const xiiUInt8>(m_Storage.GetData() + uiStartByte, m_Storage.GetCount() - static_cast<xiiUInt32>(uiStartByte));
   }
@@ -115,7 +117,9 @@ public:
   virtual xiiArrayPtr<xiiUInt8> GetContiguousMemoryRange(xiiUInt64 uiStartByte) override
   {
     if (uiStartByte >= m_Storage.GetCount())
+    {
       return {};
+    }
 
     return xiiArrayPtr<xiiUInt8>(m_Storage.GetData() + uiStartByte, m_Storage.GetCount() - static_cast<xiiUInt32>(uiStartByte));
   }
@@ -243,7 +247,9 @@ public:
   virtual xiiArrayPtr<const xiiUInt8> GetContiguousMemoryRange(xiiUInt64 uiStartByte) const override
   {
     if (uiStartByte >= m_pStorage->GetCount())
+    {
       return {};
+    }
 
     return xiiArrayPtr<const xiiUInt8>(m_pStorage->GetData() + uiStartByte, m_pStorage->GetCount() - static_cast<xiiUInt32>(uiStartByte));
   }
@@ -253,7 +259,9 @@ public:
     if constexpr (!std::is_const<CONTAINER>::value)
     {
       if (uiStartByte >= m_pStorage->GetCount())
+      {
         return {};
+      }
 
       return xiiArrayPtr<xiiUInt8>(m_pStorage->GetData() + uiStartByte, m_pStorage->GetCount() - static_cast<xiiUInt32>(uiStartByte));
     }
@@ -354,7 +362,9 @@ public:
     m_pStreamStorage  = pStreamStorage;
     m_uiWritePosition = 0;
     if (m_pStreamStorage)
+    {
       m_uiWritePosition = m_pStreamStorage->GetStorageSize64();
+    }
   }
 
   /// Copies uiBytesToWrite from pWriteBuffer into the memory stream.

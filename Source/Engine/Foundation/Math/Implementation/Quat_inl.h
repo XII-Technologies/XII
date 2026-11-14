@@ -159,9 +159,13 @@ template <typename Type>
 bool xiiQuatTemplate<Type>::IsValid(Type fEpsilon) const
 {
   if (!GetVectorPart().IsValid())
+  {
     return false;
+  }
   if (!xiiMath::IsFinite(w))
+  {
     return false;
+  }
 
   Type n = x * x + y * y + z * z + w * w;
 
@@ -189,10 +193,14 @@ bool xiiQuatTemplate<Type>::IsEqualRotation(const xiiQuatTemplate<Type>& qOther,
   qOther.GetRotationAxisAndAngle(vA2, A2);
 
   if ((A1.IsEqualSimple(A2, xiiAngleTemplate<Type>::MakeFromDegree(static_cast<Type>(360.0f * fEpsilon)))) && (vA1.IsEqual(vA2, fEpsilon)))
+  {
     return true;
+  }
 
   if ((A1.IsEqualSimple(-A2, xiiAngleTemplate<Type>::MakeFromDegree(static_cast<Type>(360.0f * fEpsilon)))) && (vA1.IsEqual(-vA2, fEpsilon)))
+  {
     return true;
+  }
 
   return false;
 }
@@ -295,10 +303,14 @@ xiiQuatTemplate<Type> xiiQuatTemplate<Type>::MakeFromMat3(const xiiMat3Template<
     xiiInt32       i      = 0;
 
     if (m.Element(1, 1) > m.Element(0, 0))
+    {
       i = 1;
+    }
 
     if (m.Element(2, 2) > m.Element(i, i))
+    {
       i = 2;
+    }
 
     xiiInt32 j = next[i];
     xiiInt32 k = next[j];
@@ -373,9 +385,13 @@ xiiQuatTemplate<Type> xiiQuatTemplate<Type>::MakeShortestRotation(const xiiVec3T
   {
     // find an axis, that is not identical and not opposing, xiiVec3Template::Cross-product to find perpendicular vector, rotate around that
     if (xiiMath::Abs(v0.Dot(xiiVec3Template<Type>(1, 0, 0))) < (Type)0.8)
+    {
       return MakeFromAxisAndAngle(v0.CrossRH(xiiVec3Template<Type>(1, 0, 0)).GetNormalized(), xiiAngleTemplate<Type>::MakeFromRadian(xiiMath::Pi<Type>()));
+    }
     else
+    {
       return MakeFromAxisAndAngle(v0.CrossRH(xiiVec3Template<Type>(0, 1, 0)).GetNormalized(), xiiAngleTemplate<Type>::MakeFromRadian(xiiMath::Pi<Type>()));
+    }
   }
 
   const xiiVec3Template<Type> c = v0.CrossRH(v1);
@@ -439,7 +455,9 @@ xiiQuatTemplate<Type> xiiQuatTemplate<Type>::MakeSlerp(const xiiQuatTemplate<Typ
   }
 
   if (bFlipSign)
+  {
     t1 = -t1;
+  }
 
   xiiQuatTemplate<Type> q;
 

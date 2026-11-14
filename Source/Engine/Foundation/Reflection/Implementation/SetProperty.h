@@ -56,7 +56,9 @@ public:
     m_Remove    = remove;
 
     if (m_Insert == nullptr || m_Remove == nullptr)
+    {
       xiiAbstractSetProperty::m_Flags.Add(xiiPropertyFlags::ReadOnly);
+    }
   }
 
 
@@ -97,7 +99,9 @@ public:
     for (const auto& value : (static_cast<const Class*>(pInstance)->*m_GetValues)())
     {
       if (value == *static_cast<const RealType*>(pObject))
+      {
         return true;
+      }
     }
     return false;
   }
@@ -148,7 +152,9 @@ public:
     m_Getter      = getter;
 
     if (m_Getter == nullptr)
+    {
       xiiAbstractSetProperty::m_Flags.Add(xiiPropertyFlags::ReadOnly);
+    }
   }
 
   virtual bool IsEmpty(const void* pInstance) const override { return m_ConstGetter(static_cast<const Class*>(pInstance)).IsEmpty(); }

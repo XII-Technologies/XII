@@ -23,12 +23,16 @@ namespace xiiInspectorUi
     const auto name       = graphs.value(id, "Render graph");
     int        duplicates = 0, ordinal = 0;
     for (auto it = graphs.begin(); it != graphs.end(); ++it)
+    {
       if (it.value() == name)
       {
         ++duplicates;
         if (it.key() <= id)
+        {
           ++ordinal;
+        }
       }
+    }
     return duplicates > 1 ? name + QString(" · Graph %1").arg(ordinal) : name;
   }
 
@@ -41,9 +45,13 @@ namespace xiiInspectorUi
   inline QString Bytes(quint64 bytes)
   {
     if (bytes >= 1024 * 1024)
+    {
       return QString::number(double(bytes) / (1024 * 1024), 'f', 2) + " MiB";
+    }
     if (bytes >= 1024)
+    {
       return QString::number(double(bytes) / 1024, 'f', 2) + " KiB";
+    }
     return QString::number(bytes) + " B";
   }
 
@@ -62,7 +70,9 @@ namespace xiiInspectorUi
   {
     QStringList result;
     for (const auto& value : array)
+    {
       result << Index(value);
+    }
     return result.join(", ");
   }
 
@@ -76,7 +86,9 @@ namespace xiiInspectorUi
       bool         leftNumeric = false, rightNumeric = false;
       const double left = text(column).toDouble(&leftNumeric), right = other.text(column).toDouble(&rightNumeric);
       if (leftNumeric != rightNumeric)
+      {
         return !leftNumeric;
+      }
       return leftNumeric && rightNumeric ? left < right : text(column).localeAwareCompare(other.text(column)) < 0;
     }
   };
@@ -123,11 +135,15 @@ namespace xiiInspectorUi
         const double factor = event->angleDelta().y() > 0 ? 1.15 : 1.0 / 1.15;
         const double next   = transform().m11() * factor;
         if (next >= 0.02 && next <= 30)
+        {
           scale(factor, factor);
+        }
         event->accept();
       }
       else
+      {
         QGraphicsView::wheelEvent(event);
+      }
     }
   };
 } // namespace xiiInspectorUi

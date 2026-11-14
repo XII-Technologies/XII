@@ -48,7 +48,9 @@ public:
     m_Remove      = remove;
 
     if (m_Insert == nullptr || remove == nullptr)
+    {
       xiiAbstractMapProperty::m_Flags.Add(xiiPropertyFlags::ReadOnly);
+    }
   }
 
   virtual bool IsEmpty(const void* pInstance) const override
@@ -68,9 +70,13 @@ public:
 
       auto it = begin(c);
       if (it != end(c))
+      {
         Remove(pInstance, *it);
+      }
       else
+      {
         return;
+      }
     }
   }
 
@@ -137,7 +143,9 @@ public:
     m_Remove       = remove;
 
     if (m_Insert == nullptr)
+    {
       xiiAbstractMapProperty::m_Flags.Add(xiiPropertyFlags::ReadOnly);
+    }
   }
 
   virtual bool IsEmpty(const void* pInstance) const override { return (static_cast<const Class*>(pInstance)->*m_GetContainer)().IsEmpty(); }
@@ -228,7 +236,9 @@ public:
     m_Getter      = getter;
 
     if (m_Getter == nullptr)
+    {
       xiiAbstractMapProperty::m_Flags.Add(xiiPropertyFlags::ReadOnly);
+    }
   }
 
   virtual bool IsEmpty(const void* pInstance) const override { return m_ConstGetter(static_cast<const Class*>(pInstance)).IsEmpty(); }

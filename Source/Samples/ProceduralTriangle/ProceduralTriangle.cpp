@@ -94,7 +94,9 @@ public:
     xiiInputManager::Update(xiiClock::GetGlobalClock()->GetTimeDiff());
 
     if (WasQuitRequested() || xiiInputManager::GetInputActionState("Main", "CloseApp") == xiiKeyState::Pressed)
+    {
       return Execution::Quit;
+    }
 
     if (xiiInputManager::GetInputActionState("Main", "Pause") == xiiKeyState::Pressed)
     {

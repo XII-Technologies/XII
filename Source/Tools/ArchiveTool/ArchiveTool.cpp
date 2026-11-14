@@ -231,7 +231,9 @@ public:
         xiiStringView sArg = GetArgument(a);
 
         if (sArg.IsEqual_NoCase("-out"))
+        {
           break;
+        }
 
         m_sInputs.PushBack(xiiOSFile::MakePathAbsoluteWithCWD(sArg));
 
@@ -297,16 +299,24 @@ public:
     const xiiStringView ext = xiiPathUtils::GetFileExtension(sFile);
 
     if (ext.IsEqual_NoCase("jpg") || ext.IsEqual_NoCase("jpeg") || ext.IsEqual_NoCase("png"))
+    {
       return xiiArchiveBuilder::InclusionMode::Uncompressed;
+    }
 
     if (ext.IsEqual_NoCase("zip") || ext.IsEqual_NoCase("7z"))
+    {
       return xiiArchiveBuilder::InclusionMode::Uncompressed;
+    }
 
     if (ext.IsEqual_NoCase("mp3") || ext.IsEqual_NoCase("ogg"))
+    {
       return xiiArchiveBuilder::InclusionMode::Uncompressed;
+    }
 
     if (ext.IsEqual_NoCase("dds"))
+    {
       return xiiArchiveBuilder::InclusionMode::Compress_zstd_fast;
+    }
 
     return xiiArchiveBuilder::InclusionMode::Compress_zstd_average;
   }

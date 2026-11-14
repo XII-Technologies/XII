@@ -75,7 +75,9 @@ public:
     void Unsubscribe()
     {
       if (m_SubscriptionID == 0)
+      {
         return;
+      }
 
       m_pEvent->RemoveEventHandler(m_SubscriptionID);
       Clear();

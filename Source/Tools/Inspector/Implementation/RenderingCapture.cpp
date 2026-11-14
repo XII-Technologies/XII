@@ -25,7 +25,9 @@ xiiQtRenderingCapture::xiiQtRenderingCapture(ads::CDockManager* manager, const c
   m_pFilter->setPlaceholderText("Filter by name…");
   m_pFilter->setAccessibleName("Capture name filter");
   for (auto* button : {capture, open, save})
+  {
     m_pControls->addWidget(button);
+  }
   m_pControls->addWidget(m_pFilter, 1);
   m_pStatus = new QLabel("Connect to an application with InspectorPlugin, then capture. Saved captures can be opened offline.");
   m_pStatus->setWordWrap(true);
@@ -63,7 +65,9 @@ void xiiQtRenderingCapture::RequestCapture()
     return;
   }
   if (m_bPending)
+  {
     return;
+  }
   xiiTelemetry::SendToServer(m_uiSystem, 'CAPT');
   m_bPending = true;
   m_RequestTime.restart();
@@ -76,7 +80,9 @@ void xiiQtRenderingCapture::ReceiveMessages()
   while (xiiTelemetry::RetrieveMessage(m_uiSystem, message).Succeeded())
   {
     if (message.GetMessageID() != 'DATA' && message.GetMessageID() != 'ERRO')
+    {
       continue;
+    }
     xiiUInt32 size = 0;
     message.GetReader() >> size;
     if (size == 0 || size > 16 * 1024 * 1024)
@@ -93,9 +99,13 @@ void xiiQtRenderingCapture::ReceiveMessages()
       continue;
     }
     if (message.GetMessageID() == 'ERRO')
+    {
       m_pStatus->setText(QString::fromUtf8(bytes));
+    }
     else
+    {
       LoadCapture(bytes);
+    }
   }
 }
 
@@ -130,7 +140,9 @@ void xiiQtRenderingCapture::SaveCapture()
   }
   const auto path = QFileDialog::getSaveFileName(this, "Save capture", {}, "JSON capture (*.json)");
   if (path.isEmpty())
+  {
     return;
+  }
   QSaveFile  file(path);
   const auto bytes = QJsonDocument(m_Document).toJson(QJsonDocument::Compact);
   if (bytes.size() > 16 * 1024 * 1024)
@@ -139,19 +151,27 @@ void xiiQtRenderingCapture::SaveCapture()
     return;
   }
   if (!file.open(QIODevice::WriteOnly) || file.write(bytes) != bytes.size() || !file.commit())
+  {
     m_pStatus->setText("Could not save capture: " + file.errorString());
+  }
 }
 
 void xiiQtRenderingCapture::OpenCapture()
 {
   const auto path = QFileDialog::getOpenFileName(this, "Open capture", {}, "JSON capture (*.json)");
   if (path.isEmpty())
+  {
     return;
+  }
   QFile file(path);
   if (!file.open(QIODevice::ReadOnly))
+  {
     m_pStatus->setText("Could not open capture: " + file.errorString());
+  }
   else if (file.size() > 16 * 1024 * 1024)
+  {
     m_pStatus->setText("Capture exceeds 16 MiB.");
+  }
   else
   {
     LoadCapture(file.readAll());

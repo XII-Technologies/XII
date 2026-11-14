@@ -105,23 +105,37 @@ struct xiiPropertyFlags
 
     xiiBitflags<xiiPropertyFlags>  flags;
     constexpr xiiVariantType::Enum type = static_cast<xiiVariantType::Enum>(xiiVariantTypeDeduction<CleanType>::value);
-    if constexpr (std::is_same<CleanType, xiiVariant>::value || (type >= xiiVariantType::FirstStandardType && type <= xiiVariantType::LastStandardType) || std::is_same<Type, const char*>::value) // We treat const char* as a basic type and not a pointer.
+    if constexpr (std::is_same<CleanType, xiiVariant>::value || (type >= xiiVariantType::FirstStandardType && type <= xiiVariantType::LastStandardType) || std::is_same<Type, const char*>::value)
+    { // We treat const char* as a basic type and not a pointer.
       flags.Add(xiiPropertyFlags::StandardType);
+    }
     else if constexpr (xiiIsEnum<CleanType>::value)
+    {
       flags.Add(xiiPropertyFlags::IsEnum);
+    }
     else if constexpr (xiiIsBitflags<CleanType>::value)
+    {
       flags.Add(xiiPropertyFlags::Bitflags);
+    }
     else
+    {
       flags.Add(xiiPropertyFlags::Class);
+    }
 
     if constexpr (std::is_const<typename xiiTypeTraits<Type>::NonReferencePointerType>::value)
+    {
       flags.Add(xiiPropertyFlags::Const);
+    }
 
     if constexpr (std::is_pointer<Type>::value && !std::is_same<Type, const char*>::value)
+    {
       flags.Add(xiiPropertyFlags::Pointer);
+    }
 
     if constexpr (std::is_reference<Type>::value)
+    {
       flags.Add(xiiPropertyFlags::Reference);
+    }
 
     return flags;
   }
@@ -191,15 +205,25 @@ public:
 
     m_Attributes.PushBack(pAttrib1);
     if (pAttrib2)
+    {
       m_Attributes.PushBack(pAttrib2);
+    }
     if (pAttrib3)
+    {
       m_Attributes.PushBack(pAttrib3);
+    }
     if (pAttrib4)
+    {
       m_Attributes.PushBack(pAttrib4);
+    }
     if (pAttrib5)
+    {
       m_Attributes.PushBack(pAttrib5);
+    }
     if (pAttrib6)
+    {
       m_Attributes.PushBack(pAttrib6);
+    }
     return this;
   };
 

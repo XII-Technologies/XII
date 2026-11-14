@@ -52,7 +52,9 @@ constexpr XII_ALWAYS_INLINE xiiStringView::xiiStringView(char (&str)[N])
 inline void xiiStringView::operator++()
 {
   if (!IsValid())
+  {
     return;
+  }
 
   const char* pEnd = m_pStart + m_uiElementCount;
   xiiUnicodeUtils::MoveToNextUtf8(m_pStart, pEnd).IgnoreResult(); // if it fails, the string is just empty
@@ -142,7 +144,9 @@ void xiiStringView::Split(bool bReturnEmptyStrings, Container& ref_output, const
   ref_output.Clear();
 
   if (IsEmpty())
+  {
     return;
+  }
 
   const xiiUInt32 uiParams = 6;
 
@@ -172,13 +176,17 @@ void xiiStringView::Split(bool bReturnEmptyStrings, Container& ref_output, const
       const xiiUInt32 uiLen = xiiStringUtils::GetStringElementCount(szReadPos, GetEndPointer());
 
       if (bReturnEmptyStrings || (uiLen > 0))
+      {
         ref_output.PushBack(xiiStringView(szReadPos, szReadPos + uiLen));
+      }
 
       return;
     }
 
     if (bReturnEmptyStrings || (szFoundPos > szReadPos))
+    {
       ref_output.PushBack(xiiStringView(szReadPos, szFoundPos));
+    }
 
     szReadPos = szFoundPos + seps[uiFoundSeparator].GetElementCount();
   }

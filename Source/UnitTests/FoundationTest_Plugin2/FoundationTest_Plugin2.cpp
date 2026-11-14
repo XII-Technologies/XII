@@ -40,7 +40,9 @@ void OnLoadPlugin()
   xiiCVarInt* pCVar = (xiiCVarInt*)xiiCVar::FindCVarByName("TestPlugin2InitCount");
 
   if (pCVar)
+  {
     *pCVar = *pCVar + 1;
+  }
 
   xiiCVarBool* pCVarDep = (xiiCVarBool*)xiiCVar::FindCVarByName("TestPlugin2FoundDependencies");
 
@@ -67,7 +69,9 @@ void OnUnloadPlugin()
   xiiCVarInt* pCVar = (xiiCVarInt*)xiiCVar::FindCVarByName("TestPlugin2UninitCount");
 
   if (pCVar)
+  {
     *pCVar = *pCVar + 1;
+  }
 
   xiiCVarBool* pCVarDep = (xiiCVarBool*)xiiCVar::FindCVarByName("TestPlugin2FoundDependencies");
 

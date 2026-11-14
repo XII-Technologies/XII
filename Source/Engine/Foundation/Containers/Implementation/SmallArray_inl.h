@@ -37,7 +37,9 @@ void xiiSmallArrayBase<T, Size>::CopyFrom(const xiiArrayPtr<const T>& other, xii
   if (GetData() == other.GetPtr())
   {
     if (m_uiCount == other.GetCount())
+    {
       return;
+    }
 
     XII_ASSERT_DEV(m_uiCount > other.GetCount(), "Dangling array pointer. The given array pointer points to invalid memory.");
 
@@ -263,7 +265,9 @@ bool xiiSmallArrayBase<T, Size>::RemoveAndCopy(const T& value)
   xiiUInt32 uiIndex = IndexOf(value);
 
   if (uiIndex == xiiInvalidIndex)
+  {
     return false;
+  }
 
   RemoveAtAndCopy(uiIndex);
   return true;
@@ -275,7 +279,9 @@ bool xiiSmallArrayBase<T, Size>::RemoveAndSwap(const T& value)
   xiiUInt32 uiIndex = IndexOf(value);
 
   if (uiIndex == xiiInvalidIndex)
+  {
     return false;
+  }
 
   RemoveAtAndSwap(uiIndex);
   return true;
@@ -320,7 +326,9 @@ xiiUInt32 xiiSmallArrayBase<T, Size>::IndexOf(const T& value, xiiUInt32 uiStartI
   for (xiiUInt32 i = uiStartIndex; i < m_uiCount; i++)
   {
     if (xiiMemoryUtils::IsEqual(pElements + i, &value))
+    {
       return i;
+    }
   }
   return xiiInvalidIndex;
 }
@@ -333,7 +341,9 @@ xiiUInt32 xiiSmallArrayBase<T, Size>::LastIndexOf(const T& value, xiiUInt32 uiSt
   for (xiiUInt32 i = xiiMath::Min<xiiUInt32>(uiStartIndex, m_uiCount); i-- > 0;)
   {
     if (xiiMemoryUtils::IsEqual(pElements + i, &value))
+    {
       return i;
+    }
   }
   return xiiInvalidIndex;
 }
@@ -448,7 +458,9 @@ template <typename T, xiiUInt16 Size>
 XII_ALWAYS_INLINE T* xiiSmallArrayBase<T, Size>::GetData()
 {
   if (IsEmpty())
+  {
     return nullptr;
+  }
 
   return GetElementsPtr();
 }
@@ -457,7 +469,9 @@ template <typename T, xiiUInt16 Size>
 XII_ALWAYS_INLINE const T* xiiSmallArrayBase<T, Size>::GetData() const
 {
   if (IsEmpty())
+  {
     return nullptr;
+  }
 
   return GetElementsPtr();
 }
@@ -490,7 +504,9 @@ template <typename T, xiiUInt16 Size>
 void xiiSmallArrayBase<T, Size>::Reserve(xiiUInt16 uiCapacity, xiiAllocator* pAllocator)
 {
   if (m_uiCapacity >= uiCapacity)
+  {
     return;
+  }
 
   const xiiUInt32 uiCurCap      = static_cast<xiiUInt32>(m_uiCapacity);
   xiiUInt32       uiNewCapacity = uiCurCap + (uiCurCap / 2);
@@ -522,7 +538,9 @@ void xiiSmallArrayBase<T, Size>::Compact(xiiAllocator* pAllocator)
     uiNewCapacity           = xiiMath::Min<xiiUInt32>(uiNewCapacity, 0xFFFFu);
 
     if (m_uiCapacity != uiNewCapacity)
+    {
       SetCapacity(static_cast<xiiUInt16>(uiNewCapacity), pAllocator);
+    }
   }
 }
 

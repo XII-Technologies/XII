@@ -19,7 +19,9 @@ inline void xiiClock::SetTimeStepSmoothing(xiiTimeStepSmoothing* pSmoother)
   m_pTimeStepSmoother = pSmoother;
 
   if (m_pTimeStepSmoother)
+  {
     m_pTimeStepSmoother->Reset(this);
+  }
 }
 
 inline xiiTimeStepSmoothing* xiiClock::GetTimeStepSmoothing() const
@@ -33,7 +35,9 @@ inline void xiiClock::SetPaused(bool bPaused)
 
   // when we enter a pause, inform the time step smoother to throw away his statistics
   if (bPaused && m_pTimeStepSmoother)
+  {
     m_pTimeStepSmoother->Reset(this);
+  }
 }
 
 inline bool xiiClock::GetPaused() const

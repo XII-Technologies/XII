@@ -18,11 +18,15 @@ XII_CREATE_SIMPLE_TEST(DearImguiGraphics, IndependentWindowInput)
   description.m_bClipMouseCursor     = false;
   description.m_bSetForegroundOnInit = false;
   if (!XII_TEST_RESULT(first.Initialize(description)))
+  {
     return;
+  }
   description.m_Title          = "XII input source two";
   description.m_uiWindowNumber = xiiWindow::GetNextUnusedWindowNumber();
   if (!XII_TEST_RESULT(second.Initialize(description)))
+  {
     return;
+  }
   first.ProcessWindowMessages();
   int          count;
   auto**       windows = SDL_GetWindows(&count);
@@ -31,9 +35,13 @@ XII_CREATE_SIMPLE_TEST(DearImguiGraphics, IndependentWindowInput)
   {
     const xiiStringView title(SDL_GetWindowTitle(windows[i]));
     if (title == "XII input source one")
+    {
       firstId = SDL_GetWindowID(windows[i]);
+    }
     if (title == "XII input source two")
+    {
       secondId = SDL_GetWindowID(windows[i]);
+    }
   }
   SDL_free(windows);
   XII_TEST_BOOL(firstId && secondId && firstId != secondId);
@@ -44,7 +52,9 @@ XII_CREATE_SIMPLE_TEST(DearImguiGraphics, IndependentWindowInput)
   second.GetInputDevice()->GetTextInputEvents().AddEventHandler([&](xiiUInt32 character) { secondCharacters.PushBack(character); });
   second.GetInputDevice()->GetInputSlotEvents().AddEventHandler([&](const xiiInputDevice::InputSlotEvent& event) {
     if (event.m_sSlot == xiiInputSlot_KeyA)
+    {
       transitions.PushBack(event.m_fValue);
+    }
   });
   SDL_Event event       = {};
   event.type            = SDL_EVENT_WINDOW_FOCUS_LOST;

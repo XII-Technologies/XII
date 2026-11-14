@@ -67,7 +67,9 @@ void* xiiInternal::xiiAllocatorImpl<A, TrackingMode>::Allocate(size_t uiSize, si
 
   // zero size allocations always return nullptr without tracking (since deallocate nullptr is ignored)
   if (uiSize == 0)
+  {
     return nullptr;
+  }
 
   XII_ASSERT_DEBUG(xiiMath::IsPowerOf2((xiiUInt32)uiAlign), "Alignment must be power of two");
 

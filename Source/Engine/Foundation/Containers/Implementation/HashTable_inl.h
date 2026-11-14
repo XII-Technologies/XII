@@ -64,7 +64,9 @@ void xiiHashTableBaseConstIterator<K, V, H>::Next()
 {
   // if we already iterated over the amount of valid elements that the hash-table stores, early out
   if (m_uiCurrentCount >= m_pHashTable->m_uiCount)
+  {
     return;
+  }
 
   // increase the counter of how many elements we have seen
   ++m_uiCurrentCount;
@@ -75,7 +77,9 @@ void xiiHashTableBaseConstIterator<K, V, H>::Next()
   while (m_uiCurrentIndex < m_pHashTable->m_uiCapacity)
   {
     if (m_pHashTable->IsValidEntry(m_uiCurrentIndex))
+    {
       return;
+    }
 
     ++m_uiCurrentIndex;
   }
@@ -278,7 +282,9 @@ template <typename K, typename V, typename H>
 bool xiiHashTableBase<K, V, H>::operator==(const xiiHashTableBase<K, V, H>& rhs) const
 {
   if (m_uiCount != rhs.m_uiCount)
+  {
     return false;
+  }
 
   xiiUInt32 uiCompared = 0;
   for (xiiUInt32 i = 0; uiCompared < m_uiCount; ++i)
@@ -287,10 +293,14 @@ bool xiiHashTableBase<K, V, H>::operator==(const xiiHashTableBase<K, V, H>& rhs)
     {
       const V* pRhsValue = nullptr;
       if (!rhs.TryGetValue(m_pEntries[i].key, pRhsValue))
+      {
         return false;
+      }
 
       if (m_pEntries[i].value != *pRhsValue)
+      {
         return false;
+      }
 
       ++uiCompared;
     }
@@ -311,7 +321,9 @@ void xiiHashTableBase<K, V, H>::Reserve(xiiUInt32 uiCapacity)
   XII_ASSERT_DEBUG(uiCapacity <= uiNewCapacity32, "xiiHashSet/Map do not support more than 2 billion entries.");
 
   if (m_uiCapacity >= uiNewCapacity32)
+  {
     return;
+  }
 
   uiNewCapacity32 = xiiMath::Max<xiiUInt32>(xiiMath::PowerOfTwo_Ceil(uiNewCapacity32), CAPACITY_ALIGNMENT);
   SetCapacity(uiNewCapacity32);
@@ -731,7 +743,9 @@ inline xiiUInt32 xiiHashTableBase<K, V, H>::FindEntry(xiiUInt32 uiHash, const Co
     while (!IsFreeEntry(uiIndex) && uiCounter < m_uiCapacity)
     {
       if (IsValidEntry(uiIndex) && H::Equal(m_pEntries[uiIndex].key, key))
+      {
         return uiIndex;
+      }
 
       ++uiIndex;
       if (uiIndex == m_uiCapacity)

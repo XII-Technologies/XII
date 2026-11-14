@@ -67,7 +67,9 @@ public:
     }
 
     if (WasQuitRequested() || xiiInputManager::GetInputActionState("Main", "CloseApp") == xiiKeyState::Pressed)
+    {
       return Execution::Quit;
+    }
 
     // Make sure time goes on
     xiiClock::GetGlobalClock()->Update();
@@ -87,13 +89,21 @@ public:
       xiiVec3 mouseMotion(0.0f);
 
       if (xiiInputManager::GetInputActionState("Main", "LookPosX", &fInputValue) != xiiKeyState::Up)
+      {
         mouseMotion.x += fInputValue * fMouseSpeed;
+      }
       if (xiiInputManager::GetInputActionState("Main", "LookNegX", &fInputValue) != xiiKeyState::Up)
+      {
         mouseMotion.x -= fInputValue * fMouseSpeed;
+      }
       if (xiiInputManager::GetInputActionState("Main", "LookPosY", &fInputValue) != xiiKeyState::Up)
+      {
         mouseMotion.y -= fInputValue * fMouseSpeed;
+      }
       if (xiiInputManager::GetInputActionState("Main", "LookNegY", &fInputValue) != xiiKeyState::Up)
+      {
         mouseMotion.y += fInputValue * fMouseSpeed;
+      }
     }
     else
     {
@@ -109,13 +119,21 @@ public:
       xiiVec3 mouseMotion(0.0f);
 
       if (xiiInputManager::GetInputActionState("Main", "TurnPosX", &fInputValue) != xiiKeyState::Up)
+      {
         mouseMotion.x += fInputValue * fTurnSpeed;
+      }
       if (xiiInputManager::GetInputActionState("Main", "TurnNegX", &fInputValue) != xiiKeyState::Up)
+      {
         mouseMotion.x -= fInputValue * fTurnSpeed;
+      }
       if (xiiInputManager::GetInputActionState("Main", "TurnPosY", &fInputValue) != xiiKeyState::Up)
+      {
         mouseMotion.y += fInputValue * fTurnSpeed;
+      }
       if (xiiInputManager::GetInputActionState("Main", "TurnNegY", &fInputValue) != xiiKeyState::Up)
+      {
         mouseMotion.y -= fInputValue * fTurnSpeed;
+      }
     }
 
     // Apply translation
@@ -124,13 +142,21 @@ public:
       xiiVec3 cameraMotion(0.0f);
 
       if (xiiInputManager::GetInputActionState("Main", "MovePosX", &fInputValue) != xiiKeyState::Up)
+      {
         cameraMotion.x += fInputValue;
+      }
       if (xiiInputManager::GetInputActionState("Main", "MoveNegX", &fInputValue) != xiiKeyState::Up)
+      {
         cameraMotion.x -= fInputValue;
+      }
       if (xiiInputManager::GetInputActionState("Main", "MovePosY", &fInputValue) != xiiKeyState::Up)
+      {
         cameraMotion.y += fInputValue;
+      }
       if (xiiInputManager::GetInputActionState("Main", "MoveNegY", &fInputValue) != xiiKeyState::Up)
+      {
         cameraMotion.y -= fInputValue;
+      }
     }
 
     // Perform rendering.
@@ -151,7 +177,9 @@ public:
           xiiRenderGraphCompileSettings settings;
           settings.m_bEnableGPUProfiling = true;
           if (xiiRenderGraphManager::ExecuteGraph(frame, m_hRenderGraph, nullptr, settings, &error).Failed())
+          {
             xiiLog::Error("Render graph execution failed: {}", error);
+          }
         }
         m_pSwapChain->Present();
       }

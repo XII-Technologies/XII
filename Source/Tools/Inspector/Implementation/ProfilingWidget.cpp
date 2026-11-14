@@ -36,7 +36,9 @@ namespace
   double Percentile(QVector<double> values, double percentile)
   {
     if (values.isEmpty())
+    {
       return 0;
+    }
     const auto index = qBound(qsizetype(0), qsizetype(std::ceil(values.size() * percentile)) - 1, values.size() - 1);
     std::nth_element(values.begin(), values.begin() + index, values.end());
     return values[index];
@@ -49,7 +51,9 @@ namespace
   {
     const auto name = data.m_Threads.value(lane);
     if (!name.isEmpty())
+    {
       return name;
+    }
     return "Unnamed thread";
   }
   // Update existing rows by stable identity. Preserve sorting, scroll, and selected operation.
@@ -74,12 +78,16 @@ namespace
       for (int column = 0; column < it.value().size(); ++column)
       {
         if (item->text(column) != it.value()[column])
+        {
           item->setText(column, it.value()[column]);
+        }
         item->setToolTip(column, details.value(it.key()));
       }
     }
     for (auto* item : existing)
+    {
       delete item;
+    }
     table->setSortingEnabled(sorting);
   }
 } // namespace
@@ -128,13 +136,17 @@ public:
     if (m_bTimeline)
     {
       for (int i = 0; i < m_Lanes.size(); ++i)
+      {
         painter.drawText(QRectF(8, m_LaneY.value(i, 35 + i * 120), 184, 100), Qt::TextWordWrap, m_Lanes[i]);
+      }
       painter.setClipRect(QRect(200, 0, width() - 200, height()));
       for (const auto& bar : m_Bars)
       {
         const auto r = Map(bar.m_Rect);
         if (!r.intersects(rect()))
+        {
           continue;
+        }
         painter.fillRect(r, bar.m_Color);
         if (bar.m_Key == m_Selected)
         {
@@ -173,12 +185,18 @@ public:
       }
       const double y = 12 + h * (1 - m_Values[i] / qMax(0.1, max));
       if (active)
+      {
         path.lineTo(x, y);
+      }
       else
+      {
         path.moveTo(x, y);
+      }
       active = true;
       if (m_Values[i] > m_fBudget)
+      {
         painter.fillRect(QRectF(x - 1, y - 1, 3, 3), QColor("#e98678"));
+      }
     }
     painter.setClipRect(QRect(55, 0, width() - 55, height()));
     painter.setPen(QPen(m_SelectFrame ? QColor("#56c8b0") : QColor("#b88ade"), 1.5));
@@ -201,15 +219,21 @@ public:
   {
     m_LastMouse = event->pos();
     if (m_bTimeline)
+    {
       for (const auto& bar : m_Bars)
+      {
         if (Map(bar.m_Rect).contains(event->position()))
         {
           m_Selected = bar.m_Key;
           if (m_SelectScope)
+          {
             m_SelectScope(m_Selected);
+          }
           update();
           break;
         }
+      }
+    }
     if (!m_bTimeline && m_SelectFrame && !m_Frames.isEmpty())
     {
       const int index = qBound(0, int(((event->position().x() - 55) / qMax(1, width() - 65) - m_fPan) / m_fZoom * (m_Frames.size() - 1) + 0.5), int(m_Frames.size()) - 1);
@@ -227,24 +251,31 @@ public:
     if (m_bTimeline)
     {
       for (const auto& bar : m_Bars)
+      {
         if (Map(bar.m_Rect).contains(event->position()))
         {
           QToolTip::showText(event->globalPosition().toPoint(), bar.m_Details, this);
           return;
         }
+      }
     }
     else if (!m_Values.isEmpty())
     {
       const int i = qBound(0, int(((event->position().x() - 55) / qMax(1, width() - 65) - m_fPan) / m_fZoom * (m_Values.size() - 1) + 0.5), int(m_Values.size()) - 1);
       if (i < m_Labels.size())
+      {
         QToolTip::showText(event->globalPosition().toPoint(), m_Labels[i], this);
+      }
     }
   }
   void mouseDoubleClickEvent(QMouseEvent* event) override
   {
     if (!m_bTimeline)
+    {
       return;
+    }
     for (const auto& bar : m_Bars)
+    {
       if (Map(bar.m_Rect).contains(event->position()))
       {
         m_fZoom = qMin(1000.0, 0.9 / qMax(0.001, bar.m_Rect.width()));
@@ -252,6 +283,7 @@ public:
         update();
         break;
       }
+    }
   }
 };
 xiiQtProfilingWidget::xiiQtProfilingWidget(ads::CDockManager* manager, bool rendering, QSharedPointer<xiiInspectorProfilingSession> session) :
@@ -260,9 +292,13 @@ xiiQtProfilingWidget::xiiQtProfilingWidget(ads::CDockManager* manager, bool rend
   m_bRendering(rendering)
 {
   if (rendering)
+  {
     s_pRenderingWidget = this;
+  }
   else
+  {
     s_pWidget = this;
+  }
   setObjectName(rendering ? "RenderingProfiler" : "ApplicationProfiler");
   auto* root     = new QWidget;
   auto* layout   = new QVBoxLayout(root);
@@ -281,7 +317,9 @@ xiiQtProfilingWidget::xiiQtProfilingWidget(ads::CDockManager* manager, bool rend
   m_pFilter->setPlaceholderText(rendering ? "Search pass or graph…" : "Search scope or function…");
   m_pFilter->setAccessibleName("Profiling search");
   for (auto* button : {m_pPause, live, m_pRecord, m_pSnapshot, open, save, fit})
+  {
     controls->addWidget(button);
+  }
   controls->addWidget(m_pFilter, 1);
   layout->addLayout(controls);
   auto* limits   = new QHBoxLayout;
@@ -333,7 +371,9 @@ xiiQtProfilingWidget::xiiQtProfilingWidget(ads::CDockManager* manager, bool rend
     auto* copy = menu.addAction("Copy process identifier");
     copy->setEnabled(m_pSession->Display().m_uiProcessId != 0);
     if (menu.exec(m_pOverview->mapToGlobal(point)) == copy)
+    {
       QApplication::clipboard()->setText(QString::number(m_pSession->Display().m_uiProcessId));
+    }
   });
   m_pOverview->setStyleSheet("font-size: 15px; padding: 6px 0;");
   layout->addWidget(m_pOverview);
@@ -344,9 +384,13 @@ xiiQtProfilingWidget::xiiQtProfilingWidget(ads::CDockManager* manager, bool rend
   selection->addWidget(m_pCaptureHistory, 1);
   connect(m_pCaptureHistory, &QComboBox::currentIndexChanged, this, [this](int index) {
     if (index == 0)
+    {
       m_pSession->SetPaused(false);
+    }
     else
+    {
       m_pSession->SelectCapture(m_pCaptureHistory->currentData().toULongLong());
+    }
     m_uiRevision = ~quint64(0);
     Refresh();
   });
@@ -366,7 +410,9 @@ xiiQtProfilingWidget::xiiQtProfilingWidget(ads::CDockManager* manager, bool rend
   m_pQueues->addItems({"All queues", "Graphics Queue 0", "Compute Queue 1", "Transfer Queue 2"});
   m_pQueues->setAccessibleName("Rendering queue filter");
   for (auto* combo : {m_pFrames, m_pLastFrame, m_pLanes, m_pGraphs, m_pQueues})
+  {
     selection->addWidget(combo, 1);
+  }
   m_pGraphs->setVisible(rendering);
   m_pQueues->setVisible(rendering);
   if (rendering)
@@ -405,8 +451,12 @@ xiiQtProfilingWidget::xiiQtProfilingWidget(ads::CDockManager* manager, bool rend
     layout->addWidget(tabs, 1);
     m_pTimeline->m_SelectScope = [this](const QString& key) {
       for (int i = 0; i < m_pScopes->topLevelItemCount(); ++i)
+      {
         if (m_pScopes->topLevelItem(i)->data(0, Qt::UserRole).toString() == key)
+        {
           m_pScopes->setCurrentItem(m_pScopes->topLevelItem(i));
+        }
+      }
     };
     connect(m_pHotspots, &QTreeWidget::itemDoubleClicked, this, [this, tabs](QTreeWidgetItem* item) {
       m_pFilter->setText(item->text(0));
@@ -433,10 +483,14 @@ xiiQtProfilingWidget::xiiQtProfilingWidget(ads::CDockManager* manager, bool rend
     connect(locate, &QPushButton::clicked, this, [this] {
       auto* item = m_pGpuPasses->currentItem();
       if (!item || !xiiQtRenderGraphWidget::s_pWidget)
+      {
         return;
+      }
       const auto parts = item->data(0, Qt::UserRole).toString().split(':');
       if (parts.size() == 4 && parts[1] == "0")
+      {
         xiiQtRenderGraphWidget::s_pWidget->LocatePass(parts[0], parts[2].toInt());
+      }
     });
     connect(m_pGpuPasses, &QTreeWidget::currentItemChanged, this, [this](QTreeWidgetItem* item) {
       m_SelectedGpu = item ? item->data(0, Qt::UserRole).toString() : QString{};
@@ -452,22 +506,30 @@ xiiQtProfilingWidget::xiiQtProfilingWidget(ads::CDockManager* manager, bool rend
   for (auto* table : {m_pHotspots, m_pScopes, m_pGpuPasses})
   {
     if (!table)
+    {
       continue;
+    }
     table->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(table, &QWidget::customContextMenuRequested, this, [table](QPoint point) {
       auto* item = table->itemAt(point);
       if (!item)
+      {
         return;
+      }
       QMenu menu;
       auto* copy = menu.addAction("Copy technical identity");
       if (menu.exec(table->viewport()->mapToGlobal(point)) == copy)
+      {
         QApplication::clipboard()->setText(item->data(0, Qt::UserRole).toString());
+      }
     });
   }
   connect(m_pPause, &QPushButton::clicked, this, [this] { m_pSession->SetPaused(!m_pSession->m_bPaused); Refresh(); });
   connect(live, &QPushButton::clicked, this, [this] {
     if (m_pSession->m_bRecording)
+    {
       m_pSession->StopRecording(false);
+    }
     m_pSession->SetPaused(false);
     m_pFrames->setCurrentIndex(0);
     m_pLastFrame->setCurrentIndex(0);
@@ -475,9 +537,13 @@ xiiQtProfilingWidget::xiiQtProfilingWidget(ads::CDockManager* manager, bool rend
   });
   connect(m_pRecord, &QPushButton::clicked, this, [this] {
     if (m_pSession->m_bRecording)
+    {
       m_pSession->StopRecording();
+    }
     else
+    {
       m_pSession->StartRecording(m_pCaptureMode->currentIndex() == 1 ? m_pCaptureFrames->value() : 36000, m_pCaptureMode->currentIndex() == 2 ? m_pCaptureSeconds->value() : 600, qsizetype(m_pCaptureMemory->value()) * 1024 * 1024);
+    }
     Refresh();
   });
   connect(m_pSnapshot, &QPushButton::clicked, this, [this] { RequestHistorySnapshot(); });
@@ -485,12 +551,14 @@ xiiQtProfilingWidget::xiiQtProfilingWidget(ads::CDockManager* manager, bool rend
   connect(save, &QPushButton::clicked, this, [this] { SaveCapture(); });
   connect(fit, &QPushButton::clicked, this, [this] {
     for (auto* plot : {m_pTimeline, m_pHistory})
+    {
       if (plot)
       {
         plot->m_fZoom = 1;
         plot->m_fPan  = 0;
         plot->update();
       }
+    }
   });
   auto changed = [this] {
     m_uiRevision = ~quint64(0);
@@ -499,7 +567,9 @@ xiiQtProfilingWidget::xiiQtProfilingWidget(ads::CDockManager* manager, bool rend
   connect(m_pFilter, &QLineEdit::textChanged, this, changed);
   connect(m_pBudget, &QDoubleSpinBox::valueChanged, this, changed);
   for (auto* combo : {m_pFrames, m_pLastFrame, m_pLanes, m_pGraphs, m_pQueues})
+  {
     connect(combo, &QComboBox::currentIndexChanged, this, changed);
+  }
   auto* timer = new QTimer(this);
   connect(timer, &QTimer::timeout, this, [this] { Tick(); });
   timer->start(33);
@@ -510,11 +580,15 @@ xiiQtProfilingWidget::xiiQtProfilingWidget(ads::CDockManager* manager, bool rend
 xiiQtProfilingWidget::~xiiQtProfilingWidget()
 {
   if (m_bRendering)
+  {
     s_pRenderingWidget = nullptr;
+  }
   else
   {
     if (m_pSession->m_bSubscribed && xiiTelemetry::IsConnectedToServer())
+    {
       xiiTelemetry::SendToServer('PSTR', 'STOP');
+    }
     s_pWidget = nullptr;
   }
 }
@@ -534,7 +608,9 @@ void xiiQtProfilingWidget::Tick()
     const bool visible   = (!isClosed() && isVisible()) || (s_pRenderingWidget && !s_pRenderingWidget->isClosed() && s_pRenderingWidget->isVisible());
     const bool needed    = connected && (m_pSession->m_bRecording || (visible && !m_pSession->m_bPaused));
     if (!connected && m_pSession->m_bSubscribed)
+    {
       m_pSession->ResetConnection();
+    }
     if (!needed && m_pSession->m_bSubscribed)
     {
       xiiTelemetry::SendToServer('PSTR', 'STOP');
@@ -554,19 +630,25 @@ void xiiQtProfilingWidget::Tick()
     }
   }
   if (isVisible() && !isClosed())
+  {
     Refresh();
+  }
 }
 
 void xiiQtProfilingWidget::ProcessTelemetry(void*)
 {
   if (!s_pWidget)
+  {
     return;
+  }
   auto&               session = *s_pWidget->m_pSession;
   xiiTelemetryMessage message;
   while (xiiTelemetry::RetrieveMessage('PSTR', message).Succeeded())
   {
     if (message.GetMessageID() != 'BTCH' || !session.m_bSubscribed)
+    {
       continue;
+    }
     if (!session.Receive(message.GetReader()))
     {
       session.m_bSubscribed = false;
@@ -581,7 +663,9 @@ void xiiQtProfilingWidget::ProcessTelemetry(void*)
   while (xiiTelemetry::RetrieveMessage('PSNP', message).Succeeded())
   {
     if (!session.m_bSnapshotPending)
+    {
       continue;
+    }
     session.m_bSnapshotPending = false;
     xiiUInt32 size             = 0;
     message.GetReader() >> size;
@@ -592,11 +676,17 @@ void xiiQtProfilingWidget::ProcessTelemetry(void*)
     }
     QByteArray bytes(size, Qt::Uninitialized);
     if (message.GetReader().ReadBytes(bytes.data(), size) != size)
+    {
       s_pWidget->m_pStatus->setText("Truncated application history snapshot.");
+    }
     else if (message.GetMessageID() == 'ERRO')
+    {
       s_pWidget->m_pStatus->setText(QString::fromUtf8(bytes));
+    }
     else if (message.GetMessageID() != 'DATA' || !s_pWidget->LoadCapture(bytes))
+    {
       s_pWidget->m_pStatus->setText("Unsupported application history snapshot. The previous capture is preserved.");
+    }
   }
 }
 
@@ -614,7 +704,9 @@ void xiiQtProfilingWidget::ResetStats()
 bool xiiQtProfilingWidget::ApplyCapture(const QJsonObject& object)
 {
   if (!m_pSession->Import(object))
+  {
     return false;
+  }
   m_uiRevision = ~quint64(0);
   Refresh();
   return true;
@@ -623,7 +715,9 @@ bool xiiQtProfilingWidget::ApplyCapture(const QJsonObject& object)
 bool xiiQtProfilingWidget::LoadCapture(const QByteArray& bytes)
 {
   if (bytes.size() > 256 * 1024 * 1024)
+  {
     return false;
+  }
   QJsonParseError error;
   const auto      doc = QJsonDocument::fromJson(bytes, &error);
   return error.error == QJsonParseError::NoError && doc.isObject() && ApplyCapture(doc.object());
@@ -639,7 +733,9 @@ void xiiQtProfilingWidget::RequestCapture()
 void xiiQtProfilingWidget::RequestHistorySnapshot()
 {
   if (!xiiTelemetry::IsConnectedToServer() || m_pSession->m_bSnapshotPending || m_pSession->m_bRecording)
+  {
     return;
+  }
   m_pSession->SetPaused(true);
   m_pSession->m_bSnapshotPending = true;
   m_pSession->m_SnapshotTimer.restart();
@@ -652,42 +748,58 @@ void xiiQtProfilingWidget::SaveCapture()
 {
   const auto path = QFileDialog::getSaveFileName(this, "Save profiling capture", {}, "Profiling JSON (*.json)");
   if (path.isEmpty())
+  {
     return;
+  }
   const auto bytes = QJsonDocument(m_pSession->Export()).toJson(QJsonDocument::Compact);
   QSaveFile  file(path);
   if (bytes.size() > 256 * 1024 * 1024 || !file.open(QIODevice::WriteOnly) || file.write(bytes) != bytes.size() || !file.commit())
+  {
     m_pStatus->setText("Could not save capture. Check the 256 MiB file limit and destination permissions. " + file.errorString());
+  }
 }
 
 void xiiQtProfilingWidget::OpenCapture()
 {
   const auto path = QFileDialog::getOpenFileName(this, "Open profiling capture", {}, "Profiling JSON (*.json)");
   if (path.isEmpty())
+  {
     return;
+  }
   QFile file(path);
   if (!file.open(QIODevice::ReadOnly) || file.size() > 256 * 1024 * 1024 || !LoadCapture(file.readAll()))
+  {
     m_pStatus->setText("Invalid or unsupported capture. The previous capture is preserved.");
+  }
 }
 void xiiQtProfilingWidget::Refresh()
 {
   const auto& data  = m_pSession->Display();
   const bool  force = m_uiRevision == ~quint64(0);
   if (!force && m_uiRevision == m_pSession->m_uiRevision)
+  {
     return;
+  }
   m_uiRevision = m_pSession->m_uiRevision;
   {
     const QSignalBlocker blocker(m_pCaptureHistory);
     m_pCaptureHistory->clear();
     m_pCaptureHistory->addItem("Live monitoring", QString{});
     for (auto it = m_pSession->m_Captures.begin(); it != m_pSession->m_Captures.end(); ++it)
+    {
       m_pCaptureHistory->addItem(QString("Capture %1 • %2 frames • %3").arg(it.key()).arg(it.value().m_Frames.size()).arg(Bytes(it.value().m_iBytes)), QString::number(it.key()));
+    }
     if (m_pSession->m_bPaused)
     {
       const int selected = m_pCaptureHistory->findData(QString::number(m_pSession->m_uiSelectedCapture));
       if (selected >= 0)
+      {
         m_pCaptureHistory->setCurrentIndex(selected);
+      }
       else
+      {
         m_pCaptureHistory->setItemText(0, "Paused live view");
+      }
     }
   }
   m_pPause->setText(m_pSession->m_bPaused ? "Resume" : "Pause");
@@ -723,37 +835,57 @@ void xiiQtProfilingWidget::Refresh()
   const QSignalBlocker first(m_pFrames), last(m_pLastFrame), lanes(m_pLanes);
   QSet<QString>        ids;
   for (const auto& frame : data.m_Frames)
+  {
     ids.insert(QString::number(frame.m_uiIndex));
+  }
   for (auto* combo : {m_pFrames, m_pLastFrame})
   {
     for (int i = combo->count(); i-- > 1;)
+    {
       if (!ids.contains(combo->itemData(i).toString()))
+      {
         combo->removeItem(i);
+      }
+    }
     QSet<QString> existing;
     for (int i = 1; i < combo->count(); ++i)
+    {
       existing.insert(combo->itemData(i).toString());
+    }
     for (const auto& frame : data.m_Frames)
     {
       const auto id = QString::number(frame.m_uiIndex);
       if (!existing.contains(id))
+      {
         combo->addItem(QString("Frame %1 • %2 ms").arg(frame.m_uiIndex).arg((frame.m_fEndUs - frame.m_fBeginUs) / 1000, 0, 'f', 2), id);
+      }
     }
   }
   QSet<QString> activeLanes;
   for (const auto& scope : data.m_Scopes)
+  {
     activeLanes.insert(scope.m_Lane);
+  }
   for (int i = m_pLanes->count(); i-- > 1;)
+  {
     if (!activeLanes.contains(m_pLanes->itemData(i).toString()))
+    {
       m_pLanes->removeItem(i);
+    }
+  }
   QSet<QString> knownLanes;
   for (int i = 1; i < m_pLanes->count(); ++i)
+  {
     knownLanes.insert(m_pLanes->itemData(i).toString());
+  }
   for (const auto& scope : data.m_Scopes)
+  {
     if (!knownLanes.contains(scope.m_Lane) && knownLanes.size() < 1024)
     {
       m_pLanes->addItem(ThreadName(data, scope.m_Lane), scope.m_Lane);
       knownLanes.insert(scope.m_Lane);
     }
+  }
   m_pHistory->m_Values.clear();
   m_pHistory->m_Frames.clear();
   m_pHistory->m_Labels.clear();
@@ -787,7 +919,9 @@ void xiiQtProfilingWidget::Refresh()
                          .arg(Percentile(times, 1), 0, 'f', 2)
                          .arg(overruns));
   if (times.isEmpty())
+  {
     m_pOverview->setText("Application CPU frame timing unavailable. Connect to a profiling-enabled application, or open a capture.");
+  }
   m_pHistory->update();
   double begin = 0, end = 0;
   if (!data.m_Frames.isEmpty())
@@ -795,28 +929,38 @@ void xiiQtProfilingWidget::Refresh()
     auto       frame = data.m_Frames.back();
     const auto id    = m_pFrames->currentData().toString();
     for (const auto& candidate : data.m_Frames)
+    {
       if (QString::number(candidate.m_uiIndex) == id)
+      {
         frame = candidate;
+      }
+    }
     begin             = frame.m_fBeginUs;
     end               = frame.m_fEndUs;
     const auto lastId = m_pLastFrame->currentData().toString();
     for (const auto& candidate : data.m_Frames)
+    {
       if (QString::number(candidate.m_uiIndex) == lastId)
       {
         begin = qMin(begin, candidate.m_fBeginUs);
         end   = qMax(end, candidate.m_fEndUs);
       }
+    }
   }
   else
+  {
     for (const auto& scope : data.m_Scopes)
     {
       begin = begin == 0 ? scope.m_fBeginUs : qMin(begin, scope.m_fBeginUs);
       end   = qMax(end, scope.m_fEndUs);
     }
+  }
   const bool updateTables = force || m_AnalysisTime.elapsed() >= 100;
   RebuildCpu(begin, end, updateTables);
   if (updateTables)
+  {
     m_AnalysisTime.restart();
+  }
 }
 
 void xiiQtProfilingWidget::RebuildCpu(double begin, double end, bool updateTables)
@@ -825,11 +969,17 @@ void xiiQtProfilingWidget::RebuildCpu(double begin, double end, bool updateTable
   const QString  lane = m_pLanes->currentData().toString(), filter = m_pFilter->text();
   QVector<Scope> scopes;
   for (const auto& scope : data.m_Scopes)
+  {
     if (scope.m_fEndUs > begin && scope.m_fBeginUs < end && (lane.isEmpty() || scope.m_Lane == lane))
+    {
       scopes.push_back(scope);
+    }
+  }
   std::sort(scopes.begin(), scopes.end(), [](const Scope& a, const Scope& b) {
     if (a.m_Lane != b.m_Lane)
+    {
       return a.m_Lane < b.m_Lane;
+    }
     return a.m_fBeginUs == b.m_fBeginUs ? a.m_fEndUs > b.m_fEndUs : a.m_fBeginUs < b.m_fBeginUs;
   });
   struct Sample
@@ -848,7 +998,9 @@ void xiiQtProfilingWidget::RebuildCpu(double begin, double end, bool updateTable
     scope.m_fEndUs   = qMin(end, scope.m_fEndUs);
     auto& stack      = stacks[scope.m_Lane];
     while (!stack.isEmpty() && (samples[stack.back()].m_Scope.m_fEndUs <= scope.m_fBeginUs || samples[stack.back()].m_Scope.m_fEndUs < scope.m_fEndUs))
+    {
       stack.pop_back();
+    }
     if (!stack.isEmpty())
     {
       auto& parent           = samples[stack.back()];
@@ -887,7 +1039,9 @@ void xiiQtProfilingWidget::RebuildCpu(double begin, double end, bool updateTable
   {
     const auto& scope = sample.m_Scope;
     if (!filter.isEmpty() && !scope.m_Name.contains(filter, Qt::CaseInsensitive) && !scope.m_Function.contains(filter, Qt::CaseInsensitive))
+    {
       continue;
+    }
     const double  ms        = (scope.m_fEndUs - scope.m_fBeginUs) / 1000;
     const QString operation = scope.m_Lane + QChar(0x1f) + scope.m_Name + QChar(0x1f) + scope.m_Function;
     auto&         aggregate = aggregates[operation];
@@ -904,9 +1058,13 @@ void xiiQtProfilingWidget::RebuildCpu(double begin, double end, bool updateTable
                      .arg(sample.m_fSelf / 1000, 0, 'f', 3)
                      .arg(scope.m_Lane, scope.m_Function);
     if (visible < 20000)
+    {
       rows[key] = {scope.m_Name, ThreadName(data, scope.m_Lane), QString::number((scope.m_fBeginUs - begin) / 1000, 'f', 3), QString::number(ms, 'f', 3), QString::number(sample.m_fSelf / 1000, 'f', 3), QString::number(sample.m_iDepth), scope.m_Function};
+    }
     if (visible++ < 20000)
+    {
       m_pTimeline->m_Bars.push_back({QRectF((scope.m_fBeginUs - begin) / qMax(1.0, end - begin), laneIndices[scope.m_Lane] + sample.m_iDepth * 22, (scope.m_fEndUs - scope.m_fBeginUs) / qMax(1.0, end - begin), 20), scope.m_Name, details[key], key, QColor::fromHsv(int(qHash(scope.m_Name) % 360), 125, 175)});
+    }
   }
   for (auto it = aggregates.begin(); it != aggregates.end(); ++it)
   {
@@ -920,7 +1078,9 @@ void xiiQtProfilingWidget::RebuildCpu(double begin, double end, bool updateTable
     UpdateRows(m_pHotspots, totals, details);
   }
   if (visible > 20000)
+  {
     m_pStatus->setText(m_pStatus->text() + " • Timeline and scope rows show the first 20,000 matches; hotspots include all matches.");
+  }
   m_pTimeline->setMinimumHeight(qMax(300, laneY + 20));
   m_pTimeline->update();
 }
@@ -931,22 +1091,32 @@ void xiiQtProfilingWidget::RebuildGpu()
   {
     const QSignalBlocker blocker(m_pGraphs);
     for (int i = m_pGraphs->count(); i-- > 1;)
+    {
       if (!data.m_Graphs.contains(m_pGraphs->itemData(i).toString().toULongLong()))
+      {
         m_pGraphs->removeItem(i);
+      }
+    }
     for (auto it = data.m_Graphs.begin(); it != data.m_Graphs.end(); ++it)
     {
       const auto key   = QString::number(it.key());
       const auto index = m_pGraphs->findData(key);
       if (index < 0)
+      {
         m_pGraphs->addItem(GraphLabel(data.m_Graphs, it.key()), key);
+      }
       else
+      {
         m_pGraphs->setItemText(index, GraphLabel(data.m_Graphs, it.key()));
+      }
     }
   }
   {
     QMap<quint64, bool> frames;
     for (const auto& sample : data.m_Gpu)
+    {
       frames[sample.m_uiFrame] = true;
+    }
     for (auto* combo : {m_pFrames, m_pLastFrame})
     {
       const QSignalBlocker blocker(combo);
@@ -955,15 +1125,21 @@ void xiiQtProfilingWidget::RebuildGpu()
       {
         const auto id = combo->itemData(i).toString();
         if (!frames.contains(id.toULongLong()))
+        {
           combo->removeItem(i);
+        }
         else
+        {
           existing.insert(id);
+        }
       }
       for (auto it = frames.begin(); it != frames.end(); ++it)
       {
         const auto id = QString::number(it.key());
         if (!existing.contains(id))
+        {
           combo->addItem("GPU frame " + id, id);
+        }
       }
     }
   }
@@ -987,23 +1163,35 @@ void xiiQtProfilingWidget::RebuildGpu()
   for (const auto& sample : data.m_Gpu)
   {
     if (sample.m_uiFrame < firstFrame || sample.m_uiFrame > lastFrame)
+    {
       continue;
+    }
     const auto graph = GraphLabel(data.m_Graphs, sample.m_uiGraph);
     if ((!m_pGraphs->currentData().toString().isEmpty() && m_pGraphs->currentData().toString() != QString::number(sample.m_uiGraph)) || (m_pQueues->currentIndex() > 0 && m_pQueues->currentIndex() - 1 != int(sample.m_uiQueue)) || (!filter.isEmpty() && !sample.m_Name.contains(filter, Qt::CaseInsensitive) && !graph.contains(filter, Qt::CaseInsensitive)))
+    {
       continue;
+    }
     auto& value = values[GpuKey(sample)];
     if (sample.m_uiFrame >= value.m_Last.m_uiFrame)
+    {
       value.m_Last = sample;
+    }
     if (sample.m_bAvailable)
+    {
       value.m_Durations.push_back(sample.m_fMs);
+    }
     else
+    {
       ++value.m_iUnavailable;
+    }
   }
   QMap<QString, QStringList>         rows;
   QMap<QString, QString>             details;
   QMap<QPair<quint64, QString>, int> duplicates;
   for (const auto& value : values)
+  {
     ++duplicates[{value.m_Last.m_uiGraph, value.m_Last.m_Name}];
+  }
   for (auto it = values.begin(); it != values.end(); ++it)
   {
     const auto&  value     = it.value();
@@ -1025,8 +1213,12 @@ void xiiQtProfilingWidget::RebuildGpu()
   {
     m_SelectedGpu = values.firstKey();
     for (int i = 0; i < m_pGpuPasses->topLevelItemCount(); ++i)
+    {
       if (m_pGpuPasses->topLevelItem(i)->data(0, Qt::UserRole).toString() == m_SelectedGpu)
+      {
         m_pGpuPasses->setCurrentItem(m_pGpuPasses->topLevelItem(i));
+      }
+    }
   }
   UpdateGpuHistory();
   auto available = m_pHistory->m_Values;
@@ -1050,8 +1242,12 @@ void xiiQtProfilingWidget::UpdateGpuHistory()
     const auto                                              pass = parts[2].toUInt(), queue = parts[3].toUInt();
     QVector<const xiiInspectorProfilingSession::GpuSample*> samples;
     for (const auto& sample : m_pSession->Display().m_Gpu)
+    {
       if (sample.m_uiGraph == graph && sample.m_bSubmission == submission && sample.m_uiPass == pass && sample.m_uiQueue == queue)
+      {
         samples.push_back(&sample);
+      }
+    }
     std::stable_sort(samples.begin(), samples.end(), [](const auto* a, const auto* b) { return a->m_uiFrame < b->m_uiFrame; });
     quint64 previousFrame = 0;
     for (const auto* sample : samples)
@@ -1073,7 +1269,9 @@ void xiiQtProfilingWidget::UpdateGpuHistory()
   m_pTimeline->m_LaneY.clear();
   QMap<QString, QVector<Scope>> lanes;
   for (const auto& scope : m_pSession->Display().m_GpuScopes)
+  {
     lanes[scope.m_Lane].push_back(scope);
+  }
   int y = 35;
   for (auto it = lanes.begin(); it != lanes.end(); ++it)
   {
@@ -1085,20 +1283,28 @@ void xiiQtProfilingWidget::UpdateGpuHistory()
     const double begin = scopes.front().m_fBeginUs;
     double       end   = begin;
     for (const auto& scope : scopes)
+    {
       end = qMax(end, scope.m_fEndUs);
+    }
     QVector<double> stack;
     int             depthMax = 1;
     for (const auto& scope : scopes)
     {
       while (!stack.isEmpty() && stack.back() <= scope.m_fBeginUs)
+      {
         stack.pop_back();
+      }
       const int depth = stack.size();
       stack.push_back(scope.m_fEndUs);
       depthMax = qMax(depthMax, depth + 1);
       if (!m_pFilter->text().isEmpty() && !scope.m_Name.contains(m_pFilter->text(), Qt::CaseInsensitive))
+      {
         continue;
+      }
       if (m_pTimeline->m_Bars.size() < 20000)
+      {
         m_pTimeline->m_Bars.push_back({QRectF((scope.m_fBeginUs - begin) / qMax(1.0, end - begin), y + depth * 22, (scope.m_fEndUs - scope.m_fBeginUs) / qMax(1.0, end - begin), 20), scope.m_Name, scope.m_Name + QString("\n%1 ms\nIndependent GPU timestamp domain. No application frame identity was supplied.").arg((scope.m_fEndUs - scope.m_fBeginUs) / 1000, 0, 'f', 3), scope.m_Lane + ":" + QString::number(scope.m_fBeginUs, 'f', 3), QColor("#946ac4")});
+      }
     }
     y += 30 + depthMax * 22;
   }
@@ -1110,7 +1316,9 @@ void xiiQtProfilingWidget::ApplyGraphCapture(const QJsonObject& object)
 {
   // Explicit snapshots may seed offline costs, but never modify a recording or frozen capture.
   if (m_pSession->m_bRecording)
+  {
     return;
+  }
   xiiInspectorProfilingSession::Data batch;
   const auto                         id = object["instance"].toString(object["id"].toString()).toULongLong();
   batch.m_Graphs[id]                    = (object["view"].toString().isEmpty() ? QString{} : object["view"].toString() + " / ") + object["name"].toString();
@@ -1119,11 +1327,13 @@ void xiiQtProfilingWidget::ApplyGraphCapture(const QJsonObject& object)
   batch.m_uiDroppedFrames               = m_pSession->m_Live.m_uiDroppedFrames;
   batch.m_uiDroppedGpu                  = m_pSession->m_Live.m_uiDroppedGpu;
   if (m_pSession->m_Live.m_Gpu.isEmpty())
+  {
     for (const auto& value : object["passes"].toArray())
     {
       const auto pass = value.toObject();
       batch.m_Gpu.push_back({id, pass["timingFrame"].toString().toULongLong(), quint32(pass["index"].toInt()), quint32(pass["queue"].toInt()), false, pass["timingAvailable"].toBool(), pass["gpuMs"].toDouble(), pass["name"].toString()});
     }
+  }
   m_pSession->Append(batch);
   m_uiRevision = ~quint64(0);
   Refresh();

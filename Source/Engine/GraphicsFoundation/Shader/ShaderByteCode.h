@@ -248,7 +248,9 @@ public:
   [[nodiscard]] XII_ALWAYS_INLINE const void* GetByteCode() const
   {
     if (m_ByteCode.IsEmpty())
+    {
       return nullptr;
+    }
 
     return m_ByteCode.GetData();
   };

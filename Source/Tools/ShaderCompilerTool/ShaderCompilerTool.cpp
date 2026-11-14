@@ -126,7 +126,9 @@ xiiResult xiiShaderCompilerApplication::CompileShader(xiiStringView sShaderFile)
   XII_LOG_BLOCK("Compiling Shader", sShaderFile);
 
   if (ExtractPermutationVarValues(sShaderFile).Failed())
+  {
     return XII_FAILURE;
+  }
 
   const xiiUInt32 uiMaxPerms = m_PermutationGenerator.GetPermutationCount();
 
@@ -136,7 +138,9 @@ xiiResult xiiShaderCompilerApplication::CompileShader(xiiStringView sShaderFile)
 
   xiiTaskSystem::ParallelForIndexed(0, uiMaxPerms, [&](xiiUInt32 uiIndex, xiiUInt32 uiCount) {
     if (!bContinue)
+    {
       return;
+    }
 
     xiiHybridArray<xiiGALPermutationVariable, 16> permutationVariables;
     xiiTokenizedFileCache                         fileCache;
@@ -272,10 +276,14 @@ xiiApplication::Execution xiiShaderCompilerApplication::Run()
       sPath = xiiFileSystem::GetDataDirectory(dirIdx)->GetDataDirectoryPath();
 
       if (sPath.IsEmpty())
+      {
         continue;
+      }
 
       if (xiiFileSystem::ResolveSpecialDirectory(sPath, sPath2).Failed())
+      {
         continue;
+      }
 
       files.AppendWithSeparator(";", sPath2);
     }

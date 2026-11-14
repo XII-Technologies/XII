@@ -112,7 +112,9 @@ template <typename EventData, typename MutexType, xiiEventType EventType>
 void xiiEventBase<EventData, MutexType, EventType>::RemoveEventHandler(xiiEventSubscriptionID& ref_id) const
 {
   if (ref_id == 0)
+  {
     return;
+  }
 
   const xiiEventSubscriptionID subId = ref_id;
   ref_id                             = 0;
@@ -164,7 +166,9 @@ bool xiiEventBase<EventData, MutexType, EventType>::HasEventHandler(const Handle
   for (xiiUInt32 i = 0; i < m_EventHandlers.GetCount(); ++i)
   {
     if (m_EventHandlers[i].m_Handler.IsEqualIfComparable(handler))
+    {
       return true;
+    }
   }
 
   return false;
@@ -197,7 +201,9 @@ void xiiEventBase<EventData, MutexType, EventType>::Broadcast(EventData eventDat
     XII_ASSERT_DEV(m_uiRecursionDepth <= uiMaxRecursionDepth, "The event has been triggered recursively or from several threads simultaneously.");
 
     if (m_uiRecursionDepth > uiMaxRecursionDepth)
+    {
       return;
+    }
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
     XII_ASSERT_ALWAYS(m_pSelf != nullptr, "This xiiEvent is broadcasted before it was initialized.");
@@ -239,7 +245,9 @@ void xiiEventBase<EventData, MutexType, EventType>::Broadcast(EventData eventDat
         XII_ASSERT_DEV(m_uiRecursionDepth <= uiMaxRecursionDepth, "The event has been triggered recursively or from several threads simultaneously.");
 
         if (m_uiRecursionDepth > uiMaxRecursionDepth)
+        {
           return;
+        }
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
         XII_ASSERT_ALWAYS(m_pSelf == this, "The xiiEvent was relocated in memory. This is not allowed, as it breaks the Unsubscribers.");

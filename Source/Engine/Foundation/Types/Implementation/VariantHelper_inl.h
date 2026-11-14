@@ -526,9 +526,13 @@ class xiiVariantHelper
     bSuccessful = true;
 
     if (value.IsA<xiiStringView>())
+    {
       result = value.Get<xiiStringView>();
+    }
     else
+    {
       result = value.IsA<xiiString>() ? value.Get<xiiString>().GetView() : value.Get<xiiHashedString>().GetView();
+    }
   }
 
   static void To(const xiiVariant& value, xiiTypedPointer& result, bool& bSuccessful)

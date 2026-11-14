@@ -187,7 +187,9 @@ template <typename K, typename H>
 bool xiiHashSetBase<K, H>::operator==(const xiiHashSetBase<K, H>& rhs) const
 {
   if (m_uiCount != rhs.m_uiCount)
+  {
     return false;
+  }
 
   xiiUInt32 uiCompared = 0;
   for (xiiUInt32 i = 0; uiCompared < m_uiCount; ++i)
@@ -195,7 +197,9 @@ bool xiiHashSetBase<K, H>::operator==(const xiiHashSetBase<K, H>& rhs) const
     if (IsValidEntry(i))
     {
       if (!rhs.Contains(m_pEntries[i]))
+      {
         return false;
+      }
 
       ++uiCompared;
     }
@@ -216,7 +220,9 @@ void xiiHashSetBase<K, H>::Reserve(xiiUInt32 uiCapacity)
   XII_ASSERT_DEBUG(uiCapacity <= uiNewCapacity32, "xiiHashSet/Map do not support more than 2 billion entries.");
 
   if (m_uiCapacity >= uiNewCapacity32)
+  {
     return;
+  }
 
   uiNewCapacity32 = xiiMath::Max<xiiUInt32>(xiiMath::PowerOfTwo_Ceil(uiNewCapacity32), CAPACITY_ALIGNMENT);
   SetCapacity(uiNewCapacity32);
@@ -411,7 +417,9 @@ bool xiiHashSetBase<K, H>::ContainsSet(const xiiHashSetBase<K, H>& operand) cons
   for (const K& key : operand)
   {
     if (!Contains(key))
+    {
       return false;
+    }
   }
 
   return true;
@@ -528,7 +536,9 @@ inline xiiUInt32 xiiHashSetBase<K, H>::FindEntry(xiiUInt32 uiHash, const Compati
     while (!IsFreeEntry(uiIndex) && uiCounter < m_uiCapacity)
     {
       if (IsValidEntry(uiIndex) && H::Equal(m_pEntries[uiIndex], key))
+      {
         return uiIndex;
+      }
 
       ++uiIndex;
       if (uiIndex == m_uiCapacity)

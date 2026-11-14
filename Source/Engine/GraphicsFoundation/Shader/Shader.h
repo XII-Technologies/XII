@@ -28,7 +28,9 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderCreationDescription : public xiiHa
   XII_ALWAYS_INLINE bool HasValidByteCode() const
   {
     if (m_ShaderType == xiiGALShaderType::Unknown)
+    {
       return false;
+    }
 
     return m_ByteCode != nullptr && m_ByteCode->IsValid();
   }

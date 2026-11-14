@@ -473,7 +473,9 @@ public:
     }
 
     if (!xiiPathUtils::IsAbsolutePath(sCompileCommandsPath.GetData()))
+    {
       xiiLog::Error("The given path is not absolute: '{0}'", sCompileCommandsPath);
+    }
 
     m_sCompileCommandsPath = sCompileCommandsPath;
 
@@ -986,7 +988,9 @@ public:
   {
     // something basic has gone wrong
     if (m_bHadSeriousWarnings || m_bHadErrors)
+    {
       return xiiApplication::Execution::Quit;
+    }
 
     auto start = xiiTimestamp::CurrentTimestamp();
 

@@ -117,7 +117,9 @@ public:
   void operator=(T* pNewReference)
   {
     if (pNewReference == m_pReferencedObject)
+    {
       return;
+    }
 
     ReleaseReferenceIfValid();
 
@@ -131,7 +133,9 @@ public:
   void operator=(const xiiScopedRefPointer<T>& other)
   {
     if (other.m_pReferencedObject == m_pReferencedObject)
+    {
       return;
+    }
 
     ReleaseReferenceIfValid();
 

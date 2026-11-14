@@ -183,7 +183,9 @@ template <typename KeyType, typename Comparer>
 typename xiiSetBase<KeyType, Comparer>::Node* xiiSetBase<KeyType, Comparer>::GetLeftMost() const
 {
   if (IsEmpty())
+  {
     return nullptr;
+  }
 
   Node* pNode = m_pRoot;
 
@@ -199,7 +201,9 @@ template <typename KeyType, typename Comparer>
 typename xiiSetBase<KeyType, Comparer>::Node* xiiSetBase<KeyType, Comparer>::GetRightMost() const
 {
   if (IsEmpty())
+  {
     return nullptr;
+  }
 
   Node* pNode = m_pRoot;
 
@@ -223,13 +227,17 @@ typename xiiSetBase<KeyType, Comparer>::Node* xiiSetBase<KeyType, Comparer>::Int
     const xiiInt32 dir2 = (xiiInt32)m_Comparer.Less(key, pNode->m_Key);
 
     if (dir == dir2)
+    {
       break;
+    }
 
     pNode = pNode->m_pLink[dir];
   }
 
   if (pNode == &m_NilNode)
+  {
     return nullptr;
+  }
 
   return pNode;
 }
@@ -254,7 +262,9 @@ XII_FORCE_INLINE bool xiiSetBase<KeyType, Comparer>::ContainsSet(const xiiSetBas
   for (const KeyType& key : operand)
   {
     if (!Contains(key))
+    {
       return false;
+    }
   }
 
   return true;
@@ -273,7 +283,9 @@ typename xiiSetBase<KeyType, Comparer>::Node* xiiSetBase<KeyType, Comparer>::Int
     const xiiInt32 dir2 = (xiiInt32)m_Comparer.Less(key, pNode->m_Key);
 
     if (dir == dir2)
+    {
       return pNode;
+    }
 
     if (dir == 0)
     {
@@ -508,7 +520,9 @@ typename xiiSetBase<KeyType, Comparer>::Node* xiiSetBase<KeyType, Comparer>::Ins
       }
 
       if (it->m_pLink[dir] == &m_NilNode)
+      {
         break;
+      }
 
       it = it->m_pLink[dir];
     }
@@ -563,12 +577,16 @@ typename xiiSetBase<KeyType, Comparer>::Node* xiiSetBase<KeyType, Comparer>::Rem
       up[top++] = it;
 
       if (it == &m_NilNode)
+      {
         return root;
+      }
 
       xiiInt32 newdir = (xiiInt32)(m_Comparer.Less(it->m_Key, key));
 
       if (newdir == (xiiInt32)(m_Comparer.Less(key, it->m_Key)))
+      {
         break;
+      }
 
       dir = newdir;
 
@@ -712,7 +730,9 @@ template <typename KeyType, typename Comparer>
 bool xiiSetBase<KeyType, Comparer>::operator==(const xiiSetBase<KeyType, Comparer>& rhs) const
 {
   if (GetCount() != rhs.GetCount())
+  {
     return false;
+  }
 
   auto itLhs = GetIterator();
   auto itRhs = rhs.GetIterator();
@@ -720,7 +740,9 @@ bool xiiSetBase<KeyType, Comparer>::operator==(const xiiSetBase<KeyType, Compare
   while (itLhs.IsValid())
   {
     if (!m_Comparer.Equal(itLhs.Key(), itRhs.Key()))
+    {
       return false;
+    }
 
     ++itLhs;
     ++itRhs;

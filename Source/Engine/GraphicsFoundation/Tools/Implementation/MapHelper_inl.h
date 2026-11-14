@@ -41,7 +41,9 @@ template <typename DataType>
 XII_ALWAYS_INLINE xiiGALMapHelper<DataType>& xiiGALMapHelper<DataType>::operator=(xiiGALMapHelper&& other) noexcept
 {
   if (this == &other)
+  {
     return *this;
+  }
 
   Unmap().IgnoreResult();
 

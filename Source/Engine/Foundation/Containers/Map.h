@@ -90,9 +90,13 @@ public:
   std::tuple_element_t<Index, xiiMapBaseConstIteratorBase>& get() const
   {
     if constexpr (Index == 0)
+    {
       return Key();
+    }
     if constexpr (Index == 1)
+    {
       return Value();
+    }
   }
 };
 
@@ -158,18 +162,26 @@ public:
   std::tuple_element_t<Index, xiiMapBaseIteratorBase>& get()
   {
     if constexpr (Index == 0)
+    {
       return xiiMapBaseConstIteratorBase<KeyType, ValueType, Comparer, REVERSE>::Key();
+    }
     if constexpr (Index == 1)
+    {
       return Value();
+    }
   }
 
   template <std::size_t Index>
   std::tuple_element_t<Index, xiiMapBaseIteratorBase>& get() const
   {
     if constexpr (Index == 0)
+    {
       return xiiMapBaseConstIteratorBase<KeyType, ValueType, Comparer, REVERSE>::Key();
+    }
     if constexpr (Index == 1)
+    {
       return Value();
+    }
   }
 };
 

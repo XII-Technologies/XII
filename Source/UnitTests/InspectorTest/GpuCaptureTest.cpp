@@ -17,7 +17,9 @@ XII_CREATE_SIMPLE_TEST(Inspector, GpuExecutionAndGraphIsolation)
 {
   xiiGPUTestingEnvironment environment;
   if (!XII_TEST_RESULT(environment.Initialize()))
+  {
     return;
+  }
   auto* device = environment.GetDevice();
   XII_SCOPE_EXIT(environment.Shutdown());
   xiiRenderGraphResourceCache     cache(environment.GetDeviceShared());
@@ -41,7 +43,9 @@ XII_CREATE_SIMPLE_TEST(Inspector, GpuExecutionAndGraphIsolation)
         ++resolvedSubmissions;
       }
       else
+      {
         ++resolvedPasses;
+      }
     }
   };
   auto timingSubscription = xiiRenderGraphTimestampProfiler::s_TimingEvents.AddEventHandler(timingHandler);
@@ -91,7 +95,9 @@ XII_CREATE_SIMPLE_TEST(Inspector, GpuExecutionAndGraphIsolation)
   }
   XII_TEST_INT(eventCount, 16);
   if (device->GetFeatures().m_DurationQueries == xiiGALDeviceFeatureState::Enabled)
+  {
     XII_TEST_BOOL(resolvedPasses > 0 && resolvedSubmissions > 0);
+  }
   XII_TEST_BOOL(captures[0]["instance"] != captures[1]["instance"]);
   for (int i = 0; i < 2; ++i)
   {

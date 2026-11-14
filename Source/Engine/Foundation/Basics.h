@@ -72,9 +72,13 @@ public:
   XII_ALWAYS_INLINE static xiiAllocator* GetDefaultAllocator()
   {
     if (s_bIsInitialized)
+    {
       return s_pDefaultAllocator;
-    else // the default allocator is not yet set so we return the static allocator instead.
+    }
+    else
+    { // the default allocator is not yet set so we return the static allocator instead.
       return GetStaticAllocator();
+    }
   }
 
   /// The aligned allocator should be used for all allocations which need alignment

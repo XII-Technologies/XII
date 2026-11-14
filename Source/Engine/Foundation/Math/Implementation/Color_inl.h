@@ -74,13 +74,21 @@ inline xiiColor xiiColor::GetInvertedColor() const
 inline bool xiiColor::IsNaN() const
 {
   if (xiiMath::IsNaN(r))
+  {
     return true;
+  }
   if (xiiMath::IsNaN(g))
+  {
     return true;
+  }
   if (xiiMath::IsNaN(b))
+  {
     return true;
+  }
   if (xiiMath::IsNaN(a))
+  {
     return true;
+  }
 
   return false;
 }
@@ -209,17 +217,29 @@ XII_ALWAYS_INLINE bool operator==(const xiiColor& c1, const xiiColor& c2)
 XII_FORCE_INLINE bool operator<(const xiiColor& c1, const xiiColor& c2)
 {
   if (c1.r < c2.r)
+  {
     return true;
+  }
   if (c1.r > c2.r)
+  {
     return false;
+  }
   if (c1.g < c2.g)
+  {
     return true;
+  }
   if (c1.g > c2.g)
+  {
     return false;
+  }
   if (c1.b < c2.b)
+  {
     return true;
+  }
   if (c1.b > c2.b)
+  {
     return false;
+  }
 
   return (c1.a < c2.a);
 }

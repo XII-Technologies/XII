@@ -497,10 +497,14 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALMultiPlanarFormatDescription : public xi
   XII_ALWAYS_INLINE bool IsValid() const
   {
     if (!xiiGALResourceFormat::IsMultiplanar(m_Format))
+    {
       return false;
+    }
 
     if (m_Planes.GetCount() == 0)
+    {
       return false;
+    }
 
     for (xiiUInt32 i = 0; i < m_Planes.GetCount(); ++i)
     {

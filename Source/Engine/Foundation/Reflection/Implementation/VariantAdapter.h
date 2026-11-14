@@ -107,7 +107,9 @@ struct xiiVariantAssignmentAdapter
   void operator=(RealType&& rhs)
   {
     if (m_Value.IsValid())
+    {
       *m_Value.Get<RealType*>() = rhs;
+    }
   }
   xiiVariant& m_Value;
 };
@@ -212,7 +214,9 @@ struct xiiVariantAdapter<T, xiiEnum<S>, 0, 0>
     m_Value(value)
   {
     if (m_Value.IsValid())
+    {
       m_realValue = static_cast<typename S::Enum>(m_Value.ConvertTo<xiiInt64>());
+    }
   }
 
   operator const xiiEnum<S>&() { return m_realValue; }
@@ -231,12 +235,16 @@ struct xiiVariantAdapter<T, xiiEnum<S>, 0, 1>
     m_Value(value)
   {
     if (m_Value.IsValid())
+    {
       m_realValue = static_cast<typename S::Enum>(m_Value.ConvertTo<xiiInt64>());
+    }
   }
   ~xiiVariantAdapter()
   {
     if (m_Value.IsValid())
+    {
       m_Value = static_cast<xiiInt64>(m_realValue.GetValue());
+    }
   }
 
   operator xiiEnum<S>&() { return m_realValue; }
@@ -255,7 +263,9 @@ struct xiiVariantAdapter<T, xiiBitflags<S>, 0, 0>
     m_Value(value)
   {
     if (m_Value.IsValid())
+    {
       m_realValue.SetValue(static_cast<typename S::StorageType>(m_Value.ConvertTo<xiiInt64>()));
+    }
   }
 
   operator const xiiBitflags<S>&() { return m_realValue; }
@@ -274,12 +284,16 @@ struct xiiVariantAdapter<T, xiiBitflags<S>, 0, 1>
     m_Value(value)
   {
     if (m_Value.IsValid())
+    {
       m_realValue.SetValue(static_cast<typename S::StorageType>(m_Value.ConvertTo<xiiInt64>()));
+    }
   }
   ~xiiVariantAdapter()
   {
     if (m_Value.IsValid())
+    {
       m_Value = static_cast<xiiInt64>(m_realValue.GetValue());
+    }
   }
 
   operator xiiBitflags<S>&() { return m_realValue; }
@@ -304,7 +318,9 @@ struct xiiVariantAdapter<T, C, 1, 0>
     if constexpr (xiiVariantTypeDeduction<C>::classification == xiiVariantClass::CustomTypeCast)
     {
       if (m_Value.GetType() == xiiVariantType::TypedPointer)
+      {
         return *m_Value.Get<RealType*>();
+      }
     }
     return m_Value.Get<RealType>();
   }
@@ -314,7 +330,9 @@ struct xiiVariantAdapter<T, C, 1, 0>
     if constexpr (xiiVariantTypeDeduction<C>::classification == xiiVariantClass::CustomTypeCast)
     {
       if (m_Value.GetType() == xiiVariantType::TypedPointer)
+      {
         return m_Value.IsValid() ? m_Value.Get<RealType*>() : nullptr;
+      }
     }
     return m_Value.IsValid() ? &m_Value.Get<RealType>() : nullptr;
   }
@@ -337,16 +355,24 @@ struct xiiVariantAdapter<T, C, 1, 1>
   operator C&()
   {
     if (m_Value.GetType() == xiiVariantType::TypedPointer)
+    {
       return *m_Value.Get<RealType*>();
+    }
     else
+    {
       return const_cast<RealType&>(m_Value.Get<RealType>());
+    }
   }
   operator C*()
   {
     if (m_Value.GetType() == xiiVariantType::TypedPointer)
+    {
       return m_Value.IsValid() ? m_Value.Get<RealType*>() : nullptr;
+    }
     else
+    {
       return m_Value.IsValid() ? &const_cast<RealType&>(m_Value.Get<RealType>()) : nullptr;
+    }
   }
 
   xiiVariant& m_Value;

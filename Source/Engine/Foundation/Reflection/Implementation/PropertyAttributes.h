@@ -965,13 +965,19 @@ const Type* xiiRTTI::GetAttributeByType() const
   for (const auto* pAttr : m_Attributes)
   {
     if (pAttr->GetDynamicRTTI()->IsDerivedFrom<Type>())
+    {
       return static_cast<const Type*>(pAttr);
+    }
   }
 
   if (GetParentType() != nullptr)
+  {
     return GetParentType()->GetAttributeByType<Type>();
+  }
   else
+  {
     return nullptr;
+  }
 }
 
 template <typename Type>
@@ -980,7 +986,9 @@ const Type* xiiAbstractProperty::GetAttributeByType() const
   for (const auto* pAttr : m_Attributes)
   {
     if (pAttr->GetDynamicRTTI()->IsDerivedFrom<Type>())
+    {
       return static_cast<const Type*>(pAttr);
+    }
   }
   return nullptr;
 }
