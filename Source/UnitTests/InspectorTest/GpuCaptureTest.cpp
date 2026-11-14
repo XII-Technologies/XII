@@ -27,11 +27,11 @@ XII_CREATE_SIMPLE_TEST(Inspector, GpuExecutionAndGraphIsolation)
   XII_SCOPE_EXIT(device->WaitIdle());
   xiiRenderGraph                                                                    graphs[] = {xiiRenderGraph("Inspection"), xiiRenderGraph("Inspection")};
   xiiRenderGraphBlackboard                                                          blackboard;
-  xiiUInt32                                                                         eventCount     = 0;
-  xiiUInt64                                                                         recordingFrame = 0;
+  xiiUInt32                                                                         eventCount          = 0;
+  xiiUInt64                                                                         recordingFrame      = 0;
   xiiUInt32                                                                         resolvedPasses      = 0;
   xiiUInt32                                                                         resolvedSubmissions = 0;
-  xiiEvent<const xiiRenderGraphTimestampProfiler::TimingSample&, xiiMutex>::Handler timingHandler = [&](const xiiRenderGraphTimestampProfiler::TimingSample& sample) {
+  xiiEvent<const xiiRenderGraphTimestampProfiler::TimingSample&, xiiMutex>::Handler timingHandler       = [&](const xiiRenderGraphTimestampProfiler::TimingSample& sample) {
     XII_TEST_BOOL(sample.m_uiFrameIndex < recordingFrame);
     XII_TEST_BOOL(sample.m_uiGraphId == graphs[0].GetInstanceId() || sample.m_uiGraphId == graphs[1].GetInstanceId());
     XII_TEST_BOOL(sample.m_RecordedAt.IsPositive());

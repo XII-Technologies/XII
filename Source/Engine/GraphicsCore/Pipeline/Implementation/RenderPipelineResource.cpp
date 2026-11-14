@@ -71,7 +71,7 @@ xiiResult xiiRenderPipelineResource::GetPipelineVariant(const xiiSharedPtr<const
     XII_LOCK(m_Mutex);
     if (!base || base != m_pPipeline)
       return XII_FAILURE;
-    authoring           = m_pResolvedAuthoring;
+    authoring               = m_pResolvedAuthoring;
     const Variant* pVariant = nullptr;
     if (m_Variants.TryGetValue(uiKey, pVariant))
     {
@@ -199,8 +199,8 @@ xiiResult xiiRenderPipelineResource::ResolveDefinitions(const xiiRenderPipelineR
 xiiResourceLoadDescription xiiRenderPipelineResource::UnloadData(Unload)
 {
   XII_LOCK(m_Mutex);
-  m_pPipeline  = nullptr;
-  m_pAuthoring = nullptr;
+  m_pPipeline          = nullptr;
+  m_pAuthoring         = nullptr;
   m_pResolvedAuthoring = nullptr;
   m_Variants.Clear();
   m_DefinitionDependencies.Clear();

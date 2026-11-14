@@ -47,8 +47,8 @@ public:
   /// Frame-local binding inspection. Handles expire when the graph starts its next setup.
   const xiiRenderPipelineBinding* GetOutputBinding(xiiUInt32 passIndex, xiiStringView pin) const;
   const xiiRenderPipeline*        GetPipeline() const { return m_pPipeline.Borrow(); }
-  const xiiRenderConfiguration&     GetRenderConfiguration() const { return m_RenderConfiguration; }
-  xiiStringView                     GetConfigurationError() const { return m_sConfigurationError; }
+  const xiiRenderConfiguration&   GetRenderConfiguration() const { return m_RenderConfiguration; }
+  xiiStringView                   GetConfigurationError() const { return m_sConfigurationError; }
   /// Distinguishes a usable loading/missing fallback from the selected pipeline's final compilation.
   xiiResourceAcquireResult     GetResourceAcquireResult() const { return m_ResourceAcquireResult; }
   xiiStringView                GetLastBuildError() const { return m_sBuildError; }

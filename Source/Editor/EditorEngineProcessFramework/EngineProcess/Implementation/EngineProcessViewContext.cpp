@@ -236,8 +236,8 @@ void xiiEngineProcessViewContext::PresentFrame()
     XII_LOCK(world->GetReadMarker());
     if (const auto* view = GetView())
     {
-      frame.m_uiRenderWidth  = view->GetRenderResolutionWidth();
-      frame.m_uiRenderHeight = view->GetRenderResolutionHeight();
+      frame.m_uiRenderWidth                = view->GetRenderResolutionWidth();
+      frame.m_uiRenderHeight               = view->GetRenderResolutionHeight();
       frame.m_EffectiveRenderConfiguration = view->GetEffectiveRenderConfiguration();
       frame.m_sRenderConfigurationError    = view->GetRenderPipelineInstance().GetConfigurationError();
     }

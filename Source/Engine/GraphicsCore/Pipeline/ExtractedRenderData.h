@@ -174,7 +174,7 @@ private:
   xiiUInt32                       m_uiPublishedDynamicCount = 0U;
 
   // Runs borrow from the merged order, so type queries never copy packet pointers.
-  xiiDynamicArray<xiiRenderData*> m_SortedAllRenderData;
+  xiiDynamicArray<xiiRenderData*>                                   m_SortedAllRenderData;
   xiiHashTable<const xiiRTTI*, xiiHybridArray<RenderDataRange, 1U>> m_RenderDataRanges;
 
   xiiDebugRendererContext m_WorldDebugContext;

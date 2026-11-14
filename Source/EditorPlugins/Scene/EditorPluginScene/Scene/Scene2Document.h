@@ -132,8 +132,8 @@ public:
   /// \name Selection Specific Functions
   ///@{
 
-  void         PreventDoubleSelectionChange(bool b);
-  void         UndoSelection() override;
+  void PreventDoubleSelectionChange(bool b);
+  void UndoSelection() override;
 
   ///@}
 

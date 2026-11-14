@@ -34,7 +34,7 @@
 
 1. **Mandatory braces (§2.2).** Current guide permits unbraced single-statement guards and loops. Replace those MAY/SHOULD clauses with MUST, update the 44 potential unbraced examples after distinguishing acceptable from intentionally bad examples.
 2. **Member field exceptions (§3).** The new profile no longer silently grandfathers arbitrary `mCamelName` fields, but cannot distinguish arrays from other types. Do not mass-rename serialized/reflected members. Introduce grandfathered exceptions or migrate them deliberately.
-3. **Source formatting.** `.clang-format` is still the authority; to make it deterministic, separately review `AllowShortFunctionsOnASingleLine`, `MaxEmptyLinesToKeep`, `KeepEmptyLinesAtTheStartOfBlocks`, alignment groups, and include categories. Update CI's current `clang-format-22` pin to `clang-format-23` only after validating the resulting changes.
+3. **Source formatting.** `.clang-format` is still the authority; to make it deterministic, separately review `AllowShortFunctionsOnASingleLine`, `MaxEmptyLinesToKeep`, `KeepEmptyLinesAtTheStartOfBlocks`, alignment groups, and include categories. CI installs and invokes `clang-format-23`; validate repository-wide formatting changes with that version before publishing them.
 4. **Naming.** Local/parameter prefixes remain optional in current §3.1. This profile does *not* invent a mandatory rule. A policy amendment and an XII-specific type-aware check would be needed to enforce a uniform local prefix convention.
 5. **Governance.** Naming check auto-fixes must be disabled for public, reflected, and serialized APIs until compatibility and migrations are handled.
 

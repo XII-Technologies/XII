@@ -33,9 +33,9 @@ void xiiRenderPipelineInstance::Clear()
     pass->GetDynamicRTTI()->GetAllocator()->Deallocate(pass);
   m_Passes.Clear();
   m_Bindings.Clear();
-  m_pPipeline = nullptr;
-  m_pBasePipeline      = nullptr;
-  m_RenderConfiguration = {};
+  m_pPipeline                    = nullptr;
+  m_pBasePipeline                = nullptr;
+  m_RenderConfiguration          = {};
   m_RequestedRenderConfiguration = {};
   m_bConfigurationSynchronized   = false;
   m_sConfigurationError.Clear();
@@ -145,7 +145,7 @@ xiiResult xiiRenderPipelineInstance::Initialize(xiiSharedPtr<const xiiRenderPipe
     XII_SUCCEED_OR_RETURN(pass->InitializePinBindings(pipeline->m_Passes[i].m_Pins));
   }
   Clear();
-  m_pPipeline = std::move(pipeline);
+  m_pPipeline           = std::move(pipeline);
   m_RenderConfiguration = configuration;
   m_Passes.Swap(passes);
   m_Bindings.SetCount(m_pPipeline->m_uiBindingCount);
@@ -194,8 +194,8 @@ xiiResult xiiRenderPipelineInstance::Synchronize(const xiiRenderPipelineResource
     m_RequestedOutputFormat        = outputFormat;
     m_bConfigurationSynchronized   = true;
   };
-  const auto*      pPrevious = m_pPipeline.Borrow();
-  auto             pipeline  = base;
+  const auto*            pPrevious = m_pPipeline.Borrow();
+  auto                   pipeline  = base;
   xiiRenderConfiguration requested;
   if (base)
   {

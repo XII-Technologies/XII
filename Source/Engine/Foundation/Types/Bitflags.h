@@ -314,7 +314,8 @@ typename xiiBitflags<T>::ConstIterator cend(const xiiBitflags<T>& container)
     using StorageType                = InternalStorageType;                                      \
     enum Enum : StorageType                                                                      \
     {                                                                                            \
-      XII_EXPAND_ARGS_WITH_INDEX(XII_DECLARE_FLAGS_ENUM, ##__VA_ARGS__) Default = DefaultValue   \
+      XII_EXPAND_ARGS_WITH_INDEX(XII_DECLARE_FLAGS_ENUM, ##__VA_ARGS__)                          \
+      Default = DefaultValue                                                                     \
     };                                                                                           \
     struct Bits                                                                                  \
     {                                                                                            \

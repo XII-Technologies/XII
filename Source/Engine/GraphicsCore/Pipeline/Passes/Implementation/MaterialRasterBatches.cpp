@@ -198,7 +198,7 @@ xiiResult xiiMaterialRasterBatches::Build(xiiRenderPipelinePassContext& context,
                                                               m_Scatter;
     const auto emitted  = context.m_Graph.AddPass<Data>(phase == 0 ? "Count Material Draws" : phase == 1 ? "Prefix Material Draws" :
                                                                                                            "Scatter Material Draws",
-                                                       xiiGALCommandQueueFlags::Compute, [&](Data& data, xiiRenderGraphBuilder& builder) {
+                                                        xiiGALCommandQueueFlags::Compute, [&](Data& data, xiiRenderGraphBuilder& builder) {
         data.m_Bins = builder.ReadBuffer(upload.first->m_Bins, xiiGALResourceStateFlags::ShaderResource);
         data.m_Visible = builder.ReadBuffer(visible, xiiGALResourceStateFlags::ShaderResource);
         data.m_Count = builder.ReadBuffer(count, xiiGALResourceStateFlags::ShaderResource);
@@ -221,7 +221,7 @@ xiiResult xiiMaterialRasterBatches::Build(xiiRenderPipelinePassContext& context,
           if (binding.second.IsValid()) commands.ResolveAndSetUnorderedAccessBufferView(xiiTempHashedString(xiiStringView(binding.first)), execute.GetBuffer(binding.second)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
         if (commands.CommitShaderResources(xiiGALStateTransitionMode::Verify).Failed()) { execute.ReportFailure("Could not bind material draw binning resources."); return; }
         commands.DispatchCompute({data.m_Groups, 1, 1}); });
-    counts = emitted.first->m_Counts;
+    counts              = emitted.first->m_Counts;
     if (phase == 1)
       draws = emitted.first->m_Draws;
     if (phase == 2)

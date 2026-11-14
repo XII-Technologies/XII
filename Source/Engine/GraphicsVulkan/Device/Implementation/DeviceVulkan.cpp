@@ -1802,9 +1802,9 @@ void xiiGALDeviceVulkan::UpdateStreamingMemoryBudget()
   const auto primary = GetPrimaryDeviceLocalHeap(heaps);
 
   const auto settings          = GetStreamingMemorySettings();
-  xiiUInt64 uiAdmissionLimit  = 0U;
-  xiiUInt64 uiMemoryDeferrals = 0U;
-  xiiUInt64 uiPendingBytes    = 0U;
+  xiiUInt64  uiAdmissionLimit  = 0U;
+  xiiUInt64  uiMemoryDeferrals = 0U;
+  xiiUInt64  uiPendingBytes    = 0U;
   {
     XII_LOCK(m_StreamingBudgetMutex);
     m_uiStreamingBudgetCap = settings.m_bUseNativeBudget ? xiiMath::MaxValue<xiiUInt64>() : xiiUInt64(settings.m_uiBudgetMiB) * s_uiBytesPerMiB;

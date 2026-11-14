@@ -32,9 +32,9 @@ public:
   xiiViewLightButtonAction(const xiiActionContext& context, const char* szName, xiiEngineViewLightSettingsEvent::Type button);
   ~xiiViewLightButtonAction() override;
 
-  void         Execute(const xiiVariant& value) override;
-  void         LightSettingsEventHandler(const xiiEngineViewLightSettingsEvent& e);
-  void         UpdateAction();
+  void Execute(const xiiVariant& value) override;
+  void LightSettingsEventHandler(const xiiEngineViewLightSettingsEvent& e);
+  void UpdateAction();
 
 private:
   xiiEngineViewLightSettingsEvent::Type m_ButtonType;
@@ -50,9 +50,9 @@ public:
   xiiViewLightSliderAction(const xiiActionContext& context, const char* szName, xiiEngineViewLightSettingsEvent::Type button);
   ~xiiViewLightSliderAction() override;
 
-  void         Execute(const xiiVariant& value) override;
-  void         LightSettingsEventHandler(const xiiEngineViewLightSettingsEvent& e);
-  void         UpdateAction();
+  void Execute(const xiiVariant& value) override;
+  void LightSettingsEventHandler(const xiiEngineViewLightSettingsEvent& e);
+  void UpdateAction();
 
 private:
   xiiEngineViewLightSettingsEvent::Type m_ButtonType;

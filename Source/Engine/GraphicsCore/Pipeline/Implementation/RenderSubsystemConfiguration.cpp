@@ -137,7 +137,7 @@ void xiiRenderConfiguration::ApplySubsystemOverrides(const xiiRenderConfiguratio
         if (origin.m_sType == source->GetDynamicRTTI()->GetTypeName() && origin.m_sPath == path)
         {
           origin.m_uiScope = scope;
-          found          = true;
+          found            = true;
           break;
         }
       if (!found)

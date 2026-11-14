@@ -138,8 +138,8 @@ xiiResult xiiRenderPipeline::Compile(const xiiRenderPipelineResourceDescriptor& 
   descriptor.m_Id         = authored.m_Id;
   descriptor.m_Parameters = authored.m_Parameters;
   descriptor.m_Settings   = authored.m_Settings;
-  xiiDynamicArray<bool> active;
-  xiiUInt8              uiAvailableBranches = 0;
+  xiiDynamicArray<bool>                 active;
+  xiiUInt8                              uiAvailableBranches = 0;
   xiiBitflags<xiiOptionalRenderFeature> availableFeatures;
   for (const auto& node : expanded.m_Nodes)
   {
@@ -248,8 +248,8 @@ xiiResult xiiRenderPipeline::Compile(const xiiRenderPipelineResourceDescriptor& 
     prototypes.PushBack(prototype);
     if (prototype->Configure(definition.m_Properties).Failed())
       return fail("Invalid pass configuration.");
-    auto& pass             = result->m_Passes.ExpandAndGetRef();
-    pass.m_pType           = type;
+    auto& pass   = result->m_Passes.ExpandAndGetRef();
+    pass.m_pType = type;
     xiiStringBuilder pinError;
     if (prototype->GetConfiguredPins(pass.m_Pins, &pinError).Failed())
       return fail(pinError.IsEmpty() ? "Invalid authored pin configuration."_xiisv : pinError.GetView());

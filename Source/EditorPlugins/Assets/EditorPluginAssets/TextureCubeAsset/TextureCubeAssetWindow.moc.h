@@ -23,8 +23,8 @@ public:
   xiiStringView GetWindowLayoutGroupName() const override { return "TextureCubeAsset"; }
 
 private:
-  void         InternalRedraw() override;
-  void         SendRedrawMsg();
+  void InternalRedraw() override;
+  void SendRedrawMsg();
 
   xiiEngineViewConfig      m_ViewConfig;
   xiiQtOrbitCamViewWidget* m_pViewWidget;

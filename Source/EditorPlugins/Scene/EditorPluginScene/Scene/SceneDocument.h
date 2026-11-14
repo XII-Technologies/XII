@@ -94,13 +94,13 @@ public:
   bool ArePrefabsAllowed() const override { return !IsPrefab(); }
 
 
-  void         GetSupportedMimeTypesForPasting(xiiHybridArray<xiiString, 4>& out_mimeTypes) const override;
-  bool         CopySelectedObjects(xiiAbstractObjectGraph& out_objectGraph, xiiStringBuilder& out_sMimeType) const override;
-  bool         Paste(const xiiArrayPtr<PasteInfo>& info, const xiiAbstractObjectGraph& objectGraph, bool bAllowPickedPosition, xiiStringView sMimeType) override;
-  bool         DuplicateSelectedObjects(const xiiArrayPtr<PasteInfo>& info, const xiiAbstractObjectGraph& objectGraph, bool bSetSelected);
-  bool         CopySelectedObjects(xiiAbstractObjectGraph& ref_graph, xiiMap<xiiUuid, xiiUuid>* out_pParents) const;
-  bool         PasteAt(const xiiArrayPtr<PasteInfo>& info, const xiiAbstractObjectGraph& objectGraph, const xiiVec3& vPos);
-  bool         PasteAtOrignalPosition(const xiiArrayPtr<PasteInfo>& info, const xiiAbstractObjectGraph& objectGraph);
+  void GetSupportedMimeTypesForPasting(xiiHybridArray<xiiString, 4>& out_mimeTypes) const override;
+  bool CopySelectedObjects(xiiAbstractObjectGraph& out_objectGraph, xiiStringBuilder& out_sMimeType) const override;
+  bool Paste(const xiiArrayPtr<PasteInfo>& info, const xiiAbstractObjectGraph& objectGraph, bool bAllowPickedPosition, xiiStringView sMimeType) override;
+  bool DuplicateSelectedObjects(const xiiArrayPtr<PasteInfo>& info, const xiiAbstractObjectGraph& objectGraph, bool bSetSelected);
+  bool CopySelectedObjects(xiiAbstractObjectGraph& ref_graph, xiiMap<xiiUuid, xiiUuid>* out_pParents) const;
+  bool PasteAt(const xiiArrayPtr<PasteInfo>& info, const xiiAbstractObjectGraph& objectGraph, const xiiVec3& vPos);
+  bool PasteAtOrignalPosition(const xiiArrayPtr<PasteInfo>& info, const xiiAbstractObjectGraph& objectGraph);
 
   void UpdatePrefabs() override;
 
@@ -135,9 +135,9 @@ public:
   xiiTransformStatus ExportScene(bool bCreateThumbnail);
   void               ExportSceneGeometry(xiiStringView sFile, bool bOnlySelection, int iExtractionMode /* xiiSceneGeometryExportMode */, const xiiMat3& mTransform);
 
-  void         HandleEngineMessage(const xiiEditorEngineDocumentMsg* pMsg) override;
-  void         HandleGameModeMsg(const xiiGameModeMsgToEditor* pMsg);
-  void         HandleObjectStateFromEngineMsg(const xiiPushObjectStateMsgToEditor* pMsg);
+  void HandleEngineMessage(const xiiEditorEngineDocumentMsg* pMsg) override;
+  void HandleGameModeMsg(const xiiGameModeMsgToEditor* pMsg);
+  void HandleObjectStateFromEngineMsg(const xiiPushObjectStateMsgToEditor* pMsg);
 
   void SendObjectMsg(const xiiDocumentObject* pObj, xiiObjectTagMsgToEngine* pMsg);
   void SendObjectMsgRecursive(const xiiDocumentObject* pObj, xiiObjectTagMsgToEngine* pMsg);
@@ -214,9 +214,9 @@ protected:
 
   xiiStatus RequestExportScene(xiiStringView sTargetFile, const xiiAssetFileHeader& header);
 
-  xiiTransformStatus         InternalTransformAsset(xiiStringView sTargetFile, xiiStringView sOutputTag, const xiiPlatformProfile* pAssetProfile, const xiiAssetFileHeader& AssetHeader, xiiBitflags<xiiTransformFlags> transformFlags) override;
-  xiiTransformStatus         InternalTransformAsset(xiiStreamWriter& stream, xiiStringView sOutputTag, const xiiPlatformProfile* pAssetProfile, const xiiAssetFileHeader& AssetHeader, xiiBitflags<xiiTransformFlags> transformFlags) override;
-  xiiTransformStatus         InternalCreateThumbnail(const ThumbnailInfo& ThumbnailInfo) override;
+  xiiTransformStatus InternalTransformAsset(xiiStringView sTargetFile, xiiStringView sOutputTag, const xiiPlatformProfile* pAssetProfile, const xiiAssetFileHeader& AssetHeader, xiiBitflags<xiiTransformFlags> transformFlags) override;
+  xiiTransformStatus InternalTransformAsset(xiiStreamWriter& stream, xiiStringView sOutputTag, const xiiPlatformProfile* pAssetProfile, const xiiAssetFileHeader& AssetHeader, xiiBitflags<xiiTransformFlags> transformFlags) override;
+  xiiTransformStatus InternalCreateThumbnail(const ThumbnailInfo& ThumbnailInfo) override;
 
   void SyncObjectHiddenState();
   void SyncObjectHiddenState(xiiDocumentObject* pObject);
@@ -256,6 +256,6 @@ protected:
 
   //////////////////////////////////////////////////////////////////////////
   /// Communication with other document types
-  void         OnInterDocumentMessage(xiiReflectedClass* pMessage, xiiDocument* pSender) override;
-  void         GatherObjectsOfType(xiiDocumentObject* pRoot, xiiGatherObjectsOfTypeMsgInterDoc* pMsg) const;
+  void OnInterDocumentMessage(xiiReflectedClass* pMessage, xiiDocument* pSender) override;
+  void GatherObjectsOfType(xiiDocumentObject* pRoot, xiiGatherObjectsOfTypeMsgInterDoc* pMsg) const;
 };

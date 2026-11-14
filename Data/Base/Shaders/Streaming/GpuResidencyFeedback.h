@@ -1,4 +1,5 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #pragma once
 RWByteAddressBuffer g_VirtualTextureFeedback[];
 void                xiiRecordPageDemand(uint feedback, uint request)

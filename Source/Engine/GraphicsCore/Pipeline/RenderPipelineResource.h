@@ -113,9 +113,9 @@ public:
   xiiUInt32                    FindInterface(xiiStringView name, bool input) const;
   /// Conservative leaf-pass dependency after expansion. Independent subgraph outputs can feed
   /// other nodes without depending on the subgraph's unrelated image inputs. Unknown pins fail closed.
-  bool                                            DoesInterfaceOutputDependOnInput(xiiStringView output, xiiStringView input) const;
-  static xiiResult                                Compile(const xiiRenderPipelineResourceDescriptor& descriptor, xiiSharedPtr<const xiiRenderPipeline>& out_pipeline, xiiStringBuilder* out_error = nullptr);
-  static xiiResult                                Compile(const xiiRenderPipelineResourceDescriptor& descriptor, xiiGraphComposition::Resolver resolver, xiiSharedPtr<const xiiRenderPipeline>& out_pipeline, xiiStringBuilder* out_error = nullptr);
+  bool             DoesInterfaceOutputDependOnInput(xiiStringView output, xiiStringView input) const;
+  static xiiResult Compile(const xiiRenderPipelineResourceDescriptor& descriptor, xiiSharedPtr<const xiiRenderPipeline>& out_pipeline, xiiStringBuilder* out_error = nullptr);
+  static xiiResult Compile(const xiiRenderPipelineResourceDescriptor& descriptor, xiiGraphComposition::Resolver resolver, xiiSharedPtr<const xiiRenderPipeline>& out_pipeline, xiiStringBuilder* out_error = nullptr);
   /// Compile a structural configuration of an already resolved authored pipeline.
   static xiiResult                                CompileVariant(const xiiRenderPipelineResourceDescriptor& descriptor, const xiiRenderPipelineVariant& variant, xiiSharedPtr<const xiiRenderPipeline>& out_pipeline, xiiStringBuilder* out_error = nullptr);
   const xiiRenderConfiguration&                   GetSubsystemDefaults() const { return m_SubsystemDefaults; }
@@ -174,7 +174,7 @@ class XII_GRAPHICSCORE_DLL xiiRenderPipelineResource final : public xiiResource
 
 public:
   xiiRenderPipelineResource();
-  xiiSharedPtr<const xiiRenderPipeline>          GetPipeline() const;
+  xiiSharedPtr<const xiiRenderPipeline> GetPipeline() const;
   /// Variants are cached per immutable definition snapshot. Failures also remain cached until reload.
   xiiResult                                      GetPipelineVariant(const xiiSharedPtr<const xiiRenderPipeline>& base, const xiiRenderPipelineVariant& variant,
                                                                     xiiSharedPtr<const xiiRenderPipeline>& out_pipeline, xiiStringBuilder& out_error) const;
@@ -196,15 +196,15 @@ private:
     xiiSharedPtr<const xiiRenderPipeline> m_pPipeline;
     xiiString                             m_sError;
   };
-  xiiResourceLoadDescription                     UnloadData(Unload whatToUnload) override;
-  xiiResourceLoadDescription                     UpdateContent(xiiStreamReader* stream) override;
-  void                                           UpdateMemoryUsage(MemoryUsage& usage) override;
-  mutable xiiMutex                               m_Mutex;
-  mutable xiiSharedPtr<const xiiRenderPipeline>  m_pPipeline;
+  xiiResourceLoadDescription                             UnloadData(Unload whatToUnload) override;
+  xiiResourceLoadDescription                             UpdateContent(xiiStreamReader* stream) override;
+  void                                                   UpdateMemoryUsage(MemoryUsage& usage) override;
+  mutable xiiMutex                                       m_Mutex;
+  mutable xiiSharedPtr<const xiiRenderPipeline>          m_pPipeline;
   mutable xiiSharedPtr<const xiiRenderPipelineAuthoring> m_pResolvedAuthoring;
   mutable xiiHashTable<xiiUInt16, Variant>               m_Variants;
-  xiiSharedPtr<const xiiRenderPipelineAuthoring> m_pAuthoring;
-  mutable xiiDynamicArray<DefinitionDependency>  m_DefinitionDependencies;
+  xiiSharedPtr<const xiiRenderPipelineAuthoring>         m_pAuthoring;
+  mutable xiiDynamicArray<DefinitionDependency>          m_DefinitionDependencies;
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelinePassDescriptor);

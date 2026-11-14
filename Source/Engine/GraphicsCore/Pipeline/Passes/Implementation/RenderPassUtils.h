@@ -56,7 +56,7 @@ namespace xiiRenderPassUtils
   struct DisplayConfiguration
   {
     xiiDisplayOutputSettings m_Settings;
-    bool                     m_bValid         = false;
+    bool                     m_bValid = false;
     xiiResult                Resolve(const xiiRenderPipelinePassContext& context, const xiiDisplayOutputSettings& authored, bool useViewDefaults);
   };
 } // namespace xiiRenderPassUtils

@@ -84,7 +84,7 @@ namespace xiiInspectorUi
     using QTreeWidgetItem::QTreeWidgetItem;
     bool operator<(const QTreeWidgetItem& other) const override
     {
-      const int    column      = treeWidget()->sortColumn();
+      const int    column       = treeWidget()->sortColumn();
       bool         leftNumeric  = false;
       bool         rightNumeric = false;
       const double left         = text(column).toDouble(&leftNumeric);

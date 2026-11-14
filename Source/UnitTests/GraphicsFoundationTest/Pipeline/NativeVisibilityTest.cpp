@@ -450,7 +450,7 @@ XII_CREATE_SIMPLE_TEST(NativeVisibility, InstanceCullingAndExplicitHistory)
             return;
           const bool      coarse = phase <= 1 || phase == 3 || (phase == 4 && view == 1);
           const xiiUInt32 count  = phase == 5 ? 0 : selected || phase == 10 ? 1 :
-             phase >= 6                                                     ? 126 :
+            phase >= 6                                                      ? 126 :
                                                                               64;
           XII_TEST_INT(arguments.x, count == 0 ? 0 : phase == 11 ? 1 :
                          phase == 10                             ? 64 :
@@ -468,7 +468,7 @@ XII_CREATE_SIMPLE_TEST(NativeVisibility, InstanceCullingAndExplicitHistory)
             return;
           const bool      coarse   = phase <= 1 || phase == 3 || (phase == 4 && view == 1);
           const xiiUInt32 visible  = phase == 5 ? 0 : selected || phase == 10 ? 1 :
-             phase >= 6                                                       ? 126 :
+            phase >= 6                                                        ? 126 :
                                                                                 64;
           xiiUInt32       expected = visible * (coarse ? 63 : 127);
           if (phase == 2)
@@ -711,9 +711,9 @@ static void TestAuthoredWorldVisibility(bool depthOnly, bool materialTargets = f
     XII_TEST_RESULT(root.Connect(i, "VisibleInstanceCount", sink, "Count"));
     XII_TEST_RESULT(root.Connect(i, "LodHistory", sink, "Lod"));
   }
-  const auto pipeline = xiiResourceManager::CreateResource<xiiRenderPipelineResource>(materialTargets ? "Authored independent material instances" : depthOnly ? "Authored independent depth instances" :
-                                                                                                                                                                "Authored world visibility instances",
-                                                                                      std::move(root));
+  const auto  pipeline = xiiResourceManager::CreateResource<xiiRenderPipelineResource>(materialTargets ? "Authored independent material instances" : depthOnly ? "Authored independent depth instances" :
+                                                                                                                                                                 "Authored world visibility instances",
+                                                                                       std::move(root));
   xiiGeometry box;
   box.AddBox(xiiVec3(1), true);
   xiiMeshResourceDescriptor meshDescription;

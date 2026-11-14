@@ -31,9 +31,12 @@ public:
   class Storage : public xiiRefCounted
   {
   public:
-    mutable enum class AccessMode { Nothing,
-                                    Read,
-                                    Write } m_AccessMode;
+    mutable enum class AccessMode
+    {
+      Nothing,
+      Read,
+      Write
+    } m_AccessMode;
     mutable KEY              m_AcessingKey;
     mutable xiiMutex         m_Mutex;
     xiiHashTable<KEY, VALUE> m_MetaData;

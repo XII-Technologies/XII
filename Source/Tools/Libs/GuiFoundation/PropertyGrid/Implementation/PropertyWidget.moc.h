@@ -454,9 +454,9 @@ private Q_SLOTS:
   void on_Menu_aboutToHide();
 
 protected:
-  void         OnInit() override;
-  void         InternalSetValue(const xiiVariant& value) override;
-  void         SetAllChecked(bool bChecked);
+  void OnInit() override;
+  void InternalSetValue(const xiiVariant& value) override;
+  void SetAllChecked(bool bChecked);
 
 protected:
   xiiMap<xiiInt64, QCheckBox*> m_Constants;
@@ -498,10 +498,10 @@ private Q_SLOTS:
   void on_Button_triggered();
 
 protected:
-  void         SetSelection(const xiiHybridArray<xiiPropertySelection, 8>& items) override;
-  void         OnInit() override;
-  void         DoPrepareToDie() override;
-  void         UpdatePreview();
+  void SetSelection(const xiiHybridArray<xiiPropertySelection, 8>& items) override;
+  void OnInit() override;
+  void DoPrepareToDie() override;
+  void UpdatePreview();
 
 protected:
   QHBoxLayout*              m_pLayout = nullptr;

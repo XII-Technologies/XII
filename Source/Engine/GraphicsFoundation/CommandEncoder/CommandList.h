@@ -1706,7 +1706,7 @@ protected:
 
   xiiGALCommandListCreationDescription m_Description;
 
-  RecordingState m_RecordingState = RecordingState::Reset;
+  RecordingState m_RecordingState       = RecordingState::Reset;
   bool           m_bSecondaryRenderPass = false;
   const bool     m_bNativeMultiDrawSupported;
 
@@ -1722,8 +1722,8 @@ protected:
   xiiGALRenderPass*  m_pRenderPass  = nullptr;
   xiiGALFramebuffer* m_pFramebuffer = nullptr;
 
-  xiiColor  m_BlendFactors = xiiColor::Black;
-  xiiUInt32 m_uiStencilRef = 0U;
+  xiiColor  m_BlendFactors       = xiiColor::Black;
+  xiiUInt32 m_uiStencilRef       = 0U;
   bool      m_bBlendFactorsValid = false;
   bool      m_bStencilRefValid   = false;
 

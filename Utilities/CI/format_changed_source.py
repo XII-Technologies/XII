@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # Copyright (c) Theophilus Eriata. All Rights Reserved.
 
-"""Repair copyright notices and format changed C/C++ lines in a clean checkout."""
+"""Repair copyright notices and format selected C/C++ files in a clean checkout."""
 
 import argparse
 import os
@@ -14,7 +14,6 @@ BOM = b"\xef\xbb\xbf"
 EXCLUDED = ("Source/ThirdParty/", "Source/Engine/Foundation/ThirdParty/", "Data/Tools/")
 CPP_SUFFIXES = {".c", ".cc", ".cpp", ".cxx", ".h", ".hh", ".hpp", ".hxx", ".inl"}
 CMAKE_SUFFIXES = {".cmake", ".BuildFilter"}
-HUNK = re.compile(rb"^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@", re.MULTILINE)
 NOTICE = re.compile(rb"(?i)^[ \t]*(?://+|#)[ \t]*Copyright\b[^\r\n]*Theophilus Eriata[^\r\n]*(?:\r?\n|$)")
 
 
@@ -39,54 +38,45 @@ def fix_notice(path, prefix):
     contents = contents.lstrip(b"\r\n")
     while match := NOTICE.match(contents):
         contents = contents[match.end():].lstrip(b"\r\n")
-    updated = bom + prefix + b" " + COPYRIGHT + newline + newline + contents
+    updated = bom + prefix + b" " + COPYRIGHT + newline
+    if contents:
+        updated += newline + contents
     if updated != original:
         path.write_bytes(updated)
 
 
-def format_lines(base, previous, current, formatter):
-    comparison = (base, "--", current)
-    if previous != current:
-        # Compare blobs so repairing the header cannot change rename detection.
-        old_blob = git("rev-parse", f"{base}:{previous}").decode().strip()
-        new_blob = git("hash-object", "-w", "--", current).decode().strip()
-        comparison = (old_blob, new_blob, "--")
-    diff = git("diff", "--no-ext-diff", "--no-textconv", "--no-color", "-U0", *comparison)
-    ranges = []
-    for start, count in HUNK.findall(diff):
-        first = int(start)
-        length = int(count or b"1")
-        if length:
-            ranges.append(f"--lines={first}:{first + length - 1}")
-    if ranges:
-        subprocess.run([formatter, "--style=file", "-i", *ranges, "--", current], check=True)
-
-
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--base", required=True, help="Full commit SHA to compare against HEAD")
+    selection = parser.add_mutually_exclusive_group(required=True)
+    selection.add_argument("--base", help="Full commit SHA to compare against HEAD; format entire changed files")
+    selection.add_argument("--all", action="store_true", help="Repair and format all tracked repository sources")
     parser.add_argument("--formatter", default="clang-format")
     parser.add_argument("--patch", type=Path, default=Path("Workspace/Quality/source-style.patch"))
     args = parser.parse_args()
-    if not re.fullmatch(r"[0-9a-f]{40}", args.base):
+    os.chdir(os.fsdecode(git("rev-parse", "--show-toplevel").rstrip(b"\n")))
+    if args.base and not re.fullmatch(r"[0-9a-f]{40}", args.base):
         parser.error("--base must be a full commit SHA")
     if git("status", "--porcelain", "--untracked-files=no", "--ignore-submodules=all"):
         parser.error("tracked files must match HEAD before formatting")
 
     args.patch.unlink(missing_ok=True)
-    base = git("merge-base", args.base, "HEAD").decode().strip()
+    if args.all:
+        paths = [os.fsdecode(path) for path in git("ls-files", "-z").split(b"\0") if path]
+    else:
+        base = git("merge-base", args.base, "HEAD").decode().strip()
+        paths = [current for previous, current in changed_paths(base)]
     files = []
-    for previous, current in changed_paths(base):
+    for current in paths:
         path = Path(current)
-        if current.startswith(EXCLUDED) or path.is_symlink() or not path.is_file():
+        if current.startswith(EXCLUDED) or "ThirdParty" in path.parts or path.is_symlink() or not path.is_file():
             continue
         is_cpp = path.suffix in CPP_SUFFIXES
         if is_cpp or path.suffix in CMAKE_SUFFIXES or path.name == "CMakeLists.txt":
             fix_notice(path, b"///" if is_cpp else b"#")
             if is_cpp:
-                files.append((previous, current))
-    for previous, current in files:
-        format_lines(base, previous, current, args.formatter)
+                files.append(current)
+    for current in files:
+        subprocess.run([args.formatter, "--style=file", "--fallback-style=none", "-i", "--", current], check=True)
 
     patch = git("diff", "--no-ext-diff", "--no-textconv", "--no-color", "--binary", "--full-index", "HEAD", "--")
     if patch:
@@ -94,7 +84,7 @@ def main():
         args.patch.write_bytes(patch)
         print(f"Applied source fixes and wrote {args.patch}")
     else:
-        print("Changed sources already follow repository style.")
+        print("Selected sources already follow repository style.")
 
 
 if __name__ == "__main__":

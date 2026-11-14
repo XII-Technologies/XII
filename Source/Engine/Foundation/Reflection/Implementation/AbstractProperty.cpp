@@ -5,7 +5,7 @@
 #include <Foundation/Reflection/Implementation/AbstractProperty.h>
 #include <Foundation/Reflection/Implementation/PropertyAttributes.h>
 
-xiiAbstractProperty ::~xiiAbstractProperty()
+xiiAbstractProperty::~xiiAbstractProperty()
 {
   // To ensure unloading plugins does not leak any heap allocated attributes etc, we need to properly clean up attributes.
   // The assumption is that anything that is deleted here was created using global 'new' when declaring the reflection information inside XII_BEGIN_PROPERTIES.

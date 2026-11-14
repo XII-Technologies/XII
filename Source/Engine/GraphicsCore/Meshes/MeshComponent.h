@@ -231,10 +231,10 @@ class XII_GRAPHICSCORE_DLL xiiStaticMeshComponent : public xiiMeshComponentBase
   // xiiMeshComponentBase
 
 protected:
-  void                                        OnActivated() override;
-  void                                        OnDeactivated() override;
-  xiiRenderData::Caching::Enum                GetRenderDataCaching() const override;
-  xiiBitflags<xiiMeshRenderDataFlags>         GetMeshRenderFlags() const override;
+  void                                OnActivated() override;
+  void                                OnDeactivated() override;
+  xiiRenderData::Caching::Enum        GetRenderDataCaching() const override;
+  xiiBitflags<xiiMeshRenderDataFlags> GetMeshRenderFlags() const override;
 
   //////////////////////////////////////////////////////////////////////////
   // xiiStaticMeshComponent

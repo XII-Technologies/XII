@@ -150,11 +150,11 @@ xiiEditorInput xiiOrbitCameraContext::DoMousePressEvent(QMouseEvent* e)
   return xiiEditorInput::MayBeHandledByOthers;
 
 activate:
-{
-  m_vLastMousePos = SetMouseMode(xiiEditorInputContext::MouseMode::HideAndWrapAtScreenBorders);
-  MakeActiveInputContext();
-  return xiiEditorInput::WasExclusivelyHandled;
-}
+  {
+    m_vLastMousePos = SetMouseMode(xiiEditorInputContext::MouseMode::HideAndWrapAtScreenBorders);
+    MakeActiveInputContext();
+    return xiiEditorInput::WasExclusivelyHandled;
+  }
 }
 
 xiiEditorInput xiiOrbitCameraContext::DoMouseReleaseEvent(QMouseEvent* e)

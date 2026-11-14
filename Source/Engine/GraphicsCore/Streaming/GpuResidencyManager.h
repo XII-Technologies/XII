@@ -153,11 +153,11 @@ struct XII_GRAPHICSCORE_DLL xiiGpuResidencyDescription
 {
   bool                         operator==(const xiiGpuResidencyDescription&) const = default;
   xiiResourceStreamingSettings m_Streaming;
-  xiiUInt32 m_uiMaxGeometries             = 65536U;
-  xiiUInt32 m_uiFramesInFlight            = 3U;
-  xiiUInt64 m_uiBudgetBytes               = 512ULL * 1024ULL * 1024ULL; ///< Soft limit for occupied meshlet metadata.
-  xiiUInt64 m_uiUploadBudgetPerFrameBytes = 32ULL * 1024ULL * 1024ULL;
-  xiiUInt32 m_uiMaxMeshlets               = 1024U * 1024U;
+  xiiUInt32                    m_uiMaxGeometries             = 65536U;
+  xiiUInt32                    m_uiFramesInFlight            = 3U;
+  xiiUInt64                    m_uiBudgetBytes               = 512ULL * 1024ULL * 1024ULL; ///< Soft limit for occupied meshlet metadata.
+  xiiUInt64                    m_uiUploadBudgetPerFrameBytes = 32ULL * 1024ULL * 1024ULL;
+  xiiUInt32                    m_uiMaxMeshlets               = 1024U * 1024U;
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiGpuResidencyDescription);

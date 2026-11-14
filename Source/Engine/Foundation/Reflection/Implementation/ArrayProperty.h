@@ -146,7 +146,7 @@ class xiiMemberArrayProperty : public xiiTypedArrayProperty<typename xiiTypeTrai
 public:
   using RealType              = typename xiiTypeTraits<Type>::NonConstReferenceType;
   using GetConstContainerFunc = const Container& (*)(const Class* pInstance);
-  using GetContainerFunc      = Container& (*)(Class * pInstance);
+  using GetContainerFunc      = Container& (*)(Class* pInstance);
 
   xiiMemberArrayProperty(xiiStringView sPropertyName, GetConstContainerFunc constGetter, GetContainerFunc getter) :
     xiiTypedArrayProperty<RealType>(sPropertyName)

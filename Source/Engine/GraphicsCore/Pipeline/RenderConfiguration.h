@@ -93,10 +93,10 @@ struct xiiRenderSettingScope
 
 struct XII_GRAPHICSCORE_DLL xiiRenderSettingSource
 {
-  bool                        operator==(const xiiRenderSettingSource&) const = default;
-  xiiString                   m_sType;
-  xiiString                   m_sPath;
-  xiiUInt8                    m_uiScope = xiiRenderSettingScope::SubsystemDefault;
+  bool      operator==(const xiiRenderSettingSource&) const = default;
+  xiiString m_sType;
+  xiiString m_sPath;
+  xiiUInt8  m_uiScope = xiiRenderSettingScope::SubsystemDefault;
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderSettingSource);
@@ -139,7 +139,7 @@ struct XII_GRAPHICSCORE_DLL xiiRenderConfiguration
 
   bool operator==(const xiiRenderConfiguration& other) const;
 
-  bool IsValid() const;
+  bool                     IsValid() const;
   xiiRenderPipelineVariant GetPipelineVariant() const;
 
   /// Applies the authored fields of a validated, higher-priority scope.

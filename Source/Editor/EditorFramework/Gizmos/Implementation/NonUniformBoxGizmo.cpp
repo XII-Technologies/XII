@@ -154,13 +154,13 @@ xiiEditorInput xiiNonUniformBoxGizmo::DoMousePressEvent(QMouseEvent* e)
 
 modify:
 
-{
-  xiiMat4 mView = m_pCamera->GetViewMatrix();
-  xiiMat4 mProj;
-  m_pCamera->GetProjectionMatrix((float)m_vViewport.x / (float)m_vViewport.y, mProj);
-  xiiMat4 mViewProj = mProj * mView;
-  m_mInvViewProj    = mViewProj.GetInverse();
-}
+  {
+    xiiMat4 mView = m_pCamera->GetViewMatrix();
+    xiiMat4 mProj;
+    m_pCamera->GetProjectionMatrix((float)m_vViewport.x / (float)m_vViewport.y, mProj);
+    xiiMat4 mViewProj = mProj * mView;
+    m_mInvViewProj    = mViewProj.GetInverse();
+  }
 
   m_vStartNegSize = m_vNegSize;
   m_vStartPosSize = m_vPosSize;

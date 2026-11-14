@@ -70,8 +70,8 @@ float3 EvaluateRectangleAreaLight(xiiGpuLightData lightData, float3 worldPositio
   float3 result = 0.0f;
   [unroll] for (uint sampleIndex = 0u; sampleIndex < 4u; ++sampleIndex)
   {
-    const float2 cell = float2((sampleIndex & 1u) != 0u ? 0.25f : -0.25f,
-                               (sampleIndex & 2u) != 0u ? 0.25f : -0.25f);
+    const float2 cell           = float2((sampleIndex & 1u) != 0u ? 0.25f : -0.25f,
+                                         (sampleIndex & 2u) != 0u ? 0.25f : -0.25f);
     const float3 samplePosition = center + right * (cell.x * width) + up * (cell.y * height);
     const float3 sampleToPoint  = normalize(worldPosition - samplePosition);
     const float  projectedArea  = sampleArea * saturate(dot(emitterNormal, sampleToPoint));

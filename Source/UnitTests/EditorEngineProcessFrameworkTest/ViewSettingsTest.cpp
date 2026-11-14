@@ -34,9 +34,9 @@ XII_CREATE_SIMPLE_TEST(EditorViews, Settings)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Redraw camera and render mode survive IPC serialization")
   {
     xiiViewRedrawMsgToEngine message;
-    message.m_CameraMode             = xiiCameraMode::OrthoFixedHeight;
-    message.m_RenderMode             = xiiViewRenderMode::Wireframe;
-    message.m_bShowFrameStats        = true;
+    message.m_CameraMode      = xiiCameraMode::OrthoFixedHeight;
+    message.m_RenderMode      = xiiViewRenderMode::Wireframe;
+    message.m_bShowFrameStats = true;
     XII_TEST_RESULT(message.m_RenderConfiguration.SetOverride<xiiDynamicResolutionSettings>("RenderScale", 0.65f));
     message.m_fFovOrDim              = 42.0f;
     message.m_fNearPlane             = -1000.0f;

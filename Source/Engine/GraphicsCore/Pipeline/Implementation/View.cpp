@@ -455,7 +455,7 @@ xiiResult xiiView::SynchronizeRenderPipeline()
     return XII_SUCCESS;
   }
   const auto& configuration = ResolveRenderConfiguration();
-  bool changed = false;
+  bool        changed       = false;
   auto        outputFormat  = xiiGALResourceFormat::Unknown;
   if (m_pRenderTargetView)
     outputFormat = static_cast<xiiGALResourceFormat::Enum>(m_pRenderTargetView->GetDescription().m_Format.GetValue());

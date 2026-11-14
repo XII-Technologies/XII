@@ -221,10 +221,10 @@ static void TestViewportInput(bool bRenderingControlsOnly)
       interpreter.Interpret(state);
       XII_TEST_FLOAT(config.m_RenderConfiguration.FindSubsystem<xiiDynamicResolutionSettings>()->m_fRenderScale, 0.65f, 0.0f);
 #endif
-      auto* preferences                           = xiiEditorSettings::QuerySettings<xiiQuadViewPreferencesUser>(scene);
+      auto* preferences                               = xiiEditorSettings::QuerySettings<xiiQuadViewPreferencesUser>(scene);
       preferences->m_ViewSingle.m_RenderConfiguration = config.m_RenderConfiguration;
-      preferences->m_ViewSingle.m_bShowFrameStats = true;
-      preferences->m_ViewSingle.m_bVSync          = false;
+      preferences->m_ViewSingle.m_bShowFrameStats     = true;
+      preferences->m_ViewSingle.m_bVSync              = false;
       XII_TEST_RESULT(xiiEditorSettings::SaveSettings(preferences));
       xiiEditorSettings::ClearDocumentSettings(scene);
       const auto* restored = xiiEditorSettings::QuerySettings<xiiQuadViewPreferencesUser>(scene);

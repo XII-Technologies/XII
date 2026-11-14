@@ -183,11 +183,11 @@ struct XII_GRAPHICSVULKAN_DLL xiiGALCommandListDataVulkan
 
   // Declared before descriptor storage so native descriptor pools are destroyed before their resources.
   xiiHashTable<xiiGALDeviceObject*, xiiSharedPtr<xiiGALDeviceObject>> m_RecordedResources;
-  xiiHybridArray<ResourceSetBindings, 1U> m_ResourceSets;
-  xiiHybridArray<vk::DescriptorSet, 4U>   m_DescriptorSets;
-  xiiDeque<vk::DescriptorBufferInfo>      m_DynamicUniformBuffers;
-  xiiHybridArray<xiiUInt32, 6U>           m_DynamicUniformBufferOffsets;
-  bool                                    m_bDescriptorsModified = false;
+  xiiHybridArray<ResourceSetBindings, 1U>                             m_ResourceSets;
+  xiiHybridArray<vk::DescriptorSet, 4U>                               m_DescriptorSets;
+  xiiDeque<vk::DescriptorBufferInfo>                                  m_DynamicUniformBuffers;
+  xiiHybridArray<xiiUInt32, 6U>                                       m_DynamicUniformBufferOffsets;
+  bool                                                                m_bDescriptorsModified = false;
 
   xiiUniquePtr<xiiGALDynamicBufferPoolVulkan> m_pDynamicBufferPoolVulkan;
   xiiUniquePtr<xiiGALStagingBufferPoolVulkan> m_pUploadStagingBufferPool;

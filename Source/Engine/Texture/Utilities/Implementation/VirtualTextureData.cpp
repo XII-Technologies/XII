@@ -1,4 +1,5 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <Texture/TexturePCH.h>
 
 #include <Foundation/IO/FileSystem/FileReader.h>

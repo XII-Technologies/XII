@@ -1,7 +1,5 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
-
-
 #include <EditorEngineProcessFrameworkTest/EditorEngineProcessFrameworkTestPCH.h>
 
 #include <Core/Graphics/Geometry.h>

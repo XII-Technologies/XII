@@ -36,24 +36,24 @@ xiiQtQuadViewWidget::~xiiQtQuadViewWidget()
 
 void xiiQtQuadViewWidget::SaveViewConfig(const xiiEngineViewConfig& cfg, xiiEngineViewPreferences& pref) const
 {
-  pref.m_vCamPos         = cfg.m_Camera.GetPosition();
-  pref.m_vCamDir         = cfg.m_Camera.GetDirForwards();
-  pref.m_vCamUp          = cfg.m_Camera.GetDirUp();
-  pref.m_PerspectiveMode = cfg.m_Perspective;
-  pref.m_RenderMode      = cfg.m_RenderMode;
+  pref.m_vCamPos             = cfg.m_Camera.GetPosition();
+  pref.m_vCamDir             = cfg.m_Camera.GetDirForwards();
+  pref.m_vCamUp              = cfg.m_Camera.GetDirUp();
+  pref.m_PerspectiveMode     = cfg.m_Perspective;
+  pref.m_RenderMode          = cfg.m_RenderMode;
   pref.m_RenderConfiguration = cfg.m_RenderConfiguration;
-  pref.m_bShowFrameStats = cfg.m_bShowFrameStats;
-  pref.m_bVSync          = cfg.m_bVSync;
-  pref.m_fFov            = cfg.m_Camera.GetFovOrDim();
+  pref.m_bShowFrameStats     = cfg.m_bShowFrameStats;
+  pref.m_bVSync              = cfg.m_bVSync;
+  pref.m_fFov                = cfg.m_Camera.GetFovOrDim();
 }
 
 void xiiQtQuadViewWidget::LoadViewConfig(xiiEngineViewConfig& cfg, xiiEngineViewPreferences& pref)
 {
-  cfg.m_Perspective     = (xiiSceneViewPerspective::Enum)pref.m_PerspectiveMode;
-  cfg.m_RenderMode      = (xiiViewRenderMode::Enum)pref.m_RenderMode;
+  cfg.m_Perspective         = (xiiSceneViewPerspective::Enum)pref.m_PerspectiveMode;
+  cfg.m_RenderMode          = (xiiViewRenderMode::Enum)pref.m_RenderMode;
   cfg.m_RenderConfiguration = pref.m_RenderConfiguration;
-  cfg.m_bShowFrameStats = pref.m_bShowFrameStats;
-  cfg.m_bVSync          = pref.m_bVSync;
+  cfg.m_bShowFrameStats     = pref.m_bShowFrameStats;
+  cfg.m_bVSync              = pref.m_bVSync;
   cfg.m_Camera.LookAt(xiiVec3(0), xiiVec3(1, 0, 0), xiiVec3(0, 0, 1));
 
   if (cfg.m_Perspective == xiiSceneViewPerspective::Perspective)

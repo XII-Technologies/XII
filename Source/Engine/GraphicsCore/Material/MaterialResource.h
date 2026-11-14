@@ -150,8 +150,8 @@ public:
   xiiTextureCubeResourceHandle GetTextureCubeBinding(const xiiTempHashedString& sName);
 
   /// Copies current description to the loading description so the material is not modified on reset.
-  void         PreserveCurrentDescription();
-  void         ResetResource() override;
+  void PreserveCurrentDescription();
+  void ResetResource() override;
 
   const xiiMaterialResourceDescriptor& GetCurrentDescription() const;
 

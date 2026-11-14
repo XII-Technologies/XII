@@ -1,4 +1,5 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 // clang-format off
 #pragma once
 #if defined(BLEND_MODE) && BLEND_MODE >= BLEND_MODE_TRANSPARENT && RENDER_PASS != RENDER_PASS_DEPTH_ONLY && RENDER_PASS != RENDER_PASS_PICKING && RENDER_PASS != RENDER_PASS_PICKING_WIREFRAME

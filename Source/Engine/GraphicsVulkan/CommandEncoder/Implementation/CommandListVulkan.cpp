@@ -778,7 +778,7 @@ void xiiGALCommandListVulkan::EndPlatform()
 
   m_CommandListState.m_vkRenderPass  = VK_NULL_HANDLE;
   m_CommandListState.m_vkFramebuffer = VK_NULL_HANDLE;
-  m_RecordingState = RecordingState::Ended;
+  m_RecordingState                   = RecordingState::Ended;
 }
 
 void xiiGALCommandListVulkan::ResetPlatform()
@@ -1306,9 +1306,9 @@ xiiResult xiiGALCommandListVulkan::CommitShaderResourcesPlatform(xiiEnum<xiiGALS
             vkWriteDescriptorSet.pBufferInfo      = nullptr;
             vkWriteDescriptorSet.pTexelBufferView = nullptr;
 
-            vk::DescriptorImageInfo                        vkDescriptorImageInfo;
-            vk::DescriptorBufferInfo                       vkDescriptorBufferInfo;
-            vk::BufferView                                 vkDescriptorBufferView;
+            vk::DescriptorImageInfo  vkDescriptorImageInfo;
+            vk::DescriptorBufferInfo vkDescriptorBufferInfo;
+            vk::BufferView           vkDescriptorBufferView;
 
             switch (resourceLayout.m_DescriptorType)
             {

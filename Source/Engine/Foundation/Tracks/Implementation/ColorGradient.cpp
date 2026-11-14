@@ -199,20 +199,20 @@ void xiiColorGradient::EvaluateColor(double x, xiiColor& ref_rgb) const
     }
 
   found:
-  {
-    const ColorCP& cpl = m_ColorCPs[uiControlPoint];
-    const ColorCP& cpr = m_ColorCPs[uiControlPoint + 1];
+    {
+      const ColorCP& cpl = m_ColorCPs[uiControlPoint];
+      const ColorCP& cpr = m_ColorCPs[uiControlPoint + 1];
 
-    const xiiColor lhs(xiiColorGammaUB(cpl.m_GammaRed, cpl.m_GammaGreen, cpl.m_GammaBlue, 255));
-    const xiiColor rhs(xiiColorGammaUB(cpr.m_GammaRed, cpr.m_GammaGreen, cpr.m_GammaBlue, 255));
+      const xiiColor lhs(xiiColorGammaUB(cpl.m_GammaRed, cpl.m_GammaGreen, cpl.m_GammaBlue, 255));
+      const xiiColor rhs(xiiColorGammaUB(cpr.m_GammaRed, cpr.m_GammaGreen, cpr.m_GammaBlue, 255));
 
-    /// \todo Use a midpoint interpolation
+      /// \todo Use a midpoint interpolation
 
-    // interpolate (linear for now)
-    const float lerpX = (float)(x - cpl.m_PosX) * cpl.m_fInvDistToNextCp;
+      // interpolate (linear for now)
+      const float lerpX = (float)(x - cpl.m_PosX) * cpl.m_fInvDistToNextCp;
 
-    ref_rgb = xiiMath::Lerp(lhs, rhs, lerpX);
-  }
+      ref_rgb = xiiMath::Lerp(lhs, rhs, lerpX);
+    }
   }
   else if (m_ColorCPs.GetCount() == 1)
   {
@@ -252,17 +252,17 @@ void xiiColorGradient::EvaluateAlpha(double x, xiiUInt8& ref_uiAlpha) const
     }
 
   found:
-  {
-    /// \todo Use a midpoint interpolation
+    {
+      /// \todo Use a midpoint interpolation
 
-    const AlphaCP& cpl = m_AlphaCPs[uiControlPoint];
-    const AlphaCP& cpr = m_AlphaCPs[uiControlPoint + 1];
+      const AlphaCP& cpl = m_AlphaCPs[uiControlPoint];
+      const AlphaCP& cpr = m_AlphaCPs[uiControlPoint + 1];
 
-    // interpolate (linear for now)
-    const float lerpX = (float)(x - cpl.m_PosX) * cpl.m_fInvDistToNextCp;
+      // interpolate (linear for now)
+      const float lerpX = (float)(x - cpl.m_PosX) * cpl.m_fInvDistToNextCp;
 
-    ref_uiAlpha = xiiMath::Lerp(cpl.m_Alpha, cpr.m_Alpha, lerpX);
-  }
+      ref_uiAlpha = xiiMath::Lerp(cpl.m_Alpha, cpr.m_Alpha, lerpX);
+    }
   }
   else if (m_AlphaCPs.GetCount() == 1)
   {
@@ -302,17 +302,17 @@ void xiiColorGradient::EvaluateIntensity(double x, float& ref_fIntensity) const
     }
 
   found:
-  {
-    const IntensityCP& cpl = m_IntensityCPs[uiControlPoint];
-    const IntensityCP& cpr = m_IntensityCPs[uiControlPoint + 1];
+    {
+      const IntensityCP& cpl = m_IntensityCPs[uiControlPoint];
+      const IntensityCP& cpr = m_IntensityCPs[uiControlPoint + 1];
 
-    /// \todo Use a midpoint interpolation
+      /// \todo Use a midpoint interpolation
 
-    // interpolate (linear for now)
-    const float lerpX = (float)(x - cpl.m_PosX) * cpl.m_fInvDistToNextCp;
+      // interpolate (linear for now)
+      const float lerpX = (float)(x - cpl.m_PosX) * cpl.m_fInvDistToNextCp;
 
-    ref_fIntensity = xiiMath::Lerp(cpl.m_Intensity, cpr.m_Intensity, lerpX);
-  }
+      ref_fIntensity = xiiMath::Lerp(cpl.m_Intensity, cpr.m_Intensity, lerpX);
+    }
   }
   else if (m_IntensityCPs.GetCount() == 1)
   {

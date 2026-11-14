@@ -2005,7 +2005,7 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
 
     // Create a command list for this submission.
     xiiGALCommandListCreationDescription commandListDescription;
-    commandListDescription.m_QueueFlags          = actualQueueFlags;
+    commandListDescription.m_QueueFlags = actualQueueFlags;
     xiiSharedPtr<xiiGALCommandList> pCommandList;
     {
       XII_PROFILE_SCOPE("Render Graph: Create Command List");

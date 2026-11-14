@@ -521,7 +521,7 @@ xiiResult xiiGALDeviceD3D12::InitializePlatform()
           // The clear operation is typically slower as a result; but will still clear to the desired value.
           // [ EXECUTION WARNING #821: CLEARDEPTHSTENCILVIEW_MISMATCHINGCLEARVALUE]
           D3D12_MESSAGE_ID_CLEARDEPTHSTENCILVIEW_MISMATCHINGCLEARVALUE //
-        };
+      };
 
       D3D12_INFO_QUEUE_FILTER queueFilter = {};
       queueFilter.DenyList.NumSeverities  = XII_ARRAY_SIZE(severities);
