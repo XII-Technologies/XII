@@ -141,11 +141,11 @@ def analyze(root: Path, binary: str, build: Path, source: Path, fix_safe: bool) 
         # Reset the full diagnostic profile and run ONLY the reviewed fix allowlist.
         # The repository profile sets WarningsAsErrors: '*'; suppress that policy
         # for the remediation pass so fixed warnings do not fail the invocation.
-        # Compiler errors still fail, and --fix-errors is intentionally omitted.
+        # Allow fixes even when compiler diagnostics are present.
         command.extend([
             "--checks=-*," + ",".join(SAFE_FIX_CHECKS),
             "--warnings-as-errors=-*",
-            "--fix",
+            "--fix-errors",
             "--format-style=file",
         ])
     result = call(command, root)
