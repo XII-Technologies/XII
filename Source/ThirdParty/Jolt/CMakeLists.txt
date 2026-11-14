@@ -5,7 +5,7 @@ xii_requires(XII_3RDPARTY_JOLT_SUPPORT)
 # Get the name of this folder as the project name
 get_filename_component(PROJECT_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME_WE)
 
-xii_create_target(LIBRARY ${PROJECT_NAME} NO_XII_PREFIX)
+xii_create_target(LIBRARY ${PROJECT_NAME} NO_XII_PREFIX NO_WARNINGS_AS_ERRORS)
 
 if (XII_COMPILE_ENGINE_AS_DLL)
   target_compile_definitions(${PROJECT_NAME} PUBLIC JPH_SHARED_LIBRARY)
