@@ -8,6 +8,7 @@
 #include <GuiFoundation/PropertyGrid/PropertyGridWidget.moc.h>
 #include <GuiFoundation/PropertyGrid/PropertyMetaState.h>
 #include <GuiFoundation/Widgets/CollapsibleGroupBox.moc.h>
+#include <QStandardItemModel>
 #include <ToolsFoundation/Object/ObjectAccessorBase.h>
 
 xiiQtCompilerPreferencesWidget::xiiQtCompilerPreferencesWidget() :
@@ -18,6 +19,15 @@ xiiQtCompilerPreferencesWidget::xiiQtCompilerPreferencesWidget() :
   for (auto& compiler : xiiCppProject::GetMachineSpecificCompilers())
   {
     m_pCompilerPreset->addItem(xiiMakeQString(compiler.m_sNiceName), counter);
+    if (!compiler.m_bSdkCompatible)
+    {
+      auto* pModel = qobject_cast<QStandardItemModel*>(m_pCompilerPreset->model());
+      if (pModel != nullptr)
+      {
+        pModel->item(counter)->setEnabled(false);
+      }
+      m_pCompilerPreset->setItemData(counter, QStringLiteral("Use an SDK built with this compiler family/version to select this toolchain."), Qt::ToolTipRole);
+    }
     ++counter;
   }
   connect(m_pCompilerPreset, &QComboBox::currentIndexChanged, this, &xiiQtCompilerPreferencesWidget::on_compiler_preset_changed);

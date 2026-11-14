@@ -103,14 +103,37 @@ void TestCppProjectConfiguration(xiiStringView sProjectDirectory)
 
     xiiStringBuilder cachePath(xiiCppProject::GetBuildDir(settings), "/CMakeCache.txt");
     XII_SCOPE_EXIT(xiiOSFile::DeleteFile(cachePath).IgnoreResult());
-    auto WriteCache = [&](xiiStringView sVersion) {
+    auto WriteCache = [&](xiiStringView sVersion, xiiStringView sOverrideKey = {}, xiiStringView sOverrideValue = {}) {
       xiiDeferredFileWriter writer;
       writer.SetOutput(cachePath);
       xiiStringBuilder text;
+      const auto       WriteValue = [&](xiiStringView sKey, xiiStringView sValue) {
+        text.AppendFormat("{}:STRING={}\n", sKey, sKey == sOverrideKey ? sOverrideValue : sValue);
+      };
       if (!sVersion.IsEmpty())
-        text.Append("XII_PROJECT_OUTPUT_LAYOUT_VERSION:INTERNAL=", sVersion, "\n");
-      const bool multiConfig = xiiCppProject::GetCMakeGeneratorName(settings).StartsWith("Visual Studio");
-      text.Append(multiConfig ? "CMAKE_CONFIGURATION_TYPES:STRING=" : "CMAKE_BUILD_TYPE:STRING=", BUILDSYSTEM_BUILDTYPE);
+      {
+        WriteValue("XII_PROJECT_OUTPUT_LAYOUT_VERSION", sVersion);
+      }
+      const bool bMultiConfig = xiiCppProject::GetCMakeGeneratorName(settings).StartsWith("Visual Studio");
+      WriteValue(bMultiConfig ? "CMAKE_CONFIGURATION_TYPES" : "CMAKE_BUILD_TYPE", bMultiConfig ? "Debug;Dev;Shipping" : BUILDSYSTEM_BUILDTYPE);
+      WriteValue("CMAKE_GENERATOR", xiiCppProject::GetCMakeGeneratorName(settings));
+      WriteValue("XII_SDK_DIR", xiiFileSystem::GetSdkRootDirectory());
+#if XII_ENABLED(XII_COMPILER_CLANG)
+      WriteValue("XII_PROJECT_SDK_COMPILER_ID", "Clang");
+#elif XII_ENABLED(XII_COMPILER_GCC)
+      WriteValue("XII_PROJECT_SDK_COMPILER_ID", "GNU");
+#else
+      WriteValue("XII_PROJECT_SDK_COMPILER_ID", "MSVC");
+#endif
+      WriteValue("XII_PROJECT_SDK_COMPILER_VERSION", xiiStringBuilder(xiiCppProject::GetSdkCompilerMajorVersion(), ".1"));
+      for (xiiStringView sKey : {"CMAKE_C_COMPILER", "CMAKE_CXX_COMPILER", "CMAKE_RC_COMPILER"})
+      {
+        const xiiVariant* pValue = nullptr;
+        if (variables.TryGetValue(sKey, pValue))
+        {
+          WriteValue(sKey, pValue->Get<xiiString>());
+        }
+      }
       XII_TEST_RESULT(writer.WriteBytes(text.GetData(), text.GetElementCount()));
       XII_TEST_RESULT(writer.Close());
     };
@@ -120,6 +143,19 @@ void TestCppProjectConfiguration(xiiStringView sProjectDirectory)
     XII_TEST_RESULT(xiiCppProject::CheckCMakeCache(settings));
     WriteCache("0");
     XII_TEST_BOOL(xiiCppProject::CheckCMakeCache(settings).Failed());
+    for (const auto sKey : {"CMAKE_GENERATOR", "XII_SDK_DIR", "XII_PROJECT_SDK_COMPILER_ID", "XII_PROJECT_SDK_COMPILER_VERSION"})
+    {
+      WriteCache("1", sKey, "stale-toolchain");
+      XII_TEST_BOOL(xiiCppProject::CheckCMakeCache(settings).Failed());
+    }
+    if (variables.Contains("CMAKE_CXX_COMPILER"))
+    {
+      WriteCache("1", "CMAKE_CXX_COMPILER", "missing-cpp-compiler");
+      XII_TEST_BOOL(xiiCppProject::CheckCMakeCache(settings).Failed());
+    }
+    WriteCache("1");
+    XII_TEST_RESULT(xiiCppProject::CheckCMakeCache(settings));
+    XII_TEST_BOOL(xiiCppProject::GetBuildDir(settings).EndsWith(xiiStringBuilder("/", BUILDSYSTEM_BUILDTYPE)));
 
     auto& bundles      = xiiQtEditorApp::GetSingleton()->GetPluginBundles().m_Plugins;
     auto& bundle       = bundles["CppPathTestPlugin"];

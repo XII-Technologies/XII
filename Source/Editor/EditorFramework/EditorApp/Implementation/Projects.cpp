@@ -436,18 +436,6 @@ void xiiQtEditorApp::ProjectEventHandler(const xiiToolsProjectEvent& r)
 
       if (m_StartupFlags.AreNoneSet(xiiQtEditorApp::StartupFlags::Headless | xiiQtEditorApp::StartupFlags::SafeMode | xiiQtEditorApp::StartupFlags::UnitTest | xiiQtEditorApp::StartupFlags::Background))
       {
-        if (xiiCppProject::ExistsProjectCMakeListsTxt())
-        {
-          xiiStatus compilerStatus = xiiCppProject::TestCompiler();
-          if (compilerStatus.Failed())
-          {
-            xiiQtUiServices::MessageBoxWarning(xiiFmt("<html>The compiler preferences are invalid.<br><br>\
-              This project has <a href='https://xiiengine.net/pages/docs/custom-code/cpp/cpp-project-generation.html'>a dedicated C++ plugin</a> with custom code.<br><br>\
-              The compiler set in the preferences does not appear to work, as a result the plugin cannot be compiled <br><br><b>Error:</b> {}</html>",
-                                                      compilerStatus.GetMessageString().GetView()));
-          }
-        }
-
         if (pPreferences->m_bBackgroundAssetProcessing)
         {
           xiiAssetProcessor::GetSingleton()->StartProcessTask();
