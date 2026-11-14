@@ -244,7 +244,7 @@ CheckOptions:
 # Preserve XII existing assignment-style default member initialization
 
   modernize-use-default-member-init.UseAssignment: 'true'
-  modernize-use-nullptr.UseNullptrT: 'false'
+  # modernize-use-nullptr.UseNullptrT: 'false'
 
 # §2.2 proposed change: all branches and loops must have braces
 
