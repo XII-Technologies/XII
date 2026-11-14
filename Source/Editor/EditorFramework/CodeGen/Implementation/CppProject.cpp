@@ -13,7 +13,10 @@
 #include <Foundation/System/Process.h>
 #include <Foundation/Threading/Mutex.h>
 #include <Foundation/Types/ScopeExit.h>
+#include <Foundation/Utilities/ConversionUtils.h>
 #include <GuiFoundation/UIServices/DynamicEnums.h>
+#include <QFileInfo>
+#include <QStandardPaths>
 #include <ToolsFoundation/Application/ApplicationServices.h>
 #include <ToolsFoundation/Project/ToolsProject.h>
 
@@ -39,7 +42,10 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiCompiler, 1)
 #endif
 XII_END_STATIC_REFLECTED_ENUM;
 
-#if XII_ENABLED(XII_PLATFORM_LINUX)
+#if XII_ENABLED(XII_COMPILER_CLANG)
+#define CPP_COMPILER_DEFAULT "clang++"
+#define C_COMPILER_DEFAULT "clang"
+#elif XII_ENABLED(XII_COMPILER_GCC)
 #define CPP_COMPILER_DEFAULT "g++"
 #define C_COMPILER_DEFAULT "gcc"
 #elif XII_ENABLED(XII_PLATFORM_WINDOWS)
@@ -101,93 +107,134 @@ xiiDynamicArray<xiiCppProject::MachineSpecificCompilerPaths> xiiCppProject::s_Ma
 
 namespace
 {
-  static constexpr xiiUInt32 minGccVersion   = 10;
-  static constexpr xiiUInt32 maxGccVersion   = 20;
-  static constexpr xiiUInt32 minClangVersion = 10;
-  static constexpr xiiUInt32 maxClangVersion = 20;
-
-  xiiResult TestCompilerExecutable(xiiStringView sName, xiiString* out_pVersion = nullptr)
+  xiiString ResolveCompilerPath(xiiStringView sExecutable)
   {
-    xiiStringBuilder  sStdout;
-    xiiProcessOptions po;
-    po.AddArgument("--version");
-    po.m_sProcess = sName;
-    po.m_onStdOut = [&sStdout](xiiStringView out) {
-      sStdout.Append(out);
+    const QString sPath = QStandardPaths::findExecutable(xiiMakeQString(sExecutable));
+    if (sPath.isEmpty())
+    {
+      return {};
+    }
+    xiiStringBuilder sResolved = QFileInfo(sPath).absoluteFilePath().toUtf8().constData();
+    sResolved.MakeCleanPath();
+    return sResolved;
+  }
+
+  xiiStatus TestCompilerExecutable(xiiStringView sExecutable, xiiCompiler::Enum expectedCompiler, xiiString* out_pVersion = nullptr)
+  {
+    const xiiString sResolved = ResolveCompilerPath(sExecutable);
+    if (sResolved.IsEmpty())
+    {
+      return xiiStatus(xiiFmt("Compiler '{}' was not found or is not executable.", sExecutable));
+    }
+
+    xiiStringBuilder  sOutput;
+    xiiMutex          outputMutex;
+    xiiProcessOptions options;
+    options.m_sProcess = sResolved;
+    options.AddArgument("-v");
+    options.m_onStdOut = [&](xiiStringView sText) {
+      XII_LOCK(outputMutex);
+      sOutput.Append(sText);
     };
-
-    xiiInt32 iExitCode = -1;
-    if (xiiProcess::Execute(po, &iExitCode).Failed() || iExitCode != 0)
-      return XII_FAILURE;
-
-    xiiHybridArray<xiiStringView, 8> lines;
-    sStdout.Split(false, lines, "\r", "\n");
-    if (lines.IsEmpty())
-      return XII_FAILURE;
-
-    xiiHybridArray<xiiStringView, 4> splitResult;
-    lines[0].Split(false, splitResult, " ");
-
-    if (splitResult.IsEmpty())
-      return XII_FAILURE;
-
-    xiiStringView version = splitResult.PeekBack();
-    splitResult.Clear();
-    version.Split(false, splitResult, ".");
-    if (splitResult.GetCount() < 3)
+    options.m_onStdError = options.m_onStdOut;
+    xiiProcess process;
+    XII_SUCCEED_OR_RETURN(process.Launch(options));
+    if (process.WaitToFinish(xiiTime::MakeFromSeconds(5.0)).Failed())
     {
-      return XII_FAILURE;
+      process.Terminate().IgnoreResult();
+      return xiiStatus(xiiFmt("Compiler '{}' did not respond within five seconds.", sExecutable));
+    }
+    if (process.GetExitCode() != 0)
+    {
+      return xiiStatus(xiiFmt("Compiler '{}' failed its version query (exit code {}).", sExecutable, process.GetExitCode()));
     }
 
-    if (out_pVersion)
+    const char* szVersion = nullptr;
+    if (expectedCompiler == xiiCompiler::Clang)
     {
-      *out_pVersion = version;
+      szVersion = sOutput.FindSubString("clang version ");
+      if (szVersion != nullptr)
+      {
+        szVersion += xiiStringUtils::GetStringElementCount("clang version ");
+      }
     }
-
+#if XII_ENABLED(XII_PLATFORM_LINUX)
+    else if (expectedCompiler == xiiCompiler::Gcc)
+    {
+      szVersion = sOutput.FindSubString("gcc version ");
+      if (szVersion != nullptr)
+      {
+        szVersion += xiiStringUtils::GetStringElementCount("gcc version ");
+      }
+    }
+#endif
+    if (szVersion == nullptr)
+    {
+      return xiiStatus(xiiFmt("Compiler '{}' does not identify as {}.", sExecutable, xiiCppProject::CompilerToString(expectedCompiler)));
+    }
+    const char* szEnd = szVersion;
+    while ((*szEnd >= '0' && *szEnd <= '9') || *szEnd == '.')
+    {
+      ++szEnd;
+    }
+    xiiUInt32           uiMajorVersion = 0U;
+    const xiiStringView sVersion(szVersion, szEnd);
+    if (sVersion.IsEmpty() || sVersion.EndsWith(".") || xiiConversionUtils::StringToUInt(sVersion, uiMajorVersion).Failed() || uiMajorVersion == 0U)
+    {
+      return xiiStatus(xiiFmt("Compiler '{}' did not report a valid version.", sExecutable));
+    }
+    if (out_pVersion != nullptr)
+    {
+      *out_pVersion = sVersion;
+    }
     return XII_SUCCESS;
+  }
+
+  bool IsSdkVersion(xiiStringView sVersion)
+  {
+    xiiUInt32 uiMajorVersion    = 0U;
+    xiiUInt32 uiSdkMajorVersion = 0U;
+    return xiiConversionUtils::StringToUInt(sVersion, uiMajorVersion).Succeeded() &&
+      xiiConversionUtils::StringToUInt(xiiCppProject::GetSdkCompilerMajorVersion(), uiSdkMajorVersion).Succeeded() && uiMajorVersion == uiSdkMajorVersion;
   }
 
   void AddCompilerVersions(xiiDynamicArray<xiiCppProject::MachineSpecificCompilerPaths>& inout_compilers, xiiCompiler::Enum compiler, xiiStringView sRequiredMajorVersion)
   {
-    xiiStringView compilerBaseName;
-    xiiStringView compilerBaseNameCpp;
-    switch (compiler)
+    const xiiStringView sCBase   = compiler == xiiCompiler::Clang ? "clang" : "gcc";
+    const xiiStringView sCppBase = compiler == xiiCompiler::Clang ? "clang++" : "g++";
+    const auto          AddPair  = [&](xiiStringView sC, xiiStringView sCpp) {
+      const xiiString sCPath   = ResolveCompilerPath(sC);
+      const xiiString sCppPath = ResolveCompilerPath(sCpp);
+      xiiString       sCVersion, sCppVersion;
+      if (TestCompilerExecutable(sCPath, compiler, &sCVersion).Failed() || TestCompilerExecutable(sCppPath, compiler, &sCppVersion).Failed())
+      {
+        return;
+      }
+      xiiUInt32 uiCMajor = 0U, uiCppMajor = 0U;
+      if (xiiConversionUtils::StringToUInt(sCVersion, uiCMajor).Failed() || xiiConversionUtils::StringToUInt(sCppVersion, uiCppMajor).Failed() || uiCMajor != uiCppMajor)
+      {
+        return;
+      }
+      for (const auto& existing : inout_compilers)
+      {
+        if (existing.m_Compiler == compiler && existing.m_sCCompiler == sCPath && existing.m_sCppCompiler == sCppPath)
+        {
+          return;
+        }
+      }
+      const bool       bCompatible = compiler == xiiCppProject::GetSdkCompiler() && IsSdkVersion(sCVersion) && IsSdkVersion(sCppVersion);
+      xiiStringBuilder sName;
+      sName.SetFormat("{} {}{}", xiiCppProject::CompilerToString(compiler), sCppVersion, bCompatible ? "" : " (different SDK toolchain)");
+      inout_compilers.PushBack({sName, compiler, sCPath, sCppPath, false, bCompatible});
+    };
+
+    AddPair(sCBase, sCppBase);
+    if (!sRequiredMajorVersion.IsEmpty())
     {
-      case xiiCompiler::Clang:
-        compilerBaseName    = "clang";
-        compilerBaseNameCpp = "clang++";
-        break;
-#if XII_ENABLED(XII_PLATFORM_LINUX)
-      case xiiCompiler::Gcc:
-        compilerBaseName    = "gcc";
-        compilerBaseNameCpp = "g++";
-        break;
-#endif
-
-        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
-    }
-
-
-    xiiString        compilerVersion;
-    xiiStringBuilder requiredVersion = sRequiredMajorVersion;
-    requiredVersion.Append('.');
-    xiiStringBuilder fmt;
-    if (TestCompilerExecutable(compilerBaseName, &compilerVersion).Succeeded() && TestCompilerExecutable(compilerBaseNameCpp).Succeeded() && compilerVersion.StartsWith(requiredVersion))
-    {
-      fmt.SetFormat("{} (system default = {})", compilerBaseName, compilerVersion);
-      inout_compilers.PushBack({fmt.GetView(), compiler, compilerBaseName, compilerBaseNameCpp, false});
-    }
-
-    xiiStringBuilder compilerExecutable;
-    xiiStringBuilder compilerExecutableCpp;
-    compilerExecutable.SetFormat("{}-{}", compilerBaseName, sRequiredMajorVersion);
-    compilerExecutableCpp.SetFormat("{}-{}", compilerBaseNameCpp, sRequiredMajorVersion);
-    if (TestCompilerExecutable(compilerExecutable, &compilerVersion).Succeeded() && TestCompilerExecutable(compilerExecutableCpp).Succeeded() && compilerVersion.StartsWith(requiredVersion))
-    {
-      fmt.SetFormat("{} (version {})", compilerBaseName, compilerVersion);
-      inout_compilers.PushBack({fmt.GetView(), compiler, compilerExecutable, compilerExecutableCpp, false});
+      AddPair(xiiStringBuilder(sCBase, "-", sRequiredMajorVersion), xiiStringBuilder(sCppBase, "-", sRequiredMajorVersion));
     }
   }
+
 } // namespace
 
 xiiString xiiCppProject::GetTargetSourceDir(xiiStringView sProjectDirectory /*= {}*/)
@@ -462,47 +509,35 @@ xiiString xiiCppProject::GetSdkCompilerMajorVersion()
 
 xiiStatus xiiCppProject::TestCompiler()
 {
-  const xiiCppProject* pProjectPreferences = xiiEditorSettings::QuerySettings<xiiCppProject>();
-  if (pProjectPreferences->m_CompilerPreferences.m_Compiler != GetSdkCompiler())
+  return TestCompiler(xiiEditorSettings::QuerySettings<xiiCppProject>()->m_CompilerPreferences);
+}
+
+xiiStatus xiiCppProject::TestCompiler(const xiiCompilerPreferences& compiler)
+{
+  if (compiler.m_Compiler != GetSdkCompiler())
   {
-    return xiiStatus(xiiFmt("The currently configured compiler is incompatible with this SDK. The SDK was built with '{}' but the currently configured compiler is '{}'.", CompilerToString(GetSdkCompiler()), CompilerToString(pProjectPreferences->m_CompilerPreferences.m_Compiler)));
+    return xiiStatus(xiiFmt("This SDK requires {} {}. Select an SDK-compatible compiler in C++ Projects preferences, or use an SDK built with {}.", CompilerToString(GetSdkCompiler()), GetSdkCompilerMajorVersion(), CompilerToString(compiler.m_Compiler)));
   }
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
-  // As CMake is selecting the compiler it is hard to do a version check, for now just assume they are compatible.
+  // Visual Studio's installed compiler and toolset are validated by CMake configuration.
   if (GetSdkCompiler() == xiiCompiler::Vs2026 || GetSdkCompiler() == xiiCompiler::Vs2022)
-    return XII_SUCCESS;
-
-  if (GetSdkCompiler() == xiiCompiler::Clang)
   {
-    if (!xiiOSFile::ExistsFile(pProjectPreferences->m_CompilerPreferences.m_sRcCompiler))
-    {
-      return xiiStatus(xiiFmt("The selected RC compiler '{}' does not exist on disk.", pProjectPreferences->m_CompilerPreferences.m_sRcCompiler));
-    }
+    return XII_SUCCESS;
+  }
+  if (!xiiOSFile::ExistsFile(compiler.m_sRcCompiler))
+  {
+    return xiiStatus(xiiFmt("The Windows resource compiler '{}' does not exist. Install the Windows SDK or select rc.exe in C++ Projects preferences.", compiler.m_sRcCompiler));
   }
 #endif
 
-  xiiString cCompilerVersion, cppCompilerVersion;
-  if (TestCompilerExecutable(pProjectPreferences->m_CompilerPreferences.m_sCCompiler, &cCompilerVersion).Failed())
+  xiiString sCVersion, sCppVersion;
+  XII_SUCCEED_OR_RETURN(TestCompilerExecutable(compiler.m_sCCompiler, compiler.m_Compiler, &sCVersion));
+  XII_SUCCEED_OR_RETURN(TestCompilerExecutable(compiler.m_sCppCompiler, compiler.m_Compiler, &sCppVersion));
+  if (!IsSdkVersion(sCVersion) || !IsSdkVersion(sCppVersion))
   {
-    return xiiStatus("The selected C Compiler doesn't work or doesn't exist.");
+    return xiiStatus(xiiFmt("This SDK requires {} major version {}. The selected C and C++ compilers report {} and {}. Select a matching compiler pair in C++ Projects preferences.", CompilerToString(GetSdkCompiler()), GetSdkCompilerMajorVersion(), sCVersion, sCppVersion));
   }
-  if (TestCompilerExecutable(pProjectPreferences->m_CompilerPreferences.m_sCppCompiler, &cppCompilerVersion).Failed())
-  {
-    return xiiStatus("The selected C++ Compiler doesn't work or doesn't exist.");
-  }
-
-  xiiStringBuilder sdkCompilerMajorVersion = GetSdkCompilerMajorVersion();
-  sdkCompilerMajorVersion.Append('.');
-  if (!cCompilerVersion.StartsWith(sdkCompilerMajorVersion))
-  {
-    return xiiStatus(xiiFmt("The selected C Compiler has an incompatible version. The SDK was built with version {} but the compiler has version {}.", GetSdkCompilerMajorVersion(), cCompilerVersion));
-  }
-  if (!cppCompilerVersion.StartsWith(sdkCompilerMajorVersion))
-  {
-    return xiiStatus(xiiFmt("The selected C++ Compiler has an incompatible version. The SDK was built with version {} but the compiler has version {}.", GetSdkCompilerMajorVersion(), cppCompilerVersion));
-  }
-
   return XII_SUCCESS;
 }
 
@@ -1127,7 +1162,8 @@ void xiiCppProject::LoadPreferences()
   XII_PROFILE_SCOPE("Preferences");
   auto pProjectPreferences = xiiEditorSettings::QuerySettings<xiiCppProject>();
 
-  xiiCompiler::Enum sdkCompiler = GetSdkCompiler();
+  const xiiCompiler::Enum sdkCompiler = GetSdkCompiler();
+  s_MachineSpecificCompilers.Clear();
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
 
@@ -1206,7 +1242,7 @@ void xiiCppProject::LoadPreferences()
     clangCppDefaultPath.ReplaceLast(".exe", "++.exe");
 
     xiiStringView clangMajorSdkVersion = XII_PP_STRINGIFY(__clang_major__) ".";
-    if (TestCompilerExecutable(clangDefaultPath, &clangVersion).Succeeded() && TestCompilerExecutable(clangCppDefaultPath).Succeeded() && clangVersion.StartsWith(clangMajorSdkVersion))
+    if (TestCompilerExecutable(clangDefaultPath, xiiCompiler::Clang, &clangVersion).Succeeded() && TestCompilerExecutable(clangCppDefaultPath, xiiCompiler::Clang).Succeeded() && clangVersion.StartsWith(clangMajorSdkVersion))
     {
       xiiStringBuilder clangNiceName;
       clangNiceName.SetFormat("Clang (system default = {})", clangVersion);
@@ -1217,23 +1253,21 @@ void xiiCppProject::LoadPreferences()
 #endif
 
 
+  AddCompilerVersions(s_MachineSpecificCompilers, xiiCompiler::Clang, sdkCompiler == xiiCompiler::Clang ? GetSdkCompilerMajorVersion().GetView() : xiiStringView());
 #if XII_ENABLED(XII_PLATFORM_LINUX)
-  AddCompilerVersions(s_MachineSpecificCompilers, xiiCppProject::GetSdkCompiler(), xiiCppProject::GetSdkCompilerMajorVersion());
+  AddCompilerVersions(s_MachineSpecificCompilers, xiiCompiler::Gcc, sdkCompiler == xiiCompiler::Gcc ? GetSdkCompilerMajorVersion().GetView() : xiiStringView());
 #endif
 
-#if XII_ENABLED(XII_COMPILER_CLANG)
-  s_MachineSpecificCompilers.PushBack({"Clang (Custom)", xiiCompiler::Clang, "", "", true});
+  s_MachineSpecificCompilers.PushBack({"Clang (Custom)", xiiCompiler::Clang, "", "", true, sdkCompiler == xiiCompiler::Clang});
+
+#if XII_ENABLED(XII_PLATFORM_LINUX)
+  s_MachineSpecificCompilers.PushBack({"GCC (Custom)", xiiCompiler::Gcc, "", "", true, sdkCompiler == xiiCompiler::Gcc});
 #endif
 
-#if XII_ENABLED(XII_PLATFORM_LINUX) && XII_ENABLED(XII_COMPILER_GCC)
-  s_MachineSpecificCompilers.PushBack({"Gcc (Custom)", xiiCompiler::Gcc, "", "", true});
-#endif
-
-  if (pProjectPreferences->m_CompilerPreferences.m_Compiler != sdkCompiler)
+  // Preserve explicit custom paths, but recover stale automatic choices after changing SDKs or machines.
+  if (!pProjectPreferences->m_CompilerPreferences.m_bCustomCompiler && TestCompiler().Failed())
   {
-    xiiStringBuilder incompatibleCompilerName = reinterpret_cast<const char*>(u8"⚠ ");
-    incompatibleCompilerName.SetFormat(reinterpret_cast<const char*>(u8"⚠ {} (incompatible)"), xiiCppProject::CompilerToString(pProjectPreferences->m_CompilerPreferences.m_Compiler));
-    s_MachineSpecificCompilers.PushBack({incompatibleCompilerName, pProjectPreferences->m_CompilerPreferences.m_Compiler, pProjectPreferences->m_CompilerPreferences.m_sCCompiler, pProjectPreferences->m_CompilerPreferences.m_sCppCompiler, pProjectPreferences->m_CompilerPreferences.m_bCustomCompiler});
+    ForceSdkCompatibleCompiler().IgnoreResult();
   }
 }
 
@@ -1241,17 +1275,25 @@ xiiResult xiiCppProject::ForceSdkCompatibleCompiler()
 {
   xiiCppProject* pProjectPreferences = xiiEditorSettings::QuerySettings<xiiCppProject>();
 
-  xiiCompiler::Enum sdkCompiler = GetSdkCompiler();
-  for (auto& compiler : s_MachineSpecificCompilers)
+  if (TestCompiler().Succeeded())
   {
-    if (!compiler.m_bIsCustom && compiler.m_Compiler == sdkCompiler)
+    return XII_SUCCESS;
+  }
+  xiiCompiler::Enum sdkCompiler = GetSdkCompiler();
+  for (const auto& compiler : s_MachineSpecificCompilers)
+  {
+    if (!compiler.m_bIsCustom && compiler.m_bSdkCompatible && compiler.m_Compiler == sdkCompiler)
     {
-      pProjectPreferences->m_CompilerPreferences.m_Compiler        = sdkCompiler;
-      pProjectPreferences->m_CompilerPreferences.m_sCCompiler      = compiler.m_sCCompiler;
-      pProjectPreferences->m_CompilerPreferences.m_sCppCompiler    = compiler.m_sCppCompiler;
-      pProjectPreferences->m_CompilerPreferences.m_bCustomCompiler = compiler.m_bIsCustom;
-
-      return XII_SUCCESS;
+      auto candidate              = pProjectPreferences->m_CompilerPreferences;
+      candidate.m_Compiler        = sdkCompiler;
+      candidate.m_sCCompiler      = compiler.m_sCCompiler;
+      candidate.m_sCppCompiler    = compiler.m_sCppCompiler;
+      candidate.m_bCustomCompiler = false;
+      if (TestCompiler(candidate).Succeeded())
+      {
+        pProjectPreferences->m_CompilerPreferences = std::move(candidate);
+        return XII_SUCCESS;
+      }
     }
   }
 

@@ -47,10 +47,16 @@ struct XII_EDITORFRAMEWORK_DLL xiiCompiler
     Vs2026,
 #endif
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS)
-    Default = Vs2026
-#else
+#if XII_ENABLED(XII_COMPILER_CLANG)
+    Default = Clang
+#elif XII_ENABLED(XII_COMPILER_GCC)
     Default = Gcc
+#elif XII_ENABLED(XII_PLATFORM_WINDOWS) && _MSC_VER >= 1950
+    Default = Vs2026
+#elif XII_ENABLED(XII_PLATFORM_WINDOWS)
+    Default = Vs2022
+#else
+#  error Unsupported SDK compiler
 #endif
   };
 };
@@ -60,7 +66,7 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_EDITORFRAMEWORK_DLL, xiiCompiler);
 struct XII_EDITORFRAMEWORK_DLL xiiCompilerPreferences
 {
   xiiEnum<xiiCompiler> m_Compiler;
-  bool                 m_bCustomCompiler;
+  bool                 m_bCustomCompiler = false;
   xiiString            m_sCppCompiler;
   xiiString            m_sCCompiler;
   xiiString            m_sRcCompiler;
@@ -88,6 +94,7 @@ struct XII_EDITORFRAMEWORK_DLL xiiCppProject : public xiiEditorSettings
     xiiString            m_sCCompiler;
     xiiString            m_sCppCompiler;
     bool                 m_bIsCustom;
+    bool                 m_bSdkCompatible = true;
   };
 
   enum class ModifyResult
@@ -130,6 +137,9 @@ struct XII_EDITORFRAMEWORK_DLL xiiCppProject : public xiiEditorSettings
   static xiiString GetSdkCompilerMajorVersion();
 
   static xiiStatus TestCompiler();
+
+  /// Validates the executable identities and SDK compatibility without changing saved preferences.
+  static xiiStatus TestCompiler(const xiiCompilerPreferences& compiler);
 
   static const char* GetCMakePath();
 
