@@ -642,9 +642,11 @@ void xiiGameApplication::ReportStatus(xiiStringView sStage, xiiStringView sDetai
 void xiiGameApplication::Run_InputUpdate()
 {
   SUPER::Run_InputUpdate();
-  if (auto* active = GetActiveGameState())
-    if (active->WasQuitRequested())
-      RequestQuit();
+  // The editor owns play-mode teardown and must keep its engine process alive.
+  if (!xiiStartup::HasApplicationTag("editorengineprocess"))
+    if (auto* active = GetActiveGameState())
+      if (active->WasQuitRequested())
+        RequestQuit();
   if (auto* state = xiiGameState::GetActiveGameState())
   {
     if (state->GetWorldRevision() != m_uiConfiguredWorldRevision)
