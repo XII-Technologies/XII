@@ -11,6 +11,8 @@ if(XII_CMAKE_PLATFORM_WINDOWS)
   target_link_libraries(${PROJECT_NAME}
     PRIVATE
     Rpcrt4.lib
+    Ws2_32.lib
+    Iphlpapi.lib
   )
 endif()
 
