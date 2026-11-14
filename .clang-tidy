@@ -1,6 +1,9 @@
 # XII Engine | LLVM 23.1.x | C++23 | strict, source-owned analysis
-# Authoritative policies: Coding-Standards.md, .clang-format, .editorconfig.
-# Exclude third-party and generated translation units in the invocation script.
+
+# Authoritative policies: Coding-Standards.md, .clang-format, .editorconfig
+
+# Exclude third-party and generated translation units in the invocation script
+
 ---
 Checks: >-
   -*,
@@ -209,7 +212,8 @@ Checks: >-
   readability-uppercase-literal-suffix,
   readability-use-concise-preprocessor-directives
 
-# Target of strict compliance. CI must gate newly introduced warnings first.
+# Target of strict compliance. CI must gate newly introduced warnings first
+
 WarningsAsErrors: '*'
 HeaderFilterRegex: '(^|.*/)Source/.*'
 ExcludeHeaderFilterRegex: '(^|/)(ThirdParty|External|Generated|_deps)(/|$)'
@@ -218,75 +222,81 @@ FormatStyle: file
 
 CheckOptions:
 
-  # §12: assertion expressions must not mutate observable state.
-  - key: bugprone-assert-side-effect.AssertMacros
+# §12: assertion expressions must not mutate observable state
+
+- key: bugprone-assert-side-effect.AssertMacros
     value: 'assert,XII_ASSERT_DEV,XII_ASSERT_RELEASE,XII_ASSERT_DEBUG,XII_ASSERT_ALWAYS'
-  - key: bugprone-assert-side-effect.CheckFunctionCalls
+- key: bugprone-assert-side-effect.CheckFunctionCalls
     value: 'false'
-  - key: bugprone-unused-return-value.AllowCastToVoid
+- key: bugprone-unused-return-value.AllowCastToVoid
     value: 'false'
 
-  # §7.6-7.7: xiiResult and standard error-bearing results must be inspected.
-  - key: bugprone-unused-return-value.CheckedReturnTypes
+# §7.6-7.7: xiiResult and standard error-bearing results must be inspected
+
+- key: bugprone-unused-return-value.CheckedReturnTypes
     value: '^::xiiResult$;^::std::error_code$;^::std::error_condition$;^::std::errc$;^::std::expected$;^::boost::system::error_code$'
 
-  # §2.5: enforce direct dependencies but avoid mass deleting PCH-dependent includes.
-  - key: misc-include-cleaner.MissingIncludes
+# §2.5: enforce direct dependencies but avoid mass deleting PCH-dependent includes
+
+- key: misc-include-cleaner.MissingIncludes
     value: 'true'
-  - key: misc-include-cleaner.UnusedIncludes
+- key: misc-include-cleaner.UnusedIncludes
     value: 'false'
 
-  # Preserve XII existing assignment-style default member initialization.
-  - key: modernize-use-default-member-init.UseAssignment
+# Preserve XII existing assignment-style default member initialization
+
+- key: modernize-use-default-member-init.UseAssignment
     value: 'true'
 
-  # §2.2 proposed change: all branches and loops must have braces.
-  - key: readability-braces-around-statements.ShortStatementLines
+# §2.2 proposed change: all branches and loops must have braces
+
+- key: readability-braces-around-statements.ShortStatementLines
     value: '0'
 
-  # §3: deterministic subset of identifier naming; typed prefixes need XII AST checker.
-  - key: readability-identifier-naming.CheckAnonFieldInParent
+# §3: deterministic subset of identifier naming; typed prefixes need XII AST checker
+
+- key: readability-identifier-naming.CheckAnonFieldInParent
     value: 'true'
-  - key: readability-identifier-naming.ClassConstantCase
+- key: readability-identifier-naming.ClassConstantCase
     value: 'CamelCase'
-  - key: readability-identifier-naming.ClassConstexprCase
+- key: readability-identifier-naming.ClassConstexprCase
     value: 'CamelCase'
-  - key: readability-identifier-naming.ConceptCase
+- key: readability-identifier-naming.ConceptCase
     value: 'CamelCase'
-  - key: readability-identifier-naming.EnumConstantCase
+- key: readability-identifier-naming.EnumConstantCase
     value: 'CamelCase'
-  - key: readability-identifier-naming.FunctionCase
+- key: readability-identifier-naming.FunctionCase
     value: 'CamelCase'
-  - key: readability-identifier-naming.GetConfigPerFile
+- key: readability-identifier-naming.GetConfigPerFile
     value: 'true'
-  - key: readability-identifier-naming.GlobalFunctionCase
+- key: readability-identifier-naming.GlobalFunctionCase
     value: 'CamelCase'
-  - key: readability-identifier-naming.IgnoreMainLikeFunctions
+- key: readability-identifier-naming.IgnoreMainLikeFunctions
     value: 'true'
-  - key: readability-identifier-naming.MacroDefinitionCase
+- key: readability-identifier-naming.MacroDefinitionCase
     value: 'UPPER_CASE'
-  - key: readability-identifier-naming.MethodCase
+- key: readability-identifier-naming.MethodCase
     value: 'CamelCase'
-  - key: readability-identifier-naming.PrivateMemberCase
+- key: readability-identifier-naming.PrivateMemberCase
     value: 'aNy_CasE'
-  - key: readability-identifier-naming.PrivateMemberIgnoredRegexp
+- key: readability-identifier-naming.PrivateMemberIgnoredRegexp
     value: '^s_.*$'
-  - key: readability-identifier-naming.PrivateMemberPrefix
+- key: readability-identifier-naming.PrivateMemberPrefix
     value: 'm_'
-  - key: readability-identifier-naming.ProtectedMemberCase
+- key: readability-identifier-naming.ProtectedMemberCase
     value: 'aNy_CasE'
-  - key: readability-identifier-naming.ProtectedMemberIgnoredRegexp
+- key: readability-identifier-naming.ProtectedMemberIgnoredRegexp
     value: '^s_.*$'
-  - key: readability-identifier-naming.ProtectedMemberPrefix
+- key: readability-identifier-naming.ProtectedMemberPrefix
     value: 'm_'
-  - key: readability-identifier-naming.ScopedEnumConstantCase
+- key: readability-identifier-naming.ScopedEnumConstantCase
     value: 'CamelCase'
-  - key: readability-identifier-naming.TemplateParameterCase
+- key: readability-identifier-naming.TemplateParameterCase
     value: 'CamelCase'
-  - key: readability-identifier-naming.TemplateTemplateParameterCase
+- key: readability-identifier-naming.TemplateTemplateParameterCase
     value: 'CamelCase'
-  - key: readability-identifier-naming.TypeTemplateParameterCase
+- key: readability-identifier-naming.TypeTemplateParameterCase
     value: 'CamelCase'
-  - key: readability-identifier-naming.ValueTemplateParameterCase
+- key: readability-identifier-naming.ValueTemplateParameterCase
     value: 'CamelCase'
 ...
