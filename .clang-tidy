@@ -2,7 +2,19 @@
 
 # Authoritative policies: Coding-Standards.md, .clang-format, .editorconfig
 
+# Reviewed source: XII-Technologies/XII / Development (November 2026)
+
+# Update §2.2 to require ALL control-flow braces before gating this profile
+
+# No automatic renaming of public/reflected/serialized interfaces
+
+# Type-specific XII prefixes and architecture contracts require custom AST checks
+
+# This YAML is not a formatter. Run pinned clang-format-23 independently
+
 # Exclude third-party and generated translation units in the invocation script
+
+# Validate with clang-tidy-23 --verify-config before enabling in CI
 
 ---
 Checks: >-
@@ -224,79 +236,49 @@ CheckOptions:
 
 # §12: assertion expressions must not mutate observable state
 
-- key: bugprone-assert-side-effect.AssertMacros
-    value: 'assert,XII_ASSERT_DEV,XII_ASSERT_RELEASE,XII_ASSERT_DEBUG,XII_ASSERT_ALWAYS'
-- key: bugprone-assert-side-effect.CheckFunctionCalls
-    value: 'false'
-- key: bugprone-unused-return-value.AllowCastToVoid
-    value: 'false'
+  bugprone-assert-side-effect.AssertMacros: 'assert,XII_ASSERT_DEV,XII_ASSERT_RELEASE,XII_ASSERT_DEBUG,XII_ASSERT_ALWAYS'
+  bugprone-assert-side-effect.CheckFunctionCalls: 'false'
+  bugprone-unused-return-value.AllowCastToVoid: 'false'
 
 # §7.6-7.7: xiiResult and standard error-bearing results must be inspected
 
-- key: bugprone-unused-return-value.CheckedReturnTypes
-    value: '^::xiiResult$;^::std::error_code$;^::std::error_condition$;^::std::errc$;^::std::expected$;^::boost::system::error_code$'
+  bugprone-unused-return-value.CheckedReturnTypes: '^::xiiResult$;^::std::error_code$;^::std::error_condition$;^::std::errc$;^::std::expected$;^::boost::system::error_code$'
 
 # §2.5: enforce direct dependencies but avoid mass deleting PCH-dependent includes
 
-- key: misc-include-cleaner.MissingIncludes
-    value: 'true'
-- key: misc-include-cleaner.UnusedIncludes
-    value: 'false'
+  misc-include-cleaner.MissingIncludes: 'true'
+  misc-include-cleaner.UnusedIncludes: 'false'
 
 # Preserve XII existing assignment-style default member initialization
 
-- key: modernize-use-default-member-init.UseAssignment
-    value: 'true'
+  modernize-use-default-member-init.UseAssignment: 'true'
 
 # §2.2 proposed change: all branches and loops must have braces
 
-- key: readability-braces-around-statements.ShortStatementLines
-    value: '0'
+  readability-braces-around-statements.ShortStatementLines: '0'
 
 # §3: deterministic subset of identifier naming; typed prefixes need XII AST checker
 
-- key: readability-identifier-naming.CheckAnonFieldInParent
-    value: 'true'
-- key: readability-identifier-naming.ClassConstantCase
-    value: 'CamelCase'
-- key: readability-identifier-naming.ClassConstexprCase
-    value: 'CamelCase'
-- key: readability-identifier-naming.ConceptCase
-    value: 'CamelCase'
-- key: readability-identifier-naming.EnumConstantCase
-    value: 'CamelCase'
-- key: readability-identifier-naming.FunctionCase
-    value: 'CamelCase'
-- key: readability-identifier-naming.GetConfigPerFile
-    value: 'true'
-- key: readability-identifier-naming.GlobalFunctionCase
-    value: 'CamelCase'
-- key: readability-identifier-naming.IgnoreMainLikeFunctions
-    value: 'true'
-- key: readability-identifier-naming.MacroDefinitionCase
-    value: 'UPPER_CASE'
-- key: readability-identifier-naming.MethodCase
-    value: 'CamelCase'
-- key: readability-identifier-naming.PrivateMemberCase
-    value: 'aNy_CasE'
-- key: readability-identifier-naming.PrivateMemberIgnoredRegexp
-    value: '^s_.*$'
-- key: readability-identifier-naming.PrivateMemberPrefix
-    value: 'm_'
-- key: readability-identifier-naming.ProtectedMemberCase
-    value: 'aNy_CasE'
-- key: readability-identifier-naming.ProtectedMemberIgnoredRegexp
-    value: '^s_.*$'
-- key: readability-identifier-naming.ProtectedMemberPrefix
-    value: 'm_'
-- key: readability-identifier-naming.ScopedEnumConstantCase
-    value: 'CamelCase'
-- key: readability-identifier-naming.TemplateParameterCase
-    value: 'CamelCase'
-- key: readability-identifier-naming.TemplateTemplateParameterCase
-    value: 'CamelCase'
-- key: readability-identifier-naming.TypeTemplateParameterCase
-    value: 'CamelCase'
-- key: readability-identifier-naming.ValueTemplateParameterCase
-    value: 'CamelCase'
+  readability-identifier-naming.CheckAnonFieldInParent: 'true'
+  readability-identifier-naming.ClassConstantCase: 'CamelCase'
+  readability-identifier-naming.ClassConstexprCase: 'CamelCase'
+  readability-identifier-naming.ConceptCase: 'CamelCase'
+  readability-identifier-naming.EnumConstantCase: 'CamelCase'
+  readability-identifier-naming.FunctionCase: 'CamelCase'
+  readability-identifier-naming.GetConfigPerFile: 'true'
+  readability-identifier-naming.GlobalFunctionCase: 'CamelCase'
+  readability-identifier-naming.IgnoreMainLikeFunctions: 'true'
+  readability-identifier-naming.MacroDefinitionCase: 'UPPER_CASE'
+  readability-identifier-naming.MethodCase: 'CamelCase'
+  readability-identifier-naming.PrivateMemberCase: 'aNy_CasE'
+  readability-identifier-naming.PrivateMemberIgnoredRegexp: '^s_.*$'
+  readability-identifier-naming.PrivateMemberPrefix: 'm_'
+  readability-identifier-naming.ProtectedMemberCase: 'aNy_CasE'
+  readability-identifier-naming.ProtectedMemberIgnoredRegexp: '^s_.*$'
+  readability-identifier-naming.ProtectedMemberPrefix: 'm_'
+  readability-identifier-naming.ScopedEnumConstantCase: 'CamelCase'
+  readability-identifier-naming.TemplateParameterCase: 'CamelCase'
+  readability-identifier-naming.TemplateTemplateParameterCase: 'CamelCase'
+  readability-identifier-naming.TypeTemplateParameterCase: 'CamelCase'
+  readability-identifier-naming.ValueTemplateParameterCase: 'CamelCase'
 ...
