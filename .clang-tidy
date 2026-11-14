@@ -246,8 +246,10 @@ CheckOptions:
 
 # §2.5: enforce direct dependencies but avoid mass deleting PCH-dependent includes
 
+  misc-include-cleaner.IgnoreHeaders: '.*PCH\.h;.*DLL\.h'
   misc-include-cleaner.MissingIncludes: 'true'
-  misc-include-cleaner.UnusedIncludes: 'false'
+  misc-include-cleaner.UnusedIncludes: 'true'
+  misc-include-cleaner.DeduplicateFindings: 'true'
 
 # Preserve XII existing assignment-style default member initialization
 
