@@ -560,6 +560,19 @@ void TestSceneWindow(xiiQtEditorApp& editor, xiiStringView sProjectDirectory)
       PumpUntil([] { return false; }, 200);
       XII_TEST_BOOL(!xiiEditorEngineProcessConnection::GetSingleton()->IsProcessCrashed());
 
+      // Stopping Play must leave the engine process available for subsequent sessions and document IPC.
+      for (xiiUInt32 iteration = 0; iteration < 2; ++iteration)
+      {
+        scene->TriggerGameModePlay(false);
+        if (!XII_TEST_BOOL(PumpUntil([&] { return scene->GetGameMode() == GameMode::Play; }, 10000)))
+          return;
+        XII_TEST_BOOL(scene->StopGameMode());
+        if (!XII_TEST_BOOL(PumpUntil([&] { return scene->GetGameMode() == GameMode::Off; }, 10000)))
+          return;
+        XII_TEST_BOOL(!xiiEditorEngineProcessConnection::GetSingleton()->IsProcessCrashed());
+        XII_TEST_STATUS(scene->WaitForEngineStatusLoaded(xiiTime::MakeFromSeconds(10)));
+      }
+
       // Closing the document can precede processing the asynchronous request to stop Play.
       // The engine context must release the game state's world references before world destruction.
       scene->TriggerGameModePlay(false);

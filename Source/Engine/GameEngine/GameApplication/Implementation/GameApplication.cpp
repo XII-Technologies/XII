@@ -48,6 +48,10 @@ xiiGameApplication::xiiGameApplication(xiiStringView sAppName, xiiStringView sPr
 
   m_CVarChangeSubscriptionID = cvar_AppVSync.m_CVarEvents.AddEventHandler(xiiMakeDelegate(&xiiGameApplication::OnVSyncChanged, this));
   m_Settings.m_SettingsChangedEvent.AddEventHandler(xiiMakeDelegate(&xiiGameApplication::OnSettingsChanged, this), m_SettingsSubscription);
+  m_StaticEvents.AddEventHandler([this](const xiiGameApplicationStaticEvent& event) {
+    if (event.m_Type == xiiGameApplicationStaticEvent::Type::AfterGameStateActivated)
+      m_uiConfiguredWorldRevision = 0;
+  });
   if (auto* cap = static_cast<xiiCVarInt*>(xiiCVar::FindCVarByName("App.FrameLimit")))
     m_FrameLimitSubscriptionID = cap->m_CVarEvents.AddEventHandler([this, cap](const xiiCVarEvent& event) {
       if (event.m_EventType != xiiCVarEvent::ValueChanged || !m_bSettingsInitialized)
@@ -642,9 +646,11 @@ void xiiGameApplication::ReportStatus(xiiStringView sStage, xiiStringView sDetai
 void xiiGameApplication::Run_InputUpdate()
 {
   SUPER::Run_InputUpdate();
-  if (auto* active = GetActiveGameState())
-    if (active->WasQuitRequested())
-      RequestQuit();
+  // The editor owns play-mode teardown and must keep its engine process alive.
+  if (!xiiStartup::HasApplicationTag("editorengineprocess"))
+    if (auto* active = GetActiveGameState())
+      if (active->WasQuitRequested())
+        RequestQuit();
   if (auto* state = xiiGameState::GetActiveGameState())
   {
     if (state->GetWorldRevision() != m_uiConfiguredWorldRevision)
@@ -706,9 +712,8 @@ xiiUInt32 xiiGameApplication::GetFrameLimit() const
 
 void xiiGameApplication::ApplyViewSettings()
 {
-  // Editor view/camera preferences are owned and synchronized by the editor's viewport controls.
-  if (xiiStartup::HasApplicationTag("editorengineprocess"))
-    return;
+  // Runtime presentation settings also apply to Play-the-Game's main view. Editor
+  // viewports keep their independently synchronized preferences.
   auto* state = xiiGameState::GetActiveGameState();
   if (!state || !state->GetMainWorld())
     return;

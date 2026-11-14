@@ -273,6 +273,49 @@ XII_CREATE_SIMPLE_TEST(RendererAssets, PipelineAssetLibrary)
     XII_TEST_RESULT(lookup.WriteBytes(lookupTable.GetData(), lookupTable.GetElementCount()));
 }
 
+XII_CREATE_SIMPLE_TEST_GROUP(PlayModePipelines);
+XII_CREATE_SIMPLE_TEST(PlayModePipelines, DebugOverlay)
+{
+  XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(">sdk/Data/Base", "PlayModePipelineTest"));
+  XII_TEST_RESULT(xiiFileSystem::AddDataDirectory({}, "PlayModePipelineTest", ":", xiiDataDirUsage::AllowWrites));
+  XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("PlayModePipelineTest"));
+  for (const xiiStringView dependency : {"SceneShadowCascade", "SceneDirectionalShadows", "SceneSpotShadows", "SceneAtmosphere", "SceneScreenSpaceReflections", "SceneTransparency", "SceneParticles", "SceneScreenSpaceIrradiance", "Scene", "Editor"})
+    xiiResourceManager::RegisterNamedResource(xiiPipelineLibraryTestIdentity(dependency), xiiStringBuilder(xiiFileSystem::GetSdkRootDirectory(), "/Data/Base/AssetCache/Common/RenderPipelines/", dependency, ".xiiBinRenderPipeline"));
+  for (const xiiStringView name : {"Scene", "Editor"})
+  {
+    const xiiStringBuilder  source(xiiFileSystem::GetSdkRootDirectory(), "/Data/Base/RenderPipelines/", name, ".xiiRenderPipelineAsset");
+    PipelineLibraryDocument document(source);
+    const auto              opened = document.LoadDocument();
+    XII_TEST_STATUS(opened);
+    if (opened.Failed())
+      return;
+    PipelineLibraryContext context;
+    if (!XII_TEST_RESULT(context.Import(document)))
+      return;
+    xiiExportDocumentMsgToEngine message;
+    message.m_sOutputFile = xiiStringBuilder(xiiFileSystem::GetSdkRootDirectory(), "/Data/Base/AssetCache/Common/RenderPipelines/", name, ".xiiBinRenderPipeline");
+    message.m_uiAssetHash = 1;
+    message.m_uiVersion   = 7;
+    const auto exported   = context.ExportDocument(&message);
+    XII_TEST_STATUS(exported);
+    if (exported.Failed())
+      return;
+    const auto                                 resource = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(message.m_sOutputFile);
+    xiiResourceLock<xiiRenderPipelineResource> loaded(resource, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+    if (!XII_TEST_BOOL(loaded.IsValid() && loaded->GetPipeline()))
+      return;
+    xiiUInt32 overlays = 0;
+    for (const auto& pass : loaded->GetPipeline()->GetDescriptor().m_Passes)
+      if (pass.m_pType->GetTypeName() == "xiiDebugOverlayPass")
+      {
+        xiiVariant enabled;
+        if (!pass.m_Properties.TryGetValue("Enabled", enabled) || enabled.Get<bool>())
+          ++overlays;
+      }
+    XII_TEST_INT(overlays, 1);
+  }
+}
+
 XII_CREATE_SIMPLE_TEST(NodeLayout, CanonicalScene)
 {
   if (!XII_TEST_RESULT(xiiFileSystem::AddDataDirectory(">sdk/Data/Base", "PipelineLayoutTest", "PipelineLayout", xiiDataDirUsage::ReadOnly)))

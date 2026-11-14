@@ -9,7 +9,6 @@
 #include <Foundation/Utilities/AssetFileHeader.h>
 #include <Foundation/Utilities/CommandLineUtils.h>
 #include <GameEngine/Components/GamePlay/PlayerStartPointComponent.h>
-#include <GameEngine/Configuration/InputConfig.h>
 #include <GameEngine/GameApplication/GameApplication.h>
 #include <GameEngine/GameState/FallbackGameState.h>
 #include <GraphicsCore/Components/Render/CameraComponent.h>
@@ -84,37 +83,29 @@ xiiResult xiiFallbackGameState::SpawnPlayer(xiiStringView sStartPosition, const 
   return XII_FAILURE;
 }
 
-static xiiHybridArray<xiiGameAppInputConfig, 16> g_AllInput;
-
-static void RegisterInputAction(const char* szInputSet, const char* szInputAction, const char* szKey1, const char* szKey2 = nullptr, const char* szKey3 = nullptr)
+static void RegisterInputAction(const char* szInputSet, const char* szInputAction, const char* szKey1, const char* szKey2 = nullptr, float fScale1 = 1.0f)
 {
-  xiiGameAppInputConfig& gacfg = g_AllInput.ExpandAndGetRef();
-  gacfg.m_sInputSet            = szInputSet;
-  gacfg.m_sInputAction         = szInputAction;
-  gacfg.m_sInputSlotTrigger[0] = szKey1;
-  gacfg.m_sInputSlotTrigger[1] = szKey2;
-  gacfg.m_sInputSlotTrigger[2] = szKey3;
-  gacfg.m_bApplyTimeScaling    = true;
-
   xiiInputActionConfig cfg;
 
   cfg                     = xiiInputManager::GetInputActionConfig(szInputSet, szInputAction);
   cfg.m_bApplyTimeScaling = true;
 
   if (szKey1 != nullptr)
+  {
     cfg.m_sInputSlotTrigger[0] = szKey1;
+    cfg.m_fInputSlotScale[0]   = fScale1;
+  }
   if (szKey2 != nullptr)
+  {
     cfg.m_sInputSlotTrigger[1] = szKey2;
-  if (szKey3 != nullptr)
-    cfg.m_sInputSlotTrigger[2] = szKey3;
+    cfg.m_fInputSlotScale[1]   = 1.0f;
+  }
 
   xiiInputManager::SetInputActionConfig(szInputSet, szInputAction, cfg, true);
 }
 
 void xiiFallbackGameState::ConfigureInputActions()
 {
-  g_AllInput.Clear();
-
   RegisterInputAction("Game", "MoveForwards", xiiInputSlot_KeyW);
   RegisterInputAction("Game", "MoveBackwards", xiiInputSlot_KeyS);
   RegisterInputAction("Game", "MoveLeft", xiiInputSlot_KeyA);
@@ -123,10 +114,12 @@ void xiiFallbackGameState::ConfigureInputActions()
   RegisterInputAction("Game", "MoveDown", xiiInputSlot_KeyQ);
   RegisterInputAction("Game", "Run", xiiInputSlot_KeyLeftShift);
 
-  RegisterInputAction("Game", "TurnLeft", xiiInputSlot_MouseMoveNegX, xiiInputSlot_KeyLeft);
-  RegisterInputAction("Game", "TurnRight", xiiInputSlot_MouseMovePosX, xiiInputSlot_KeyRight);
-  RegisterInputAction("Game", "TurnUp", xiiInputSlot_MouseMoveNegY, xiiInputSlot_KeyUp);
-  RegisterInputAction("Game", "TurnDown", xiiInputSlot_MouseMovePosY, xiiInputSlot_KeyDown);
+  // Mouse deltas are pixels and never time-scaled. Keep keyboard turning at 180 degrees/second,
+  // while one mouse pixel turns the camera by 0.36 degrees at the default device sensitivity.
+  RegisterInputAction("Game", "TurnLeft", xiiInputSlot_MouseMoveNegX, xiiInputSlot_KeyLeft, 0.002f);
+  RegisterInputAction("Game", "TurnRight", xiiInputSlot_MouseMovePosX, xiiInputSlot_KeyRight, 0.002f);
+  RegisterInputAction("Game", "TurnUp", xiiInputSlot_MouseMoveNegY, xiiInputSlot_KeyUp, 0.002f);
+  RegisterInputAction("Game", "TurnDown", xiiInputSlot_MouseMovePosY, xiiInputSlot_KeyDown, 0.002f);
 
   RegisterInputAction("Game", "NextCamera", xiiInputSlot_KeyPageDown);
   RegisterInputAction("Game", "PrevCamera", xiiInputSlot_KeyPageUp);
@@ -205,13 +198,6 @@ void xiiFallbackGameState::ProcessInput()
 {
   SUPER::ProcessInput();
 
-
-  {
-    float fProgress = 0.0f;
-    IsLoadingSceneInBackground(&fProgress);
-
-    xiiDebugRenderer::DrawInfoText(m_pMainWorld, xiiDebugTextPlacement::TopCenter, "Loading", xiiFmt("Loading: {}%%", xiiMath::RoundToInt(fProgress * 100.0f)));
-  }
 
   {
     if (xiiInputManager::GetExclusiveInputSet().IsEmpty() || xiiInputManager::GetExclusiveInputSet() == "xiiPlayer")

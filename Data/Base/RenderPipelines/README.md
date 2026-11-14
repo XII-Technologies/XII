@@ -2,12 +2,14 @@
 
 | Resource | Use |
 | --- | --- |
-| Scene | World meshes, materials, depth, basic directional/local lighting and presentation. |
+| Scene | World meshes, materials, depth, basic directional/local lighting, debug overlays and presentation. |
 | Editor | Scene rendering plus selection, picking, visualization, icons and debug overlays before presentation. |
 
 The source documents are ordinary editable pipeline assets. Compiled resources
 are emitted into the ignored asset cache and checked for deterministic reproduction.
 Scene is independent; Editor references Scene through explicit interfaces.
+Editor disables Scene's debug overlay and presentation, then draws debug overlays
+once after its own selection and gizmo passes.
 
 Fixed texture and cubemap previews use C++ resource descriptors. Specialized sensors,
 offline rendering and user-authored/programmatic pipelines remain supported by the
