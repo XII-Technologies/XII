@@ -21,6 +21,7 @@ xiiUInt32                  xiiQtSharedTextureWidget::s_uiWidgetCount = 0;
 xiiQtSharedTextureWidget::xiiQtSharedTextureWidget(QWidget* parent) : QWidget(parent)
 {
   ++s_uiWidgetCount;
+  setAttribute(Qt::WA_DontCreateNativeAncestors);
   setAttribute(Qt::WA_NativeWindow);
   setAttribute(Qt::WA_PaintOnScreen);
   setAttribute(Qt::WA_NoSystemBackground);
