@@ -957,12 +957,13 @@ void xiiNetworkHostRuntime::FinishSend(Peer& peer, xiiUInt32 uiSlot, xiiNetworkE
   send.m_Outbound.m_Payload.Clear();
   send.m_bCompleted = true;
   xiiNetworkEvent event;
-  event.m_Type       = xiiNetworkEventType::MessageSent;
-  event.m_Connection = peer.m_Handle;
-  event.m_Channel    = send.m_Channel;
-  event.m_Message    = send.m_Handle;
-  event.m_Error      = error;
-  event.m_uiUserData = send.m_uiUserData;
+  event.m_Type         = xiiNetworkEventType::MessageSent;
+  event.m_pSessionInfo = peer.m_pSessionInfo;
+  event.m_Connection   = peer.m_Handle;
+  event.m_Channel      = send.m_Channel;
+  event.m_Message      = send.m_Handle;
+  event.m_Error        = error;
+  event.m_uiUserData   = send.m_uiUserData;
   Publish(std::move(event));
 }
 

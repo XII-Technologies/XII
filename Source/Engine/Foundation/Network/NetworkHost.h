@@ -120,6 +120,7 @@ struct XII_FOUNDATION_DLL xiiNetworkEvent
   xiiSharedPtr<xiiNetworkAuthenticationData> m_pAuthentication;
   xiiNetworkChannelConfiguration             m_ChannelConfiguration;
   xiiSharedPtr<xiiNetworkSessionTicket>      m_pSessionTicket;
+  xiiSharedPtr<const xiiNetworkSessionInfo>  m_pSessionInfo;
   xiiUInt64                                  m_uiUserData = 0;
   xiiTime                                    m_ReconnectDelay;
 };
@@ -162,6 +163,7 @@ public:
   [[nodiscard]] xiiNetworkError                 AuthorizeChannel(xiiNetworkChannel channel, bool bAccept);
   [[nodiscard]] xiiNetworkError                 CloseChannel(xiiNetworkChannel channel);
   [[nodiscard]] xiiNetworkError                 GetChannelStatistics(xiiNetworkChannel channel, xiiNetworkChannelStatistics& out_statistics) const;
+  [[nodiscard]] xiiNetworkError                 GetChannelConfiguration(xiiNetworkChannel channel, xiiNetworkChannelConfiguration& out_configuration) const;
   [[nodiscard]] xiiNetworkError                 Authorize(xiiNetworkConnection connection, const xiiNetworkAuthorization& authorization, bool bAccept);
   [[nodiscard]] xiiNetworkError                 Disconnect(xiiNetworkConnection connection, bool bGraceful = true);
   [[nodiscard]] xiiNetworkError                 CancelReconnect(xiiNetworkConnection connection);

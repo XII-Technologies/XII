@@ -88,6 +88,14 @@ XII_CREATE_SIMPLE_TEST(NetworkTransport, HostReliableMessaging)
       return;
     }
     const auto serverConnection = event.m_Connection;
+    const auto serverSession    = event.m_pSessionInfo;
+    if (!XII_TEST_BOOL(serverSession != nullptr))
+    {
+      return;
+    }
+    XII_TEST_BOOL(serverSession->m_Connection == serverConnection);
+    XII_TEST_BOOL(serverSession->m_ConnectionInfo.m_Session.IsValid());
+
     if (!HostTestEvent(client, xiiNetworkEventType::Connected, event))
     {
       return;
@@ -117,6 +125,7 @@ XII_CREATE_SIMPLE_TEST(NetworkTransport, HostReliableMessaging)
       return;
     }
     XII_TEST_INT(event.m_Payload.GetCount(), 1024 * 1024);
+    XII_TEST_BOOL(event.m_pSessionInfo.Borrow() == serverSession.Borrow());
     for (xiiUInt32 uiIndex = 0; uiIndex < event.m_Payload.GetCount(); ++uiIndex)
     {
       if (event.m_Payload.GetBytes()[uiIndex] != static_cast<xiiUInt8>(uiIndex * 17))
@@ -174,6 +183,9 @@ XII_CREATE_SIMPLE_TEST(NetworkTransport, HostReliableMessaging)
     server.Shutdown();
     client.Shutdown();
     XII_TEST_BOOL(!client.IsRunning());
+    XII_TEST_BOOL(serverSession->m_ConnectionInfo.m_Session.IsValid());
+    XII_TEST_BOOL(serverSession->m_DefaultChannel.m_Connection == serverConnection);
+
     XII_TEST_BOOL(client.Start(clientConfiguration).m_Code == xiiNetworkErrorCode::AlreadyOpen);
   }
 }

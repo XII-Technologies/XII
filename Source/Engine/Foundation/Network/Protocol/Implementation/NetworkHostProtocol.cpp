@@ -322,15 +322,21 @@ void xiiNetworkHostRuntime::Activate(Peer& peer)
     }
     defaultChannel.m_uiReservedEvents = 1;
   }
-  peer.m_bActivated                              = true;
-  peer.m_Info.m_State                            = xiiNetworkConnectionState::Connected;
-  auto& channel                                  = defaultChannel;
-  channel.m_uiId                                 = DefaultChannelId;
-  channel.m_uiGeneration                         = 1;
-  channel.m_State                                = ChannelState::Open;
-  channel.m_Configuration.m_uiMaximumQueuedBytes = m_Configuration.m_uiMaximumPeerSendBytes;
-  peer.m_LastActivity                            = xiiTime::Now();
-  peer.m_Info.m_EstablishmentTime                = peer.m_LastActivity - peer.m_AttemptStartedAt;
+  peer.m_bActivated                               = true;
+  peer.m_Info.m_State                             = xiiNetworkConnectionState::Connected;
+  auto& channel                                   = defaultChannel;
+  channel.m_uiId                                  = DefaultChannelId;
+  channel.m_uiGeneration                          = 1;
+  channel.m_State                                 = ChannelState::Open;
+  channel.m_Configuration.m_uiMaximumQueuedBytes  = m_Configuration.m_uiMaximumPeerSendBytes;
+  peer.m_LastActivity                             = xiiTime::Now();
+  peer.m_Info.m_EstablishmentTime                 = peer.m_LastActivity - peer.m_AttemptStartedAt;
+  xiiSharedPtr<xiiNetworkSessionInfo> sessionInfo = XII_DEFAULT_NEW(xiiNetworkSessionInfo);
+  sessionInfo->m_Connection                       = peer.m_Handle;
+  sessionInfo->m_DefaultChannel                   = {peer.m_Handle, DefaultChannelId, peer.m_uiAttempt};
+  sessionInfo->m_ConnectionInfo                   = peer.m_Info;
+  sessionInfo->m_PeerCertificate                  = peer.m_Certificate;
+  peer.m_pSessionInfo                             = std::move(sessionInfo);
   ++m_uiConnectionsEstablished;
   if (!PeerEvent(peer, xiiNetworkEventType::Connected))
   {
@@ -636,10 +642,11 @@ void xiiNetworkHostRuntime::Frame(Peer& peer, xiiNetworkFrame&& frame, xiiNetwor
   receive.m_bEventReserved  = false;
   receive.m_uiReservedBytes = 0;
   xiiNetworkEvent event;
-  event.m_Type       = xiiNetworkEventType::Message;
-  event.m_Connection = peer.m_Handle;
-  event.m_Channel    = {peer.m_Handle, frame.m_Header.m_uiChannel, peer.m_uiAttempt};
-  event.m_Payload    = std::move(frame.m_Payload);
+  event.m_Type         = xiiNetworkEventType::Message;
+  event.m_pSessionInfo = peer.m_pSessionInfo;
+  event.m_Connection   = peer.m_Handle;
+  event.m_Channel      = {peer.m_Handle, frame.m_Header.m_uiChannel, peer.m_uiAttempt};
+  event.m_Payload      = std::move(frame.m_Payload);
   ++pChannel->m_Statistics.m_uiMessagesReceived;
   ++peer.m_Info.m_Statistics.m_uiMessagesReceived;
   peer.m_Info.m_Statistics.m_uiPayloadBytesReceived += event.m_Payload.GetCount();
