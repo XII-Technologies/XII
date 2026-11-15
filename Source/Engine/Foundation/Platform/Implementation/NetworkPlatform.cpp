@@ -998,6 +998,7 @@ xiiNetworkOperationResult xiiNetworkSocket::ReceiveBuffers(xiiArrayPtr<const xii
   if (uiCount == 0)
   {
     nativeBuffers[0].buf = &cEmpty;
+    nativeBuffers[0].len = 1;
     uiCount              = 1;
   }
   DWORD     uiReceived = 0;
@@ -1012,7 +1013,7 @@ xiiNetworkOperationResult xiiNetworkSocket::ReceiveBuffers(xiiArrayPtr<const xii
     {
       return {TranslateSocketError(iError), 0};
     }
-    // Winsock fills the supplied out_buffers and discards the tail of an oversized UDP datagram.
+    // Winsock fills the supplied buffers and discards the tail of an oversized UDP datagram.
     bTruncated      = true;
     iTruncationCode = iError;
     uiReceived      = uiTotal;
@@ -1035,6 +1036,7 @@ xiiNetworkOperationResult xiiNetworkSocket::ReceiveBuffers(xiiArrayPtr<const xii
   if (uiCount == 0)
   {
     nativeBuffers[0].iov_base = &uiEmpty;
+    nativeBuffers[0].iov_len  = 1;
     uiCount                   = 1;
   }
   msghdr message     = {};
@@ -1045,7 +1047,7 @@ xiiNetworkOperationResult xiiNetworkSocket::ReceiveBuffers(xiiArrayPtr<const xii
     message.msg_name    = sender.Get();
     message.msg_namelen = sender.m_uiLength;
   }
-  // No input MSG_TRUNC: return the out_bytes actually copied on Linux and BSD alike.
+  // No input MSG_TRUNC: return the bytes actually copied on Linux and BSD alike.
   const ssize_t iResult = ::recvmsg(Borrow(*this), &message, 0);
   if (iResult < 0)
   {
@@ -1055,6 +1057,14 @@ xiiNetworkOperationResult xiiNetworkSocket::ReceiveBuffers(xiiArrayPtr<const xii
   bTruncated        = (message.msg_flags & MSG_TRUNC) != 0;
   sender.m_uiLength = message.msg_namelen;
 #endif
+  if (m_bDatagram && uiTotal == 0)
+  {
+    // BSD marks an unread zero-length mbuf as truncated when the native receive capacity is zero.
+    // A one-byte scratch receive consumes the datagram atomically and distinguishes empty payloads
+    // from discarded data without a peek/receive race or an extra syscall.
+    bTruncated    = bTruncated || uiTransferred != 0;
+    uiTransferred = 0;
+  }
   if (m_bDatagram && out_pSender != nullptr)
   {
     error = FromNative(sender.Get(), sender.m_uiLength, *out_pSender);

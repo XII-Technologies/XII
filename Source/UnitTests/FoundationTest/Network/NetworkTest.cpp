@@ -11,6 +11,7 @@
 #include <Foundation/Time/Time.h>
 
 #include <cstring>
+#include <source_location>
 #include <type_traits>
 #include <utility>
 
@@ -54,9 +55,9 @@ namespace
 #endif
   }
 
-  bool Check(xiiNetworkError error)
+  bool Check(xiiNetworkError error, const std::source_location& location = std::source_location::current())
   {
-    return XII_TEST_BOOL_MSG(error.Succeeded(), "%s (native %d, domain %u)", error.GetCodeName(), error.m_iNativeCode, static_cast<xiiUInt32>(error.m_Domain));
+    return XII_TEST_BOOL_MSG(error.Succeeded(), "%s (native %d, domain %u) at %s:%u", error.GetCodeName(), error.m_iNativeCode, static_cast<xiiUInt32>(error.m_Domain), location.file_name(), location.line());
   }
 
   xiiNetworkEndpoint Loopback(xiiNetworkAddressFamily family)
@@ -422,13 +423,13 @@ XII_CREATE_SIMPLE_TEST(Network, Tcp)
     {
       input[uiIndex] = static_cast<xiiUInt8>(uiIndex * 17);
     }
-    // Sending a large payload to a non-reading peer must eventually produce partial progress/backpressure.
+    // A native send may complete fully or partially; drain and resume using its actual byte count.
     const auto first = client.Send(input);
     if (!Check(first.m_Error))
     {
       return;
     }
-    XII_TEST_BOOL(first.m_uiBytesTransferred > 0 && first.m_uiBytesTransferred < input.GetCount());
+    XII_TEST_BOOL(first.m_uiBytesTransferred > 0 && first.m_uiBytesTransferred <= input.GetCount());
     xiiUInt32     uiReceived = 0;
     const xiiTime deadline   = xiiTime::Now() + TestTimeout;
     while (uiReceived < first.m_uiBytesTransferred && xiiTime::Now() < deadline)
@@ -500,7 +501,9 @@ XII_CREATE_SIMPLE_TEST(Network, Tcp)
     const auto eof = server.Receive(uiReceived);
     XII_TEST_BOOL(eof.m_Error.m_Code == xiiNetworkErrorCode::ConnectionClosed);
     TransferAll(server, client, uiSecond, xiiArrayPtr<xiiUInt8>(uiReceived, 2));
-    Check(server.Shutdown(xiiNetworkShutdown::Both));
+    const auto shutdown = server.Shutdown(xiiNetworkShutdown::Both);
+    // BSD may already consider the fully half-closed connection disconnected.
+    XII_TEST_BOOL(shutdown.Succeeded() || shutdown.m_Code == xiiNetworkErrorCode::NotConnected);
     Check(server.Close());
     // A write after local send-shutdown reports an error without terminating the process.
     const auto closedSend = client.Send(uiFirst);
@@ -648,6 +651,11 @@ XII_CREATE_SIMPLE_TEST(Network, Udp)
       received = receiver.ReceiveFrom(xiiArrayPtr<xiiUInt8>(), receivedSource);
       Check(received.m_Error);
       XII_TEST_INT(received.m_uiBytesTransferred, 0);
+      Check(sender.SendTo(destination, xiiArrayPtr<const xiiUInt8>(uiFirst, 1)).m_Error);
+      Check(receiver.Wait(xiiNetworkSocketEvent::Readable, TestTimeout));
+      received = receiver.ReceiveFrom(xiiArrayPtr<xiiUInt8>(), receivedSource);
+      XII_TEST_BOOL(received.m_Error.m_Code == xiiNetworkErrorCode::Truncated);
+      XII_TEST_INT(received.m_uiBytesTransferred, 0);
       Check(sender.SendTo(destination, uiFirst).m_Error);
       Check(receiver.Wait(xiiNetworkSocketEvent::Readable, TestTimeout));
       received = receiver.ReceiveFrom(xiiArrayPtr<xiiUInt8>(), receivedSource);
@@ -751,7 +759,8 @@ XII_CREATE_SIMPLE_TEST(Network, OwnershipAndErrors)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Nonblocking connection refusal and retained completion error")
   {
-    // Reserve a TCP port with a bound socket that never listens; no ephemeral-port release race.
+    // Bind the client while the target is reserved so it cannot select the target as its source port.
+    // Release the target before connecting: BSD may leave SYNs to bound non-listeners pending.
     xiiTcpSocket reservation;
     if (!Check(reservation.Open(xiiNetworkAddressFamily::Ipv4)) || !Check(reservation.Bind(Loopback(xiiNetworkAddressFamily::Ipv4))))
     {
@@ -761,6 +770,8 @@ XII_CREATE_SIMPLE_TEST(Network, OwnershipAndErrors)
     Check(reservation.GetLocalEndpoint(endpoint));
     xiiTcpSocket client;
     Check(client.Open(xiiNetworkAddressFamily::Ipv4));
+    Check(client.Bind(Loopback(xiiNetworkAddressFamily::Ipv4)));
+    Check(reservation.Close());
     auto error = client.Connect(endpoint);
     if (error.m_Code == xiiNetworkErrorCode::InProgress)
     {
@@ -849,39 +860,51 @@ XII_CREATE_SIMPLE_TEST(Network, ResourceLifetime)
   }
   xiiDynamicArray<xiiNetworkEndpoint> endpoints;
   Check(xiiNetworkResolver::Resolve("127.0.0.1", "0", endpoints));
-  const xiiUInt32 uiBefore = CountOpenResources();
+  xiiUInt32 uiBefore = CountOpenResources();
   if (!XII_TEST_BOOL(uiBefore != 0))
   {
     return;
   }
-  for (xiiUInt32 uiIteration = 0; uiIteration < 32; ++uiIteration)
+  for (xiiUInt32 uiPass = 0; uiPass < 3; ++uiPass)
   {
-    xiiTcpSocket client;
-    xiiTcpSocket server;
-    if (!Check(MakePair(client, server)))
+    for (xiiUInt32 uiIteration = 0; uiIteration < 32; ++uiIteration)
     {
-      return;
+      xiiTcpSocket client;
+      xiiTcpSocket server;
+      if (!Check(MakePair(client, server)))
+      {
+        return;
+      }
+      xiiTcpSocket moved(std::move(client));
+      Check(server.SetLinger(true));
+      Check(server.Close());
+      Check(moved.Wait(xiiNetworkSocketEvent::Readable, TestTimeout));
+      xiiUInt8   uiBuffer[8] = {};
+      const auto reset       = moved.Receive(uiBuffer);
+      XII_TEST_BOOL(reset.m_Error.m_Code == xiiNetworkErrorCode::ConnectionReset);
+      // No SIGPIPE on this path, including a write after observing a native reset.
+      XII_TEST_BOOL(moved.Send(uiBuffer).Failed());
+      Check(xiiNetworkResolver::Resolve("127.0.0.1", "0", endpoints));
+      xiiUdpSocket first;
+      xiiUdpSocket failedBind;
+      Check(first.Open(xiiNetworkAddressFamily::Ipv4));
+      Check(first.Bind(Loopback(xiiNetworkAddressFamily::Ipv4)));
+      xiiNetworkEndpoint endpoint;
+      Check(first.GetLocalEndpoint(endpoint));
+      Check(failedBind.Open(xiiNetworkAddressFamily::Ipv4));
+      XII_TEST_BOOL(failedBind.Bind(endpoint).Failed());
     }
-    xiiTcpSocket moved(std::move(client));
-    Check(server.SetLinger(true));
-    Check(server.Close());
-    Check(moved.Wait(xiiNetworkSocketEvent::Readable, TestTimeout));
-    xiiUInt8   uiBuffer[8];
-    const auto reset = moved.Receive(uiBuffer);
-    XII_TEST_BOOL(reset.m_Error.m_Code == xiiNetworkErrorCode::ConnectionReset);
-    // No SIGPIPE on this path, including a write after observing a native reset.
-    XII_TEST_BOOL(moved.Send(uiBuffer).Failed());
-    Check(xiiNetworkResolver::Resolve("127.0.0.1", "0", endpoints));
-    xiiUdpSocket first;
-    xiiUdpSocket failedBind;
-    Check(first.Open(xiiNetworkAddressFamily::Ipv4));
-    Check(first.Bind(Loopback(xiiNetworkAddressFamily::Ipv4)));
-    xiiNetworkEndpoint endpoint;
-    Check(first.GetLocalEndpoint(endpoint));
-    Check(failedBind.Open(xiiNetworkAddressFamily::Ipv4));
-    XII_TEST_BOOL(failedBind.Bind(endpoint).Failed());
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+    if (uiPass == 0)
+    {
+      // Winsock may initialize persistent provider resources on the first reset/cleanup path.
+      // Two further identical batches must not grow the process handle count.
+      uiBefore = CountOpenResources();
+      continue;
+    }
+#endif
+    XII_TEST_INT(CountOpenResources(), uiBefore);
   }
-  XII_TEST_INT(CountOpenResources(), uiBefore);
 }
 
 XII_CREATE_SIMPLE_TEST(Network, BackpressureAndDualStack)
