@@ -1,26 +1,23 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
-#pragma once
+#include <Foundation/FoundationPCH.h>
 
-#include <arpa/inet.h>
-#include <cerrno>
-#include <fcntl.h>
-#include <net/if.h>
-#include <netdb.h>
-#include <netinet/in.h>
-#include <netinet/tcp.h>
-#include <poll.h>
-#include <sys/socket.h>
-#include <sys/time.h>
-#include <sys/uio.h>
-#include <unistd.h>
+#if XII_ENABLED(XII_PLATFORM_LINUX) || XII_ENABLED(XII_PLATFORM_OSX)
+
+#  include <Foundation/Platform/Implementation/NetworkPlatform.h>
+
+#  include <arpa/inet.h>
+#  include <cerrno>
+#  include <fcntl.h>
+#  include <netinet/in.h>
+#  include <netinet/tcp.h>
+#  include <poll.h>
+#  include <sys/time.h>
+#  include <sys/uio.h>
+#  include <unistd.h>
 
 namespace xiiNetworkInternal
 {
-  using NativeSocket                         = int;
-  using NativeLength                         = socklen_t;
-  constexpr NativeSocket InvalidNativeSocket = -1;
-
   xiiNetworkError TranslateSocketError(int iNativeCode)
   {
     xiiNetworkErrorCode code = xiiNetworkErrorCode::Unknown;
@@ -60,6 +57,9 @@ namespace xiiNetworkInternal
         break;
       case EPIPE:
         code = xiiNetworkErrorCode::ConnectionClosed;
+        break;
+      case ENETRESET:
+        code = xiiNetworkErrorCode::ConnectionReset;
         break;
       case ENETUNREACH:
         code = xiiNetworkErrorCode::NetworkUnreachable;
@@ -118,11 +118,11 @@ namespace xiiNetworkInternal
       case EISCONN:
         code = xiiNetworkErrorCode::AlreadyConnected;
         break;
-#if EAGAIN != EWOULDBLOCK
+#  if EAGAIN != EWOULDBLOCK
       case EWOULDBLOCK:
         code = xiiNetworkErrorCode::WouldBlock;
         break;
-#endif
+#  endif
       default:
         break;
     }
@@ -133,12 +133,7 @@ namespace xiiNetworkInternal
   int  CloseNative(NativeSocket hSocket) { return ::close(hSocket); }
   void ReleaseRuntime() {}
 
-  class RuntimeLease
-  {
-  public:
-    xiiNetworkError GetError() const { return {}; }
-    void            Detach() {}
-  };
+
 
   int SetOption(NativeSocket hSocket, int iLevel, int iName, const void* pValue, NativeLength uiSize)
   {
@@ -187,10 +182,7 @@ namespace xiiNetworkInternal
     value.tv_usec = static_cast<decltype(value.tv_usec)>((uiMilliseconds % 1000) * 1000);
     return ::setsockopt(hSocket, SOL_SOCKET, iOption, &value, sizeof(value)) == 0 ? xiiNetworkError() : TranslateSocketError(errno);
   }
+
 } // namespace xiiNetworkInternal
 
-#if XII_ENABLED(XII_PLATFORM_LINUX)
-#  include <Foundation/Platform/Implementation/Linux/Network_linux.h>
-#elif XII_ENABLED(XII_PLATFORM_OSX)
-#  include <Foundation/Platform/Implementation/OSX/Network_osx.h>
 #endif

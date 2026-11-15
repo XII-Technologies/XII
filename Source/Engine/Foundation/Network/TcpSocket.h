@@ -10,6 +10,9 @@
 class XII_FOUNDATION_DLL xiiTcpSocket final : public xiiNetworkSocket
 {
 public:
+  ~xiiTcpSocket()                                                        = default;
+  xiiTcpSocket(const xiiTcpSocket&)                                      = delete;
+  xiiTcpSocket& operator=(const xiiTcpSocket&)                           = delete;
   xiiTcpSocket()                                                         = default;
   xiiTcpSocket(xiiTcpSocket&& other) noexcept                            = default;
   xiiTcpSocket&                 operator=(xiiTcpSocket&& other) noexcept = default;
@@ -22,10 +25,10 @@ public:
   /// Each operation may transfer fewer bytes than requested. Empty TCP buffers succeed with zero bytes.
   /// A nonempty receive returning ConnectionClosed means orderly EOF, distinct from an empty receive.
   [[nodiscard]] xiiNetworkOperationResult Send(xiiArrayPtr<const xiiUInt8> bytes);
-  [[nodiscard]] xiiNetworkOperationResult Receive(xiiArrayPtr<xiiUInt8> bytes);
+  [[nodiscard]] xiiNetworkOperationResult Receive(xiiArrayPtr<xiiUInt8> out_bytes);
   /// Up to 64 spans per call, with aggregate size <= INT_MAX. No allocation or coalescing.
   [[nodiscard]] xiiNetworkOperationResult SendGather(xiiArrayPtr<const xiiArrayPtr<const xiiUInt8>> buffers);
-  [[nodiscard]] xiiNetworkOperationResult ReceiveScatter(xiiArrayPtr<const xiiArrayPtr<xiiUInt8>> buffers);
+  [[nodiscard]] xiiNetworkOperationResult ReceiveScatter(xiiArrayPtr<const xiiArrayPtr<xiiUInt8>> out_buffers);
   [[nodiscard]] xiiNetworkError           Shutdown(xiiNetworkShutdown direction);
   [[nodiscard]] xiiNetworkError           SetNoDelay(bool bEnable);
   [[nodiscard]] xiiNetworkError           SetKeepAlive(bool bEnable);

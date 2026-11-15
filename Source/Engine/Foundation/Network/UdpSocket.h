@@ -12,6 +12,9 @@
 class XII_FOUNDATION_DLL xiiUdpSocket final : public xiiNetworkSocket
 {
 public:
+  ~xiiUdpSocket()                                                        = default;
+  xiiUdpSocket(const xiiUdpSocket&)                                      = delete;
+  xiiUdpSocket& operator=(const xiiUdpSocket&)                           = delete;
   xiiUdpSocket()                                                         = default;
   xiiUdpSocket(xiiUdpSocket&& other) noexcept                            = default;
   xiiUdpSocket&                 operator=(xiiUdpSocket&& other) noexcept = default;
@@ -24,8 +27,8 @@ public:
   [[nodiscard]] xiiNetworkOperationResult SendTo(const xiiNetworkEndpoint& destination, xiiArrayPtr<const xiiUInt8> bytes);
   [[nodiscard]] xiiNetworkOperationResult SendToGather(const xiiNetworkEndpoint& destination, xiiArrayPtr<const xiiArrayPtr<const xiiUInt8>> buffers);
   [[nodiscard]] xiiNetworkOperationResult Send(xiiArrayPtr<const xiiUInt8> bytes);
-  [[nodiscard]] xiiNetworkOperationResult ReceiveFrom(xiiArrayPtr<xiiUInt8> bytes, xiiNetworkEndpoint& out_sender);
-  [[nodiscard]] xiiNetworkOperationResult ReceiveFromScatter(xiiArrayPtr<const xiiArrayPtr<xiiUInt8>> buffers, xiiNetworkEndpoint& out_sender);
+  [[nodiscard]] xiiNetworkOperationResult ReceiveFrom(xiiArrayPtr<xiiUInt8> out_bytes, xiiNetworkEndpoint& out_sender);
+  [[nodiscard]] xiiNetworkOperationResult ReceiveFromScatter(xiiArrayPtr<const xiiArrayPtr<xiiUInt8>> out_buffers, xiiNetworkEndpoint& out_sender);
   [[nodiscard]] xiiNetworkError           SetBroadcast(bool bEnable);
   /// IPv4 interface is a local IPv4 address (wildcard selects default). IPv6 uses an interface index.
   [[nodiscard]] xiiNetworkError JoinMulticast(const xiiNetworkAddress& group, const xiiNetworkAddress& ipv4Interface = xiiNetworkAddress::MakeWildcard(xiiNetworkAddressFamily::Ipv4), xiiUInt32 uiIpv6InterfaceIndex = 0);

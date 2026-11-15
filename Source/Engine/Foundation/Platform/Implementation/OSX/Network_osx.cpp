@@ -1,9 +1,18 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
-#pragma once
+#include <Foundation/FoundationPCH.h>
+
+#if XII_ENABLED(XII_PLATFORM_OSX)
+
+#  include <Foundation/Platform/Implementation/NetworkPlatform.h>
+
+#  include <cerrno>
+#  include <fcntl.h>
+#  include <unistd.h>
 
 namespace xiiNetworkInternal
 {
+
   xiiNetworkError ConfigureDescriptor(NativeSocket hSocket, bool bNonBlocking)
   {
     // BSD has no accept4/SOCK_CLOEXEC. Applications must serialize fork/exec with descriptor creation.
@@ -53,4 +62,7 @@ namespace xiiNetworkInternal
     }
     return hSocket;
   }
+
 } // namespace xiiNetworkInternal
+
+#endif

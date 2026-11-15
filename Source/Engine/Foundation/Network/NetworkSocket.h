@@ -79,8 +79,8 @@ protected:
   [[nodiscard]] xiiNetworkError           BindSocket(const xiiNetworkEndpoint& endpoint);
   [[nodiscard]] xiiNetworkError           ConnectSocket(const xiiNetworkEndpoint& endpoint);
   [[nodiscard]] xiiNetworkError           FinishConnection();
-  [[nodiscard]] xiiNetworkOperationResult SendBuffers(xiiArrayPtr<const xiiArrayPtr<const xiiUInt8>> buffers, const xiiNetworkEndpoint* pDestination);
-  [[nodiscard]] xiiNetworkOperationResult ReceiveBuffers(xiiArrayPtr<const xiiArrayPtr<xiiUInt8>> buffers, xiiNetworkEndpoint* out_pSender);
+  [[nodiscard]] xiiNetworkOperationResult SendBuffers(xiiArrayPtr<const xiiArrayPtr<const xiiUInt8>> buffers, const xiiNetworkEndpoint* pDestination) const;
+  [[nodiscard]] xiiNetworkOperationResult ReceiveBuffers(xiiArrayPtr<const xiiArrayPtr<xiiUInt8>> out_buffers, xiiNetworkEndpoint* out_pSender) const;
 
   xiiNetworkSocketState m_State = xiiNetworkSocketState::Closed;
   xiiNetworkError       m_ConnectError;

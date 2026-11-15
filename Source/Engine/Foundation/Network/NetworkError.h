@@ -51,7 +51,7 @@ enum class xiiNetworkErrorDomain : xiiUInt8
 struct [[nodiscard]] XII_FOUNDATION_DLL xiiNetworkError
 {
   constexpr xiiNetworkError() = default;
-  constexpr xiiNetworkError(xiiNetworkErrorCode code, xiiInt32 iNativeCode = 0, xiiNetworkErrorDomain domain = xiiNetworkErrorDomain::None) :
+  constexpr explicit xiiNetworkError(xiiNetworkErrorCode code, xiiInt32 iNativeCode = 0, xiiNetworkErrorDomain domain = xiiNetworkErrorDomain::None) :
     m_Code(code), m_Domain(domain), m_iNativeCode(iNativeCode) {}
 
   [[nodiscard]] constexpr bool Succeeded() const { return m_Code == xiiNetworkErrorCode::Success; }

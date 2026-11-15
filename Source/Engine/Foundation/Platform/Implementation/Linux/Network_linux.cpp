@@ -1,9 +1,18 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
-#pragma once
+#include <Foundation/FoundationPCH.h>
+
+#if XII_ENABLED(XII_PLATFORM_LINUX)
+
+#  include <Foundation/Platform/Implementation/NetworkPlatform.h>
+
+#  include <cerrno>
+#  include <fcntl.h>
+#  include <unistd.h>
 
 namespace xiiNetworkInternal
 {
+
   NativeSocket CreateNative(int iFamily, int iType, bool bNonBlocking, xiiNetworkError& out_error)
   {
     const int hSocket = ::socket(iFamily, iType | SOCK_CLOEXEC | (bNonBlocking ? SOCK_NONBLOCK : 0), 0);
@@ -23,4 +32,7 @@ namespace xiiNetworkInternal
     }
     return hSocket;
   }
+
 } // namespace xiiNetworkInternal
+
+#endif

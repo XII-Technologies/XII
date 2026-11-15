@@ -220,6 +220,20 @@ XII_CREATE_SIMPLE_TEST(Network, Addresses)
       XII_TEST_BOOL(xiiNetworkAddress::Parse(szInput, address).Failed());
       XII_TEST_BOOL(address == xiiNetworkAddress::MakeLoopback(xiiNetworkAddressFamily::Ipv4));
     }
+#if XII_ENABLED(XII_PLATFORM_LINUX) || XII_ENABLED(XII_PLATFORM_OSX)
+    xiiNetworkAddress scoped;
+#  if XII_ENABLED(XII_PLATFORM_LINUX)
+    Check(xiiNetworkAddress::Parse("fe80::1%lo", scoped));
+#  else
+    Check(xiiNetworkAddress::Parse("fe80::1%lo0", scoped));
+#  endif
+    XII_TEST_BOOL(scoped.GetScopeId() != 0);
+    xiiStringBuilder sScoped;
+    scoped.ToString(sScoped);
+    xiiNetworkAddress scopedRoundTrip;
+    Check(xiiNetworkAddress::Parse(sScoped, scopedRoundTrip));
+    XII_TEST_BOOL(scopedRoundTrip == scoped);
+#endif
     const char        szEmbeddedNull[] = {'1', '.', '2', '.', '3', '.', '4', '\0', '5'};
     xiiNetworkAddress address;
     XII_TEST_BOOL(xiiNetworkAddress::Parse(xiiStringView(szEmbeddedNull, 9), address).Failed());
@@ -327,8 +341,14 @@ XII_CREATE_SIMPLE_TEST(Network, Resolver)
       XII_TEST_BOOL(reverse.m_Code == xiiNetworkErrorCode::NameNotFound);
       xiiTestFramework::Output(xiiTestOutput::Warning, "Skipped reverse localhost name: host database has no reverse entry.");
     }
-    // Syntactically invalid hostname: fails locally, without an external DNS timeout.
-    const auto invalid = xiiNetworkResolver::Resolve("invalid host name", "80", endpoints);
+    // Malformed hostname input is rejected before invoking the OS resolver.
+    const char szInvalidHost[] = {'l', 'o', 'c', 'a', 'l', 'h', 'o', 's', 't', '\0', 'x'};
+    const auto invalidHost     = xiiNetworkResolver::Resolve(xiiStringView(szInvalidHost, 11), "80", endpoints);
+    XII_TEST_BOOL(invalidHost.m_Code == xiiNetworkErrorCode::InvalidArgument);
+    XII_TEST_BOOL(endpoints.IsEmpty());
+    // A numeric host with an unknown local service exercises native resolver error translation
+    // without issuing an invalid-host DNS query or depending on an Internet DNS server.
+    const auto invalid = xiiNetworkResolver::Resolve("127.0.0.1", "xii-invalid-network-service", endpoints);
     XII_TEST_BOOL(invalid.Failed());
     XII_TEST_BOOL(invalid.m_Domain == xiiNetworkErrorDomain::Resolver);
     XII_TEST_BOOL(invalid.m_iNativeCode != 0);
@@ -444,11 +464,31 @@ XII_CREATE_SIMPLE_TEST(Network, Tcp)
     Check(sent.m_Error);
     XII_TEST_INT(sent.m_uiBytesTransferred, 5);
     Check(server.Wait(xiiNetworkSocketEvent::Readable, TestTimeout));
-    xiiUInt8                    uiReceived[5]    = {};
-    const xiiArrayPtr<xiiUInt8> receiveBuffers[] = {{uiReceived, 2}, {}, {uiReceived + 2, 3}};
-    const auto                  received         = server.ReceiveScatter(xiiMakeArrayPtr(receiveBuffers));
-    Check(received.m_Error);
-    XII_TEST_INT(received.m_uiBytesTransferred, 5);
+    xiiUInt8      uiReceived[5] = {};
+    xiiUInt32     uiRead        = 0;
+    const xiiTime deadline      = xiiTime::Now() + TestTimeout;
+    while (uiRead < 5 && xiiTime::Now() < deadline)
+    {
+      const xiiArrayPtr<xiiUInt8> receiveBuffers[] = {
+        uiRead < 2 ? xiiArrayPtr<xiiUInt8>(uiReceived + uiRead, 2 - uiRead) : xiiArrayPtr<xiiUInt8>(),
+        {},
+        {uiReceived + (uiRead < 2 ? 2 : uiRead), uiRead < 2 ? 3U : 5 - uiRead}};
+      const auto result = server.ReceiveScatter(xiiMakeArrayPtr(receiveBuffers));
+      if (result.Succeeded())
+      {
+        uiRead += result.m_uiBytesTransferred;
+      }
+      else if (result.m_Error.m_Code == xiiNetworkErrorCode::WouldBlock)
+      {
+        Check(server.Wait(xiiNetworkSocketEvent::Readable, TestTimeout));
+      }
+      else if (result.m_Error.m_Code != xiiNetworkErrorCode::Interrupted)
+      {
+        Check(result.m_Error);
+        return;
+      }
+    }
+    XII_TEST_INT(uiRead, 5);
     for (xiiUInt32 uiIndex = 0; uiIndex < 5; ++uiIndex)
     {
       XII_TEST_INT(uiReceived[uiIndex], uiIndex + 1);
@@ -761,6 +801,35 @@ XII_CREATE_SIMPLE_TEST(Network, MulticastConfiguration)
     Check(socket.LeaveMulticast(group, loopback));
     // Close also drops active memberships without maintaining a heap-allocated membership registry.
     Check(socket.JoinMulticast(group, loopback));
+    if (Check(socket.Bind(xiiNetworkEndpoint(xiiNetworkAddress::MakeWildcard(xiiNetworkAddressFamily::Ipv4), 0))))
+    {
+      xiiNetworkEndpoint local;
+      Check(socket.GetLocalEndpoint(local));
+      const xiiUInt8 uiPayload[] = {7, 8, 9};
+      const auto     sent        = socket.SendTo(xiiNetworkEndpoint(group, local.GetPort()), uiPayload);
+      if (Check(sent.m_Error))
+      {
+        const auto ready = socket.Wait(xiiNetworkSocketEvent::Readable, xiiTime::MakeFromSeconds(1));
+        if (ready.Succeeded())
+        {
+          xiiUInt8           uiReceived[3];
+          xiiNetworkEndpoint sender;
+          const auto         received = socket.ReceiveFrom(uiReceived, sender);
+          Check(received.m_Error);
+          XII_TEST_INT(received.m_uiBytesTransferred, 3);
+          XII_TEST_BOOL(xiiMakeArrayPtr(uiReceived) == xiiMakeArrayPtr(uiPayload));
+          XII_TEST_BOOL(sender.GetAddress().IsLoopback());
+        }
+        else if (ready.m_Code == xiiNetworkErrorCode::TimedOut)
+        {
+          xiiTestFramework::Output(xiiTestOutput::Warning, "Skipped multicast delivery: loopback routing policy did not deliver the joined group.");
+        }
+        else
+        {
+          Check(ready);
+        }
+      }
+    }
   }
   else
   {

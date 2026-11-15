@@ -9,7 +9,7 @@ Foundation's `Network/` API provides native IPv4/IPv6 addressing, OS name resolu
 - `xiiNetworkResolver` uses `getaddrinfo` and `getnameinfo`. Forward lookup returns unique endpoints in OS preference order, with explicit family and TCP/UDP service selection. It applies no IPv4 preference or `AI_ADDRCONFIG` filtering. An empty hostname selects wildcard addresses. Reverse lookup requires a name. DNS and host database calls are synchronous and may block; there is no resolver timeout in this milestone. Resolver output is cleared on failure; other output values remain unchanged unless their operation documents partial data.
 - `xiiNetworkSocket` owns the resource and supplies typed configuration and bounded readiness waits. Its destructor is protected: it is a shared implementation base, not a polymorphic deletion interface. `xiiTcpSocket`, `xiiTcpListener` and `xiiUdpSocket` are concrete move-only owners.
 
-The existing Foundation source collection discovers all files. `Platform/Implementation/NetworkPlatform.cpp` selects private Windows or POSIX implementations at compile time. Shared native address conversion, resolver, socket, option and vector transfer code remains under `Platform/Implementation/`. Linux uses `socket`/`accept4` with atomic `SOCK_CLOEXEC` and optional `SOCK_NONBLOCK`, plus `MSG_NOSIGNAL`. macOS shares POSIX operations but uses `fcntl`, `accept` and `SO_NOSIGPIPE`, with BSD multicast option widths. Since macOS has no atomic close-on-exec creation/accept primitive, applications using concurrent fork/exec must serialize those operations with descriptor creation.
+The existing Foundation source collection discovers all files. `Platform/Implementation/NetworkPlatform.cpp` uses private Windows or POSIX implementation files selected by platform guards. Shared native address conversion, resolver, socket, option and vector transfer code remains under `Platform/Implementation/`. Linux uses `socket`/`accept4` with atomic `SOCK_CLOEXEC` and optional `SOCK_NONBLOCK`, plus `MSG_NOSIGNAL`. macOS shares POSIX operations but uses `fcntl`, `accept` and `SO_NOSIGPIPE`, with BSD multicast option widths. Since macOS has no atomic close-on-exec creation/accept primitive, applications using concurrent fork/exec must serialize those operations with descriptor creation.
 
 Windows uses overlapped-capable `WSASocketW` sockets with inheritance disabled, `ioctlsocket`, and Winsock vector I/O. Each live socket owns one successful `WSAStartup(2.2)` reference; each resolver call holds a scoped reference. Acceptance acquires its own reference before publishing the new socket. Moves transfer the existing reference and close releases it. Winsock's process reference counting synchronizes initialization and cleanup without a global engine I/O lock. Startup failure is a returned error. Foundation privately links `Ws2_32.lib` and `Iphlpapi.lib` (the latter provides interface-name conversion). The existing Windows PCH suppresses `winsock.h` through `IncludeWindows.h` before the private implementation includes `winsock2.h`.
 
@@ -106,6 +106,27 @@ xiiNetworkError ServeGreeting(const xiiNetworkEndpoint& local, xiiTime timeout)
   error = listener.Accept(client);
   if (error.Failed())
     return error;
+  // Drain the request to its half-close before releasing the accepted socket.
+  const xiiTime deadline = xiiTime::Now() + timeout;
+  xiiUInt8 requestBuffer[4096];
+  while (true)
+  {
+    if (xiiTime::Now() >= deadline)
+      return xiiNetworkError(xiiNetworkErrorCode::TimedOut);
+    const auto received = client.Receive(requestBuffer);
+    if (received.m_Error.m_Code == xiiNetworkErrorCode::ConnectionClosed)
+      break;
+    if (received.Succeeded() || received.m_Error.m_Code == xiiNetworkErrorCode::Interrupted)
+      continue;
+    if (received.m_Error.m_Code != xiiNetworkErrorCode::WouldBlock)
+      return received.m_Error;
+    const xiiTime remaining = deadline - xiiTime::Now();
+    if (remaining.IsZeroOrNegative())
+      return xiiNetworkError(xiiNetworkErrorCode::TimedOut);
+    error = client.Wait(xiiNetworkSocketEvent::Readable, remaining);
+    if (error.Failed() && error.m_Code != xiiNetworkErrorCode::Interrupted)
+      return error;
+  }
   const xiiUInt8 greeting[] = {'h', 'e', 'l', 'l', 'o'};
   error = SendAll(client, greeting, timeout);
   return error.Failed() ? error : client.Shutdown(xiiNetworkShutdown::Send);

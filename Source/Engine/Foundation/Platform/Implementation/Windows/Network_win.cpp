@@ -1,20 +1,16 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
-#pragma once
+#include <Foundation/FoundationPCH.h>
 
-// FoundationPCH includes IncludeWindows.h, which defines _WINSOCKAPI_ to suppress winsock.h.
-// winsock2.h remains private to this platform implementation; no public header includes Windows.h.
-#include <iphlpapi.h>
-#include <mstcpip.h>
-#include <winsock2.h>
-#include <ws2tcpip.h>
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+
+#  include <Foundation/Platform/Implementation/NetworkPlatform.h>
+
+#  include <iphlpapi.h>
+#  include <mstcpip.h>
 
 namespace xiiNetworkInternal
 {
-  using NativeSocket                         = SOCKET;
-  using NativeLength                         = int;
-  constexpr NativeSocket InvalidNativeSocket = INVALID_SOCKET;
-
   xiiNetworkError TranslateSocketError(int iNativeCode)
   {
     xiiNetworkErrorCode code = xiiNetworkErrorCode::Unknown;
@@ -116,46 +112,6 @@ namespace xiiNetworkInternal
   int  CloseNative(NativeSocket hSocket) { return ::closesocket(hSocket); }
   void ReleaseRuntime() { ::WSACleanup(); }
 
-  /// One successful WSAStartup reference per live socket or resolver operation. Winsock serializes
-  /// its process reference count; no engine global mutex or subsystem shutdown ordering is required.
-  /// Ownership of the startup reference transfers to a socket only after complete initialization.
-  class RuntimeLease
-  {
-  public:
-    RuntimeLease()
-    {
-      WSADATA   data    = {};
-      const int iResult = ::WSAStartup(MAKEWORD(2, 2), &data);
-      if (iResult != 0)
-      {
-        m_Error = xiiNetworkError(xiiNetworkErrorCode::InitializationFailed, iResult, xiiNetworkErrorDomain::Initialization);
-      }
-      else if (data.wVersion != MAKEWORD(2, 2))
-      {
-        ::WSACleanup();
-        m_Error = xiiNetworkError(xiiNetworkErrorCode::InitializationFailed, WSAVERNOTSUPPORTED, xiiNetworkErrorDomain::Initialization);
-      }
-      else
-      {
-        m_bAcquired = true;
-      }
-    }
-    ~RuntimeLease()
-    {
-      if (m_bAcquired)
-      {
-        ::WSACleanup();
-      }
-    }
-    RuntimeLease(const RuntimeLease&)              = delete;
-    RuntimeLease&   operator=(const RuntimeLease&) = delete;
-    xiiNetworkError GetError() const { return m_Error; }
-    void            Detach() { m_bAcquired = false; }
-
-  private:
-    xiiNetworkError m_Error;
-    bool            m_bAcquired = false;
-  };
 
   int SetOption(NativeSocket hSocket, int iLevel, int iName, const void* pValue, NativeLength iSize)
   {
@@ -239,4 +195,38 @@ namespace xiiNetworkInternal
     const DWORD uiValue = uiMilliseconds;
     return SetOption(hSocket, SOL_SOCKET, iOption, &uiValue, sizeof(uiValue)) == 0 ? xiiNetworkError() : TranslateSocketError(GetLastError());
   }
+
+  /// One successful WSAStartup reference per live socket or resolver operation. Winsock serializes
+  /// its process reference count; no engine global mutex or subsystem shutdown ordering is required.
+  /// Ownership of the startup reference transfers to a socket only after complete initialization.
+
+
+  RuntimeLease::RuntimeLease()
+  {
+    WSADATA   data    = {};
+    const int iResult = ::WSAStartup(MAKEWORD(2, 2), &data);
+    if (iResult != 0)
+    {
+      m_Error = xiiNetworkError(xiiNetworkErrorCode::InitializationFailed, iResult, xiiNetworkErrorDomain::Initialization);
+    }
+    else if (data.wVersion != MAKEWORD(2, 2))
+    {
+      ::WSACleanup();
+      m_Error = xiiNetworkError(xiiNetworkErrorCode::InitializationFailed, WSAVERNOTSUPPORTED, xiiNetworkErrorDomain::Initialization);
+    }
+    else
+    {
+      m_bAcquired = true;
+    }
+  }
+  RuntimeLease::~RuntimeLease()
+  {
+    if (m_bAcquired)
+    {
+      ::WSACleanup();
+    }
+  }
+
 } // namespace xiiNetworkInternal
+
+#endif

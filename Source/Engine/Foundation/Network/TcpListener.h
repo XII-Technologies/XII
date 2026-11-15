@@ -10,6 +10,9 @@
 class XII_FOUNDATION_DLL xiiTcpListener final : public xiiNetworkSocket
 {
 public:
+  ~xiiTcpListener()                                                        = default;
+  xiiTcpListener(const xiiTcpListener&)                                    = delete;
+  xiiTcpListener& operator=(const xiiTcpListener&)                         = delete;
   xiiTcpListener()                                                         = default;
   xiiTcpListener(xiiTcpListener&& other) noexcept                          = default;
   xiiTcpListener&               operator=(xiiTcpListener&& other) noexcept = default;
