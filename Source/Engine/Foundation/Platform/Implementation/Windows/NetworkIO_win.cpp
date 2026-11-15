@@ -121,6 +121,16 @@ namespace
 
 namespace xiiNetworkIOInternal
 {
+  xiiTime CurrentThreadCpuTime()
+  {
+    FILETIME creation = {}, exit = {}, kernel = {}, user = {};
+    if (!::GetThreadTimes(::GetCurrentThread(), &creation, &exit, &kernel, &user))
+      return {};
+    const xiiUInt64 uiKernel = (static_cast<xiiUInt64>(kernel.dwHighDateTime) << 32) | kernel.dwLowDateTime;
+    const xiiUInt64 uiUser   = (static_cast<xiiUInt64>(user.dwHighDateTime) << 32) | user.dwLowDateTime;
+    return xiiTime::MakeFromSeconds(static_cast<double>(uiKernel + uiUser) / 10000000.0);
+  }
+
   xiiNetworkError StartThread(NativeThread& thread, void (*pFunction)(void*), void* pUserData)
   {
     NetworkWindowsThread* pThread = XII_DEFAULT_NEW(NetworkWindowsThread);

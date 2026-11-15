@@ -696,6 +696,7 @@ xiiNetworkIOStatistics xiiNetworkIORuntime::GetStatistics() const
     statistics.m_uiBackpressureEvents += source.m_uiBackpressureEvents;
     statistics.m_uiEventLoopWakeups += source.m_uiEventLoopWakeups;
     statistics.m_uiNativeErrors += source.m_uiNativeErrors;
+    statistics.m_WorkerCpuTime += source.m_WorkerCpuTime;
     statistics.m_WorkerActiveTime += source.m_WorkerActiveTime;
     statistics.m_WorkerWaitTime += source.m_WorkerWaitTime;
     if (pWorker->m_bWaiting)

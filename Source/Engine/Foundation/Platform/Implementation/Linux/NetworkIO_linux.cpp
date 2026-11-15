@@ -11,6 +11,7 @@
 #  include <cerrno>
 #  include <sys/epoll.h>
 #  include <sys/eventfd.h>
+#  include <time.h>
 #  include <unistd.h>
 
 XII_DEFINE_AS_POD_TYPE(epoll_event);
@@ -38,6 +39,14 @@ namespace
 
 namespace xiiNetworkIOInternal
 {
+  xiiTime CurrentThreadCpuTime()
+  {
+    timespec time = {};
+    if (::clock_gettime(CLOCK_THREAD_CPUTIME_ID, &time) != 0)
+      return {};
+    return xiiTime::MakeFromSeconds(static_cast<double>(time.tv_sec) + static_cast<double>(time.tv_nsec) / 1000000000.0);
+  }
+
   xiiNetworkError CreateWorker(Worker& worker)
   {
     xiiUniquePtr<NetworkEpollState> pState = XII_DEFAULT_NEW(NetworkEpollState);

@@ -166,6 +166,7 @@ namespace xiiNetworkIOInternal
     void          Run();
   };
 
+  xiiTime                   CurrentThreadCpuTime();
   xiiNetworkError           CreateWorker(Worker& worker);
   void                      DestroyWorker(Worker& worker);
   void                      Wake(Worker& worker);

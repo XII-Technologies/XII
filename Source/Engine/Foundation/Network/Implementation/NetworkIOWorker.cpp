@@ -392,6 +392,7 @@ namespace xiiNetworkIOInternal
 
   void Worker::Run()
   {
+    const xiiTime cpuBegin = CurrentThreadCpuTime();
     if (m_pRuntime->m_Configuration.m_bEnableProfiling)
     {
       xiiProfilingSystem::SetThreadName("Network I/O");
@@ -485,6 +486,10 @@ namespace xiiNetworkIOInternal
         }
         m_Statistics.m_WorkerActiveTime += xiiTime::Now() - waitEnd;
       }
+    }
+    {
+      XII_LOCK(m_Mutex);
+      m_Statistics.m_WorkerCpuTime = CurrentThreadCpuTime() - cpuBegin;
     }
     if (m_pRuntime->m_Configuration.m_bEnableProfiling)
     {

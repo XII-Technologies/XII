@@ -10,6 +10,7 @@
 
 #  include <cerrno>
 #  include <fcntl.h>
+#  include <mach/mach.h>
 #  include <sys/event.h>
 #  include <unistd.h>
 
@@ -35,6 +36,19 @@ namespace
 
 namespace xiiNetworkIOInternal
 {
+  xiiTime CurrentThreadCpuTime()
+  {
+    const mach_port_t        hThread = ::mach_thread_self();
+    thread_basic_info_data_t info    = {};
+    mach_msg_type_number_t   count   = THREAD_BASIC_INFO_COUNT;
+    const kern_return_t      result  = ::thread_info(hThread, THREAD_BASIC_INFO, reinterpret_cast<thread_info_t>(&info), &count);
+    ::mach_port_deallocate(::mach_task_self(), hThread);
+    if (result != KERN_SUCCESS)
+      return {};
+    return xiiTime::MakeFromSeconds(static_cast<double>(info.user_time.seconds) + static_cast<double>(info.system_time.seconds) +
+                                    (static_cast<double>(info.user_time.microseconds) + static_cast<double>(info.system_time.microseconds)) / 1000000.0);
+  }
+
   xiiNetworkError CreateWorker(Worker& worker)
   {
     static_assert(sizeof(uintptr_t) >= sizeof(xiiUInt64), "macOS registration tokens require its supported 64-bit ABI.");
