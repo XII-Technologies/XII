@@ -219,6 +219,13 @@ xiiNetworkDataError xiiNetworkReflectionEndpointState::DispatchRpc(Packet& packe
     else
       invocation.PushBack(arguments[i]);
   }
+  {
+    XII_LOCK(m_Mutex);
+    if (!m_bRunning || FindPeer(packet.m_Event.m_Channel) == nullptr)
+      return xiiNetworkDataError(xiiNetworkDataErrorCode::Disconnected);
+    if (packet.m_Deadline <= xiiTime::Now())
+      return xiiNetworkDataError(xiiNetworkDataErrorCode::TimedOut);
+  }
   method->m_pFunction->Execute(service->m_pOwner->GetObject(), invocation, result);
   {
     XII_LOCK(m_Mutex);

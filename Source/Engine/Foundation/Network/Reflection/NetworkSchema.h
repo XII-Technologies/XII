@@ -61,8 +61,7 @@ enum class xiiNetworkValueKind : xiiUInt8
   Vector4I64        = 48,
   Vector2U64        = 49,
   Vector3U64        = 50,
-  Vector4U64        = 51,
-  HashedString      = 52
+  Vector4U64        = 51
 };
 
 enum class xiiNetworkFieldCategory : xiiUInt8

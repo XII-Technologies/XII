@@ -66,7 +66,6 @@ namespace xiiNetworkMessagingInternal
     xiiUInt64                                 m_uiNextRequest = 1, m_uiHighestRequest = 0;
     xiiTime                                   m_LastRefill;
     double                                    m_fTokens = 0;
-    bool                                      m_bAlive  = true;
   };
   struct Packet
   {

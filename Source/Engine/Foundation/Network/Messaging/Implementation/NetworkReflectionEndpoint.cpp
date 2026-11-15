@@ -72,7 +72,7 @@ void xiiNetworkReflectionEndpointState::Stop(xiiNetworkDataError error)
 xiiSharedPtr<Peer> xiiNetworkReflectionEndpointState::FindPeer(xiiNetworkChannel channel)
 {
   for (const auto& peer : m_Peers)
-    if (peer->m_bAlive && peer->m_pInfo->m_Connection == channel.m_Connection &&
+    if (peer->m_pInfo->m_Connection == channel.m_Connection &&
         peer->m_pInfo->m_DefaultChannel.m_uiSessionGeneration == channel.m_uiSessionGeneration)
       return peer;
   return {};
@@ -214,6 +214,28 @@ xiiNetworkDataError xiiNetworkReflectionEndpoint::OfferSchema(xiiNetworkChannel 
   if (writer.GetError().Failed())
     return writer.GetError();
   return m_pState->Send(channel, bytes);
+}
+xiiNetworkDataError xiiNetworkReflectionEndpoint::GetSchemaAgreement(xiiNetworkChannel channel, xiiUInt64 type, bool& compact) const
+{
+  compact = false;
+  ReadScope scope(xiiNetworkRegistryAccess::Get(m_pState->m_Registry));
+  if (!scope.m_bAcquired)
+    return xiiNetworkDataError(xiiNetworkDataErrorCode::RegistryUnavailable);
+  xiiSharedPtr<const xiiNetworkSchema> schema;
+  auto                                 error = m_pState->m_Registry.GetSchema(type, schema);
+  if (error.Failed())
+    return error;
+  XII_LOCK(m_pState->m_Mutex);
+  const auto peer = m_pState->FindPeer(channel);
+  if (!m_pState->m_bRunning || peer == nullptr)
+    return xiiNetworkDataError(xiiNetworkDataErrorCode::Disconnected);
+  for (const auto& agreement : peer->m_Agreements)
+    if (agreement.m_uiType == type && agreement.m_bOutgoing && agreement.m_pLocal->m_Descriptor == schema->m_Descriptor)
+    {
+      compact = agreement.m_bExact;
+      return {};
+    }
+  return xiiNetworkDataError(xiiNetworkDataErrorCode::NotNegotiated);
 }
 xiiNetworkDataError xiiNetworkReflectionEndpoint::SendMessage(xiiNetworkChannel channel, const xiiRTTI* type, const void* message, xiiNetworkEncoding encoding, xiiNetworkMessage* submission, xiiUInt64 userData)
 {

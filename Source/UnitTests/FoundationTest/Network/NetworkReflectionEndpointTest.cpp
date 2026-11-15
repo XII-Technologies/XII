@@ -6,6 +6,7 @@
 #include <Foundation/Threading/Implementation/OSThread.h>
 #include <Foundation/Threading/ThreadUtils.h>
 #include <Foundation/Types/Delegate.h>
+#include <Foundation/Utilities/CommandLineUtils.h>
 #include <FoundationTest/Network/Implementation/NetworkHostTestUtilities.h>
 #include <FoundationTest/Network/Implementation/NetworkReflectionTestTypes.h>
 #include <FoundationTest/Network/Implementation/NetworkSecurityTestUtilities.h>
@@ -471,4 +472,113 @@ XII_CREATE_SIMPLE_TEST(NetworkReflection, TypedParserMutationCorpus)
   }
   XII_TEST_BOOL(pair.m_Receiver.GetStatistics().m_uiQueuedPackets == 0);
   XII_TEST_BOOL(pair.m_Receiver.Dispatch(0).Succeeded());
+}
+
+XII_CREATE_SIMPLE_TEST(NetworkReflection, TypedDispatchAndRpcBenchmark)
+{
+  if (!xiiCommandLineUtils::GetGlobalInstance()->GetBoolOption("-networkReflectionBenchmark"))
+    return;
+  Pair pair;
+  if (!pair.Start() || !pair.Agree())
+    return;
+  xiiSharedPtr<ExampleHandler> handler = XII_DEFAULT_NEW(ExampleHandler);
+  xiiSharedPtr<ExampleService> service = XII_DEFAULT_NEW(ExampleService);
+  XII_TEST_BOOL(pair.m_Receiver.RegisterMessageHandler(handler, 11).Succeeded());
+  XII_TEST_BOOL(pair.m_Receiver.RegisterService(7, service, 12).Succeeded());
+  XII_TEST_BOOL(pair.m_Sender.DeclareRemoteService(7, xiiGetStaticRTTI<NetworkRpcExample>()).Succeeded());
+  NetworkExampleState message;
+  for (xiiUInt32 i = 0; i < 32; ++i)
+  {
+    XII_TEST_BOOL(pair.m_Sender.SendMessage(pair.m_ClientChannel, message, xiiNetworkEncoding::Compact).Succeeded());
+    if (!pair.Receive(pair.m_Server, pair.m_Receiver))
+      return;
+  }
+  auto started = xiiTime::Now();
+  XII_TEST_BOOL(pair.m_Receiver.Dispatch(11, 32).Succeeded());
+  xiiTestFramework::Output(xiiTestOutput::Details, "Typed cached decode+dispatch: %.1f ns/message", (xiiTime::Now() - started).GetNanoseconds() / 32);
+  const xiiVariant    args[] = {xiiInt32(19), xiiInt32(23)};
+  xiiNetworkRpcResult result;
+  started = xiiTime::Now();
+  for (xiiUInt32 i = 0; i < 100; ++i)
+    if (!pair.Rpc(1, args, result))
+      return;
+  xiiTestFramework::Output(xiiTestOutput::Details, "TCP loopback sequential RPC: %.1f us/roundtrip, includes application polling", (xiiTime::Now() - started).GetMicroseconds() / 100);
+  for (xiiUInt32 i = 0; i < 16; ++i)
+  {
+    xiiNetworkRpcRequest request;
+    XII_TEST_BOOL(pair.m_Sender.CallRpc(pair.m_ClientChannel, 7, 1, args, request).Succeeded());
+    if (!pair.Receive(pair.m_Server, pair.m_Receiver))
+      return;
+  }
+  started = xiiTime::Now();
+  XII_TEST_BOOL(pair.m_Receiver.Dispatch(12, 16).Succeeded());
+  xiiTestFramework::Output(xiiTestOutput::Details, "Cached RPC decode+invoke+response admission: %.1f ns/call", (xiiTime::Now() - started).GetNanoseconds() / 16);
+  XII_TEST_INT(service->m_Target.m_iCalls, 116);
+}
+
+XII_CREATE_SIMPLE_TEST(NetworkReflection, RpcPortableWireFixture)
+{
+  Pair pair;
+  if (!pair.Start())
+    return;
+  xiiSharedPtr<ExampleService> service = XII_DEFAULT_NEW(ExampleService);
+  XII_TEST_BOOL(pair.m_Receiver.RegisterService(7, service, 12).Succeeded());
+  XII_TEST_BOOL(pair.m_Sender.DeclareRemoteService(7, xiiGetStaticRTTI<NetworkRpcExample>()).Succeeded());
+  xiiNetworkRpcRequest request;
+  XII_TEST_BOOL(pair.m_Sender.CallRpc(pair.m_ClientChannel, 7, 5, {}, request, xiiTime::MakeZero(), true).Succeeded());
+  xiiNetworkEvent event;
+  if (!xiiNetworkHostTestUtilities::HostTestEvent(pair.m_Server, xiiNetworkEventType::Message, event))
+    return;
+  constexpr xiiUInt8 expected[] = {
+    0x58, 0x4E, 0x52, 0x31, 0x04,
+    0, 0, 0, 0, 0, 0, 0, 7,
+    0, 0, 0, 0, 0, 0, 0, 5,
+    0, 0, 0, 0, 0, 0, 0, 1,
+    1, 0, 0, 0x13, 0x88, 0, 0, 0, 21,
+    0x04, 0x13, 0xAB, 0x3A, 0xD5, 0xB1, 0x09, 0x2A,
+    0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0};
+  XII_TEST_BOOL(event.m_Payload.GetBytes() == xiiMakeArrayPtr(expected));
+  XII_TEST_BOOL(pair.m_Receiver.ProcessEvent(std::move(event)).Succeeded());
+  XII_TEST_BOOL(pair.m_Receiver.Dispatch(12).Succeeded());
+  XII_TEST_INT(service->m_Target.m_iCalls, 1);
+}
+
+XII_CREATE_SIMPLE_TEST(NetworkReflection, ChannelCloseCompletesOnlyItsCalls)
+{
+  Pair pair;
+  if (!pair.Start())
+    return;
+  xiiSharedPtr<ExampleService> service = XII_DEFAULT_NEW(ExampleService);
+  XII_TEST_BOOL(pair.m_Receiver.RegisterService(7, service, 12).Succeeded());
+  XII_TEST_BOOL(pair.m_Sender.DeclareRemoteService(7, xiiGetStaticRTTI<NetworkRpcExample>()).Succeeded());
+  xiiNetworkChannel channel;
+  if (!XII_TEST_BOOL(pair.m_Client.OpenChannel(pair.m_ClientChannel.m_Connection, {}, channel).Succeeded()))
+    return;
+  using xiiNetworkHostTestUtilities::HostTestEvent;
+  xiiNetworkEvent event;
+  if (!HostTestEvent(pair.m_Client, xiiNetworkEventType::ChannelOpened, event) ||
+      !HostTestEvent(pair.m_Server, xiiNetworkEventType::ChannelOpened, event))
+    return;
+  xiiNetworkRpcRequest secondary, primary;
+  if (!XII_TEST_BOOL(pair.m_Sender.CallRpc(channel, 7, 5, {}, secondary).Succeeded()) ||
+      !XII_TEST_BOOL(pair.m_Sender.CallRpc(pair.m_ClientChannel, 7, 5, {}, primary).Succeeded()) ||
+      !pair.Receive(pair.m_Server, pair.m_Receiver) || !pair.Receive(pair.m_Server, pair.m_Receiver))
+    return;
+  if (!XII_TEST_BOOL(pair.m_Client.CloseChannel(channel).Succeeded()) ||
+      !HostTestEvent(pair.m_Client, xiiNetworkEventType::ChannelClosed, event))
+    return;
+  XII_TEST_BOOL(pair.m_Sender.ProcessEvent(std::move(event)).Succeeded());
+  xiiNetworkRpcResult result;
+  XII_TEST_BOOL(pair.m_Sender.TryGetRpcResult(result));
+  XII_TEST_BOOL(result.m_Request == secondary && result.m_Error.m_Code == xiiNetworkDataErrorCode::Disconnected);
+  XII_TEST_BOOL(!pair.m_Sender.TryGetRpcResult(result));
+  if (!HostTestEvent(pair.m_Server, xiiNetworkEventType::ChannelClosed, event))
+    return;
+  XII_TEST_BOOL(pair.m_Receiver.ProcessEvent(std::move(event)).Succeeded());
+  XII_TEST_BOOL(pair.m_Receiver.Dispatch(12).Succeeded());
+  if (!pair.Receive(pair.m_Client, pair.m_Sender))
+    return;
+  XII_TEST_BOOL(pair.m_Sender.TryGetRpcResult(result));
+  XII_TEST_BOOL(result.m_Request == primary && result.m_Error.Succeeded());
+  XII_TEST_INT(service->m_Target.m_iCalls, 1);
 }

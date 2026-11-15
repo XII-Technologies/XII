@@ -32,21 +32,29 @@ xiiNetworkDataError xiiNetworkReflectionEndpointState::Process(xiiNetworkEvent&&
   XII_LOCK(m_Mutex);
   if (!m_bRunning)
     return xiiNetworkDataError(xiiNetworkDataErrorCode::Disconnected);
-  if (event.m_Type == xiiNetworkEventType::Closed)
+  if (event.m_Type == xiiNetworkEventType::Closed || event.m_Type == xiiNetworkEventType::ChannelClosed)
   {
+    const bool bConnectionClosed = event.m_Type == xiiNetworkEventType::Closed;
+    const auto matches           = [&](xiiNetworkChannel channel) {
+      return bConnectionClosed ? channel.m_Connection == event.m_Connection : channel == event.m_Channel;
+    };
+    auto error        = xiiNetworkDataError(xiiNetworkDataErrorCode::Disconnected);
+    error.m_Transport = event.m_Error;
     for (xiiUInt32 i = m_Pending.GetCount(); i-- > 0;)
-      if (m_Pending[i].m_Request.m_Channel.m_Connection == event.m_Connection)
-        Complete(i, xiiNetworkDataError(xiiNetworkDataErrorCode::Disconnected));
-    for (xiiUInt32 i = m_Peers.GetCount(); i-- > 0;)
-      if (m_Peers[i]->m_pInfo->m_Connection == event.m_Connection)
-      {
-        for (const auto& agreement : m_Peers[i]->m_Agreements)
-          m_uiSchemaCacheBytes -= agreement.m_Remote.GetCount();
-        m_Peers[i]->m_bAlive = false;
-        m_Peers.RemoveAtAndCopy(i);
-      }
+      if (matches(m_Pending[i].m_Request.m_Channel))
+        Complete(i, error);
+    if (bConnectionClosed)
+    {
+      for (xiiUInt32 i = m_Peers.GetCount(); i-- > 0;)
+        if (m_Peers[i]->m_pInfo->m_Connection == event.m_Connection)
+        {
+          for (const auto& agreement : m_Peers[i]->m_Agreements)
+            m_uiSchemaCacheBytes -= agreement.m_Remote.GetCount();
+          m_Peers.RemoveAtAndCopy(i);
+        }
+    }
     for (xiiUInt32 i = m_Queue.GetCount(); i-- > 0;)
-      if (m_Queue[i].m_Event.m_Connection == event.m_Connection)
+      if (matches(m_Queue[i].m_Event.m_Channel))
       {
         ReleaseRequest(m_Queue[i]);
         m_Statistics.m_uiQueuedBytes -= m_Queue[i].m_Event.m_Payload.GetCapacity();

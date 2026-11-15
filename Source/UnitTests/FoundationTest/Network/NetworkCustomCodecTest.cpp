@@ -3,6 +3,7 @@
 #include <FoundationTest/FoundationTestPCH.h>
 
 #include <Foundation/Network/Serialization/NetworkSerializer.h>
+#include <Foundation/Utilities/CommandLineUtils.h>
 
 struct NetworkCodecValue
 {
@@ -82,4 +83,24 @@ XII_CREATE_SIMPLE_TEST(NetworkReflection, CustomCodecsAreExplicitAndBounded)
   XII_TEST_BOOL(registry.RemoveCodec(codec->GetWireId()).Succeeded());
   XII_TEST_BOOL(registry.GetSchema(xiiGetStaticRTTI<NetworkCodecValue>(), schema).m_Code == xiiNetworkDataErrorCode::CustomCodecFailure);
   XII_TEST_INT(codec->GetRefCount(), 1);
+}
+
+XII_CREATE_SIMPLE_TEST(NetworkReflection, CustomCodecBenchmark)
+{
+  if (!xiiCommandLineUtils::GetGlobalInstance()->GetBoolOption("-networkReflectionBenchmark"))
+    return;
+  xiiNetworkTypeRegistry            registry;
+  xiiSharedPtr<NetworkIntegerCodec> codec = XII_DEFAULT_NEW(NetworkIntegerCodec);
+  XII_TEST_BOOL(registry.RegisterCodec(codec).Succeeded());
+  xiiNetworkSerializationContext context;
+  NetworkCodecValue              source, target;
+  source.m_iValue = 123;
+  xiiArrayPtr<const xiiUInt8> bytes;
+  const auto                  started = xiiTime::Now();
+  for (xiiUInt32 i = 0; i < 10000; ++i)
+  {
+    XII_TEST_BOOL(xiiNetworkSerializer::Serialize(registry, source, context, bytes).Succeeded());
+    XII_TEST_BOOL(xiiNetworkSerializer::Deserialize(registry, target, bytes, context).Succeeded());
+  }
+  xiiTestFramework::Output(xiiTestOutput::Details, "Custom codec encode+decode: %.1f ns/op", (xiiTime::Now() - started).GetNanoseconds() / 10000);
 }

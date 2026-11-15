@@ -44,7 +44,7 @@ struct XII_FOUNDATION_DLL xiiNetworkReflectionStatistics
 
 class xiiNetworkReflectionEndpointState;
 
-/// M4 protocol layered on M3 logical channels. Feed Connected/Message/Closed events in publication
+/// M4 protocol layered on M3 logical channels. Feed Connected, Message, ChannelClosed and Closed events in publication
 /// order through ProcessEvent. Other host events remain the application's responsibility. Configure
 /// both hosts with EnableProtocol before Start. Raw NativeUdp has no authenticated sessions and is
 /// intentionally outside this endpoint; QUIC unreliable channels support typed datagrams.
@@ -74,6 +74,8 @@ public:
   /// Offers a bounded recursive descriptor. A matching acknowledgment enables compact encoding;
   /// compatible evolved descriptors permit tagged encoding. No application object is constructed.
   [[nodiscard]] xiiNetworkDataError OfferSchema(xiiNetworkChannel channel, const xiiRTTI* pType);
+  /// Returns NotNegotiated until an outgoing agreement exists for the current local descriptor.
+  [[nodiscard]] xiiNetworkDataError GetSchemaAgreement(xiiNetworkChannel channel, xiiUInt64 uiTypeId, bool& out_bCompact) const;
   [[nodiscard]] xiiNetworkDataError SendMessage(xiiNetworkChannel channel, const xiiRTTI* pType, const void* pMessage, xiiNetworkEncoding encoding = xiiNetworkEncoding::Tagged, xiiNetworkMessage* out_pSubmission = nullptr, xiiUInt64 uiUserData = 0);
   [[nodiscard]] xiiNetworkDataError ProcessEvent(xiiNetworkEvent&& event);
   /// Runs at most uiMaximum callbacks on the selected executor. Rejections count as dispatched work.
