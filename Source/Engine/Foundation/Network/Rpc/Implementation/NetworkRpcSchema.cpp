@@ -152,13 +152,13 @@ namespace xiiNetworkMessagingInternal
     return policy;
   }
 } // namespace xiiNetworkMessagingInternal
-xiiNetworkDataError xiiNetworkReflectionEndpointState::Register(xiiUInt64 id, const xiiRTTI* type, xiiSharedPtr<xiiNetworkRpcService> owner, xiiUInt32 executor)
+xiiNetworkDataError xiiNetworkReflectionEndpointState::Register(xiiUInt64 id, const xiiRTTI* type, xiiSharedPtr<xiiNetworkRpcService> owner, xiiUInt32 executor, const xiiNetworkRpcServiceLimits& limits)
 {
   auto&     registry = xiiNetworkRegistryAccess::Get(m_Registry);
   ReadScope scope(registry);
   if (!scope.m_bAcquired)
     return xiiNetworkDataError(xiiNetworkDataErrorCode::RegistryUnavailable);
-  if (id == 0 || type == nullptr)
+  if (id == 0 || type == nullptr || limits.m_uiRequestsPerSecond == 0 || limits.m_uiBurst == 0 || limits.m_uiMaximumConcurrentRequests == 0 || limits.m_uiMaximumResponseBytes == 0)
     return xiiNetworkDataError(xiiNetworkDataErrorCode::InvalidArgument);
   xiiSharedPtr<Service> service = XII_DEFAULT_NEW(Service);
   service->m_pType              = type;
@@ -166,6 +166,9 @@ xiiNetworkDataError xiiNetworkReflectionEndpointState::Register(xiiUInt64 id, co
   service->m_uiId               = id;
   service->m_uiExecutor         = executor;
   service->m_uiGeneration       = registry.m_uiGeneration.load();
+  service->m_Limits             = limits;
+  service->m_fTokens            = limits.m_uiBurst;
+  service->m_LastRefill         = xiiTime::Now();
   auto error                    = CompileService(registry, *service, m_Config);
   if (error.Failed())
     return error;

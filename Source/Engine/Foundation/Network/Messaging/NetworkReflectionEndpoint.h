@@ -4,39 +4,11 @@
 
 #include <Foundation/Basics.h>
 #include <Foundation/Network/NetworkHost.h>
+#include <Foundation/Network/Rpc/NetworkRpc.h>
 #include <Foundation/Network/Serialization/NetworkSerializer.h>
-
-/// Stable delivery context captured at session establishment, never obtained from a recycled slot.
-struct XII_FOUNDATION_DLL xiiNetworkDispatchContext
-{
-  xiiSharedPtr<const xiiNetworkSessionInfo> m_pSession;
-  xiiNetworkChannel                         m_Channel;
-  xiiUInt64                                 m_uiService = 0;
-  xiiUInt64                                 m_uiMethod  = 0;
-  xiiUInt64                                 m_uiRequest = 0;
-};
-
-/// Explicit incoming-message allowlist entry. The endpoint owns this handler until removal; active
-/// dispatch retains it through the callback. GetType must remain constant. Callbacks may reenter the
-/// endpoint, but must not unload plugins, mutate the registry, or destroy the endpoint.
-class XII_FOUNDATION_DLL xiiNetworkMessageHandler : public xiiRefCounted
-{
-public:
-  [[nodiscard]] virtual const xiiRTTI* GetType() const                                                        = 0;
-  [[nodiscard]] virtual bool           Authorize(const xiiNetworkDispatchContext& context) const              = 0;
-  virtual void                         Handle(const xiiNetworkDispatchContext& context, const void* pMessage) = 0;
-};
-
-/// Own the native target through this object. Only attributed reflected member functions can execute.
-/// Authorization runs before argument decoding on the selected executor and must explicitly allow
-/// each invocation. GetType/GetObject must stay constant; the owner must serialize target mutation.
-class XII_FOUNDATION_DLL xiiNetworkRpcService : public xiiRefCounted
-{
-public:
-  [[nodiscard]] virtual const xiiRTTI* GetType() const                                           = 0;
-  [[nodiscard]] virtual void*          GetObject()                                               = 0;
-  [[nodiscard]] virtual bool           Authorize(const xiiNetworkDispatchContext& context) const = 0;
-};
+#include <Foundation/Time/Timestamp.h>
+#include <type_traits>
+#include <utility>
 
 struct XII_FOUNDATION_DLL xiiNetworkReflectionConfiguration
 {
@@ -48,35 +20,16 @@ struct XII_FOUNDATION_DLL xiiNetworkReflectionConfiguration
   xiiUInt32                     m_uiMaximumQueuedPackets     = 1024;
   xiiUInt64                     m_uiMaximumQueuedBytes       = 16 * 1024 * 1024;
   /// Slots are reserved at admission, including completed results not yet dequeued.
-  xiiUInt32 m_uiMaximumPendingCalls   = 256;
-  xiiUInt32 m_uiMaximumSchemasPerPeer = 128;
-  xiiUInt32 m_uiMaximumSchemaBytes    = 262144;
+  xiiUInt32 m_uiMaximumPendingCalls     = 256;
+  xiiUInt32 m_uiMaximumSchemasPerPeer   = 128;
+  xiiUInt64 m_uiMaximumSchemaCacheBytes = 8 * 1024 * 1024;
+  xiiUInt32 m_uiMaximumSchemaBytes      = 262144;
   /// Finite out-of-order replay window. Older requests are rejected, never automatically retried.
   xiiUInt32 m_uiReplayWindow = 1024;
   /// Per-peer admission rate, shared across services. Both must be nonzero.
   xiiUInt32 m_uiRequestsPerSecond = 1000;
   xiiUInt32 m_uiRequestBurst      = 128;
   xiiTime   m_MaximumCallTimeout  = xiiTime::MakeFromSeconds(30);
-};
-
-struct XII_FOUNDATION_DLL xiiNetworkRpcRequest
-{
-  xiiNetworkChannel  m_Channel;
-  xiiUInt64          m_uiId = 0;
-  [[nodiscard]] bool IsValid() const { return m_Channel.IsValid() && m_uiId != 0; }
-  bool               operator==(const xiiNetworkRpcRequest&) const = default;
-};
-
-/// Encoded results contain no plugin-owned native objects. Decode explicitly against a local,
-/// declared service signature. Exactly one result is retained for every admitted correlated call.
-struct XII_FOUNDATION_DLL xiiNetworkRpcResult
-{
-  xiiNetworkRpcRequest      m_Request;
-  xiiUInt64                 m_uiService = 0;
-  xiiUInt64                 m_uiMethod  = 0;
-  xiiNetworkDataError       m_Error;
-  xiiDynamicArray<xiiUInt8> m_Value;
-  xiiDynamicArray<xiiUInt8> m_Signature;
 };
 
 struct XII_FOUNDATION_DLL xiiNetworkReflectionStatistics
@@ -116,12 +69,12 @@ public:
   [[nodiscard]] xiiNetworkDataError RemoveMessageHandler(xiiUInt64 uiTypeId);
   /// Declares the local signature of a remote service without exposing a local target.
   [[nodiscard]] xiiNetworkDataError DeclareRemoteService(xiiUInt64 uiService, const xiiRTTI* pType);
-  [[nodiscard]] xiiNetworkDataError RegisterService(xiiUInt64 uiService, xiiSharedPtr<xiiNetworkRpcService> pService, xiiUInt32 uiExecutor = 0);
+  [[nodiscard]] xiiNetworkDataError RegisterService(xiiUInt64 uiService, xiiSharedPtr<xiiNetworkRpcService> pService, xiiUInt32 uiExecutor = 0, const xiiNetworkRpcServiceLimits& limits = {});
   [[nodiscard]] xiiNetworkDataError RemoveService(xiiUInt64 uiService);
   /// Offers a bounded recursive descriptor. A matching acknowledgment enables compact encoding;
   /// compatible evolved descriptors permit tagged encoding. No application object is constructed.
   [[nodiscard]] xiiNetworkDataError OfferSchema(xiiNetworkChannel channel, const xiiRTTI* pType);
-  [[nodiscard]] xiiNetworkDataError SendMessage(xiiNetworkChannel channel, const xiiRTTI* pType, const void* pMessage, xiiNetworkEncoding encoding = xiiNetworkEncoding::Tagged);
+  [[nodiscard]] xiiNetworkDataError SendMessage(xiiNetworkChannel channel, const xiiRTTI* pType, const void* pMessage, xiiNetworkEncoding encoding = xiiNetworkEncoding::Tagged, xiiNetworkMessage* out_pSubmission = nullptr, xiiUInt64 uiUserData = 0);
   [[nodiscard]] xiiNetworkDataError ProcessEvent(xiiNetworkEvent&& event);
   /// Runs at most uiMaximum callbacks on the selected executor. Rejections count as dispatched work.
   [[nodiscard]] xiiNetworkDataError Dispatch(xiiUInt32 uiExecutor, xiiUInt32 uiMaximum = 64);
@@ -138,9 +91,40 @@ public:
   [[nodiscard]] xiiNetworkDataError            DecodeRpcResult(const xiiNetworkRpcResult& result, xiiVariant& out_value);
   [[nodiscard]] xiiNetworkReflectionStatistics GetStatistics() const;
   template <typename T>
-  [[nodiscard]] xiiNetworkDataError SendMessage(xiiNetworkChannel channel, const T& message, xiiNetworkEncoding encoding = xiiNetworkEncoding::Tagged)
+  [[nodiscard]] xiiNetworkDataError SendMessage(xiiNetworkChannel channel, const T& message, xiiNetworkEncoding encoding = xiiNetworkEncoding::Tagged, xiiNetworkMessage* out_pSubmission = nullptr, xiiUInt64 uiUserData = 0)
   {
-    return SendMessage(channel, xiiGetStaticRTTI<T>(), &message, encoding);
+    return SendMessage(channel, xiiGetStaticRTTI<T>(), &message, encoding, out_pSubmission, uiUserData);
+  }
+
+  /// Typed convenience. Timestamp results use microseconds in the variant API; this overload restores
+  /// the native timestamp. Reflected return objects must have ordinary copy assignment semantics.
+  template <typename T>
+  [[nodiscard]] xiiNetworkDataError DecodeRpcResult(const xiiNetworkRpcResult& result, T& out_value)
+  {
+    xiiVariant value;
+    auto       error = DecodeRpcResult(result, value);
+    if (error.Failed())
+      return error;
+    if constexpr (std::is_same_v<T, xiiTimestamp>)
+    {
+      if (!value.IsA<xiiInt64>())
+        return xiiNetworkDataError(xiiNetworkDataErrorCode::InvalidFieldType);
+      out_value = xiiTimestamp::MakeFromInt(value.Get<xiiInt64>(), xiiSIUnitOfTime::Microsecond);
+    }
+    else if constexpr (std::is_same_v<T, xiiVariant>)
+      out_value = std::move(value);
+    else
+    {
+      bool matches = value.GetReflectedType() == xiiGetStaticRTTI<T>();
+      if constexpr (std::is_same_v<T, xiiVariantArray>)
+        matches = value.IsA<xiiVariantArray>();
+      if constexpr (std::is_same_v<T, xiiVariantDictionary>)
+        matches = value.IsA<xiiVariantDictionary>();
+      if (!matches || value.GetData() == nullptr)
+        return xiiNetworkDataError(xiiNetworkDataErrorCode::InvalidFieldType);
+      out_value = *static_cast<const T*>(value.GetData());
+    }
+    return {};
   }
 
 private:

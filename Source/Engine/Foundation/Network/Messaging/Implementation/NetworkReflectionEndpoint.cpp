@@ -4,6 +4,7 @@
 
 #include <Foundation/Network/Messaging/Implementation/NetworkReflectionEndpointInternal.h>
 #include <Foundation/Profiling/Profiling.h>
+#include <cmath>
 
 using namespace xiiNetworkMessagingInternal;
 using namespace xiiNetworkReflectionInternal;
@@ -22,9 +23,20 @@ void xiiNetworkReflectionEndpointState::OnPluginEvent(const xiiPluginEvent& even
     return;
   // Order-independent barrier: no active callback may retain module code/RTTI past this point.
   m_Registry.Invalidate();
-  const bool running = m_bRunning;
-  Stop(xiiNetworkDataError(xiiNetworkDataErrorCode::HandlerRemoved));
-  m_bRunning = running;
+  decltype(m_Handlers) handlers;
+  decltype(m_Services) services;
+  {
+    XII_LOCK(m_Mutex);
+    while (!m_Pending.IsEmpty())
+      Complete(m_Pending.GetCount() - 1, xiiNetworkDataError(xiiNetworkDataErrorCode::HandlerRemoved));
+    m_Queue.Clear();
+    m_Statistics.m_uiQueuedBytes = 0;
+    m_uiSchemaCacheBytes         = 0;
+    for (auto& peer : m_Peers)
+      peer->m_Agreements.Clear();
+    m_Handlers.Swap(handlers);
+    m_Services.Swap(services);
+  }
 }
 void xiiNetworkReflectionEndpointState::Complete(xiiUInt32 index, xiiNetworkDataError error, xiiArrayPtr<const xiiUInt8> value)
 {
@@ -51,6 +63,7 @@ void xiiNetworkReflectionEndpointState::Stop(xiiNetworkDataError error)
     m_Queue.Clear();
     m_Statistics.m_uiQueuedBytes = 0;
     m_Peers.Clear();
+    m_uiSchemaCacheBytes = 0;
     m_Handlers.Swap(handlers);
     m_Services.Swap(services);
   }
@@ -101,7 +114,7 @@ xiiNetworkDataError xiiNetworkReflectionEndpoint::Start(const xiiNetworkReflecti
       c.m_uiMaximumPendingCalls == 0 || c.m_uiMaximumSchemasPerPeer == 0 || c.m_uiMaximumSchemaBytes < 16 || c.m_uiMaximumSchemaBytes > 262144 ||
       c.m_uiReplayWindow == 0 || c.m_uiReplayWindow > 65536 || c.m_uiRequestBurst == 0 || c.m_uiRequestsPerSecond == 0 ||
       c.m_Serialization.m_uiMaximumPayloadBytes < 128 || c.m_uiMaximumQueuedBytes < c.m_Serialization.m_uiMaximumPayloadBytes ||
-      c.m_MaximumCallTimeout <= xiiTime::MakeZero() || c.m_MaximumCallTimeout > xiiTime::MakeFromHours(1))
+      !std::isfinite(c.m_MaximumCallTimeout.GetSeconds()) || c.m_uiMaximumSchemaCacheBytes < c.m_uiMaximumSchemaBytes || c.m_MaximumCallTimeout <= xiiTime::MakeZero() || c.m_MaximumCallTimeout > xiiTime::MakeFromHours(1))
     return xiiNetworkDataError(xiiNetworkDataErrorCode::InvalidArgument);
   XII_LOCK(m_pState->m_Mutex);
   if (m_pState->m_bRunning || !m_pState->m_Results.IsEmpty())
@@ -124,7 +137,8 @@ xiiNetworkDataError xiiNetworkReflectionEndpoint::RegisterMessageHandler(xiiShar
   xiiSharedPtr<CompiledSchema> schema;
   if (!registry.m_Schemas.TryGetValue(type, schema))
     return xiiNetworkDataError(xiiNetworkDataErrorCode::UnknownType);
-  if (!type->GetAllocator()->CanAllocate() || type->GetTypeSize() > m_pState->m_Config.m_Serialization.m_uiMaximumObjectBytes)
+  if (!type->GetAllocator()->CanAllocate() || type->GetTypeSize() > m_pState->m_Config.m_Serialization.m_uiMaximumObjectBytes ||
+      type->GetTypeSize() > m_pState->m_Config.m_Serialization.m_uiMaximumDecodedBytes)
     return xiiNetworkDataError(xiiNetworkDataErrorCode::UnsupportedNestedType);
   xiiSharedPtr<Handler> entry = XII_DEFAULT_NEW(Handler);
   entry->m_pOwner             = std::move(handler);
@@ -144,6 +158,9 @@ xiiNetworkDataError xiiNetworkReflectionEndpoint::RegisterMessageHandler(xiiShar
 }
 xiiNetworkDataError xiiNetworkReflectionEndpoint::RemoveMessageHandler(xiiUInt64 type)
 {
+  ReadScope scope(xiiNetworkRegistryAccess::Get(m_pState->m_Registry));
+  if (!scope.m_bAcquired)
+    return xiiNetworkDataError(xiiNetworkDataErrorCode::RegistryUnavailable);
   xiiSharedPtr<Handler> removed;
   {
     XII_LOCK(m_pState->m_Mutex);
@@ -154,17 +171,20 @@ xiiNetworkDataError xiiNetworkReflectionEndpoint::RemoveMessageHandler(xiiUInt64
 }
 xiiNetworkDataError xiiNetworkReflectionEndpoint::DeclareRemoteService(xiiUInt64 service, const xiiRTTI* type)
 {
-  return m_pState->Register(service, type, {}, 0);
+  return m_pState->Register(service, type, {}, 0, {});
 }
-xiiNetworkDataError xiiNetworkReflectionEndpoint::RegisterService(xiiUInt64 service, xiiSharedPtr<xiiNetworkRpcService> owner, xiiUInt32 executor)
+xiiNetworkDataError xiiNetworkReflectionEndpoint::RegisterService(xiiUInt64 service, xiiSharedPtr<xiiNetworkRpcService> owner, xiiUInt32 executor, const xiiNetworkRpcServiceLimits& limits)
 {
   if (owner == nullptr || owner->GetObject() == nullptr)
     return xiiNetworkDataError(xiiNetworkDataErrorCode::InvalidArgument);
   const auto* type = owner->GetType();
-  return m_pState->Register(service, type, std::move(owner), executor);
+  return m_pState->Register(service, type, std::move(owner), executor, limits);
 }
 xiiNetworkDataError xiiNetworkReflectionEndpoint::RemoveService(xiiUInt64 service)
 {
+  ReadScope scope(xiiNetworkRegistryAccess::Get(m_pState->m_Registry));
+  if (!scope.m_bAcquired)
+    return xiiNetworkDataError(xiiNetworkDataErrorCode::RegistryUnavailable);
   xiiSharedPtr<Service> removed;
   {
     XII_LOCK(m_pState->m_Mutex);
@@ -195,8 +215,10 @@ xiiNetworkDataError xiiNetworkReflectionEndpoint::OfferSchema(xiiNetworkChannel 
     return writer.GetError();
   return m_pState->Send(channel, bytes);
 }
-xiiNetworkDataError xiiNetworkReflectionEndpoint::SendMessage(xiiNetworkChannel channel, const xiiRTTI* type, const void* message, xiiNetworkEncoding encoding)
+xiiNetworkDataError xiiNetworkReflectionEndpoint::SendMessage(xiiNetworkChannel channel, const xiiRTTI* type, const void* message, xiiNetworkEncoding encoding, xiiNetworkMessage* submission, xiiUInt64 userData)
 {
+  if (submission != nullptr)
+    *submission = {};
   auto&     registry = xiiNetworkRegistryAccess::Get(m_pState->m_Registry);
   ReadScope scope(registry);
   if (!scope.m_bAcquired)
@@ -220,6 +242,7 @@ xiiNetworkDataError xiiNetworkReflectionEndpoint::SendMessage(xiiNetworkChannel 
     if (!agreed)
       return xiiNetworkDataError(xiiNetworkDataErrorCode::NotNegotiated);
     context.m_Limits = m_pState->m_Config.m_Serialization;
+    context.m_Limits.m_uiMaximumTemporaryBytes /= 2;
   }
   xiiArrayPtr<const xiiUInt8> encoded;
   auto                        error = xiiNetworkSerializer::Serialize(m_pState->m_Registry, type, message, context, encoded, encoding);
@@ -234,7 +257,10 @@ xiiNetworkDataError xiiNetworkReflectionEndpoint::SendMessage(xiiNetworkChannel 
   XII_LOCK(m_pState->m_Mutex);
   if (!m_pState->m_bRunning || m_pState->FindPeer(channel) == nullptr)
     return xiiNetworkDataError(xiiNetworkDataErrorCode::Disconnected);
-  error = m_pState->Send(channel, bytes);
+  xiiNetworkMessage nativeSubmission;
+  error = Transport(m_pState->m_Host.Send(channel, bytes, nativeSubmission, userData));
+  if (error.Succeeded() && submission != nullptr)
+    *submission = nativeSubmission;
   if (error.Succeeded())
     ++m_pState->m_Statistics.m_uiMessagesSent;
   return error;

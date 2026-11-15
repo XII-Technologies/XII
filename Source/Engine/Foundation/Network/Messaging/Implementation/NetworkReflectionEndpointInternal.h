@@ -46,6 +46,10 @@ namespace xiiNetworkMessagingInternal
     xiiUInt64                          m_uiId = 0, m_uiGeneration = 0, m_uiRegistration = 0;
     xiiUInt32                          m_uiExecutor = 0;
     xiiDynamicArray<Method>            m_Methods;
+    xiiNetworkRpcServiceLimits         m_Limits;
+    xiiTime                            m_LastRefill;
+    double                             m_fTokens       = 0;
+    xiiUInt32                          m_uiOutstanding = 0;
   };
   struct Agreement
   {
@@ -99,7 +103,7 @@ public:
   xiiNetworkDataError                             Reliable(xiiNetworkChannel channel);
   void                                            Complete(xiiUInt32 uiIndex, xiiNetworkDataError error, xiiArrayPtr<const xiiUInt8> value = {});
   void                                            Stop(xiiNetworkDataError error);
-  xiiNetworkDataError                             Register(xiiUInt64 uiService, const xiiRTTI* pType, xiiSharedPtr<xiiNetworkRpcService> pOwner, xiiUInt32 uiExecutor);
+  xiiNetworkDataError                             Register(xiiUInt64 uiService, const xiiRTTI* pType, xiiSharedPtr<xiiNetworkRpcService> pOwner, xiiUInt32 uiExecutor, const xiiNetworkRpcServiceLimits& limits);
   xiiNetworkDataError                             Process(xiiNetworkEvent&& event);
   xiiNetworkDataError                             Dispatch(xiiUInt32 uiExecutor, xiiUInt32 uiMaximum);
   xiiNetworkDataError                             DispatchMessage(xiiNetworkMessagingInternal::Packet& packet);
@@ -109,11 +113,13 @@ public:
                                                        xiiNetworkRpcRequest& out_request, xiiTime timeout, bool bFireAndForget);
   xiiNetworkDataError                             Decode(const xiiNetworkRpcResult& result, xiiVariant& out_value);
 
+  void                                                                        ReleaseRequest(const xiiNetworkMessagingInternal::Packet& packet);
   xiiNetworkHost&                                                             m_Host;
   xiiNetworkTypeRegistry&                                                     m_Registry;
   xiiMutex                                                                    m_Mutex;
   bool                                                                        m_bRunning           = false;
   xiiUInt64                                                                   m_uiNextRegistration = 1;
+  xiiUInt64                                                                   m_uiSchemaCacheBytes = 0;
   xiiNetworkReflectionConfiguration                                           m_Config;
   xiiHashTable<xiiUInt64, xiiSharedPtr<xiiNetworkMessagingInternal::Handler>> m_Handlers;
   xiiHashTable<xiiUInt64, xiiSharedPtr<xiiNetworkMessagingInternal::Service>> m_Services;

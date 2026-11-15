@@ -294,3 +294,46 @@ XII_CREATE_SIMPLE_TEST(NetworkReflection, PrimitiveAndMathematicalVariants)
     XII_TEST_BOOL(target.m_Value == source.m_Value);
   }
 }
+
+XII_CREATE_SIMPLE_TEST(NetworkReflection, FixedArrayRejectsOversizedWireCount)
+{
+  xiiNetworkTypeRegistry         registry;
+  xiiNetworkSerializationContext context;
+  NetworkExampleState            source, target;
+  target.m_iSequence = -91;
+  target.m_Fixed.PushBack(37);
+  xiiArrayPtr<const xiiUInt8> view;
+  if (!XII_TEST_BOOL(xiiNetworkSerializer::Serialize(registry, source, context, view).Succeeded()))
+    return;
+  xiiDynamicArray<xiiUInt8>            bytes(view);
+  xiiSharedPtr<const xiiNetworkSchema> schema;
+  XII_TEST_BOOL(registry.GetSchema(xiiGetStaticRTTI<NetworkExampleState>(), schema).Succeeded());
+  xiiUInt64 fixedId = 0;
+  for (const auto& field : schema->m_Fields)
+    if (field.m_sName == "Fixed")
+      fixedId = field.m_uiId;
+  XII_TEST_BOOL(fixedId != 0);
+  xiiNetworkBinaryReader reader(bytes.GetArrayPtr().GetSubArray(25));
+  bool                   changed = false;
+  while (reader.GetRemaining() > 0)
+  {
+    const auto id = reader.VarUInt();
+    if (id == 0)
+      break;
+    XII_IGNORE_UNUSED(reader.U64());
+    const auto count  = reader.U32();
+    const auto offset = 25 + reader.GetPosition();
+    XII_IGNORE_UNUSED(reader.Bytes(count));
+    if (id == fixedId)
+    {
+      bytes[offset] = 127;
+      changed       = true;
+      break;
+    }
+  }
+  XII_TEST_BOOL(changed);
+  XII_TEST_BOOL(xiiNetworkSerializer::Deserialize(registry, target, bytes, context).m_Code == xiiNetworkDataErrorCode::SizeLimit);
+  XII_TEST_INT(target.m_iSequence, -91);
+  XII_TEST_INT(target.m_Fixed.GetCount(), 1);
+  XII_TEST_INT(target.m_Fixed[0], 37);
+}

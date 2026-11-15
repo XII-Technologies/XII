@@ -59,7 +59,7 @@ xiiNetworkDataError xiiNetworkReflectionEndpointState::Call(xiiNetworkChannel ch
   if (reliable.Failed())
     return reliable;
   xiiDynamicArray<xiiUInt8> encoded;
-  xiiNetworkBinaryWriter    args(encoded, xiiMath::Min(method->m_uiMaximumBytes, m_Config.m_Serialization.m_uiMaximumPayloadBytes));
+  xiiNetworkBinaryWriter    args(encoded, static_cast<xiiUInt32>(xiiMath::Min<xiiUInt64>(method->m_uiMaximumBytes, xiiMath::Min<xiiUInt64>(m_Config.m_Serialization.m_uiMaximumPayloadBytes, m_Config.m_Serialization.m_uiMaximumTemporaryBytes / 8))));
   for (xiiUInt32 i = 0; i < arguments.GetCount(); ++i)
   {
     auto error = WriteValue(method->m_Arguments[i], arguments[i], RpcPolicy(method->m_Arguments[i], m_Config.m_Serialization), args,
@@ -86,8 +86,12 @@ xiiNetworkDataError xiiNetworkReflectionEndpointState::Call(xiiNetworkChannel ch
   writer.U64(id);
   writer.U8(fireAndForget ? 1 : 0);
   writer.U32(static_cast<xiiUInt32>(xiiMath::Max(1.0, timeout.GetMilliseconds())));
+  if (4ULL * (encoded.GetCount() + method->m_Descriptor.GetCount() + 128ULL) > m_Config.m_Serialization.m_uiMaximumTemporaryBytes)
+    return xiiNetworkDataError(xiiNetworkDataErrorCode::AllocationLimit);
   writer.U32(method->m_Descriptor.GetCount());
   writer.Bytes(method->m_Descriptor);
+  if (2ULL * (writer.GetCount() + encoded.GetCount() + 64ULL) + 2ULL * (encoded.GetCount() + 64ULL) > m_Config.m_Serialization.m_uiMaximumTemporaryBytes)
+    return xiiNetworkDataError(xiiNetworkDataErrorCode::AllocationLimit);
   writer.Bytes(encoded);
   if (writer.GetError().Failed())
     return writer.GetError();
@@ -222,7 +226,7 @@ xiiNetworkDataError xiiNetworkReflectionEndpointState::DispatchRpc(Packet& packe
     m_Statistics.m_RpcExecutionTime += xiiTime::Now() - started;
   }
   xiiDynamicArray<xiiUInt8> encoded;
-  xiiNetworkBinaryWriter    writer(encoded, m_Config.m_Serialization.m_uiMaximumPayloadBytes - 30);
+  xiiNetworkBinaryWriter    writer(encoded, static_cast<xiiUInt32>(xiiMath::Min<xiiUInt64>(service->m_Limits.m_uiMaximumResponseBytes, xiiMath::Min<xiiUInt64>(m_Config.m_Serialization.m_uiMaximumPayloadBytes - 30, m_Config.m_Serialization.m_uiMaximumTemporaryBytes / 8))));
   if (method->m_bReturns)
   {
     if (method->m_Return.m_Kind == xiiNetworkValueKind::Timestamp)

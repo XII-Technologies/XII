@@ -40,13 +40,16 @@ xiiNetworkDataError xiiNetworkReflectionEndpointState::Process(xiiNetworkEvent&&
     for (xiiUInt32 i = m_Peers.GetCount(); i-- > 0;)
       if (m_Peers[i]->m_pInfo->m_Connection == event.m_Connection)
       {
+        for (const auto& agreement : m_Peers[i]->m_Agreements)
+          m_uiSchemaCacheBytes -= agreement.m_Remote.GetCount();
         m_Peers[i]->m_bAlive = false;
         m_Peers.RemoveAtAndCopy(i);
       }
     for (xiiUInt32 i = m_Queue.GetCount(); i-- > 0;)
       if (m_Queue[i].m_Event.m_Connection == event.m_Connection)
       {
-        m_Statistics.m_uiQueuedBytes -= m_Queue[i].m_Event.m_Payload.GetCount();
+        ReleaseRequest(m_Queue[i]);
+        m_Statistics.m_uiQueuedBytes -= m_Queue[i].m_Event.m_Payload.GetCapacity();
         m_Queue.RemoveAtAndCopy(i);
       }
     return {};
@@ -95,7 +98,9 @@ xiiNetworkDataError xiiNetworkReflectionEndpointState::Process(xiiNetworkEvent&&
     xiiSharedPtr<CompiledSchema> schema;
     if (!registry.m_Ids.TryGetValue(id, type) || !registry.m_Schemas.TryGetValue(type, schema))
       return xiiNetworkDataError(xiiNetworkDataErrorCode::UnknownType, id);
-    auto error = Compatible(descriptor, schema->m_pInfo->m_Descriptor);
+    const auto incoming = Compatible(descriptor, schema->m_pInfo->m_Descriptor);
+    const auto outgoing = Compatible(schema->m_pInfo->m_Descriptor, descriptor);
+    auto       error    = kind == Kind::Offer ? incoming : outgoing;
     if (error.Failed())
       return error;
     const bool exact     = descriptor == schema->m_pInfo->m_Descriptor.GetArrayPtr();
@@ -112,18 +117,19 @@ xiiNetworkDataError xiiNetworkReflectionEndpointState::Process(xiiNetworkEvent&&
     // Changes always reset previous agreement. Peer descriptors are bounded and copied only here.
     if (agreement->m_pLocal == nullptr || agreement->m_pLocal->m_Descriptor != schema->m_pInfo->m_Descriptor || agreement->m_Remote.GetArrayPtr() != descriptor)
     {
-      *agreement          = {};
-      agreement->m_uiType = id;
-      agreement->m_pLocal = schema->m_pInfo;
-      agreement->m_Remote = descriptor;
+      const auto oldSize = agreement->m_Remote.GetCount();
+      if (descriptor.GetCount() > m_Config.m_uiMaximumSchemaCacheBytes - (m_uiSchemaCacheBytes - oldSize))
+        return xiiNetworkDataError(xiiNetworkDataErrorCode::Backpressure);
+      m_uiSchemaCacheBytes = m_uiSchemaCacheBytes - oldSize + descriptor.GetCount();
+      *agreement           = {};
+      agreement->m_uiType  = id;
+      agreement->m_pLocal  = schema->m_pInfo;
+      agreement->m_Remote  = descriptor;
     }
-    agreement->m_bIncoming = true;
+    agreement->m_bIncoming = incoming.Succeeded();
     agreement->m_bExact    = exact;
     if (kind == Kind::Agreement)
     {
-      error = Compatible(schema->m_pInfo->m_Descriptor, descriptor);
-      if (error.Failed())
-        return error;
       agreement->m_bOutgoing = true;
       return {};
     }
@@ -172,7 +178,8 @@ xiiNetworkDataError xiiNetworkReflectionEndpointState::Process(xiiNetworkEvent&&
       if (m_Queue[i].m_Kind == Kind::Request && m_Queue[i].m_uiRequest == id && m_Queue[i].m_Event.m_Channel == event.m_Channel)
       {
         Reply(m_Queue[i], xiiNetworkDataError(xiiNetworkDataErrorCode::Cancelled)).IgnoreResult();
-        m_Statistics.m_uiQueuedBytes -= m_Queue[i].m_Event.m_Payload.GetCount();
+        ReleaseRequest(m_Queue[i]);
+        m_Statistics.m_uiQueuedBytes -= m_Queue[i].m_Event.m_Payload.GetCapacity();
         m_Queue.RemoveAtAndCopy(i);
         return {};
       }
@@ -239,6 +246,15 @@ xiiNetworkDataError xiiNetworkReflectionEndpointState::Process(xiiNetworkEvent&&
       Reply(packet, xiiNetworkDataError(xiiNetworkDataErrorCode::UnknownRpc)).IgnoreResult();
       return xiiNetworkDataError(xiiNetworkDataErrorCode::UnknownRpc);
     }
+    service->m_fTokens    = xiiMath::Min(static_cast<double>(service->m_Limits.m_uiBurst), service->m_fTokens + (now - service->m_LastRefill).GetSeconds() * service->m_Limits.m_uiRequestsPerSecond);
+    service->m_LastRefill = now;
+    if (service->m_fTokens < 1 || service->m_uiOutstanding >= service->m_Limits.m_uiMaximumConcurrentRequests)
+    {
+      Reply(packet, xiiNetworkDataError(xiiNetworkDataErrorCode::Backpressure)).IgnoreResult();
+      return xiiNetworkDataError(xiiNetworkDataErrorCode::Backpressure);
+    }
+    service->m_fTokens -= 1;
+    ++service->m_uiOutstanding;
     packet.m_uiExecutor     = service->m_uiExecutor;
     packet.m_uiRegistration = service->m_uiRegistration;
     ++m_Statistics.m_uiRpcRequests;
@@ -247,9 +263,10 @@ xiiNetworkDataError xiiNetworkReflectionEndpointState::Process(xiiNetworkEvent&&
     return xiiNetworkDataError(xiiNetworkDataErrorCode::InvalidEncoding);
   if (kind == Kind::Message)
     packet.m_Event = std::move(event);
-  const auto size = packet.m_Event.m_Payload.GetCount();
+  const auto size = packet.m_Event.m_Payload.GetCapacity();
   if (m_Queue.GetCount() >= m_Config.m_uiMaximumQueuedPackets || size > m_Config.m_uiMaximumQueuedBytes - m_Statistics.m_uiQueuedBytes)
   {
+    ReleaseRequest(packet);
     if (kind == Kind::Request)
       Reply(packet, xiiNetworkDataError(xiiNetworkDataErrorCode::Backpressure)).IgnoreResult();
     ++m_Statistics.m_uiRejectedPackets;
@@ -281,7 +298,7 @@ xiiNetworkDataError xiiNetworkReflectionEndpointState::Dispatch(xiiUInt32 execut
         {
           packet = std::move(m_Queue[j]);
           m_Queue.RemoveAtAndCopy(j);
-          m_Statistics.m_uiQueuedBytes -= packet.m_Event.m_Payload.GetCount();
+          m_Statistics.m_uiQueuedBytes -= packet.m_Event.m_Payload.GetCapacity();
           m_Statistics.m_DispatchDelay += xiiTime::Now() - packet.m_Queued;
           found = true;
           break;
@@ -292,6 +309,10 @@ xiiNetworkDataError xiiNetworkReflectionEndpointState::Dispatch(xiiUInt32 execut
     auto error = packet.m_Kind == Kind::Message ? DispatchMessage(packet) : DispatchRpc(packet);
     if (packet.m_Kind == Kind::Request && error.Failed())
       Reply(packet, error).IgnoreResult();
+    {
+      XII_LOCK(m_Mutex);
+      ReleaseRequest(packet);
+    }
     if (error.Failed())
     {
       XII_LOCK(m_Mutex);
@@ -322,10 +343,14 @@ xiiNetworkDataError xiiNetworkReflectionEndpointState::DispatchMessage(Packet& p
     return xiiNetworkDataError(xiiNetworkDataErrorCode::Unauthorized);
   xiiNetworkSerializationContext serialization;
   serialization.m_Limits = m_Config.m_Serialization;
-  auto*      allocator   = handler->m_pType->GetAllocator();
-  void*      instance    = allocator->Allocate<void>();
-  const auto bytes       = packet.m_Event.m_Payload.GetBytes().GetSubArray(5);
-  auto       error       = xiiNetworkSerializer::Deserialize(m_Registry, handler->m_pType, instance, bytes, serialization);
+  const auto objectBytes = 2ULL * handler->m_pType->GetTypeSize() + 64;
+  if (objectBytes > serialization.m_Limits.m_uiMaximumDecodedBytes)
+    return xiiNetworkDataError(xiiNetworkDataErrorCode::AllocationLimit);
+  serialization.m_Limits.m_uiMaximumDecodedBytes -= objectBytes;
+  auto*      allocator = handler->m_pType->GetAllocator();
+  void*      instance  = allocator->Allocate<void>();
+  const auto bytes     = packet.m_Event.m_Payload.GetBytes().GetSubArray(5);
+  auto       error     = xiiNetworkSerializer::Deserialize(m_Registry, handler->m_pType, instance, bytes, serialization);
   if (error.Succeeded())
   {
     handler->m_pOwner->Handle(context, instance);
@@ -334,4 +359,13 @@ xiiNetworkDataError xiiNetworkReflectionEndpointState::DispatchMessage(Packet& p
   }
   allocator->Deallocate(instance);
   return error;
+}
+
+void xiiNetworkReflectionEndpointState::ReleaseRequest(const Packet& packet)
+{
+  if (packet.m_Kind != Kind::Request)
+    return;
+  xiiSharedPtr<Service> service;
+  if (m_Services.TryGetValue(packet.m_uiService, service) && service->m_uiRegistration == packet.m_uiRegistration && service->m_uiOutstanding > 0)
+    --service->m_uiOutstanding;
 }

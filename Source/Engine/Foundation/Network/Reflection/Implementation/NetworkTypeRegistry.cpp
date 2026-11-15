@@ -521,6 +521,10 @@ xiiNetworkDataError xiiNetworkTypeRegistryState::BuildSchema(const xiiRTTI* pTyp
     {
       return fail(xiiNetworkDataErrorCode::InvalidAttribute, fieldInfo.m_uiId);
     }
+    if (fieldInfo.m_uiQuantizationBits != 0 &&
+        (fieldInfo.m_Kind == xiiNetworkValueKind::Quaternion || fieldInfo.m_Kind == xiiNetworkValueKind::Quaterniond) &&
+        (fieldInfo.m_uiQuantizationBits < 8 || fieldInfo.m_fMinimum != -1.0 || fieldInfo.m_fMaximum != 1.0))
+      return fail(xiiNetworkDataErrorCode::InvalidAttribute, fieldInfo.m_uiId);
     if (field.m_Value.m_pNested != nullptr)
     {
       fieldInfo.m_uiNestedTypeId = field.m_Value.m_pNested->m_pInfo->m_uiTypeId;
@@ -751,6 +755,10 @@ xiiNetworkDataError xiiNetworkTypeRegistry::RegisterCodec(xiiSharedPtr<xiiNetwor
   {
     return xiiNetworkDataError(xiiNetworkDataErrorCode::InvalidArgument);
   }
+  const auto* type = pCodec->GetType();
+  if (type->GetVariantType() == xiiVariantType::Invalid &&
+      (type->GetAllocator() == nullptr || !type->GetAllocator()->CanAllocate()))
+    return xiiNetworkDataError(xiiNetworkDataErrorCode::CustomCodecFailure);
   XII_LOCK(m_pState->m_MutationMutex);
   const bool bWasPaused = m_pState->m_bPaused.load();
   m_pState->Pause();

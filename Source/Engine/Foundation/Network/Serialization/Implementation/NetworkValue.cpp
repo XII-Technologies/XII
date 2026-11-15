@@ -327,12 +327,16 @@ namespace
       case xiiNetworkValueKind::Quaternion:
       {
         const auto& object = *static_cast<const xiiQuat*>(pObject);
+        if (!object.IsValid(static_cast<decltype(object.x)>(0.0001)))
+          return xiiNetworkDataError(xiiNetworkDataErrorCode::InvalidEncoding);
         WriteComponents(writer, policy, object.x, object.y, object.z, object.w);
         break;
       }
       case xiiNetworkValueKind::Quaterniond:
       {
         const auto& object = *static_cast<const xiiQuatd*>(pObject);
+        if (!object.IsValid(static_cast<decltype(object.x)>(0.0001)))
+          return xiiNetworkDataError(xiiNetworkDataErrorCode::InvalidEncoding);
         WriteComponents(writer, policy, object.x, object.y, object.z, object.w);
         break;
       }
@@ -700,6 +704,12 @@ namespace
       {
         xiiQuat object;
         ReadComponents(reader, policy, object.x, object.y, object.z, object.w);
+        const double error = policy.m_uiQuantizationBits == 0 ? 0.0001 :
+                                                                4.0 / static_cast<double>((xiiUInt64(1) << policy.m_uiQuantizationBits) - 1) + 0.0001;
+        if (!object.IsValid(static_cast<decltype(object.x)>(error)))
+          return xiiNetworkDataError(xiiNetworkDataErrorCode::InvalidEncoding);
+        if (policy.m_uiQuantizationBits != 0)
+          object.Normalize();
         ref_object = object;
         break;
       }
@@ -707,6 +717,12 @@ namespace
       {
         xiiQuatd object;
         ReadComponents(reader, policy, object.x, object.y, object.z, object.w);
+        const double error = policy.m_uiQuantizationBits == 0 ? 0.0001 :
+                                                                4.0 / static_cast<double>((xiiUInt64(1) << policy.m_uiQuantizationBits) - 1) + 0.0001;
+        if (!object.IsValid(static_cast<decltype(object.x)>(error)))
+          return xiiNetworkDataError(xiiNetworkDataErrorCode::InvalidEncoding);
+        if (policy.m_uiQuantizationBits != 0)
+          object.Normalize();
         ref_object = object;
         break;
       }
