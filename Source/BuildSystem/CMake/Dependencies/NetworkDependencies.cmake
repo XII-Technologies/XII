@@ -51,7 +51,7 @@ function(xii_link_network_providers TARGET_NAME)
       --root "${PROVIDER_ROOT}" --cache "${XII_NETWORK_DEPENDENCY_ARCHIVE_CACHE}"
       --bin "${PROVIDER_BIN}" --lib "${PROVIDER_LIB}" --include "${PROVIDER_INCLUDE}"
       --arch "${PROVIDER_ARCH}" --cc "${CMAKE_C_COMPILER}" --cxx "${CMAKE_CXX_COMPILER}"
-      --cmake "${CMAKE_COMMAND}" --perl "${PERL_EXECUTABLE}" --vs "${CMAKE_VS_INSTALLATION_PATH}"
+      --cmake "${CMAKE_COMMAND}" --perl "${PERL_EXECUTABLE}" --vs "${CMAKE_GENERATOR_INSTANCE}"
       --jobs "${XII_NETWORK_DEPENDENCY_BUILD_JOBS}"
     DEPENDS "${XII_ROOT}/Utilities/Build/build_network_dependencies.py"
     COMMENT "Building pinned OpenSSL 3.5.9 and MsQuic 2.6.4 providers" VERBATIM)

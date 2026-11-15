@@ -109,6 +109,44 @@ def stage_file(source_path: Path, destination: Path) -> None:
         shutil.copy2(source_path, destination)
 
 
+def find_vcvars(instance: str, compiler: str, environment: dict[str, str]) -> Path:
+    """Locate the tools used by the parent Visual Studio generator or native compiler."""
+    candidates = [instance.split(",", 1)[0], environment.get("VSINSTALLDIR", "")]
+    candidates.extend(str(parent) for parent in Path(compiler).parents if parent.is_absolute())
+    for candidate in candidates:
+        if candidate:
+            script = Path(candidate) / "VC/Auxiliary/Build/vcvarsall.bat"
+            if script.is_file():
+                return script
+    base = environment.get("ProgramFiles(x86)")
+    if base:
+        vswhere = Path(base) / "Microsoft Visual Studio/Installer/vswhere.exe"
+        if vswhere.is_file():
+            query = subprocess.run(
+                [str(vswhere), "-latest", "-prerelease", "-products", "*",
+                 "-requires", "Microsoft.VisualStudio.Component.VC.Tools.x86.x64", "-property", "installationPath"],
+                capture_output=True, text=True, check=True,
+            )
+            instance_path = query.stdout.strip()
+            if instance_path:
+                script = Path(instance_path) / "VC/Auxiliary/Build/vcvarsall.bat"
+                if script.is_file():
+                    return script
+    raise RuntimeError("Could not locate vcvarsall.bat for the selected Visual Studio instance")
+
+
+def configure_msvc(instance: str, compiler: str, architecture: str, environment: dict[str, str]) -> None:
+    vcvars = find_vcvars(instance, compiler, environment)
+    target = "amd64" if architecture == "x64" else "amd64_arm64"
+    # cmd.exe requires its native outer quoting, which differs from C runtime argv escaping.
+    command = f'cmd.exe /d /s /c "call "{vcvars}" {target} >nul && set"'
+    result = subprocess.run(command, check=True, capture_output=True, text=True, env=environment)
+    for line in result.stdout.splitlines():
+        if "=" in line and not line.startswith("="):
+            key, value = line.split("=", 1)
+            environment[key.upper()] = value
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ("root", "cache", "bin", "lib", "include"):
@@ -127,15 +165,7 @@ def main() -> None:
     with build_lock(args.root / "build.lock"):
         environment = os.environ.copy()
         if os.name == "nt":
-            vcvars = Path(args.vs) / "VC/Auxiliary/Build/vcvarsall.bat"
-            if not vcvars.is_file():
-                raise RuntimeError("The selected Visual Studio installation must supply vcvarsall.bat")
-            target = "amd64" if args.arch == "x64" else "amd64_arm64"
-            result = subprocess.run(["cmd.exe", "/d", "/s", "/c", f'call "{vcvars}" {target} >nul && set'], check=True, capture_output=True, text=True)
-            for line in result.stdout.splitlines():
-                if "=" in line and not line.startswith("="):
-                    key, value = line.split("=", 1)
-                    environment[key.upper()] = value
+            configure_msvc(args.vs, args.cc, args.arch, environment)
             nasm = source("nasm", args.cache, args.root)
             environment["PATH"] = str(nasm) + os.pathsep + environment.get("PATH", "")
         else:
@@ -185,7 +215,8 @@ def main() -> None:
             if os.name == "nt":
                 command += ["-G", "NMake Makefiles"]
             else:
-                command += ["-G", "Ninja", "-DCMAKE_C_COMPILER=" + args.cc, "-DCMAKE_CXX_COMPILER=" + args.cxx]
+                generator = "Unix Makefiles" if sys.platform == "darwin" else "Ninja"
+                command += ["-G", generator, "-DCMAKE_C_COMPILER=" + args.cc, "-DCMAKE_CXX_COMPILER=" + args.cxx]
             if sys.platform == "darwin":
                 command += ["-DCMAKE_OSX_ARCHITECTURES=" + ("arm64" if args.arch == "arm64" else "x86_64")]
             run(command, args.root, environment)
