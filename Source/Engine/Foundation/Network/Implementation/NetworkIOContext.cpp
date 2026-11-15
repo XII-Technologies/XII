@@ -2,6 +2,8 @@
 
 #include <Foundation/FoundationPCH.h>
 
+#include <Foundation/Network/Implementation/NetworkIOContextAccess.h>
+
 #include <Foundation/Network/NetworkIOContext.h>
 
 #include <Foundation/Network/Implementation/NetworkIOInternal.h>
@@ -585,6 +587,10 @@ void xiiNetworkIORuntime::Publish(Operation& operation)
   m_CompletionRing[uiTail] = &operation;
   ++m_uiCompletionCount;
   m_Completions.SignalOne();
+  if (m_pCompletionSignal != nullptr)
+  {
+    m_pCompletionSignal->RaiseSignal();
+  }
 }
 
 bool xiiNetworkIORuntime::TryGetCompletion(xiiNetworkIOResult& out_result)
@@ -769,4 +775,15 @@ xiiNetworkIOStatistics   xiiNetworkIOContext::GetStatistics() const { return m_p
 xiiNetworkError          xiiNetworkIOContext::AcquireBuffer(xiiUInt32 uiCount, xiiNetworkIOBuffer& out_buffer)
 {
   return GetState() == xiiNetworkIOContextState::Running ? m_pRuntime->m_BufferPool.Acquire(uiCount, out_buffer) : xiiNetworkError(xiiNetworkErrorCode::NotRunning);
+}
+
+xiiNetworkError xiiNetworkIOContextAccess::SetCompletionSignal(xiiNetworkIOContext& context, xiiThreadSignal& signal)
+{
+  XII_LOCK(context.m_pRuntime->m_LifecycleMutex);
+  if (context.GetState() != xiiNetworkIOContextState::Created)
+  {
+    return xiiNetworkError(xiiNetworkErrorCode::AlreadyOpen);
+  }
+  context.m_pRuntime->m_pCompletionSignal = &signal;
+  return {};
 }
