@@ -74,20 +74,21 @@ enum class xiiNetworkFieldCategory : xiiUInt8
 
 struct XII_FOUNDATION_DLL xiiNetworkFieldSchema
 {
-  xiiString               m_sName;
-  xiiUInt64               m_uiId                 = 0;
-  xiiUInt64               m_uiWireSignature      = 0;
-  xiiUInt64               m_uiNestedTypeId       = 0;
-  xiiUInt64               m_uiCodecId            = 0;
-  xiiUInt32               m_uiCodecVersion       = 0;
-  xiiNetworkValueKind     m_Kind                 = xiiNetworkValueKind::Invalid;
-  xiiNetworkFieldCategory m_Category             = xiiNetworkFieldCategory::Member;
-  bool                    m_bOptional            = false;
-  xiiUInt32               m_uiMaximumElements    = 4096;
-  xiiUInt32               m_uiMaximumStringBytes = 65536;
-  xiiUInt8                m_uiQuantizationBits   = 0;
-  double                  m_fMinimum             = 0;
-  double                  m_fMaximum             = 1;
+  xiiString                 m_sName;
+  xiiUInt64                 m_uiId            = 0;
+  xiiUInt64                 m_uiWireSignature = 0;
+  xiiDynamicArray<xiiUInt8> m_WireDescriptor;
+  xiiUInt64                 m_uiNestedTypeId       = 0;
+  xiiUInt64                 m_uiCodecId            = 0;
+  xiiUInt32                 m_uiCodecVersion       = 0;
+  xiiNetworkValueKind       m_Kind                 = xiiNetworkValueKind::Invalid;
+  xiiNetworkFieldCategory   m_Category             = xiiNetworkFieldCategory::Member;
+  bool                      m_bOptional            = false;
+  xiiUInt32                 m_uiMaximumElements    = 4096;
+  xiiUInt32                 m_uiMaximumStringBytes = 65536;
+  xiiUInt8                  m_uiQuantizationBits   = 0;
+  double                    m_fMinimum             = 0;
+  double                    m_fMaximum             = 1;
 };
 
 /// Immutable portable snapshot returned by the registry. Contains no borrowed RTTI or code pointers;

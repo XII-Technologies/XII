@@ -113,10 +113,7 @@ namespace xiiNetworkReflectionInternal
     {
       return xiiNetworkValueKind::Angled;
     }
-    if (pType == xiiGetStaticRTTI<xiiHashedString>())
-    {
-      return xiiNetworkValueKind::HashedString;
-    }
+
     if (pType == xiiGetStaticRTTI<xiiVec2>())
     {
       return xiiNetworkValueKind::Vector2;
@@ -279,6 +276,14 @@ namespace
     {
       writer.U64(TypeId(value.m_pType));
     }
+    if (value.m_bEnumeration)
+    {
+      writer.U32(value.m_EnumValues.GetCount());
+      for (const auto iNumber : value.m_EnumValues)
+      {
+        writer.U64(std::bit_cast<xiiUInt64>(iNumber));
+      }
+    }
     if (value.m_pCodec != nullptr)
     {
       writer.U64(value.m_pCodec->GetWireId());
@@ -358,6 +363,11 @@ xiiNetworkDataError xiiNetworkTypeRegistryState::CompileValue(const xiiRTTI* pTy
     {
       return xiiNetworkDataError(xiiNetworkDataErrorCode::CustomCodecFailure);
     }
+    if (pType->GetVariantType() == xiiVariantType::Invalid &&
+        (pType->GetAllocator() == nullptr || !pType->GetAllocator()->CanAllocate()))
+    {
+      return xiiNetworkDataError(xiiNetworkDataErrorCode::CustomCodecFailure);
+    }
     value.m_Kind = xiiNetworkValueKind::Custom;
   }
   else if (flags.IsAnySet(xiiPropertyFlags::IsEnum | xiiPropertyFlags::Bitflags) || pType->GetTypeFlags().IsAnySet(xiiTypeFlags::IsEnum | xiiTypeFlags::Bitflags))
@@ -402,6 +412,21 @@ xiiNetworkDataError xiiNetworkTypeRegistryState::CompileValue(const xiiRTTI* pTy
           return xiiNetworkDataError(xiiNetworkDataErrorCode::UnsupportedNestedType);
         }
         value.m_Kind = xiiNetworkValueKind::Structure;
+      }
+    }
+  }
+  if (value.m_bEnumeration)
+  {
+    if (value.m_EnumValues.GetCount() > 512)
+    {
+      return xiiNetworkDataError(xiiNetworkDataErrorCode::SizeLimit);
+    }
+    value.m_EnumValues.Sort();
+    for (xiiUInt32 uiIndex = value.m_EnumValues.GetCount(); uiIndex > 1; --uiIndex)
+    {
+      if (value.m_EnumValues[uiIndex - 1] == value.m_EnumValues[uiIndex - 2])
+      {
+        value.m_EnumValues.RemoveAtAndCopy(uiIndex - 1);
       }
     }
   }
@@ -474,7 +499,7 @@ xiiNetworkDataError xiiNetworkTypeRegistryState::BuildSchema(const xiiRTTI* pTyp
     fieldInfo.m_fMinimum             = pAttribute->m_fMinimum;
     fieldInfo.m_fMaximum             = pAttribute->m_fMaximum;
     if (fieldInfo.m_uiId == 0 || fieldInfo.m_uiMaximumElements == 0 || fieldInfo.m_uiMaximumStringBytes == 0 ||
-        fieldInfo.m_uiQuantizationBits > 24 || (fieldInfo.m_uiQuantizationBits != 0 && (!std::isfinite(fieldInfo.m_fMinimum) || !std::isfinite(fieldInfo.m_fMaximum) || fieldInfo.m_fMinimum >= fieldInfo.m_fMaximum)))
+        fieldInfo.m_uiQuantizationBits > 24 || (fieldInfo.m_uiQuantizationBits != 0 && (!std::isfinite(fieldInfo.m_fMinimum) || !std::isfinite(fieldInfo.m_fMaximum) || fieldInfo.m_fMinimum >= fieldInfo.m_fMaximum || !std::isfinite(fieldInfo.m_fMaximum - fieldInfo.m_fMinimum))))
     {
       return fail(xiiNetworkDataErrorCode::InvalidAttribute, fieldInfo.m_uiId);
     }
@@ -520,6 +545,7 @@ xiiNetworkDataError xiiNetworkTypeRegistryState::BuildSchema(const xiiRTTI* pTyp
       return fail(signatureWriter.GetError().m_Code, fieldInfo.m_uiId);
     }
     fieldInfo.m_uiWireSignature = HashBytes(signature);
+    fieldInfo.m_WireDescriptor  = std::move(signature);
     pSchema->m_Fields.PushBack(std::move(field));
     if (pSchema->m_Fields.GetCount() > 512)
     {
@@ -541,11 +567,20 @@ xiiNetworkDataError xiiNetworkTypeRegistryState::BuildSchema(const xiiRTTI* pTyp
     uiPrevious = field.m_Info.m_uiId;
     info.m_Fields.PushBack(field.m_Info);
     descriptor.U64(field.m_Info.m_uiId);
-    descriptor.U64(field.m_Info.m_uiWireSignature);
+    descriptor.U32(field.m_Info.m_WireDescriptor.GetCount());
+    descriptor.Bytes(field.m_Info.m_WireDescriptor);
     descriptor.U8(field.m_Info.m_bOptional ? 1 : 0);
     descriptor.U32(field.m_Info.m_uiMaximumElements);
     descriptor.U32(field.m_Info.m_uiMaximumStringBytes);
-    descriptor.U64(field.m_Value.m_pNested != nullptr ? field.m_Value.m_pNested->m_pInfo->m_uiFingerprint : 0);
+    if (field.m_Value.m_pNested != nullptr)
+    {
+      descriptor.U32(field.m_Value.m_pNested->m_pInfo->m_Descriptor.GetCount());
+      descriptor.Bytes(field.m_Value.m_pNested->m_pInfo->m_Descriptor);
+    }
+    else
+    {
+      descriptor.U32(0);
+    }
   }
   if (descriptor.GetError().Failed())
   {
