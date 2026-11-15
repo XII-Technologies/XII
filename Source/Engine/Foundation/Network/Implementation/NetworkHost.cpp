@@ -127,6 +127,23 @@ xiiNetworkError xiiNetworkHost::Listen(const xiiNetworkEndpoint& endpoint, xiiNe
       }
       if (error.Succeeded())
       {
+        // Some kernels also use socket buffer limits to bound a single datagram.
+        // Retain larger native defaults and reserve room for the configured payload.
+        xiiUInt32  uiSendBytes    = 0;
+        xiiUInt32  uiReceiveBytes = 0;
+        const auto uiPayloadBytes = runtime.m_Capabilities.m_uiMaximumUnreliablePayload;
+        error                     = socket.GetBufferSizes(uiSendBytes, uiReceiveBytes);
+        if (error.Succeeded() && uiSendBytes < uiPayloadBytes)
+        {
+          error = socket.SetSendBufferSize(uiPayloadBytes);
+        }
+        if (error.Succeeded() && uiReceiveBytes < uiPayloadBytes)
+        {
+          error = socket.SetReceiveBufferSize(uiPayloadBytes);
+        }
+      }
+      if (error.Succeeded())
+      {
         error = socket.Bind(endpoint);
       }
       if (error.Succeeded())

@@ -61,7 +61,7 @@ xiiNetworkError xiiNetworkHostRuntime::Start(const xiiNetworkHostConfiguration& 
   m_Capabilities.m_bAuthenticated             = bSecure;
   m_Capabilities.m_bConnectionless            = configuration.m_Transport == xiiNetworkTransportType::NativeUdp;
   m_Capabilities.m_uiDeliveryModes            = m_Capabilities.m_bConnectionless ? xiiNetworkDeliveryMask(xiiNetworkDeliveryMode::UnreliableUnsequenced) : xiiNetworkDeliveryMask(xiiNetworkDeliveryMode::ReliableOrdered);
-  m_Capabilities.m_uiMaximumUnreliablePayload = m_Capabilities.m_bConnectionless ? 65507U : 0U;
+  m_Capabilities.m_uiMaximumUnreliablePayload = m_Capabilities.m_bConnectionless ? xiiMath::Min(configuration.m_uiMaximumMessageBytes, 65507U) : 0U;
   if (configuration.m_Transport == xiiNetworkTransportType::SecureDatagram)
   {
     m_pQuic          = XII_DEFAULT_NEW(xiiNetworkQuic);

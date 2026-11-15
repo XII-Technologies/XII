@@ -263,7 +263,7 @@ void xiiNetworkHostRuntime::DriveListener(Listener& listener, xiiTime now, xiiTi
     if (!listener.m_bReceivePending)
     {
       xiiNetworkIOBuffer buffer;
-      auto               error = m_IO.AcquireBuffer(xiiMath::Min(m_Configuration.m_uiMaximumMessageBytes, 65507U), buffer);
+      auto               error = m_IO.AcquireBuffer(m_Capabilities.m_uiMaximumUnreliablePayload, buffer);
       if (error.Succeeded())
       {
         xiiNetworkIOBuffers buffers;

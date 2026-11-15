@@ -188,6 +188,12 @@ XII_CREATE_SIMPLE_TEST(NetworkTransport, HostNativeUdpDatagrams)
       return;
     }
     xiiNetworkEvent event;
+    if (!HostTestEvent(sender, xiiNetworkEventType::MessageSent, event) ||
+        !XII_TEST_BOOL_MSG(event.m_Error.Succeeded(), "UDP send of %u bytes: %s (%d)", uiSize, event.m_Error.GetCodeName(), event.m_Error.m_iNativeCode))
+    {
+      return;
+    }
+    XII_TEST_BOOL(event.m_Message == message);
     if (!HostTestEvent(receiver, xiiNetworkEventType::Datagram, event))
     {
       return;
@@ -195,11 +201,6 @@ XII_CREATE_SIMPLE_TEST(NetworkTransport, HostNativeUdpDatagrams)
     XII_TEST_BOOL(event.m_Error.Succeeded());
     XII_TEST_INT(event.m_Payload.GetCount(), uiSize);
     XII_TEST_BOOL(event.m_Endpoint == sourceEndpoint);
-    if (!HostTestEvent(sender, xiiNetworkEventType::MessageSent, event))
-    {
-      return;
-    }
-    XII_TEST_BOOL(event.m_Error.Succeeded() && event.m_Message == message);
   }
   xiiNetworkConnection connection;
   XII_TEST_BOOL(sender.Connect(endpoint, {}, connection).m_Code == xiiNetworkErrorCode::UnsupportedOperation);
