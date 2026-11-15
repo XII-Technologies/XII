@@ -787,3 +787,8 @@ xiiNetworkError xiiNetworkIOContextAccess::SetCompletionSignal(xiiNetworkIOConte
   context.m_pRuntime->m_pCompletionSignal = &signal;
   return {};
 }
+
+bool xiiNetworkIOContextAccess::OwnsBuffer(const xiiNetworkIOContext& context, const xiiNetworkIOBuffer& buffer)
+{
+  return xiiNetworkIOBufferAccess::IsFrom(buffer, context.m_pRuntime->m_BufferPool);
+}

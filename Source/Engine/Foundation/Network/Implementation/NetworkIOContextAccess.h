@@ -14,5 +14,6 @@ class xiiNetworkIOContextAccess
 public:
   /// Set before Start only. The borrowed signal must outlive context destruction. Publication raises
   /// it without running application callbacks. Coalescing is safe when the consumer drains the queue.
+  static bool            OwnsBuffer(const xiiNetworkIOContext& context, const xiiNetworkIOBuffer& buffer);
   static xiiNetworkError SetCompletionSignal(xiiNetworkIOContext& context, xiiThreadSignal& signal);
 };
