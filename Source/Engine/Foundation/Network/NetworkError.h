@@ -35,7 +35,12 @@ enum class xiiNetworkErrorCode : xiiUInt8
   AlreadyConnected,
   NameNotFound,
   NameResolutionFailed,
-  Unknown
+  Unknown,
+  Cancelled,
+  Backpressure,
+  InvalidHandle,
+  ShuttingDown,
+  NotRunning
 };
 
 /// Identifies the namespace of the preserved native error code.
