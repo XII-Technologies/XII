@@ -4,6 +4,7 @@
 
 #include <Foundation/Network/Security/NetworkCredentials.h>
 #include <FoundationTest/Network/Implementation/NetworkSecurityTestUtilities.h>
+#include <ctime>
 
 XII_CREATE_SIMPLE_TEST(NetworkTransport, CertificateValidation)
 {
@@ -32,8 +33,9 @@ XII_CREATE_SIMPLE_TEST(NetworkTransport, CertificateValidation)
   {
     return;
   }
-  XII_TEST_BOOL(certificate.m_ValidFrom.IsValid());
-  XII_TEST_BOOL(certificate.m_ValidUntil.IsValid());
+  const auto iNow = static_cast<xiiInt64>(std::time(nullptr));
+  XII_TEST_BOOL(certificate.m_iValidFromUnixSeconds <= iNow && certificate.m_iValidFromUnixSeconds > iNow - 86400 * 2);
+  XII_TEST_BOOL(certificate.m_iValidUntilUnixSeconds > iNow && certificate.m_iValidUntilUnixSeconds < iNow + 86400 * 2);
   XII_TEST_BOOL(!certificate.m_sSubject.IsEmpty());
   for (const char* szName : {"localhost", "127.0.0.1", "::1"})
   {

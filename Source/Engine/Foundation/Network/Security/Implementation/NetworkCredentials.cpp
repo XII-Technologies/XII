@@ -18,7 +18,6 @@
 
 #include <climits>
 #include <cstring>
-#include <ctime>
 #include <utility>
 
 namespace
@@ -75,23 +74,22 @@ namespace
     return static_cast<int>(bytes.GetCount());
   }
 
-  xiiTimestamp CertificateTime(const ASN1_TIME* pTime)
+  bool CertificateTime(const ASN1_TIME* pTime, xiiInt64& out_iUnixSeconds)
   {
-    std::tm time = {};
-    if (ASN1_TIME_to_tm(pTime, &time) != 1 || time.tm_year < -1899 || time.tm_year > 8099 ||
-        time.tm_mon < 0 || time.tm_mon > 11 || time.tm_mday < 1 || time.tm_mday > 31 ||
-        time.tm_hour < 0 || time.tm_hour > 23 || time.tm_min < 0 || time.tm_min > 59 || time.tm_sec < 0 || time.tm_sec > 59)
+    ASN1_TIME* pEpoch = ASN1_TIME_set(nullptr, 0);
+    if (pEpoch == nullptr)
     {
-      return xiiTimestamp::MakeInvalid();
+      return false;
     }
-    xiiDateTime date;
-    date.SetYear(static_cast<xiiInt16>(time.tm_year + 1900));
-    date.SetMonth(static_cast<xiiUInt8>(time.tm_mon + 1));
-    date.SetDay(static_cast<xiiUInt8>(time.tm_mday));
-    date.SetHour(static_cast<xiiUInt8>(time.tm_hour));
-    date.SetMinute(static_cast<xiiUInt8>(time.tm_min));
-    date.SetSecond(static_cast<xiiUInt8>(time.tm_sec));
-    return date.GetTimestamp();
+    int        iDays    = 0;
+    int        iSeconds = 0;
+    const bool bValid   = ASN1_TIME_diff(&iDays, &iSeconds, pEpoch, pTime) == 1;
+    ASN1_TIME_free(pEpoch);
+    if (bValid)
+    {
+      out_iUnixSeconds = static_cast<xiiInt64>(iDays) * 86400 + iSeconds;
+    }
+    return bValid;
   }
 
   xiiString CertificateName(X509_NAME* pName)
@@ -327,11 +325,10 @@ namespace xiiNetworkSecurityInternal
     {
       return LastError();
     }
-    certificate.m_sSubject   = CertificateName(X509_get_subject_name(pCertificate));
-    certificate.m_sIssuer    = CertificateName(X509_get_issuer_name(pCertificate));
-    certificate.m_ValidFrom  = CertificateTime(X509_get0_notBefore(pCertificate));
-    certificate.m_ValidUntil = CertificateTime(X509_get0_notAfter(pCertificate));
-    if (!certificate.m_ValidFrom.IsValid() || !certificate.m_ValidUntil.IsValid())
+    certificate.m_sSubject = CertificateName(X509_get_subject_name(pCertificate));
+    certificate.m_sIssuer  = CertificateName(X509_get_issuer_name(pCertificate));
+    if (!CertificateTime(X509_get0_notBefore(pCertificate), certificate.m_iValidFromUnixSeconds) ||
+        !CertificateTime(X509_get0_notAfter(pCertificate), certificate.m_iValidUntilUnixSeconds))
     {
       return xiiNetworkError(xiiNetworkErrorCode::CertificateUntrusted);
     }

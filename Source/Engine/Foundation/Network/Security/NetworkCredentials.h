@@ -8,7 +8,6 @@
 #include <Foundation/Network/NetworkError.h>
 #include <Foundation/Network/Security/NetworkSecurityConfig.h>
 #include <Foundation/Strings/String.h>
-#include <Foundation/Time/Timestamp.h>
 #include <Foundation/Types/RefCounted.h>
 #include <Foundation/Types/SharedPtr.h>
 
@@ -23,11 +22,12 @@ class xiiNetworkSecurityAccess;
 
 struct XII_FOUNDATION_DLL xiiNetworkCertificate
 {
-  xiiUInt8                  m_uiSha256[32] = {};
-  xiiString                 m_sSubject;
-  xiiString                 m_sIssuer;
-  xiiTimestamp              m_ValidFrom;
-  xiiTimestamp              m_ValidUntil;
+  xiiUInt8  m_uiSha256[32] = {};
+  xiiString m_sSubject;
+  xiiString m_sIssuer;
+  /// UTC seconds since the Unix epoch; populated only by successful certificate inspection.
+  xiiInt64                  m_iValidFromUnixSeconds  = 0;
+  xiiInt64                  m_iValidUntilUnixSeconds = 0;
   xiiDynamicArray<xiiUInt8> m_Der;
 };
 
