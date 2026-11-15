@@ -46,9 +46,9 @@ xiiNetworkDataError xiiNetworkReflectionEndpointState::Process(xiiNetworkEvent&&
     if (bConnectionClosed)
     {
       for (xiiUInt32 i = m_Peers.GetCount(); i-- > 0;)
-        if (m_Peers[i]->m_pInfo->m_Connection == event.m_Connection)
+        if (m_Peers[i].m_pInfo->m_Connection == event.m_Connection)
         {
-          for (const auto& agreement : m_Peers[i]->m_Agreements)
+          for (const auto& agreement : m_Peers[i].m_Agreements)
             m_uiSchemaCacheBytes -= agreement.m_Remote.GetCount();
           m_Peers.RemoveAtAndCopy(i);
         }
@@ -70,12 +70,11 @@ xiiNetworkDataError xiiNetworkReflectionEndpointState::Process(xiiNetworkEvent&&
       return xiiNetworkDataError(xiiNetworkDataErrorCode::InvalidArgument);
     if (m_Peers.GetCount() >= m_Config.m_uiMaximumPeers)
       return xiiNetworkDataError(xiiNetworkDataErrorCode::Backpressure);
-    xiiSharedPtr<Peer> peer = XII_DEFAULT_NEW(Peer);
-    peer->m_pInfo           = event.m_pSessionInfo;
-    peer->m_Replay.SetCount(m_Config.m_uiReplayWindow, 0);
-    peer->m_fTokens    = m_Config.m_uiRequestBurst;
-    peer->m_LastRefill = xiiTime::Now();
-    m_Peers.PushBack(std::move(peer));
+    auto& peer   = m_Peers.ExpandAndGetRef();
+    peer.m_pInfo = event.m_pSessionInfo;
+    peer.m_Replay.SetCount(m_Config.m_uiReplayWindow, 0);
+    peer.m_fTokens    = m_Config.m_uiRequestBurst;
+    peer.m_LastRefill = xiiTime::Now();
     return {};
   }
   if (event.m_Type != xiiNetworkEventType::Message)

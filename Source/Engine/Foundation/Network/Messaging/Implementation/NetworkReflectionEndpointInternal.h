@@ -58,7 +58,7 @@ namespace xiiNetworkMessagingInternal
     xiiDynamicArray<xiiUInt8>            m_Remote;
     bool                                 m_bIncoming = false, m_bOutgoing = false, m_bExact = false;
   };
-  struct Peer : xiiRefCountingImpl
+  struct Peer
   {
     xiiSharedPtr<const xiiNetworkSessionInfo> m_pInfo;
     xiiDynamicArray<Agreement>                m_Agreements;
@@ -96,21 +96,21 @@ class xiiNetworkReflectionEndpointState
 public:
   xiiNetworkReflectionEndpointState(xiiNetworkHost& host, xiiNetworkTypeRegistry& registry);
   ~xiiNetworkReflectionEndpointState();
-  void                                            OnPluginEvent(const xiiPluginEvent& event);
-  xiiSharedPtr<xiiNetworkMessagingInternal::Peer> FindPeer(xiiNetworkChannel channel);
-  xiiNetworkDataError                             Send(xiiNetworkChannel channel, xiiArrayPtr<const xiiUInt8> bytes);
-  xiiNetworkDataError                             Reliable(xiiNetworkChannel channel);
-  void                                            Complete(xiiUInt32 uiIndex, xiiNetworkDataError error, xiiArrayPtr<const xiiUInt8> value = {});
-  void                                            Stop(xiiNetworkDataError error);
-  xiiNetworkDataError                             Register(xiiUInt64 uiService, const xiiRTTI* pType, xiiSharedPtr<xiiNetworkRpcService> pOwner, xiiUInt32 uiExecutor, const xiiNetworkRpcServiceLimits& limits);
-  xiiNetworkDataError                             Process(xiiNetworkEvent&& event);
-  xiiNetworkDataError                             Dispatch(xiiUInt32 uiExecutor, xiiUInt32 uiMaximum);
-  xiiNetworkDataError                             DispatchMessage(xiiNetworkMessagingInternal::Packet& packet);
-  xiiNetworkDataError                             DispatchRpc(xiiNetworkMessagingInternal::Packet& packet);
-  xiiNetworkDataError                             Reply(const xiiNetworkMessagingInternal::Packet& packet, xiiNetworkDataError error, xiiArrayPtr<const xiiUInt8> bytes = {});
-  xiiNetworkDataError                             Call(xiiNetworkChannel channel, xiiUInt64 uiService, xiiUInt64 uiMethod, xiiArrayPtr<const xiiVariant> arguments,
-                                                       xiiNetworkRpcRequest& out_request, xiiTime timeout, bool bFireAndForget);
-  xiiNetworkDataError                             Decode(const xiiNetworkRpcResult& result, xiiVariant& out_value);
+  void                               OnPluginEvent(const xiiPluginEvent& event);
+  xiiNetworkMessagingInternal::Peer* FindPeer(xiiNetworkChannel channel);
+  xiiNetworkDataError                Send(xiiNetworkChannel channel, xiiArrayPtr<const xiiUInt8> bytes);
+  xiiNetworkDataError                Reliable(xiiNetworkChannel channel);
+  void                               Complete(xiiUInt32 uiIndex, xiiNetworkDataError error, xiiArrayPtr<const xiiUInt8> value = {});
+  void                               Stop(xiiNetworkDataError error);
+  xiiNetworkDataError                Register(xiiUInt64 uiService, const xiiRTTI* pType, xiiSharedPtr<xiiNetworkRpcService> pOwner, xiiUInt32 uiExecutor, const xiiNetworkRpcServiceLimits& limits);
+  xiiNetworkDataError                Process(xiiNetworkEvent&& event);
+  xiiNetworkDataError                Dispatch(xiiUInt32 uiExecutor, xiiUInt32 uiMaximum);
+  xiiNetworkDataError                DispatchMessage(xiiNetworkMessagingInternal::Packet& packet);
+  xiiNetworkDataError                DispatchRpc(xiiNetworkMessagingInternal::Packet& packet);
+  xiiNetworkDataError                Reply(const xiiNetworkMessagingInternal::Packet& packet, xiiNetworkDataError error, xiiArrayPtr<const xiiUInt8> bytes = {});
+  xiiNetworkDataError                Call(xiiNetworkChannel channel, xiiUInt64 uiService, xiiUInt64 uiMethod, xiiArrayPtr<const xiiVariant> arguments,
+                                          xiiNetworkRpcRequest& out_request, xiiTime timeout, bool bFireAndForget);
+  xiiNetworkDataError                Decode(const xiiNetworkRpcResult& result, xiiVariant& out_value);
 
   void                                                                        ReleaseRequest(const xiiNetworkMessagingInternal::Packet& packet);
   xiiNetworkHost&                                                             m_Host;
@@ -122,7 +122,7 @@ public:
   xiiNetworkReflectionConfiguration                                           m_Config;
   xiiHashTable<xiiUInt64, xiiSharedPtr<xiiNetworkMessagingInternal::Handler>> m_Handlers;
   xiiHashTable<xiiUInt64, xiiSharedPtr<xiiNetworkMessagingInternal::Service>> m_Services;
-  xiiDynamicArray<xiiSharedPtr<xiiNetworkMessagingInternal::Peer>>            m_Peers;
+  xiiDynamicArray<xiiNetworkMessagingInternal::Peer>                          m_Peers;
   xiiDynamicArray<xiiNetworkMessagingInternal::Packet>                        m_Queue;
   xiiDynamicArray<xiiNetworkMessagingInternal::Pending>                       m_Pending;
   xiiDeque<xiiNetworkRpcResult>                                               m_Results;

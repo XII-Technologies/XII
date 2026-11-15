@@ -33,7 +33,7 @@ void xiiNetworkReflectionEndpointState::OnPluginEvent(const xiiPluginEvent& even
     m_Statistics.m_uiQueuedBytes = 0;
     m_uiSchemaCacheBytes         = 0;
     for (auto& peer : m_Peers)
-      peer->m_Agreements.Clear();
+      peer.m_Agreements.Clear();
     m_Handlers.Swap(handlers);
     m_Services.Swap(services);
   }
@@ -69,13 +69,13 @@ void xiiNetworkReflectionEndpointState::Stop(xiiNetworkDataError error)
   }
   // Owned callbacks/targets may have application destructors. Never release them under state locks.
 }
-xiiSharedPtr<Peer> xiiNetworkReflectionEndpointState::FindPeer(xiiNetworkChannel channel)
+Peer* xiiNetworkReflectionEndpointState::FindPeer(xiiNetworkChannel channel)
 {
-  for (const auto& peer : m_Peers)
-    if (peer->m_pInfo->m_Connection == channel.m_Connection &&
-        peer->m_pInfo->m_DefaultChannel.m_uiSessionGeneration == channel.m_uiSessionGeneration)
-      return peer;
-  return {};
+  for (auto& peer : m_Peers)
+    if (peer.m_pInfo->m_Connection == channel.m_Connection &&
+        peer.m_pInfo->m_DefaultChannel.m_uiSessionGeneration == channel.m_uiSessionGeneration)
+      return &peer;
+  return nullptr;
 }
 xiiNetworkDataError xiiNetworkReflectionEndpointState::Send(xiiNetworkChannel channel, xiiArrayPtr<const xiiUInt8> bytes)
 {
