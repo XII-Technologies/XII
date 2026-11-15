@@ -109,6 +109,20 @@ def stage_file(source_path: Path, destination: Path) -> None:
         shutil.copy2(source_path, destination)
 
 
+def prepare_msquic_msvc_source(source_root: Path) -> None:
+    # VS 2026's SAL analyzer evaluates the shifted QUIC_UINT62_MAX as a signed
+    # int in _In_range_, leading to C28020 for valid values under /WX.
+    # The equivalent 64-bit literal preserves the published API and range.
+    header = source_root / "src/inc/msquic.h"
+    original = b"#define QUIC_UINT62_MAX ((1ULL << 62U) - 1)"
+    replacement = b"#define QUIC_UINT62_MAX 0x3FFFFFFFFFFFFFFFULL"
+    content = header.read_bytes()
+    if content.count(original) == 1:
+        header.write_bytes(content.replace(original, replacement))
+    elif content.count(replacement) != 1:
+        raise RuntimeError("The pinned MsQuic SAL compatibility adjustment no longer matches its source")
+
+
 def find_vcvars(instance: str, compiler: str, environment: dict[str, str]) -> Path:
     """Locate the tools used by the parent Visual Studio generator or native compiler."""
     candidates = [instance.split(",", 1)[0], environment.get("VSINSTALLDIR", "")]
@@ -173,6 +187,8 @@ def main() -> None:
             environment["CXX"] = args.cxx
         openssl = source("openssl", args.cache, args.root)
         msquic = source("msquic", args.cache, args.root)
+        if os.name == "nt":
+            prepare_msquic_msvc_source(msquic)
         prefix = args.root / "install"
         ssl_build = args.root / "openssl-build"
         ssl_build.mkdir(exist_ok=True)
@@ -208,7 +224,7 @@ def main() -> None:
         quic_build = args.root / "msquic-build"
         quic_output = quic_build / "provider"
         quic_library = quic_output / ("msquic.dll" if os.name == "nt" else "libmsquic.2.dylib" if sys.platform == "darwin" else "libmsquic.so.2")
-        provider_stamp = args.root / "provider-config-v2.ready"
+        provider_stamp = args.root / ("provider-config-v3.ready" if os.name == "nt" else "provider-config-v2.ready")
         if not quic_library.exists() or not provider_stamp.exists():
             quic_build.mkdir(exist_ok=True)
             command = [args.cmake, "-S", str(msquic), "-B", str(quic_build), "-DCMAKE_BUILD_TYPE=Release", "-DQUIC_TLS_LIB=openssl", "-DQUIC_USE_EXTERNAL_OPENSSL=ON", "-DQUIC_OPENSSL_INCLUDE_DIR=" + str(prefix / "include"), "-DQUIC_OPENSSL_LIB_DIR=" + str(prefix / "lib"), "-DQUIC_BUILD_SHARED=ON", "-DQUIC_BUILD_TOOLS=OFF", "-DQUIC_BUILD_TEST=OFF", "-DQUIC_BUILD_PERF=OFF", "-DQUIC_ENABLE_LOGGING=OFF", "-DQUIC_OUTPUT_DIR=" + str(quic_output), "-DCMAKE_INSTALL_RPATH=" + ("@loader_path" if sys.platform == "darwin" else "$ORIGIN"), "-DCMAKE_BUILD_WITH_INSTALL_RPATH=ON", "-DQUIC_STATIC_LINK_CRT=OFF", "-DQUIC_STATIC_LINK_PARTIAL_CRT=OFF"]
@@ -221,7 +237,7 @@ def main() -> None:
                 command += ["-DCMAKE_OSX_ARCHITECTURES=" + ("arm64" if args.arch == "arm64" else "x86_64")]
             run(command, args.root, environment)
             run([args.cmake, "--build", str(quic_build), "--config", "Release", "--parallel", str(args.jobs), "--target", "msquic"], args.root, environment)
-            provider_stamp.write_text("relocatable-rpath-v2\n", encoding="utf-8")
+            provider_stamp.write_text("pinned-network-provider\n", encoding="utf-8")
         args.include.mkdir(parents=True, exist_ok=True)
         shutil.copytree(prefix / "include", args.include, dirs_exist_ok=True)
         for header in (msquic / "src/inc").glob("*.h"):
