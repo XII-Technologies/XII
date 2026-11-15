@@ -208,11 +208,21 @@ def main() -> None:
                 stage_file(prefix / "lib" / name, args.bin / name)
             stage_file(quic_library, args.bin / quic_library.name)
             if sys.platform == "darwin":
-                for name in names:
+                for name in (*names, quic_library.name):
                     path = args.bin / name
                     run(["install_name_tool", "-id", "@rpath/" + name, str(path)], args.root, environment)
                     for dependency in names:
                         run(["install_name_tool", "-change", str(prefix / "lib" / dependency), "@rpath/" + dependency, str(path)], args.root, environment)
+                    run(["codesign", "--force", "--sign", "-", str(path)], args.root, environment)
+            # Static Foundation consumers can use the linker's conventional -l names.
+            # Keep one runtime image and create build-time aliases to its versioned filename.
+            for stem, name in zip(("ssl", "crypto", "msquic"), (*names, quic_library.name), strict=True):
+                extension = ".dylib" if sys.platform == "darwin" else ".so"
+                alias = args.bin / ("lib" + stem + extension)
+                if alias.is_symlink() and alias.readlink() == Path(name):
+                    continue
+                alias.unlink(missing_ok=True)
+                alias.symlink_to(name)
         # The marker is written only after every expected artifact is available.
         (args.bin / "xii-network-dependencies.ready").write_text("OpenSSL 3.5.9\nMsQuic 2.6.4\n", encoding="utf-8")
 
