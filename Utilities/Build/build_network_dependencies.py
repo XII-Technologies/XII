@@ -110,17 +110,21 @@ def stage_file(source_path: Path, destination: Path) -> None:
 
 
 def prepare_msquic_msvc_source(source_root: Path) -> None:
-    # VS 2026's SAL analyzer misinterprets shifted 62-bit maxima in _In_range_.
-    # Equivalent literals preserve the two public/internal ranges under /WX.
-    for filename, name in (("msquic.h", "QUIC_UINT62_MAX"), ("quic_var_int.h", "QUIC_VAR_INT_MAX")):
-        header = source_root / "src/inc" / filename
-        original = f"#define {name} ((1ULL << 62U) - 1)".encode("ascii")
-        replacement = f"#define {name} 0x3FFFFFFFFFFFFFFFULL".encode("ascii")
-        content = header.read_bytes()
-        if content.count(original) == 1:
-            header.write_bytes(content.replace(original, replacement))
-        elif content.count(replacement) != 1:
-            raise RuntimeError("The pinned MsQuic SAL compatibility adjustment no longer matches its source")
+    # Express the timestamp parameter's two bits as a provably bounded sum for
+    # VS 2026 SAL analysis. Keep /analyze, /WX and the original varint contract.
+    source_path = source_root / "src/core/crypto_tls.c"
+    original = b"""        const uint32_t value =
+            (TransportParams->Flags &
+             (QUIC_TP_FLAG_TIMESTAMP_SEND_ENABLED | QUIC_TP_FLAG_TIMESTAMP_RECV_ENABLED))
+            >> QUIC_TP_FLAG_TIMESTAMP_SHIFT;"""
+    replacement = b"""        const uint32_t value =
+            ((TransportParams->Flags & QUIC_TP_FLAG_TIMESTAMP_RECV_ENABLED) ? 1U : 0U) +
+            ((TransportParams->Flags & QUIC_TP_FLAG_TIMESTAMP_SEND_ENABLED) ? 2U : 0U);"""
+    content = source_path.read_bytes()
+    if content.count(original) == 2:
+        source_path.write_bytes(content.replace(original, replacement))
+    elif content.count(replacement) != 2:
+        raise RuntimeError("The pinned MsQuic SAL compatibility adjustment no longer matches its source")
 
 
 def find_vcvars(instance: str, compiler: str, environment: dict[str, str]) -> Path:
@@ -224,7 +228,7 @@ def main() -> None:
         quic_build = args.root / "msquic-build"
         quic_output = quic_build / "provider"
         quic_library = quic_output / ("msquic.dll" if os.name == "nt" else "libmsquic.2.dylib" if sys.platform == "darwin" else "libmsquic.so.2")
-        provider_stamp = args.root / ("provider-config-v4.ready" if os.name == "nt" else "provider-config-v2.ready")
+        provider_stamp = args.root / ("provider-config-v5.ready" if os.name == "nt" else "provider-config-v2.ready")
         if not quic_library.exists() or not provider_stamp.exists():
             quic_build.mkdir(exist_ok=True)
             command = [args.cmake, "-S", str(msquic), "-B", str(quic_build), "-DCMAKE_BUILD_TYPE=Release", "-DQUIC_TLS_LIB=openssl", "-DQUIC_USE_EXTERNAL_OPENSSL=ON", "-DQUIC_OPENSSL_INCLUDE_DIR=" + str(prefix / "include"), "-DQUIC_OPENSSL_LIB_DIR=" + str(prefix / "lib"), "-DQUIC_BUILD_SHARED=ON", "-DQUIC_BUILD_TOOLS=OFF", "-DQUIC_BUILD_TEST=OFF", "-DQUIC_BUILD_PERF=OFF", "-DQUIC_ENABLE_LOGGING=OFF", "-DQUIC_OUTPUT_DIR=" + str(quic_output), "-DCMAKE_INSTALL_RPATH=" + ("@loader_path" if sys.platform == "darwin" else "$ORIGIN"), "-DCMAKE_BUILD_WITH_INSTALL_RPATH=ON", "-DQUIC_STATIC_LINK_CRT=OFF", "-DQUIC_STATIC_LINK_PARTIAL_CRT=OFF"]
