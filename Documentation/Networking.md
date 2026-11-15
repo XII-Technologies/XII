@@ -2,6 +2,8 @@
 
 Foundation's `Network/` API provides native IPv4/IPv6 addressing, OS name resolution, TCP streams and listeners, and UDP datagrams. It has no dependency on `Foundation/Communication`, ENet or higher engine modules. Include the individual public headers needed by the caller; they expose no OS socket types. Foundation defines its export macros in `Basics.h` and has no separate `DLL.h`.
 
+For operation-oriented native I/O, bounded workers, buffer ownership and completion delivery, see [Asynchronous Networking](AsyncNetworking.md).
+
 ## Organization and platform integration
 
 - `xiiNetworkAddress` stores up to sixteen network-order address bytes, a numeric IPv6 scope and a family. Default construction is invalid; wildcard addresses are valid values. IPv4-mapped IPv6 addresses remain IPv6 values. Equality and hashes include the scope and exclude padding. Numeric formatting uses lowercase hexadecimal and the first longest compressible IPv6 zero run. Mapped addresses format in hexadecimal as well.
