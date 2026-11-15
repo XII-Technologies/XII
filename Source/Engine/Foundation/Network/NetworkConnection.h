@@ -52,26 +52,31 @@ enum class xiiNetworkConnectionState : xiiUInt8
 
 struct XII_FOUNDATION_DLL xiiNetworkConnectionStatistics
 {
-  xiiUInt64 m_uiMessagesSent            = 0;
-  xiiUInt64 m_uiMessagesReceived        = 0;
-  xiiUInt64 m_uiPayloadBytesSent        = 0;
-  xiiUInt64 m_uiPayloadBytesReceived    = 0;
-  xiiUInt64 m_uiWireBytesSent           = 0;
-  xiiUInt64 m_uiWireBytesReceived       = 0;
-  xiiUInt64 m_uiQueuedSendBytes         = 0;
-  xiiUInt64 m_uiLocallyDroppedDatagrams = 0;
-  xiiUInt64 m_uiStaleDatagrams          = 0;
-  xiiUInt64 m_uiBackpressureEvents      = 0;
+  xiiUInt64 m_uiMessagesSent              = 0;
+  xiiUInt64 m_uiMessagesReceived          = 0;
+  xiiUInt64 m_uiPayloadBytesSent          = 0;
+  xiiUInt64 m_uiPayloadBytesReceived      = 0;
+  xiiUInt64 m_uiWireBytesSent             = 0;
+  xiiUInt64 m_uiWireBytesReceived         = 0;
+  xiiUInt64 m_uiQueuedSendBytes           = 0;
+  xiiUInt64 m_uiLocallyDroppedDatagrams   = 0;
+  xiiUInt64 m_uiProviderReceiveQueueDrops = 0;
+  xiiUInt64 m_uiStaleDatagrams            = 0;
+  xiiUInt64 m_uiBackpressureEvents        = 0;
   /// Measured application ping round trip, distinct from provider congestion estimates.
   xiiTime   m_HeartbeatRoundTrip;
   bool      m_bHasNativeCongestionStatistics = false;
   xiiTime   m_NativeSmoothedRoundTrip;
-  xiiUInt64 m_uiNativeLostPackets        = 0;
-  xiiUInt64 m_uiNativeRetransmittedBytes = 0;
+  xiiUInt64 m_uiNativeLostPackets           = 0;
+  xiiUInt32 m_uiNativeCongestionWindowBytes = 0;
+  xiiUInt64 m_uiNativeReorderedPackets      = 0;
 };
 
 struct XII_FOUNDATION_DLL xiiNetworkConnectionInfo
 {
+  xiiTime         m_EstablishmentTime;
+  xiiNetworkError m_TerminalError;
+
   xiiNetworkConnectionState       m_State = xiiNetworkConnectionState::Closed;
   xiiNetworkEndpoint              m_LocalEndpoint;
   xiiNetworkEndpoint              m_RemoteEndpoint;

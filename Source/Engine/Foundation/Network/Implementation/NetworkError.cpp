@@ -96,6 +96,8 @@ const char* xiiNetworkError::GetCodeName() const
       return "ChannelClosed";
     case xiiNetworkErrorCode::UnsupportedCapability:
       return "UnsupportedCapability";
+    case xiiNetworkErrorCode::DatagramLost:
+      return "DatagramLost";
   }
   return "Unknown";
 }

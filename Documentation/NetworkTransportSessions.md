@@ -74,3 +74,22 @@ Reconnection defaults to disabled. Fixed/exponential policies have bounded attem
 A `NativeUdp` host uses `Listen` to bind a datagram socket, then `SendDatagram` with a destination endpoint and an owned host buffer. `Datagram` events contain the sender endpoint, payload and native status. Empty datagrams are valid messages. Truncation is reported explicitly. `Connect`, application sessions and logical channels are unsupported for this transport. Native datagram boundaries are preserved.
 
 Connection statistics expose actual payload/wire counts, queue pressure and measured application heartbeat RTT. Native congestion statistics are explicitly marked unavailable when the provider cannot supply them. No synthetic TCP packet-loss or retransmission estimates are reported.
+
+## Secure datagrams
+
+Select `xiiNetworkTransportType::SecureDatagram` for QUIC over UDP. Foundation uses MsQuic with TLS 1.3 and its native flow control, pacing, retransmission and congestion control. The protocol driver applies the same explicit credential trust, SAN and certificate-purpose checks as TLS over TCP. Peer verification completes before the connection is admitted to the application protocol. Certificate-policy servers require mutual authentication. QUIC early data, native ticket resumption and migration are disabled. Setting the native ticket option for this transport returns `UnsupportedCapability`. The application session recovery protocol is available independently.
+
+| Channel policy | QUIC mapping |
+| --- | --- |
+| Reliable ordered | One persistent unidirectional stream per sending direction and channel |
+| Reliable unordered | One unidirectional stream per message, terminated with FIN |
+| Unreliable sequenced | QUIC DATAGRAM with a sequence check that drops stale messages |
+| Unreliable unsequenced | QUIC DATAGRAM with no ordering guarantee |
+
+Control messages use a separate bidirectional stream. Reliable receives defer native completion long enough to parse retained provider buffers directly into owned payload leases. Data received ahead of activation or channel acceptance stays pending on its own stream. Each unreliable message fits in one provider datagram. Query `GetConnectionInfo` for the current path payload limit and handle `MessageTooLarge` if it changes. A datagram send completion can report `DatagramLost` when the provider stops tracking an unacknowledged datagram. Native acknowledgements describe transport progress. Application acknowledgement is a higher-level protocol responsibility.
+
+QUIC channel closure exchanges final send sequences to drain reliable traffic across separate streams. The host enforces the connection close deadline, including when a remote peer stops participating. Outstanding provider handles, retained receives and send descriptors are retired before connection slots are reused. The registration and configuration objects are private to each host. The shared provider lifetime bounds its execution partitions to at most two processors, with a single partition on Darwin.
+
+The QUIC host supports IPv4 and IPv6 listeners with separate explicit binds. It reports `UnsupportedCapability` for a requested IPv6 dual-stack listener. QUIC hosts support at most 1,024 configured channels per connection. The provider uses a bounded number of unordered stream slots and bounded receive windows. Hosts can coexist with different transport types, protocol identifiers, credentials and resource limits. Credential rotation affects new connections, and a running QUIC host keeps its initial ALPN.
+
+`GetStatistics` reports occupancy, active listeners, connections, sessions and channels, completed traffic, failure categories, receive drops and M2 buffer pool metrics. `GetConnectionInfo` exposes establishment time, terminal error and per-peer traffic. Native QUIC samples report congestion window, RTT, packet loss and reordering. Use `GetPeerCertificate` for the verified identity snapshot. `m_Tcp` controls the TCP socket options, and the host and peer token buckets can also limit native UDP sends.

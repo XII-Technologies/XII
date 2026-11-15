@@ -87,6 +87,31 @@ xiiNetworkError xiiNetworkHost::Listen(const xiiNetworkEndpoint& endpoint, xiiNe
     {
       continue;
     }
+    if (runtime.m_pQuic != nullptr)
+    {
+      if (!bIpv6Only && endpoint.GetAddress().GetFamily() == xiiNetworkAddressFamily::Ipv6)
+      {
+        return HostError(xiiNetworkErrorCode::UnsupportedCapability);
+      }
+      if (!runtime.ReserveEvent())
+      {
+        return HostError(xiiNetworkErrorCode::Backpressure);
+      }
+      const xiiNetworkListener handle = {runtime.m_uiHostId, entry.m_Handle.m_uiGeneration + 1, uiSlot};
+      const auto               error  = runtime.m_pQuic->Listen(endpoint, handle, entry.m_pQuic, entry.m_Endpoint);
+      if (error.Failed())
+      {
+        runtime.ReleaseEvents(1);
+        return error;
+      }
+      entry.m_Handle   = handle;
+      entry.m_bInUse   = true;
+      entry.m_bClosing = entry.m_bDeregistered = entry.m_bTerminalPublished = entry.m_bTerminalConsumed = false;
+      entry.m_Error                                                                                     = {};
+      out_listener                                                                                      = handle;
+      runtime.m_WorkSignal.RaiseSignal();
+      return {};
+    }
     xiiNetworkError error;
     if (runtime.m_Configuration.m_Transport == xiiNetworkTransportType::NativeUdp)
     {
@@ -112,6 +137,10 @@ xiiNetworkError xiiNetworkHost::Listen(const xiiNetworkEndpoint& endpoint, xiiNe
       if (error.Succeeded() && endpoint.GetAddress().GetFamily() == xiiNetworkAddressFamily::Ipv6)
       {
         error = socket.SetIpv6Only(bIpv6Only);
+      }
+      if (error.Succeeded() && runtime.m_Configuration.m_Tcp.m_bReuseListenerAddress)
+      {
+        error = socket.SetAddressReuse(true);
       }
       if (error.Succeeded())
       {
@@ -149,7 +178,8 @@ xiiNetworkError xiiNetworkHost::Listen(const xiiNetworkEndpoint& endpoint, xiiNe
     entry.m_bClosing                                                               = false;
     entry.m_uiPendingIO                                                            = 0;
     entry.m_bReceivePending                                                        = false;
-    out_listener                                                                   = entry.m_Handle;
+    entry.m_SendTokens.Reset(runtime.m_Configuration.m_uiPeerSendBurstBytes);
+    out_listener = entry.m_Handle;
     runtime.m_WorkSignal.RaiseSignal();
     return {};
   }
@@ -329,6 +359,9 @@ xiiNetworkError xiiNetworkHost::OpenChannel(xiiNetworkConnection handle, const x
     channel.m_uiLastReceiveSequence = 0;
     channel.m_State                 = ChannelState::Opening;
     channel.m_bLocal                = true;
+    channel.m_Deadline              = xiiTime::Now() + runtime.m_Configuration.m_HandshakeTimeout;
+    channel.m_bHasPeerFinalSequence = false;
+    channel.m_pOrderedReceive       = nullptr;
     channel.m_bCloseReceived = channel.m_bCloseSent = channel.m_bCloseAcknowledged = false;
     channel.m_bNeedsControl                                                        = true;
     out_channel                                                                    = {handle, channel.m_uiId, pPeer->m_uiAttempt};
@@ -352,7 +385,7 @@ xiiNetworkError xiiNetworkHost::AuthorizeChannel(xiiNetworkChannel handle, bool 
   {
     return HostError(xiiNetworkErrorCode::InvalidHandle);
   }
-  if (pChannel->m_State != ChannelState::Authorizing)
+  if (pChannel->m_State != ChannelState::Authorizing || pChannel->m_bNeedsControl)
   {
     return HostError(xiiNetworkErrorCode::InvalidArgument);
   }
@@ -379,6 +412,10 @@ xiiNetworkError xiiNetworkHost::CloseChannel(xiiNetworkChannel handle)
   {
     return HostError(xiiNetworkErrorCode::ChannelClosed);
   }
+  if (pChannel->m_State != ChannelState::Open)
+  {
+    return HostError(xiiNetworkErrorCode::InProgress);
+  }
   if (pChannel->m_uiReservedEvents == 0)
   {
     if (!runtime.ReserveEvent())
@@ -388,6 +425,7 @@ xiiNetworkError xiiNetworkHost::CloseChannel(xiiNetworkChannel handle)
     ++pChannel->m_uiReservedEvents;
   }
   pChannel->m_State         = ChannelState::Closing;
+  pChannel->m_Deadline      = xiiTime::Now() + runtime.m_Configuration.m_CloseTimeout;
   pChannel->m_bNeedsControl = true;
   runtime.m_WorkSignal.RaiseSignal();
   return {};
@@ -462,6 +500,20 @@ xiiNetworkError xiiNetworkHost::ReplaceCredentials(xiiSharedPtr<xiiNetworkCreden
     return HostError(xiiNetworkErrorCode::InvalidArgument);
   }
   XII_LOCK(m_pRuntime->m_CredentialsMutex);
+  if (!IsRunning())
+  {
+    return HostError(xiiNetworkErrorCode::NotRunning);
+  }
+  if (!m_pRuntime->m_Capabilities.m_bEncrypted)
+  {
+    return HostError(xiiNetworkErrorCode::UnsupportedCapability);
+  }
+  if (m_pRuntime->m_Configuration.m_Transport == xiiNetworkTransportType::SecureDatagram &&
+      (pCredentials->GetConfiguration().m_bEnableTransportResumption ||
+       pCredentials->GetConfiguration().m_sApplicationProtocol != m_pRuntime->m_pCredentials->GetConfiguration().m_sApplicationProtocol))
+  {
+    return HostError(xiiNetworkErrorCode::UnsupportedCapability);
+  }
   m_pRuntime->m_pCredentials = pCredentials;
   return {};
 }
@@ -492,12 +544,18 @@ xiiNetworkError xiiNetworkHost::Send(xiiNetworkChannel channel, xiiNetworkIOBuff
   {
     return HostError(xiiNetworkErrorCode::PermissionDenied);
   }
+  if (pChannel->m_uiNextSendSequence == std::numeric_limits<xiiUInt64>::max())
+  {
+    return HostError(xiiNetworkErrorCode::ResourceExhausted);
+  }
   const xiiUInt32 uiBytes = payload.GetCount();
   if (!runtime.OwnsBuffer(payload))
   {
     return HostError(xiiNetworkErrorCode::InvalidArgument);
   }
-  if (uiBytes > pPeer->m_Info.m_uiMaximumMessageBytes)
+  const auto mode        = pChannel->m_Configuration.m_Delivery;
+  const bool bUnreliable = mode == xiiNetworkDeliveryMode::UnreliableSequenced || mode == xiiNetworkDeliveryMode::UnreliableUnsequenced;
+  if (uiBytes > pPeer->m_Info.m_uiMaximumMessageBytes || (bUnreliable && uiBytes > pPeer->m_Info.m_Capabilities.m_uiMaximumUnreliablePayload))
   {
     return HostError(xiiNetworkErrorCode::MessageTooLarge);
   }
@@ -506,6 +564,7 @@ xiiNetworkError xiiNetworkHost::Send(xiiNetworkChannel channel, xiiNetworkIOBuff
       uiBytes > runtime.m_Configuration.m_uiMaximumPeerSendBytes - pPeer->m_Info.m_Statistics.m_uiQueuedSendBytes)
   {
     ++pPeer->m_Info.m_Statistics.m_uiBackpressureEvents;
+    ++runtime.m_uiBackpressureEvents;
     return HostError(xiiNetworkErrorCode::Backpressure);
   }
   const auto error = runtime.AllocateSend(channel, std::move(payload), uiUserData, out_message);
@@ -574,4 +633,29 @@ xiiNetworkError xiiNetworkHost::WaitForEvent(xiiNetworkEvent& out_event, xiiTime
     }
     m_pRuntime->m_EventsMutex.UnlockWaitForSignalAndLock(remaining);
   }
+}
+
+xiiNetworkHostStatistics xiiNetworkHost::GetStatistics() const
+{
+  return m_pRuntime->GetStatistics();
+}
+
+xiiNetworkError xiiNetworkHost::GetPeerCertificate(xiiNetworkConnection handle, xiiNetworkCertificate& out_certificate) const
+{
+  auto* pPeer = m_pRuntime->Find(handle);
+  if (pPeer == nullptr)
+  {
+    return HostError(xiiNetworkErrorCode::InvalidHandle);
+  }
+  XII_LOCK(pPeer->m_Mutex);
+  if (!pPeer->m_bInUse || pPeer->m_Handle != handle)
+  {
+    return HostError(xiiNetworkErrorCode::InvalidHandle);
+  }
+  if (pPeer->m_Certificate.m_Der.IsEmpty())
+  {
+    return HostError(xiiNetworkErrorCode::UnsupportedCapability);
+  }
+  out_certificate = pPeer->m_Certificate;
+  return {};
 }

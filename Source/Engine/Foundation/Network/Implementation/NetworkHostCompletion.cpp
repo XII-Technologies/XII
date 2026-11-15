@@ -49,7 +49,12 @@ void xiiNetworkHostRuntime::CompleteIO(xiiNetworkIOResult&& result)
               event.m_Payload.SetCount(uiBytes).IgnoreResult();
             }
             m_uiReceiveBytes.fetch_add(event.m_Payload.GetCount());
+            TrackMessage(false, event.m_Payload.GetCount());
             Publish(std::move(event));
+          }
+          else
+          {
+            ++m_uiDroppedDatagrams;
           }
         }
       }
@@ -61,7 +66,7 @@ void xiiNetworkHostRuntime::CompleteIO(xiiNetworkIOResult&& result)
       if (!m_bStopping.load() && AllocatePeer(true, pPeer).Succeeded())
       {
         XII_LOCK(pPeer->m_Mutex);
-        auto error = result.m_AcceptedSocket.SetNoDelay(true);
+        auto error = ConfigureTcp(result.m_AcceptedSocket);
         if (error.Succeeded())
         {
           error = m_IO.Register(std::move(result.m_AcceptedSocket), pPeer->m_Registration);
@@ -205,7 +210,7 @@ void xiiNetworkHostRuntime::CompleteIO(xiiNetworkIOResult&& result)
   }
 }
 
-void xiiNetworkHostRuntime::DriveListener(Listener& listener)
+void xiiNetworkHostRuntime::DriveListener(Listener& listener, xiiTime now, xiiTime& ref_nextWake)
 {
   if (listener.m_bTerminalPublished)
   {
@@ -219,7 +224,15 @@ void xiiNetworkHostRuntime::DriveListener(Listener& listener)
   {
     if (!listener.m_bDeregistered)
     {
-      m_IO.Deregister(listener.m_Registration).IgnoreResult();
+      if (listener.m_pQuic != nullptr)
+      {
+        m_pQuic->CloseListener(listener.m_pQuic);
+        listener.m_pQuic = nullptr;
+      }
+      else
+      {
+        m_IO.Deregister(listener.m_Registration).IgnoreResult();
+      }
       listener.m_bDeregistered = true;
     }
     while (!listener.m_SendQueue.IsEmpty())
@@ -237,6 +250,10 @@ void xiiNetworkHostRuntime::DriveListener(Listener& listener)
       Publish(std::move(event));
       listener.m_bTerminalPublished = true;
     }
+    return;
+  }
+  if (listener.m_pQuic != nullptr)
+  {
     return;
   }
   xiiNetworkIOOptions options;
@@ -266,8 +283,17 @@ void xiiNetworkHostRuntime::DriveListener(Listener& listener)
     }
     if (listener.m_uiMessageSlot == InvalidSlot && !listener.m_SendQueue.IsEmpty())
     {
-      const auto          uiSlot = listener.m_SendQueue.PeekFront();
-      auto&               send   = m_Sends[uiSlot];
+      const auto uiSlot       = listener.m_SendQueue.PeekFront();
+      auto&      send         = m_Sends[uiSlot];
+      auto       hostTokens   = m_SendTokens;
+      auto       socketTokens = listener.m_SendTokens;
+      if (!hostTokens.Take(send.m_uiPayloadBytes, m_Configuration.m_uiSendBytesPerSecond, m_Configuration.m_uiSendBurstBytes, now, ref_nextWake) ||
+          !socketTokens.Take(send.m_uiPayloadBytes, m_Configuration.m_uiPeerSendBytesPerSecond, m_Configuration.m_uiPeerSendBurstBytes, now, ref_nextWake))
+      {
+        return;
+      }
+      m_SendTokens          = hostTokens;
+      listener.m_SendTokens = socketTokens;
       xiiNetworkIOBuffers buffers;
       buffers.PushBack(std::move(send.m_Outbound.m_Payload));
       xiiNetworkIOOperation operation;
@@ -358,6 +384,10 @@ void xiiNetworkHostRuntime::FinishDatagram(xiiUInt32 uiSlot, xiiNetworkError err
   auto& send     = m_Sends[uiSlot];
   auto& listener = m_Listeners[send.m_Listener.m_uiSlot];
   listener.m_uiQueuedBytes -= send.m_uiPayloadBytes;
+  if (error.Succeeded())
+  {
+    TrackMessage(true, send.m_uiPayloadBytes);
+  }
   send.m_Outbound.m_Payload.Clear();
   send.m_bCompleted = true;
   xiiNetworkEvent event;

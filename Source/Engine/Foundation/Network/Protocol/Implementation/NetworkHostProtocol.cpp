@@ -308,14 +308,30 @@ void xiiNetworkHostRuntime::SendWelcome(Peer& peer)
 
 void xiiNetworkHostRuntime::Activate(Peer& peer)
 {
+  if (peer.m_bClosing)
+  {
+    return;
+  }
+  auto& defaultChannel = peer.m_Channels[1];
+  if (peer.m_pQuic != nullptr)
+  {
+    if (!ReserveEvent())
+    {
+      Close(peer, xiiNetworkError(xiiNetworkErrorCode::Backpressure));
+      return;
+    }
+    defaultChannel.m_uiReservedEvents = 1;
+  }
   peer.m_bActivated                              = true;
   peer.m_Info.m_State                            = xiiNetworkConnectionState::Connected;
-  auto& channel                                  = peer.m_Channels[1];
+  auto& channel                                  = defaultChannel;
   channel.m_uiId                                 = DefaultChannelId;
   channel.m_uiGeneration                         = 1;
   channel.m_State                                = ChannelState::Open;
   channel.m_Configuration.m_uiMaximumQueuedBytes = m_Configuration.m_uiMaximumPeerSendBytes;
   peer.m_LastActivity                            = xiiTime::Now();
+  peer.m_Info.m_EstablishmentTime                = peer.m_LastActivity - peer.m_AttemptStartedAt;
+  ++m_uiConnectionsEstablished;
   if (!PeerEvent(peer, xiiNetworkEventType::Connected))
   {
     Close(peer, xiiNetworkError(xiiNetworkErrorCode::Backpressure));
@@ -326,7 +342,7 @@ void xiiNetworkHostRuntime::Activate(Peer& peer)
   }
 }
 
-void xiiNetworkHostRuntime::Frame(Peer& peer, xiiNetworkFrame&& frame)
+void xiiNetworkHostRuntime::Frame(Peer& peer, xiiNetworkFrame&& frame, xiiNetworkReceiveState& receive)
 {
   peer.m_LastActivity = xiiTime::Now();
   const auto type     = frame.m_Header.m_Type;
@@ -506,7 +522,7 @@ void xiiNetworkHostRuntime::Frame(Peer& peer, xiiNetworkFrame&& frame)
       peer.m_Options.m_pSessionTicket = pTicket;
     }
     xiiNetworkSecurityInternal::ClearSecret(frame.m_Payload.GetBytes());
-    peer.m_Decoder.SetMaximumPayloadBytes(peer.m_Info.m_uiMaximumMessageBytes).IgnoreResult();
+    receive.m_Decoder.SetMaximumPayloadBytes(peer.m_Info.m_uiMaximumMessageBytes).IgnoreResult();
     Queue(peer, xiiNetworkFrameType::Ready);
     return;
   }
@@ -519,7 +535,7 @@ void xiiNetworkHostRuntime::Frame(Peer& peer, xiiNetworkFrame&& frame)
     }
     peer.m_bReadyReceived = true;
     Queue(peer, xiiNetworkFrameType::Activated);
-    peer.m_Decoder.SetMaximumPayloadBytes(peer.m_Info.m_uiMaximumMessageBytes).IgnoreResult();
+    receive.m_Decoder.SetMaximumPayloadBytes(peer.m_Info.m_uiMaximumMessageBytes).IgnoreResult();
     Activate(peer);
     return;
   }
@@ -574,7 +590,7 @@ void xiiNetworkHostRuntime::Frame(Peer& peer, xiiNetworkFrame&& frame)
     return;
   }
   auto* pChannel = Find(peer, {peer.m_Handle, frame.m_Header.m_uiChannel, peer.m_uiAttempt});
-  if (pChannel == nullptr || pChannel->m_State != ChannelState::Open)
+  if (pChannel == nullptr || (pChannel->m_State != ChannelState::Open && pChannel->m_State != ChannelState::Closing))
   {
     reject(xiiNetworkErrorCode::ChannelClosed);
     return;
@@ -597,13 +613,13 @@ void xiiNetworkHostRuntime::Frame(Peer& peer, xiiNetworkFrame&& frame)
     return;
   }
   pChannel->m_uiLastReceiveSequence = frame.m_Header.m_uiSequence;
-  if (!peer.m_bDecoderEventReserved && !ReserveEvent())
+  if (!receive.m_bEventReserved && !ReserveEvent())
   {
     Close(peer, xiiNetworkError(xiiNetworkErrorCode::Backpressure));
     return;
   }
-  peer.m_bDecoderEventReserved  = false;
-  peer.m_uiDecoderReservedBytes = 0;
+  receive.m_bEventReserved  = false;
+  receive.m_uiReservedBytes = 0;
   xiiNetworkEvent event;
   event.m_Type       = xiiNetworkEventType::Message;
   event.m_Connection = peer.m_Handle;
@@ -612,6 +628,7 @@ void xiiNetworkHostRuntime::Frame(Peer& peer, xiiNetworkFrame&& frame)
   ++pChannel->m_Statistics.m_uiMessagesReceived;
   ++peer.m_Info.m_Statistics.m_uiMessagesReceived;
   peer.m_Info.m_Statistics.m_uiPayloadBytesReceived += event.m_Payload.GetCount();
+  TrackMessage(false, event.m_Payload.GetCount());
   Publish(std::move(event));
 }
 

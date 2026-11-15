@@ -71,7 +71,7 @@ public:
   xiiNetworkFrameDecoder& operator=(const xiiNetworkFrameDecoder&) = delete;
   xiiNetworkFrameDecoder(xiiNetworkFrameDecoder&&)                 = delete;
   xiiNetworkFrameDecoder& operator=(xiiNetworkFrameDecoder&&)      = delete;
-  ~xiiNetworkFrameDecoder()                                        = default;
+  ~xiiNetworkFrameDecoder();
 
   /// Maximum may only change between frames. Values above INT_MAX - 13 are invalid.
   [[nodiscard]] xiiNetworkError SetMaximumPayloadBytes(xiiUInt32 uiMaximumPayloadBytes);

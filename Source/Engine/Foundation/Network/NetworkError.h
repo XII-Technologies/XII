@@ -50,7 +50,8 @@ enum class xiiNetworkErrorCode : xiiUInt8
   TlsError,
   SessionExpired,
   ChannelClosed,
-  UnsupportedCapability
+  UnsupportedCapability,
+  DatagramLost
 };
 
 /// Identifies the namespace of the preserved native error code.

@@ -24,6 +24,10 @@ void xiiNetworkHostRuntime::Run()
 {
   while (true)
   {
+    if (m_pQuic != nullptr)
+    {
+      ProcessQuic();
+    }
     xiiNetworkIOResult result;
     xiiUInt32          uiCompletions = 0;
     while (uiCompletions < 256 && m_IO.TryGetCompletion(result))
@@ -35,7 +39,9 @@ void xiiNetworkHostRuntime::Run()
     {
       m_WorkSignal.RaiseSignal();
     }
-    bool bActive = false;
+    const auto now      = xiiTime::Now();
+    auto       nextWake = now + xiiTime::MakeFromHours(24);
+    bool       bActive  = false;
     for (auto& listener : m_Listeners)
     {
       XII_LOCK(listener.m_Mutex);
@@ -47,11 +53,9 @@ void xiiNetworkHostRuntime::Run()
       {
         listener.m_bClosing = true;
       }
-      DriveListener(listener);
+      DriveListener(listener, now, nextWake);
       bActive |= listener.m_bInUse && !listener.m_bTerminalPublished;
     }
-    const auto now      = xiiTime::Now();
-    auto       nextWake = now + xiiTime::MakeFromHours(24);
     for (auto& peer : m_Peers)
     {
       XII_LOCK(peer.m_Mutex);
@@ -67,8 +71,19 @@ void xiiNetworkHostRuntime::Run()
       DrivePeer(peer, now, nextWake);
       bActive |= !peer.m_bTerminalPublished;
     }
+    if (m_pQuic != nullptr)
+    {
+      for (auto& peer : m_Peers)
+      {
+        CloseQuicPeer(peer);
+      }
+    }
     if (m_bStopping.load() && !bActive)
     {
+      if (m_pQuic != nullptr && ProcessQuic())
+      {
+        continue;
+      }
       break;
     }
     const auto remaining = nextWake - xiiTime::Now();
@@ -81,9 +96,10 @@ void xiiNetworkHostRuntime::Run()
 
 void xiiNetworkHostRuntime::StartAttempt(Peer& peer)
 {
-  peer.m_bStarted     = true;
-  peer.m_uiAttempt    = m_uiNextAttempt.fetch_add(1);
-  peer.m_LastActivity = xiiTime::Now();
+  peer.m_bStarted         = true;
+  peer.m_uiAttempt        = m_uiNextAttempt.fetch_add(1);
+  peer.m_LastActivity     = xiiTime::Now();
+  peer.m_AttemptStartedAt = peer.m_LastActivity;
   if (peer.m_uiEndpointIndex == 0 && peer.m_Info.m_State != xiiNetworkConnectionState::Resolving)
   {
     peer.m_Deadline = peer.m_LastActivity + m_Configuration.m_HandshakeTimeout;
@@ -111,13 +127,22 @@ void xiiNetworkHostRuntime::StartAttempt(Peer& peer)
     }
     return;
   }
-  peer.m_Info.m_State   = xiiNetworkConnectionState::Connecting;
-  const auto   endpoint = peer.m_Endpoints[peer.m_uiEndpointIndex];
+  peer.m_Info.m_State = xiiNetworkConnectionState::Connecting;
+  const auto endpoint = peer.m_Endpoints[peer.m_uiEndpointIndex];
+  if (m_pQuic != nullptr)
+  {
+    const auto error = m_pQuic->Connect(endpoint, peer.m_Options.m_sServerName, peer.m_pCredentials, peer.m_Handle, peer.m_pQuic);
+    if (error.Failed())
+    {
+      Close(peer, error);
+    }
+    return;
+  }
   xiiTcpSocket socket;
   auto         error = socket.Open(endpoint.GetAddress().GetFamily());
   if (error.Succeeded())
   {
-    error = socket.SetNoDelay(true);
+    error = ConfigureTcp(socket);
   }
   if (error.Succeeded())
   {
@@ -182,6 +207,10 @@ void xiiNetworkHostRuntime::BeginProtocol(Peer& peer)
 
 void xiiNetworkHostRuntime::Receive(Peer& peer)
 {
+  if (m_pQuic != nullptr)
+  {
+    return;
+  }
   if (peer.m_Info.m_State == xiiNetworkConnectionState::Connecting || peer.m_Info.m_State == xiiNetworkConnectionState::Resolving || peer.m_Info.m_State == xiiNetworkConnectionState::Reconnecting)
   {
     return;
@@ -215,6 +244,10 @@ void xiiNetworkHostRuntime::Receive(Peer& peer)
 
 void xiiNetworkHostRuntime::DriveInput(Peer& peer)
 {
+  if (m_pQuic != nullptr)
+  {
+    return;
+  }
   if (peer.m_bClosing)
   {
     return;
@@ -319,77 +352,126 @@ void xiiNetworkHostRuntime::DriveInput(Peer& peer)
 
 void xiiNetworkHostRuntime::Parse(Peer& peer, xiiArrayPtr<const xiiUInt8> bytes)
 {
-  xiiUInt32 uiOffset = 0;
-  while (uiOffset < bytes.GetCount() && !peer.m_bClosing)
+  Parse(peer, peer.m_Receive, bytes);
+}
+
+xiiUInt32 xiiNetworkHostRuntime::Parse(Peer& peer, xiiNetworkReceiveState& receive, xiiArrayPtr<const xiiUInt8> bytes)
+{
+  xiiUInt32 uiOffset         = 0;
+  receive.m_bAwaitingChannel = false;
+  while (!peer.m_bClosing && (uiOffset < bytes.GetCount() || receive.m_Decoder.GetState() == xiiNetworkFrameDecodeState::NeedBuffer || receive.m_Decoder.GetState() == xiiNetworkFrameDecodeState::Ready))
   {
     xiiUInt32  uiConsumed = 0;
-    const auto error      = peer.m_Decoder.Consume(bytes.GetSubArray(uiOffset), uiConsumed);
+    const auto error      = receive.m_Decoder.Consume(bytes.GetSubArray(uiOffset), uiConsumed);
     uiOffset += uiConsumed;
     if (error.Failed())
     {
       Close(peer, error);
-      return;
+      return uiOffset;
     }
-    if (peer.m_Decoder.GetState() == xiiNetworkFrameDecodeState::NeedBuffer)
+    const auto state = receive.m_Decoder.GetState();
+    if (!receive.m_bHeaderValidated && (state == xiiNetworkFrameDecodeState::NeedBuffer || state == xiiNetworkFrameDecodeState::Ready))
     {
-      const auto& header  = peer.m_Decoder.GetHeader();
+      const auto& header = receive.m_Decoder.GetHeader();
+      if ((receive.m_bRequireControlFrames && header.m_Type == xiiNetworkFrameType::Data) ||
+          (receive.m_bRequireDataFrames && header.m_Type != xiiNetworkFrameType::Data))
+      {
+        Close(peer, xiiNetworkError(xiiNetworkErrorCode::ProtocolViolation));
+        return uiOffset;
+      }
+      if (receive.m_bRequireDataFrames)
+      {
+        auto* pChannel = Find(peer, {peer.m_Handle, header.m_uiChannel, peer.m_uiAttempt});
+        if (pChannel != nullptr && pChannel->m_State == ChannelState::Opening)
+        {
+          receive.m_bAwaitingChannel = true;
+          return uiOffset;
+        }
+        if (pChannel == nullptr || (pChannel->m_State != ChannelState::Open && pChannel->m_State != ChannelState::Closing) ||
+            (pChannel->m_Configuration.m_Delivery != xiiNetworkDeliveryMode::ReliableOrdered && pChannel->m_Configuration.m_Delivery != xiiNetworkDeliveryMode::ReliableUnordered) ||
+            (receive.m_uiBoundChannel != 0 && receive.m_uiBoundChannel != header.m_uiChannel) ||
+            (pChannel->m_Configuration.m_Delivery == xiiNetworkDeliveryMode::ReliableUnordered && receive.m_uiFrames != 0))
+        {
+          Close(peer, xiiNetworkError(xiiNetworkErrorCode::ProtocolViolation));
+          return uiOffset;
+        }
+        if (pChannel->m_Configuration.m_Delivery == xiiNetworkDeliveryMode::ReliableOrdered)
+        {
+          if (pChannel->m_pOrderedReceive != nullptr && pChannel->m_pOrderedReceive != &receive)
+          {
+            Close(peer, xiiNetworkError(xiiNetworkErrorCode::ProtocolViolation));
+            return uiOffset;
+          }
+          pChannel->m_pOrderedReceive = &receive;
+        }
+        receive.m_uiBoundChannel = header.m_uiChannel;
+        receive.m_bSingleFrame   = pChannel->m_Configuration.m_Delivery == xiiNetworkDeliveryMode::ReliableUnordered;
+      }
+      receive.m_bHeaderValidated = true;
+    }
+    if (receive.m_Decoder.GetState() == xiiNetworkFrameDecodeState::NeedBuffer)
+    {
+      const auto& header  = receive.m_Decoder.GetHeader();
       const auto  uiBytes = header.m_uiPayloadBytes;
       if (uiBytes > m_Configuration.m_uiMaximumPeerReceiveBytes - peer.m_uiReceiveBytes.load() || uiBytes > m_Configuration.m_uiMaximumReceiveBytes - m_uiReceiveBytes.load())
       {
         Close(peer, xiiNetworkError(xiiNetworkErrorCode::Backpressure));
-        return;
+        return uiOffset;
       }
       if (header.m_Type == xiiNetworkFrameType::Data)
       {
         if (!ReserveEvent())
         {
           Close(peer, xiiNetworkError(xiiNetworkErrorCode::Backpressure));
-          return;
+          return uiOffset;
         }
-        peer.m_bDecoderEventReserved = true;
+        receive.m_bEventReserved = true;
       }
       peer.m_uiReceiveBytes.fetch_add(uiBytes);
       m_uiReceiveBytes.fetch_add(uiBytes);
-      peer.m_uiDecoderReservedBytes = uiBytes;
+      receive.m_uiReservedBytes = uiBytes;
       xiiNetworkIOBuffer buffer;
       auto               allocation = m_IO.AcquireBuffer(uiBytes, buffer);
       if (allocation.Succeeded())
       {
-        allocation = peer.m_Decoder.SupplyBuffer(std::move(buffer));
+        allocation = receive.m_Decoder.SupplyBuffer(std::move(buffer));
       }
       if (allocation.Failed())
       {
         Close(peer, allocation);
-        return;
+        return uiOffset;
       }
     }
-    if (peer.m_Decoder.GetState() == xiiNetworkFrameDecodeState::Ready)
+    if (receive.m_Decoder.GetState() == xiiNetworkFrameDecodeState::Ready)
     {
       xiiNetworkFrame frame;
-      const auto      taken = peer.m_Decoder.TakeFrame(frame);
+      const auto      taken = receive.m_Decoder.TakeFrame(frame);
       if (taken.Failed())
       {
         Close(peer, taken);
-        return;
+        return uiOffset;
       }
-      Frame(peer, std::move(frame));
-      if (peer.m_uiDecoderReservedBytes != 0)
+      Frame(peer, std::move(frame), receive);
+      receive.m_bHeaderValidated = false;
+      ++receive.m_uiFrames;
+      if (receive.m_uiReservedBytes != 0)
       {
-        peer.m_uiReceiveBytes.fetch_sub(peer.m_uiDecoderReservedBytes);
-        m_uiReceiveBytes.fetch_sub(peer.m_uiDecoderReservedBytes);
-        peer.m_uiDecoderReservedBytes = 0;
+        peer.m_uiReceiveBytes.fetch_sub(receive.m_uiReservedBytes);
+        m_uiReceiveBytes.fetch_sub(receive.m_uiReservedBytes);
+        receive.m_uiReservedBytes = 0;
       }
-      if (peer.m_bDecoderEventReserved)
+      if (receive.m_bEventReserved)
       {
         ReleaseEvents(1);
-        peer.m_bDecoderEventReserved = false;
+        receive.m_bEventReserved = false;
       }
     }
-    else if (uiConsumed == 0 && peer.m_Decoder.GetState() != xiiNetworkFrameDecodeState::Payload)
+    else if (uiConsumed == 0 && receive.m_Decoder.GetState() != xiiNetworkFrameDecodeState::Payload)
     {
-      return;
+      return uiOffset;
     }
   }
+  return uiOffset;
 }
 
 void xiiNetworkHostRuntime::DrivePeer(Peer& peer, xiiTime now, xiiTime& ref_nextWake)
@@ -409,7 +491,7 @@ void xiiNetworkHostRuntime::DrivePeer(Peer& peer, xiiTime now, xiiTime& ref_next
       m_IO.Deregister(peer.m_Registration).IgnoreResult();
       peer.m_bDeregistered = true;
     }
-    if (peer.m_uiPendingIO == 0)
+    if (peer.m_uiPendingIO == 0 && peer.m_pQuic == nullptr)
     {
       FinishClose(peer);
     }
@@ -452,6 +534,46 @@ void xiiNetworkHostRuntime::DrivePeer(Peer& peer, xiiTime now, xiiTime& ref_next
       return;
     }
   }
+  if (peer.m_pQuic != nullptr)
+  {
+    const auto providerFailure = m_pQuic->GetFailure(*peer.m_pQuic);
+    if (providerFailure.Failed())
+    {
+      Close(peer, providerFailure);
+      return;
+    }
+    const auto uiDatagramBytes                              = m_pQuic->GetMaximumDatagramBytes(*peer.m_pQuic);
+    peer.m_Info.m_Capabilities.m_uiMaximumUnreliablePayload = uiDatagramBytes > xiiNetworkFrame::HeaderCapacity ? uiDatagramBytes - xiiNetworkFrame::HeaderCapacity : 0;
+    if (peer.m_bActivated)
+    {
+      xiiUInt32 uiRetained = 0;
+      for (xiiUInt32 uiIndex = 0; uiIndex < peer.m_QuicDeferred.GetCount() && !peer.m_bClosing; ++uiIndex)
+      {
+        auto& pending = peer.m_QuicDeferred[uiIndex];
+        if (!ReceiveQuic(peer, pending))
+        {
+          if (uiIndex != uiRetained)
+          {
+            peer.m_QuicDeferred[uiRetained] = std::move(pending);
+          }
+          ++uiRetained;
+        }
+      }
+      while (peer.m_QuicDeferred.GetCount() > uiRetained)
+      {
+        peer.m_QuicDeferred.PopBack();
+      }
+    }
+    if (peer.m_bActivated)
+    {
+      if (now >= peer.m_QuicStatisticsAt)
+      {
+        m_pQuic->UpdateStatistics(*peer.m_pQuic, peer.m_Info.m_Statistics);
+        peer.m_QuicStatisticsAt = now + xiiTime::MakeFromSeconds(1);
+      }
+      ref_nextWake = xiiMath::Min(ref_nextWake, peer.m_QuicStatisticsAt);
+    }
+  }
   DriveInput(peer);
   if (peer.m_bClosing)
   {
@@ -478,6 +600,25 @@ void xiiNetworkHostRuntime::DrivePeer(Peer& peer, xiiTime now, xiiTime& ref_next
     {
       ref_nextWake = xiiMath::Min(ref_nextWake, pingAt);
     }
+    for (const auto& channel : peer.m_Channels)
+    {
+      if (channel.m_State == ChannelState::Opening || channel.m_State == ChannelState::Authorizing || channel.m_State == ChannelState::Closing)
+      {
+        ref_nextWake = xiiMath::Min(ref_nextWake, channel.m_Deadline);
+      }
+    }
+    if (peer.m_pQuic != nullptr && peer.m_Info.m_State == xiiNetworkConnectionState::Draining)
+    {
+      for (auto& channel : peer.m_Channels)
+      {
+        if (channel.m_State == ChannelState::Open)
+        {
+          channel.m_State         = ChannelState::Closing;
+          channel.m_Deadline      = peer.m_Deadline;
+          channel.m_bNeedsControl = true;
+        }
+      }
+    }
     ProcessChannels(peer);
   }
   DriveOutput(peer, now, ref_nextWake);
@@ -486,7 +627,8 @@ void xiiNetworkHostRuntime::DrivePeer(Peer& peer, xiiTime now, xiiTime& ref_next
     bool bQueued = peer.m_uiActiveSend != InvalidSlot || peer.m_bActiveControl || !peer.m_ControlQueue.IsEmpty() || peer.m_bCipherSendPending;
     for (const auto& channel : peer.m_Channels)
     {
-      bQueued |= !channel.m_SendQueue.IsEmpty();
+      bQueued |= !channel.m_SendQueue.IsEmpty() ||
+        (peer.m_pQuic != nullptr && peer.m_bActivated && channel.m_State != ChannelState::Free && channel.m_State != ChannelState::Closed);
     }
     if (!bQueued)
     {
@@ -497,6 +639,10 @@ void xiiNetworkHostRuntime::DrivePeer(Peer& peer, xiiTime now, xiiTime& ref_next
         Queue(peer, xiiNetworkFrameType::Disconnect, writer);
         peer.m_bDisconnectSent = true;
         m_WorkSignal.RaiseSignal();
+      }
+      else if (peer.m_pQuic != nullptr)
+      {
+        m_pQuic->Shutdown(*peer.m_pQuic);
       }
       else if (peer.m_pTls != nullptr)
       {
@@ -544,6 +690,11 @@ void xiiNetworkHostRuntime::DrivePeer(Peer& peer, xiiTime now, xiiTime& ref_next
 
 void xiiNetworkHostRuntime::DriveOutput(Peer& peer, xiiTime now, xiiTime& ref_nextWake)
 {
+  if (m_pQuic != nullptr)
+  {
+    DriveQuicOutput(peer, now, ref_nextWake);
+    return;
+  }
   if (peer.m_bClosing || !peer.m_Registration.IsValid())
   {
     return;
@@ -731,8 +882,20 @@ void xiiNetworkHostRuntime::FinishSend(Peer& peer, xiiUInt32 uiSlot, xiiNetworkE
     return;
   }
   auto& channel = peer.m_Channels[send.m_Channel.m_uiId & 0xFFFFU];
-  XII_ASSERT_DEV(!channel.m_SendQueue.IsEmpty() && channel.m_SendQueue.PeekFront() == uiSlot, "Stream/channel sends retire in submission order.");
-  channel.m_SendQueue.PopFront();
+  if (channel.m_SendQueue.PeekFront() == uiSlot)
+  {
+    channel.m_SendQueue.PopFront();
+  }
+  else
+  {
+    xiiUInt32 uiIndex = 1;
+    while (uiIndex < channel.m_SendQueue.GetCount() && channel.m_SendQueue[uiIndex] != uiSlot)
+    {
+      ++uiIndex;
+    }
+    XII_ASSERT_DEV(uiIndex < channel.m_SendQueue.GetCount(), "The accepted message retains its queue entry.");
+    channel.m_SendQueue.RemoveAtAndCopy(uiIndex);
+  }
   --channel.m_Statistics.m_uiQueuedMessages;
   channel.m_Statistics.m_uiQueuedBytes -= send.m_uiPayloadBytes;
   peer.m_Info.m_Statistics.m_uiQueuedSendBytes -= send.m_uiPayloadBytes;
@@ -741,6 +904,7 @@ void xiiNetworkHostRuntime::FinishSend(Peer& peer, xiiUInt32 uiSlot, xiiNetworkE
     ++channel.m_Statistics.m_uiMessagesSent;
     ++peer.m_Info.m_Statistics.m_uiMessagesSent;
     peer.m_Info.m_Statistics.m_uiPayloadBytesSent += send.m_uiPayloadBytes;
+    TrackMessage(true, send.m_uiPayloadBytes);
   }
   send.m_Outbound.m_Payload.Clear();
   send.m_bCompleted = true;
@@ -812,14 +976,14 @@ void xiiNetworkHostRuntime::FinishClose(Peer& peer)
   peer.m_CipherInput.Clear();
   peer.m_Registration     = {};
   peer.m_ReceiveOperation = {};
-  peer.m_Decoder.Reset();
-  peer.m_uiReceiveBytes.fetch_sub(peer.m_uiDecoderReservedBytes);
-  m_uiReceiveBytes.fetch_sub(peer.m_uiDecoderReservedBytes);
-  peer.m_uiDecoderReservedBytes = 0;
-  if (peer.m_bDecoderEventReserved)
+  peer.m_Receive.m_Decoder.Reset();
+  peer.m_uiReceiveBytes.fetch_sub(peer.m_Receive.m_uiReservedBytes);
+  m_uiReceiveBytes.fetch_sub(peer.m_Receive.m_uiReservedBytes);
+  peer.m_Receive.m_uiReservedBytes = 0;
+  if (peer.m_Receive.m_bEventReserved)
   {
     ReleaseEvents(1);
-    peer.m_bDecoderEventReserved = false;
+    peer.m_Receive.m_bEventReserved = false;
   }
   DetachSession(peer);
   const auto& retry = peer.m_Options.m_Reconnect;
@@ -859,7 +1023,7 @@ void xiiNetworkHostRuntime::FinishClose(Peer& peer)
       peer.m_uiDeliveryModes                             = m_Capabilities.m_uiDeliveryModes;
       peer.m_Channels.Clear();
       peer.m_Channels.SetCount(peer.m_uiMaximumChannels + 1);
-      peer.m_Decoder.SetMaximumPayloadBytes(8192).IgnoreResult();
+      peer.m_Receive.m_Decoder.SetMaximumPayloadBytes(8192).IgnoreResult();
       {
         XII_LOCK(m_CredentialsMutex);
         peer.m_pCredentials = m_pCredentials;
@@ -876,9 +1040,11 @@ void xiiNetworkHostRuntime::FinishClose(Peer& peer)
       peer.m_CloseError = randomError;
     }
   }
-  peer.m_Info.m_State       = xiiNetworkConnectionState::Closed;
-  peer.m_bTerminalPublished = true;
-  const bool bPublished     = PeerEvent(peer, xiiNetworkEventType::Closed, peer.m_CloseError);
+  peer.m_Info.m_State         = xiiNetworkConnectionState::Closed;
+  peer.m_bTerminalPublished   = true;
+  peer.m_Info.m_TerminalError = peer.m_CloseError;
+  TrackTerminal(peer.m_CloseError);
+  const bool bPublished = PeerEvent(peer, xiiNetworkEventType::Closed, peer.m_CloseError);
   XII_ASSERT_DEV(bPublished, "An admitted peer reserves its terminal event.");
   ReleaseEvents(peer.m_uiReservedEvents);
   peer.m_uiReservedEvents = 0;

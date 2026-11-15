@@ -12,6 +12,11 @@ void xiiNetworkHostRuntime::ProcessChannels(Peer& peer)
   for (xiiUInt32 uiSlot = 1; uiSlot <= peer.m_uiMaximumChannels && uiControls < 4 && peer.m_ControlQueue.GetCount() < 8; ++uiSlot)
   {
     auto& channel = peer.m_Channels[uiSlot];
+    if ((channel.m_State == ChannelState::Opening || channel.m_State == ChannelState::Authorizing || channel.m_State == ChannelState::Closing) && xiiTime::Now() >= channel.m_Deadline)
+    {
+      Close(peer, xiiNetworkError(xiiNetworkErrorCode::TimedOut));
+      return;
+    }
     if (!channel.m_bNeedsControl)
     {
       continue;
@@ -49,22 +54,38 @@ void xiiNetworkHostRuntime::ProcessChannels(Peer& peer)
     }
     else if (channel.m_State == ChannelState::Closing && channel.m_SendQueue.IsEmpty())
     {
+      const auto      mode       = channel.m_Configuration.m_Delivery;
+      const bool      bReliable  = mode == xiiNetworkDeliveryMode::ReliableOrdered || mode == xiiNetworkDeliveryMode::ReliableUnordered;
+      const xiiUInt64 uiReceived = mode == xiiNetworkDeliveryMode::ReliableOrdered ? channel.m_uiLastReceiveSequence : channel.m_Statistics.m_uiMessagesReceived;
+      if (bReliable && channel.m_bHasPeerFinalSequence && uiReceived > channel.m_uiPeerFinalSequence)
+      {
+        Close(peer, xiiNetworkError(xiiNetworkErrorCode::ProtocolViolation));
+        return;
+      }
+      const bool bReceivedAll = !bReliable || (channel.m_bHasPeerFinalSequence && uiReceived == channel.m_uiPeerFinalSequence);
+      if (channel.m_bCloseReceived && !bReceivedAll)
+      {
+        continue;
+      }
       WireWriter writer;
       if (channel.m_bCloseReceived)
       {
         writer.U8(1);
+        writer.U64(channel.m_uiNextSendSequence - 1);
         Queue(peer, xiiNetworkFrameType::CloseChannel, writer, channel.m_uiId);
         channel.m_bCloseAcknowledged = true;
       }
       else if (!channel.m_bCloseSent)
       {
         writer.U8(0);
+        writer.U64(channel.m_uiNextSendSequence - 1);
         Queue(peer, xiiNetworkFrameType::CloseChannel, writer, channel.m_uiId);
         channel.m_bCloseSent = true;
       }
-      channel.m_bNeedsControl = false;
-      if (channel.m_bCloseAcknowledged)
+      channel.m_bNeedsControl = channel.m_bCloseAcknowledged && !bReceivedAll;
+      if (channel.m_bCloseAcknowledged && bReceivedAll)
       {
+        FinishQuicChannel(peer, channel);
         channel.m_State = ChannelState::Closed;
         if (!ChannelEvent(peer, channel, xiiNetworkEventType::ChannelClosed))
         {
@@ -154,6 +175,9 @@ void xiiNetworkHostRuntime::ProcessChannelFrame(Peer& peer, xiiNetworkFrame&& fr
     channel.m_bLocal                                  = false;
     channel.m_bCloseReceived = channel.m_bCloseSent = channel.m_bCloseAcknowledged = false;
     channel.m_State                                                                = ChannelState::Authorizing;
+    channel.m_Deadline                                                             = xiiTime::Now() + m_Configuration.m_AuthenticationTimeout;
+    channel.m_bHasPeerFinalSequence                                                = false;
+    channel.m_pOrderedReceive                                                      = nullptr;
     channel.m_bAccept                                                              = !m_Configuration.m_bRequireChannelAuthorization;
     channel.m_bNeedsControl                                                        = !m_Configuration.m_bRequireChannelAuthorization;
     if (m_Configuration.m_bRequireChannelAuthorization && !ChannelEvent(peer, channel, xiiNetworkEventType::ChannelRequested))
@@ -190,17 +214,25 @@ void xiiNetworkHostRuntime::ProcessChannelFrame(Peer& peer, xiiNetworkFrame&& fr
   }
   if (frame.m_Header.m_Type == xiiNetworkFrameType::CloseChannel)
   {
-    const auto uiAcknowledged = reader.U8();
+    const auto uiAcknowledged  = reader.U8();
+    const auto uiFinalSequence = reader.U64();
+    if (reader.Done() && uiAcknowledged == 1 && channel.m_State == ChannelState::Closed && channel.m_bCloseSent && channel.m_bCloseReceived && channel.m_bCloseAcknowledged && channel.m_uiPeerFinalSequence == uiFinalSequence)
+    {
+      return;
+    }
     if (!reader.Done() || uiAcknowledged > 1 || channel.m_State == ChannelState::Free || channel.m_State == ChannelState::Closed ||
         (uiAcknowledged == 1 && !channel.m_bCloseSent))
     {
       Close(peer, xiiNetworkError(xiiNetworkErrorCode::ProtocolViolation));
       return;
     }
-    channel.m_State              = ChannelState::Closing;
-    channel.m_bCloseReceived     = uiAcknowledged == 0;
-    channel.m_bCloseAcknowledged = uiAcknowledged == 1;
-    channel.m_bNeedsControl      = true;
+    channel.m_State                 = ChannelState::Closing;
+    channel.m_Deadline              = xiiTime::Now() + m_Configuration.m_CloseTimeout;
+    channel.m_uiPeerFinalSequence   = uiFinalSequence;
+    channel.m_bHasPeerFinalSequence = true;
+    channel.m_bCloseReceived        = uiAcknowledged == 0;
+    channel.m_bCloseAcknowledged    = uiAcknowledged == 1;
+    channel.m_bNeedsControl         = true;
     return;
   }
   Close(peer, xiiNetworkError(xiiNetworkErrorCode::ProtocolViolation));

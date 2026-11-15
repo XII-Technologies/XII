@@ -60,18 +60,18 @@ namespace
   }
 } // namespace
 
-XII_CREATE_SIMPLE_TEST(NetworkTransport, HostTcpAndTlsMessaging)
+XII_CREATE_SIMPLE_TEST(NetworkTransport, HostReliableMessaging)
 {
   NetworkSecurityTestCertificates files;
   if (!XII_TEST_BOOL(files.Initialize().Succeeded()))
   {
     return;
   }
-  for (auto type : {xiiNetworkTransportType::Tcp, xiiNetworkTransportType::TlsTcp})
+  for (auto type : {xiiNetworkTransportType::Tcp, xiiNetworkTransportType::TlsTcp, xiiNetworkTransportType::SecureDatagram})
   {
     auto serverConfiguration = HostTestConfiguration(type);
     auto clientConfiguration = HostTestConfiguration(type);
-    if (type == xiiNetworkTransportType::TlsTcp)
+    if (type != xiiNetworkTransportType::Tcp)
     {
       serverConfiguration.m_pCredentials = XII_DEFAULT_NEW(xiiNetworkCredentials);
       clientConfiguration.m_pCredentials = XII_DEFAULT_NEW(xiiNetworkCredentials);
@@ -372,4 +372,197 @@ XII_CREATE_SIMPLE_TEST(NetworkTransport, HostAuthenticationAndSessionRecovery)
   }
   XII_TEST_BOOL(event.m_Error.m_Code == xiiNetworkErrorCode::SessionExpired);
   XII_TEST_BOOL(HostTestEvent(client, xiiNetworkEventType::Closed, event));
+}
+
+XII_CREATE_SIMPLE_TEST(NetworkTransport, HostChannelAuthorizationTimeout)
+{
+  auto configuration                           = HostTestConfiguration(xiiNetworkTransportType::Tcp);
+  configuration.m_bRequireChannelAuthorization = true;
+  configuration.m_AuthenticationTimeout        = xiiTime::MakeFromMilliseconds(100);
+  xiiNetworkHost server;
+  xiiNetworkHost client;
+  if (!XII_TEST_BOOL(server.Start(configuration).Succeeded()) || !XII_TEST_BOOL(client.Start(configuration).Succeeded()))
+  {
+    return;
+  }
+  xiiNetworkListener listener;
+  xiiNetworkEndpoint endpoint;
+  XII_TEST_BOOL(server.Listen({xiiNetworkAddress::MakeLoopback(xiiNetworkAddressFamily::Ipv4), 0}, listener).Succeeded());
+  XII_TEST_BOOL(server.GetLocalEndpoint(listener, endpoint).Succeeded());
+  xiiNetworkConnection connection;
+  XII_TEST_BOOL(client.Connect(endpoint, {}, connection).Succeeded());
+  xiiNetworkEvent event;
+  if (!HostTestEvent(server, xiiNetworkEventType::Connected, event) || !HostTestEvent(client, xiiNetworkEventType::Connected, event))
+  {
+    return;
+  }
+  xiiNetworkChannel channel;
+  XII_TEST_BOOL(client.OpenChannel(connection, {}, channel).Succeeded());
+  if (!HostTestEvent(server, xiiNetworkEventType::ChannelRequested, event))
+  {
+    return;
+  }
+  XII_TEST_BOOL(server.AuthorizeChannel(event.m_Channel, false).Succeeded());
+  XII_TEST_BOOL(server.AuthorizeChannel(event.m_Channel, true).m_Code == xiiNetworkErrorCode::InvalidArgument);
+  if (!HostTestEvent(client, xiiNetworkEventType::ChannelClosed, event))
+  {
+    return;
+  }
+  XII_TEST_BOOL(event.m_Error.m_Code == xiiNetworkErrorCode::PermissionDenied);
+  const auto old = channel;
+  XII_TEST_BOOL(client.OpenChannel(connection, {}, channel).Succeeded());
+  XII_TEST_BOOL(channel.m_uiId != old.m_uiId);
+  if (!HostTestEvent(server, xiiNetworkEventType::ChannelRequested, event))
+  {
+    return;
+  }
+  if (!HostTestEvent(server, xiiNetworkEventType::Closed, event))
+  {
+    return;
+  }
+  XII_TEST_BOOL(event.m_Error.m_Code == xiiNetworkErrorCode::TimedOut);
+  XII_TEST_BOOL(HostTestEvent(client, xiiNetworkEventType::Closed, event));
+}
+
+XII_CREATE_SIMPLE_TEST(NetworkTransport, HostQuicDeliveryModes)
+{
+  NetworkSecurityTestCertificates files;
+  if (!XII_TEST_BOOL(files.Initialize().Succeeded()))
+  {
+    return;
+  }
+  auto serverConfiguration           = HostTestConfiguration(xiiNetworkTransportType::SecureDatagram);
+  auto clientConfiguration           = serverConfiguration;
+  serverConfiguration.m_pCredentials = XII_DEFAULT_NEW(xiiNetworkCredentials);
+  clientConfiguration.m_pCredentials = XII_DEFAULT_NEW(xiiNetworkCredentials);
+  if (!XII_TEST_BOOL(serverConfiguration.m_pCredentials->Load(files.Configuration()).Succeeded()) ||
+      !XII_TEST_BOOL(clientConfiguration.m_pCredentials->Load(files.Configuration("client")).Succeeded()))
+  {
+    return;
+  }
+  xiiNetworkHost server;
+  xiiNetworkHost client;
+  const auto     serverStart = server.Start(serverConfiguration);
+  const auto     clientStart = client.Start(clientConfiguration);
+  if (!XII_TEST_BOOL_MSG(serverStart.Succeeded(), "%s (%d)", serverStart.GetCodeName(), serverStart.m_iNativeCode) ||
+      !XII_TEST_BOOL_MSG(clientStart.Succeeded(), "%s (%d)", clientStart.GetCodeName(), clientStart.m_iNativeCode))
+  {
+    return;
+  }
+
+  xiiNetworkListener listener;
+  xiiNetworkEndpoint endpoint;
+  const auto         listen = server.Listen({xiiNetworkAddress::MakeLoopback(xiiNetworkAddressFamily::Ipv4), 0}, listener);
+  if (!XII_TEST_BOOL_MSG(listen.Succeeded(), "%s (%d)", listen.GetCodeName(), listen.m_iNativeCode) ||
+      !XII_TEST_BOOL(server.GetLocalEndpoint(listener, endpoint).Succeeded()))
+  {
+    return;
+  }
+
+  xiiNetworkConnectOptions options;
+  options.m_sServerName = "localhost";
+  xiiNetworkConnection connection;
+  if (!XII_TEST_BOOL(client.Connect(endpoint, options, connection).Succeeded()))
+  {
+    return;
+  }
+  xiiNetworkEvent event;
+  if (!HostTestEvent(server, xiiNetworkEventType::Connected, event) ||
+      !HostTestEvent(client, xiiNetworkEventType::Connected, event))
+  {
+    return;
+  }
+
+  xiiNetworkConnectionInfo info;
+  if (!XII_TEST_BOOL(client.GetConnectionInfo(connection, info).Succeeded()))
+  {
+    return;
+  }
+  XII_TEST_BOOL(info.m_Capabilities.m_bIndependentChannelProgress);
+  XII_TEST_BOOL(info.m_Capabilities.m_bEncrypted);
+  XII_TEST_BOOL(info.m_Capabilities.m_uiMaximumUnreliablePayload >= 256);
+
+  for (auto mode : {xiiNetworkDeliveryMode::ReliableOrdered, xiiNetworkDeliveryMode::ReliableUnordered, xiiNetworkDeliveryMode::UnreliableSequenced, xiiNetworkDeliveryMode::UnreliableUnsequenced})
+  {
+    xiiNetworkChannelConfiguration configuration;
+    configuration.m_Delivery = mode;
+    xiiNetworkChannel channel;
+    if (!XII_TEST_BOOL(info.m_Capabilities.Supports(mode)) ||
+        !XII_TEST_BOOL(client.OpenChannel(connection, configuration, channel).Succeeded()) ||
+        !HostTestEvent(client, xiiNetworkEventType::ChannelOpened, event) ||
+        !HostTestEvent(server, xiiNetworkEventType::ChannelOpened, event))
+    {
+      return;
+    }
+    const auto serverChannel = event.m_Channel;
+
+    const bool bUnreliable = mode == xiiNetworkDeliveryMode::UnreliableSequenced || mode == xiiNetworkDeliveryMode::UnreliableUnsequenced;
+    if (bUnreliable)
+    {
+      xiiNetworkIOBuffer large;
+      if (!XII_TEST_BOOL(client.AcquireBuffer(65536, large).Succeeded()))
+      {
+        return;
+      }
+      xiiNetworkMessage rejected;
+      XII_TEST_BOOL(client.Send(channel, std::move(large), rejected).m_Code == xiiNetworkErrorCode::MessageTooLarge);
+      XII_TEST_BOOL(large.IsValid());
+    }
+    // Concurrent reliable messages exercise independent stream lifetimes. Unreliable messages are
+    // sent one at a time so the sequenced policy does not depend on loopback packet arrival order.
+    const xiiUInt32   uiBatch       = bUnreliable ? 1 : 24;
+    bool              bReceived[24] = {};
+    xiiNetworkMessage ids[24];
+    for (xiiUInt32 uiIndex = 0; uiIndex < uiBatch; ++uiIndex)
+    {
+      const xiiUInt8 uiPayload[] = {static_cast<xiiUInt8>(uiIndex), 17, 255};
+      if (!XII_TEST_BOOL(client.Send(channel, uiPayload, ids[uiIndex], uiIndex).Succeeded()))
+      {
+        return;
+      }
+    }
+    for (xiiUInt32 uiIndex = 0; uiIndex < uiBatch; ++uiIndex)
+    {
+      if (!HostTestEvent(server, xiiNetworkEventType::Message, event) || !XII_TEST_INT(event.m_Payload.GetCount(), 3))
+      {
+        return;
+      }
+      XII_TEST_BOOL(event.m_Channel == serverChannel);
+      const auto bytes = event.m_Payload.GetBytes();
+      if (!XII_TEST_BOOL(bytes[0] < uiBatch))
+      {
+        return;
+      }
+      XII_TEST_BOOL(!bReceived[bytes[0]]);
+      bReceived[bytes[0]] = true;
+      if (mode == xiiNetworkDeliveryMode::ReliableOrdered)
+      {
+        XII_TEST_INT(bytes[0], uiIndex);
+      }
+      XII_TEST_INT(bytes[1], 17);
+      XII_TEST_INT(bytes[2], 255);
+    }
+    for (xiiUInt32 uiIndex = 0; uiIndex < uiBatch; ++uiIndex)
+    {
+      if (!HostTestEvent(client, xiiNetworkEventType::MessageSent, event) ||
+          !XII_TEST_BOOL_MSG(event.m_Error.Succeeded(), "%s (%d)", event.m_Error.GetCodeName(), event.m_Error.m_iNativeCode) ||
+          !XII_TEST_BOOL(event.m_uiUserData < uiBatch))
+      {
+        return;
+      }
+      XII_TEST_BOOL(event.m_Message == ids[event.m_uiUserData]);
+    }
+    if (!XII_TEST_BOOL(client.CloseChannel(channel).Succeeded()) ||
+        !HostTestEvent(client, xiiNetworkEventType::ChannelClosed, event) ||
+        !HostTestEvent(server, xiiNetworkEventType::ChannelClosed, event))
+    {
+      return;
+    }
+  }
+  XII_TEST_BOOL(client.Disconnect(connection).Succeeded());
+  if (!HostTestEvent(client, xiiNetworkEventType::Closed, event) ||
+      !HostTestEvent(server, xiiNetworkEventType::Closed, event))
+  {
+    return;
+  }
 }

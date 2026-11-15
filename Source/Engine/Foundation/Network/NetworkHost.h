@@ -5,8 +5,44 @@
 #include <Foundation/Basics.h>
 #include <Foundation/Network/NetworkChannel.h>
 #include <Foundation/Network/NetworkIOConfiguration.h>
+#include <Foundation/Network/NetworkIOStatistics.h>
 #include <Foundation/Network/Security/NetworkSecurityConfig.h>
 #include <Foundation/Network/Session/NetworkSession.h>
+
+struct XII_FOUNDATION_DLL xiiNetworkTcpOptions
+{
+  bool m_bNoDelay              = true;
+  bool m_bKeepAlive            = false;
+  bool m_bReuseListenerAddress = false;
+  /// Zero leaves native defaults. Options are applied before native registration.
+  xiiUInt32 m_uiSendBufferBytes    = 0;
+  xiiUInt32 m_uiReceiveBufferBytes = 0;
+};
+
+/// Observation of host queues and lifetime totals. Individual counters may advance during sampling.
+struct XII_FOUNDATION_DLL xiiNetworkHostStatistics
+{
+  xiiUInt32              m_uiActiveConnections      = 0;
+  xiiUInt32              m_uiActiveSessions         = 0;
+  xiiUInt32              m_uiActiveChannels         = 0;
+  xiiUInt32              m_uiActiveListeners        = 0;
+  xiiUInt32              m_uiQueuedEvents           = 0;
+  xiiUInt32              m_uiReservedEventSlots     = 0;
+  xiiUInt64              m_uiQueuedMessages         = 0;
+  xiiUInt64              m_uiQueuedSendBytes        = 0;
+  xiiUInt64              m_uiReservedReceiveBytes   = 0;
+  xiiUInt64              m_uiConnectionsEstablished = 0;
+  xiiUInt64              m_uiAuthenticationFailures = 0;
+  xiiUInt64              m_uiProtocolFailures       = 0;
+  xiiUInt64              m_uiTimeouts               = 0;
+  xiiUInt64              m_uiBackpressureEvents     = 0;
+  xiiUInt64              m_uiMessagesSent           = 0;
+  xiiUInt64              m_uiMessagesReceived       = 0;
+  xiiUInt64              m_uiPayloadBytesSent       = 0;
+  xiiUInt64              m_uiPayloadBytesReceived   = 0;
+  xiiUInt64              m_uiDroppedDatagrams       = 0;
+  xiiNetworkIOStatistics m_IO;
+};
 
 struct XII_FOUNDATION_DLL xiiNetworkHostConfiguration
 {
@@ -43,6 +79,7 @@ struct XII_FOUNDATION_DLL xiiNetworkHostConfiguration
   xiiUInt32                 m_uiMaximumSessions        = 256;
   xiiTime                   m_SessionRecoveryWindow    = xiiTime::MakeFromSeconds(30);
   xiiTime                   m_MaximumSessionLifetime   = xiiTime::MakeFromSeconds(3600);
+  xiiNetworkTcpOptions      m_Tcp;
   xiiNetworkIOConfiguration m_IO;
 };
 
@@ -104,6 +141,8 @@ public:
   void                                          Shutdown();
   [[nodiscard]] bool                            IsRunning() const;
   [[nodiscard]] xiiNetworkTransportCapabilities GetCapabilities() const;
+  [[nodiscard]] xiiNetworkHostStatistics        GetStatistics() const;
+  [[nodiscard]] xiiNetworkError                 GetPeerCertificate(xiiNetworkConnection connection, xiiNetworkCertificate& out_certificate) const;
   [[nodiscard]] xiiNetworkError                 Listen(const xiiNetworkEndpoint& endpoint, xiiNetworkListener& out_listener, xiiInt32 iBacklog = 128, bool bIpv6Only = true);
   [[nodiscard]] xiiNetworkError                 CloseListener(xiiNetworkListener listener);
   [[nodiscard]] xiiNetworkError                 GetLocalEndpoint(xiiNetworkListener listener, xiiNetworkEndpoint& out_endpoint) const;

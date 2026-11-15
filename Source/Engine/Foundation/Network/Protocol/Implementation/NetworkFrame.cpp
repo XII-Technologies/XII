@@ -3,6 +3,7 @@
 #include <Foundation/FoundationPCH.h>
 
 #include <Foundation/Network/Protocol/NetworkFrame.h>
+#include <Foundation/Network/Security/Implementation/NetworkCertificatePlatform.h>
 
 #include <algorithm>
 #include <climits>
@@ -79,6 +80,10 @@ xiiNetworkError xiiNetworkFrameDecoder::Fail(xiiNetworkErrorCode code)
 {
   m_State = xiiNetworkFrameDecodeState::Failed;
   m_Error = xiiNetworkError(code);
+  if (m_Frame.m_Header.m_Type == xiiNetworkFrameType::Hello || m_Frame.m_Header.m_Type == xiiNetworkFrameType::Welcome)
+  {
+    xiiNetworkSecurityInternal::ClearSecret(m_Frame.m_Payload.GetBytes());
+  }
   m_Frame.m_Payload.Clear();
   return m_Error;
 }
@@ -184,8 +189,17 @@ xiiNetworkError xiiNetworkFrameDecoder::TakeFrame(xiiNetworkFrame& out_frame)
   return {};
 }
 
+xiiNetworkFrameDecoder::~xiiNetworkFrameDecoder()
+{
+  Reset();
+}
+
 void xiiNetworkFrameDecoder::Reset()
 {
+  if (m_Frame.m_Header.m_Type == xiiNetworkFrameType::Hello || m_Frame.m_Header.m_Type == xiiNetworkFrameType::Welcome)
+  {
+    xiiNetworkSecurityInternal::ClearSecret(m_Frame.m_Payload.GetBytes());
+  }
   m_Frame          = xiiNetworkFrame();
   m_State          = xiiNetworkFrameDecodeState::Header;
   m_Error          = {};

@@ -9,8 +9,10 @@
 #include <Foundation/Network/Implementation/NetworkNativeThread.h>
 #include <Foundation/Network/NetworkHost.h>
 #include <Foundation/Network/NetworkIOContext.h>
+#include <Foundation/Network/Protocol/Implementation/NetworkReceiveState.h>
 #include <Foundation/Network/Protocol/NetworkFrame.h>
 #include <Foundation/Network/Security/NetworkTlsStream.h>
+#include <Foundation/Network/Transport/Implementation/NetworkQuic.h>
 #include <Foundation/Threading/ConditionVariable.h>
 #include <Foundation/Threading/Mutex.h>
 #include <Foundation/Threading/ThreadSignal.h>
@@ -77,6 +79,10 @@ namespace xiiNetworkHostInternal
     xiiDeque<xiiUInt32>            m_SendQueue;
     xiiUInt64                      m_uiNextSendSequence    = 1;
     xiiUInt64                      m_uiLastReceiveSequence = 0;
+    xiiUInt64                      m_uiPeerFinalSequence   = 0;
+    xiiTime                        m_Deadline;
+    xiiNetworkReceiveState*        m_pOrderedReceive       = nullptr;
+    bool                           m_bHasPeerFinalSequence = false;
     xiiUInt32                      m_uiReservedEvents      = 0;
     bool                           m_bLocal                = false;
     bool                           m_bCloseReceived        = false;
@@ -145,42 +151,44 @@ namespace xiiNetworkHostInternal
     xiiUInt64                             m_uiCipherProduced  = 0;
     xiiUInt64                             m_uiCipherCompleted = 0;
     std::atomic<xiiUInt64>                m_uiReceiveBytes{0};
-    xiiUInt64                             m_uiDecoderReservedBytes = 0;
-    xiiUInt64                             m_uiPingSequence         = 0;
+    xiiUInt64                             m_uiPingSequence = 0;
     xiiTime                               m_PingSent;
     xiiTime                               m_LastActivity;
+    xiiTime                               m_AttemptStartedAt;
     xiiTime                               m_Deadline;
     xiiTime                               m_ReconnectAt;
     TokenBucket                           m_SendTokens;
     xiiUniquePtr<xiiNetworkTlsStream>     m_pTls;
-    xiiNetworkFrameDecoder                m_Decoder{8192};
+    xiiNetworkReceiveState                m_Receive;
+    xiiNetworkQuicConnection*             m_pQuic = nullptr;
+    xiiDeque<xiiNetworkQuicEvent>         m_QuicDeferred;
+    xiiTime                               m_QuicStatisticsAt;
     xiiNetworkIOBuffer                    m_CipherInput;
     xiiUInt32                             m_uiCipherOffset = 0;
     xiiDeque<Channel>                     m_Channels;
     xiiDeque<Outbound>                    m_ControlQueue;
-    xiiUInt32                             m_uiActiveSend          = InvalidSlot;
-    bool                                  m_bActiveControl        = false;
-    bool                                  m_bInUse                = false;
-    bool                                  m_bStarted              = false;
-    bool                                  m_bIncoming             = false;
-    bool                                  m_bCipherSendPending    = false;
-    bool                                  m_bClosing              = false;
-    bool                                  m_bCloseRequested       = false;
-    bool                                  m_bGraceful             = true;
-    bool                                  m_bDisconnectSent       = false;
-    bool                                  m_bShutdownSent         = false;
-    bool                                  m_bDeregistered         = false;
-    bool                                  m_bPeerEof              = false;
-    bool                                  m_bTlsClosed            = false;
-    bool                                  m_bTerminalPublished    = false;
-    bool                                  m_bTerminalConsumed     = false;
-    bool                                  m_bAuthorizationReady   = false;
-    bool                                  m_bAcceptAuthorization  = false;
-    bool                                  m_bHelloReceived        = false;
-    bool                                  m_bWelcomeReceived      = false;
-    bool                                  m_bReadyReceived        = false;
-    bool                                  m_bActivated            = false;
-    bool                                  m_bDecoderEventReserved = false;
+    xiiUInt32                             m_uiActiveSend         = InvalidSlot;
+    bool                                  m_bActiveControl       = false;
+    bool                                  m_bInUse               = false;
+    bool                                  m_bStarted             = false;
+    bool                                  m_bIncoming            = false;
+    bool                                  m_bCipherSendPending   = false;
+    bool                                  m_bClosing             = false;
+    bool                                  m_bCloseRequested      = false;
+    bool                                  m_bGraceful            = true;
+    bool                                  m_bDisconnectSent      = false;
+    bool                                  m_bShutdownSent        = false;
+    bool                                  m_bDeregistered        = false;
+    bool                                  m_bPeerEof             = false;
+    bool                                  m_bTlsClosed           = false;
+    bool                                  m_bTerminalPublished   = false;
+    bool                                  m_bTerminalConsumed    = false;
+    bool                                  m_bAuthorizationReady  = false;
+    bool                                  m_bAcceptAuthorization = false;
+    bool                                  m_bHelloReceived       = false;
+    bool                                  m_bWelcomeReceived     = false;
+    bool                                  m_bReadyReceived       = false;
+    bool                                  m_bActivated           = false;
     xiiNetworkError                       m_CloseError;
   };
 
@@ -196,6 +204,8 @@ namespace xiiNetworkHostInternal
     xiiNetworkIORegistration m_Registration;
     xiiNetworkEndpoint       m_Endpoint;
     xiiDeque<xiiUInt32>      m_SendQueue;
+    xiiNetworkQuicListener*  m_pQuic = nullptr;
+    TokenBucket              m_SendTokens;
     xiiUInt32                m_uiPendingIO     = 0;
     bool                     m_bInUse          = false;
     bool                     m_bClosing        = false;
@@ -230,13 +240,24 @@ public:
   using Outbound   = xiiNetworkHostInternal::Outbound;
   using WireWriter = xiiNetworkHostInternal::WireWriter;
   using WireReader = xiiNetworkHostInternal::WireReader;
+  xiiNetworkError          ConfigureTcp(xiiTcpSocket& socket) const;
+  xiiNetworkHostStatistics GetStatistics() const;
+  void                     TrackMessage(bool bSent, xiiUInt32 uiBytes);
+  void                     TrackTerminal(xiiNetworkError error);
   xiiNetworkHostRuntime();
   ~xiiNetworkHostRuntime();
   xiiNetworkError Start(const xiiNetworkHostConfiguration& configuration);
   void            Shutdown();
   void            Run();
+  bool            ProcessQuic();
+  void            CompleteQuic(xiiNetworkQuicEvent&& event);
+  bool            ReceiveQuic(Peer& peer, xiiNetworkQuicEvent& event);
+  void            ReceiveQuicDatagram(Peer& peer, xiiNetworkQuicEvent& event);
+  void            DriveQuicOutput(Peer& peer, xiiTime now, xiiTime& ref_nextWake);
+  void            CloseQuicPeer(Peer& peer);
+  void            FinishQuicChannel(Peer& peer, Channel& channel);
   void            DrivePeer(Peer& peer, xiiTime now, xiiTime& ref_nextWake);
-  void            DriveListener(Listener& listener);
+  void            DriveListener(Listener& listener, xiiTime now, xiiTime& ref_nextWake);
   void            CompleteIO(xiiNetworkIOResult&& result);
   void            StartAttempt(Peer& peer);
   void            StartTransport(Peer& peer);
@@ -244,7 +265,8 @@ public:
   void            Receive(Peer& peer);
   void            DriveInput(Peer& peer);
   void            Parse(Peer& peer, xiiArrayPtr<const xiiUInt8> bytes);
-  void            Frame(Peer& peer, xiiNetworkFrame&& frame);
+  xiiUInt32       Parse(Peer& peer, xiiNetworkReceiveState& receive, xiiArrayPtr<const xiiUInt8> bytes);
+  void            Frame(Peer& peer, xiiNetworkFrame&& frame, xiiNetworkReceiveState& receive);
   void            DriveOutput(Peer& peer, xiiTime now, xiiTime& ref_nextWake);
   void            FinishSend(Peer& peer, xiiUInt32 uiSlot, xiiNetworkError error);
   void            Close(Peer& peer, xiiNetworkError error, bool bGraceful = false);
@@ -279,6 +301,7 @@ public:
   mutable xiiConditionVariable                    m_EventsMutex;
   xiiThreadSignal                                 m_WorkSignal;
   xiiNetworkIOContext                             m_IO;
+  xiiUniquePtr<xiiNetworkQuic>                    m_pQuic;
   xiiNetworkHostConfiguration                     m_Configuration;
   xiiNetworkTransportCapabilities                 m_Capabilities;
   xiiSharedPtr<xiiNetworkCredentials>             m_pCredentials;
@@ -294,6 +317,16 @@ public:
   std::atomic<xiiUInt32>                          m_uiEventReservations{0};
   std::atomic<xiiUInt64>                          m_uiNextAttempt{1};
   std::atomic<xiiUInt64>                          m_uiReceiveBytes{0};
+  std::atomic<xiiUInt64>                          m_uiConnectionsEstablished{0};
+  std::atomic<xiiUInt64>                          m_uiAuthenticationFailures{0};
+  std::atomic<xiiUInt64>                          m_uiProtocolFailures{0};
+  std::atomic<xiiUInt64>                          m_uiTimeouts{0};
+  std::atomic<xiiUInt64>                          m_uiBackpressureEvents{0};
+  std::atomic<xiiUInt64>                          m_uiMessagesSent{0};
+  std::atomic<xiiUInt64>                          m_uiMessagesReceived{0};
+  std::atomic<xiiUInt64>                          m_uiPayloadBytesSent{0};
+  std::atomic<xiiUInt64>                          m_uiPayloadBytesReceived{0};
+  std::atomic<xiiUInt64>                          m_uiDroppedDatagrams{0};
   const xiiUInt64                                 m_uiHostId;
   bool                                            m_bStarted = false;
 };
