@@ -81,17 +81,31 @@ namespace
 
 NetworkSecurityTestCertificates::~NetworkSecurityTestCertificates()
 {
-  if (!m_sDirectory.IsEmpty())
+  DeleteFiles().IgnoreResult();
+}
+
+xiiResult NetworkSecurityTestCertificates::DeleteFiles()
+{
+  if (m_sFilePrefix.IsEmpty())
   {
-    xiiOSFile::DeleteFolder(m_sDirectory).IgnoreResult();
+    return XII_SUCCESS;
   }
+  bool bDeleted = true;
+  for (const char* szName : {"ca.pem", "server.pem", "server.key", "client.pem", "client.key", "expired.pem", "expired.key"})
+  {
+    bDeleted &= xiiOSFile::DeleteFile(Path(szName)).Succeeded();
+  }
+  if (bDeleted)
+  {
+    m_sFilePrefix.Clear();
+    return XII_SUCCESS;
+  }
+  return XII_FAILURE;
 }
 
 xiiString NetworkSecurityTestCertificates::Path(xiiStringView sName) const
 {
-  xiiStringBuilder sPath(m_sDirectory);
-  sPath.AppendPath(sName);
-  return sPath;
+  return xiiStringBuilder(m_sFilePrefix, "-", sName);
 }
 
 xiiNetworkSecurityConfig NetworkSecurityTestCertificates::Configuration(xiiStringView sIdentity) const
@@ -119,13 +133,13 @@ xiiResult NetworkSecurityTestCertificates::Initialize(bool bIntermediate)
   xiiStringBuilder sUuid;
   xiiConversionUtils::ToString(xiiUuid::MakeUuid(), sUuid);
   xiiStringBuilder sDirectory(xiiTestFramework::GetInstance()->GetAbsOutputPath());
-  sDirectory.AppendPath("Certificates", sUuid);
-  m_sDirectory = sDirectory;
-  if (!XII_TEST_BOOL(xiiOSFile::CreateDirectoryStructure(m_sDirectory).Succeeded()))
+  sDirectory.AppendPath("Certificates");
+  if (!XII_TEST_BOOL(xiiOSFile::CreateDirectoryStructure(sDirectory).Succeeded()))
   {
-    xiiTestFramework::Output(xiiTestOutput::Error, "Fixture directory: %s", m_sDirectory.GetData());
     return XII_FAILURE;
   }
+  sDirectory.AppendPath(sUuid);
+  m_sFilePrefix              = sDirectory;
   EVP_PKEY* pCaKey           = EVP_EC_gen("prime256v1");
   X509*     pCa              = pCaKey != nullptr ? MakeTestCertificate(pCaKey, nullptr, nullptr, 1, "XII ephemeral test CA", false, false, bIntermediate ? "critical,CA:TRUE,pathlen:1" : "critical,CA:TRUE,pathlen:0") : nullptr;
   bool      bValid           = pCa != nullptr && WriteTestPem(Path("ca.pem"), pCa, nullptr);

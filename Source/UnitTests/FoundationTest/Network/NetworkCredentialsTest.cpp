@@ -2,7 +2,6 @@
 
 #include <FoundationTest/FoundationTestPCH.h>
 
-#include <Foundation/IO/OSFile.h>
 #include <Foundation/Network/Security/NetworkCredentials.h>
 #include <FoundationTest/Network/Implementation/NetworkSecurityTestUtilities.h>
 
@@ -56,8 +55,7 @@ XII_CREATE_SIMPLE_TEST(NetworkTransport, CertificateValidation)
   XII_TEST_BOOL(client.VerifyCertificate(certificate.m_Der, {}, "localhost", xiiNetworkCertificateUsage::Server, verified).Failed());
   XII_TEST_BOOL(server.Load(files.Configuration()).m_Code == xiiNetworkErrorCode::AlreadyOpen);
   // Loaded snapshots retain identity/trust after files disappear; replacements are independent.
-  XII_TEST_BOOL(xiiOSFile::DeleteFolder(files.m_sDirectory).Succeeded());
-  files.m_sDirectory.Clear();
+  XII_TEST_BOOL(files.DeleteFiles().Succeeded());
   XII_TEST_BOOL(server.GetCertificate(certificate).Succeeded());
   XII_TEST_BOOL(client.VerifyCertificate(certificate.m_Der, {}, "localhost", xiiNetworkCertificateUsage::Server, verified).Succeeded());
 }
