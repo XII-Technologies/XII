@@ -6,13 +6,40 @@
 #include <Foundation/Network/NetworkResolver.h>
 #include <Foundation/Network/UdpSocket.h>
 #include <Foundation/Strings/StringBuilder.h>
+#include <Foundation/Threading/Implementation/OSThread.h>
+#include <Foundation/Threading/ThreadUtils.h>
 #include <Foundation/Time/Time.h>
+#include <Foundation/Types/Delegate.h>
 #include <FoundationTest/Network/Implementation/NetworkHostTestUtilities.h>
 #include <FoundationTest/Network/Implementation/NetworkSecurityTestUtilities.h>
+#include <atomic>
 #include <cstring>
 #include <utility>
 
 using namespace xiiNetworkHostTestUtilities;
+
+namespace
+{
+  class HostTestThread
+  {
+  public:
+    explicit HostTestThread(xiiDelegate<void()> function) : m_Function(std::move(function)), m_Thread(Entry, this, "Host test sender", 512 * 1024) { m_Thread.Start(); }
+    ~HostTestThread() { m_Thread.Join(); }
+
+  private:
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+    static xiiMinWindows::DWORD __stdcall Entry(void* pData)
+#else
+    static void* Entry(void* pData)
+#endif
+    {
+      static_cast<HostTestThread*>(pData)->m_Function();
+      return {};
+    }
+    xiiDelegate<void()> m_Function;
+    xiiOSThread         m_Thread;
+  };
+} // namespace
 
 XII_CREATE_SIMPLE_TEST(NetworkTransport, HostReliableMessaging)
 {
@@ -221,6 +248,157 @@ XII_CREATE_SIMPLE_TEST(NetworkTransport, HostBroadcastAdmission)
   }
   XII_TEST_INT(server.GetStatistics().m_uiMessagesSent, 2);
   XII_TEST_BOOL(server.Broadcast({}, {}, {}).Succeeded());
+}
+
+XII_CREATE_SIMPLE_TEST(NetworkTransport, HostConcurrentSendsAndShutdown)
+{
+  NetworkSecurityTestCertificates files;
+  if (!XII_TEST_BOOL(files.Initialize().Succeeded()))
+  {
+    return;
+  }
+  for (auto type : {xiiNetworkTransportType::Tcp, xiiNetworkTransportType::TlsTcp, xiiNetworkTransportType::SecureDatagram})
+  {
+    auto serverConfiguration = HostTestConfiguration(type);
+    auto clientConfiguration = serverConfiguration;
+    if (type != xiiNetworkTransportType::Tcp)
+    {
+      serverConfiguration.m_pCredentials = XII_DEFAULT_NEW(xiiNetworkCredentials);
+      clientConfiguration.m_pCredentials = XII_DEFAULT_NEW(xiiNetworkCredentials);
+      if (!XII_TEST_BOOL(serverConfiguration.m_pCredentials->Load(files.Configuration()).Succeeded()) ||
+          !XII_TEST_BOOL(clientConfiguration.m_pCredentials->Load(files.Configuration("client")).Succeeded()))
+      {
+        return;
+      }
+    }
+    xiiNetworkHost           server;
+    xiiNetworkHost           client;
+    xiiNetworkListener       listener;
+    xiiNetworkEndpoint       endpoint;
+    xiiNetworkConnectOptions options;
+    options.m_sServerName = "localhost";
+    xiiNetworkConnection connection;
+    xiiNetworkChannel    channel;
+    xiiNetworkEvent      event;
+    if (!XII_TEST_BOOL(server.Start(serverConfiguration).Succeeded()) || !XII_TEST_BOOL(client.Start(clientConfiguration).Succeeded()) ||
+        !XII_TEST_BOOL(server.Listen({xiiNetworkAddress::MakeLoopback(xiiNetworkAddressFamily::Ipv4), 0}, listener).Succeeded()) ||
+        !XII_TEST_BOOL(server.GetLocalEndpoint(listener, endpoint).Succeeded()) ||
+        !XII_TEST_BOOL(client.Connect(endpoint, options, connection).Succeeded()) ||
+        !HostTestEvent(server, xiiNetworkEventType::Connected, event) || !HostTestEvent(client, xiiNetworkEventType::Connected, event) ||
+        !XII_TEST_BOOL(client.GetDefaultChannel(connection, channel).Succeeded()))
+    {
+      return;
+    }
+    constexpr xiiUInt32       MessagesPerThread = 16;
+    xiiNetworkBroadcastResult results[2][MessagesPerThread];
+    auto                      send = [&](xiiUInt32 uiProducer) {
+      for (xiiUInt32 uiIndex = 0; uiIndex < MessagesPerThread; ++uiIndex)
+      {
+        const xiiUInt8 uiPayload[] = {static_cast<xiiUInt8>(uiProducer), static_cast<xiiUInt8>(uiIndex)};
+        auto&          result      = results[uiProducer][uiIndex];
+        result.m_Error             = client.Send(channel, uiPayload, result.m_Message, uiProducer * MessagesPerThread + uiIndex);
+      }
+    };
+    {
+      HostTestThread first([&] { send(0); });
+      HostTestThread second([&] { send(1); });
+    }
+    xiiUInt32 uiNext[2] = {};
+    for (xiiUInt32 uiCount = 0; uiCount < 2 * MessagesPerThread; ++uiCount)
+    {
+      if (!HostTestEvent(server, xiiNetworkEventType::Message, event) || !XII_TEST_INT(event.m_Payload.GetCount(), 2))
+      {
+        return;
+      }
+      const auto uiProducer = event.m_Payload.GetBytes()[0];
+      if (!XII_TEST_BOOL(uiProducer < 2))
+      {
+        return;
+      }
+      XII_TEST_INT(event.m_Payload.GetBytes()[1], uiNext[uiProducer]++);
+    }
+    bool bCompleted[2 * MessagesPerThread] = {};
+    for (xiiUInt32 uiCount = 0; uiCount < 2 * MessagesPerThread; ++uiCount)
+    {
+      if (!HostTestEvent(client, xiiNetworkEventType::MessageSent, event) || !XII_TEST_BOOL(event.m_uiUserData < 2 * MessagesPerThread))
+      {
+        return;
+      }
+      auto& result = results[event.m_uiUserData / MessagesPerThread][event.m_uiUserData % MessagesPerThread];
+      XII_TEST_BOOL(result.m_Error.Succeeded() && result.m_Message == event.m_Message && event.m_Error.Succeeded());
+      XII_TEST_BOOL(!bCompleted[event.m_uiUserData]);
+      bCompleted[event.m_uiUserData] = true;
+    }
+    // Synchronize both producers after their first admission, then race the remaining
+    // submissions with Shutdown. Threads only record results; assertions stay on this thread.
+    std::atomic<xiiUInt32> uiReady{0};
+    std::atomic<bool>      bContinue{false};
+    auto                   sendDuringShutdown = [&](xiiUInt32 uiProducer) {
+      const xiiUInt8 uiPayload[] = {0xAA};
+      for (xiiUInt32 uiIndex = 0; uiIndex < MessagesPerThread; ++uiIndex)
+      {
+        auto& result     = results[uiProducer][uiIndex];
+        result.m_Message = {};
+        result.m_Error   = client.Send(channel, uiPayload, result.m_Message, uiProducer * MessagesPerThread + uiIndex);
+        if (uiIndex == 0)
+        {
+          ++uiReady;
+          while (!bContinue.load())
+          {
+            xiiThreadUtils::YieldTimeSlice();
+          }
+        }
+      }
+    };
+    {
+      HostTestThread first([&] { sendDuringShutdown(0); });
+      HostTestThread second([&] { sendDuringShutdown(1); });
+      const auto     deadline = xiiTime::Now() + xiiTime::MakeFromSeconds(5);
+      while (uiReady.load() != 2 && xiiTime::Now() < deadline)
+      {
+        xiiThreadUtils::YieldTimeSlice();
+      }
+      XII_TEST_INT(uiReady.load(), 2);
+      bContinue.store(true);
+      client.Shutdown();
+    }
+    XII_TEST_BOOL(results[0][0].m_Error.Succeeded() && results[1][0].m_Error.Succeeded());
+    for (auto& bValue : bCompleted)
+    {
+      bValue = false;
+    }
+    bool bClosed = false;
+    while (client.TryGetEvent(event))
+    {
+      if (event.m_Type == xiiNetworkEventType::MessageSent)
+      {
+        if (!XII_TEST_BOOL(event.m_uiUserData < 2 * MessagesPerThread))
+        {
+          return;
+        }
+        auto& result = results[event.m_uiUserData / MessagesPerThread][event.m_uiUserData % MessagesPerThread];
+        XII_TEST_BOOL(!bClosed && !bCompleted[event.m_uiUserData]);
+        XII_TEST_BOOL(result.m_Error.Succeeded() && result.m_Message == event.m_Message);
+        bCompleted[event.m_uiUserData] = true;
+      }
+      if (event.m_Type == xiiNetworkEventType::Closed)
+      {
+        XII_TEST_BOOL(!bClosed && event.m_Connection == connection);
+        bClosed = true;
+      }
+    }
+    XII_TEST_BOOL(bClosed && !client.IsRunning());
+    for (xiiUInt32 uiProducer = 0; uiProducer < 2; ++uiProducer)
+    {
+      for (xiiUInt32 uiIndex = 0; uiIndex < MessagesPerThread; ++uiIndex)
+      {
+        const auto& result = results[uiProducer][uiIndex];
+        XII_TEST_BOOL(result.m_Error.Succeeded() == bCompleted[uiProducer * MessagesPerThread + uiIndex]);
+        XII_TEST_BOOL(result.m_Error.Succeeded() || result.m_Error.m_Code == xiiNetworkErrorCode::NotRunning ||
+                      result.m_Error.m_Code == xiiNetworkErrorCode::NotConnected);
+      }
+    }
+  }
 }
 
 XII_CREATE_SIMPLE_TEST(NetworkTransport, HostNativeUdpDatagrams)
