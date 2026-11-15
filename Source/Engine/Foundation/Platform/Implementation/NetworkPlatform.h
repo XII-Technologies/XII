@@ -5,6 +5,7 @@
 #include <Foundation/Basics.h>
 
 #include <Foundation/FoundationInternal.h>
+#include <Foundation/Network/NetworkEndpoint.h>
 #include <Foundation/Network/NetworkError.h>
 
 XII_FOUNDATION_INTERNAL_HEADER
@@ -51,6 +52,16 @@ namespace xiiNetworkInternal
     void            Detach() const {}
   };
 #endif
+
+  struct NativeAddress
+  {
+    sockaddr_storage m_Storage  = {};
+    NativeLength     m_uiLength = sizeof(sockaddr_storage);
+    sockaddr*        Get() { return reinterpret_cast<sockaddr*>(&m_Storage); }
+    const sockaddr*  Get() const { return reinterpret_cast<const sockaddr*>(&m_Storage); }
+  };
+  xiiNetworkError ToNative(const xiiNetworkEndpoint& endpoint, NativeAddress& out_native);
+  xiiNetworkError FromNative(const sockaddr* pNative, NativeLength uiLength, xiiNetworkEndpoint& out_endpoint);
 
   xiiNetworkError TranslateSocketError(int iNativeCode);
   int             GetLastSocketError();

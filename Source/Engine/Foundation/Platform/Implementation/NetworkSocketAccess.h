@@ -18,5 +18,10 @@ XII_FOUNDATION_INTERNAL_HEADER
 class xiiNetworkSocketAccess
 {
 public:
+  static void SetState(xiiNetworkSocket& socket, xiiNetworkSocketState state, xiiNetworkError error = {})
+  {
+    socket.m_State        = state;
+    socket.m_ConnectError = error;
+  }
   static xiiUInt64 BorrowNativeHandle(const xiiNetworkSocket& socket) { return socket.m_uiNativeHandle; }
 };

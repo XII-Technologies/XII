@@ -57,79 +57,6 @@ namespace
     return -1;
   }
 
-  struct NativeAddress
-  {
-    sockaddr_storage m_Storage  = {};
-    NativeLength     m_uiLength = sizeof(sockaddr_storage);
-    sockaddr*        Get() { return reinterpret_cast<sockaddr*>(&m_Storage); }
-    const sockaddr*  Get() const { return reinterpret_cast<const sockaddr*>(&m_Storage); }
-  };
-
-  xiiNetworkError ToNative(const xiiNetworkEndpoint& endpoint, NativeAddress& out_native)
-  {
-    out_native                       = {};
-    const xiiNetworkAddress& address = endpoint.GetAddress();
-    if (address.GetFamily() == xiiNetworkAddressFamily::Ipv4)
-    {
-      sockaddr_in native = {};
-      native.sin_family  = AF_INET;
-      native.sin_port    = htons(endpoint.GetPort());
-      std::memcpy(&native.sin_addr, address.GetBytes().GetPtr(), 4);
-      out_native.m_uiLength = sizeof(native);
-      std::memcpy(&out_native.m_Storage, &native, sizeof(native));
-    }
-    else if (address.GetFamily() == xiiNetworkAddressFamily::Ipv6)
-    {
-      sockaddr_in6 native  = {};
-      native.sin6_family   = AF_INET6;
-      native.sin6_port     = htons(endpoint.GetPort());
-      native.sin6_scope_id = address.GetScopeId();
-      std::memcpy(&native.sin6_addr, address.GetBytes().GetPtr(), 16);
-      out_native.m_uiLength = sizeof(native);
-      std::memcpy(&out_native.m_Storage, &native, sizeof(native));
-    }
-    else
-    {
-      return xiiNetworkError(xiiNetworkErrorCode::InvalidAddress);
-    }
-#if XII_ENABLED(XII_PLATFORM_OSX)
-    // BSD carries the native structure length in the common sockaddr prefix.
-    out_native.Get()->sa_len = static_cast<xiiUInt8>(out_native.m_uiLength);
-#endif
-    return {};
-  }
-
-  xiiNetworkError FromNative(const sockaddr* pNative, NativeLength uiLength, xiiNetworkEndpoint& out_endpoint)
-  {
-    xiiNetworkAddress address;
-    xiiUInt16         uiPort = 0;
-    xiiNetworkError   error;
-    if (pNative->sa_family == AF_INET && uiLength >= static_cast<NativeLength>(sizeof(sockaddr_in)))
-    {
-      sockaddr_in native = {};
-      std::memcpy(&native, pNative, sizeof(native));
-      error  = xiiNetworkAddress::FromBytes({reinterpret_cast<const xiiUInt8*>(&native.sin_addr), 4}, 0, address);
-      uiPort = ntohs(native.sin_port);
-    }
-    else if (pNative->sa_family == AF_INET6 && uiLength >= static_cast<NativeLength>(sizeof(sockaddr_in6)))
-    {
-      sockaddr_in6 native = {};
-      std::memcpy(&native, pNative, sizeof(native));
-      error  = xiiNetworkAddress::FromBytes({reinterpret_cast<const xiiUInt8*>(&native.sin6_addr), 16}, native.sin6_scope_id, address);
-      uiPort = ntohs(native.sin6_port);
-    }
-    else
-    {
-      return xiiNetworkError(xiiNetworkErrorCode::UnsupportedAddressFamily);
-    }
-    if (error.Failed())
-    {
-      return error;
-    }
-    out_endpoint = xiiNetworkEndpoint(address, uiPort);
-    return {};
-  }
-
   xiiNetworkError SetIntegerOption(const xiiNetworkSocket& socket, int iLevel, int iOption, int iValue)
   {
     if (!socket.IsOpen())
@@ -233,6 +160,75 @@ namespace
     return {};
   }
 } // namespace
+
+namespace xiiNetworkInternal
+{
+  xiiNetworkError ToNative(const xiiNetworkEndpoint& endpoint, NativeAddress& out_native)
+  {
+    out_native                       = {};
+    const xiiNetworkAddress& address = endpoint.GetAddress();
+    if (address.GetFamily() == xiiNetworkAddressFamily::Ipv4)
+    {
+      sockaddr_in native = {};
+      native.sin_family  = AF_INET;
+      native.sin_port    = htons(endpoint.GetPort());
+      std::memcpy(&native.sin_addr, address.GetBytes().GetPtr(), 4);
+      out_native.m_uiLength = sizeof(native);
+      std::memcpy(&out_native.m_Storage, &native, sizeof(native));
+    }
+    else if (address.GetFamily() == xiiNetworkAddressFamily::Ipv6)
+    {
+      sockaddr_in6 native  = {};
+      native.sin6_family   = AF_INET6;
+      native.sin6_port     = htons(endpoint.GetPort());
+      native.sin6_scope_id = address.GetScopeId();
+      std::memcpy(&native.sin6_addr, address.GetBytes().GetPtr(), 16);
+      out_native.m_uiLength = sizeof(native);
+      std::memcpy(&out_native.m_Storage, &native, sizeof(native));
+    }
+    else
+    {
+      return xiiNetworkError(xiiNetworkErrorCode::InvalidAddress);
+    }
+#if XII_ENABLED(XII_PLATFORM_OSX)
+    // BSD carries the native structure length in the common sockaddr prefix.
+    out_native.Get()->sa_len = static_cast<xiiUInt8>(out_native.m_uiLength);
+#endif
+    return {};
+  }
+
+  xiiNetworkError FromNative(const sockaddr* pNative, NativeLength uiLength, xiiNetworkEndpoint& out_endpoint)
+  {
+    xiiNetworkAddress address;
+    xiiUInt16         uiPort = 0;
+    xiiNetworkError   error;
+    if (pNative->sa_family == AF_INET && uiLength >= static_cast<NativeLength>(sizeof(sockaddr_in)))
+    {
+      sockaddr_in native = {};
+      std::memcpy(&native, pNative, sizeof(native));
+      error  = xiiNetworkAddress::FromBytes({reinterpret_cast<const xiiUInt8*>(&native.sin_addr), 4}, 0, address);
+      uiPort = ntohs(native.sin_port);
+    }
+    else if (pNative->sa_family == AF_INET6 && uiLength >= static_cast<NativeLength>(sizeof(sockaddr_in6)))
+    {
+      sockaddr_in6 native = {};
+      std::memcpy(&native, pNative, sizeof(native));
+      error  = xiiNetworkAddress::FromBytes({reinterpret_cast<const xiiUInt8*>(&native.sin6_addr), 16}, native.sin6_scope_id, address);
+      uiPort = ntohs(native.sin6_port);
+    }
+    else
+    {
+      return xiiNetworkError(xiiNetworkErrorCode::UnsupportedAddressFamily);
+    }
+    if (error.Failed())
+    {
+      return error;
+    }
+    out_endpoint = xiiNetworkEndpoint(address, uiPort);
+    return {};
+  }
+
+} // namespace xiiNetworkInternal
 
 xiiNetworkError xiiNetworkAddress::Parse(xiiStringView sText, xiiNetworkAddress& out_address)
 {
