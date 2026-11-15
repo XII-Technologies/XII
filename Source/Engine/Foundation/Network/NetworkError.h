@@ -40,7 +40,17 @@ enum class xiiNetworkErrorCode : xiiUInt8
   Backpressure,
   InvalidHandle,
   ShuttingDown,
-  NotRunning
+  NotRunning,
+  ProtocolViolation,
+  ProtocolMismatch,
+  AuthenticationFailed,
+  CertificateUntrusted,
+  CertificateExpired,
+  HostnameMismatch,
+  TlsError,
+  SessionExpired,
+  ChannelClosed,
+  UnsupportedCapability
 };
 
 /// Identifies the namespace of the preserved native error code.
@@ -50,7 +60,9 @@ enum class xiiNetworkErrorDomain : xiiUInt8
   Socket,
   Resolver,
   Initialization,
-  NativeCompletion
+  NativeCompletion,
+  Tls,
+  Quic
 };
 
 /// Allocation-free result. Expected conditions (including WouldBlock and InProgress) are not success.
