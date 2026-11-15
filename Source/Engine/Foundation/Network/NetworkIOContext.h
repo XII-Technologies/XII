@@ -32,6 +32,8 @@ class XII_FOUNDATION_DLL xiiNetworkIOContext
 public:
   xiiNetworkIOContext();
   ~xiiNetworkIOContext();
+  xiiNetworkIOContext(xiiNetworkIOContext&&)                          = delete;
+  xiiNetworkIOContext& operator=(xiiNetworkIOContext&&)               = delete;
   xiiNetworkIOContext(const xiiNetworkIOContext&)                     = delete;
   xiiNetworkIOContext&          operator=(const xiiNetworkIOContext&) = delete;
   [[nodiscard]] xiiNetworkError Start(const xiiNetworkIOConfiguration& configuration = {}, xiiAllocator* pAllocator = nullptr);

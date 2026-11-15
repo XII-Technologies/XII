@@ -10,6 +10,7 @@
 #include <climits>
 #include <cmath>
 #include <utility>
+#include <variant>
 
 namespace xiiNetworkIOInternal
 {
@@ -184,7 +185,7 @@ namespace xiiNetworkIOInternal
 
   xiiInt32 Worker::GetWaitMilliseconds() const
   {
-    if (!m_Ready.IsEmpty())
+    if (m_pReadyHead != nullptr)
     {
       return 0;
     }
@@ -193,6 +194,10 @@ namespace xiiNetworkIOInternal
       return -1;
     }
     const double fMilliseconds = std::ceil((m_DeadlineHeap[0]->m_Deadline - xiiTime::Now()).GetMilliseconds());
-    return fMilliseconds <= 0 ? 0 : (fMilliseconds >= INT_MAX ? INT_MAX : static_cast<xiiInt32>(fMilliseconds));
+    if (fMilliseconds <= 0)
+    {
+      return 0;
+    }
+    return fMilliseconds >= INT_MAX ? INT_MAX : static_cast<xiiInt32>(fMilliseconds);
   }
 } // namespace xiiNetworkIOInternal

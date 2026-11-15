@@ -22,7 +22,12 @@ namespace
 {
   struct NetworkKqueueState
   {
-    int                            m_hQueue = -1;
+    NetworkKqueueState()                                           = default;
+    NetworkKqueueState(const NetworkKqueueState&)                  = delete;
+    NetworkKqueueState& operator=(const NetworkKqueueState&)       = delete;
+    NetworkKqueueState(NetworkKqueueState&&)                       = delete;
+    NetworkKqueueState&            operator=(NetworkKqueueState&&) = delete;
+    int                            m_hQueue                        = -1;
     xiiDynamicArray<struct kevent> m_Events;
     ~NetworkKqueueState()
     {
@@ -40,11 +45,13 @@ namespace xiiNetworkIOInternal
   {
     const mach_port_t        hThread = ::mach_thread_self();
     thread_basic_info_data_t info    = {};
-    mach_msg_type_number_t   count   = THREAD_BASIC_INFO_COUNT;
-    const kern_return_t      result  = ::thread_info(hThread, THREAD_BASIC_INFO, reinterpret_cast<thread_info_t>(&info), &count);
+    mach_msg_type_number_t   uiCount = THREAD_BASIC_INFO_COUNT;
+    const kern_return_t      result  = ::thread_info(hThread, THREAD_BASIC_INFO, reinterpret_cast<thread_info_t>(&info), &uiCount);
     ::mach_port_deallocate(::mach_task_self(), hThread);
     if (result != KERN_SUCCESS)
+    {
       return {};
+    }
     return xiiTime::MakeFromSeconds(static_cast<double>(info.user_time.seconds) + static_cast<double>(info.system_time.seconds) +
                                     (static_cast<double>(info.user_time.microseconds) + static_cast<double>(info.system_time.microseconds)) / 1000000.0);
   }
@@ -78,6 +85,10 @@ namespace xiiNetworkIOInternal
   void DestroyWorker(Worker& worker)
   {
     auto* pState = static_cast<NetworkKqueueState*>(worker.m_pNativeData);
+    if (pState != nullptr)
+    {
+      worker.m_Statistics.m_uiInternalMemoryBytes -= sizeof(NetworkKqueueState) + pState->m_Events.GetHeapMemoryUsage();
+    }
     XII_DEFAULT_DELETE(pState);
     worker.m_pNativeData = nullptr;
   }
@@ -91,7 +102,7 @@ namespace xiiNetworkIOInternal
     auto&         state = *static_cast<NetworkKqueueState*>(worker.m_pNativeData);
     struct kevent event = {};
     EV_SET(&event, 0, EVFILT_USER, 0, NOTE_TRIGGER, 0, nullptr);
-    int iResult;
+    int iResult = 0;
     do
     {
       iResult = ::kevent(state.m_hQueue, &event, 1, nullptr, 0, nullptr);

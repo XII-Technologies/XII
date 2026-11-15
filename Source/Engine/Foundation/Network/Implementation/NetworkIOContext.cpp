@@ -18,6 +18,19 @@ namespace
   std::atomic<xiiUInt64> s_uiNextContext{1};
   std::atomic<xiiUInt64> s_uiActiveContexts{0};
 
+  xiiUInt64 NextIdentity(std::atomic<xiiUInt64>& counter)
+  {
+    xiiUInt64 uiValue = counter.load();
+    while (uiValue != 0)
+    {
+      if (counter.compare_exchange_weak(uiValue, uiValue + 1))
+      {
+        return uiValue;
+      }
+    }
+    return 0; // Exhaustion is permanent; never wrap back into a live identity namespace.
+  }
+
   void RunNetworkWorker(void* pData) { static_cast<xiiNetworkIOInternal::Worker*>(pData)->Run(); }
   void RunNetworkResolver(void* pData) { static_cast<xiiNetworkIORuntime*>(pData)->ResolverRun(); }
 
@@ -29,7 +42,7 @@ namespace
 
 using namespace xiiNetworkIOInternal;
 
-xiiNetworkIORuntime::xiiNetworkIORuntime() : m_uiContextId(s_uiNextContext.fetch_add(1)) {}
+xiiNetworkIORuntime::xiiNetworkIORuntime() : m_uiContextId(NextIdentity(s_uiNextContext)) {}
 
 xiiNetworkIORuntime::~xiiNetworkIORuntime()
 {
@@ -94,7 +107,6 @@ xiiNetworkError xiiNetworkIORuntime::Start(const xiiNetworkIOConfiguration& conf
     pWorker->m_Registrations.SetCount(uiSocketsPerWorker);
     pWorker->m_FreeRegistrations.Reserve(uiSocketsPerWorker);
     pWorker->m_NativeTokens.Reserve(uiSocketsPerWorker);
-    pWorker->m_Ready.Reserve(uiSocketsPerWorker);
     pWorker->m_DeadlineHeap.Reserve(configuration.m_uiMaxOutstandingOperations);
     pWorker->m_Events.SetCount(configuration.m_uiNativeEventBatchSize);
     for (xiiUInt32 uiSlot = uiSocketsPerWorker; uiSlot > 0; --uiSlot)
@@ -249,15 +261,25 @@ xiiNetworkError xiiNetworkIORuntime::Register(Socket&& socket, xiiNetworkIORegis
     {
       continue;
     }
-    const xiiUInt64 uiToken = m_uiNextToken.fetch_add(1);
+    const xiiUInt64 uiToken = NextIdentity(m_uiNextToken);
     if (uiToken == 0)
     {
       error = xiiNetworkError(xiiNetworkErrorCode::ResourceExhausted);
       break;
     }
-    registration.m_Socket.template emplace<Socket>(std::move(socket));
-    registration.m_Kind = std::is_same_v<Socket, xiiTcpSocket> ? SocketKind::Tcp :
-                                                                 (std::is_same_v<Socket, xiiTcpListener> ? SocketKind::Listener : SocketKind::Udp);
+    registration.m_Socket.template emplace<Socket>(std::forward<Socket>(socket));
+    if constexpr (std::is_same_v<Socket, xiiTcpSocket>)
+    {
+      registration.m_Kind = SocketKind::Tcp;
+    }
+    else if constexpr (std::is_same_v<Socket, xiiTcpListener>)
+    {
+      registration.m_Kind = SocketKind::Listener;
+    }
+    else
+    {
+      registration.m_Kind = SocketKind::Udp;
+    }
     ++registration.m_Handle.m_uiGeneration;
     registration.m_Handle.m_uiContextId = m_uiContextId;
     registration.m_Handle.m_uiWorker    = worker.m_uiIndex;
@@ -534,10 +556,22 @@ xiiNetworkError xiiNetworkIORuntime::Resolve(xiiStringView sHost, xiiStringView 
   out_operation                     = pOperation->m_Result.m_Operation;
   worker.AddDeadline(*pOperation);
   worker.m_Resolves.Push(*pOperation);
+  bool bQueued = false;
   {
     XII_LOCK(m_ResolverCondition);
-    m_ResolverQueue.PushBack(pOperation);
-    m_ResolverCondition.SignalOne();
+    if (!m_bResolverStop)
+    {
+      m_ResolverQueue.PushBack(pOperation);
+      m_ResolverCondition.SignalOne();
+      bQueued = true;
+    }
+  }
+  if (!bQueued)
+  {
+    // Shutdown may close executor admission after Allocate accepted this operation.
+    // Do not leave a pinned queue entry after the last resolver has already exited.
+    pOperation->m_bNativePending = false;
+    worker.Complete(*pOperation, xiiNetworkError(xiiNetworkErrorCode::Cancelled));
   }
   Wake(worker);
   return {};
@@ -706,7 +740,7 @@ xiiNetworkIOStatistics xiiNetworkIORuntime::GetStatistics() const
     statistics.m_TotalCompletionLatency += source.m_TotalCompletionLatency;
     statistics.m_MaxCompletionLatency = std::max(statistics.m_MaxCompletionLatency, source.m_MaxCompletionLatency);
     statistics.m_uiInternalMemoryBytes += sizeof(Worker) + pWorker->m_Registrations.GetHeapMemoryUsage() + pWorker->m_NativeTokens.GetHeapMemoryUsage() +
-      pWorker->m_FreeRegistrations.GetHeapMemoryUsage() + pWorker->m_Ready.GetHeapMemoryUsage() +
+      pWorker->m_FreeRegistrations.GetHeapMemoryUsage() +
       pWorker->m_DeadlineHeap.GetHeapMemoryUsage() + pWorker->m_Events.GetHeapMemoryUsage();
   }
   statistics.m_BufferPool = m_BufferPool.GetStatistics();

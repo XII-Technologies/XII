@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <utility>
 
 namespace xiiNetworkIOInternal
 {
@@ -38,12 +39,52 @@ namespace xiiNetworkIOInternal
     {
       return;
     }
-    registration.m_bReadyQueued = true;
-    m_Ready.PushBack(registration.m_uiNativeToken);
+    registration.m_bReadyQueued   = true;
+    registration.m_pReadyPrevious = m_pReadyTail;
+    registration.m_pReadyNext     = nullptr;
+    if (m_pReadyTail != nullptr)
+    {
+      m_pReadyTail->m_pReadyNext = &registration;
+    }
+    else
+    {
+      m_pReadyHead = &registration;
+    }
+    m_pReadyTail = &registration;
+    ++m_uiReadyCount;
+    XII_ASSERT_DEV(m_uiReadyCount <= m_Registrations.GetCount(), "A registration has at most one intrusive ready-queue entry.");
     if (bWake)
     {
       Wake(*this);
     }
+  }
+
+  void Worker::Unready(Registration& registration)
+  {
+    if (!registration.m_bReadyQueued)
+    {
+      return;
+    }
+    if (registration.m_pReadyPrevious != nullptr)
+    {
+      registration.m_pReadyPrevious->m_pReadyNext = registration.m_pReadyNext;
+    }
+    else
+    {
+      m_pReadyHead = registration.m_pReadyNext;
+    }
+    if (registration.m_pReadyNext != nullptr)
+    {
+      registration.m_pReadyNext->m_pReadyPrevious = registration.m_pReadyPrevious;
+    }
+    else
+    {
+      m_pReadyTail = registration.m_pReadyPrevious;
+    }
+    registration.m_pReadyPrevious = nullptr;
+    registration.m_pReadyNext     = nullptr;
+    registration.m_bReadyQueued   = false;
+    --m_uiReadyCount;
   }
 
   void Worker::CloseIfDrained(Registration& registration)
@@ -52,6 +93,7 @@ namespace xiiNetworkIOInternal
     {
       return;
     }
+    Unready(registration);
     Remove(*this, registration);
     registration.GetSocket().Close().IgnoreResult();
     registration.m_bActive      = false;
@@ -289,8 +331,9 @@ namespace xiiNetworkIOInternal
       }
       return;
     }
-    const auto code = attempt.m_Transfer.m_Error.m_Code;
-    if (code != xiiNetworkErrorCode::WouldBlock && code != xiiNetworkErrorCode::InProgress && code != xiiNetworkErrorCode::Interrupted)
+    // Only readiness backends retain an operation after an uninitiated would-block/interrupted call.
+    // A completion backend must either own a native request or publish the immediate failure.
+    if (!attempt.m_bWaitForReadiness)
     {
       ApplyTransfer(operation, attempt.m_Transfer);
     }
@@ -375,18 +418,12 @@ namespace xiiNetworkIOInternal
 
   void Worker::ProcessReady()
   {
-    const xiiUInt32 uiCount = std::min(m_pRuntime->m_Configuration.m_uiSocketsPerIteration, m_Ready.GetCount());
-    for (xiiUInt32 uiIndex = 0; uiIndex < uiCount; ++uiIndex)
+    const xiiUInt32 uiCount = std::min(m_pRuntime->m_Configuration.m_uiSocketsPerIteration, m_uiReadyCount);
+    for (xiiUInt32 uiIndex = 0; uiIndex < uiCount && m_pReadyHead != nullptr; ++uiIndex)
     {
-      const xiiUInt64 uiToken = m_Ready.PeekFront();
-      m_Ready.PopFront();
-      xiiUInt32 uiSlot = 0;
-      if (m_NativeTokens.TryGetValue(uiToken, uiSlot))
-      {
-        Registration& registration  = m_Registrations[uiSlot];
-        registration.m_bReadyQueued = false;
-        ProcessRegistration(registration);
-      }
+      Registration& registration = *m_pReadyHead;
+      Unready(registration);
+      ProcessRegistration(registration);
     }
   }
 
@@ -510,7 +547,7 @@ namespace
     auto& worker = *runtime.m_Workers[handle.m_uiWorker];
     XII_LOCK(worker.m_Mutex);
     auto* pRegistration = worker.Find(handle);
-    return pRegistration != nullptr ? function(worker, *pRegistration) : xiiNetworkError(xiiNetworkErrorCode::InvalidHandle);
+    return pRegistration != nullptr ? std::forward<Function>(function)(worker, *pRegistration) : xiiNetworkError(xiiNetworkErrorCode::InvalidHandle);
   }
 } // namespace
 
@@ -567,7 +604,11 @@ xiiNetworkError xiiNetworkIOContext::SetDeadline(xiiNetworkIOOperation operation
     return xiiNetworkError(xiiNetworkErrorCode::InvalidArgument);
   }
   const xiiTime deadline = timeout.IsNegative() ? xiiTime::MakeFromSeconds(-1) : xiiTime::Now() + timeout;
-  if (!std::isfinite(deadline.GetSeconds()) || operation.m_uiContextId != m_pRuntime->m_uiContextId || operation.m_uiWorker >= m_pRuntime->m_Workers.GetCount())
+  if (!std::isfinite(deadline.GetSeconds()))
+  {
+    return xiiNetworkError(xiiNetworkErrorCode::InvalidArgument);
+  }
+  if (operation.m_uiContextId != m_pRuntime->m_uiContextId || operation.m_uiWorker >= m_pRuntime->m_Workers.GetCount())
   {
     return xiiNetworkError(xiiNetworkErrorCode::InvalidHandle);
   }

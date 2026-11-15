@@ -54,9 +54,9 @@ Errors extend Milestone 1 with `Cancelled`, `Backpressure`, `InvalidHandle`, `Sh
 
 ## Native execution and synchronization
 
-Each socket has affinity to one configured worker. Independent shard locks protect operation state; short pool/queue locks reserve capacity and deliver records. Native waits, resolver calls and thread joins run without shard locks. No global lock encloses independent socket I/O. Ready queues rotate sockets; alternating direction priority, per-socket attempt/byte/time budgets and a per-iteration socket budget prevent one ready connection from monopolizing the worker. Budget exhaustion reschedules work; would-block waits for a new native notification.
+Each socket has affinity to one configured worker. Independent shard locks protect operation state; short pool/queue locks reserve capacity and deliver records. Native waits, resolver calls and thread joins run without shard locks. No global lock encloses independent socket I/O. Intrusive ready queues rotate sockets and unlink closing registrations immediately; native control wakeups are coalesced. Alternating direction priority, per-socket attempt/byte/time budgets and a per-iteration socket budget prevent one ready connection from monopolizing the worker. Budget exhaustion reschedules work; would-block waits for a new native notification.
 
-- **Windows:** a bounded number of IOCP affinity shards, one port per worker and many sockets per port. `CreateIoCompletionPort`, batched `GetQueuedCompletionStatus` drains and `PostQueuedCompletionStatus` provide association, completion and wakeup. Operations use overlapped WSA transfers, provider-cached `AcceptEx`/`ConnectEx`, pre-created accept sockets and the required `SO_UPDATE_*_CONTEXT` updates. Immediate success still waits for its IOCP packet. `CancelIoEx` requests cancellation; a provider cancellation failure aborts the socket while retaining storage and the worker's Winsock lease until packets drain. Ports close after workers join. Native extension failures produce ordinary results. [Microsoft's overlapped receive contract](https://learn.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-WSARecvFrom) and [cancellation contract](https://learn.microsoft.com/en-us/windows/win32/api/ioapiset/nf-ioapiset-cancelioex) define these native lifetimes.
+- **Windows:** a bounded number of IOCP affinity shards, one port per worker and many sockets per port. `CreateIoCompletionPort`, batched `GetQueuedCompletionStatus` drains and `PostQueuedCompletionStatus` provide association, completion and wakeup. Operations use overlapped WSA transfers, provider-cached `AcceptEx`/`ConnectEx`, pre-created accept sockets and the required `SO_UPDATE_*_CONTEXT` updates. Immediate success still waits for its IOCP packet. `CancelIoEx` requests cancellation; a provider cancellation failure aborts the socket while retaining storage and the worker's Winsock lease until packets drain. Ports close after workers join. Native extension failures produce ordinary results. A call that fails without initiating an overlapped request publishes its error; it never waits for a completion packet that will not arrive. [Microsoft's overlapped receive contract](https://learn.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-WSARecvFrom) and [cancellation contract](https://learn.microsoft.com/en-us/windows/win32/api/ioapiset/nf-ioapiset-cancelioex) define these native lifetimes.
 - **Linux:** `epoll_create1`, `EPOLLONESHOT`, explicit read/write interests and `eventfd` wakeup. Interest exists only while queued operations need it and is rearmed after processing. Error/hangup notifications enter the same nonblocking operation path to retrieve precise errors or drain data before EOF. Event descriptors use close-on-exec.
 - **macOS:** `kqueue` with `EV_DISPATCH` read/write filters, explicit reenabling/deletion and `EVFILT_USER` wakeup. `EV_EOF` still allows reading queued data. `EV_ERROR` is checked. Queue descriptors use close-on-exec; socket creation inherits Milestone 1's BSD descriptor/fork restrictions.
 - **Shared POSIX:** operation execution reuses Milestone 1's `accept4`/BSD acceptance, vector transfers, SIGPIPE suppression, connection completion and centralized native error translation. No duplicate socket implementation is introduced.
@@ -80,61 +80,109 @@ The following complete functions compile together against `NetworkIOContext.h`. 
 
 xiiNetworkError AsyncTcpExchange(xiiNetworkAddressFamily family)
 {
-  xiiNetworkIOContext context;
+  xiiNetworkIOContext       context;
   xiiNetworkIOConfiguration configuration;
   configuration.m_uiWorkerThreadCount = 2;
-  configuration.m_DefaultTimeout = xiiTime::MakeFromSeconds(5);
-  auto error = context.Start(configuration);
-  if (error.Failed()) return error;
+  configuration.m_DefaultTimeout      = xiiTime::MakeFromSeconds(5);
+  auto error                          = context.Start(configuration);
+  if (error.Failed())
+  {
+    return error;
+  }
 
   xiiTcpListener listener;
   error = listener.Open(family);
-  if (error.Failed()) return error;
+  if (error.Failed())
+  {
+    return error;
+  }
   error = listener.Bind({xiiNetworkAddress::MakeLoopback(family), 0});
-  if (error.Failed()) return error;
+  if (error.Failed())
+  {
+    return error;
+  }
   error = listener.Listen();
-  if (error.Failed()) return error;
+  if (error.Failed())
+  {
+    return error;
+  }
   xiiNetworkEndpoint endpoint;
   error = listener.GetLocalEndpoint(endpoint);
-  if (error.Failed()) return error;
+  if (error.Failed())
+  {
+    return error;
+  }
   xiiNetworkIORegistration listening;
   error = context.Register(std::move(listener), listening);
-  if (error.Failed()) return error;
+  if (error.Failed())
+  {
+    return error;
+  }
 
   xiiTcpSocket clientSocket;
   error = clientSocket.Open(family);
-  if (error.Failed()) return error;
+  if (error.Failed())
+  {
+    return error;
+  }
   error = clientSocket.SetNoDelay(true);
-  if (error.Failed()) return error;
+  if (error.Failed())
+  {
+    return error;
+  }
   xiiNetworkIORegistration client;
   error = context.Register(std::move(clientSocket), client);
-  if (error.Failed()) return error;
+  if (error.Failed())
+  {
+    return error;
+  }
   xiiNetworkIOOperation accept;
   xiiNetworkIOOperation connect;
   error = context.Accept(listening, accept);
-  if (error.Failed()) return error;
+  if (error.Failed())
+  {
+    return error;
+  }
   error = context.Connect(client, endpoint, connect);
-  if (error.Failed()) return error;
+  if (error.Failed())
+  {
+    return error;
+  }
   xiiNetworkIORegistration server;
-  for (xiiUInt32 i = 0; i < 2; ++i)
+  for (xiiUInt32 uiIndex = 0; uiIndex < 2; ++uiIndex)
   {
     xiiNetworkIOResult result;
     error = context.WaitForCompletion(result, xiiTime::MakeFromSeconds(5));
-    if (error.Failed()) return error;
-    if (result.Failed()) return result.m_Error;
+    if (error.Failed())
+    {
+      return error;
+    }
+    if (result.Failed())
+    {
+      return result.m_Error;
+    }
     if (result.m_Operation == accept)
     {
       error = context.Register(std::move(result.m_AcceptedSocket), server);
-      if (error.Failed()) return error;
+      if (error.Failed())
+      {
+        return error;
+      }
     }
   }
 
   xiiNetworkIOBuffer sendBuffer;
   xiiNetworkIOBuffer receiveBuffer;
   error = context.AcquireBuffer(1, sendBuffer);
-  if (error.Failed()) return error;
+  if (error.Failed())
+  {
+    return error;
+  }
   error = context.AcquireBuffer(1, receiveBuffer);
-  if (error.Failed()) return error;
+  if (error.Failed())
+  {
+    return error;
+  }
   sendBuffer.GetBytes()[0] = 42;
   xiiNetworkIOBuffers send;
   xiiNetworkIOBuffers receive;
@@ -143,32 +191,49 @@ xiiNetworkError AsyncTcpExchange(xiiNetworkAddressFamily family)
   xiiNetworkIOOperation sent;
   xiiNetworkIOOperation received;
   error = context.Receive(server, std::move(receive), received);
-  if (error.Failed()) return error;
+  if (error.Failed())
+  {
+    return error;
+  }
   error = context.Send(client, std::move(send), sent);
-  if (error.Failed()) return error;
-  for (xiiUInt32 i = 0; i < 2; ++i)
+  if (error.Failed())
+  {
+    return error;
+  }
+  for (xiiUInt32 uiIndex = 0; uiIndex < 2; ++uiIndex)
   {
     xiiNetworkIOResult result;
     error = context.WaitForCompletion(result, xiiTime::MakeFromSeconds(5));
-    if (error.Failed()) return error;
+    if (error.Failed())
+    {
+      return error;
+    }
     // All mode completes the entire byte count. On disconnection/error the result
     // still owns the buffers and reports any bytes transferred before the failure.
-    if (result.Failed()) return result.m_Error;
+    if (result.Failed())
+    {
+      return result.m_Error;
+    }
     if (result.m_Operation == received && result.m_Buffers[0].GetBytes()[0] != 42)
+    {
       return xiiNetworkError(xiiNetworkErrorCode::InvalidArgument);
+    }
   }
   context.Shutdown();
   return {};
 }
 
-xiiNetworkError AsyncDatagram(xiiNetworkIOContext& context,
-                             xiiNetworkIORegistration socket,
-                             const xiiNetworkEndpoint& destination,
-                             xiiNetworkIOOperation& out_operation)
+xiiNetworkError AsyncDatagram(xiiNetworkIOContext&      context,
+                              xiiNetworkIORegistration  socket,
+                              const xiiNetworkEndpoint& destination,
+                              xiiNetworkIOOperation&    out_operation)
 {
   xiiNetworkIOBuffer buffer;
-  auto error = context.AcquireBuffer(3, buffer);
-  if (error.Failed()) return error;
+  auto               error = context.AcquireBuffer(3, buffer);
+  if (error.Failed())
+  {
+    return error;
+  }
   buffer.GetBytes()[0] = 1;
   buffer.GetBytes()[1] = 2;
   buffer.GetBytes()[2] = 3;
@@ -178,21 +243,21 @@ xiiNetworkError AsyncDatagram(xiiNetworkIOContext& context,
   return context.SendTo(socket, destination, std::move(buffers), out_operation);
 }
 
-xiiNetworkError ResolveLocalhost(xiiNetworkIOContext& context,
-                                xiiNetworkIOOperation& out_operation)
+xiiNetworkError ResolveLocalhost(xiiNetworkIOContext&   context,
+                                 xiiNetworkIOOperation& out_operation)
 {
   xiiNetworkIOOptions options;
-  options.m_Timeout = xiiTime::MakeFromSeconds(2);
+  options.m_Timeout    = xiiTime::MakeFromSeconds(2);
   options.m_uiUserData = 100;
   return context.Resolve("localhost", "443", out_operation,
-    xiiNetworkAddressFamily::Unspecified, xiiNetworkTransport::Tcp, options);
+                         xiiNetworkAddressFamily::Unspecified, xiiNetworkTransport::Tcp, options);
 }
 
-xiiNetworkError CancelOrShorten(xiiNetworkIOContext& context,
-                               xiiNetworkIOOperation operation, bool cancel)
+xiiNetworkError CancelOrShorten(xiiNetworkIOContext&  context,
+                                xiiNetworkIOOperation operation, bool bCancel)
 {
-  return cancel ? context.Cancel(operation) :
-    context.SetDeadline(operation, xiiTime::MakeFromMilliseconds(20));
+  return bCancel ? context.Cancel(operation) :
+                   context.SetDeadline(operation, xiiTime::MakeFromMilliseconds(20));
 }
 ```
 
@@ -206,6 +271,8 @@ Stress intensity is configurable: `-networkStressConnections` (default 64, maxim
 
 Statistics expose pending/retained/completed work, queue depths, byte counts, cancellation/timeouts/failures, native errors, backpressure, wakeups, completion-latency sum/max and pool allocation/reuse. Tracked internal memory covers primary runtime containers and allocated native operation/event state; it excludes allocator metadata, incidental query/vector allocations, kernel resources and thread stacks, and is not process RSS. Active/wait durations describe worker wall time. Native worker CPU time is collected on worker exit (zero before exit), excludes resolver/application CPU, and is available after `Shutdown()`. Snapshots are thread-safe, not globally transactional; latency is submission-to-terminal-commit, excluding application queue residence. These definitions matter when comparing workloads.
 
-One Linux x86-64 **Clang Debug** run with two I/O workers completed 1000 concurrent loopback connections in 68.429 ms, then 174361 transfer operations/s for one 64-byte send/receive per connection. The runtime tracked 1983992 bytes of internal storage and 512000 committed pool bytes; mean completion latency across connection and transfer operations was 34.405 microseconds. The worker lifetime used 43.478 ms of native CPU time. A separate 10000-message, 64-byte FIFO run measured 151592 messages/s (9.252 MiB/s), 33 pool backing allocations and 9968 reuses. An 8 MiB gather-send/receive with full byte validation measured 198.020 MiB/s. These are individual local observations with scheduling and Debug/harness overhead, not cross-platform guarantees or comparative performance claims.
+One Linux x86-64 **Clang Debug** run with two I/O workers completed 2000 concurrent loopback connections in 126.127 ms, then 230507 transfer operations/s for one 64-byte send/receive per connection. The runtime tracked 3985112 bytes of internal storage and 1024000 committed pool bytes; mean completion latency across connection and transfer operations was 32.529 microseconds. The worker lifetime used 85.570 ms of native CPU time. A separate 10000-message, 64-byte FIFO run measured 153388 messages/s (9.362 MiB/s), 33 pool backing allocations and 9968 reuses. An 8 MiB gather-send/receive with full byte validation measured 187.071 MiB/s. Socket-wide cancellation of 64 queued UDP receives took 9.385 microseconds to request and 57.470 microseconds through final dequeue. These are individual local observations with scheduling and Debug/harness overhead, not cross-platform guarantees or comparative performance claims.
+
+Linux AddressSanitizer/LeakSanitizer validation passed. The combined ASan/UBSan run completed the networking assertions but reported existing zero-length null memory calls during Foundation allocator/container initialization. ThreadSanitizer completed the asynchronous assertions and reported existing task-system thread-status/shutdown races; it reported no networking-runtime races in that run. These full-harness UBSan/TSan runs are not clean. Configured Clang-Tidy analysis also reports include-cycle/include-cleaner and const-correctness diagnostics, including surrounding Foundation headers and macro expansions; no warning suppression is added.
 
 Future secure transports, sessions and message protocols can consume this operation/lease model without borrowing descriptors or running application work inside native locks. Their protocol state, cancellation policy and dispatch scheduling remain above Foundation's raw I/O runtime.

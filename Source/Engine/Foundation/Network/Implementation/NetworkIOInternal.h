@@ -64,6 +64,8 @@ namespace xiiNetworkIOInternal
     bool                                                     m_bReadyQueued      = false;
     bool                                                     m_bNativeRegistered = false;
     void*                                                    m_pNativeData       = nullptr;
+    Registration*                                            m_pReadyPrevious    = nullptr;
+    Registration*                                            m_pReadyNext        = nullptr;
     OperationQueue                                           m_Read;
     OperationQueue                                           m_Write;
     xiiNetworkSocket&                                        GetSocket();
@@ -117,7 +119,8 @@ namespace xiiNetworkIOInternal
   struct NativeAttempt
   {
     xiiNetworkOperationResult m_Transfer;
-    bool                      m_bPending = false;
+    bool                      m_bPending          = false;
+    bool                      m_bWaitForReadiness = false;
   };
 
   struct NativeThread
@@ -135,7 +138,10 @@ namespace xiiNetworkIOInternal
     xiiDeque<Registration>             m_Registrations;
     xiiDynamicArray<xiiUInt32>         m_FreeRegistrations;
     xiiHashTable<xiiUInt64, xiiUInt32> m_NativeTokens;
-    xiiDeque<xiiUInt64>                m_Ready;
+    Registration*                      m_pReadyHead   = nullptr;
+    Registration*                      m_pReadyTail   = nullptr;
+    xiiUInt32                          m_uiReadyCount = 0;
+    std::atomic<bool>                  m_bWakePending{false};
     OperationQueue                     m_Resolves;
     xiiDynamicArray<Operation*>        m_DeadlineHeap;
     xiiDynamicArray<NativeEvent>       m_Events;
@@ -150,6 +156,7 @@ namespace xiiNetworkIOInternal
     Registration* Find(xiiNetworkIORegistration handle);
     Operation*    Find(xiiNetworkIOOperation handle);
     void          Ready(Registration& registration, bool bWake);
+    void          Unready(Registration& registration);
     void          ProcessReady();
     void          ProcessRegistration(Registration& registration);
     void          ProcessOperation(Operation& operation);
@@ -194,6 +201,10 @@ class xiiNetworkIORuntime
 public:
   xiiNetworkIORuntime();
   ~xiiNetworkIORuntime();
+  xiiNetworkIORuntime(const xiiNetworkIORuntime&)                             = delete;
+  xiiNetworkIORuntime& operator=(const xiiNetworkIORuntime&)                  = delete;
+  xiiNetworkIORuntime(xiiNetworkIORuntime&&)                                  = delete;
+  xiiNetworkIORuntime&                       operator=(xiiNetworkIORuntime&&) = delete;
   xiiNetworkError                            Start(const xiiNetworkIOConfiguration& configuration, xiiAllocator* pBufferAllocator);
   void                                       Shutdown();
   void                                       ShutdownUnlocked();

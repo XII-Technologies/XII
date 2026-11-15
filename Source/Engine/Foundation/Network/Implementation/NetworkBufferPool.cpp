@@ -19,6 +19,10 @@ public:
     m_Configuration(configuration), m_pAllocator(pAllocator) {}
 
   ~xiiNetworkBufferPoolState() { Trim(); }
+  xiiNetworkBufferPoolState(const xiiNetworkBufferPoolState&)            = delete;
+  xiiNetworkBufferPoolState& operator=(const xiiNetworkBufferPoolState&) = delete;
+  xiiNetworkBufferPoolState(xiiNetworkBufferPoolState&&)                 = delete;
+  xiiNetworkBufferPoolState& operator=(xiiNetworkBufferPoolState&&)      = delete;
 
   void Trim()
   {

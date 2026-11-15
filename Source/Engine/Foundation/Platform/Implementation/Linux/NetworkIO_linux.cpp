@@ -11,8 +11,9 @@
 #  include <cerrno>
 #  include <sys/epoll.h>
 #  include <sys/eventfd.h>
-#  include <time.h>
 #  include <unistd.h>
+
+#  include <ctime>
 
 XII_DEFINE_AS_POD_TYPE(epoll_event);
 
@@ -20,8 +21,13 @@ namespace
 {
   struct NetworkEpollState
   {
-    int                          m_hEpoll = -1;
-    int                          m_hWake  = -1;
+    NetworkEpollState()                                         = default;
+    NetworkEpollState(const NetworkEpollState&)                 = delete;
+    NetworkEpollState& operator=(const NetworkEpollState&)      = delete;
+    NetworkEpollState(NetworkEpollState&&)                      = delete;
+    NetworkEpollState&           operator=(NetworkEpollState&&) = delete;
+    int                          m_hEpoll                       = -1;
+    int                          m_hWake                        = -1;
     xiiDynamicArray<epoll_event> m_Events;
     ~NetworkEpollState()
     {
@@ -43,8 +49,10 @@ namespace xiiNetworkIOInternal
   {
     timespec time = {};
     if (::clock_gettime(CLOCK_THREAD_CPUTIME_ID, &time) != 0)
+    {
       return {};
-    return xiiTime::MakeFromSeconds(static_cast<double>(time.tv_sec) + static_cast<double>(time.tv_nsec) / 1000000000.0);
+    }
+    return xiiTime::MakeFromSeconds(static_cast<double>(time.tv_sec) + (static_cast<double>(time.tv_nsec) / 1000000000.0));
   }
 
   xiiNetworkError CreateWorker(Worker& worker)
@@ -76,6 +84,10 @@ namespace xiiNetworkIOInternal
   void DestroyWorker(Worker& worker)
   {
     auto* pState = static_cast<NetworkEpollState*>(worker.m_pNativeData);
+    if (pState != nullptr)
+    {
+      worker.m_Statistics.m_uiInternalMemoryBytes -= sizeof(NetworkEpollState) + pState->m_Events.GetHeapMemoryUsage();
+    }
     XII_DEFAULT_DELETE(pState);
     worker.m_pNativeData = nullptr;
   }
@@ -86,9 +98,9 @@ namespace xiiNetworkIOInternal
     {
       return;
     }
-    auto&          state = *static_cast<NetworkEpollState*>(worker.m_pNativeData);
-    const uint64_t uiOne = 1;
-    ssize_t        iResult;
+    auto&          state   = *static_cast<NetworkEpollState*>(worker.m_pNativeData);
+    const uint64_t uiOne   = 1;
+    ssize_t        iResult = 0;
     do
     {
       iResult = ::write(state.m_hWake, &uiOne, sizeof(uiOne));

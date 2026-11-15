@@ -5,13 +5,12 @@
 #if XII_ENABLED(XII_PLATFORM_LINUX) || XII_ENABLED(XII_PLATFORM_OSX)
 
 #  include <Foundation/Network/Implementation/NetworkIOInternal.h>
-#  include <Foundation/Platform/Implementation/NetworkPlatform.h>
-#  include <Foundation/Platform/Implementation/NetworkSocketAccess.h>
 
 #  include <cerrno>
 #  include <pthread.h>
 
 #  include <climits>
+#  include <variant>
 
 namespace
 {
@@ -114,7 +113,8 @@ namespace xiiNetworkIOInternal
         result.m_Error = xiiNetworkError(xiiNetworkErrorCode::InvalidArgument);
         break;
     }
-    return {result, false};
+    const auto code = result.m_Error.m_Code;
+    return {result, false, code == xiiNetworkErrorCode::WouldBlock || code == xiiNetworkErrorCode::InProgress || code == xiiNetworkErrorCode::Interrupted};
   }
 } // namespace xiiNetworkIOInternal
 

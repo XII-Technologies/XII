@@ -32,6 +32,8 @@ class XII_FOUNDATION_DLL xiiNetworkBufferPool
 public:
   xiiNetworkBufferPool();
   ~xiiNetworkBufferPool();
+  xiiNetworkBufferPool(xiiNetworkBufferPool&&)                         = delete;
+  xiiNetworkBufferPool& operator=(xiiNetworkBufferPool&&)              = delete;
   xiiNetworkBufferPool(const xiiNetworkBufferPool&)                    = delete;
   xiiNetworkBufferPool&         operator=(const xiiNetworkBufferPool&) = delete;
   [[nodiscard]] xiiNetworkError Initialize(const xiiNetworkBufferPoolConfiguration& configuration = {}, xiiAllocator* pAllocator = nullptr);

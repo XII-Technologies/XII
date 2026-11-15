@@ -19,6 +19,11 @@ namespace
 {
   struct NetworkIocpState
   {
+    NetworkIocpState()                                             = default;
+    NetworkIocpState(const NetworkIocpState&)                      = delete;
+    NetworkIocpState& operator=(const NetworkIocpState&)           = delete;
+    NetworkIocpState(NetworkIocpState&&)                           = delete;
+    NetworkIocpState&                operator=(NetworkIocpState&&) = delete;
     xiiNetworkInternal::RuntimeLease m_Runtime;
     HANDLE                           m_hPort = nullptr;
     ~NetworkIocpState()
@@ -125,7 +130,9 @@ namespace xiiNetworkIOInternal
   {
     FILETIME creation = {}, exit = {}, kernel = {}, user = {};
     if (!::GetThreadTimes(::GetCurrentThread(), &creation, &exit, &kernel, &user))
+    {
       return {};
+    }
     const xiiUInt64 uiKernel = (static_cast<xiiUInt64>(kernel.dwHighDateTime) << 32) | kernel.dwLowDateTime;
     const xiiUInt64 uiUser   = (static_cast<xiiUInt64>(user.dwHighDateTime) << 32) | user.dwLowDateTime;
     return xiiTime::MakeFromSeconds(static_cast<double>(uiKernel + uiUser) / 10000000.0);
@@ -139,7 +146,12 @@ namespace xiiNetworkIOInternal
     pThread->m_hThread            = ::CreateThread(nullptr, 0, NetworkWindowsThreadMain, pThread, 0, nullptr);
     if (pThread->m_hThread == nullptr)
     {
-      const auto error = NetworkCompletionError(::GetLastError());
+      auto error     = NetworkCompletionError(::GetLastError());
+      error.m_Domain = xiiNetworkErrorDomain::Initialization;
+      if (error.m_Code != xiiNetworkErrorCode::ResourceExhausted)
+      {
+        error.m_Code = xiiNetworkErrorCode::InitializationFailed;
+      }
       XII_DEFAULT_DELETE(pThread);
       return error;
     }
@@ -181,13 +193,17 @@ namespace xiiNetworkIOInternal
   void DestroyWorker(Worker& worker)
   {
     auto* pState = static_cast<NetworkIocpState*>(worker.m_pNativeData);
+    if (pState != nullptr)
+    {
+      worker.m_Statistics.m_uiInternalMemoryBytes -= sizeof(NetworkIocpState);
+    }
     XII_DEFAULT_DELETE(pState);
     worker.m_pNativeData = nullptr;
   }
 
   void Wake(Worker& worker)
   {
-    if (worker.m_pNativeData == nullptr)
+    if (worker.m_pNativeData == nullptr || worker.m_bWakePending.exchange(true))
     {
       return;
     }
@@ -218,7 +234,8 @@ namespace xiiNetworkIOInternal
         {
           break;
         }
-        // Null-overlapped packets are control wakeups, never operation completions.
+        worker.m_bWakePending.store(false);
+        // Null-overlapped packets are coalesced control wakeups, never operation completions.
         continue;
       }
       auto*        pNative = reinterpret_cast<NetworkIocpOperation*>(pOverlapped);
