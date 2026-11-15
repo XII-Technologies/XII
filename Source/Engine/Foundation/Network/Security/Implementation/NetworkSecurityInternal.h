@@ -16,8 +16,9 @@ XII_FOUNDATION_INTERNAL_HEADER
 struct xiiNetworkTlsSessionEntry
 {
   xiiString    m_sOrigin;
-  SSL_SESSION* m_pSession = nullptr;
-  xiiUInt64    m_uiAge    = 0;
+  SSL_SESSION* m_pSession   = nullptr;
+  xiiUInt64    m_uiAge      = 0;
+  STACK_OF(X509) * m_pChain = nullptr;
 };
 
 class xiiNetworkCredentialsState

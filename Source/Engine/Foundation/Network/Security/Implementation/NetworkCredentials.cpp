@@ -34,6 +34,29 @@ namespace
     ~CredentialFileBytes() { xiiNetworkSecurityInternal::ClearSecret(m_Bytes); }
   };
 
+  int SelectNetworkAlpn(SSL*, const unsigned char** ppOutput, unsigned char* pOutputLength, const unsigned char* pInput, unsigned int uiInputBytes, void* pData)
+  {
+    const auto&     configuration = static_cast<xiiNetworkCredentialsState*>(pData)->m_Configuration;
+    const xiiUInt32 uiExpected    = configuration.m_sApplicationProtocol.GetElementCount();
+    unsigned int    uiOffset      = 0;
+    while (uiOffset < uiInputBytes)
+    {
+      const unsigned int uiLength = pInput[uiOffset++];
+      if (uiLength == 0 || uiLength > uiInputBytes - uiOffset)
+      {
+        return SSL_TLSEXT_ERR_ALERT_FATAL;
+      }
+      if (uiLength == uiExpected && std::memcmp(pInput + uiOffset, configuration.m_sApplicationProtocol.GetData(), uiLength) == 0)
+      {
+        *ppOutput      = pInput + uiOffset;
+        *pOutputLength = static_cast<unsigned char>(uiLength);
+        return SSL_TLSEXT_ERR_OK;
+      }
+      uiOffset += uiLength;
+    }
+    return SSL_TLSEXT_ERR_ALERT_FATAL;
+  }
+
   int PrivateKeyPassword(char* pBuffer, int iCapacity, int, void* pData)
   {
     if (pData == nullptr)
@@ -357,6 +380,22 @@ namespace xiiNetworkSecurityInternal
     {
       return xiiNetworkError(xiiNetworkErrorCode::CertificateUntrusted);
     }
+    const int iLeafBytes         = i2d_X509(pCertificate, nullptr);
+    xiiUInt32 uiCertificateBytes = 0;
+    const int iChainCount        = sk_X509_num(pChain);
+    if (iLeafBytes <= 0 || static_cast<xiiUInt32>(iLeafBytes) > pState->m_Configuration.m_uiMaximumCertificateBytes || iChainCount > 17)
+    {
+      return xiiNetworkError(xiiNetworkErrorCode::CertificateUntrusted);
+    }
+    for (int iIndex = 0; iIndex < iChainCount; ++iIndex)
+    {
+      const int iBytes = i2d_X509(sk_X509_value(pChain, iIndex), nullptr);
+      if (iBytes <= 0 || static_cast<xiiUInt32>(iBytes) > pState->m_Configuration.m_uiMaximumCertificateBytes - uiCertificateBytes)
+      {
+        return xiiNetworkError(xiiNetworkErrorCode::CertificateUntrusted);
+      }
+      uiCertificateBytes += static_cast<xiiUInt32>(iBytes);
+    }
     X509_STORE_CTX* pVerification = X509_STORE_CTX_new();
     if (pVerification == nullptr)
     {
@@ -369,6 +408,7 @@ namespace xiiNetworkSecurityInternal
     }
     X509_VERIFY_PARAM* pParameters = X509_STORE_CTX_get0_param(pVerification);
     X509_VERIFY_PARAM_set_depth(pParameters, 16);
+    X509_VERIFY_PARAM_set_flags(pParameters, X509_V_FLAG_X509_STRICT | X509_V_FLAG_TRUSTED_FIRST);
     X509_VERIFY_PARAM_set_hostflags(pParameters, X509_CHECK_FLAG_NO_PARTIAL_WILDCARDS | X509_CHECK_FLAG_NEVER_CHECK_SUBJECT);
     int iConfigured = X509_VERIFY_PARAM_set_purpose(pParameters, bServerCertificate ? X509_PURPOSE_SSL_SERVER : X509_PURPOSE_SSL_CLIENT);
     if (bServerCertificate)
@@ -405,6 +445,7 @@ xiiNetworkCredentialsState::~xiiNetworkCredentialsState()
   for (auto& session : m_Sessions)
   {
     SSL_SESSION_free(session.m_pSession);
+    sk_X509_pop_free(session.m_pChain, X509_free);
   }
   xiiNetworkSecurityInternal::ClearSecret(m_Pkcs12);
   SSL_CTX_free(m_pContext);
@@ -507,8 +548,10 @@ xiiNetworkError xiiNetworkCredentials::Load(const xiiNetworkSecurityConfig& conf
   }
   SSL_CTX_set_options(pState->m_pContext, SSL_OP_NO_COMPRESSION | SSL_OP_NO_RENEGOTIATION);
   SSL_CTX_set_mode(pState->m_pContext, SSL_MODE_ENABLE_PARTIAL_WRITE | SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER);
+  SSL_CTX_set_alpn_select_cb(pState->m_pContext, SelectNetworkAlpn, pState.Borrow());
   SSL_CTX_set_verify(pState->m_pContext, SSL_VERIFY_PEER, nullptr);
   SSL_CTX_set_verify_depth(pState->m_pContext, 16);
+  X509_VERIFY_PARAM_set_flags(SSL_CTX_get0_param(pState->m_pContext), X509_V_FLAG_X509_STRICT | X509_V_FLAG_TRUSTED_FIRST);
   SSL_CTX_set_max_cert_list(pState->m_pContext, configuration.m_uiMaximumCertificateBytes);
   SSL_CTX_set_max_early_data(pState->m_pContext, 0);
   SSL_CTX_set_session_cache_mode(pState->m_pContext, configuration.m_bEnableTransportResumption ? SSL_SESS_CACHE_BOTH : SSL_SESS_CACHE_OFF);

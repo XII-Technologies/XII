@@ -15,3 +15,11 @@ TLS 1.3 peer verification is mandatory. Server names are checked against DNS/IP 
 An explicit development CA can be used as a trust bundle. There is no certificate-verification bypass. Test certificates and private keys are generated in the test output directory and removed by their fixture owners.
 
 Upstream references: [OpenSSL 3.5 documentation](https://docs.openssl.org/3.5/), [MsQuic 2.6.4](https://github.com/microsoft/msquic/tree/v2.6.4), [MsQuic certificate handling](https://github.com/microsoft/msquic/blob/v2.6.4/docs/api/QUIC_CONNECTION_EVENT.md). License copies are in `Foundation/Network/ThirdParty/` (OpenSSL: Apache-2.0; MsQuic: MIT).
+
+## Caller-driven TLS records
+
+`xiiNetworkTlsStream` owns a serialized TLS 1.3 connection with two fixed 64 KiB BIO directions. `Initialize` retains a shared immutable credential snapshot. Clients supply an explicit DNS name or IP SAN and an origin port. Servers require an identity; client certificates are required by default. ALPN must match exactly. `Handshake`, `Read`, `Write` and `Shutdown` never wait on a socket. `WouldBlock` means the owner must feed received ciphertext or drain produced ciphertext before retrying. Writes may accept a prefix of the supplied span; after `WouldBlock`, retry the same remaining bytes before starting another write.
+
+Drain output into retained native send leases and feed completed native receive leases, preserving bytes that could not yet be accepted. `NotifyEndOfInput` follows all received ciphertext. TLS `close_notify` is distinct from unexpected raw EOF, which fails the connection. `Shutdown` produces `close_notify` and requires output drain and peer input until it succeeds or an external close deadline expires. The scheduling owner enforces handshake, idle and close deadlines; this record engine has no timers or threads.
+
+Transport resumption is opt-in and has no early data. A bounded LRU cache belongs to each client credential snapshot, keyed by server name, port and ALPN. Cached native sessions and verified chains retain explicit references; cache replacement releases them. Resumed connections revalidate the cached peer chain and current validity against the retained trust snapshot. TLS ticket resumption is separate from application session recovery. An uncleanly terminated native TLS session may be marked non-resumable by OpenSSL.
