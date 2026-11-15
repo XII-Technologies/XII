@@ -136,7 +136,7 @@ namespace
     {
       return xiiNetworkError(xiiNetworkErrorCode::NotOpen);
     }
-    return SetOption(Borrow(socket), iLevel, iOption, &iValue, sizeof(iValue)) == 0 ? xiiNetworkError() : TranslateSocketError(GetLastError());
+    return SetOption(Borrow(socket), iLevel, iOption, &iValue, sizeof(iValue)) == 0 ? xiiNetworkError() : TranslateSocketError(GetLastSocketError());
   }
 
   xiiNetworkError Milliseconds(xiiTime time, xiiUInt32& out_uiMilliseconds)
@@ -321,7 +321,7 @@ xiiNetworkError xiiNetworkResolver::Resolve(xiiStringView sHost, xiiStringView s
   const int iResult            = ::getaddrinfo(sHost.IsEmpty() ? nullptr : sHostStorage.GetData(), sService.IsEmpty() ? "0" : sServiceStorage.GetData(), &hints, &pResults);
   if (iResult != 0)
   {
-    return TranslateResolverError(iResult, GetLastError());
+    return TranslateResolverError(iResult, GetLastSocketError());
   }
   // Keep OS allocations scoped even when entries are filtered or future validation adds early returns.
   XII_SCOPE_EXIT(::freeaddrinfo(pResults));
@@ -359,7 +359,7 @@ xiiNetworkError xiiNetworkResolver::ReverseLookup(const xiiNetworkEndpoint& endp
   const int iResult = ::getnameinfo(native.Get(), native.m_uiLength, szHostname, sizeof(szHostname), nullptr, 0, NI_NAMEREQD);
   if (iResult != 0)
   {
-    return TranslateResolverError(iResult, GetLastError());
+    return TranslateResolverError(iResult, GetLastSocketError());
   }
   out_sHostname = szHostname;
   return {};
@@ -400,7 +400,7 @@ xiiNetworkError xiiNetworkSocket::Close()
   }
   const NativeSocket hSocket      = Borrow(*this);
   const int          iResult      = CloseNative(hSocket);
-  const int          iNativeError = iResult == 0 ? 0 : GetLastError();
+  const int          iNativeError = iResult == 0 ? 0 : GetLastSocketError();
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
   if (iResult != 0)
   {
@@ -445,7 +445,7 @@ xiiNetworkError xiiNetworkSocket::OpenSocket(xiiNetworkAddressFamily family, boo
     const int iEnabled = 1;
     if (SetOption(hSocket, IPPROTO_IPV6, IPV6_V6ONLY, &iEnabled, sizeof(iEnabled)) != 0)
     {
-      error = TranslateSocketError(GetLastError());
+      error = TranslateSocketError(GetLastSocketError());
       CloseNative(hSocket);
       return error;
     }
@@ -457,7 +457,7 @@ xiiNetworkError xiiNetworkSocket::OpenSocket(xiiNetworkAddressFamily family, boo
     const linger value = {};
     if (SetOption(hSocket, SOL_SOCKET, SO_LINGER, &value, sizeof(value)) != 0)
     {
-      error = TranslateSocketError(GetLastError());
+      error = TranslateSocketError(GetLastSocketError());
       CloseNative(hSocket);
       return error;
     }
@@ -490,7 +490,7 @@ xiiNetworkError xiiNetworkSocket::BindSocket(const xiiNetworkEndpoint& endpoint)
   {
     return error;
   }
-  return ::bind(Borrow(*this), native.Get(), native.m_uiLength) == 0 ? xiiNetworkError() : TranslateSocketError(GetLastError());
+  return ::bind(Borrow(*this), native.Get(), native.m_uiLength) == 0 ? xiiNetworkError() : TranslateSocketError(GetLastSocketError());
 }
 
 xiiNetworkError xiiNetworkSocket::ConnectSocket(const xiiNetworkEndpoint& endpoint)
@@ -515,7 +515,7 @@ xiiNetworkError xiiNetworkSocket::ConnectSocket(const xiiNetworkEndpoint& endpoi
     m_State = xiiNetworkSocketState::Connected;
     return {};
   }
-  xiiNetworkError connectError = TranslateSocketError(GetLastError());
+  xiiNetworkError connectError = TranslateSocketError(GetLastSocketError());
   if (connectError.m_Code == xiiNetworkErrorCode::WouldBlock || connectError.m_Code == xiiNetworkErrorCode::InProgress || connectError.m_Code == xiiNetworkErrorCode::Interrupted)
   {
     connectError.m_Code = xiiNetworkErrorCode::InProgress;
@@ -539,7 +539,7 @@ xiiNetworkError xiiNetworkSocket::GetLocalEndpoint(xiiNetworkEndpoint& out_endpo
   NativeAddress native;
   if (::getsockname(Borrow(*this), native.Get(), &native.m_uiLength) != 0)
   {
-    return TranslateSocketError(GetLastError());
+    return TranslateSocketError(GetLastSocketError());
   }
   return FromNative(native.Get(), native.m_uiLength, out_endpoint);
 }
@@ -554,7 +554,7 @@ xiiNetworkError xiiNetworkSocket::GetPeerEndpoint(xiiNetworkEndpoint& out_endpoi
   NativeAddress native;
   if (::getpeername(Borrow(*this), native.Get(), &native.m_uiLength) != 0)
   {
-    return TranslateSocketError(GetLastError());
+    return TranslateSocketError(GetLastSocketError());
   }
   return FromNative(native.Get(), native.m_uiLength, out_endpoint);
 }
@@ -616,12 +616,12 @@ xiiNetworkError xiiNetworkSocket::GetBufferSizes(xiiUInt32& out_uiSendBytes, xii
   NativeLength uiLength     = sizeof(int);
   if (GetOption(Borrow(*this), SOL_SOCKET, SO_SNDBUF, &iSendSize, &uiLength) != 0)
   {
-    return TranslateSocketError(GetLastError());
+    return TranslateSocketError(GetLastSocketError());
   }
   uiLength = sizeof(int);
   if (GetOption(Borrow(*this), SOL_SOCKET, SO_RCVBUF, &iReceiveSize, &uiLength) != 0)
   {
-    return TranslateSocketError(GetLastError());
+    return TranslateSocketError(GetLastSocketError());
   }
   if (iSendSize < 0 || iReceiveSize < 0)
   {
@@ -703,7 +703,7 @@ xiiNetworkError xiiNetworkSocket::FinishConnection()
   NativeLength uiLength      = sizeof(iPendingError);
   if (GetOption(Borrow(*this), SOL_SOCKET, SO_ERROR, &iPendingError, &uiLength) != 0)
   {
-    return TranslateSocketError(GetLastError());
+    return TranslateSocketError(GetLastSocketError());
   }
   m_ConnectError = TranslateSocketError(iPendingError);
   m_State        = m_ConnectError.Succeeded() ? xiiNetworkSocketState::Connected : xiiNetworkSocketState::Failed;
@@ -732,7 +732,7 @@ xiiNetworkError xiiTcpSocket::Shutdown(xiiNetworkShutdown direction)
     default:
       return xiiNetworkError(xiiNetworkErrorCode::InvalidArgument);
   }
-  return ::shutdown(Borrow(*this), iDirection) == 0 ? xiiNetworkError() : TranslateSocketError(GetLastError());
+  return ::shutdown(Borrow(*this), iDirection) == 0 ? xiiNetworkError() : TranslateSocketError(GetLastSocketError());
 }
 xiiNetworkError xiiTcpSocket::SetNoDelay(bool bEnable) { return SetIntegerOption(*this, IPPROTO_TCP, TCP_NODELAY, bEnable ? 1 : 0); }
 xiiNetworkError xiiTcpSocket::SetKeepAlive(bool bEnable) { return SetIntegerOption(*this, SOL_SOCKET, SO_KEEPALIVE, bEnable ? 1 : 0); }
@@ -744,8 +744,8 @@ xiiNetworkError xiiTcpSocket::SetLinger(bool bDiscardPendingData)
     return xiiNetworkError(xiiNetworkErrorCode::NotOpen);
   }
   linger value  = {};
-  value.l_onoff = bDiscardPendingData ? 1 : 0;
-  return SetOption(Borrow(*this), SOL_SOCKET, SO_LINGER, &value, sizeof(value)) == 0 ? xiiNetworkError() : TranslateSocketError(GetLastError());
+  value.l_onoff = static_cast<decltype(value.l_onoff)>(bDiscardPendingData ? 1 : 0);
+  return SetOption(Borrow(*this), SOL_SOCKET, SO_LINGER, &value, sizeof(value)) == 0 ? xiiNetworkError() : TranslateSocketError(GetLastSocketError());
 }
 
 xiiNetworkError xiiTcpSocket::SetKeepAliveTiming(xiiTime idleTime, xiiTime interval, xiiUInt32 uiProbeCount)
@@ -792,7 +792,7 @@ xiiNetworkError xiiTcpListener::Listen(xiiUInt32 uiBacklog)
   }
   if (::listen(Borrow(*this), static_cast<int>(uiBacklog)) != 0)
   {
-    return TranslateSocketError(GetLastError());
+    return TranslateSocketError(GetLastSocketError());
   }
   m_State = xiiNetworkSocketState::Listening;
   return {};
@@ -909,7 +909,7 @@ xiiNetworkOperationResult xiiNetworkSocket::SendBuffers(xiiArrayPtr<const xiiArr
     ::WSASend(Borrow(*this), nativeBuffers, uiCount, &uiSent, 0, nullptr, nullptr);
   if (iResult != 0)
   {
-    return {TranslateSocketError(GetLastError()), 0};
+    return {TranslateSocketError(GetLastSocketError()), 0};
   }
   uiTransferred = uiSent;
 #else
@@ -946,7 +946,7 @@ xiiNetworkOperationResult xiiNetworkSocket::SendBuffers(xiiArrayPtr<const xiiArr
   const ssize_t iResult = ::sendmsg(Borrow(*this), &message, SendFlags);
   if (iResult < 0)
   {
-    return {TranslateSocketError(GetLastError()), 0};
+    return {TranslateSocketError(GetLastSocketError()), 0};
   }
   uiTransferred = static_cast<xiiUInt32>(iResult);
 #endif
@@ -1007,7 +1007,7 @@ xiiNetworkOperationResult xiiNetworkSocket::ReceiveBuffers(xiiArrayPtr<const xii
     ::WSARecv(Borrow(*this), nativeBuffers, uiCount, &uiReceived, &uiFlags, nullptr, nullptr);
   if (iResult != 0)
   {
-    const int iError = GetLastError();
+    const int iError = GetLastSocketError();
     if (!m_bDatagram || iError != WSAEMSGSIZE)
     {
       return {TranslateSocketError(iError), 0};
@@ -1049,7 +1049,7 @@ xiiNetworkOperationResult xiiNetworkSocket::ReceiveBuffers(xiiArrayPtr<const xii
   const ssize_t iResult = ::recvmsg(Borrow(*this), &message, 0);
   if (iResult < 0)
   {
-    return {TranslateSocketError(GetLastError()), 0};
+    return {TranslateSocketError(GetLastSocketError()), 0};
   }
   uiTransferred     = static_cast<xiiUInt32>(iResult);
   bTruncated        = (message.msg_flags & MSG_TRUNC) != 0;
@@ -1101,7 +1101,7 @@ namespace
       std::memcpy(&membership.imr_interface, ipv4Interface.GetBytes().GetPtr(), 4);
       return SetOption(Borrow(socket), IPPROTO_IP, bJoin ? IP_ADD_MEMBERSHIP : IP_DROP_MEMBERSHIP, &membership, sizeof(membership)) == 0 ?
         xiiNetworkError() :
-        TranslateSocketError(GetLastError());
+        TranslateSocketError(GetLastSocketError());
     }
     if (group.GetScopeId() != 0 && uiIpv6InterfaceIndex != 0 && group.GetScopeId() != uiIpv6InterfaceIndex)
     {
@@ -1112,7 +1112,7 @@ namespace
     membership.ipv6mr_interface = uiIpv6InterfaceIndex != 0 ? uiIpv6InterfaceIndex : group.GetScopeId();
     return SetOption(Borrow(socket), IPPROTO_IPV6, bJoin ? IPV6_JOIN_GROUP : IPV6_LEAVE_GROUP, &membership, sizeof(membership)) == 0 ?
       xiiNetworkError() :
-      TranslateSocketError(GetLastError());
+      TranslateSocketError(GetLastSocketError());
   }
 } // namespace
 
@@ -1140,10 +1140,10 @@ xiiNetworkError xiiUdpSocket::SetMulticastInterface(const xiiNetworkAddress& ipv
     }
     in_addr native = {};
     std::memcpy(&native, ipv4Interface.GetBytes().GetPtr(), 4);
-    return SetOption(Borrow(*this), IPPROTO_IP, IP_MULTICAST_IF, &native, sizeof(native)) == 0 ? xiiNetworkError() : TranslateSocketError(GetLastError());
+    return SetOption(Borrow(*this), IPPROTO_IP, IP_MULTICAST_IF, &native, sizeof(native)) == 0 ? xiiNetworkError() : TranslateSocketError(GetLastSocketError());
   }
   const xiiUInt32 uiIndex = uiIpv6InterfaceIndex;
-  return SetOption(Borrow(*this), IPPROTO_IPV6, IPV6_MULTICAST_IF, &uiIndex, sizeof(uiIndex)) == 0 ? xiiNetworkError() : TranslateSocketError(GetLastError());
+  return SetOption(Borrow(*this), IPPROTO_IPV6, IPV6_MULTICAST_IF, &uiIndex, sizeof(uiIndex)) == 0 ? xiiNetworkError() : TranslateSocketError(GetLastSocketError());
 }
 xiiNetworkError xiiUdpSocket::SetMulticastHopLimit(xiiUInt8 uiHops)
 {
@@ -1152,7 +1152,7 @@ xiiNetworkError xiiUdpSocket::SetMulticastHopLimit(xiiUInt8 uiHops)
   {
     return xiiNetworkInternal::SetOption(Borrow(*this), IPPROTO_IP, IP_MULTICAST_TTL, &uiHops, sizeof(uiHops)) == 0 ?
       xiiNetworkError() :
-      xiiNetworkInternal::TranslateSocketError(xiiNetworkInternal::GetLastError());
+      xiiNetworkInternal::TranslateSocketError(xiiNetworkInternal::GetLastSocketError());
   }
 #endif
   return SetIntegerOption(*this, GetFamily() == xiiNetworkAddressFamily::Ipv4 ? IPPROTO_IP : IPPROTO_IPV6,
@@ -1167,7 +1167,7 @@ xiiNetworkError xiiUdpSocket::SetMulticastLoopback(bool bEnable)
     const xiiUInt8 uiValue = bEnable ? 1 : 0;
     return xiiNetworkInternal::SetOption(Borrow(*this), IPPROTO_IP, IP_MULTICAST_LOOP, &uiValue, sizeof(uiValue)) == 0 ?
       xiiNetworkError() :
-      xiiNetworkInternal::TranslateSocketError(xiiNetworkInternal::GetLastError());
+      xiiNetworkInternal::TranslateSocketError(xiiNetworkInternal::GetLastSocketError());
   }
 #endif
   return SetIntegerOption(*this, GetFamily() == xiiNetworkAddressFamily::Ipv4 ? IPPROTO_IP : IPPROTO_IPV6,

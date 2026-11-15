@@ -129,7 +129,7 @@ namespace xiiNetworkInternal
     return xiiNetworkError(code, iNativeCode, xiiNetworkErrorDomain::Socket);
   }
 
-  int  GetLastError() { return errno; }
+  int  GetLastSocketError() { return errno; }
   int  CloseNative(NativeSocket hSocket) { return ::close(hSocket); }
   void ReleaseRuntime() {}
 

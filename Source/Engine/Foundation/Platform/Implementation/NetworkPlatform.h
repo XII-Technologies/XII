@@ -53,7 +53,7 @@ namespace xiiNetworkInternal
 #endif
 
   xiiNetworkError TranslateSocketError(int iNativeCode);
-  int             GetLastError();
+  int             GetLastSocketError();
   int             CloseNative(NativeSocket hSocket);
   void            ReleaseRuntime();
   int             SetOption(NativeSocket hSocket, int iLevel, int iName, const void* pValue, NativeLength uiSize);

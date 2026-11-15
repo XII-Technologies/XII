@@ -108,7 +108,7 @@ namespace xiiNetworkInternal
     return xiiNetworkError(code, iNativeCode, xiiNetworkErrorDomain::Socket);
   }
 
-  int  GetLastError() { return ::WSAGetLastError(); }
+  int  GetLastSocketError() { return ::WSAGetLastError(); }
   int  CloseNative(NativeSocket hSocket) { return ::closesocket(hSocket); }
   void ReleaseRuntime() { ::WSACleanup(); }
 
@@ -125,7 +125,7 @@ namespace xiiNetworkInternal
   xiiNetworkError SetNonBlockingNative(NativeSocket hSocket, bool bNonBlocking)
   {
     u_long uiMode = bNonBlocking ? 1UL : 0UL;
-    return ::ioctlsocket(hSocket, FIONBIO, &uiMode) == 0 ? xiiNetworkError() : TranslateSocketError(GetLastError());
+    return ::ioctlsocket(hSocket, FIONBIO, &uiMode) == 0 ? xiiNetworkError() : TranslateSocketError(GetLastSocketError());
   }
 
   NativeSocket CreateNative(int iFamily, int iType, bool bNonBlocking, xiiNetworkError& out_error)
@@ -133,7 +133,7 @@ namespace xiiNetworkInternal
     const SOCKET hSocket = ::WSASocketW(iFamily, iType, 0, nullptr, 0, WSA_FLAG_OVERLAPPED | WSA_FLAG_NO_HANDLE_INHERIT);
     if (hSocket == INVALID_SOCKET)
     {
-      out_error = TranslateSocketError(GetLastError());
+      out_error = TranslateSocketError(GetLastSocketError());
       return INVALID_SOCKET;
     }
     out_error = SetNonBlockingNative(hSocket, bNonBlocking);
@@ -150,7 +150,7 @@ namespace xiiNetworkInternal
     const SOCKET hSocket = ::accept(hListener, out_pAddress, inout_pLength);
     if (hSocket == INVALID_SOCKET)
     {
-      out_error = TranslateSocketError(GetLastError());
+      out_error = TranslateSocketError(GetLastSocketError());
       return INVALID_SOCKET;
     }
     // accept inherits the listener's no-inherit property, but enforce it before publication as well.
@@ -185,7 +185,7 @@ namespace xiiNetworkInternal
     const int iResult = ::select(0, bRead ? &ready : nullptr, bRead ? nullptr : &ready, &errors, &timeout);
     if (iResult < 0)
     {
-      return TranslateSocketError(GetLastError());
+      return TranslateSocketError(GetLastSocketError());
     }
     return iResult == 0 ? xiiNetworkError(xiiNetworkErrorCode::TimedOut) : xiiNetworkError();
   }
@@ -193,7 +193,7 @@ namespace xiiNetworkInternal
   xiiNetworkError SetTimeoutNative(NativeSocket hSocket, int iOption, xiiUInt32 uiMilliseconds)
   {
     const DWORD uiValue = uiMilliseconds;
-    return SetOption(hSocket, SOL_SOCKET, iOption, &uiValue, sizeof(uiValue)) == 0 ? xiiNetworkError() : TranslateSocketError(GetLastError());
+    return SetOption(hSocket, SOL_SOCKET, iOption, &uiValue, sizeof(uiValue)) == 0 ? xiiNetworkError() : TranslateSocketError(GetLastSocketError());
   }
 
   /// One successful WSAStartup reference per live socket or resolver operation. Winsock serializes
