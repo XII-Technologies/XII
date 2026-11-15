@@ -510,7 +510,7 @@ xiiNetworkError xiiNetworkHost::ReplaceCredentials(xiiSharedPtr<xiiNetworkCreden
   {
     return HostError(xiiNetworkErrorCode::InvalidArgument);
   }
-  XII_LOCK(m_pRuntime->m_CredentialsMutex);
+  XII_LOCK(m_pRuntime->m_AdmissionMutex);
   if (!IsRunning())
   {
     return HostError(xiiNetworkErrorCode::NotRunning);
@@ -519,6 +519,16 @@ xiiNetworkError xiiNetworkHost::ReplaceCredentials(xiiSharedPtr<xiiNetworkCreden
   {
     return HostError(xiiNetworkErrorCode::UnsupportedCapability);
   }
+  for (const auto& listener : m_pRuntime->m_Listeners)
+  {
+    XII_LOCK(listener.m_Mutex);
+    if (listener.m_bInUse && !listener.m_bClosing &&
+        (!pCredentials->HasIdentity() || (m_pRuntime->m_Configuration.m_Authentication == xiiNetworkAuthenticationPolicy::Certificate && !pCredentials->GetConfiguration().m_bRequireClientCertificate)))
+    {
+      return HostError(xiiNetworkErrorCode::InvalidArgument);
+    }
+  }
+  XII_LOCK(m_pRuntime->m_CredentialsMutex);
   if (m_pRuntime->m_Configuration.m_Transport == xiiNetworkTransportType::SecureDatagram &&
       (pCredentials->GetConfiguration().m_bEnableTransportResumption ||
        pCredentials->GetConfiguration().m_sApplicationProtocol != m_pRuntime->m_pCredentials->GetConfiguration().m_sApplicationProtocol))

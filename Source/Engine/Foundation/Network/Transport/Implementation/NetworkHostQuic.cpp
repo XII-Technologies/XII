@@ -195,6 +195,10 @@ void xiiNetworkHostRuntime::CompleteQuic(xiiNetworkQuicEvent&& event)
 
 bool xiiNetworkHostRuntime::ReceiveQuic(Peer& peer, xiiNetworkQuicEvent& event)
 {
+  if (peer.m_Info.m_State == xiiNetworkConnectionState::Securing)
+  {
+    return false;
+  }
   auto& receive = m_pQuic->GetReceiveState(*event.m_pStream);
   if (receive.m_bRequireDataFrames)
   {

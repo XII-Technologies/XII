@@ -347,10 +347,25 @@ void xiiNetworkHostRuntime::Frame(Peer& peer, xiiNetworkFrame&& frame, xiiNetwor
   peer.m_LastActivity = xiiTime::Now();
   const auto type     = frame.m_Header.m_Type;
   WireReader reader(frame.m_Payload.GetBytes());
-  auto       reject = [&](xiiNetworkErrorCode code) {
+  if (peer.m_bProtocolRejected)
+  {
+    if (type == xiiNetworkFrameType::Hello || type == xiiNetworkFrameType::Welcome)
+    {
+      xiiNetworkSecurityInternal::ClearSecret(frame.m_Payload.GetBytes());
+    }
+    return;
+  }
+  auto reject = [&](xiiNetworkErrorCode code) {
+    peer.m_bProtocolRejected = true;
+    if (peer.m_bActivated)
+    {
+      Close(peer, xiiNetworkError(code));
+      return;
+    }
     WireWriter reason;
     reason.U32(static_cast<xiiUInt32>(code));
     Queue(peer, xiiNetworkFrameType::Disconnect, reason);
+    peer.m_bDisconnectSent = true;
     Close(peer, xiiNetworkError(code), true);
   };
   const bool bChannelFrame = type == xiiNetworkFrameType::Data || type == xiiNetworkFrameType::OpenChannel || type == xiiNetworkFrameType::ChannelAccepted || type == xiiNetworkFrameType::CloseChannel;

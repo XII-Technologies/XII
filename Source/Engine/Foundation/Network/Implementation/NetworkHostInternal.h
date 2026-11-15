@@ -190,6 +190,7 @@ namespace xiiNetworkHostInternal
     bool                                  m_bWelcomeReceived     = false;
     bool                                  m_bReadyReceived       = false;
     bool                                  m_bActivated           = false;
+    bool                                  m_bProtocolRejected    = false;
     xiiNetworkError                       m_CloseError;
   };
 

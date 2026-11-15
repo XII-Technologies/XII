@@ -119,13 +119,13 @@ void xiiNetworkHostRuntime::Run()
 
 void xiiNetworkHostRuntime::StartAttempt(Peer& peer)
 {
-  peer.m_bStarted         = true;
-  peer.m_uiAttempt        = m_uiNextAttempt.fetch_add(1);
-  peer.m_LastActivity     = xiiTime::Now();
-  peer.m_AttemptStartedAt = peer.m_LastActivity;
+  peer.m_bStarted     = true;
+  peer.m_uiAttempt    = m_uiNextAttempt.fetch_add(1);
+  peer.m_LastActivity = xiiTime::Now();
   if (peer.m_uiEndpointIndex == 0 && peer.m_Info.m_State != xiiNetworkConnectionState::Resolving)
   {
-    peer.m_Deadline = peer.m_LastActivity + m_Configuration.m_HandshakeTimeout;
+    peer.m_AttemptStartedAt = peer.m_LastActivity;
+    peer.m_Deadline         = peer.m_LastActivity + m_Configuration.m_HandshakeTimeout;
   }
   if (peer.m_bIncoming)
   {
@@ -578,7 +578,7 @@ void xiiNetworkHostRuntime::DrivePeer(Peer& peer, xiiTime now, xiiTime& ref_next
     }
     const auto uiDatagramBytes                              = m_pQuic->GetMaximumDatagramBytes(*peer.m_pQuic);
     peer.m_Info.m_Capabilities.m_uiMaximumUnreliablePayload = uiDatagramBytes > xiiNetworkFrame::HeaderCapacity ? uiDatagramBytes - xiiNetworkFrame::HeaderCapacity : 0;
-    if (peer.m_bActivated)
+    if (peer.m_Info.m_State != xiiNetworkConnectionState::Securing)
     {
       xiiUInt32 uiRetained = 0;
       for (xiiUInt32 uiIndex = 0; uiIndex < peer.m_QuicDeferred.GetCount() && !peer.m_bClosing; ++uiIndex)
@@ -1044,17 +1044,22 @@ void xiiNetworkHostRuntime::FinishClose(Peer& peer)
       peer.m_bClosing = peer.m_bDeregistered = peer.m_bPeerEof = peer.m_bTlsClosed = false;
       peer.m_bDisconnectSent = peer.m_bShutdownSent = peer.m_bCipherSendPending = false;
       peer.m_bHelloReceived = peer.m_bWelcomeReceived = peer.m_bReadyReceived = peer.m_bActivated = false;
+      peer.m_bProtocolRejected                                                                    = false;
       peer.m_bAuthorizationReady = peer.m_bAcceptAuthorization = false;
       peer.m_bTransportLost                                    = false;
       peer.m_uiCipherProduced = peer.m_uiCipherCompleted = 0;
       peer.m_uiCipherOffset                              = 0;
       peer.m_uiSessionSlot                               = InvalidSlot;
       peer.m_uiEndpointIndex                             = 0;
-      peer.m_Info.m_Session                              = {};
-      peer.m_Info.m_bSessionResumed                      = false;
-      peer.m_Info.m_uiMaximumMessageBytes                = m_Configuration.m_uiMaximumMessageBytes;
-      peer.m_uiMaximumChannels                           = m_Configuration.m_uiMaximumChannelsPerConnection;
-      peer.m_uiDeliveryModes                             = m_Capabilities.m_uiDeliveryModes;
+      if (!peer.m_sHost.IsEmpty())
+      {
+        peer.m_Endpoints.Clear();
+      }
+      peer.m_Info.m_Session               = {};
+      peer.m_Info.m_bSessionResumed       = false;
+      peer.m_Info.m_uiMaximumMessageBytes = m_Configuration.m_uiMaximumMessageBytes;
+      peer.m_uiMaximumChannels            = m_Configuration.m_uiMaximumChannelsPerConnection;
+      peer.m_uiDeliveryModes              = m_Capabilities.m_uiDeliveryModes;
       peer.m_Channels.Clear();
       peer.m_Channels.SetCount(peer.m_uiMaximumChannels + 1);
       peer.m_Receive.m_Decoder.SetMaximumPayloadBytes(8192).IgnoreResult();

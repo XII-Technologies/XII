@@ -169,11 +169,14 @@ bool xiiNetworkHostRuntime::PeerEvent(Peer& peer, xiiNetworkEventType type, xiiN
     return false;
   }
   xiiNetworkEvent event;
-  event.m_Type           = type;
-  event.m_Connection     = peer.m_Handle;
-  event.m_Error          = error;
-  event.m_pSessionTicket = peer.m_pTicket;
-  event.m_Endpoint       = peer.m_Info.m_RemoteEndpoint;
+  event.m_Type       = type;
+  event.m_Connection = peer.m_Handle;
+  event.m_Error      = error;
+  if (!peer.m_bIncoming)
+  {
+    event.m_pSessionTicket = peer.m_pTicket;
+  }
+  event.m_Endpoint = peer.m_Info.m_RemoteEndpoint;
   if (type == xiiNetworkEventType::ReconnectScheduled)
   {
     event.m_ReconnectDelay = xiiMath::Max(peer.m_ReconnectAt - xiiTime::Now(), xiiTime::MakeZero());
@@ -309,6 +312,7 @@ xiiNetworkError xiiNetworkHostRuntime::AllocatePeer(bool bIncoming, Peer*& out_p
     peer.m_LastActivity                                = xiiTime::Now();
     peer.m_Deadline                                    = peer.m_LastActivity + m_Configuration.m_HandshakeTimeout;
     peer.m_ReconnectAt                                 = xiiTime::MakeZero();
+    peer.m_QuicStatisticsAt                            = xiiTime::MakeZero();
     peer.m_SendTokens.Reset(m_Configuration.m_uiPeerSendBurstBytes);
     peer.m_pTls.Clear();
     peer.m_Receive.m_Decoder.Reset();
@@ -335,6 +339,7 @@ xiiNetworkError xiiNetworkHostRuntime::AllocatePeer(bool bIncoming, Peer*& out_p
     peer.m_bTerminalPublished = peer.m_bTerminalConsumed = false;
     peer.m_bAuthorizationReady = peer.m_bAcceptAuthorization = false;
     peer.m_bHelloReceived = peer.m_bWelcomeReceived = peer.m_bReadyReceived = peer.m_bActivated = false;
+    peer.m_bProtocolRejected                                                                    = false;
     peer.m_Receive.m_bEventReserved                                                             = false;
     peer.m_CloseError                                                                           = {};
     {
