@@ -124,6 +124,14 @@ struct XII_FOUNDATION_DLL xiiNetworkEvent
   xiiTime                                    m_ReconnectDelay;
 };
 
+/// Independent admission result for one broadcast recipient. Successful admission produces the
+/// ordinary MessageSent event; failed admission leaves m_Message invalid and produces no event.
+struct XII_FOUNDATION_DLL xiiNetworkBroadcastResult
+{
+  xiiNetworkMessage m_Message;
+  xiiNetworkError   m_Error;
+};
+
 /// Independently owned host with one protocol driver and a native M2 I/O context. Start/Shutdown are
 /// mutually serialized; submissions, queries and event polling may otherwise be concurrent. Destroy
 /// only after callers stop accessing the facade. Shutdown rejects admission, quiesces native users,
@@ -164,6 +172,10 @@ public:
   [[nodiscard]] xiiNetworkError Send(xiiNetworkChannel channel, xiiNetworkIOBuffer&& payload, xiiNetworkMessage& out_message, xiiUInt64 uiUserData = 0);
   /// Explicit copy convenience; use AcquireBuffer/owning overload for retained zero-copy admission.
   [[nodiscard]] xiiNetworkError Send(xiiNetworkChannel channel, xiiArrayPtr<const xiiUInt8> payload, xiiNetworkMessage& out_message, xiiUInt64 uiUserData = 0);
+  /// Copies payload into an independent lease for each channel, in input order. Admission is not
+  /// atomic: inspect every result. Equal channel/result counts are required before any submission.
+  /// Empty recipient lists succeed without work. Duplicate channels receive duplicate messages.
+  [[nodiscard]] xiiNetworkError Broadcast(xiiArrayPtr<const xiiNetworkChannel> channels, xiiArrayPtr<const xiiUInt8> payload, xiiArrayPtr<xiiNetworkBroadcastResult> out_results, xiiUInt64 uiUserData = 0);
   /// NativeUdp only: raw datagrams have no sessions, authentication or logical channels.
   [[nodiscard]] xiiNetworkError SendDatagram(xiiNetworkListener socket, const xiiNetworkEndpoint& destination, xiiNetworkIOBuffer&& payload, xiiNetworkMessage& out_message, xiiUInt64 uiUserData = 0);
   [[nodiscard]] bool            TryGetEvent(xiiNetworkEvent& out_event);

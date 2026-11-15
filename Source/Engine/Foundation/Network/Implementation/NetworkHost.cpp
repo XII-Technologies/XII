@@ -618,6 +618,21 @@ xiiNetworkError xiiNetworkHost::Send(xiiNetworkChannel channel, xiiNetworkIOBuff
   }
   return error;
 }
+xiiNetworkError xiiNetworkHost::Broadcast(xiiArrayPtr<const xiiNetworkChannel> channels, xiiArrayPtr<const xiiUInt8> payload, xiiArrayPtr<xiiNetworkBroadcastResult> out_results, xiiUInt64 uiUserData)
+{
+  if (channels.GetCount() != out_results.GetCount())
+  {
+    return HostError(xiiNetworkErrorCode::InvalidArgument);
+  }
+  for (xiiUInt32 uiIndex = 0; uiIndex < channels.GetCount(); ++uiIndex)
+  {
+    auto& result     = out_results[uiIndex];
+    result.m_Message = {};
+    result.m_Error   = Send(channels[uiIndex], payload, result.m_Message, uiUserData);
+  }
+  return {};
+}
+
 xiiNetworkError xiiNetworkHost::Send(xiiNetworkChannel channel, xiiArrayPtr<const xiiUInt8> payload, xiiNetworkMessage& out_message, xiiUInt64 uiUserData)
 {
   if (!payload.IsEmpty() && payload.GetPtr() == nullptr)

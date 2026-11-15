@@ -55,7 +55,31 @@ A client creates its own host with client identity/trust credentials, sets `xiiN
 
 Messages have canonical unsigned LEB128 body lengths followed by a one-byte kind, big-endian channel identifier and 64-bit sequence. Parsing validates size/type before reserving memory. Header fragments, payload fragments and multiple coalesced frames are supported. Plain TCP submits header/payload leases with scatter/gather; TLS moves ciphertext through bounded record BIOs. M2 retains partial native transfers until completion. Applications receive whole messages and never need to reconstruct a TCP stream.
 
+`Broadcast` takes an explicit array of recipient channels and an equally sized result array. It copies the caller's payload into each admitted send lease. Admission is independent and follows recipient order; a full queue or invalid recipient does not suppress later recipients. Inspect every result for its message handle or admission error, then consume the ordinary `MessageSent` completions. A mismatched result count rejects the entire call before submission.
+
 Protocol negotiation exchanges a protocol UUID, version range, required/supported features, delivery capabilities and size/channel limits. Incompatible requirements fail closed. Authentication precedes session activation. The Hello/Welcome/Ready/Activated barrier prevents application dispatch before both peers agree. Certificate policy authenticates both peers. Application policy authenticates the secure server, then delegates client authorization to the event consumer. Authorization controls client sending, channel creation and recovery eligibility.
+
+## Wire protocol
+
+Version 1 uses the same framing for TCP, decrypted TLS records, QUIC streams and QUIC datagrams. Native UDP remains application-defined. Each frame contains a canonical unsigned LEB128 body length (at most five bytes), a one-byte type, a big-endian `u32` channel, a big-endian `u64` sequence, and the payload. The body length includes the 13 metadata bytes. Overlong encodings, unknown tags, arithmetic overflow and payloads exceeding the negotiated limit are rejected. Control payloads are limited to 8,192 bytes.
+
+All integers below are unsigned and in network byte order. `uuid` occupies 16 bytes: the high 64-bit value followed by the low value. `text` consists of a `u32` byte count and that many bytes without an embedded NUL. There is no structure padding or implicit terminator. Fields appear in the order listed, and trailing bytes are rejected.
+
+| Tag | Payload fields |
+| --- | --- |
+| 1, Hello | `u32` magic `0x58494933`; protocol `uuid`; `u32` minimum and maximum versions; `u64` supported and required feature masks; `u32` delivery mask, maximum message bytes and maximum channels; `u8` authentication policy and flags; requested session `uuid`; 32-byte recovery token; `u32` authentication byte count followed by at most 4,096 credential bytes |
+| 2, Welcome | protocol `uuid`; `u32` selected version; `u64` features; `u32` delivery mask, maximum message bytes and maximum channels; session `uuid`; `u8` resumed indicator and permission mask; identity `text`; `u64` remaining recovery lifetime in milliseconds; 32-byte recovery token |
+| 3, Ready; 4, Activated | Empty |
+| 5, Data | Opaque application bytes |
+| 6, OpenChannel | `u8` delivery mode and scheduling weight; `u32` queued-message limit; `u64` queued-byte limit; `u32` application service identifier |
+| 7, ChannelAccepted | `u32` admission error code, zero for acceptance |
+| 8, CloseChannel | `u8` acknowledgement indicator; `u64` final sequence sent by this side |
+| 9, Disconnect | `u32` networking error code, zero for ordinary closure |
+| 10, Ping; 11, Pong | Empty; the frame sequence carries the probe identifier |
+
+Authentication policy values are certificate `0`, application `1` and anonymous development `2`. Hello flag bits permit a fresh session (`1`) and request recovery (`2`). Welcome permission bits allow client messages (`1`), client channel creation (`2`) and recovery (`4`). Delivery mode values are reliable ordered `0`, reliable unordered `1`, unreliable sequenced `2` and unreliable unsequenced `3`; delivery masks use the corresponding bit positions. Control error values follow the stable `xiiNetworkErrorCode` numbering; native error values are never transmitted.
+
+Only Data and channel-management frames carry a nonzero channel. Channel IDs combine a 16-bit generation above a 16-bit slot. Slot 1, generation 1 is the default channel; clients allocate additional odd slots and servers allocate even slots. Data sequences start at 1 independently for each sending direction and channel. Other control sequences are zero except heartbeat probes. Unknown identifiers, invalid generations and out-of-phase handshakes terminate the connection. The handshake order is client Hello, server Welcome, client Ready and server Activated. Recovery tokens are only exchanged after authenticated encryption is established and are cleared from temporary control storage.
 
 ## Queues, channels and closure
 

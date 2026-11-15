@@ -151,6 +151,78 @@ XII_CREATE_SIMPLE_TEST(NetworkTransport, HostReliableMessaging)
   }
 }
 
+XII_CREATE_SIMPLE_TEST(NetworkTransport, HostBroadcastAdmission)
+{
+  const auto     configuration = HostTestConfiguration(xiiNetworkTransportType::Tcp);
+  xiiNetworkHost server;
+  xiiNetworkHost client;
+  if (!XII_TEST_BOOL(server.Start(configuration).Succeeded()) || !XII_TEST_BOOL(client.Start(configuration).Succeeded()))
+  {
+    return;
+  }
+  xiiNetworkListener listener;
+  xiiNetworkEndpoint endpoint;
+  if (!XII_TEST_BOOL(server.Listen({xiiNetworkAddress::MakeLoopback(xiiNetworkAddressFamily::Ipv4), 0}, listener).Succeeded()) ||
+      !XII_TEST_BOOL(server.GetLocalEndpoint(listener, endpoint).Succeeded()))
+  {
+    return;
+  }
+  xiiNetworkConnection connections[2];
+  xiiNetworkChannel    channels[3];
+  xiiNetworkEvent      event;
+  for (xiiUInt32 uiIndex = 0; uiIndex < 2; ++uiIndex)
+  {
+    if (!XII_TEST_BOOL(client.Connect(endpoint, {}, connections[uiIndex]).Succeeded()) ||
+        !HostTestEvent(server, xiiNetworkEventType::Connected, event) ||
+        !XII_TEST_BOOL(server.GetDefaultChannel(event.m_Connection, channels[uiIndex * 2]).Succeeded()) ||
+        !HostTestEvent(client, xiiNetworkEventType::Connected, event))
+    {
+      return;
+    }
+  }
+  // Leave the middle recipient invalid: admission must continue to the second peer.
+  xiiNetworkBroadcastResult results[3];
+  const xiiUInt8            uiRejected[] = {0xEE};
+  XII_TEST_BOOL(server.Broadcast(xiiMakeArrayPtr(channels), uiRejected, xiiMakeArrayPtr(results).GetSubArray(0, 2)).m_Code == xiiNetworkErrorCode::InvalidArgument);
+  const xiiUInt8 uiPayload[] = {1, 2, 3, 4};
+  if (!XII_TEST_BOOL(server.Broadcast(xiiMakeArrayPtr(channels), uiPayload, xiiMakeArrayPtr(results), 73).Succeeded()))
+  {
+    return;
+  }
+  XII_TEST_BOOL(results[0].m_Error.Succeeded() && results[0].m_Message.IsValid());
+  XII_TEST_BOOL(results[1].m_Error.m_Code == xiiNetworkErrorCode::InvalidHandle && !results[1].m_Message.IsValid());
+  XII_TEST_BOOL(results[2].m_Error.Succeeded() && results[2].m_Message.IsValid());
+  XII_TEST_BOOL(results[0].m_Message != results[2].m_Message);
+  bool bReceived[2] = {};
+  for (xiiUInt32 uiIndex = 0; uiIndex < 2; ++uiIndex)
+  {
+    if (!HostTestEvent(client, xiiNetworkEventType::Message, event))
+    {
+      return;
+    }
+    XII_TEST_INT(event.m_Payload.GetCount(), 4);
+    XII_TEST_BOOL(event.m_Payload.GetCount() == 4 && std::memcmp(event.m_Payload.GetBytes().GetPtr(), uiPayload, 4) == 0);
+    const xiiUInt32 uiPeer = event.m_Connection == connections[0] ? 0 : 1;
+    XII_TEST_BOOL(event.m_Connection == connections[uiPeer] && !bReceived[uiPeer]);
+    bReceived[uiPeer] = true;
+  }
+  bool bCompleted[2] = {};
+  for (xiiUInt32 uiIndex = 0; uiIndex < 2; ++uiIndex)
+  {
+    if (!HostTestEvent(server, xiiNetworkEventType::MessageSent, event))
+    {
+      return;
+    }
+    const xiiUInt32 uiPeer = event.m_Message == results[0].m_Message ? 0 : 1;
+    XII_TEST_BOOL(event.m_Message == results[uiPeer * 2].m_Message && !bCompleted[uiPeer]);
+    XII_TEST_BOOL(event.m_Error.Succeeded());
+    XII_TEST_INT(event.m_uiUserData, 73);
+    bCompleted[uiPeer] = true;
+  }
+  XII_TEST_INT(server.GetStatistics().m_uiMessagesSent, 2);
+  XII_TEST_BOOL(server.Broadcast({}, {}, {}).Succeeded());
+}
+
 XII_CREATE_SIMPLE_TEST(NetworkTransport, HostNativeUdpDatagrams)
 {
   auto           configuration = HostTestConfiguration(xiiNetworkTransportType::NativeUdp);
