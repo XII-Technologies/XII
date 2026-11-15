@@ -439,6 +439,7 @@ XII_CREATE_SIMPLE_TEST(NetworkReflection, RpcCorrelationReplayAndLimits)
   xiiNetworkEvent closed;
   closed.m_Type       = xiiNetworkEventType::Closed;
   closed.m_Connection = pair.m_ClientChannel.m_Connection;
+  pair.m_Registry.Invalidate();
   XII_TEST_BOOL(pair.m_Sender.ProcessEvent(std::move(closed)).Succeeded());
   XII_TEST_BOOL(pair.m_Sender.TryGetRpcResult(result));
   XII_TEST_BOOL(result.m_Request == first && result.m_Error.m_Code == xiiNetworkDataErrorCode::Disconnected);

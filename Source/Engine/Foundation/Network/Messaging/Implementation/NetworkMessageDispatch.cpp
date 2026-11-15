@@ -27,8 +27,6 @@ xiiNetworkDataError xiiNetworkReflectionEndpointState::Process(xiiNetworkEvent&&
   XII_PROFILE_SCOPE("NetworkReflection.Process");
   auto&     registry = xiiNetworkRegistryAccess::Get(m_Registry);
   ReadScope scope(registry);
-  if (!scope.m_bAcquired)
-    return xiiNetworkDataError(xiiNetworkDataErrorCode::RegistryUnavailable);
   XII_LOCK(m_Mutex);
   if (!m_bRunning)
     return xiiNetworkDataError(xiiNetworkDataErrorCode::Disconnected);
@@ -77,8 +75,11 @@ xiiNetworkDataError xiiNetworkReflectionEndpointState::Process(xiiNetworkEvent&&
     peer.m_LastRefill = xiiTime::Now();
     return {};
   }
+  // Session lifecycle must still drain while plugin changes pause reflected metadata.
   if (event.m_Type != xiiNetworkEventType::Message)
     return xiiNetworkDataError(xiiNetworkDataErrorCode::UnknownMessage);
+  if (!scope.m_bAcquired)
+    return xiiNetworkDataError(xiiNetworkDataErrorCode::RegistryUnavailable);
   auto peer = FindPeer(event.m_Channel);
   if (peer == nullptr || event.m_pSessionInfo != peer->m_pInfo)
     return xiiNetworkDataError(xiiNetworkDataErrorCode::Disconnected);
