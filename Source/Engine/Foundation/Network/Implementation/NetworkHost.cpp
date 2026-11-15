@@ -70,6 +70,10 @@ xiiNetworkError xiiNetworkHost::Listen(const xiiNetworkEndpoint& endpoint, xiiNe
   {
     return HostError(xiiNetworkErrorCode::NotRunning);
   }
+  if (iBacklog != 128 && (runtime.m_Configuration.m_Transport == xiiNetworkTransportType::NativeUdp || runtime.m_pQuic != nullptr))
+  {
+    return HostError(xiiNetworkErrorCode::UnsupportedCapability);
+  }
   if (runtime.m_Capabilities.m_bEncrypted)
   {
     XII_LOCK(runtime.m_CredentialsMutex);
@@ -233,6 +237,12 @@ namespace
     {
       return HostError(xiiNetworkErrorCode::UnsupportedOperation);
     }
+    if (sHost.GetElementCount() > 253 || sService.GetElementCount() > 64 || options.m_sServerName.GetElementCount() > 253 ||
+        (options.m_pAuthentication != nullptr && runtime.m_Configuration.m_Authentication != xiiNetworkAuthenticationPolicy::Application) ||
+        (options.m_pSessionTicket != nullptr && !runtime.m_Configuration.m_bEnableSessionRecovery))
+    {
+      return HostError(xiiNetworkErrorCode::InvalidArgument);
+    }
     const auto& retry = options.m_Reconnect;
     if ((runtime.m_Capabilities.m_bEncrypted && options.m_sServerName.IsEmpty()) ||
         retry.m_Mode > xiiNetworkReconnectMode::Exponential || !ValidDuration(retry.m_InitialDelay) || !ValidDuration(retry.m_MaximumDelay) ||
@@ -351,17 +361,18 @@ xiiNetworkError xiiNetworkHost::OpenChannel(xiiNetworkConnection handle, const x
       runtime.ReleaseEvents(1);
       return HostError(xiiNetworkErrorCode::Backpressure);
     }
-    channel.m_uiReservedEvents      = 2;
-    channel.m_uiId                  = (++channel.m_uiGeneration << 16) | uiSlot;
-    channel.m_Configuration         = configuration;
-    channel.m_Statistics            = {};
-    channel.m_uiNextSendSequence    = 1;
-    channel.m_uiLastReceiveSequence = 0;
-    channel.m_State                 = ChannelState::Opening;
-    channel.m_bLocal                = true;
-    channel.m_Deadline              = xiiTime::Now() + runtime.m_Configuration.m_HandshakeTimeout;
-    channel.m_bHasPeerFinalSequence = false;
-    channel.m_pOrderedReceive       = nullptr;
+    channel.m_uiReservedEvents        = 2;
+    channel.m_uiId                    = (++channel.m_uiGeneration << 16) | uiSlot;
+    channel.m_Configuration           = configuration;
+    channel.m_Statistics              = {};
+    channel.m_uiNextSendSequence      = 1;
+    channel.m_uiLastReceiveSequence   = 0;
+    channel.m_State                   = ChannelState::Opening;
+    channel.m_bLocal                  = true;
+    channel.m_Deadline                = xiiTime::Now() + runtime.m_Configuration.m_HandshakeTimeout;
+    channel.m_bHasPeerFinalSequence   = false;
+    channel.m_pOrderedReceive         = nullptr;
+    channel.m_bOrderedReceiveFinished = false;
     channel.m_bCloseReceived = channel.m_bCloseSent = channel.m_bCloseAcknowledged = false;
     channel.m_bNeedsControl                                                        = true;
     out_channel                                                                    = {handle, channel.m_uiId, pPeer->m_uiAttempt};

@@ -3,62 +3,14 @@
 #include <FoundationTest/FoundationTestPCH.h>
 
 #include <Foundation/Network/NetworkHost.h>
+#include <Foundation/Network/UdpSocket.h>
 #include <Foundation/Time/Time.h>
+#include <FoundationTest/Network/Implementation/NetworkHostTestUtilities.h>
 #include <FoundationTest/Network/Implementation/NetworkSecurityTestUtilities.h>
 #include <cstring>
 #include <utility>
 
-namespace
-{
-  bool HostTestEvent(xiiNetworkHost& host, xiiNetworkEventType type, xiiNetworkEvent& out_event)
-  {
-    const auto deadline = xiiTime::Now() + xiiTime::MakeFromSeconds(5);
-    for (xiiUInt32 uiCount = 0; uiCount < 1000; ++uiCount)
-    {
-      const auto remaining = deadline - xiiTime::Now();
-      if (remaining.IsNegative())
-      {
-        break;
-      }
-      const auto error = host.WaitForEvent(out_event, remaining);
-      if (!XII_TEST_BOOL_MSG(error.Succeeded(), "Wait %u: %s", static_cast<unsigned>(type), error.GetCodeName()))
-      {
-        return false;
-      }
-      if (out_event.m_Type == type)
-      {
-        return true;
-      }
-      if (out_event.m_Type == xiiNetworkEventType::Closed)
-      {
-        XII_TEST_BOOL_MSG(false, "Unexpected close: %s (%d)", out_event.m_Error.GetCodeName(), out_event.m_Error.m_iNativeCode);
-        return false;
-      }
-    }
-    return XII_TEST_BOOL(false);
-  }
-
-  xiiNetworkHostConfiguration HostTestConfiguration(xiiNetworkTransportType type)
-  {
-    xiiNetworkHostConfiguration configuration;
-    configuration.m_Transport                      = type;
-    configuration.m_uiMaximumConnections           = 8;
-    configuration.m_uiMaximumChannelsPerConnection = 8;
-    configuration.m_uiMaximumQueuedMessages        = 64;
-    configuration.m_uiMaximumQueuedEvents          = 128;
-    configuration.m_uiMaximumSessions              = 16;
-    configuration.m_IO.m_uiWorkerThreadCount       = 1;
-    configuration.m_IO.m_uiResolverThreadCount     = 1;
-    configuration.m_HandshakeTimeout               = xiiTime::MakeFromSeconds(3);
-    configuration.m_CloseTimeout                   = xiiTime::MakeFromMilliseconds(500);
-    if (type == xiiNetworkTransportType::Tcp || type == xiiNetworkTransportType::NativeUdp)
-    {
-      configuration.m_Authentication            = xiiNetworkAuthenticationPolicy::AnonymousDevelopment;
-      configuration.m_bAllowInsecureDevelopment = true;
-    }
-    return configuration;
-  }
-} // namespace
+using namespace xiiNetworkHostTestUtilities;
 
 XII_CREATE_SIMPLE_TEST(NetworkTransport, HostReliableMessaging)
 {
@@ -258,38 +210,108 @@ XII_CREATE_SIMPLE_TEST(NetworkTransport, HostAuthenticationAndSessionRecovery)
   {
     return;
   }
-  auto serverConfiguration                     = HostTestConfiguration(xiiNetworkTransportType::TlsTcp);
-  auto clientConfiguration                     = HostTestConfiguration(xiiNetworkTransportType::TlsTcp);
-  serverConfiguration.m_bEnableSessionRecovery = clientConfiguration.m_bEnableSessionRecovery = true;
-  serverConfiguration.m_Authentication = clientConfiguration.m_Authentication = xiiNetworkAuthenticationPolicy::Application;
-  serverConfiguration.m_pCredentials                                          = XII_DEFAULT_NEW(xiiNetworkCredentials);
-  clientConfiguration.m_pCredentials                                          = XII_DEFAULT_NEW(xiiNetworkCredentials);
-  if (!XII_TEST_BOOL(serverConfiguration.m_pCredentials->Load(files.Configuration()).Succeeded()) ||
-      !XII_TEST_BOOL(clientConfiguration.m_pCredentials->Load(files.Configuration("client")).Succeeded()))
+  for (const auto type : {xiiNetworkTransportType::TlsTcp, xiiNetworkTransportType::SecureDatagram})
   {
-    return;
-  }
-  xiiNetworkHost server;
-  xiiNetworkHost client;
-  if (!XII_TEST_BOOL(server.Start(serverConfiguration).Succeeded()) || !XII_TEST_BOOL(client.Start(clientConfiguration).Succeeded()))
-  {
-    return;
-  }
-  xiiNetworkListener listener;
-  xiiNetworkEndpoint endpoint;
-  XII_TEST_BOOL(server.Listen({xiiNetworkAddress::MakeLoopback(xiiNetworkAddressFamily::Ipv4), 0}, listener).Succeeded());
-  XII_TEST_BOOL(server.GetLocalEndpoint(listener, endpoint).Succeeded());
-  xiiNetworkConnectOptions options;
-  options.m_sServerName          = "localhost";
-  options.m_pAuthentication      = XII_DEFAULT_NEW(xiiNetworkAuthenticationData);
-  const xiiUInt8 uiCredentials[] = {1, 2, 3, 4};
-  XII_TEST_BOOL(options.m_pAuthentication->Initialize(uiCredentials).Succeeded());
-  xiiNetworkConnection                  connection;
-  xiiSharedPtr<xiiNetworkSessionTicket> pTicket;
-  xiiUuid                               firstSession;
-  xiiNetworkChannel                     oldChannel;
-  for (xiiUInt32 uiAttempt = 0; uiAttempt < 2; ++uiAttempt)
-  {
+    auto serverConfiguration = HostTestConfiguration(type);
+    auto clientConfiguration = HostTestConfiguration(type);
+    if (type == xiiNetworkTransportType::SecureDatagram)
+    {
+      serverConfiguration.m_IdleTimeout = clientConfiguration.m_IdleTimeout = xiiTime::MakeFromMilliseconds(750);
+    }
+    serverConfiguration.m_bEnableSessionRecovery = clientConfiguration.m_bEnableSessionRecovery = true;
+    serverConfiguration.m_Authentication = clientConfiguration.m_Authentication = xiiNetworkAuthenticationPolicy::Application;
+    serverConfiguration.m_pCredentials                                          = XII_DEFAULT_NEW(xiiNetworkCredentials);
+    clientConfiguration.m_pCredentials                                          = XII_DEFAULT_NEW(xiiNetworkCredentials);
+    if (!XII_TEST_BOOL(serverConfiguration.m_pCredentials->Load(files.Configuration()).Succeeded()) ||
+        !XII_TEST_BOOL(clientConfiguration.m_pCredentials->Load(files.Configuration("client")).Succeeded()))
+    {
+      return;
+    }
+    xiiNetworkHost server;
+    xiiNetworkHost client;
+    if (!XII_TEST_BOOL(server.Start(serverConfiguration).Succeeded()) || !XII_TEST_BOOL(client.Start(clientConfiguration).Succeeded()))
+    {
+      return;
+    }
+    xiiNetworkListener listener;
+    xiiNetworkEndpoint endpoint;
+    XII_TEST_BOOL(server.Listen({xiiNetworkAddress::MakeLoopback(xiiNetworkAddressFamily::Ipv4), 0}, listener).Succeeded());
+    XII_TEST_BOOL(server.GetLocalEndpoint(listener, endpoint).Succeeded());
+    xiiNetworkConnectOptions options;
+    options.m_sServerName          = "localhost";
+    options.m_pAuthentication      = XII_DEFAULT_NEW(xiiNetworkAuthenticationData);
+    const xiiUInt8 uiCredentials[] = {1, 2, 3, 4};
+    XII_TEST_BOOL(options.m_pAuthentication->Initialize(uiCredentials).Succeeded());
+    xiiNetworkConnection                  connection;
+    xiiSharedPtr<xiiNetworkSessionTicket> pTicket;
+    xiiUuid                               firstSession;
+    xiiNetworkChannel                     oldChannel;
+    for (xiiUInt32 uiAttempt = 0; uiAttempt < 2; ++uiAttempt)
+    {
+      if (!XII_TEST_BOOL(client.Connect(endpoint, options, connection).Succeeded()))
+      {
+        return;
+      }
+      xiiNetworkEvent event;
+      if (!HostTestEvent(server, xiiNetworkEventType::AuthenticationRequired, event))
+      {
+        return;
+      }
+      XII_TEST_BOOL(event.m_pAuthentication != nullptr);
+      XII_TEST_BOOL(event.m_pAuthentication->GetBytes() == xiiArrayPtr<const xiiUInt8>(uiCredentials));
+      const auto               serverConnection = event.m_Connection;
+      xiiNetworkConnectionInfo info;
+      XII_TEST_BOOL(server.GetConnectionInfo(serverConnection, info).Succeeded());
+      XII_TEST_BOOL(info.m_State == xiiNetworkConnectionState::Authenticating);
+      xiiNetworkAuthorization authorization;
+      authorization.m_sIdentity        = "test-account";
+      authorization.m_bMayOpenChannels = false;
+      if (!XII_TEST_BOOL(server.Authorize(serverConnection, authorization, true).Succeeded()))
+      {
+        return;
+      }
+      if (!HostTestEvent(server, xiiNetworkEventType::Connected, event) || !HostTestEvent(client, xiiNetworkEventType::Connected, event))
+      {
+        return;
+      }
+      if (!XII_TEST_BOOL(event.m_pSessionTicket != nullptr && event.m_pSessionTicket->IsValid()))
+      {
+        return;
+      }
+      pTicket = event.m_pSessionTicket;
+      XII_TEST_BOOL(client.GetConnectionInfo(connection, info).Succeeded());
+      XII_TEST_BOOL(info.m_bSessionResumed == (uiAttempt != 0));
+      if (uiAttempt == 0)
+      {
+        firstSession = info.m_Session;
+      }
+      else
+      {
+        XII_TEST_BOOL(info.m_Session == firstSession);
+      }
+      xiiNetworkChannel channel;
+      XII_TEST_BOOL(client.GetDefaultChannel(connection, channel).Succeeded());
+      if (uiAttempt == 0)
+      {
+        oldChannel = channel;
+      }
+      else
+      {
+        xiiNetworkMessage message;
+        XII_TEST_BOOL(client.Send(oldChannel, xiiArrayPtr<const xiiUInt8>(), message).m_Code == xiiNetworkErrorCode::InvalidHandle);
+      }
+      xiiNetworkChannelConfiguration channelConfiguration;
+      XII_TEST_BOOL(client.OpenChannel(connection, channelConfiguration, channel).m_Code == xiiNetworkErrorCode::PermissionDenied);
+      options.m_pSessionTicket = pTicket;
+      // Abort the native stream to exercise recovery rather than authenticated logout.
+      XII_TEST_BOOL(client.Disconnect(connection, false).Succeeded());
+      if (!HostTestEvent(client, xiiNetworkEventType::Closed, event) || !HostTestEvent(server, xiiNetworkEventType::Closed, event))
+      {
+        return;
+      }
+    }
+    XII_TEST_BOOL(server.RevokeSession(firstSession).Succeeded());
+    XII_TEST_BOOL(server.RevokeSession(firstSession).m_Code == xiiNetworkErrorCode::SessionExpired);
     if (!XII_TEST_BOOL(client.Connect(endpoint, options, connection).Succeeded()))
     {
       return;
@@ -299,79 +321,16 @@ XII_CREATE_SIMPLE_TEST(NetworkTransport, HostAuthenticationAndSessionRecovery)
     {
       return;
     }
-    XII_TEST_BOOL(event.m_pAuthentication != nullptr);
-    XII_TEST_BOOL(event.m_pAuthentication->GetBytes() == xiiArrayPtr<const xiiUInt8>(uiCredentials));
-    const auto               serverConnection = event.m_Connection;
-    xiiNetworkConnectionInfo info;
-    XII_TEST_BOOL(server.GetConnectionInfo(serverConnection, info).Succeeded());
-    XII_TEST_BOOL(info.m_State == xiiNetworkConnectionState::Authenticating);
     xiiNetworkAuthorization authorization;
-    authorization.m_sIdentity        = "test-account";
-    authorization.m_bMayOpenChannels = false;
-    if (!XII_TEST_BOOL(server.Authorize(serverConnection, authorization, true).Succeeded()))
+    authorization.m_sIdentity = "test-account";
+    XII_TEST_BOOL(server.Authorize(event.m_Connection, authorization, true).Succeeded());
+    if (!HostTestEvent(server, xiiNetworkEventType::Closed, event))
     {
       return;
     }
-    if (!HostTestEvent(server, xiiNetworkEventType::Connected, event) || !HostTestEvent(client, xiiNetworkEventType::Connected, event))
-    {
-      return;
-    }
-    if (!XII_TEST_BOOL(event.m_pSessionTicket != nullptr && event.m_pSessionTicket->IsValid()))
-    {
-      return;
-    }
-    pTicket = event.m_pSessionTicket;
-    XII_TEST_BOOL(client.GetConnectionInfo(connection, info).Succeeded());
-    XII_TEST_BOOL(info.m_bSessionResumed == (uiAttempt != 0));
-    if (uiAttempt == 0)
-    {
-      firstSession = info.m_Session;
-    }
-    else
-    {
-      XII_TEST_BOOL(info.m_Session == firstSession);
-    }
-    xiiNetworkChannel channel;
-    XII_TEST_BOOL(client.GetDefaultChannel(connection, channel).Succeeded());
-    if (uiAttempt == 0)
-    {
-      oldChannel = channel;
-    }
-    else
-    {
-      xiiNetworkMessage message;
-      XII_TEST_BOOL(client.Send(oldChannel, xiiArrayPtr<const xiiUInt8>(), message).m_Code == xiiNetworkErrorCode::InvalidHandle);
-    }
-    xiiNetworkChannelConfiguration channelConfiguration;
-    XII_TEST_BOOL(client.OpenChannel(connection, channelConfiguration, channel).m_Code == xiiNetworkErrorCode::PermissionDenied);
-    options.m_pSessionTicket = pTicket;
-    // Abort the native stream to exercise recovery rather than authenticated logout.
-    XII_TEST_BOOL(client.Disconnect(connection, false).Succeeded());
-    if (!HostTestEvent(client, xiiNetworkEventType::Closed, event) || !HostTestEvent(server, xiiNetworkEventType::Closed, event))
-    {
-      return;
-    }
+    XII_TEST_BOOL(event.m_Error.m_Code == xiiNetworkErrorCode::SessionExpired);
+    XII_TEST_BOOL(HostTestEvent(client, xiiNetworkEventType::Closed, event));
   }
-  XII_TEST_BOOL(server.RevokeSession(firstSession).Succeeded());
-  XII_TEST_BOOL(server.RevokeSession(firstSession).m_Code == xiiNetworkErrorCode::SessionExpired);
-  if (!XII_TEST_BOOL(client.Connect(endpoint, options, connection).Succeeded()))
-  {
-    return;
-  }
-  xiiNetworkEvent event;
-  if (!HostTestEvent(server, xiiNetworkEventType::AuthenticationRequired, event))
-  {
-    return;
-  }
-  xiiNetworkAuthorization authorization;
-  authorization.m_sIdentity = "test-account";
-  XII_TEST_BOOL(server.Authorize(event.m_Connection, authorization, true).Succeeded());
-  if (!HostTestEvent(server, xiiNetworkEventType::Closed, event))
-  {
-    return;
-  }
-  XII_TEST_BOOL(event.m_Error.m_Code == xiiNetworkErrorCode::SessionExpired);
-  XII_TEST_BOOL(HostTestEvent(client, xiiNetworkEventType::Closed, event));
 }
 
 XII_CREATE_SIMPLE_TEST(NetworkTransport, HostChannelAuthorizationTimeout)
@@ -564,5 +523,248 @@ XII_CREATE_SIMPLE_TEST(NetworkTransport, HostQuicDeliveryModes)
       !HostTestEvent(server, xiiNetworkEventType::Closed, event))
   {
     return;
+  }
+}
+
+XII_CREATE_SIMPLE_TEST(NetworkTransport, HostQuicRejectsUnverifiedPeers)
+{
+  NetworkSecurityTestCertificates files;
+  NetworkSecurityTestCertificates untrusted;
+  if (!XII_TEST_BOOL(files.Initialize().Succeeded()) || !XII_TEST_BOOL(untrusted.Initialize().Succeeded()))
+  {
+    return;
+  }
+  auto serverConfiguration           = HostTestConfiguration(xiiNetworkTransportType::SecureDatagram);
+  serverConfiguration.m_pCredentials = XII_DEFAULT_NEW(xiiNetworkCredentials);
+  if (!XII_TEST_BOOL(serverConfiguration.m_pCredentials->Load(files.Configuration()).Succeeded()))
+  {
+    return;
+  }
+  xiiNetworkHost server;
+  if (!XII_TEST_BOOL(server.Start(serverConfiguration).Succeeded()))
+  {
+    return;
+  }
+  xiiNetworkListener listener;
+  xiiNetworkEndpoint endpoint;
+  if (!XII_TEST_BOOL(server.Listen({xiiNetworkAddress::MakeLoopback(xiiNetworkAddressFamily::Ipv4), 0}, listener).Succeeded()) ||
+      !XII_TEST_BOOL(server.GetLocalEndpoint(listener, endpoint).Succeeded()))
+  {
+    return;
+  }
+
+  for (xiiUInt32 uiCase = 0; uiCase < 3; ++uiCase)
+  {
+    auto clientConfiguration = HostTestConfiguration(xiiNetworkTransportType::SecureDatagram);
+    auto security            = files.Configuration(uiCase == 2 ? "" : "client");
+    if (uiCase == 1)
+    {
+      security.m_sTrustAnchorsFile = untrusted.Configuration().m_sTrustAnchorsFile;
+    }
+    clientConfiguration.m_pCredentials = XII_DEFAULT_NEW(xiiNetworkCredentials);
+    xiiNetworkHost client;
+    if (!XII_TEST_BOOL(clientConfiguration.m_pCredentials->Load(security).Succeeded()) ||
+        !XII_TEST_BOOL(client.Start(clientConfiguration).Succeeded()))
+    {
+      return;
+    }
+    xiiNetworkConnectOptions options;
+    options.m_sServerName = uiCase == 0 ? "unmatched.invalid" : "localhost";
+    xiiNetworkConnection connection;
+    if (!XII_TEST_BOOL(client.Connect(endpoint, options, connection).Succeeded()))
+    {
+      return;
+    }
+    xiiNetworkEvent event;
+    if (!HostTestEvent(client, xiiNetworkEventType::Closed, event))
+    {
+      return;
+    }
+    if (uiCase == 0)
+    {
+      XII_TEST_BOOL(event.m_Error.m_Code == xiiNetworkErrorCode::HostnameMismatch);
+    }
+    if (uiCase == 1)
+    {
+      XII_TEST_BOOL(event.m_Error.m_Code == xiiNetworkErrorCode::CertificateUntrusted);
+    }
+    if (!HostTestEvent(server, xiiNetworkEventType::Closed, event))
+    {
+      return;
+    }
+    if (uiCase == 2)
+    {
+      XII_TEST_BOOL(event.m_Error.m_Code == xiiNetworkErrorCode::CertificateUntrusted);
+    }
+    XII_TEST_INT(client.GetStatistics().m_uiConnectionsEstablished, 0);
+  }
+  XII_TEST_INT(server.GetStatistics().m_uiConnectionsEstablished, 0);
+}
+
+XII_CREATE_SIMPLE_TEST(NetworkTransport, HostReconnectionAndBackpressure)
+{
+  auto configuration                      = HostTestConfiguration(xiiNetworkTransportType::Tcp);
+  configuration.m_uiMaximumQueuedMessages = 1;
+  xiiNetworkHost client;
+  xiiNetworkHost server;
+  if (!XII_TEST_BOOL(client.Start(configuration).Succeeded()) || !XII_TEST_BOOL(server.Start(configuration).Succeeded()))
+  {
+    return;
+  }
+  xiiNetworkListener listener;
+  xiiNetworkEndpoint endpoint;
+  if (!XII_TEST_BOOL(server.Listen({xiiNetworkAddress::MakeLoopback(xiiNetworkAddressFamily::Ipv4), 0}, listener).Succeeded()) ||
+      !XII_TEST_BOOL(server.GetLocalEndpoint(listener, endpoint).Succeeded()))
+  {
+    return;
+  }
+  xiiNetworkConnectOptions options;
+  options.m_Reconnect.m_Mode            = xiiNetworkReconnectMode::Fixed;
+  options.m_Reconnect.m_fJitterFraction = 0;
+  options.m_Reconnect.m_InitialDelay    = xiiTime::MakeFromMilliseconds(20);
+  xiiNetworkConnection connection;
+  if (!XII_TEST_BOOL(client.Connect(endpoint, options, connection).Succeeded()))
+  {
+    return;
+  }
+  xiiNetworkEvent event;
+  if (!HostTestEvent(server, xiiNetworkEventType::Connected, event))
+  {
+    return;
+  }
+  const auto serverConnection = event.m_Connection;
+  if (!HostTestEvent(client, xiiNetworkEventType::Connected, event))
+  {
+    return;
+  }
+  xiiNetworkChannel oldChannel;
+  if (!XII_TEST_BOOL(client.GetDefaultChannel(connection, oldChannel).Succeeded()))
+  {
+    return;
+  }
+  const xiiUInt8    uiPayload[] = {255, 0, 17};
+  xiiNetworkMessage first;
+  if (!XII_TEST_BOOL(client.Send(oldChannel, uiPayload, first).Succeeded()))
+  {
+    return;
+  }
+  xiiNetworkIOBuffer leased;
+  if (!XII_TEST_BOOL(client.AcquireBuffer(3, leased).Succeeded()))
+  {
+    return;
+  }
+  xiiNetworkMessage rejected;
+  XII_TEST_BOOL(client.Send(oldChannel, std::move(leased), rejected).m_Code == xiiNetworkErrorCode::Backpressure);
+  XII_TEST_BOOL(leased.IsValid());
+  if (!HostTestEvent(client, xiiNetworkEventType::MessageSent, event) ||
+      !HostTestEvent(server, xiiNetworkEventType::Message, event))
+  {
+    return;
+  }
+  XII_TEST_INT(client.GetStatistics().m_uiMessagesSent, 1);
+
+  if (!XII_TEST_BOOL(server.Disconnect(serverConnection, false).Succeeded()) ||
+      !HostTestEvent(server, xiiNetworkEventType::Closed, event) ||
+      !HostTestEvent(client, xiiNetworkEventType::ReconnectScheduled, event) ||
+      !HostTestEvent(server, xiiNetworkEventType::Connected, event) ||
+      !HostTestEvent(client, xiiNetworkEventType::Connected, event))
+  {
+    return;
+  }
+  XII_TEST_BOOL(event.m_Connection == connection);
+  XII_TEST_BOOL(client.Send(oldChannel, uiPayload, rejected).m_Code == xiiNetworkErrorCode::InvalidHandle);
+  xiiNetworkChannel newChannel;
+  XII_TEST_BOOL(client.GetDefaultChannel(connection, newChannel).Succeeded());
+  XII_TEST_BOOL(newChannel != oldChannel);
+  XII_TEST_INT(client.GetStatistics().m_uiConnectionsEstablished, 2);
+  XII_TEST_BOOL(server.WaitForEvent(event, xiiTime::MakeFromMilliseconds(30)).m_Code == xiiNetworkErrorCode::TimedOut);
+}
+
+XII_CREATE_SIMPLE_TEST(NetworkTransport, HostQuicIpv6AndProtocolMismatch)
+{
+  const xiiNetworkEndpoint loopback(xiiNetworkAddress::MakeLoopback(xiiNetworkAddressFamily::Ipv6), 0);
+  xiiUdpSocket             probe;
+  auto                     probeError = probe.Open(xiiNetworkAddressFamily::Ipv6);
+  if (probeError.Succeeded())
+  {
+    probeError = probe.Bind(loopback);
+  }
+  if (probeError.m_Code == xiiNetworkErrorCode::UnsupportedAddressFamily || probeError.m_Code == xiiNetworkErrorCode::AddressNotAvailable)
+  {
+    xiiTestFramework::Output(xiiTestOutput::Warning, "Skipped QUIC IPv6 loopback: %s (%d).", probeError.GetCodeName(), probeError.m_iNativeCode);
+    return;
+  }
+  if (!XII_TEST_BOOL(probeError.Succeeded()))
+  {
+    return;
+  }
+  NetworkSecurityTestCertificates files;
+  if (!XII_TEST_BOOL(files.Initialize().Succeeded()))
+  {
+    return;
+  }
+  auto serverConfiguration           = HostTestConfiguration(xiiNetworkTransportType::SecureDatagram);
+  auto clientConfiguration           = serverConfiguration;
+  serverConfiguration.m_pCredentials = XII_DEFAULT_NEW(xiiNetworkCredentials);
+  clientConfiguration.m_pCredentials = XII_DEFAULT_NEW(xiiNetworkCredentials);
+  if (!XII_TEST_BOOL(serverConfiguration.m_pCredentials->Load(files.Configuration()).Succeeded()) ||
+      !XII_TEST_BOOL(clientConfiguration.m_pCredentials->Load(files.Configuration("client")).Succeeded()))
+  {
+    return;
+  }
+  serverConfiguration.m_uiSupportedFeatures = 1;
+  serverConfiguration.m_uiRequiredFeatures  = 1;
+  xiiNetworkHost server;
+  if (!XII_TEST_BOOL(server.Start(serverConfiguration).Succeeded()))
+  {
+    return;
+  }
+  xiiNetworkListener listener;
+  xiiNetworkEndpoint endpoint;
+  if (!XII_TEST_BOOL(server.Listen(loopback, listener).Succeeded()) ||
+      !XII_TEST_BOOL(server.GetLocalEndpoint(listener, endpoint).Succeeded()))
+  {
+    return;
+  }
+  xiiNetworkConnectOptions options;
+  options.m_sServerName = "::1";
+  for (const bool bCompatible : {false, true})
+  {
+    clientConfiguration.m_uiSupportedFeatures = bCompatible ? 1 : 0;
+    xiiNetworkHost       client;
+    xiiNetworkConnection connection;
+    if (!XII_TEST_BOOL(client.Start(clientConfiguration).Succeeded()) ||
+        !XII_TEST_BOOL(client.Connect(endpoint, options, connection).Succeeded()))
+    {
+      return;
+    }
+    xiiNetworkEvent event;
+    if (bCompatible)
+    {
+      if (!HostTestEvent(client, xiiNetworkEventType::Connected, event) ||
+          !HostTestEvent(server, xiiNetworkEventType::Connected, event))
+      {
+        return;
+      }
+      xiiNetworkConnectionInfo info;
+      XII_TEST_BOOL(client.GetConnectionInfo(connection, info).Succeeded());
+      XII_TEST_BOOL(info.m_RemoteEndpoint == endpoint);
+      XII_TEST_INT(info.m_uiNegotiatedFeatures, 1);
+      xiiNetworkCertificate certificate;
+      XII_TEST_BOOL(client.GetPeerCertificate(connection, certificate).Succeeded());
+    }
+    else
+    {
+      if (!HostTestEvent(client, xiiNetworkEventType::Closed, event))
+      {
+        return;
+      }
+      XII_TEST_BOOL(event.m_Error.m_Code == xiiNetworkErrorCode::ProtocolMismatch);
+      if (!HostTestEvent(server, xiiNetworkEventType::Closed, event))
+      {
+        return;
+      }
+      XII_TEST_BOOL(event.m_Error.m_Code == xiiNetworkErrorCode::ProtocolMismatch);
+    }
   }
 }

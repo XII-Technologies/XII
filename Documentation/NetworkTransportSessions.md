@@ -93,3 +93,17 @@ QUIC channel closure exchanges final send sequences to drain reliable traffic ac
 The QUIC host supports IPv4 and IPv6 listeners with separate explicit binds. It reports `UnsupportedCapability` for a requested IPv6 dual-stack listener. QUIC hosts support at most 1,024 configured channels per connection. The provider uses a bounded number of unordered stream slots and bounded receive windows. Hosts can coexist with different transport types, protocol identifiers, credentials and resource limits. Credential rotation affects new connections, and a running QUIC host keeps its initial ALPN.
 
 `GetStatistics` reports occupancy, active listeners, connections, sessions and channels, completed traffic, failure categories, receive drops and M2 buffer pool metrics. `GetConnectionInfo` exposes establishment time, terminal error and per-peer traffic. Native QUIC samples report congestion window, RTT, packet loss and reordering. Use `GetPeerCertificate` for the verified identity snapshot. `m_Tcp` controls the TCP socket options, and the host and peer token buckets can also limit native UDP sends.
+
+## Focused validation and benchmarks
+
+Build `FoundationTest` with the Clang Debug preset. Run the networking suites with `FoundationTest -noGui -all -noSave -assert 0 -filter Network`. The `NetworkTransport` suite covers incremental framing, a deterministic malformed frame corpus, trust and identity failures, TLS tickets, session recovery and revocation, reconnects, queue exhaustion, all QUIC delivery modes, IPv6 negotiation and shutdown. The QUIC relay test drops every thirteenth client packet, reorders selected packets and duplicates every seventeenth forwarded packet in its fault phase. It checks the complete payload and provider loss and congestion metrics.
+
+Enable `-networkTransportBenchmark` for the bounded loopback workload. An x86-64 Fedora Linux 45 run on an Intel Core i7-12700H with Clang 23.1.5 Debug used two hosts, 32 simultaneous peers, one M2 worker and one resolver per host. Each throughput sample moved 4 MiB in 16 KiB messages with payload validation and batches of 32. The four-channel sample alternated messages across independent logical channels. The TLS and QUIC samples used mutual certificate authentication.
+
+| Transport | Establishments/s | One channel MiB/s | Four channels MiB/s | Mean 64-byte echo RTT | Closures/s | Incremental server buffer pool bytes/peer | Process CPU and elapsed time |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| TCP | 10,632 | 785 | 881 | 85 µs | 27,734 | 16,512 | 0.040 s and 0.017 s |
+| TLS | 1,327 | 195 | 248 | 122 µs | 17,335 | 23,144 | 0.153 s and 0.067 s |
+| QUIC | 720 | 93 | 589 | 59 µs | 9,237 | 488 | 0.089 s and 0.100 s |
+
+These are single debug loopback samples. Pool bytes measure the M2 allocator delta and exclude provider, process and kernel allocations. The benchmark checks host capacity at 32 peers. The backpressure regression separately verifies send-slot exhaustion and ownership preservation. WAN capacity, tail latency and cross-OS peer interoperability require separate measurements.

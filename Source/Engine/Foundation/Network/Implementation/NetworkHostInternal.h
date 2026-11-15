@@ -81,15 +81,16 @@ namespace xiiNetworkHostInternal
     xiiUInt64                      m_uiLastReceiveSequence = 0;
     xiiUInt64                      m_uiPeerFinalSequence   = 0;
     xiiTime                        m_Deadline;
-    xiiNetworkReceiveState*        m_pOrderedReceive       = nullptr;
-    bool                           m_bHasPeerFinalSequence = false;
-    xiiUInt32                      m_uiReservedEvents      = 0;
-    bool                           m_bLocal                = false;
-    bool                           m_bCloseReceived        = false;
-    bool                           m_bCloseSent            = false;
-    bool                           m_bCloseAcknowledged    = false;
-    bool                           m_bNeedsControl         = false;
-    bool                           m_bAccept               = false;
+    xiiNetworkReceiveState*        m_pOrderedReceive         = nullptr;
+    bool                           m_bOrderedReceiveFinished = false;
+    bool                           m_bHasPeerFinalSequence   = false;
+    xiiUInt32                      m_uiReservedEvents        = 0;
+    bool                           m_bLocal                  = false;
+    bool                           m_bCloseReceived          = false;
+    bool                           m_bCloseSent              = false;
+    bool                           m_bCloseAcknowledged      = false;
+    bool                           m_bNeedsControl           = false;
+    bool                           m_bAccept                 = false;
   };
 
   struct Outbound

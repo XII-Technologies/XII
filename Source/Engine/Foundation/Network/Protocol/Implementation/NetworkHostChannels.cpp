@@ -178,6 +178,7 @@ void xiiNetworkHostRuntime::ProcessChannelFrame(Peer& peer, xiiNetworkFrame&& fr
     channel.m_Deadline                                                             = xiiTime::Now() + m_Configuration.m_AuthenticationTimeout;
     channel.m_bHasPeerFinalSequence                                                = false;
     channel.m_pOrderedReceive                                                      = nullptr;
+    channel.m_bOrderedReceiveFinished                                              = false;
     channel.m_bAccept                                                              = !m_Configuration.m_bRequireChannelAuthorization;
     channel.m_bNeedsControl                                                        = !m_Configuration.m_bRequireChannelAuthorization;
     if (m_Configuration.m_bRequireChannelAuthorization && !ChannelEvent(peer, channel, xiiNetworkEventType::ChannelRequested))

@@ -4,6 +4,7 @@
 
 #include <Foundation/Network/Implementation/NetworkHostInternal.h>
 #include <Foundation/Network/Security/Implementation/NetworkSecurityInternal.h>
+#include <Foundation/Profiling/Profiling.h>
 #include <Foundation/Threading/Lock.h>
 #include <cmath>
 #include <cstring>
@@ -22,6 +23,12 @@ namespace
 
 void xiiNetworkHostRuntime::Run()
 {
+  if (m_Configuration.m_IO.m_bEnableProfiling)
+  {
+    xiiProfilingSystem::SetThreadName("Network Host");
+  }
+  xiiUInt32 uiPeerStart     = 0;
+  xiiUInt32 uiListenerStart = 0;
   while (true)
   {
     if (m_pQuic != nullptr)
@@ -42,8 +49,9 @@ void xiiNetworkHostRuntime::Run()
     const auto now      = xiiTime::Now();
     auto       nextWake = now + xiiTime::MakeFromHours(24);
     bool       bActive  = false;
-    for (auto& listener : m_Listeners)
+    for (xiiUInt32 uiIndex = 0; uiIndex < m_Listeners.GetCount(); ++uiIndex)
     {
+      auto& listener = m_Listeners[(uiListenerStart + uiIndex) % m_Listeners.GetCount()];
       XII_LOCK(listener.m_Mutex);
       if (!listener.m_bInUse)
       {
@@ -56,8 +64,10 @@ void xiiNetworkHostRuntime::Run()
       DriveListener(listener, now, nextWake);
       bActive |= listener.m_bInUse && !listener.m_bTerminalPublished;
     }
-    for (auto& peer : m_Peers)
+    uiListenerStart = (uiListenerStart + 1) % m_Listeners.GetCount();
+    for (xiiUInt32 uiIndex = 0; uiIndex < m_Peers.GetCount(); ++uiIndex)
     {
+      auto& peer = m_Peers[(uiPeerStart + uiIndex) % m_Peers.GetCount()];
       XII_LOCK(peer.m_Mutex);
       if (!peer.m_bInUse || peer.m_bTerminalPublished)
       {
@@ -68,9 +78,18 @@ void xiiNetworkHostRuntime::Run()
         peer.m_bCloseRequested = true;
         Close(peer, xiiNetworkError(xiiNetworkErrorCode::ShuttingDown), peer.m_bActivated);
       }
-      DrivePeer(peer, now, nextWake);
+      if (m_Configuration.m_IO.m_bEnableProfiling)
+      {
+        XII_PROFILE_SCOPE("NetworkHost.Peer");
+        DrivePeer(peer, now, nextWake);
+      }
+      else
+      {
+        DrivePeer(peer, now, nextWake);
+      }
       bActive |= !peer.m_bTerminalPublished;
     }
+    uiPeerStart = (uiPeerStart + 1) % m_Peers.GetCount();
     if (m_pQuic != nullptr)
     {
       for (auto& peer : m_Peers)
@@ -91,6 +110,10 @@ void xiiNetworkHostRuntime::Run()
     {
       m_WorkSignal.WaitForSignal(remaining);
     }
+  }
+  if (m_Configuration.m_IO.m_bEnableProfiling)
+  {
+    xiiProfilingSystem::RemoveThread();
   }
 }
 
@@ -261,7 +284,11 @@ void xiiNetworkHostRuntime::DriveInput(Peer& peer)
     }
     if (peer.m_bPeerEof)
     {
-      if (peer.m_Info.m_State == xiiNetworkConnectionState::Draining)
+      if (!peer.m_Receive.m_Decoder.IsAtFrameBoundary())
+      {
+        Close(peer, xiiNetworkError(xiiNetworkErrorCode::ProtocolViolation));
+      }
+      else if (peer.m_Info.m_State == xiiNetworkConnectionState::Draining)
       {
         Close(peer, peer.m_CloseError);
       }
@@ -330,7 +357,14 @@ void xiiNetworkHostRuntime::DriveInput(Peer& peer)
       if (read.m_Error.m_Code == xiiNetworkErrorCode::ConnectionClosed)
       {
         peer.m_bTlsClosed = true;
-        Close(peer, xiiNetworkError(xiiNetworkErrorCode::ConnectionClosed), true);
+        if (!peer.m_Receive.m_Decoder.IsAtFrameBoundary())
+        {
+          Close(peer, xiiNetworkError(xiiNetworkErrorCode::ProtocolViolation));
+        }
+        else
+        {
+          Close(peer, xiiNetworkError(xiiNetworkErrorCode::ConnectionClosed), true);
+        }
         return;
       }
       if (read.Failed() && read.m_Error.m_Code != xiiNetworkErrorCode::WouldBlock)
@@ -397,7 +431,7 @@ xiiUInt32 xiiNetworkHostRuntime::Parse(Peer& peer, xiiNetworkReceiveState& recei
         }
         if (pChannel->m_Configuration.m_Delivery == xiiNetworkDeliveryMode::ReliableOrdered)
         {
-          if (pChannel->m_pOrderedReceive != nullptr && pChannel->m_pOrderedReceive != &receive)
+          if (pChannel->m_bOrderedReceiveFinished || (pChannel->m_pOrderedReceive != nullptr && pChannel->m_pOrderedReceive != &receive))
           {
             Close(peer, xiiNetworkError(xiiNetworkErrorCode::ProtocolViolation));
             return uiOffset;

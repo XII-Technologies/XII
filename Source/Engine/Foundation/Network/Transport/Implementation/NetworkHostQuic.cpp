@@ -88,11 +88,17 @@ void xiiNetworkHostRuntime::CompleteQuic(xiiNetworkQuicEvent&& event)
         }
       }
       auto& receive = m_pQuic->GetReceiveState(*event.m_pStream);
+      if (auto* pChannel = Find(peer, {peer.m_Handle, receive.m_uiBoundChannel, peer.m_uiAttempt});
+          pChannel != nullptr && pChannel->m_pOrderedReceive == &receive)
+      {
+        pChannel->m_pOrderedReceive         = nullptr;
+        pChannel->m_bOrderedReceiveFinished = true;
+      }
       if (!peer.m_bClosing && receive.m_bRequireControlFrames)
       {
         Close(peer, xiiNetworkError(xiiNetworkErrorCode::ConnectionClosed));
       }
-      if (!peer.m_bClosing && receive.m_bRequireDataFrames && receive.m_Decoder.GetState() != xiiNetworkFrameDecodeState::Header)
+      if (!peer.m_bClosing && receive.m_bRequireDataFrames && !receive.m_Decoder.IsAtFrameBoundary())
       {
         Close(peer, xiiNetworkError(xiiNetworkErrorCode::ProtocolViolation));
       }
@@ -212,7 +218,7 @@ bool xiiNetworkHostRuntime::ReceiveQuic(Peer& peer, xiiNetworkQuicEvent& event)
     }
     ++event.m_uiSpanIndex;
   }
-  if (event.m_bFin && !peer.m_bClosing && (receive.m_Decoder.GetState() != xiiNetworkFrameDecodeState::Header || (receive.m_bSingleFrame && receive.m_uiFrames != 1) || (receive.m_bRequireDataFrames && receive.m_uiFrames == 0)))
+  if (event.m_bFin && !peer.m_bClosing && (!receive.m_Decoder.IsAtFrameBoundary() || (receive.m_bSingleFrame && receive.m_uiFrames != 1) || (receive.m_bRequireDataFrames && receive.m_uiFrames == 0)))
   {
     Close(peer, xiiNetworkError(xiiNetworkErrorCode::ProtocolViolation));
   }
@@ -294,7 +300,8 @@ void xiiNetworkHostRuntime::DriveQuicOutput(Peer& peer, xiiTime now, xiiTime& re
     return;
   }
   xiiUInt32 uiEmpty = 0;
-  for (xiiUInt32 uiWork = 0; uiWork < 32 && uiEmpty < peer.m_uiMaximumChannels; ++uiWork)
+  xiiUInt32 uiSent  = 0;
+  while (uiSent < 32 && uiEmpty < peer.m_uiMaximumChannels)
   {
     auto&      channel    = peer.m_Channels[peer.m_uiScheduleChannel];
     const auto mode       = channel.m_Configuration.m_Delivery;
@@ -308,7 +315,7 @@ void xiiNetworkHostRuntime::DriveQuicOutput(Peer& peer, xiiTime now, xiiTime& re
         pOutbound = &outbound;
         break;
       }
-      if (mode == xiiNetworkDeliveryMode::ReliableOrdered && ++uiInFlight == 8)
+      if (mode == xiiNetworkDeliveryMode::ReliableOrdered && ++uiInFlight == 32)
       {
         break;
       }
@@ -328,7 +335,8 @@ void xiiNetworkHostRuntime::DriveQuicOutput(Peer& peer, xiiTime now, xiiTime& re
           m_SendTokens      = hostTokens;
           peer.m_SendTokens = peerTokens;
           bSent             = true;
-          uiEmpty           = 0;
+          ++uiSent;
+          uiEmpty = 0;
         }
         else if (error.m_Code != xiiNetworkErrorCode::WouldBlock)
         {

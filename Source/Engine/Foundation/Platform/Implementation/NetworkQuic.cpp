@@ -126,6 +126,16 @@ namespace
       }
       if (error.Succeeded())
       {
+        QUIC_TLS_PROVIDER provider        = {};
+        xiiUInt32         uiProviderBytes = sizeof(provider);
+        error                             = MapQuicError(s_pQuicApi->GetParam(nullptr, QUIC_PARAM_GLOBAL_TLS_PROVIDER, &uiProviderBytes, &provider));
+        if (error.Succeeded() && provider != QUIC_TLS_PROVIDER_OPENSSL)
+        {
+          error = xiiNetworkError(xiiNetworkErrorCode::InitializationFailed);
+        }
+      }
+      if (error.Succeeded())
+      {
         struct ExecutionConfiguration
         {
           QUIC_GLOBAL_EXECUTION_CONFIG_FLAGS m_Flags                = QUIC_GLOBAL_EXECUTION_CONFIG_FLAG_NO_IDEAL_PROC;
@@ -316,6 +326,7 @@ public:
   xiiUInt32                       m_uiSendLimit             = 0;
   xiiUInt32                       m_uiDatagrams             = 0;
   xiiUInt32                       m_uiFlowWindow            = 0;
+  xiiUInt32                       m_uiStreamWindow          = 0;
   xiiUInt64                       m_uiHandshakeMilliseconds = 0;
   xiiUInt64                       m_uiIdleMilliseconds      = 0;
 };
@@ -352,7 +363,7 @@ xiiNetworkError xiiNetworkQuicState::Configuration(xiiSharedPtr<xiiNetworkCreden
   settings.IsSet.ServerResumptionLevel           = true;
   settings.ServerResumptionLevel                 = QUIC_SERVER_NO_RESUME;
   settings.IsSet.StreamRecvWindowDefault         = true;
-  settings.StreamRecvWindowDefault               = 65536;
+  settings.StreamRecvWindowDefault               = m_uiStreamWindow;
   settings.IsSet.ConnFlowControlWindow           = true;
   settings.ConnFlowControlWindow                 = m_uiFlowWindow;
   settings.IsSet.HandshakeIdleTimeoutMs          = true;
@@ -371,7 +382,7 @@ xiiNetworkError xiiNetworkQuicState::Configuration(xiiSharedPtr<xiiNetworkCreden
   QUIC_CREDENTIAL_CONFIG  credentials = {};
   credentials.Type                    = identity.IsEmpty() ? QUIC_CREDENTIAL_TYPE_NONE : QUIC_CREDENTIAL_TYPE_CERTIFICATE_PKCS12;
   credentials.CertificatePkcs12       = identity.IsEmpty() ? nullptr : &pkcs12;
-  credentials.Flags                   = QUIC_CREDENTIAL_FLAG_INDICATE_CERTIFICATE_RECEIVED | QUIC_CREDENTIAL_FLAG_DEFER_CERTIFICATE_VALIDATION | QUIC_CREDENTIAL_FLAG_USE_PORTABLE_CERTIFICATES;
+  credentials.Flags                   = QUIC_CREDENTIAL_FLAG_INDICATE_CERTIFICATE_RECEIVED | QUIC_CREDENTIAL_FLAG_DEFER_CERTIFICATE_VALIDATION | QUIC_CREDENTIAL_FLAG_USE_PORTABLE_CERTIFICATES | QUIC_CREDENTIAL_FLAG_USE_TLS_BUILTIN_CERTIFICATE_VALIDATION;
   if (!bServer)
   {
     credentials.Flags |= QUIC_CREDENTIAL_FLAG_CLIENT;
@@ -754,6 +765,7 @@ xiiNetworkError xiiNetworkQuic::Start(const xiiNetworkHostConfiguration& configu
   pState->m_uiQueueLimit            = configuration.m_uiMaximumQueuedMessages + QuicDatagramQueueLimit + 2 * configuration.m_uiMaximumConnections * (2 * pState->m_uiStreamLimit + 8);
   pState->m_uiSendLimit             = xiiMath::Min(configuration.m_uiMaximumQueuedMessages, pState->m_uiStreamLimit + QuicDatagramQueueLimit) + 1;
   pState->m_uiFlowWindow            = static_cast<xiiUInt32>(xiiMath::Clamp(configuration.m_uiMaximumPeerReceiveBytes, xiiUInt64{65536}, xiiUInt64{64 * 1024 * 1024}));
+  pState->m_uiStreamWindow          = xiiMath::Min(pState->m_uiFlowWindow, 256U * 1024);
   pState->m_uiHandshakeMilliseconds = static_cast<xiiUInt64>(xiiMath::Clamp(configuration.m_HandshakeTimeout.GetMilliseconds(), 1.0, 86400000.0));
   pState->m_uiIdleMilliseconds      = static_cast<xiiUInt64>(xiiMath::Clamp(configuration.m_IdleTimeout.GetMilliseconds(), 1.0, 86400000.0));
   m_pState                          = pState.Release();

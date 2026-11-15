@@ -79,8 +79,10 @@ public:
   /// Requires an exact-count lease; ownership is preserved on failure.
   [[nodiscard]] xiiNetworkError SupplyBuffer(xiiNetworkIOBuffer&& buffer);
   /// Transfers a complete frame and resets the decoder. Output unchanged if not Ready.
-  [[nodiscard]] xiiNetworkError            TakeFrame(xiiNetworkFrame& out_frame);
-  void                                     Reset();
+  [[nodiscard]] xiiNetworkError TakeFrame(xiiNetworkFrame& out_frame);
+  void                          Reset();
+  /// True only when no partial frame prefix, header or payload remains.
+  [[nodiscard]] bool                       IsAtFrameBoundary() const { return m_State == xiiNetworkFrameDecodeState::Header && m_uiHeaderBytes == 0; }
   [[nodiscard]] xiiNetworkFrameDecodeState GetState() const { return m_State; }
   /// Header fields are valid only in NeedBuffer, Payload and Ready states.
   [[nodiscard]] const xiiNetworkFrameHeader& GetHeader() const { return m_Frame.m_Header; }

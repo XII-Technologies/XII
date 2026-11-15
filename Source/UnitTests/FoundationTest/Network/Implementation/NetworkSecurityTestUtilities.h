@@ -13,7 +13,7 @@ struct NetworkSecurityTestCertificates
   ~NetworkSecurityTestCertificates();
   NetworkSecurityTestCertificates(const NetworkSecurityTestCertificates&)            = delete;
   NetworkSecurityTestCertificates& operator=(const NetworkSecurityTestCertificates&) = delete;
-  xiiResult                        Initialize();
+  xiiResult                        Initialize(bool bIntermediate = false);
   xiiNetworkSecurityConfig         Configuration(xiiStringView sIdentity = "server") const;
   xiiString                        Path(xiiStringView sName) const;
   xiiString                        m_sDirectory;
