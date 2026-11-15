@@ -66,6 +66,16 @@ const char* xiiNetworkError::GetCodeName() const
       return "NameResolutionFailed";
     case xiiNetworkErrorCode::Unknown:
       return "Unknown";
+    case xiiNetworkErrorCode::Cancelled:
+      return "Cancelled";
+    case xiiNetworkErrorCode::Backpressure:
+      return "Backpressure";
+    case xiiNetworkErrorCode::InvalidHandle:
+      return "InvalidHandle";
+    case xiiNetworkErrorCode::ShuttingDown:
+      return "ShuttingDown";
+    case xiiNetworkErrorCode::NotRunning:
+      return "NotRunning";
   }
   return "Unknown";
 }

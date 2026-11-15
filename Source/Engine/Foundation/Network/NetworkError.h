@@ -35,7 +35,12 @@ enum class xiiNetworkErrorCode : xiiUInt8
   AlreadyConnected,
   NameNotFound,
   NameResolutionFailed,
-  Unknown
+  Unknown,
+  Cancelled,
+  Backpressure,
+  InvalidHandle,
+  ShuttingDown,
+  NotRunning
 };
 
 /// Identifies the namespace of the preserved native error code.
@@ -44,7 +49,8 @@ enum class xiiNetworkErrorDomain : xiiUInt8
   None,
   Socket,
   Resolver,
-  Initialization
+  Initialization,
+  NativeCompletion
 };
 
 /// Allocation-free result. Expected conditions (including WouldBlock and InProgress) are not success.

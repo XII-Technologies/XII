@@ -195,13 +195,13 @@ private:
   /// Removes profiling data of dead threads.
   static void Reset();
 
-  /// Sets the name of the current thread.
+public:
+  /// Registers the current native thread with the profiler. Call once on entry and pair with
+  /// RemoveThread() before exit. xiiThread performs this registration automatically.
   static void SetThreadName(xiiStringView sThreadName);
   /// Removes the current thread from the profiling system.
   ///  Needs to be called before the thread exits to be able to release profiling memory of dead threads on Reset.
   static void RemoveThread();
-
-public:
   /// Initialized internal data structures for GPU profiling data. Needs to be called before adding any data.
   static void InitializeGPUData(xiiUInt32 uiGpuCount = 1);
 

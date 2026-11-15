@@ -10,6 +10,8 @@
 #include <Foundation/Threading/ThreadUtils.h>
 #include <Foundation/Time/Time.h>
 
+#include <FoundationTest/Network/Implementation/NetworkTestUtilities.h>
+
 #include <cstring>
 #include <source_location>
 #include <type_traits>
@@ -23,10 +25,8 @@
 
 XII_CREATE_SIMPLE_TEST_GROUP(Network);
 
-namespace
+namespace xiiNetworkTestUtilities
 {
-  const xiiTime TestTimeout = xiiTime::MakeFromSeconds(3);
-
   xiiUInt32 CountOpenResources()
   {
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
@@ -54,6 +54,12 @@ namespace
     return uiCount;
 #endif
   }
+
+} // namespace xiiNetworkTestUtilities
+
+namespace
+{
+  const xiiTime TestTimeout = xiiTime::MakeFromSeconds(3);
 
   bool Check(xiiNetworkError error, const std::source_location& location = std::source_location::current())
   {
@@ -860,7 +866,7 @@ XII_CREATE_SIMPLE_TEST(Network, ResourceLifetime)
   }
   xiiDynamicArray<xiiNetworkEndpoint> endpoints;
   Check(xiiNetworkResolver::Resolve("127.0.0.1", "0", endpoints));
-  xiiUInt32 uiBefore = CountOpenResources();
+  xiiUInt32 uiBefore = xiiNetworkTestUtilities::CountOpenResources();
   if (!XII_TEST_BOOL(uiBefore != 0))
   {
     return;
@@ -899,11 +905,11 @@ XII_CREATE_SIMPLE_TEST(Network, ResourceLifetime)
     {
       // Winsock may initialize persistent provider resources on the first reset/cleanup path.
       // Two further identical batches must not grow the process handle count.
-      uiBefore = CountOpenResources();
+      uiBefore = xiiNetworkTestUtilities::CountOpenResources();
       continue;
     }
 #endif
-    XII_TEST_INT(CountOpenResources(), uiBefore);
+    XII_TEST_INT(xiiNetworkTestUtilities::CountOpenResources(), uiBefore);
   }
 }
 
