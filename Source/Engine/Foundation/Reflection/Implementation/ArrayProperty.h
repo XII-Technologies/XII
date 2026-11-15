@@ -103,8 +103,17 @@ public:
 
   void Clear(void* pInstance) const override { SetCount(pInstance, 0); }
 
+  bool CanSetCount(const void* pInstance, xiiUInt32 uiCount) const override
+  {
+    return m_Setter != nullptr && (uiCount == GetCount(pInstance) || (m_Insert != nullptr && m_Remove != nullptr));
+  }
+
   void SetCount(void* pInstance, xiiUInt32 uiCount) const override
   {
+    if (uiCount == GetCount(pInstance))
+    {
+      return;
+    }
     XII_ASSERT_DEBUG(m_Insert != nullptr && m_Remove != nullptr, "The property '{0}' has no remove and insert function, thus it is fixed-size.", xiiAbstractProperty::GetPropertyName());
 
     while (uiCount < GetCount(pInstance))
@@ -139,6 +148,40 @@ struct xiiArrayPropertyAccessor
   static ContainerType& GetContainer(Class* pInstance) { return (*pInstance).*Member; }
 };
 
+
+namespace xiiArrayPropertyDetail
+{
+  template <typename Container>
+  struct Capacity
+  {
+    static constexpr xiiUInt32 Maximum = 0;
+  };
+  template <typename T, xiiUInt32 Size>
+  struct Capacity<xiiStaticArray<T, Size>>
+  {
+    static constexpr xiiUInt32 Maximum = Size;
+  };
+  template <typename T, typename Allocator>
+  struct Capacity<xiiDynamicArray<T, Allocator>>
+  {
+    static constexpr xiiUInt32 Maximum = 0xFFFFFFFFU;
+  };
+  template <typename T, xiiUInt32 Size, typename Allocator>
+  struct Capacity<xiiHybridArray<T, Size, Allocator>>
+  {
+    static constexpr xiiUInt32 Maximum = 0xFFFFFFFFU;
+  };
+  template <typename T, xiiUInt16 Size, typename Allocator>
+  struct Capacity<xiiSmallArray<T, Size, Allocator>>
+  {
+    static constexpr xiiUInt32 Maximum = 0xFFFCU;
+  };
+  template <typename T, typename Allocator, bool Construct>
+  struct Capacity<xiiDeque<T, Allocator, Construct>>
+  {
+    static constexpr xiiUInt32 Maximum = 0xFFFFFFFFU;
+  };
+} // namespace xiiArrayPropertyDetail
 
 template <typename Class, typename Container, typename Type>
 class xiiMemberArrayProperty : public xiiTypedArrayProperty<typename xiiTypeTraits<Type>::NonConstReferenceType>
@@ -207,6 +250,11 @@ public:
     XII_ASSERT_DEBUG(m_Getter != nullptr, "The property '{0}' has no non-const array accessor function, thus it is read-only.", xiiAbstractProperty::GetPropertyName());
 
     m_Getter(static_cast<Class*>(pInstance)).SetCount(uiCount);
+  }
+
+  bool CanSetCount(const void* pInstance, xiiUInt32 uiCount) const override
+  {
+    return m_Getter != nullptr && (uiCount == GetCount(pInstance) || uiCount <= xiiArrayPropertyDetail::Capacity<Container>::Maximum);
   }
 
   void* GetValuePointer(void* pInstance, xiiUInt32 uiIndex) const override

@@ -19,6 +19,10 @@ struct NetworkSchemaChild : NetworkSchemaBase
   void                        SetValue(float fValue) { m_fValue = fValue; }
   float                       m_fValue = 3;
 };
+struct NetworkSchemaFixed
+{
+  xiiStaticArray<xiiInt32, 4> m_Values;
+};
 struct NetworkSchemaOrdinary
 {
   xiiInt32 m_iValue = 0;
@@ -41,6 +45,7 @@ struct NetworkSchemaCollisionB
   xiiInt32 m_iValue = 0;
 };
 
+XII_DECLARE_REFLECTABLE_TYPE(XII_NO_LINKAGE, NetworkSchemaFixed);
 XII_DECLARE_REFLECTABLE_TYPE(XII_NO_LINKAGE, NetworkSchemaBase);
 XII_DECLARE_REFLECTABLE_TYPE(XII_NO_LINKAGE, NetworkSchemaChild);
 XII_DECLARE_REFLECTABLE_TYPE(XII_NO_LINKAGE, NetworkSchemaOrdinary);
@@ -48,6 +53,13 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_NO_LINKAGE, NetworkSchemaBad);
 XII_DECLARE_REFLECTABLE_TYPE(XII_NO_LINKAGE, NetworkSchemaDuplicate);
 XII_DECLARE_REFLECTABLE_TYPE(XII_NO_LINKAGE, NetworkSchemaCollisionA);
 XII_DECLARE_REFLECTABLE_TYPE(XII_NO_LINKAGE, NetworkSchemaCollisionB);
+
+XII_BEGIN_STATIC_REFLECTED_TYPE(NetworkSchemaFixed, xiiNoBase, 1, xiiRTTIDefaultAllocator<NetworkSchemaFixed>)
+  {
+    XII_BEGIN_PROPERTIES
+    {XII_ARRAY_MEMBER_PROPERTY("Values", m_Values)->AddAttributes(new xiiNetworkAttribute())} XII_END_PROPERTIES;
+  }
+XII_END_STATIC_REFLECTED_TYPE;
 
 XII_BEGIN_STATIC_REFLECTED_TYPE(NetworkSchemaBase, xiiNoBase, 1, xiiRTTIDefaultAllocator<NetworkSchemaBase>)
   {
@@ -155,12 +167,9 @@ XII_CREATE_SIMPLE_TEST(NetworkReflection, DynamicSchemaLifetime)
   xiiSharedPtr<const xiiNetworkSchema> snapshot;
   registry.Invalidate();
   {
-    // A local dynamic RTTI borrows existing property metadata; no manual network registration occurs.
-    xiiDynamicArray<const xiiAbstractProperty*> properties;
-    for (const auto* pProperty : xiiGetStaticRTTI<NetworkSchemaBase>()->GetProperties())
-    {
-      properties.PushBack(pProperty);
-    }
+    // Dynamic RTTI owns its property metadata and deletes it on destruction.
+    using OwnType                                           = NetworkSchemaBase;
+    const xiiAbstractProperty*                 properties[] = {XII_MEMBER_PROPERTY("Base", m_iBase)->AddAttributes(new xiiNetworkAttribute(1))};
     xiiRTTIDefaultAllocator<NetworkSchemaBase> allocator;
     xiiRTTI                                    dynamic("NetworkSchemaDynamic", nullptr, sizeof(NetworkSchemaBase), 1, xiiVariantType::Invalid,
                                                        xiiTypeFlags::Class, &allocator, properties, {}, {}, {}, {}, nullptr);
@@ -173,4 +182,16 @@ XII_CREATE_SIMPLE_TEST(NetworkReflection, DynamicSchemaLifetime)
   XII_TEST_BOOL(registry.GetSchema(snapshot->m_uiTypeId, current).m_Code == xiiNetworkDataErrorCode::UnknownType);
   XII_TEST_STRING(snapshot->m_sTypeName, "NetworkSchemaDynamic");
   XII_TEST_INT(snapshot->m_Fields.GetCount(), 1);
+}
+
+XII_CREATE_SIMPLE_TEST(NetworkReflection, ReflectedArrayCapacity)
+{
+  NetworkSchemaFixed fixed;
+  const auto*        pFixed = static_cast<const xiiAbstractArrayProperty*>(xiiGetStaticRTTI<NetworkSchemaFixed>()->FindPropertyByName("Values"));
+  XII_TEST_BOOL(pFixed->CanSetCount(&fixed, 0));
+  XII_TEST_BOOL(pFixed->CanSetCount(&fixed, 4));
+  XII_TEST_BOOL(!pFixed->CanSetCount(&fixed, 5));
+  NetworkSchemaChild dynamic;
+  const auto*        pDynamic = static_cast<const xiiAbstractArrayProperty*>(xiiGetStaticRTTI<NetworkSchemaChild>()->FindPropertyByName("Samples"));
+  XII_TEST_BOOL(pDynamic->CanSetCount(&dynamic, 100));
 }
