@@ -313,6 +313,7 @@ xiiNetworkError xiiNetworkHostRuntime::AllocatePeer(bool bIncoming, Peer*& out_p
     peer.m_Deadline                                    = peer.m_LastActivity + m_Configuration.m_HandshakeTimeout;
     peer.m_ReconnectAt                                 = xiiTime::MakeZero();
     peer.m_QuicStatisticsAt                            = xiiTime::MakeZero();
+    peer.m_bTryNextQuicEndpoint                        = false;
     peer.m_SendTokens.Reset(m_Configuration.m_uiPeerSendBurstBytes);
     peer.m_pTls.Clear();
     peer.m_Receive.m_Decoder.Reset();

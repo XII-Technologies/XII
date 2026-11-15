@@ -164,6 +164,8 @@ namespace xiiNetworkHostInternal
     xiiNetworkQuicConnection*             m_pQuic = nullptr;
     xiiDeque<xiiNetworkQuicEvent>         m_QuicDeferred;
     xiiTime                               m_QuicStatisticsAt;
+    xiiTime                               m_QuicCandidateDeadline;
+    bool                                  m_bTryNextQuicEndpoint = false;
     xiiNetworkIOBuffer                    m_CipherInput;
     xiiUInt32                             m_uiCipherOffset = 0;
     xiiDeque<Channel>                     m_Channels;
@@ -257,6 +259,7 @@ public:
   void            ReceiveQuicDatagram(Peer& peer, xiiNetworkQuicEvent& event);
   void            DriveQuicOutput(Peer& peer, xiiTime now, xiiTime& ref_nextWake);
   void            CloseQuicPeer(Peer& peer);
+  bool            TryNextQuicEndpoint(Peer& peer, xiiNetworkError error);
   void            FinishQuicChannel(Peer& peer, Channel& channel);
   void            DrivePeer(Peer& peer, xiiTime now, xiiTime& ref_nextWake);
   void            DriveListener(Listener& listener, xiiTime now, xiiTime& ref_nextWake);

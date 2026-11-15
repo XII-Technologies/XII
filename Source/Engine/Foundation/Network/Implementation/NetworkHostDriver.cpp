@@ -139,7 +139,7 @@ void xiiNetworkHostRuntime::StartAttempt(Peer& peer)
     xiiNetworkIOOptions   options;
     options.m_uiUserData = peer.m_uiAttempt;
     options.m_Timeout    = m_Configuration.m_HandshakeTimeout;
-    const auto error     = m_IO.Resolve(peer.m_sHost, peer.m_sService, operation, xiiNetworkAddressFamily::Unspecified, xiiNetworkTransport::Tcp, options);
+    const auto error     = m_IO.Resolve(peer.m_sHost, peer.m_sService, operation, xiiNetworkAddressFamily::Unspecified, m_pQuic != nullptr ? xiiNetworkTransport::Udp : xiiNetworkTransport::Tcp, options);
     if (error.Failed())
     {
       Close(peer, error);
@@ -154,8 +154,11 @@ void xiiNetworkHostRuntime::StartAttempt(Peer& peer)
   const auto endpoint = peer.m_Endpoints[peer.m_uiEndpointIndex];
   if (m_pQuic != nullptr)
   {
-    const auto error = m_pQuic->Connect(endpoint, peer.m_Options.m_sServerName, peer.m_pCredentials, peer.m_Handle, peer.m_pQuic);
-    if (error.Failed())
+    const auto remaining         = xiiMath::Max(peer.m_Deadline - xiiTime::Now(), xiiTime::MakeZero());
+    const auto uiCandidates      = peer.m_Endpoints.GetCount() - peer.m_uiEndpointIndex;
+    peer.m_QuicCandidateDeadline = xiiTime::Now() + remaining / static_cast<double>(uiCandidates);
+    const auto error             = m_pQuic->Connect(endpoint, peer.m_Options.m_sServerName, peer.m_pCredentials, peer.m_Handle, peer.m_pQuic);
+    if (error.Failed() && !TryNextQuicEndpoint(peer, error))
     {
       Close(peer, error);
     }
@@ -570,6 +573,17 @@ void xiiNetworkHostRuntime::DrivePeer(Peer& peer, xiiTime now, xiiTime& ref_next
   }
   if (peer.m_pQuic != nullptr)
   {
+    if (peer.m_Info.m_State == xiiNetworkConnectionState::Connecting && !peer.m_bIncoming)
+    {
+      if (now >= peer.m_QuicCandidateDeadline && TryNextQuicEndpoint(peer, xiiNetworkError(xiiNetworkErrorCode::TimedOut)))
+      {
+        return;
+      }
+      if (peer.m_uiEndpointIndex + 1 < peer.m_Endpoints.GetCount())
+      {
+        ref_nextWake = xiiMath::Min(ref_nextWake, peer.m_QuicCandidateDeadline);
+      }
+    }
     const auto providerFailure = m_pQuic->GetFailure(*peer.m_pQuic);
     if (providerFailure.Failed())
     {

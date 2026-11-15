@@ -17,6 +17,7 @@
 #undef QUIC_API_ENABLE_PREVIEW_FEATURES
 
 #include <atomic>
+#include <cstddef>
 #include <cstring>
 #include <utility>
 
@@ -143,7 +144,7 @@ namespace
           xiiUInt32                          m_uiProcessorCount     = 0;
           xiiUInt16                          m_uiProcessors[2]      = {};
         } configuration;
-        static_assert(offsetof(ExecutionConfiguration, m_uiProcessors) == QUIC_GLOBAL_EXECUTION_CONFIG_MIN_SIZE);
+        static_assert(offsetof(ExecutionConfiguration, m_uiProcessors) == offsetof(QUIC_GLOBAL_EXECUTION_CONFIG, ProcessorList));
         configuration.m_uiProcessorCount = xiiNetworkQuicProcessors(configuration.m_uiProcessors);
         error                            = configuration.m_uiProcessorCount == 0 ? xiiNetworkError(xiiNetworkErrorCode::InitializationFailed) :
                                                                                    MapQuicError(s_pQuicApi->SetParam(nullptr, QUIC_PARAM_GLOBAL_EXECUTION_CONFIG, sizeof(configuration), &configuration));

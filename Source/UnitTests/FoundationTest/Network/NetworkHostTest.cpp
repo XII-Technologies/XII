@@ -3,7 +3,9 @@
 #include <FoundationTest/FoundationTestPCH.h>
 
 #include <Foundation/Network/NetworkHost.h>
+#include <Foundation/Network/NetworkResolver.h>
 #include <Foundation/Network/UdpSocket.h>
+#include <Foundation/Strings/StringBuilder.h>
 #include <Foundation/Time/Time.h>
 #include <FoundationTest/Network/Implementation/NetworkHostTestUtilities.h>
 #include <FoundationTest/Network/Implementation/NetworkSecurityTestUtilities.h>
@@ -767,4 +769,71 @@ XII_CREATE_SIMPLE_TEST(NetworkTransport, HostQuicIpv6AndProtocolMismatch)
       XII_TEST_BOOL(event.m_Error.m_Code == xiiNetworkErrorCode::ProtocolMismatch);
     }
   }
+}
+
+XII_CREATE_SIMPLE_TEST(NetworkTransport, HostQuicTriesResolvedEndpointCandidates)
+{
+  xiiDynamicArray<xiiNetworkEndpoint> candidates;
+  if (!XII_TEST_BOOL(xiiNetworkResolver::Resolve("localhost", "0", candidates, xiiNetworkAddressFamily::Unspecified, xiiNetworkTransport::Udp).Succeeded()))
+  {
+    return;
+  }
+  if (candidates.GetCount() < 2)
+  {
+    xiiTestFramework::Output(xiiTestOutput::Warning, "Skipped QUIC endpoint fallback because localhost resolves to only one address.");
+    return;
+  }
+  NetworkSecurityTestCertificates files;
+  if (!XII_TEST_BOOL(files.Initialize().Succeeded()))
+  {
+    return;
+  }
+  auto serverConfiguration           = HostTestConfiguration(xiiNetworkTransportType::SecureDatagram);
+  auto clientConfiguration           = serverConfiguration;
+  serverConfiguration.m_pCredentials = XII_DEFAULT_NEW(xiiNetworkCredentials);
+  clientConfiguration.m_pCredentials = XII_DEFAULT_NEW(xiiNetworkCredentials);
+  if (!XII_TEST_BOOL(serverConfiguration.m_pCredentials->Load(files.Configuration()).Succeeded()) ||
+      !XII_TEST_BOOL(clientConfiguration.m_pCredentials->Load(files.Configuration("client")).Succeeded()))
+  {
+    return;
+  }
+  xiiNetworkHost server;
+  xiiNetworkHost client;
+  if (!XII_TEST_BOOL(server.Start(serverConfiguration).Succeeded()) ||
+      !XII_TEST_BOOL(client.Start(clientConfiguration).Succeeded()))
+  {
+    return;
+  }
+  // Only the last DNS candidate is listening. Prior UDP candidates fail by refusal or a bounded wait.
+  xiiNetworkListener listener;
+  xiiNetworkEndpoint endpoint;
+  const auto         bindError = server.Listen(candidates.PeekBack(), listener);
+  if (bindError.m_Code == xiiNetworkErrorCode::UnsupportedAddressFamily || bindError.m_Code == xiiNetworkErrorCode::AddressNotAvailable)
+  {
+    xiiTestFramework::Output(xiiTestOutput::Warning, "Skipped QUIC endpoint fallback because the last localhost address cannot listen.");
+    return;
+  }
+  if (!XII_TEST_BOOL(bindError.Succeeded()) ||
+      !XII_TEST_BOOL(server.GetLocalEndpoint(listener, endpoint).Succeeded()))
+  {
+    return;
+  }
+  xiiStringBuilder sPort;
+  sPort.SetFormat("{}", endpoint.GetPort());
+  xiiNetworkConnectOptions options;
+  options.m_sServerName = "localhost";
+  xiiNetworkConnection connection;
+  if (!XII_TEST_BOOL(client.Connect("localhost", sPort, options, connection).Succeeded()))
+  {
+    return;
+  }
+  xiiNetworkEvent event;
+  if (!HostTestEvent(client, xiiNetworkEventType::Connected, event) ||
+      !HostTestEvent(server, xiiNetworkEventType::Connected, event))
+  {
+    return;
+  }
+  xiiNetworkConnectionInfo info;
+  XII_TEST_BOOL(client.GetConnectionInfo(connection, info).Succeeded());
+  XII_TEST_BOOL(info.m_RemoteEndpoint == endpoint);
 }

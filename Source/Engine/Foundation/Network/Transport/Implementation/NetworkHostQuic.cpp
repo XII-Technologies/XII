@@ -121,7 +121,8 @@ void xiiNetworkHostRuntime::CompleteQuic(xiiNetworkQuicEvent&& event)
   {
     case xiiNetworkQuicEventType::Certificate:
     {
-      const auto error = m_pQuic->VerifyCertificate(connection, event, peer.m_Certificate);
+      peer.m_Info.m_State = xiiNetworkConnectionState::Securing;
+      const auto error    = m_pQuic->VerifyCertificate(connection, event, peer.m_Certificate);
       if (error.Failed())
       {
         Close(peer, error);
@@ -179,6 +180,10 @@ void xiiNetworkHostRuntime::CompleteQuic(xiiNetworkQuicEvent&& event)
     }
     case xiiNetworkQuicEventType::Shutdown:
     {
+      if (event.m_Error.Failed() && TryNextQuicEndpoint(peer, event.m_Error))
+      {
+        break;
+      }
       const bool bDraining = peer.m_Info.m_State == xiiNetworkConnectionState::Draining;
       if (event.m_bFin || event.m_Error.Failed())
       {
@@ -195,7 +200,7 @@ void xiiNetworkHostRuntime::CompleteQuic(xiiNetworkQuicEvent&& event)
 
 bool xiiNetworkHostRuntime::ReceiveQuic(Peer& peer, xiiNetworkQuicEvent& event)
 {
-  if (peer.m_Info.m_State == xiiNetworkConnectionState::Securing)
+  if (peer.m_Info.m_State == xiiNetworkConnectionState::Connecting || peer.m_Info.m_State == xiiNetworkConnectionState::Securing)
   {
     return false;
   }
@@ -381,6 +386,50 @@ void xiiNetworkHostRuntime::FinishQuicChannel(Peer& peer, Channel& channel)
   }
 }
 
+bool xiiNetworkHostRuntime::TryNextQuicEndpoint(Peer& peer, xiiNetworkError error)
+{
+  if (peer.m_bIncoming || peer.m_bClosing || peer.m_bCloseRequested || peer.m_Info.m_State != xiiNetworkConnectionState::Connecting ||
+      peer.m_uiEndpointIndex + 1 >= peer.m_Endpoints.GetCount() || xiiTime::Now() >= peer.m_Deadline)
+  {
+    return false;
+  }
+  switch (error.m_Code)
+  {
+    case xiiNetworkErrorCode::AddressNotAvailable:
+    case xiiNetworkErrorCode::InvalidAddress:
+    case xiiNetworkErrorCode::ConnectionRefused:
+    case xiiNetworkErrorCode::ConnectionAborted:
+    case xiiNetworkErrorCode::ConnectionClosed:
+    case xiiNetworkErrorCode::HostUnreachable:
+    case xiiNetworkErrorCode::NetworkUnreachable:
+    case xiiNetworkErrorCode::TimedOut:
+    case xiiNetworkErrorCode::UnsupportedAddressFamily:
+      break;
+    case xiiNetworkErrorCode::ProtocolMismatch:
+      // A shared MsQuic socket can report ALPN negotiation failure when no
+      // listener matches this address. Every candidate still uses the same ALPN.
+      if (error.m_Domain != xiiNetworkErrorDomain::Quic)
+      {
+        return false;
+      }
+      break;
+    default:
+      return false;
+  }
+  ++peer.m_uiEndpointIndex;
+  if (peer.m_pQuic != nullptr)
+  {
+    peer.m_bClosing             = true;
+    peer.m_bTryNextQuicEndpoint = true;
+  }
+  else
+  {
+    peer.m_bStarted = false;
+  }
+  m_WorkSignal.RaiseSignal();
+  return true;
+}
+
 void xiiNetworkHostRuntime::CloseQuicPeer(Peer& peer)
 {
   xiiNetworkQuicConnection* pConnection = nullptr;
@@ -406,6 +455,12 @@ void xiiNetworkHostRuntime::CloseQuicPeer(Peer& peer)
     XII_LOCK(peer.m_Mutex);
     peer.m_pQuic = nullptr;
     peer.m_QuicDeferred.Clear();
+    if (peer.m_bTryNextQuicEndpoint)
+    {
+      peer.m_bTryNextQuicEndpoint = false;
+      peer.m_bClosing             = false;
+      peer.m_bStarted             = false;
+    }
     peer.m_uiReceiveBytes.fetch_sub(uiBytes);
     m_uiReceiveBytes.fetch_sub(uiBytes);
     ReleaseEvents(uiEvents);
