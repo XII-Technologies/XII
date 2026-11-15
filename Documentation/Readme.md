@@ -1,6 +1,7 @@
 # XII developer documentation
 
 - [Build, test, and troubleshoot](Building.md)
+- [Foundation native networking](Networking.md)
 - [CI, security, releases, and maintainer settings](Infrastructure.md)
 - [Infrastructure audit and verification results](InfrastructureAudit.md)
 - [Contribution guide](../CONTRIBUTING.md)

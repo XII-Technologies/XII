@@ -1,0 +1,71 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
+#include <Foundation/FoundationPCH.h>
+
+#include <Foundation/Network/NetworkError.h>
+
+const char* xiiNetworkError::GetCodeName() const
+{
+  switch (m_Code)
+  {
+    case xiiNetworkErrorCode::Success:
+      return "Success";
+    case xiiNetworkErrorCode::InvalidArgument:
+      return "InvalidArgument";
+    case xiiNetworkErrorCode::InvalidAddress:
+      return "InvalidAddress";
+    case xiiNetworkErrorCode::UnsupportedAddressFamily:
+      return "UnsupportedAddressFamily";
+    case xiiNetworkErrorCode::AddressInUse:
+      return "AddressInUse";
+    case xiiNetworkErrorCode::AddressNotAvailable:
+      return "AddressNotAvailable";
+    case xiiNetworkErrorCode::PermissionDenied:
+      return "PermissionDenied";
+    case xiiNetworkErrorCode::ConnectionRefused:
+      return "ConnectionRefused";
+    case xiiNetworkErrorCode::ConnectionReset:
+      return "ConnectionReset";
+    case xiiNetworkErrorCode::ConnectionAborted:
+      return "ConnectionAborted";
+    case xiiNetworkErrorCode::ConnectionClosed:
+      return "ConnectionClosed";
+    case xiiNetworkErrorCode::NetworkUnreachable:
+      return "NetworkUnreachable";
+    case xiiNetworkErrorCode::HostUnreachable:
+      return "HostUnreachable";
+    case xiiNetworkErrorCode::TimedOut:
+      return "TimedOut";
+    case xiiNetworkErrorCode::InProgress:
+      return "InProgress";
+    case xiiNetworkErrorCode::WouldBlock:
+      return "WouldBlock";
+    case xiiNetworkErrorCode::Interrupted:
+      return "Interrupted";
+    case xiiNetworkErrorCode::ResourceExhausted:
+      return "ResourceExhausted";
+    case xiiNetworkErrorCode::MessageTooLarge:
+      return "MessageTooLarge";
+    case xiiNetworkErrorCode::Truncated:
+      return "Truncated";
+    case xiiNetworkErrorCode::UnsupportedOperation:
+      return "UnsupportedOperation";
+    case xiiNetworkErrorCode::InitializationFailed:
+      return "InitializationFailed";
+    case xiiNetworkErrorCode::NotOpen:
+      return "NotOpen";
+    case xiiNetworkErrorCode::AlreadyOpen:
+      return "AlreadyOpen";
+    case xiiNetworkErrorCode::NotConnected:
+      return "NotConnected";
+    case xiiNetworkErrorCode::AlreadyConnected:
+      return "AlreadyConnected";
+    case xiiNetworkErrorCode::NameNotFound:
+      return "NameNotFound";
+    case xiiNetworkErrorCode::NameResolutionFailed:
+      return "NameResolutionFailed";
+    case xiiNetworkErrorCode::Unknown:
+      return "Unknown";
+  }
+  return "Unknown";
+}
