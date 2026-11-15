@@ -1097,7 +1097,7 @@ void xiiNetworkHostRuntime::FinishClose(Peer& peer)
   peer.m_bTerminalPublished   = true;
   peer.m_Info.m_TerminalError = peer.m_CloseError;
   TrackTerminal(peer.m_CloseError);
-  const bool bPublished = PeerEvent(peer, xiiNetworkEventType::Closed, peer.m_CloseError);
+  [[maybe_unused]] const bool bPublished = PeerEvent(peer, xiiNetworkEventType::Closed, peer.m_CloseError);
   XII_ASSERT_DEV(bPublished, "An admitted peer reserves its terminal event.");
   ReleaseEvents(peer.m_uiReservedEvents);
   peer.m_uiReservedEvents = 0;

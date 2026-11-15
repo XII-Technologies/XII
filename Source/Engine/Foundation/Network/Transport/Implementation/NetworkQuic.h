@@ -29,21 +29,27 @@ enum class xiiNetworkQuicEventType : xiiUInt8
   Shutdown
 };
 
+struct xiiNetworkQuicReceiveSpan
+{
+  const xiiUInt8* m_pData   = nullptr;
+  xiiUInt32       m_uiBytes = 0;
+};
+
 struct xiiNetworkQuicEvent
 {
-  xiiNetworkQuicEventType                        m_Type        = xiiNetworkQuicEventType::Shutdown;
-  xiiNetworkQuicConnection*                      m_pConnection = nullptr;
-  xiiNetworkQuicStream*                          m_pStream     = nullptr;
-  xiiNetworkListener                             m_Listener;
-  xiiNetworkError                                m_Error;
-  xiiNetworkFrameHeader                          m_FrameHeader;
-  xiiNetworkIOBuffer                             m_Bytes;
-  xiiNetworkIOBuffer                             m_Chain;
-  xiiHybridArray<xiiArrayPtr<const xiiUInt8>, 4> m_Spans;
-  void*                                          m_pSend          = nullptr;
-  xiiUInt32                                      m_uiSpanIndex    = 0;
-  xiiUInt64                                      m_uiReceiveBytes = 0;
-  bool                                           m_bFin           = false;
+  xiiNetworkQuicEventType                      m_Type        = xiiNetworkQuicEventType::Shutdown;
+  xiiNetworkQuicConnection*                    m_pConnection = nullptr;
+  xiiNetworkQuicStream*                        m_pStream     = nullptr;
+  xiiNetworkListener                           m_Listener;
+  xiiNetworkError                              m_Error;
+  xiiNetworkFrameHeader                        m_FrameHeader;
+  xiiNetworkIOBuffer                           m_Bytes;
+  xiiNetworkIOBuffer                           m_Chain;
+  xiiHybridArray<xiiNetworkQuicReceiveSpan, 4> m_Spans;
+  void*                                        m_pSend          = nullptr;
+  xiiUInt32                                    m_uiSpanIndex    = 0;
+  xiiUInt64                                    m_uiReceiveBytes = 0;
+  bool                                         m_bFin           = false;
 };
 
 /// Driver-owned native handles with a bounded callback queue. Close quiesces provider callbacks

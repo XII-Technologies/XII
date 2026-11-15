@@ -147,7 +147,7 @@ bool xiiNetworkHostRuntime::ReserveEvent()
 }
 void xiiNetworkHostRuntime::ReleaseEvents(xiiUInt32 uiCount)
 {
-  const auto uiOld = m_uiEventReservations.fetch_sub(uiCount);
+  [[maybe_unused]] const auto uiOld = m_uiEventReservations.fetch_sub(uiCount);
   XII_ASSERT_DEV(uiOld >= uiCount, "Event credits cannot underflow.");
 }
 void xiiNetworkHostRuntime::Publish(xiiNetworkEvent&& event)

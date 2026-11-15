@@ -218,11 +218,12 @@ bool xiiNetworkHostRuntime::ReceiveQuic(Peer& peer, xiiNetworkQuicEvent& event)
   }
   while (event.m_uiSpanIndex < event.m_Spans.GetCount() && !peer.m_bClosing)
   {
-    auto&           bytes      = event.m_Spans[event.m_uiSpanIndex];
-    const xiiUInt32 uiConsumed = Parse(peer, receive, bytes);
+    auto&           span       = event.m_Spans[event.m_uiSpanIndex];
+    const xiiUInt32 uiConsumed = Parse(peer, receive, {span.m_pData, span.m_uiBytes});
     if (receive.m_bAwaitingChannel)
     {
-      bytes = bytes.GetSubArray(uiConsumed);
+      span.m_pData += uiConsumed;
+      span.m_uiBytes -= uiConsumed;
       return false;
     }
     ++event.m_uiSpanIndex;
