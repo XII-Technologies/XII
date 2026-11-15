@@ -7,12 +7,16 @@ get_filename_component(PROJECT_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME_WE)
 
 xii_create_target(LIBRARY ${PROJECT_NAME})
 
+include("${XII_ROOT}/Source/BuildSystem/CMake/Dependencies/NetworkDependencies.cmake")
+xii_link_network_providers(${PROJECT_NAME})
+
 if(XII_CMAKE_PLATFORM_WINDOWS)
   target_link_libraries(${PROJECT_NAME}
     PRIVATE
     Rpcrt4.lib
     Ws2_32.lib
     Iphlpapi.lib
+    Crypt32.lib
   )
 endif()
 
@@ -43,6 +47,7 @@ endif()
 if(CURRENT_OSX_VERSION)
   find_library(CORESERVICES_LIBRARY CoreServices)
   find_library(COREFOUNDATION_LIBRARY CoreFoundation)
+  find_library(SECURITY_LIBRARY Security REQUIRED)
 
   mark_as_advanced(FORCE CORESERVICES_LIBRARY COREFOUNDATION_LIBRARY)
 
@@ -50,6 +55,7 @@ if(CURRENT_OSX_VERSION)
     PRIVATE
     ${CORESERVICES_LIBRARY}
     ${COREFOUNDATION_LIBRARY}
+    ${SECURITY_LIBRARY}
   )
 endif()
 

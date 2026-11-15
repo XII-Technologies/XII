@@ -62,7 +62,8 @@ enum class xiiNetworkErrorDomain : xiiUInt8
   Initialization,
   NativeCompletion,
   Tls,
-  Quic
+  Quic,
+  CredentialFile
 };
 
 /// Allocation-free result. Expected conditions (including WouldBlock and InProgress) are not success.

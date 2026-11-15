@@ -23,3 +23,10 @@ xii_ci_add_test(${PROJECT_NAME} HEADLESS)
 if(XII_CMAKE_COMPILER_MSVC)
   target_compile_options(${PROJECT_NAME} PRIVATE /wd4244 /wd4018)
 endif()
+
+# Certificate fixtures exercise the exact private provider used by Foundation.
+get_property(NETWORK_PROVIDER_INCLUDE GLOBAL PROPERTY XII_NETWORK_PROVIDER_INCLUDE)
+get_property(NETWORK_PROVIDER_LINK GLOBAL PROPERTY XII_NETWORK_PROVIDER_LINK)
+target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE "${NETWORK_PROVIDER_INCLUDE}")
+target_link_libraries(${PROJECT_NAME} PRIVATE ${NETWORK_PROVIDER_LINK})
+add_dependencies(${PROJECT_NAME} NetworkProviders)

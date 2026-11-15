@@ -1,0 +1,17 @@
+# Native networking security providers
+
+Foundation uses OpenSSL 3.5.9 LTS for TLS 1.3, certificate validation and cryptographic randomness, and MsQuic 2.6.4 for standards-based secure datagram transport. MsQuic implements QUIC reliability, congestion control and TLS; Foundation does not implement a custom reliable UDP protocol or cryptography. These are private C ABI dependencies of Foundation, not public engine interfaces.
+
+The build verifies SHA-256 source archive hashes before extraction. OpenSSL and MsQuic build in a separate CMake binary-directory subtree. OpenSSL is shared by both consumers. Provider libraries use Release builds for every engine configuration; C++ objects and allocator ownership do not cross these C ABIs. Static Foundation builds still require the shared provider runtime libraries. The build stages these beside the engine binaries and exports their runtime metadata for SDK consumers.
+
+Required build tools are Python 3.12+, Perl (including its standard build modules), CMake, and a native compiler. Unix builds require make and Ninja. Windows builds require Visual Studio's native build tools; the build fetches a hash-pinned NASM 2.16.03 for x64 OpenSSL assembly. Supported provider targets are x64 and arm64. Initial builds require HTTPS access to the official source archives or a prefilled `XII_NETWORK_DEPENDENCY_ARCHIVE_CACHE`. No system-wide installation is performed. `XII_NETWORK_DEPENDENCY_BUILD_JOBS` bounds provider compilation parallelism.
+
+Provider source identities and hashes are recorded in `Utilities/Build/build_network_dependencies.py`. MsQuic is pinned to commit `4504c53564948c8075d6854a08c77e574c5cd3f9`. Provider updates require archive verification, native platform builds, TLS certificate/handshake regression tests and QUIC interoperability checks. Runtime OpenSSL must exactly match the compiled provider version.
+
+Credential snapshots load PEM certificate chains, private keys and explicit trust/CRL bundles once. Key file bytes and serialized private identity material are cleansed at release. Identity and trust changes require a new snapshot; active handshakes retain their original snapshot. No password is retained. Missing passwords never invoke an interactive prompt. Private key file access permissions remain the deployment's responsibility.
+
+TLS 1.3 peer verification is mandatory. Server names are checked against DNS/IP subject alternative names; common-name fallback is disabled. Trust validation checks certificate purpose, validity and chain depth. CRL checking is enabled when an explicit revocation bundle is configured; validation does not fetch online intermediates or revocation information. Linux loads the configured system OpenSSL trust paths, Windows imports native ROOT stores, and macOS imports Security framework trust anchors. Imported roots establish certificate-chain trust; platform-specific dynamic trust policy is not evaluated by OpenSSL.
+
+An explicit development CA can be used as a trust bundle. There is no certificate-verification bypass. Test certificates and private keys are generated in the test output directory and removed by their fixture owners.
+
+Upstream references: [OpenSSL 3.5 documentation](https://docs.openssl.org/3.5/), [MsQuic 2.6.4](https://github.com/microsoft/msquic/tree/v2.6.4), [MsQuic certificate handling](https://github.com/microsoft/msquic/blob/v2.6.4/docs/api/QUIC_CONNECTION_EVENT.md). License copies are in `Foundation/Network/ThirdParty/` (OpenSSL: Apache-2.0; MsQuic: MIT).

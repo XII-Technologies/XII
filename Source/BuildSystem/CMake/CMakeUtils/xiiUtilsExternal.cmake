@@ -80,6 +80,21 @@ function(xii_stage_external_runtime TARGET_NAME)
     endif()
   endforeach()
 
+  if(TARGET Foundation)
+    get_target_property(NETWORK_FILES Foundation XII_NETWORK_RUNTIME_FILES)
+    if(NETWORK_FILES)
+      foreach(CONFIG IN ITEMS DEBUG DEV RELEASE)
+        get_target_property(NETWORK_${CONFIG} Foundation XII_NETWORK_RUNTIME_${CONFIG})
+      endforeach()
+      set(NETWORK_DIRECTORY "$<IF:$<CONFIG:Debug>,${NETWORK_DEBUG},$<IF:$<CONFIG:Dev>,${NETWORK_DEV},${NETWORK_RELEASE}>>")
+      foreach(NETWORK_FILE IN LISTS NETWORK_FILES)
+        add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
+          COMMAND ${CMAKE_COMMAND} -E copy_if_different "${NETWORK_DIRECTORY}/${NETWORK_FILE}" "$<TARGET_FILE_DIR:${TARGET_NAME}>/${NETWORK_FILE}"
+          VERBATIM)
+      endforeach()
+    endif()
+  endif()
+
   # DXC is a private native dependency, so it is not part of the exported target interface.
   if(TARGET ShaderCompilerSPIRV)
     if(WIN32)
