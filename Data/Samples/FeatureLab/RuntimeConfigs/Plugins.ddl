@@ -11,6 +11,16 @@ Plugin
 }
 Plugin
 {
+	string %Path{"xiiJoltPlugin"}
+	bool %LoadCopy{false}
+}
+Plugin
+{
+	string %Path{"xiiMujocoPlugin"}
+	bool %LoadCopy{false}
+}
+Plugin
+{
 	string %Path{"xiiVisualScriptPlugin"}
 	bool %LoadCopy{false}
 }
