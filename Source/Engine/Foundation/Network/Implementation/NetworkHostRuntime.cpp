@@ -169,9 +169,10 @@ bool xiiNetworkHostRuntime::PeerEvent(Peer& peer, xiiNetworkEventType type, xiiN
     return false;
   }
   xiiNetworkEvent event;
-  event.m_Type       = type;
-  event.m_Connection = peer.m_Handle;
-  event.m_Error      = error;
+  event.m_pSessionInfo = peer.m_pSessionInfo;
+  event.m_Type         = type;
+  event.m_Connection   = peer.m_Handle;
+  event.m_Error        = error;
   if (!peer.m_bIncoming)
   {
     event.m_pSessionTicket = peer.m_pTicket;
@@ -195,6 +196,7 @@ bool xiiNetworkHostRuntime::ChannelEvent(Peer& peer, Channel& channel, xiiNetwor
     return false;
   }
   xiiNetworkEvent event;
+  event.m_pSessionInfo         = peer.m_pSessionInfo;
   event.m_Type                 = type;
   event.m_Connection           = peer.m_Handle;
   event.m_Channel              = {peer.m_Handle, channel.m_uiId, peer.m_uiAttempt};
@@ -289,6 +291,7 @@ xiiNetworkError xiiNetworkHostRuntime::AllocatePeer(bool bIncoming, Peer*& out_p
     peer.m_Info.m_State                 = xiiNetworkConnectionState::Connecting;
     peer.m_Options                      = {};
     peer.m_pTicket.Clear();
+    peer.m_pSessionInfo.Clear();
     peer.m_Certificate   = {};
     peer.m_Authorization = {};
     peer.m_sHost.Clear();

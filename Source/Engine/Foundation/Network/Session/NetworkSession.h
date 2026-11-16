@@ -3,11 +3,25 @@
 #pragma once
 
 #include <Foundation/Basics.h>
+#include <Foundation/Network/NetworkChannel.h>
 #include <Foundation/Network/Security/NetworkCredentials.h>
 #include <Foundation/Time/Time.h>
 #include <Foundation/Types/Uuid.h>
 
 class xiiNetworkHostRuntime;
+
+/// Immutable establishment metadata retained by connection events. Independent of native slot reuse;
+/// may outlive the host. Contains peer certificates, never private keys or recovery capabilities.
+/// State/statistics describe activation; use host queries for live connection statistics.
+class XII_FOUNDATION_DLL xiiNetworkSessionInfo final : public xiiRefCountingImpl
+{
+public:
+  xiiNetworkConnection     m_Connection;
+  xiiNetworkChannel        m_DefaultChannel;
+  xiiNetworkConnectionInfo m_ConnectionInfo;
+  xiiNetworkCertificate    m_PeerCertificate;
+};
+
 
 /// Secret-bearing, immutable recovery capability. Explicit shared owners retain it until release.
 /// There is no serialization or secret-byte accessor. Host-origin/certificate/protocol binding is

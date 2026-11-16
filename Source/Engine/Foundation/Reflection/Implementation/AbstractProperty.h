@@ -334,6 +334,10 @@ public:
   /// Resizes the array to uiCount.
   virtual void SetCount(void* pInstance, xiiUInt32 uiCount) const = 0;
 
+  /// Whether SetCount accepts this size without violating the container's capacity contract.
+  /// Custom properties default to their existing count and may override this for resizable storage.
+  virtual bool CanSetCount(const void* pInstance, xiiUInt32 uiCount) const { return !GetFlags().IsSet(xiiPropertyFlags::ReadOnly) && uiCount == GetCount(pInstance); }
+
   virtual void* GetValuePointer(void* pInstance, xiiUInt32 uiIndex) const
   {
     XII_IGNORE_UNUSED(pInstance);

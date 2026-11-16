@@ -712,3 +712,20 @@ xiiNetworkError xiiNetworkHost::GetPeerCertificate(xiiNetworkConnection handle, 
   out_certificate = pPeer->m_Certificate;
   return {};
 }
+
+xiiNetworkError xiiNetworkHost::GetChannelConfiguration(xiiNetworkChannel channel, xiiNetworkChannelConfiguration& out_configuration) const
+{
+  auto* pPeer = m_pRuntime->Find(channel.m_Connection);
+  if (pPeer == nullptr)
+  {
+    return HostError(xiiNetworkErrorCode::InvalidHandle);
+  }
+  XII_LOCK(pPeer->m_Mutex);
+  auto* pChannel = m_pRuntime->Find(*pPeer, channel);
+  if (pChannel == nullptr)
+  {
+    return HostError(xiiNetworkErrorCode::InvalidHandle);
+  }
+  out_configuration = pChannel->m_Configuration;
+  return {};
+}

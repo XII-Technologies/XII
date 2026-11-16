@@ -1,5 +1,7 @@
 # Message transports and sessions
 
+For schema negotiation, typed messages, and reflected RPC over these sessions, see [Reflection networking](NetworkReflection.md).
+
 `xiiNetworkHost` owns a protocol driver and Milestone 2 native I/O context. Select transport independently for each host. `Tcp` and `TlsTcp` carry framed reliable ordered messages; `NativeUdp` carries raw connectionless datagrams. Capability queries describe the selected transport. Unsupported delivery guarantees are rejected before admission. Plain TCP, UDP and anonymous authentication require explicit insecure-development configuration. TLS uses immutable credential snapshots described in [NetworkProviders.md](NetworkProviders.md).
 
 Host startup/shutdown are serialized. Submissions, queries and event dequeues may be concurrent after startup; destruction must not race facade access. There are no application callbacks on native worker threads. `WaitForEvent` and `TryGetEvent` transfer move-only events to their caller. Application authorization uses `AuthenticationRequired` followed by `Authorize`; optional channel authorization uses `ChannelRequested` followed by `AuthorizeChannel`. Authentication data is retained in a bounded immutable object that cleanses its secret storage at final release.
