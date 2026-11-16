@@ -43,10 +43,14 @@ macro(xii_include_xiiExport)
   # read the xiiExport file into a string
   file(READ ${EXP_FILE} IMP_CONTENT)
 
-  # replace the original paths with our paths
-  string(REPLACE ${EXPINP_OUTPUT_DIRECTORY_DLL} ${XII_OUTPUT_DIRECTORY_DLL} IMP_CONTENT "${IMP_CONTENT}")
-  string(REPLACE ${EXPINP_OUTPUT_DIRECTORY_LIB} ${XII_OUTPUT_DIRECTORY_LIB} IMP_CONTENT "${IMP_CONTENT}")
-  string(REPLACE ${EXPINP_SOURCE_DIR} ${XII_SDK_DIR} IMP_CONTENT "${IMP_CONTENT}")
+  # Replace the original prefixes before inserting new paths. The relocated SDK can
+  # live below the original checkout, so inserted paths must not be replaced again.
+  string(REPLACE "${EXPINP_OUTPUT_DIRECTORY_DLL}" "@XII_IMPORTED_DLL_DIRECTORY@" IMP_CONTENT "${IMP_CONTENT}")
+  string(REPLACE "${EXPINP_OUTPUT_DIRECTORY_LIB}" "@XII_IMPORTED_LIB_DIRECTORY@" IMP_CONTENT "${IMP_CONTENT}")
+  string(REPLACE "${EXPINP_SOURCE_DIR}" "@XII_IMPORTED_SOURCE_DIRECTORY@" IMP_CONTENT "${IMP_CONTENT}")
+  string(REPLACE "@XII_IMPORTED_DLL_DIRECTORY@" "${XII_OUTPUT_DIRECTORY_DLL}" IMP_CONTENT "${IMP_CONTENT}")
+  string(REPLACE "@XII_IMPORTED_LIB_DIRECTORY@" "${XII_OUTPUT_DIRECTORY_LIB}" IMP_CONTENT "${IMP_CONTENT}")
+  string(REPLACE "@XII_IMPORTED_SOURCE_DIRECTORY@" "${XII_SDK_DIR}" IMP_CONTENT "${IMP_CONTENT}")
 
   # write the modified xiiExport file to disk
   file(WRITE ${IMP_FILE} "${IMP_CONTENT}")

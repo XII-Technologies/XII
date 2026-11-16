@@ -332,7 +332,7 @@ add_executable(app main.c)
 target_link_libraries(app PRIVATE Fixture::Native)
 xii_nuget_stage_runtime(TARGET app LIBRARIES Fixture::Native)
 ''')
-        for config in ("Debug", "Dev", "Shipping"):
+        for config in ("Debug", "Dev", "Shipping", "Release", "RelWithDebInfo", "MinSizeRel"):
             directory = self.root / f"consumer-{config}"
             result = subprocess.run(["cmake", "-S", str(consumer), "-B", str(directory), f"-DCMAKE_BUILD_TYPE={config}"], capture_output=True, text=True, timeout=30)
             self.assertEqual(result.returncode, 0, result.stderr)

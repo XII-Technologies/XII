@@ -47,6 +47,7 @@ def main():
     original = workspace / "original-sdk"
     original.mkdir(parents=True)
     shutil.copyfile(root / "xiiCMakeConfig.cmake", original / "xiiCMakeConfig.cmake")
+    shutil.copyfile(root / "version.txt", original / "version.txt")
     shutil.copytree(root / "Source/BuildSystem/CMake", original / "Source/BuildSystem/CMake")
     shutil.copytree(root / "Source/Engine/Foundation", original / "Source/Engine/Foundation",
                     ignore=shutil.ignore_patterns("*.cpp", "*.c", "CMakeLists.txt", "finalize.cmake"))
@@ -94,17 +95,26 @@ xii_configure_external_project()
 add_executable(NetworkSdkConsumer main.cpp)
 set_target_properties(NetworkSdkConsumer PROPERTIES CXX_STANDARD 23 CXX_STANDARD_REQUIRED ON)
 target_link_libraries(NetworkSdkConsumer PRIVATE Foundation)
-xii_nuget_stage_runtime(TARGET NetworkSdkConsumer LIBRARIES Foundation)
-get_target_property(FOUNDATION_TYPE Foundation TYPE)
-if(FOUNDATION_TYPE STREQUAL "SHARED_LIBRARY")
-  add_custom_command(TARGET NetworkSdkConsumer POST_BUILD
-    COMMAND "${CMAKE_COMMAND}" -E copy_if_different "$<TARGET_FILE:Foundation>" "$<TARGET_FILE_DIR:NetworkSdkConsumer>")
-endif()
+xii_stage_external_runtime(NetworkSdkConsumer)
 file(GENERATE OUTPUT "${CMAKE_BINARY_DIR}/program-$<CONFIG>.txt" CONTENT "$<TARGET_FILE:NetworkSdkConsumer>")
 ''', encoding="utf-8")
     consumer_build = workspace / "consumer-build"
-    run(["cmake", "-S", project, "-B", consumer_build, f"-DXII_SDK_DIR={sdk.as_posix()}",
-         "-DXII_ENABLE_QT_SUPPORT=OFF", "-DXII_NUGET_OFFLINE=ON", f"-DCMAKE_BUILD_TYPE={config}"], cwd=root)
+    cache = {}
+    for line in (build / "CMakeCache.txt").read_text(encoding="utf-8").splitlines():
+        if not line.startswith(("#", "//")) and ":" in line and "=" in line:
+            key, value = line.split("=", 1)
+            cache[key.split(":", 1)[0]] = value
+    configure = ["cmake", "-S", project, "-B", consumer_build, "-G", cache["CMAKE_GENERATOR"],
+                 f"-DXII_SDK_DIR={sdk.as_posix()}", "-DXII_ENABLE_QT_SUPPORT=OFF", "-DXII_NUGET_OFFLINE=ON",
+                 f"-DCMAKE_BUILD_TYPE={config}"]
+    if cache.get("CMAKE_GENERATOR_PLATFORM"):
+        configure += ["-A", cache["CMAKE_GENERATOR_PLATFORM"]]
+    if cache.get("CMAKE_GENERATOR_TOOLSET"):
+        configure += ["-T", cache["CMAKE_GENERATOR_TOOLSET"]]
+    for language in ("C", "CXX"):
+        if cache.get(f"CMAKE_{language}_COMPILER"):
+            configure += [f"-DCMAKE_{language}_COMPILER={cache[f'CMAKE_{language}_COMPILER']}"]
+    run(configure, cwd=root)
     run(["cmake", "--build", consumer_build, "--config", config, "--parallel", "2"], cwd=root)
     executable = Path((consumer_build / f"program-{config}.txt").read_text())
     for name in ("msquic.dll", "libssl-3-x64.dll", "libcrypto-3-x64.dll"):
