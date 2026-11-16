@@ -117,6 +117,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSwapChainCreationDescription
                                                                                                            ///  \note When xiiGALSurfaceTransform::Optimal is used, the engine will select the most optimal surface transformation. An application may request a specific transform and the engine will try to use that. If the transform is not available, the engine will select the most optimal transform. After the swap chain has been created, this member will contain the actual transform selected by the engine.
   xiiUInt32 m_uiBufferCount         = 2U;                                                                  ///< The number of buffers in the swap chain.
   float     m_fDefaultDepthValue    = 1.0F;                                                                ///< Default depth value, which is used as the optimized depth clear value in D3D12.
+  bool      m_bDeferredAcquire      = false;                                                               ///< The client calls TryAcquireBackBuffer before rendering. Supported by Vulkan.
   xiiUInt8  m_uiDefaultStencilValue = 0U;                                                                  ///< Default stencil value, which is used as the optimized clear value in D3D12.
 };
 

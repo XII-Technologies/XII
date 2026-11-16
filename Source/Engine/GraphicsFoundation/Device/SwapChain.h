@@ -18,6 +18,15 @@ public:
   /// This retrieves the current back buffer texture.
   [[nodiscard]] XII_ALWAYS_INLINE xiiSharedPtr<xiiGALTexture> GetBackBufferTexture() const { return m_pBackBufferTexture; };
 
+  /// Acquires an image for deferred-acquire swapchains without waiting for a free image or an in-flight frame.
+  /// A successful result with no texture means acquisition should be retried later.
+  /// Swapchain creation and surface reconfiguration can still require presentation queue synchronization.
+  virtual xiiResult TryAcquireBackBuffer(xiiSharedPtr<xiiGALTexture>& out_pTexture)
+  {
+    out_pTexture = m_pBackBufferTexture;
+    return XII_SUCCESS;
+  }
+
   /// This retrieves the current swap chain size.
   [[nodiscard]] XII_ALWAYS_INLINE xiiSizeU32 GetCurrentSize() const { return m_CurrentSize; };
 

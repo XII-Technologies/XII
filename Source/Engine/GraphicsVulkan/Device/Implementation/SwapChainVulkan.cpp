@@ -117,8 +117,12 @@ xiiResult xiiGALSwapChainVulkan::InitPlatform()
     m_pFrameCompleteFence->SetDebugName("SwapChain frame complete fence.");
   }
 
-  // Note that the image may be immediately out of date.
-  XII_IGNORE_UNUSED(AcquireNextImage());
+  m_bIsVSyncEnabled = m_PresentMode == xiiGALPresentMode::VSync;
+  if (!m_Description.m_bDeferredAcquire)
+  {
+    // The image may be immediately out of date.
+    XII_IGNORE_UNUSED(AcquireNextImage());
+  }
 
   // We have created a surface on a window, the window must not be destroyed while the surface is still alive.
   if (m_Description.m_pWindow)
@@ -607,6 +611,7 @@ void xiiGALSwapChainVulkan::ReleaseSwapChainResources(bool bReleaseSwapChain)
 
   // We must wait until GPU is idled before destroying the fences as they are destroyed immediately.
   // The semaphores are managed and will be kept alive by the command queue they are submitted to.
+  m_bIsImageAcquired = false;
   m_uiSemaphoreIndex = 0U;
 
   xiiGALSemaphorePoolVulkan* pSemaphorePool = pDeviceVulkan->GetVulkanSemaphorePool();
@@ -721,9 +726,19 @@ vk::Result xiiGALSwapChainVulkan::AcquireNextImage()
   // and regardless of when queued presentation requests will complete relative to the call. Instead, applications can use fences
   // to meter their frame generation work to match the presentation rate.
 
-  // vkAcquireNextImageKHR requires that the semaphore is not in use, so we must wait for the frame (FrameIndex - BufferCount) to complete.
-  // This also ensures that there are no more than BufferCount frames in flight at any time.
-  ThrottleFrameSubmission();
+  // Each acquisition semaphore can be reused after its prior graphics wait completes.
+  if (m_Description.m_bDeferredAcquire)
+  {
+    if (m_uiFrameIndex > m_Description.m_uiBufferCount &&
+        m_pFrameCompleteFence->GetCompletedValue() < m_uiFrameIndex - m_Description.m_uiBufferCount)
+    {
+      return vk::Result::eNotReady;
+    }
+  }
+  else
+  {
+    ThrottleFrameSubmission();
+  }
 
   // If there is no swap chain (window minimized) nothing to acquire.
   if (m_vkSwapChain == VK_NULL_HANDLE || m_bIsMinimized || !m_CurrentSize.HasNonZeroArea())
@@ -743,11 +758,12 @@ vk::Result xiiGALSwapChainVulkan::AcquireNextImage()
 
   const vk::Semaphore& vkImageAcquiredSemaphore = m_ImageAcquiredSemaphores[m_uiSemaphoreIndex];
 
-  vk::Result result  = vkLogicalDevice.acquireNextImageKHR(m_vkSwapChain, xiiMath::MaxValue<xiiUInt64>(), vkImageAcquiredSemaphore, VK_NULL_HANDLE, &m_uiBackBufferIndex, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
-  m_bIsImageAcquired = (result == vk::Result::eSuccess || result == vk::Result::eSuboptimalKHR);
+  const xiiUInt64 uiTimeout = m_Description.m_bDeferredAcquire ? 0U : xiiMath::MaxValue<xiiUInt64>();
+  vk::Result      result    = vkLogicalDevice.acquireNextImageKHR(m_vkSwapChain, uiTimeout, vkImageAcquiredSemaphore, VK_NULL_HANDLE, &m_uiBackBufferIndex, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+  m_bIsImageAcquired        = (result == vk::Result::eSuccess || result == vk::Result::eSuboptimalKHR);
 
 #if XII_ENABLED(XII_PLATFORM_OSX)
-  if (result == vk::Result::eSuboptimalKHR)
+  if (result == vk::Result::eSuboptimalKHR && !m_Description.m_bDeferredAcquire)
   {
     // https://github.com/KhronosGroup/MoltenVK/issues/2542
     m_bIsImageAcquired = false;
@@ -797,8 +813,48 @@ vk::Result xiiGALSwapChainVulkan::AcquireNextImage()
   return result;
 }
 
+xiiResult xiiGALSwapChainVulkan::TryAcquireBackBuffer(xiiSharedPtr<xiiGALTexture>& out_pTexture)
+{
+  out_pTexture.Clear();
+  if (!m_Description.m_bDeferredAcquire || m_bIsImageAcquired)
+  {
+    out_pTexture = m_pBackBufferTexture;
+    return XII_SUCCESS;
+  }
+
+  const bool bVSync = m_PresentMode == xiiGALPresentMode::VSync;
+  if (m_bRecreatePending || bVSync != m_bIsVSyncEnabled)
+  {
+    XII_SUCCEED_OR_RETURN(RecreateVulkanSwapChain());
+    m_bIsVSyncEnabled  = bVSync;
+    m_bRecreatePending = false;
+  }
+
+  switch (AcquireNextImage())
+  {
+    case vk::Result::eSuccess:
+    case vk::Result::eSuboptimalKHR:
+      out_pTexture = m_pBackBufferTexture;
+      return XII_SUCCESS;
+    case vk::Result::eNotReady:
+    case vk::Result::eTimeout:
+      return XII_SUCCESS;
+    case vk::Result::eErrorOutOfDateKHR:
+    case vk::Result::eErrorSurfaceLostKHR:
+      m_bRecreatePending = true;
+      return XII_SUCCESS;
+    default:
+      return XII_FAILURE;
+  }
+}
+
 void xiiGALSwapChainVulkan::Present()
 {
+  if (m_Description.m_bDeferredAcquire && !m_bIsImageAcquired)
+  {
+    return;
+  }
+
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
   // Do not read m_pBackBufferTexture here because we may recreate the swap chain below
   // and m_pBackBufferTexture may change. Resolve the current backbuffer after recreation.
@@ -891,6 +947,15 @@ void xiiGALSwapChainVulkan::Present()
       });
     }
 
+    if (m_Description.m_bDeferredAcquire)
+    {
+      m_bRecreatePending = result == vk::Result::eSuboptimalKHR || result == vk::Result::eErrorOutOfDateKHR || result == vk::Result::eErrorSurfaceLostKHR;
+      m_bIsImageAcquired = false;
+      m_pBackBufferTexture.Clear();
+      m_uiSemaphoreIndex = (m_uiSemaphoreIndex + 1U) % m_Description.m_uiBufferCount;
+      return;
+    }
+
     if (result == vk::Result::eSuboptimalKHR || result == vk::Result::eErrorOutOfDateKHR)
     {
       RecreateVulkanSwapChain().AssertSuccess();
@@ -965,7 +1030,7 @@ xiiResult xiiGALSwapChainVulkan::Resize(xiiSizeU32 newSize, xiiEnum<xiiGALSurfac
   {
     if (RecreateVulkanSwapChain().Succeeded())
     {
-      if (AcquireNextImage() != vk::Result::eSuccess)
+      if (!m_Description.m_bDeferredAcquire && AcquireNextImage() != vk::Result::eSuccess)
       {
         xiiLog::Error("Failed to acquire next image for the just resized swap chain.");
       }

@@ -66,25 +66,13 @@ void xiiEditorEngineProcessConnection::HandleIPCEvent(const xiiProcessCommunicat
 
 void xiiEditorEngineProcessConnection::UIServicesTickEventHandler(const xiiQtUiServices::TickEvent& e)
 {
-  if (e.m_Type == xiiQtUiServices::TickEvent::Type::EndFrame)
+  if (e.m_Type == xiiQtUiServices::TickEvent::Type::EndFrame && CanSendViewRedraw())
   {
-    // Interactive startup pumps UI ticks before the setup/project-ready handshake completes.
-    // A rejected redraw sync cannot be acknowledged and must not start a blocking wait.
-    if (IsEngineSetup() && !IsProcessCrashed())
+    xiiSyncWithProcessMsgToEngine marker;
+    marker.m_uiRedrawCount = m_uiRedrawCountSent + 1;
+    if (SendMessage(&marker))
     {
-      xiiSyncWithProcessMsgToEngine sm;
-      sm.m_uiRedrawCount = m_uiRedrawCountSent + 1;
-      SendMessage(&sm);
-
-      if (m_uiRedrawCountSent > m_uiRedrawCountReceived)
-      {
-        xiiStringBuilder sRedrawScope;
-        sRedrawScope.SetFormat("Wait For Redraw {}", m_uiRedrawCountReceived + 1);
-        XII_PROFILE_SCOPE(sRedrawScope.GetData());
-        WaitForMessage(xiiGetStaticRTTI<xiiSyncWithProcessMsgToEditor>(), xiiTime::MakeFromSeconds(2.0)).IgnoreResult();
-      }
-
-      ++m_uiRedrawCountSent;
+      m_uiRedrawCountSent = marker.m_uiRedrawCount;
     }
   }
 }
@@ -123,6 +111,8 @@ void xiiEditorEngineProcessConnection::Initialize(const xiiRTTI* pFirstAllowedMe
   m_bProcessShouldBeRunning = true;
   m_bProcessCrashed         = false;
   m_bClientIsConfigured     = false;
+  m_uiRedrawCountSent       = 0;
+  m_uiRedrawCountReceived   = 0;
 
   xiiStringBuilder tmp;
 

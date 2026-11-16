@@ -285,7 +285,8 @@ public:
   xiiDataBuffer                   m_Pixels; ///< Packed RGBA8, only used when GPU interoperability is unavailable.
 };
 
-/// Sent only after the consumer has submitted its semaphore signal, or rejected the import.
+/// Shared frames are acknowledged after the consumer GPU has signaled release.
+/// A rejected import is acknowledged without scheduling a producer acquire.
 class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiViewFrameConsumedMsgToEngine : public xiiEditorEngineViewMsg
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiViewFrameConsumedMsgToEngine, xiiEditorEngineViewMsg);

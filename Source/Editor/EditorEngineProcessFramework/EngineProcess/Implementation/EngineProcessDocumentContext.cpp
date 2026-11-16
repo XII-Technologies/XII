@@ -69,7 +69,15 @@ void xiiEngineProcessDocumentContext::UpdateDocumentContexts()
   XII_PROFILE_SCOPE("UpdateDocumentContexts");
   for (auto it = s_DocumentContexts.GetIterator(); it.IsValid(); ++it)
   {
-    it.Value()->UpdateDocumentContext();
+    auto& context = *it.Value();
+    context.UpdateDocumentContext();
+    for (auto* pView : context.m_ViewContexts)
+    {
+      if (pView)
+      {
+        pView->PublishCompletedFrames();
+      }
+    }
   }
 }
 
@@ -82,6 +90,7 @@ void xiiEngineProcessDocumentContext::FinishFrame()
       if (view)
       {
         view->PresentFrame();
+        view->PublishCompletedFrames();
         view->SuspendRendering();
       }
     if (context.m_pThumbnailViewContext)

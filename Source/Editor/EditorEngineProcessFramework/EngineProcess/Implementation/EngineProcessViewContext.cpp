@@ -17,6 +17,7 @@
 #include <EditorEngineProcessFramework/Rendering/ViewportNavigationGizmo.h>
 #include <Foundation/Configuration/CVar.h>
 #include <Foundation/Profiling/Profiling.h>
+#include <Foundation/Utilities/Stats.h>
 #include <GraphicsCore/Components/Render/CameraComponent.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
@@ -96,6 +97,12 @@ xiiEngineProcessViewContext::~xiiEngineProcessViewContext()
       }
     }
   }
+  if (!m_FrameSlots.IsEmpty())
+  {
+    xiiStringBuilder sStat;
+    sStat.SetFormat("Editor/Viewport {}/IPC round trip (ms)", m_uiViewID);
+    xiiStats::RemoveStat(sStat);
+  }
 }
 
 void xiiEngineProcessViewContext::SetViewID(xiiUInt32 uiId)
@@ -109,6 +116,7 @@ void xiiEngineProcessViewContext::HandleViewMessage(const xiiEditorEngineViewMsg
 {
   if (const xiiViewRedrawMsgToEngine* pViewRedrawMsg = xiiDynamicCast<const xiiViewRedrawMsgToEngine*>(pMsg))
   {
+    PublishCompletedFrames();
     // Camera and input state continue to update while presentation applies backpressure.
     const bool bReady             = UpdateRenderTarget(pViewRedrawMsg->m_uiWindowWidth, pViewRedrawMsg->m_uiWindowHeight, pViewRedrawMsg->m_bUseSharedTexture).Succeeded();
     m_bShowNavigationGizmo        = pViewRedrawMsg->m_bShowNavigationGizmo;
@@ -155,6 +163,9 @@ void xiiEngineProcessViewContext::ReturnFrameSlot(const xiiViewFrameConsumedMsgT
     return;
   }
 
+  xiiStringBuilder sStat;
+  sStat.SetFormat("Editor/Viewport {}/IPC round trip (ms)", m_uiViewID);
+  xiiStats::SetStat(sStat, (xiiTime::Now() - slot.m_PublishedAt).GetMilliseconds());
   slot.m_State = FrameSlotState::Returning;
   if (!slot.m_pTexture->GetExternalMemoryKind().IsSet(xiiGALExternalMemoryKind::Exportable))
   {
@@ -215,6 +226,7 @@ xiiResult xiiEngineProcessViewContext::UpdateRenderTarget(xiiUInt16 uiWidth, xii
   auto        pDevice  = xiiGALDevice::GetDefaultDevice();
   const auto& features = pDevice->GetFeatures();
   bShared              = bShared && !m_bSharingFailed &&
+    features.m_NativeFence == xiiGALDeviceFeatureState::Enabled &&
     features.m_ExternalMemory == xiiGALDeviceFeatureState::Enabled &&
     features.m_ExternalSemaphore == xiiGALDeviceFeatureState::Enabled;
   const xiiUInt64  uiCompleted = pDevice->GetCommandQueue()->GetCompletedFenceValue();
@@ -288,8 +300,9 @@ xiiResult xiiEngineProcessViewContext::CreateFrameSlot(FrameSlot& ref_slot, xiiS
   {
     return XII_FAILURE;
   }
-  ref_slot.m_pTarget     = std::move(pTarget);
-  ref_slot.m_pTexture    = std::move(pTexture);
+  ref_slot.m_pTarget  = std::move(pTarget);
+  ref_slot.m_pTexture = std::move(pTexture);
+  ref_slot.m_pReadback.Clear();
   ref_slot.m_uiTextureID = ++m_uiTextureID;
   return XII_SUCCESS;
 }
@@ -308,10 +321,10 @@ void xiiEngineProcessViewContext::PresentFrame()
   auto  pDevice              = xiiGALDevice::GetDefaultDevice();
   // The ViewTarget's terminal use is on the graphics queue. Preserve that
   // submission's lifetime even if the graph only partially executed.
-  slot.m_State                 = FrameSlotState::Returning;
-  slot.m_uiFenceValue          = pDevice->GetCommandQueue()->GetNextFenceValue() - 1;
-  const auto              size = slot.m_pTexture->GetDescription().m_Size;
-  xiiViewFrameMsgToEditor frame;
+  slot.m_State                   = FrameSlotState::Returning;
+  slot.m_uiFenceValue            = pDevice->GetCommandQueue()->GetNextFenceValue() - 1;
+  const auto               size  = slot.m_pTexture->GetDescription().m_Size;
+  xiiViewFrameMsgToEditor& frame = slot.m_Frame;
   if (const auto* pWorld = GetDocumentContext()->GetWorld())
   {
     XII_LOCK(pWorld->GetReadMarker());
@@ -331,6 +344,7 @@ void xiiEngineProcessViewContext::PresentFrame()
   }
   if (!m_sScreenshot.IsEmpty())
   {
+    XII_PROFILE_SCOPE("Viewport: Synchronous screenshot");
     xiiImage image;
     if (xiiCaptureThumbnail(slot.m_pTexture, size, image).Failed() || image.SaveTo(m_sScreenshot).Failed())
       xiiLog::Error("Could not capture viewport screenshot '{}'.", m_sScreenshot);
@@ -341,30 +355,118 @@ void xiiEngineProcessViewContext::PresentFrame()
   frame.m_uiSlotIndex = uiSlotIndex;
   frame.m_uiWidth     = static_cast<xiiUInt16>(size.width);
   frame.m_uiHeight    = static_cast<xiiUInt16>(size.height);
-  if (slot.m_pTexture->GetExternalMemoryKind().IsSet(xiiGALExternalMemoryKind::Exportable))
+  auto pCommand       = pDevice->CreateCommandList({.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
+  if (!pCommand)
   {
-    auto command = pDevice->CreateCommandList({.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
-    if (!command)
-      return;
-    command->Begin();
-    const auto result = slot.m_pTexture->ReleaseExternalMemory(command);
-    command->End();
-    if (result.Failed())
-      return;
-    slot.m_uiFenceValue = pDevice->GetCommandQueue()->Submit(command);
-    frame.m_Memory      = slot.m_pTexture->GetExternalMemoryDescription();
+    return;
+  }
+  const bool bShared = slot.m_pTexture->GetExternalMemoryKind().IsSet(xiiGALExternalMemoryKind::Exportable);
+  pCommand->Begin();
+  xiiResult result = XII_FAILURE;
+  if (bShared)
+  {
+    result         = slot.m_pTexture->ReleaseExternalMemory(pCommand);
+    frame.m_Memory = slot.m_pTexture->GetExternalMemoryDescription();
+    frame.m_Pixels.Clear();
   }
   else
   {
-    xiiImage image;
-    if (xiiCaptureThumbnail(slot.m_pTexture, size, image).Failed())
-      return;
-    frame.m_Pixels.SetCountUninitialized(size.width * size.height * 4);
-    xiiMemoryUtils::Copy(frame.m_Pixels.GetData(), image.GetPixelPointer<xiiUInt8>(), frame.m_Pixels.GetCount());
+    XII_PROFILE_SCOPE("Viewport: Record readback");
+    if (!slot.m_pReadback)
+    {
+      slot.m_pReadback = XII_DEFAULT_NEW(xiiGALTextureReadback, pDevice.Borrow());
+    }
+    result         = slot.m_pReadback->Enqueue(pCommand, {.m_pTexture = slot.m_pTexture});
+    frame.m_Memory = {};
+  }
+  pCommand->End();
+  if (result.Failed())
+  {
+    if (bShared)
+    {
+      m_bSharingFailed = true;
+    }
+    return;
+  }
+  {
+    XII_PROFILE_SCOPE("Viewport: Submit output");
+    slot.m_uiFenceValue = pDevice->GetCommandQueue()->Submit(pCommand);
   }
   slot.m_uiFrameID = frame.m_uiFrameID;
-  slot.m_State     = FrameSlotState::Published;
-  SendViewMessage(&frame);
+  slot.m_State     = FrameSlotState::Publishing;
+}
+
+void xiiEngineProcessViewContext::PublishCompletedFrames()
+{
+  const bool bPending = std::ranges::any_of(m_FrameSlots, [](const FrameSlot& slot) { return slot.m_State == FrameSlotState::Publishing; });
+  if (!bPending)
+  {
+    return;
+  }
+
+  XII_PROFILE_SCOPE("Viewport: Collect completed outputs");
+  auto            pDevice     = xiiGALDevice::GetDefaultDevice();
+  const xiiUInt64 uiCompleted = pDevice->GetCommandQueue()->GetCompletedFenceValue();
+  for (auto& slot : m_FrameSlots)
+  {
+    if (slot.m_State != FrameSlotState::Publishing || slot.m_uiFenceValue > uiCompleted)
+    {
+      continue;
+    }
+
+    auto& frame = slot.m_Frame;
+    if (slot.m_pReadback)
+    {
+      XII_PROFILE_SCOPE("Viewport: Map completed readback");
+      auto pCommand = pDevice->CreateCommandList({.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
+      if (!pCommand)
+      {
+        continue;
+      }
+      const auto capture = slot.m_pReadback->GetCompleted();
+      if (!capture)
+      {
+        continue;
+      }
+
+      xiiResult                      result = XII_FAILURE;
+      xiiGALMappedTextureSubresource mapped;
+      pCommand->Begin();
+      if (pCommand->MapTextureSubresource(capture.m_pStagingTexture, {}, xiiGALMapType::Read, xiiGALMapFlags::DoNotWait, nullptr, mapped).Succeeded())
+      {
+        const xiiUInt32 uiRowBytes = capture.m_uiRowStrideBytes;
+        const xiiUInt64 uiBytes    = xiiUInt64(uiRowBytes) * capture.m_uiHeight;
+        if (mapped.m_pData && mapped.m_uiStride >= uiRowBytes && uiBytes <= xiiMath::MaxValue<xiiUInt32>())
+        {
+          frame.m_Pixels.SetCountUninitialized(static_cast<xiiUInt32>(uiBytes));
+          for (xiiUInt32 uiRow = 0; uiRow < capture.m_uiHeight; ++uiRow)
+          {
+            xiiMemoryUtils::Copy(frame.m_Pixels.GetData() + uiRow * uiRowBytes,
+                                 static_cast<const xiiUInt8*>(mapped.m_pData) + uiRow * mapped.m_uiStride, uiRowBytes);
+          }
+          result = XII_SUCCESS;
+        }
+        if (pCommand->UnmapTextureSubresource(capture.m_pStagingTexture, {}).Failed())
+        {
+          result = XII_FAILURE;
+        }
+      }
+      pCommand->End();
+      slot.m_pReadback->RecycleStagingTexture(capture.m_pStagingTexture);
+      if (result.Failed())
+      {
+        slot.m_State = FrameSlotState::Available;
+        continue;
+      }
+    }
+
+    // The producer's signal has completed before the editor submits its wait.
+    // This also keeps pending producer work off the editor's presentation queue.
+    XII_PROFILE_SCOPE("Viewport: Send completed frame");
+    slot.m_PublishedAt = xiiTime::Now();
+    slot.m_State       = FrameSlotState::Published;
+    SendViewMessage(&frame);
+  }
 }
 
 xiiView* xiiEngineProcessViewContext::GetView() const

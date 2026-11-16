@@ -9,6 +9,7 @@
 #include <Foundation/Containers/StaticArray.h>
 #include <GraphicsCore/Pipeline/Declarations.h>
 #include <GraphicsCore/Pipeline/RenderPipelineProfileConfig.h>
+#include <GraphicsFoundation/Tools/TextureReadback.h>
 
 /// Engine-owned view purposes. Scene previews and scene editors share the authored Editor pipeline.
 enum class xiiEditorRenderPipelineUsage
@@ -47,8 +48,11 @@ public:
   /// Consumes this frame's redraw request without discarding camera or pipeline state.
   virtual void SuspendRendering();
 
-  /// Publishes a rendered offscreen frame; called after world render submissions.
+  /// Queues the selected target for export or readback after world render submissions.
   void PresentFrame();
+
+  /// Publishes GPU-complete frames without blocking on the graphics queue.
+  void PublishCompletedFrames();
 
   /// Focuses camera on the given object
   static bool FocusCameraOnObject(xiiCamera& inout_camera, const xiiBoundingBoxSphere& objectBounds, float fFov, const xiiVec3& vViewDir);
@@ -91,18 +95,22 @@ private:
   {
     Available,
     Rendering,
+    Publishing,
     Published,
     Returning,
   };
 
   struct FrameSlot
   {
-    xiiSharedPtr<xiiGALTexture>     m_pTexture;
-    xiiSharedPtr<xiiGALTextureView> m_pTarget;
-    xiiUInt64                       m_uiTextureID  = 0;
-    xiiUInt64                       m_uiFrameID    = 0;
-    xiiUInt64                       m_uiFenceValue = 0;
-    FrameSlotState                  m_State        = FrameSlotState::Available;
+    xiiSharedPtr<xiiGALTexture>         m_pTexture;
+    xiiSharedPtr<xiiGALTextureView>     m_pTarget;
+    xiiUInt64                           m_uiTextureID  = 0;
+    xiiUInt64                           m_uiFrameID    = 0;
+    xiiUInt64                           m_uiFenceValue = 0;
+    xiiUniquePtr<xiiGALTextureReadback> m_pReadback;
+    xiiViewFrameMsgToEditor             m_Frame;
+    xiiTime                             m_PublishedAt;
+    FrameSlotState                      m_State = FrameSlotState::Available;
   };
 
   xiiResult CreateFrameSlot(FrameSlot& ref_slot, xiiSizeU32 size, bool bShared);

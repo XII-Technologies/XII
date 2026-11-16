@@ -7,6 +7,7 @@
 #include <Foundation/Types/Delegate.h>
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Device/SwapChain.h>
+#include <QTimer>
 #include <QWidget>
 
 /// Qt owns the native window and input. GAL owns every graphics resource and operation.
@@ -31,6 +32,8 @@ private:
   xiiResult EnsureDevice();
   xiiResult EnsureSwapChain();
   xiiResult PresentTexture();
+  void      CollectCompletedFrames();
+  void      ScheduleCompletionCheck();
   void      DestroySwapChain();
 
   static xiiSharedPtr<xiiGALDevice> s_pDevice;
@@ -39,11 +42,26 @@ private:
   struct ImportedSlot
   {
     xiiSharedPtr<xiiGALTexture> m_pTexture;
-    xiiUInt64                   m_uiTextureID = 0;
+    xiiUInt64                   m_uiTextureID    = 0;
+    xiiUInt64                   m_uiFrameID      = 0;
+    xiiUInt64                   m_uiReleaseFence = 0;
   };
-  ImportedSlot                m_ImportedSlots[XII_MAX_VIEWPORT_FRAME_SLOTS];
-  xiiSharedPtr<xiiGALTexture> m_pPresentationTexture;
-  bool                        m_bVSync           = true;
-  bool                        m_bSharingFailed   = false;
-  bool                        m_bCreatingSurface = false;
+
+  struct PresentationSlot
+  {
+    xiiSharedPtr<xiiGALTexture> m_pTexture;
+    xiiUInt64                   m_uiFrameID   = 0;
+    xiiUInt64                   m_uiCopyFence = 0;
+  };
+
+  ImportedSlot              m_ImportedSlots[XII_MAX_VIEWPORT_FRAME_SLOTS];
+  static constexpr xiiUInt8 PresentationSlotCount = 3U;
+  PresentationSlot          m_PresentationSlots[PresentationSlotCount];
+  xiiUInt8                  m_uiLatestSlot    = PresentationSlotCount;
+  xiiUInt64                 m_uiLatestFrameID = 0;
+  QTimer                    m_CompletionTimer;
+  bool                      m_bVSync           = true;
+  bool                      m_bPresentRetry    = false;
+  bool                      m_bSharingFailed   = false;
+  bool                      m_bCreatingSurface = false;
 };

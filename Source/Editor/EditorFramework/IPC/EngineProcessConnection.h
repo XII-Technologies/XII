@@ -55,6 +55,9 @@ public:
   ///        message matches both type, document and is accepted by pCallback.
   xiiResult WaitForDocumentMessage(const xiiUuid& assetGuid, const xiiRTTI* pMessageType, xiiTime timeout, xiiProcessCommunicationChannel::WaitForMessageCallback* pCallback = nullptr);
 
+  /// Interactive view redraws and their sync marker share one outstanding IPC batch.
+  bool CanSendViewRedraw() const { return IsEngineSetup() && !IsProcessCrashed() && m_uiRedrawCountSent == m_uiRedrawCountReceived; }
+
   bool IsEngineSetup() const { return m_bClientIsConfigured; }
   bool SupportsRayTracingModes() const { return m_bClientIsConfigured && !m_bProcessCrashed && m_bHardwareRayTracing; }
 

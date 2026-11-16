@@ -4,6 +4,7 @@
 
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessMessages.h>
 #include <EditorFramework/DocumentWindow/SharedTextureWidget.h>
+#include <Foundation/Profiling/Profiling.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
@@ -23,6 +24,16 @@ xiiUInt32                  xiiQtSharedTextureWidget::s_uiWidgetCount = 0;
 xiiQtSharedTextureWidget::xiiQtSharedTextureWidget(QWidget* parent) : QWidget(parent)
 {
   ++s_uiWidgetCount;
+  m_CompletionTimer.setSingleShot(true);
+  m_CompletionTimer.setInterval(2);
+  connect(&m_CompletionTimer, &QTimer::timeout, this, [this] {
+    CollectCompletedFrames();
+    if (m_bPresentRetry && isVisible())
+    {
+      update();
+    }
+    ScheduleCompletionCheck();
+  });
   setAttribute(Qt::WA_DontCreateNativeAncestors);
   setAttribute(Qt::WA_NativeWindow);
   setAttribute(Qt::WA_TransparentForMouseEvents);
@@ -42,7 +53,10 @@ xiiQtSharedTextureWidget::~xiiQtSharedTextureWidget()
   {
     slot.m_pTexture.Clear();
   }
-  m_pPresentationTexture.Clear();
+  for (auto& slot : m_PresentationSlots)
+  {
+    slot.m_pTexture.Clear();
+  }
   if (--s_uiWidgetCount == 0 && s_pDevice)
   {
     s_pDevice->WaitIdle();
@@ -97,7 +111,8 @@ xiiResult xiiQtSharedTextureWidget::EnsureSwapChain()
     return XII_FAILURE;
   windowHandle()->installEventFilter(this);
   xiiGALSwapChainCreationDescription description;
-  description.m_SurfaceSize = size;
+  description.m_SurfaceSize      = size;
+  description.m_bDeferredAcquire = true;
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
   description.m_NativeWindow.m_Type = xiiGALNativeWindowDescription::Type::Win32;
 #elif XII_ENABLED(XII_PLATFORM_LINUX)
@@ -146,83 +161,193 @@ xiiResult xiiQtSharedTextureWidget::EnsureSwapChain()
 
 void xiiQtSharedTextureWidget::SetFrame(const xiiViewFrameMsgToEditor& frame)
 {
-  const bool shared   = frame.m_Memory.m_Type.IsSet(xiiGALExternalMemoryKind::Exportable);
-  bool       accepted = false;
-  if (frame.m_uiSlotIndex >= XII_MAX_VIEWPORT_FRAME_SLOTS || frame.m_uiWidth == 0 || frame.m_uiHeight == 0 || EnsureDevice().Failed())
+  XII_PROFILE_SCOPE("Viewport: Receive frame");
+  const bool bShared = frame.m_Memory.m_Type.IsSet(xiiGALExternalMemoryKind::Exportable);
+  if (frame.m_uiSlotIndex >= XII_MAX_VIEWPORT_FRAME_SLOTS || frame.m_uiWidth == 0 || frame.m_uiHeight == 0 ||
+      (!bShared && xiiUInt64(frame.m_uiWidth) * frame.m_uiHeight * 4U != frame.m_Pixels.GetCount()) || EnsureDevice().Failed())
   {
     m_OnFrameConsumed(frame.m_uiSlotIndex, frame.m_uiFrameID, false);
     return;
   }
-  s_pDevice->BeginFrame();
+
+  CollectCompletedFrames();
+  auto& imported = m_ImportedSlots[frame.m_uiSlotIndex];
+  if (imported.m_uiFrameID >= frame.m_uiFrameID || imported.m_uiReleaseFence != 0)
   {
-    XII_SCOPE_EXIT(s_pDevice->EndFrame());
-    xiiGALTextureCreationDescription description;
-    description.m_Type      = xiiGALResourceDimension::Texture2D;
-    description.m_Size      = {frame.m_uiWidth, frame.m_uiHeight};
-    description.m_Format    = xiiGALResourceFormat::RGBA8UNormalizedSRGB;
-    description.m_BindFlags = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::ShaderResource;
-    if (shared)
+    // The producer can only publish after we acknowledge the previous frame in this slot.
+    return;
+  }
+  imported.m_uiFrameID = frame.m_uiFrameID;
+
+  s_pDevice->BeginFrame();
+  XII_SCOPE_EXIT(s_pDevice->EndFrame());
+  xiiGALTextureCreationDescription description;
+  description.m_Type      = xiiGALResourceDimension::Texture2D;
+  description.m_Size      = {frame.m_uiWidth, frame.m_uiHeight};
+  description.m_Format    = xiiGALResourceFormat::RGBA8UNormalizedSRGB;
+  description.m_BindFlags = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::ShaderResource;
+
+  if (bShared && imported.m_uiTextureID != frame.m_uiTextureID)
+  {
+    XII_PROFILE_SCOPE("Viewport: Import texture allocation");
+    description.m_ExternalMemory = frame.m_Memory;
+    imported.m_pTexture          = s_pDevice->CreateTexture(description, nullptr, xiiGALExternalMemoryKind::Imported);
+    description.m_ExternalMemory = {};
+    imported.m_uiTextureID       = frame.m_uiTextureID;
+  }
+  else if (!bShared)
+  {
+    imported.m_pTexture.Clear();
+    imported.m_uiTextureID = 0;
+  }
+
+  PresentationSlot* pDestination = nullptr;
+  if (frame.m_uiFrameID > m_uiLatestFrameID && isVisible())
+  {
+    for (xiiUInt8 uiIndex = 0; uiIndex < PresentationSlotCount; ++uiIndex)
     {
-      auto& slot = m_ImportedSlots[frame.m_uiSlotIndex];
-      if (slot.m_uiTextureID != frame.m_uiTextureID || !slot.m_pTexture)
+      auto& slot = m_PresentationSlots[uiIndex];
+      if (uiIndex == m_uiLatestSlot || slot.m_uiCopyFence != 0)
       {
-        slot.m_pTexture.Clear();
-        description.m_ExternalMemory = frame.m_Memory;
-        slot.m_pTexture              = s_pDevice->CreateTexture(description, nullptr, xiiGALExternalMemoryKind::Imported);
-        description.m_ExternalMemory = {};
-        slot.m_uiTextureID           = frame.m_uiTextureID;
+        continue;
+      }
+      if (!slot.m_pTexture || slot.m_pTexture->GetDescription().m_Size != description.m_Size)
+      {
+        slot.m_pTexture = s_pDevice->CreateTexture(description);
       }
       if (slot.m_pTexture)
       {
-        if (!m_pPresentationTexture || m_pPresentationTexture->GetDescription().m_Size != description.m_Size)
-          m_pPresentationTexture = s_pDevice->CreateTexture(description);
-        auto command = s_pDevice->CreateCommandList({.m_QueueFlags = xiiGALCommandQueueFlags::Graphics | xiiGALCommandQueueFlags::Transfer});
-        if (command && m_pPresentationTexture)
-        {
-          command->Begin();
-          const auto acquired = slot.m_pTexture->AcquireExternalMemory(command);
-          if (acquired.Succeeded())
-            command->CopyTexture(slot.m_pTexture, m_pPresentationTexture);
-          const auto released = acquired.Succeeded() ? slot.m_pTexture->ReleaseExternalMemory(command) : XII_FAILURE;
-          command->End();
-          if (released.Succeeded())
-          {
-            s_pDevice->GetCommandQueue()->Submit(command);
-            accepted = true;
-          }
-        }
+        pDestination = &slot;
       }
-      if (!accepted)
-      {
-        m_bSharingFailed = true;
-        xiiLog::Warning("GAL viewport texture import unavailable; using offscreen readback presentation.");
-      }
+      break;
     }
-    else if (xiiUInt64(frame.m_uiWidth) * frame.m_uiHeight * 4 == frame.m_Pixels.GetCount())
-    {
-      xiiGALTextureSubResourceData data(frame.m_Pixels.GetArrayPtr().ToByteArray(), frame.m_uiWidth * 4, xiiUInt64(frame.m_uiWidth) * frame.m_uiHeight * 4);
-      xiiGALTextureData            initialData(xiiMakeArrayPtr(&data, 1));
-      m_pPresentationTexture = s_pDevice->CreateTexture(description, &initialData);
-    }
-    // The presentation texture is private to this process. Repaints never access
-    // the imported image after its release semaphore has been submitted.
-    if (m_pPresentationTexture && PresentTexture().Failed() && isVisible())
-      xiiLog::Error("Could not present the editor viewport through GAL.");
   }
-  m_OnFrameConsumed(frame.m_uiSlotIndex, frame.m_uiFrameID, accepted);
+
+  auto*     pQueue      = s_pDevice->GetCommandQueue();
+  xiiUInt64 uiCopyFence = 0;
+  if (bShared && imported.m_pTexture)
+  {
+    auto pCommand = s_pDevice->CreateCommandList({.m_QueueFlags = xiiGALCommandQueueFlags::Graphics | xiiGALCommandQueueFlags::Transfer});
+    if (pCommand)
+    {
+      XII_PROFILE_SCOPE("Viewport: Submit external texture copy");
+      pCommand->Begin();
+      const auto acquired = imported.m_pTexture->AcquireExternalMemory(pCommand);
+      if (acquired.Succeeded() && pDestination)
+      {
+        pCommand->CopyTexture(imported.m_pTexture, pDestination->m_pTexture);
+      }
+      const auto released = acquired.Succeeded() ? imported.m_pTexture->ReleaseExternalMemory(pCommand) : XII_FAILURE;
+      pCommand->End();
+      if (released.Succeeded())
+      {
+        uiCopyFence               = pQueue->Submit(pCommand);
+        imported.m_uiReleaseFence = uiCopyFence;
+      }
+    }
+  }
+  else if (!bShared && pDestination)
+  {
+    auto pCommand = s_pDevice->CreateCommandList({.m_QueueFlags = xiiGALCommandQueueFlags::Graphics | xiiGALCommandQueueFlags::Transfer});
+    if (pCommand)
+    {
+      XII_PROFILE_SCOPE("Viewport: Submit pixel upload");
+      const xiiGALTextureSubResourceData data(frame.m_Pixels.GetArrayPtr().ToByteArray(), frame.m_uiWidth * 4U, frame.m_Pixels.GetCount());
+      const auto                         box = xiiBoundingBoxU32::MakeFromMinMax(xiiVec3U32::MakeZero(), {frame.m_uiWidth, frame.m_uiHeight, 1U});
+      pCommand->Begin();
+      pCommand->UpdateTexture(pDestination->m_pTexture, {}, box, data);
+      pCommand->End();
+      uiCopyFence = pQueue->Submit(pCommand);
+    }
+  }
+
+  if (uiCopyFence != 0 && pDestination)
+  {
+    pDestination->m_uiFrameID   = frame.m_uiFrameID;
+    pDestination->m_uiCopyFence = uiCopyFence;
+  }
+  else
+  {
+    XII_PROFILE_SCOPE("Viewport: Drop presentation frame");
+  }
+
+  if (!bShared || imported.m_uiReleaseFence == 0)
+  {
+    if (bShared && !m_bSharingFailed)
+    {
+      m_bSharingFailed = true;
+      xiiLog::Warning("GAL viewport texture import unavailable; using offscreen readback presentation.");
+    }
+    m_OnFrameConsumed(frame.m_uiSlotIndex, frame.m_uiFrameID, false);
+  }
+  ScheduleCompletionCheck();
+}
+
+void xiiQtSharedTextureWidget::CollectCompletedFrames()
+{
+  XII_PROFILE_SCOPE("Viewport: Collect completed copies");
+  const xiiUInt64 uiCompleted = s_pDevice->GetCommandQueue()->GetCompletedFenceValue();
+  for (xiiUInt8 uiIndex = 0; uiIndex < XII_MAX_VIEWPORT_FRAME_SLOTS; ++uiIndex)
+  {
+    auto& slot = m_ImportedSlots[uiIndex];
+    if (slot.m_uiReleaseFence != 0 && slot.m_uiReleaseFence <= uiCompleted)
+    {
+      slot.m_uiReleaseFence = 0;
+      m_OnFrameConsumed(uiIndex, slot.m_uiFrameID, true);
+    }
+  }
+  const xiiUInt64 uiPreviousFrameID = m_uiLatestFrameID;
+  for (xiiUInt8 uiIndex = 0; uiIndex < PresentationSlotCount; ++uiIndex)
+  {
+    auto& slot = m_PresentationSlots[uiIndex];
+    if (slot.m_uiCopyFence != 0 && slot.m_uiCopyFence <= uiCompleted)
+    {
+      slot.m_uiCopyFence = 0;
+      if (slot.m_uiFrameID > m_uiLatestFrameID)
+      {
+        m_uiLatestFrameID = slot.m_uiFrameID;
+        m_uiLatestSlot    = uiIndex;
+      }
+    }
+  }
+  if (m_uiLatestFrameID != uiPreviousFrameID)
+  {
+    update();
+  }
+}
+
+void xiiQtSharedTextureWidget::ScheduleCompletionCheck()
+{
+  if (m_CompletionTimer.isActive())
+  {
+    return;
+  }
+  const bool bPendingRelease = std::ranges::any_of(m_ImportedSlots, [](const ImportedSlot& slot) { return slot.m_uiReleaseFence != 0; });
+  const bool bPendingCopy    = std::ranges::any_of(m_PresentationSlots, [](const PresentationSlot& slot) { return slot.m_uiCopyFence != 0; });
+  if (bPendingRelease || bPendingCopy || (m_bPresentRetry && isVisible()))
+  {
+    m_CompletionTimer.start();
+  }
 }
 
 xiiResult xiiQtSharedTextureWidget::PresentTexture()
 {
+  XII_PROFILE_SCOPE("Viewport: Present latest completed frame");
+  m_bPresentRetry = false;
   XII_SUCCEED_OR_RETURN(EnsureSwapChain());
-  auto target = m_pSwapChain->GetBackBufferTexture();
-  if (!target || !m_pPresentationTexture)
-    return XII_FAILURE;
+  xiiSharedPtr<xiiGALTexture> pTarget;
+  XII_SUCCEED_OR_RETURN(m_pSwapChain->TryAcquireBackBuffer(pTarget));
+  if (!pTarget)
+  {
+    m_bPresentRetry = true;
+    ScheduleCompletionCheck();
+    return XII_SUCCESS;
+  }
   auto command = s_pDevice->CreateCommandList({.m_QueueFlags = xiiGALCommandQueueFlags::Graphics | xiiGALCommandQueueFlags::Transfer});
   if (!command)
     return XII_FAILURE;
   command->Begin();
-  const auto result = command->BlitTexture(m_pPresentationTexture, target);
+  const auto result = command->BlitTexture(m_PresentationSlots[m_uiLatestSlot].m_pTexture, pTarget);
   command->End();
   XII_SUCCEED_OR_RETURN(result);
   s_pDevice->GetCommandQueue()->Submit(command);
@@ -232,7 +357,7 @@ xiiResult xiiQtSharedTextureWidget::PresentTexture()
 
 void xiiQtSharedTextureWidget::paintEvent(QPaintEvent*)
 {
-  if (!s_pDevice || !m_pPresentationTexture)
+  if (!s_pDevice || m_uiLatestSlot >= PresentationSlotCount)
     return;
   s_pDevice->BeginFrame();
   PresentTexture().IgnoreResult();
@@ -241,8 +366,6 @@ void xiiQtSharedTextureWidget::paintEvent(QPaintEvent*)
 
 void xiiQtSharedTextureWidget::DestroySwapChain()
 {
-  if (s_pDevice)
-    s_pDevice->WaitIdle();
   m_pSwapChain.Clear();
 }
 

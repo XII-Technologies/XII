@@ -24,6 +24,8 @@ class XII_GRAPHICSVULKAN_DLL xiiGALSwapChainVulkan final : public xiiGALSwapChai
   XII_ADD_DYNAMIC_REFLECTION(xiiGALSwapChainVulkan, xiiGALSwapChain);
 
 public:
+  xiiResult TryAcquireBackBuffer(xiiSharedPtr<xiiGALTexture>& out_pTexture) override final;
+
   virtual void Present() override final;
 
   virtual xiiResult Resize(xiiSizeU32 newSize, xiiEnum<xiiGALSurfaceTransform> newTransform = xiiGALSurfaceTransform::Optimal) override final;
@@ -70,6 +72,7 @@ private:
   xiiSharedPtr<xiiGALFence> m_pFrameCompleteFence;
   xiiUInt64                 m_uiFrameIndex = 1ULL;
 
+  bool m_bRecreatePending = false;
   bool m_bIsImageAcquired = false;
   bool m_bIsMinimized     = false;
   bool m_bIsVSyncEnabled  = false;

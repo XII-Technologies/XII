@@ -101,14 +101,19 @@ xiiQtEngineViewWidget::~xiiQtEngineViewWidget()
 
 void xiiQtEngineViewWidget::SyncToEngine()
 {
+  static_cast<xiiQtSharedTextureWidget*>(m_pViewportWidget)->SetVSyncEnabled(m_pViewConfig->m_bVSync);
+  if (!xiiEditorEngineProcessConnection::GetSingleton()->CanSendViewRedraw())
+  {
+    return;
+  }
+
   xiiViewRedrawMsgToEngine cam;
   if (!xiiViewRenderMode::IsSupportedVisualizationMode(m_pViewConfig->m_RenderMode) ||
       (xiiViewRenderMode::IsRayTracingVisualizationMode(m_pViewConfig->m_RenderMode) && xiiEditorEngineProcessConnection::GetSingleton()->IsEngineSetup() &&
        !xiiEditorEngineProcessConnection::GetSingleton()->IsProcessCrashed() && !xiiEditorEngineProcessConnection::GetSingleton()->SupportsRayTracingModes()))
     m_pViewConfig->m_RenderMode = xiiViewRenderMode::Default;
-  cam.m_bShowFrameStats     = m_pViewConfig->m_bShowFrameStats;
-  cam.m_RenderConfiguration = m_pViewConfig->m_RenderConfiguration;
-  static_cast<xiiQtSharedTextureWidget*>(m_pViewportWidget)->SetVSyncEnabled(m_pViewConfig->m_bVSync);
+  cam.m_bShowFrameStats      = m_pViewConfig->m_bShowFrameStats;
+  cam.m_RenderConfiguration  = m_pViewConfig->m_RenderConfiguration;
   cam.m_RenderMode           = m_pViewConfig->m_RenderMode;
   cam.m_bShowNavigationGizmo = IsNavigationGizmoEnabled();
   if (m_pNavigationGizmo)
