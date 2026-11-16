@@ -6,6 +6,10 @@
 #include <Foundation/Types/Uuid.h>
 #include <Foundation/Utilities/ConversionUtils.h>
 #include <FoundationTest/Network/Implementation/NetworkSecurityTestUtilities.h>
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+#  include <Foundation/Basics/Platform/Windows/IncludeWindows.h>
+#endif
+
 #include <openssl/err.h>
 #include <openssl/pem.h>
 #include <openssl/ssl.h>
