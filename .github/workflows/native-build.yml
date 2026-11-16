@@ -70,6 +70,12 @@ jobs:
           key: ccache-v2-${{ inputs.os }}-${{ runner.arch }}-${{ inputs.preset }}-${{ inputs.configuration }}-${{ hashFiles('CMakePresets.json', 'Source/BuildSystem/**', '.gitmodules') }}-${{ github.sha }}
           restore-keys: |
             ccache-v2-${{ inputs.os }}-${{ runner.arch }}-${{ inputs.preset }}-${{ inputs.configuration }}-${{ hashFiles('CMakePresets.json', 'Source/BuildSystem/**', '.gitmodules') }}-
+      - name: Restore verified native NuGet packages
+        if: runner.os == 'Windows'
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: Workspace/Nuget
+          key: nuget-native-${{ hashFiles('Source/BuildSystem/CMake/Dependencies/NetworkDependencies.cmake') }}
       - name: Configure
         run: |
           $ErrorActionPreference = 'Stop'
@@ -94,6 +100,16 @@ jobs:
           python Utilities/CI/check_test_discovery.py "Workspace/$env:BUILD_PRESET" $env:BUILD_CONFIGURATION
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           ctest --test-dir "Workspace/$env:BUILD_PRESET" -C $env:BUILD_CONFIGURATION -L '^headless$' --no-tests=error --output-on-failure --output-junit "$env:GITHUB_WORKSPACE/Workspace/Diagnostics/ctest.xml"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Validate relocated Windows networking SDK
+        if: runner.os == 'Windows'
+        run: |
+          python Utilities/CI/validate_network_sdk.py --root . --build "Workspace/$env:BUILD_PRESET" --configuration $env:BUILD_CONFIGURATION
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Validate static Windows networking and SDK cache reuse
+        if: runner.os == 'Windows'
+        run: |
+          python Utilities/CI/validate_network_sdk.py --root . --build "Workspace/$env:BUILD_PRESET" --configuration $env:BUILD_CONFIGURATION --static
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Cache statistics
         if: always() && runner.os == 'Linux'

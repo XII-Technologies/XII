@@ -19,11 +19,17 @@ mark_as_advanced(FORCE XII_OPENXR_REMOTING_DIR)
 xii_pull_compiler_and_architecture_vars()
 
 if((XII_OPENXR_LOADER_DIR STREQUAL "XII_OPENXR_LOADER_DIR-NOTFOUND") OR(XII_OPENXR_LOADER_DIR STREQUAL "") OR(XII_OPENXR_HEADERS_DIR STREQUAL "XII_OPENXR_HEADERS_DIR-NOTFOUND") OR(XII_OPENXR_HEADERS_DIR STREQUAL "") OR(XII_OPENXR_REMOTING_DIR STREQUAL "XII_OPENXR_REMOTING_DIR-NOTFOUND") OR(XII_OPENXR_REMOTING_DIR STREQUAL ""))
-  xii_nuget_init()
-  execute_process(COMMAND ${NUGET} restore ${CMAKE_SOURCE_DIR}/Source/EnginePlugins/OpenXRPlugin/packages.config -PackagesDirectory ${CMAKE_BINARY_DIR}/packages WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
-  set(XII_OPENXR_LOADER_DIR "${CMAKE_BINARY_DIR}/packages/OpenXR.Loader.1.0.10.2" CACHE PATH "Directory of OpenXR loader installation" FORCE)
-  set(XII_OPENXR_HEADERS_DIR "${CMAKE_BINARY_DIR}/packages/OpenXR.Headers.1.0.10.2" CACHE PATH "Directory of OpenXR headers installation" FORCE)
-  set(XII_OPENXR_REMOTING_DIR "${CMAKE_BINARY_DIR}/packages/Microsoft.Holographic.Remoting.OpenXr.2.4.0" CACHE PATH "Directory of OpenXR remoting installation" FORCE)
+  # This existing NuGet consumer uses the same verified persistent cache as native providers.
+  xii_nuget_fetch_package(PACKAGE OpenXR.Headers VERSION 1.0.10.2
+    SHA256 f1bd28e0eb0cf6c476e211f3e9201dd480d7cf37be4c8ba75ebba9c60b75a8c8 OUT_PACKAGE_DIR OPENXR_HEADERS)
+  xii_nuget_fetch_package(PACKAGE OpenXR.Loader VERSION 1.0.10.2
+    SHA256 a9286f2977a207689e6838487c85685317309b7bd1f528655e552c760e335b12
+    DEPENDENCIES openxr.headers@1.0.10.2 OUT_PACKAGE_DIR OPENXR_LOADER)
+  xii_nuget_fetch_package(PACKAGE Microsoft.Holographic.Remoting.OpenXr VERSION 2.9.4
+    SHA256 0efbc12a5b75fe83d6104d153aa3d80f2cacdfecb90bdbc1d76ebb18d22a791c OUT_PACKAGE_DIR OPENXR_REMOTING)
+  set(XII_OPENXR_LOADER_DIR "${OPENXR_LOADER}" CACHE PATH "Directory of OpenXR loader installation" FORCE)
+  set(XII_OPENXR_HEADERS_DIR "${OPENXR_HEADERS}" CACHE PATH "Directory of OpenXR headers installation" FORCE)
+  set(XII_OPENXR_REMOTING_DIR "${OPENXR_REMOTING}" CACHE PATH "Directory of OpenXR remoting installation" FORCE)
 endif()
 
 if(XII_CMAKE_PLATFORM_WINDOWS)

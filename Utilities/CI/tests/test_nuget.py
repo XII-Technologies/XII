@@ -195,6 +195,59 @@ class NuGetTests(unittest.TestCase):
         _, digest = self.package(metadata=metadata)
         self.run_script(self.fetch(digest), success=False)
 
+    def test_balanced_xml_and_package_opc_metadata(self):
+        for metadata in (
+            '<package><metadata><id>Fixture.Native</id><version>1.2.3</version></wrong></package>',
+            '<package><metadata><id>Fixture.Native</id><version>1.2.3</version></metadata>',
+            '<!DOCTYPE package [<!ENTITY remote SYSTEM "https://invalid.example/">]><package/>',
+        ):
+            shutil.rmtree(self.cache, ignore_errors=True)
+            _, digest = self.package(metadata=metadata)
+            self.run_script(self.fetch(digest), success=False)
+        shutil.rmtree(self.cache, ignore_errors=True)
+        _, digest = self.package(files={"_rels/.rels": "invalid OPC XML"})
+        self.run_script(self.fetch(digest), success=False)
+        shutil.rmtree(self.cache, ignore_errors=True)
+        _, digest = self.package(metadata='<package><metadata><id>Fixture.Native</id><version>1.2.3+build.4</version><description><![CDATA[<id>NotMetadata</id>]]></description></metadata></package>')
+        self.run_script(self.fetch(digest))
+
+    def test_validation_does_not_repair_and_version_metadata_is_normalized(self):
+        _, digest = self.package()
+        self.run_script(self.fetch(digest, name="FIXTURE.NATIVE", version="01.02.003+build.7"))
+        marker = self.cache / "fixture.native/1.2.3/.extracted"
+        marker.write_text("corrupt")
+        self.run_script(f'xii_nuget_validate_package(PACKAGE Fixture.Native VERSION 1.2.3 SHA256 {digest} OUT_VALID VALID)\nif(VALID)\nmessage(FATAL_ERROR "corrupt cache accepted")\nendif()\n')
+        self.assertEqual(marker.read_text(), "corrupt")
+
+    @unittest.skipUnless(shutil.which("cc") and shutil.which("ar") and platform.system() == "Linux", "Linux native archive fixture")
+    def test_static_archive_and_exported_private_runtime_metadata(self):
+        source = self.root / "native.c"
+        source.write_text("int fixture(void) { return 42; }\n")
+        obj = self.root / "native.o"
+        archive = self.root / "libfixture.a"
+        subprocess.run(["cc", "-c", str(source), "-o", str(obj)], check=True, capture_output=True)
+        subprocess.run(["ar", "rcs", str(archive), str(obj)], check=True, capture_output=True)
+        _, digest = self.package(files={"lib/libfixture.a": archive.read_bytes()})
+        project = self.root / "static-project"
+        project.mkdir()
+        (project / "wrapper.c").write_text("int wrapper(void) { return 0; }\n")
+        (project / "CMakeLists.txt").write_text(self.preamble() + 'project(StaticArchive C)\n' + self.fetch(digest) + r'''
+xii_nuget_import_native_library(TARGET Fixture::Static PACKAGE_DIR "${PACKAGE_DIR}"
+  TYPE STATIC PLATFORM Linux ARCHITECTURE x64 ABI C CRT NONE LOCATION lib/libfixture.a INCLUDE_DIRS include)
+add_library(Wrapper SHARED wrapper.c)
+target_link_libraries(Wrapper PRIVATE Fixture::Static)
+xii_nuget_stage_runtime(TARGET Wrapper LIBRARIES Wrapper)
+export(TARGETS Wrapper FILE "${CMAKE_BINARY_DIR}/wrapper-targets.cmake")
+xii_nuget_export_targets(FILE "${CMAKE_BINARY_DIR}/sdk/xiiNuGetTargets.cmake" TARGETS Fixture::Static)
+''')
+        build = self.root / "static-build"
+        result = subprocess.run(["cmake", "-S", str(project), "-B", str(build), "-DCMAKE_BUILD_TYPE=Debug"], capture_output=True, text=True, timeout=30)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        subprocess.run(["cmake", "--build", str(build)], check=True, capture_output=True, timeout=30)
+        exported = (build / "wrapper-targets.cmake").read_text()
+        self.assertIn('XII_NUGET_RUNTIME_TARGETS "Fixture::Static"', exported)
+        self.assertIn('add_library(Fixture::Static STATIC IMPORTED GLOBAL)', (build / "sdk/xiiNuGetTargets.cmake").read_text())
+
     def test_offline_miss_and_incomplete_archive_fail(self):
         archive, digest = self.package()
         result = self.run_script("set(XII_NUGET_OFFLINE ON)\n" + self.fetch(digest), success=False)

@@ -94,7 +94,7 @@ macro(xii_create_target TYPE TARGET_NAME)
   endif()
 
   # Resolve native package runtime dependencies after this directory has finished linking targets.
-  cmake_language(EVAL CODE "cmake_language(DEFER CALL xii_nuget_stage_runtime TARGET \"${TARGET_NAME}\" LIBRARIES \"${TARGET_NAME}\")")
+  cmake_language(EVAL CODE "cmake_language(DEFER CALL xii_nuget_stage_runtime TARGET ${TARGET_NAME} LIBRARIES ${TARGET_NAME})")
 
   # On linux we want all symbols to be hidden by default. We manually "export" them.
   if(XII_COMPILE_ENGINE_AS_DLL AND XII_CMAKE_PLATFORM_LINUX AND NOT ARG_ALL_SYMBOLS_VISIBLE)
