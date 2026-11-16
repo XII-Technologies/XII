@@ -9,6 +9,7 @@
 #include <GraphicsVulkan/Pools/StagingBufferPoolVulkan.h>
 #include <GraphicsVulkan/Resources/BufferViewVulkan.h>
 #include <GraphicsVulkan/Resources/BufferVulkan.h>
+#include <GraphicsVulkan/Utilities/ExternalMemoryVulkan.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALBufferVulkan, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
@@ -22,12 +23,29 @@ xiiGALBufferVulkan::~xiiGALBufferVulkan()
 {
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
 
-  if (m_vkBuffer != VK_NULL_HANDLE)
+  pDeviceVulkan->SafeReleaseDeviceObject(std::move(m_vkExternalMemorySemaphore));
+  if (m_bOwnsExternalHandles)
   {
-    pDeviceVulkan->SafeReleaseDeviceObject(std::move(m_vkBuffer), std::move(m_BufferMemoryAllocation));
+    m_ExternalMemoryDescription.CloseHandles();
+  }
 
-    m_vkBuffer               = VK_NULL_HANDLE;
-    m_BufferMemoryAllocation = VK_NULL_HANDLE;
+  if (m_vkBuffer)
+  {
+    if (m_ExternalMemoryKind == xiiGALExternalMemoryKind::Imported)
+    {
+      if (m_vkImportedMemory)
+      {
+        pDeviceVulkan->SafeReleaseDeviceObject(std::move(m_vkBuffer), VK_NULL_HANDLE, std::move(m_vkImportedMemory));
+      }
+      else
+      {
+        pDeviceVulkan->GetVulkanLogicalDevice().destroyBuffer(m_vkBuffer, nullptr, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+      }
+    }
+    else
+    {
+      pDeviceVulkan->SafeReleaseDeviceObject(std::move(m_vkBuffer), std::move(m_BufferMemoryAllocation));
+    }
   }
 }
 
@@ -39,8 +57,6 @@ xiiUInt64 xiiGALBufferVulkan::GetMemoryConsumption() const
 
 xiiResult xiiGALBufferVulkan::InitPlatform(const xiiGALBufferData* pInitialData, xiiBitflags<xiiGALExternalMemoryKind> externalMemoryKind)
 {
-  XII_IGNORE_UNUSED(externalMemoryKind);
-
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan          = m_pDevice.Downcast<xiiGALDeviceVulkan>();
   xiiVulkanMemoryAllocator*        pVulkanMemoryAllocator = pDeviceVulkan->GetVulkanMemoryAllocator();
 
@@ -117,6 +133,17 @@ xiiResult xiiGALBufferVulkan::InitPlatform(const xiiGALBufferData* pInitialData,
 
         XII_DEFAULT_CASE_NOT_IMPLEMENTED;
     }
+  }
+
+  if (externalMemoryKind.IsAnySet(xiiGALExternalMemoryKind::Imported | xiiGALExternalMemoryKind::Exportable))
+  {
+    if (pInitialData || m_Description.m_Usage != xiiGALResourceUsage::Mutable ||
+        m_Description.m_BindFlags.IsSet(xiiGALBindFlags::RayTracing) ||
+        (externalMemoryKind != xiiGALExternalMemoryKind::Imported && externalMemoryKind != xiiGALExternalMemoryKind::Exportable))
+    {
+      return XII_FAILURE;
+    }
+    return InitializeExternalBuffer(vkBufferCreateInfo, externalMemoryKind);
   }
 
   constexpr vk::BufferUsageFlags usageFlagsThatRequireBackingBuffer = vk::BufferUsageFlagBits::eStorageTexelBuffer | vk::BufferUsageFlagBits::eUniformTexelBuffer | vk::BufferUsageFlagBits::eShaderDeviceAddress;
@@ -271,6 +298,115 @@ xiiResult xiiGALBufferVulkan::InitPlatform(const xiiGALBufferData* pInitialData,
     }
   }
 
+  return XII_SUCCESS;
+}
+
+xiiResult xiiGALBufferVulkan::InitializeExternalBuffer(const vk::BufferCreateInfo& createInfo, xiiBitflags<xiiGALExternalMemoryKind> kind)
+{
+  auto       pDevice    = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  const auto handleType = xiiVulkanExternalMemory::GetHandleType();
+  if (handleType == vk::ExternalMemoryHandleTypeFlagBits{} ||
+      !m_Description.m_ExternalMemory.m_Flags.IsSet(xiiGALExternalMemoryFlags::BinarySemaphore))
+  {
+    return XII_FAILURE;
+  }
+
+  vk::PhysicalDeviceExternalBufferInfo query;
+  query.flags      = createInfo.flags;
+  query.usage      = createInfo.usage;
+  query.handleType = handleType;
+  vk::ExternalBufferProperties properties;
+  const auto&                  dispatch = pDevice->GetVulkanDynamicDispatchLoader();
+  pDevice->GetVulkanPhysicalDevice().getExternalBufferProperties(&query, &properties, dispatch);
+  const auto required = kind == xiiGALExternalMemoryKind::Imported ? vk::ExternalMemoryFeatureFlagBits::eImportable : vk::ExternalMemoryFeatureFlagBits::eExportable;
+  if (!(properties.externalMemoryProperties.externalMemoryFeatures & required))
+  {
+    return XII_FAILURE;
+  }
+
+  vk::ExternalMemoryBufferCreateInfo external;
+  external.handleTypes                     = handleType;
+  auto externalCreateInfo                  = createInfo;
+  external.pNext                           = externalCreateInfo.pNext;
+  externalCreateInfo.pNext                 = &external;
+  externalCreateInfo.sharingMode           = vk::SharingMode::eExclusive;
+  externalCreateInfo.queueFamilyIndexCount = 0;
+  externalCreateInfo.pQueueFamilyIndices   = nullptr;
+
+  xiiVulkanAllocationInfo allocationInfo = {};
+  m_ExternalMemoryKind                   = kind;
+  m_ExternalMemoryDescription            = m_Description.m_ExternalMemory;
+  if (kind == xiiGALExternalMemoryKind::Imported)
+  {
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(pDevice->GetVulkanLogicalDevice().createBuffer(&externalCreateInfo, nullptr, &m_vkBuffer, dispatch));
+  }
+  else
+  {
+    xiiVulkanAllocationCreateInfo allocation;
+    allocation.m_MemoryCategory          = m_Description.m_MemoryCategory;
+    allocation.m_Usage                   = xiiVulkanMemoryUsage::Auto;
+    allocation.m_RequiredFlags           = xiiVulkanMemoryPropertyFlags::DeviceLocal;
+    allocation.m_bExportSharedAllocation = true;
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(pDevice->GetVulkanMemoryAllocator()->CreateBuffer(externalCreateInfo, allocation, m_vkBuffer, m_BufferMemoryAllocation, &allocationInfo));
+  }
+
+  vk::MemoryDedicatedAllocateInfo dedicated;
+  dedicated.buffer = m_vkBuffer;
+  XII_SUCCEED_OR_RETURN(xiiVulkanExternalMemory::Initialize(*pDevice, kind, allocationInfo, dedicated, m_ExternalMemoryDescription,
+                                                            m_vkExternalMemorySemaphore, m_vkImportedMemory, m_bOwnsExternalHandles));
+  SetResourceState(xiiGALResourceStateFlags::Common);
+  return XII_SUCCESS;
+}
+
+xiiResult xiiGALBufferVulkan::AcquireExternalMemory(xiiGALCommandList* pCommandList)
+{
+  return TransferExternalBuffer(pCommandList, true);
+}
+
+xiiResult xiiGALBufferVulkan::ReleaseExternalMemory(xiiGALCommandList* pCommandList)
+{
+  return TransferExternalBuffer(pCommandList, false);
+}
+
+xiiResult xiiGALBufferVulkan::TransferExternalBuffer(xiiGALCommandList* pCommandList, bool bAcquire)
+{
+  auto  pDevice  = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  auto* pCommand = xiiVulkanExternalMemory::GetTransferCommandList(pCommandList, *pDevice, m_ExternalMemoryDescription, m_vkExternalMemorySemaphore);
+  if (!pCommand)
+  {
+    return XII_FAILURE;
+  }
+
+  const auto queueFlags = pCommand->GetDescription().m_QueueFlags;
+  if (!queueFlags.IsAnySet(xiiGALCommandQueueFlags::Graphics | xiiGALCommandQueueFlags::Compute | xiiGALCommandQueueFlags::Transfer))
+  {
+    return XII_FAILURE;
+  }
+
+  const xiiUInt32         uiQueueFamily = pDevice->GetCommandQueueInformation(queueFlags).m_uiQueueFamilyIndex;
+  constexpr auto          access        = vk::AccessFlagBits::eMemoryRead | vk::AccessFlagBits::eMemoryWrite;
+  vk::BufferMemoryBarrier barrier;
+  barrier.buffer              = m_vkBuffer;
+  barrier.offset              = 0;
+  barrier.size                = VK_WHOLE_SIZE;
+  barrier.srcQueueFamilyIndex = bAcquire ? VK_QUEUE_FAMILY_EXTERNAL : uiQueueFamily;
+  barrier.dstQueueFamilyIndex = bAcquire ? uiQueueFamily : VK_QUEUE_FAMILY_EXTERNAL;
+  barrier.srcAccessMask       = bAcquire ? vk::AccessFlags{} : access;
+  barrier.dstAccessMask       = bAcquire ? access : vk::AccessFlags{};
+  if (bAcquire)
+  {
+    pCommand->AddWaitSemaphore(m_vkExternalMemorySemaphore, vk::PipelineStageFlagBits::eAllCommands);
+  }
+  pCommand->FlushBarriers();
+  pCommand->GetVulkanCommandBuffer().pipelineBarrier(
+    bAcquire ? vk::PipelineStageFlagBits::eTopOfPipe : vk::PipelineStageFlagBits::eAllCommands,
+    bAcquire ? vk::PipelineStageFlagBits::eAllCommands : vk::PipelineStageFlagBits::eBottomOfPipe,
+    {}, 0, nullptr, 1, &barrier, 0, nullptr, pDevice->GetVulkanDynamicDispatchLoader());
+  if (!bAcquire)
+  {
+    pCommand->AddSignalSemaphore(m_vkExternalMemorySemaphore);
+  }
+  SetResourceState(xiiGALResourceStateFlags::Common);
   return XII_SUCCESS;
 }
 

@@ -82,6 +82,7 @@ XII_CREATE_SIMPLE_TEST(EditorViews, Settings)
     message.m_Memory.m_uiSize                  = 65536;
     message.m_Memory.m_uiProcessId             = 789;
     message.m_Memory.m_uiMemoryTypeIndex       = 2;
+    message.m_Memory.m_DriverUUID              = xiiUuid::MakeUuid();
     message.m_Memory.m_DeviceUUID              = xiiUuid::MakeUuid();
     xiiDefaultMemoryStreamStorage storage;
     xiiMemoryStreamWriter         writer(&storage);

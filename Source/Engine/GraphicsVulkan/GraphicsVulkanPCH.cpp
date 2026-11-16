@@ -33,4 +33,5 @@ XII_STATICLINK_LIBRARY(GraphicsVulkan)
   XII_STATICLINK_REFERENCE(GraphicsVulkan_States_Implementation_RasterizerStateVulkan);
   XII_STATICLINK_REFERENCE(GraphicsVulkan_States_Implementation_RayTracingPipelineStateVulkan);
   XII_STATICLINK_REFERENCE(GraphicsVulkan_States_Implementation_TilePipelineStateVulkan);
+  XII_STATICLINK_REFERENCE(GraphicsVulkan_Utilities_Implementation_ExternalMemoryVulkan);
 }

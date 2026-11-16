@@ -4,6 +4,7 @@
 
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
+#include <GraphicsFoundation/Declarations/Descriptors.h>
 #include <GraphicsFoundation/Device/MemoryStatistics.h>
 
 #include <GraphicsFoundation/Resources/BufferView.h>
@@ -57,13 +58,14 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALBufferCreationDescription : public xiiHa
   XII_DECLARE_POD_TYPE();
 
   xiiEnum<xiiGALMemoryCategory>      m_MemoryCategory;
-  xiiUInt64                          m_uiSize              = 0U;                           ///< The size of the buffer in bytes. For a uniform (constant) buffer, this must be a multiple of 16. The default is 0.
-  xiiBitflags<xiiGALBindFlags>       m_BindFlags           = xiiGALBindFlags::None;        ///< The bind flags. Allowed flags are Vertex, Index, Uniform (Constant), Shader Resource, Stream Output, Unordered Access, Indirect Draw Args, Ray Tracing. Allowed flags for sparse resources are stored in the allowed sparse resource properties. The default is None.
-  xiiEnum<xiiGALResourceUsage>       m_Usage               = xiiGALResourceUsage::Mutable; ///< The resource usage. The default is Default.
-  xiiBitflags<xiiGALCPUAccessFlag>   m_CPUAccessFlags      = xiiGALCPUAccessFlag::None;    ///< The CPU access flags or None if no CPU access is allowed. The default is None.
-  xiiEnum<xiiGALBufferMode>          m_Mode                = xiiGALBufferMode::Undefined;  ///< The buffer mode. The default is Undefined.
-  xiiBitflags<xiiGALMiscBufferFlags> m_MiscFlags           = xiiGALMiscBufferFlags::None;  ///< The miscellaneous flags. The default is None.
-  xiiUInt32                          m_uiElementByteStride = 0U;                           ///< The buffer element stride in bytes. For a structured buffer, this member defines the size of each buffer element. For a formatted buffer and optionally a raw buffer, this member defines the size of the format that will be used for views created for this buffer. For an index buffer, a stride of 2 will set the index buffer format to 16-bits. The default is 0.
+  xiiUInt64                          m_uiSize         = 0U;                           ///< The size of the buffer in bytes. For a uniform (constant) buffer, this must be a multiple of 16. The default is 0.
+  xiiBitflags<xiiGALBindFlags>       m_BindFlags      = xiiGALBindFlags::None;        ///< The bind flags. Allowed flags are Vertex, Index, Uniform (Constant), Shader Resource, Stream Output, Unordered Access, Indirect Draw Args, Ray Tracing. Allowed flags for sparse resources are stored in the allowed sparse resource properties. The default is None.
+  xiiEnum<xiiGALResourceUsage>       m_Usage          = xiiGALResourceUsage::Mutable; ///< The resource usage. The default is Default.
+  xiiBitflags<xiiGALCPUAccessFlag>   m_CPUAccessFlags = xiiGALCPUAccessFlag::None;    ///< The CPU access flags or None if no CPU access is allowed. The default is None.
+  xiiEnum<xiiGALBufferMode>          m_Mode           = xiiGALBufferMode::Undefined;  ///< The buffer mode. The default is Undefined.
+  xiiBitflags<xiiGALMiscBufferFlags> m_MiscFlags      = xiiGALMiscBufferFlags::None;  ///< The miscellaneous flags. The default is None.
+  xiiGALExternalMemoryDescription    m_ExternalMemory;                                ///< Borrowed import handles, or export options.
+  xiiUInt32                          m_uiElementByteStride = 0U;                      ///< The buffer element stride in bytes. For a structured buffer, this member defines the size of each buffer element. For a formatted buffer and optionally a raw buffer, this member defines the size of the format that will be used for views created for this buffer. For an index buffer, a stride of 2 will set the index buffer format to 16-bits. The default is 0.
 };
 
 /// This describes the buffer initial data.

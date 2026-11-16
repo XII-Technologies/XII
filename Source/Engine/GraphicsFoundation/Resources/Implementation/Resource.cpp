@@ -2,6 +2,7 @@
 
 #include <GraphicsFoundation/GraphicsFoundationPCH.h>
 
+#include <GraphicsFoundation/Declarations/Descriptors.h>
 #include <GraphicsFoundation/Resources/Resource.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALResource, 1, xiiRTTINoAllocator)
@@ -16,6 +17,12 @@ xiiGALResource::xiiGALResource(xiiSharedPtr<xiiGALDevice> pDevice) :
 }
 
 xiiGALResource::~xiiGALResource() = default;
+
+const xiiGALExternalMemoryDescription& xiiGALResource::GetExternalMemoryDescription() const
+{
+  static const xiiGALExternalMemoryDescription EmptyDescription;
+  return EmptyDescription;
+}
 
 xiiGALResourceView::xiiGALResourceView(xiiSharedPtr<xiiGALDevice> pDevice) :
   xiiGALDeviceObject(std::move(pDevice))

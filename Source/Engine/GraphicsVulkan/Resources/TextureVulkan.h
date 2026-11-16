@@ -74,6 +74,8 @@ private:
 
   xiiGALSparseTextureProperties m_SparseTextureProperties;
 
-  vk::Semaphore m_vkExternalMemorySemaphore;
-  bool          m_bOwnsExternalHandles = false;
+  vk::DeviceMemory m_vkImportedMemory;
+  vk::Semaphore    m_vkExternalMemorySemaphore;
+  bool             m_bImportedImage       = false;
+  bool             m_bOwnsExternalHandles = false;
 };

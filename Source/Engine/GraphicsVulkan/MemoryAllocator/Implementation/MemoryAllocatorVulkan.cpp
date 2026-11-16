@@ -363,7 +363,7 @@ vk::Result xiiVulkanMemoryAllocator::CreateBuffer(const vk::BufferCreateInfo& vk
 
       newExportedSharedPool.m_Pool = vmaPool;
 
-      XII_VERIFY(m_pImplementation->m_ExportedSharedPools.Insert(uiMemoryTypeIndex, std::move(newExportedSharedPool)), "Failed to insert exported shared pool.");
+      XII_VERIFY(!m_pImplementation->m_ExportedSharedPools.Insert(uiMemoryTypeIndex, std::move(newExportedSharedPool)), "Failed to insert exported shared pool.");
 
       pExportedSharedPool = m_pImplementation->m_ExportedSharedPools.GetValue(uiMemoryTypeIndex);
     }

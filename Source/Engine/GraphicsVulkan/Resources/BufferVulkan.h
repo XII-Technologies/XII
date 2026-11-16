@@ -26,6 +26,10 @@ public:
   [[nodiscard]] vk::DeviceAddress GetVulkanBufferDeviceAddress() const;
   [[nodiscard]] xiiUInt64         GetMemoryConsumption() const override final;
 
+  const xiiGALExternalMemoryDescription& GetExternalMemoryDescription() const override final { return m_ExternalMemoryDescription; }
+  xiiResult                              AcquireExternalMemory(xiiGALCommandList* pCommandList) override final;
+  xiiResult                              ReleaseExternalMemory(xiiGALCommandList* pCommandList) override final;
+
   void                                 SetAccessFlags(vk::AccessFlags accessFlags);
   [[nodiscard]] vk::AccessFlags        GetAccessFlags() const;
   [[nodiscard]] XII_ALWAYS_INLINE bool CheckAccessFlags(vk::AccessFlags accessFlags) const { return (GetAccessFlags() & accessFlags) == accessFlags; }
@@ -45,6 +49,13 @@ protected:
   virtual void SetDebugNamePlatform(xiiStringView sName) const override final;
 
 private:
-  vk::Buffer          m_vkBuffer               = VK_NULL_HANDLE;
-  xiiVulkanAllocation m_BufferMemoryAllocation = {};
+  xiiResult InitializeExternalBuffer(const vk::BufferCreateInfo& createInfo, xiiBitflags<xiiGALExternalMemoryKind> kind);
+  xiiResult TransferExternalBuffer(xiiGALCommandList* pCommandList, bool bAcquire);
+
+  vk::DeviceMemory                m_vkImportedMemory;
+  vk::Semaphore                   m_vkExternalMemorySemaphore;
+  xiiGALExternalMemoryDescription m_ExternalMemoryDescription;
+  bool                            m_bOwnsExternalHandles   = false;
+  vk::Buffer                      m_vkBuffer               = VK_NULL_HANDLE;
+  xiiVulkanAllocation             m_BufferMemoryAllocation = {};
 };
