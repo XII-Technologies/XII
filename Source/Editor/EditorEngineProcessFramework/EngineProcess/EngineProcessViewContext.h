@@ -9,6 +9,7 @@
 #include <Foundation/Containers/StaticArray.h>
 #include <GraphicsCore/Pipeline/Declarations.h>
 #include <GraphicsCore/Pipeline/RenderPipelineProfileConfig.h>
+#include <GraphicsFoundation/Tools/ResourceExchangeSlot.h>
 #include <GraphicsFoundation/Tools/TextureReadback.h>
 
 /// Engine-owned view purposes. Scene previews and scene editors share the authored Editor pipeline.
@@ -76,7 +77,7 @@ protected:
   /// Clears all hit fields on failure; document and view routing fields remain unchanged.
   /// Gizmos do not report a surface normal. The caller sends or combines the result.
   xiiResult PickGizmoAtPixel(xiiUInt32 x, xiiUInt32 y, xiiViewPickingResultMsgToEditor& out_result) const;
-  void      SendViewMessage(xiiEditorEngineViewMsg* pViewMsg);
+  bool      SendViewMessage(xiiEditorEngineViewMsg* pViewMsg);
   xiiResult UpdateRenderTarget(xiiUInt16 uiWidth, xiiUInt16 uiHeight, bool bShared);
 
   virtual void SetCamera(const xiiViewRedrawMsgToEngine* pMsg);
@@ -91,26 +92,15 @@ protected:
 
 
 private:
-  enum class FrameSlotState : xiiUInt8
-  {
-    Available,
-    Rendering,
-    Publishing,
-    Published,
-    Returning,
-  };
-
   struct FrameSlot
   {
     xiiSharedPtr<xiiGALTexture>         m_pTexture;
     xiiSharedPtr<xiiGALTextureView>     m_pTarget;
-    xiiUInt64                           m_uiTextureID  = 0;
-    xiiUInt64                           m_uiFrameID    = 0;
-    xiiUInt64                           m_uiFenceValue = 0;
+    xiiUInt64                           m_uiTextureID = 0;
     xiiUniquePtr<xiiGALTextureReadback> m_pReadback;
     xiiViewFrameMsgToEditor             m_Frame;
     xiiTime                             m_PublishedAt;
-    FrameSlotState                      m_State = FrameSlotState::Available;
+    xiiGALResourceExchangeSlot          m_Exchange;
   };
 
   xiiResult CreateFrameSlot(FrameSlot& ref_slot, xiiSizeU32 size, bool bShared);

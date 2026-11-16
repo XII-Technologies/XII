@@ -67,7 +67,7 @@ xiiQtSharedTextureWidget::~xiiQtSharedTextureWidget()
 xiiResult xiiQtSharedTextureWidget::EnsureDevice()
 {
   if (s_pDevice)
-    return XII_SUCCESS;
+    return s_pDevice->IsDeviceLost() ? XII_FAILURE : XII_SUCCESS;
   xiiGALDeviceCreationDescription description;
   description.m_GraphicsDeviceType                 = xiiGALGraphicsDeviceType::Vulkan;
   description.m_DeviceFeatures.m_NativeFence       = xiiGALDeviceFeatureState::Optional;
@@ -252,7 +252,25 @@ void xiiQtSharedTextureWidget::SetFrame(const xiiViewFrameMsgToEditor& frame)
     if (pCommand)
     {
       XII_PROFILE_SCOPE("Viewport: Submit pixel upload");
-      const xiiGALTextureSubResourceData data(frame.m_Pixels.GetArrayPtr().ToByteArray(), frame.m_uiWidth * 4U, frame.m_Pixels.GetCount());
+      const xiiUInt32             uiRowBytes = frame.m_uiWidth * 4U;
+      const xiiUInt32             uiStride   = xiiMemoryUtils::AlignSize(uiRowBytes, 16U);
+      xiiArrayPtr<const xiiUInt8> pixels     = frame.m_Pixels.GetArrayPtr();
+      if (uiRowBytes != uiStride)
+      {
+        const xiiUInt64 uiPaddedBytes = xiiUInt64(uiStride) * frame.m_uiHeight;
+        if (uiPaddedBytes > xiiMath::MaxValue<xiiUInt32>())
+        {
+          m_OnFrameConsumed(frame.m_uiSlotIndex, frame.m_uiFrameID, false);
+          return;
+        }
+        m_UploadPixels.SetCountUninitialized(static_cast<xiiUInt32>(uiPaddedBytes));
+        for (xiiUInt32 uiRow = 0; uiRow < frame.m_uiHeight; ++uiRow)
+        {
+          xiiMemoryUtils::Copy(m_UploadPixels.GetData() + uiRow * uiStride, pixels.GetPtr() + uiRow * uiRowBytes, uiRowBytes);
+        }
+        pixels = m_UploadPixels.GetArrayPtr();
+      }
+      const xiiGALTextureSubResourceData data(pixels.ToByteArray(), uiStride, pixels.GetCount());
       const auto                         box = xiiBoundingBoxU32::MakeFromMinMax(xiiVec3U32::MakeZero(), {frame.m_uiWidth, frame.m_uiHeight, 1U});
       pCommand->Begin();
       pCommand->UpdateTexture(pDestination->m_pTexture, {}, box, data);
@@ -287,6 +305,20 @@ void xiiQtSharedTextureWidget::CollectCompletedFrames()
 {
   XII_PROFILE_SCOPE("Viewport: Collect completed copies");
   const xiiUInt64 uiCompleted = s_pDevice->GetCommandQueue()->GetCompletedFenceValue();
+  if (s_pDevice->IsDeviceLost())
+  {
+    m_bPresentRetry = false;
+    for (xiiUInt8 uiIndex = 0; uiIndex < XII_MAX_VIEWPORT_FRAME_SLOTS; ++uiIndex)
+    {
+      auto& slot = m_ImportedSlots[uiIndex];
+      if (slot.m_uiReleaseFence != 0)
+      {
+        slot.m_uiReleaseFence = 0;
+        m_OnFrameConsumed(uiIndex, slot.m_uiFrameID, false);
+      }
+    }
+    return;
+  }
   for (xiiUInt8 uiIndex = 0; uiIndex < XII_MAX_VIEWPORT_FRAME_SLOTS; ++uiIndex)
   {
     auto& slot = m_ImportedSlots[uiIndex];
@@ -318,7 +350,7 @@ void xiiQtSharedTextureWidget::CollectCompletedFrames()
 
 void xiiQtSharedTextureWidget::ScheduleCompletionCheck()
 {
-  if (m_CompletionTimer.isActive())
+  if (m_CompletionTimer.isActive() || s_pDevice->IsDeviceLost())
   {
     return;
   }
@@ -352,12 +384,17 @@ xiiResult xiiQtSharedTextureWidget::PresentTexture()
   XII_SUCCEED_OR_RETURN(result);
   s_pDevice->GetCommandQueue()->Submit(command);
   m_pSwapChain->Present();
+  if (s_pDevice->IsDeviceLost())
+  {
+    return XII_FAILURE;
+  }
+  m_uiLastSubmittedFrameID = m_uiLatestFrameID;
   return XII_SUCCESS;
 }
 
 void xiiQtSharedTextureWidget::paintEvent(QPaintEvent*)
 {
-  if (!s_pDevice || m_uiLatestSlot >= PresentationSlotCount)
+  if (!s_pDevice || s_pDevice->IsDeviceLost() || m_uiLatestSlot >= PresentationSlotCount)
     return;
   s_pDevice->BeginFrame();
   PresentTexture().IgnoreResult();

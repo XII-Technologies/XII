@@ -17,9 +17,12 @@ public:
   explicit xiiQtSharedTextureWidget(QWidget* pParent);
   ~xiiQtSharedTextureWidget();
 
-  void                                         SetVSyncEnabled(bool bEnabled) { m_bVSync = bEnabled; }
-  bool                                         SupportsSharedTextures();
-  void                                         SetFrame(const xiiViewFrameMsgToEditor& frame);
+  void SetVSyncEnabled(bool bEnabled) { m_bVSync = bEnabled; }
+  bool SupportsSharedTextures();
+  void SetFrame(const xiiViewFrameMsgToEditor& frame);
+  /// Last frame submitted for presentation. Window-system display can complete later.
+  [[nodiscard]] xiiUInt64 GetLastSubmittedFrameID() const { return m_uiLastSubmittedFrameID; }
+
   xiiDelegate<void(xiiUInt8, xiiUInt64, bool)> m_OnFrameConsumed;
 
 protected:
@@ -57,8 +60,10 @@ private:
   ImportedSlot              m_ImportedSlots[XII_MAX_VIEWPORT_FRAME_SLOTS];
   static constexpr xiiUInt8 PresentationSlotCount = 3U;
   PresentationSlot          m_PresentationSlots[PresentationSlotCount];
-  xiiUInt8                  m_uiLatestSlot    = PresentationSlotCount;
-  xiiUInt64                 m_uiLatestFrameID = 0;
+  xiiUInt8                  m_uiLatestSlot           = PresentationSlotCount;
+  xiiUInt64                 m_uiLatestFrameID        = 0;
+  xiiUInt64                 m_uiLastSubmittedFrameID = 0;
+  xiiDataBuffer             m_UploadPixels;
   QTimer                    m_CompletionTimer;
   bool                      m_bVSync           = true;
   bool                      m_bPresentRetry    = false;

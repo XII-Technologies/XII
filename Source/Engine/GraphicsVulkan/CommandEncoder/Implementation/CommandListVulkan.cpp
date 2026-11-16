@@ -3096,7 +3096,9 @@ xiiResult xiiGALCommandListVulkan::BlitTexture(xiiGALTexture* source, xiiGALText
   auto* sourceVulkan      = static_cast<xiiGALTextureVulkan*>(source);
   auto* destinationVulkan = static_cast<xiiGALTextureVulkan*>(destination);
   TransitionImageLayout(sourceVulkan, vk::ImageLayout::eTransferSrcOptimal);
-  TransitionImageLayout(destinationVulkan, vk::ImageLayout::eTransferDstOptimal);
+  // A previous clear or copy can already have set COPY_DEST without making
+  // that write available to this blit.
+  TransitionTextureState(destinationVulkan, xiiGALResourceStateFlags::Unknown, xiiGALResourceStateFlags::CopyDestination, xiiGALStateTransitionFlags::UpdateState);
   FlushBarriers();
   vk::ImageBlit region;
   region.srcSubresource = vk::ImageSubresourceLayers{vk::ImageAspectFlagBits::eColor, 0, 0, 1};

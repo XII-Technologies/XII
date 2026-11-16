@@ -278,6 +278,9 @@ public:
   /// Whether the backend is applying memory pressure controls to optional streaming work.
   [[nodiscard]] virtual bool IsStreamingMemoryPressured() const { return false; }
 
+  /// Whether this device has reported terminal GPU loss. Pending output cannot be published.
+  [[nodiscard]] virtual bool IsDeviceLost() const { return false; }
+
   /// This retrieves the device feature states. See xiiGALDeviceFeatures.
   [[nodiscard]] const xiiGALDeviceFeatures& GetFeatures() const;
 

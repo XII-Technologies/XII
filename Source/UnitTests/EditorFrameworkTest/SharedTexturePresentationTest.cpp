@@ -23,6 +23,7 @@
 #include <QWidget>
 #include <QWindow>
 #include <Qt>
+#include <TestFramework/Utilities/TestLogInterface.h>
 #include <ads/AutoHideDockContainer.h>
 #include <ads/DockManager.h>
 #include <ads/DockWidget.h>
@@ -33,6 +34,13 @@ XII_CREATE_SIMPLE_TEST(EditorDockViewportStacking, AutoHideAboveNativeViewport)
 #if XII_DISABLED(XII_PLATFORM_LINUX)
   return;
 #endif
+
+  auto*            pEditor      = xiiQtEditorApp::GetSingleton();
+  xiiStringBuilder sPreferences = xiiTestFramework::GetInstance()->GetAbsOutputPath();
+  sPreferences.AppendPath("Preferences");
+  XII_TEST_RESULT(xiiOSFile::CreateDirectoryStructure(sPreferences));
+  pEditor->StartupEditor(xiiQtEditorApp::StartupFlags::UnitTest | xiiQtEditorApp::StartupFlags::NoRecent | xiiQtEditorApp::StartupFlags::SafeMode, sPreferences);
+  XII_SCOPE_EXIT(pEditor->ShutdownEditor());
 
   XII_TEST_BOOL(QCoreApplication::testAttribute(Qt::AA_DontCreateNativeWidgetSiblings));
   const auto previousFlags = ads::CDockManager::autoHideConfigFlags();
@@ -148,10 +156,16 @@ XII_CREATE_SIMPLE_TEST(EditorViewportPresentation, NativeChildIsolation)
 
 XII_CREATE_SIMPLE_TEST(EditorViewportPresentation, SharedTexture)
 {
-  if (QGuiApplication::platformName() != "windows" && QGuiApplication::platformName() != "xcb")
-    return; // These native platforms permit capturing the presented window for pixel verification.
-  auto*            editor      = xiiQtEditorApp::GetSingleton();
-  xiiStringBuilder preferences = xiiTestFramework::GetInstance()->GetAbsOutputPath();
+  const auto platform = QGuiApplication::platformName();
+  if (platform != "windows" && platform != "xcb" && !platform.startsWith("wayland"))
+  {
+    return;
+  }
+
+  // XWayland and Wayland cannot capture a Vulkan window through QScreen.
+  const bool       bCanCapturePixels = platform == "windows" || (platform == "xcb" && qgetenv("XDG_SESSION_TYPE") != "wayland");
+  auto*            editor            = xiiQtEditorApp::GetSingleton();
+  xiiStringBuilder preferences       = xiiTestFramework::GetInstance()->GetAbsOutputPath();
   preferences.AppendPath("Preferences");
   XII_TEST_RESULT(xiiOSFile::CreateDirectoryStructure(preferences));
   editor->StartupEditor(xiiQtEditorApp::StartupFlags::UnitTest | xiiQtEditorApp::StartupFlags::NoRecent | xiiQtEditorApp::StartupFlags::SafeMode, preferences);
@@ -173,9 +187,12 @@ XII_CREATE_SIMPLE_TEST(EditorViewportPresentation, SharedTexture)
     widgets[i]->show();
   }
   QApplication::processEvents();
-  const auto checkPresented = [&](xiiQtSharedTextureWidget& widget, QColor expected) {
-    widget.raise();
-    widget.activateWindow();
+  const auto checkPresented = [&](xiiQtSharedTextureWidget& widget, xiiUInt64 uiFrameID, QColor expected) {
+    if (bCanCapturePixels)
+    {
+      widget.raise();
+      widget.activateWindow();
+    }
     QElapsedTimer timer;
     timer.start();
     QImage image;
@@ -183,10 +200,19 @@ XII_CREATE_SIMPLE_TEST(EditorViewportPresentation, SharedTexture)
     {
       QApplication::processEvents();
       widget.repaint();
-      const auto position = widget.mapToGlobal(QPoint(0, 0));
-      image               = widget.screen()->grabWindow(0, position.x(), position.y(), widget.width(), widget.height()).toImage();
-      if (!image.isNull() && image.pixelColor(image.width() / 2, image.height() / 2) == expected)
-        return true;
+      if (widget.GetLastSubmittedFrameID() == uiFrameID)
+      {
+        if (!bCanCapturePixels)
+        {
+          return true;
+        }
+        const auto position = widget.mapToGlobal(QPoint(0, 0));
+        image               = widget.screen()->grabWindow(0, position.x(), position.y(), widget.width(), widget.height()).toImage();
+        if (!image.isNull() && image.pixelColor(image.width() / 2, image.height() / 2) == expected)
+        {
+          return true;
+        }
+      }
       QThread::msleep(5);
     }
     if (!image.isNull())
@@ -215,7 +241,7 @@ XII_CREATE_SIMPLE_TEST(EditorViewportPresentation, SharedTexture)
     widgets[0]->SetVSyncEnabled(false);
     widgets[0]->SetFrame(frame);
     XII_TEST_BOOL(bConsumed);
-    XII_TEST_BOOL(checkPresented(*widgets[0], QColor(Qt::red)));
+    XII_TEST_BOOL(checkPresented(*widgets[0], frame.m_uiFrameID, QColor(Qt::red)));
 
     bConsumed = false;
     ++frame.m_uiFrameID;
@@ -227,7 +253,7 @@ XII_CREATE_SIMPLE_TEST(EditorViewportPresentation, SharedTexture)
     widgets[0]->SetVSyncEnabled(true);
     widgets[0]->SetFrame(frame);
     XII_TEST_BOOL(bConsumed);
-    XII_TEST_BOOL(checkPresented(*widgets[0], QColor(Qt::blue)));
+    XII_TEST_BOOL(checkPresented(*widgets[0], frame.m_uiFrameID, QColor(Qt::blue)));
     widgets[0]->m_OnFrameConsumed.Invalidate();
   }
   if (!widgets[0]->SupportsSharedTextures() || producer->GetFeatures().m_NativeFence != xiiGALDeviceFeatureState::Enabled || producer->GetFeatures().m_ExternalMemory != xiiGALDeviceFeatureState::Enabled || producer->GetFeatures().m_ExternalSemaphore != xiiGALDeviceFeatureState::Enabled)
@@ -292,6 +318,11 @@ XII_CREATE_SIMPLE_TEST(EditorViewportPresentation, SharedTexture)
           message.m_uiWidth     = static_cast<xiiUInt16>(pTexture->GetDescription().m_Size.width);
           message.m_uiHeight    = static_cast<xiiUInt16>(pTexture->GetDescription().m_Size.height);
           message.m_Memory      = pTexture->GetExternalMemoryDescription();
+          if (uiBatch != 0 && !bReplace)
+          {
+            // A cached allocation can be consumed without reopening its native handles.
+            message.m_Memory.m_uiNativeHandle = 0;
+          }
           widgets[uiView]->SetFrame(message);
         }
       }
@@ -314,7 +345,7 @@ XII_CREATE_SIMPLE_TEST(EditorViewportPresentation, SharedTexture)
         }
         widgets[uiView]->resize(128 + uiBatch * 8, 96 + uiBatch * 4);
         const auto color = (uiBatch + uiView) % 2 != 0 ? QColor(Qt::blue) : QColor(Qt::red);
-        XII_TEST_BOOL(checkPresented(*widgets[uiView], color));
+        XII_TEST_BOOL(checkPresented(*widgets[uiView], uiFirstFrameID + XII_MAX_VIEWPORT_FRAME_SLOTS - 1, color));
         for (auto& pTexture : pTextures[uiView])
         {
           pCommand->Begin();
@@ -323,6 +354,41 @@ XII_CREATE_SIMPLE_TEST(EditorViewportPresentation, SharedTexture)
           pQueue->WaitForFenceValue(pQueue->Submit(pCommand));
         }
       }
+    }
+
+    {
+      xiiViewFrameMsgToEditor rejected;
+      rejected.m_uiFrameID           = 12;
+      rejected.m_uiTextureID         = 5;
+      rejected.m_uiWidth             = 64;
+      rejected.m_uiHeight            = 48;
+      rejected.m_Memory              = pTextures[0][0]->GetExternalMemoryDescription();
+      rejected.m_Memory.m_DriverUUID = {};
+      bool bRejected                 = false;
+      widgets[0]->m_OnFrameConsumed  = [&](xiiUInt8, xiiUInt64 uiFrameID, bool bShared) {
+        if (uiFrameID == rejected.m_uiFrameID)
+        {
+          bRejected = !bShared;
+        }
+      };
+      {
+        xiiTestLogInterface   log;
+        xiiTestLogSystemScope scope(&log, true);
+        log.ExpectMessage("External Vulkan memory requires the exporting physical device and driver.", xiiLogMsgType::ErrorMsg);
+        log.ExpectMessage("GAL viewport texture import unavailable", xiiLogMsgType::WarningMsg);
+        widgets[0]->SetFrame(rejected);
+      }
+      XII_TEST_BOOL(bRejected);
+      XII_TEST_BOOL(!widgets[0]->SupportsSharedTextures());
+
+      xiiViewFrameMsgToEditor fallback;
+      fallback.m_uiFrameID = 13;
+      fallback.m_uiWidth   = 2;
+      fallback.m_uiHeight  = 2;
+      fallback.m_Pixels.SetCount(16, 255);
+      widgets[0]->SetFrame(fallback);
+      XII_TEST_BOOL(checkPresented(*widgets[0], fallback.m_uiFrameID, QColor(Qt::white)));
+      widgets[0]->m_OnFrameConsumed.Invalidate();
     }
   }
 }

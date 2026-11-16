@@ -55,6 +55,11 @@ void xiiGALFencePoolVulkan::ReclaimFence(vk::Fence&& vkFence)
 {
   XII_LOCK(m_PoolMutex);
 
+  if (m_pDeviceVulkan->IsDeviceLost())
+  {
+    return;
+  }
+
   vk::Device vkLogicalDevice = m_pDeviceVulkan->GetVulkanLogicalDevice();
 
   VK_ASSERT_DEV(vkLogicalDevice.resetFences(1U, &vkFence, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader()));

@@ -10,6 +10,7 @@
 #include <Foundation/Communication/GlobalEvent.h>
 #include <Foundation/Configuration/CVar.h>
 #include <Foundation/Configuration/Startup.h>
+#include <Foundation/Profiling/Profiling.h>
 #include <GraphicsCore/Components/Lights/LightComponent.h>
 #include <GraphicsCore/Components/Render/RenderComponent.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
@@ -630,6 +631,7 @@ void xiiRenderWorldModule::DeleteAllCachedRenderData()
 
 void xiiRenderWorldModule::PrepareExtraction(const xiiWorldModule::UpdateContext&)
 {
+  XII_PROFILE_SCOPE("Render World: Prepare extraction");
   // Drop all borrowed pointers before releasing retired/static snapshot ownership.
   for (auto it = m_ViewIdTable.GetIterator(); it.IsValid(); ++it)
     it.Value().m_pExtractedData->Clear();
@@ -673,6 +675,7 @@ void xiiRenderWorldModule::PrepareExtraction(const xiiWorldModule::UpdateContext
 
 void xiiRenderWorldModule::ExtractRenderData(const xiiWorldModule::UpdateContext& context)
 {
+  XII_PROFILE_SCOPE("Render World: Extract view render data");
   m_SharedFramePackets.Clear();
   for (auto it = m_ViewIdTable.GetIterator(); it.IsValid(); ++it)
   {
@@ -828,10 +831,11 @@ void xiiRenderWorldModule::ExtractRenderData(const xiiWorldModule::UpdateContext
 
 void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateContext& context)
 {
+  XII_PROFILE_SCOPE("Render World: Execute world render graphs");
   if (!xiiGALDevice::HasDefaultDevice())
     return;
   xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
-  if (!pDevice)
+  if (!pDevice || pDevice->IsDeviceLost())
     return;
 
   bool active = false;

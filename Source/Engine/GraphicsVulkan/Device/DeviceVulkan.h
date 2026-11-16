@@ -173,6 +173,9 @@ public:
   [[nodiscard]] XII_ALWAYS_INLINE xiiGALFencePoolVulkan*     GetVulkanFencePool() const { return m_pFencePool.Borrow(); }
   [[nodiscard]] XII_ALWAYS_INLINE xiiGALSemaphorePoolVulkan* GetVulkanSemaphorePool() const { return m_pSemaphorePool.Borrow(); }
 
+  [[nodiscard]] bool IsDeviceLost() const override final { return m_bDeviceLost; }
+  void               ReportDeviceLoss();
+
   // Deactivate Doxygen document generation for the following block. (API implementation only)
   /// \cond
 
@@ -333,6 +336,7 @@ private:
   xiiUInt32                              m_uiAllocatorFrameIndex = 0U;
 
   xiiMutex      m_StreamingBudgetMutex;
+  xiiAtomicBool m_bDeviceLost;
   xiiAtomicBool m_bStreamingMemoryPressured;
   xiiUInt64     m_uiStreamingBudgetCap       = 0U;
   xiiUInt64     m_uiStreamingHeadroom        = 0U;

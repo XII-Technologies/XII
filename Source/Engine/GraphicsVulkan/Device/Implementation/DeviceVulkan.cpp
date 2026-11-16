@@ -2198,6 +2198,14 @@ xiiInternal::NewInstance<xiiGALTilePipelineState> xiiGALDeviceVulkan::CreateTile
   return pTilePipelineStateVulkan;
 }
 
+void xiiGALDeviceVulkan::ReportDeviceLoss()
+{
+  if (!m_bDeviceLost.Set(true))
+  {
+    xiiLog::Error("The Vulkan device was lost.");
+  }
+}
+
 void xiiGALDeviceVulkan::WaitIdlePlatform()
 {
   if (m_pTransferCommandQueue)
@@ -2210,7 +2218,15 @@ void xiiGALDeviceVulkan::WaitIdlePlatform()
   }
   m_pGraphicsCommandQueue->WaitForIdle();
 
-  VK_ASSERT_DEV(m_LogicalDevice.waitIdle(m_InstanceDispatchLoader));
+  const vk::Result result = m_LogicalDevice.waitIdle(m_InstanceDispatchLoader);
+  if (result == vk::Result::eErrorDeviceLost)
+  {
+    ReportDeviceLoss();
+  }
+  else
+  {
+    VK_ASSERT_DEV(result);
+  }
 
   // Releasing completed primary lists can retire their retained secondary lists. Drain both
   // before destroying query pools or command queues during device shutdown.

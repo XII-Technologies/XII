@@ -17,6 +17,7 @@
 #include <EditorEngineProcessFramework/Rendering/ViewportNavigationGizmo.h>
 #include <Foundation/Configuration/CVar.h>
 #include <Foundation/Profiling/Profiling.h>
+#include <Foundation/Types/ScopeExit.h>
 #include <Foundation/Utilities/Stats.h>
 #include <GraphicsCore/Components/Render/CameraComponent.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
@@ -29,6 +30,8 @@
 #include <GraphicsFoundation/Device/SwapChain.h>
 #include <GraphicsFoundation/Resources/Texture.h>
 #include <Texture/Image/Image.h>
+
+#include <algorithm>
 
 namespace
 {
@@ -102,6 +105,10 @@ xiiEngineProcessViewContext::~xiiEngineProcessViewContext()
     xiiStringBuilder sStat;
     sStat.SetFormat("Editor/Viewport {}/IPC round trip (ms)", m_uiViewID);
     xiiStats::RemoveStat(sStat);
+    sStat.SetFormat("Editor/Viewport {}/Occupied slots", m_uiViewID);
+    xiiStats::RemoveStat(sStat);
+    sStat.SetFormat("Editor/Viewport {}/Available slots", m_uiViewID);
+    xiiStats::RemoveStat(sStat);
   }
 }
 
@@ -158,7 +165,7 @@ void xiiEngineProcessViewContext::ReturnFrameSlot(const xiiViewFrameConsumedMsgT
     return;
   }
   auto& slot = m_FrameSlots[message.m_uiSlotIndex];
-  if (slot.m_State != FrameSlotState::Published || slot.m_uiFrameID != message.m_uiFrameID)
+  if (!slot.m_Exchange.MatchesPublication(message.m_uiFrameID))
   {
     return;
   }
@@ -166,14 +173,14 @@ void xiiEngineProcessViewContext::ReturnFrameSlot(const xiiViewFrameConsumedMsgT
   xiiStringBuilder sStat;
   sStat.SetFormat("Editor/Viewport {}/IPC round trip (ms)", m_uiViewID);
   xiiStats::SetStat(sStat, (xiiTime::Now() - slot.m_PublishedAt).GetMilliseconds());
-  slot.m_State = FrameSlotState::Returning;
   if (!slot.m_pTexture->GetExternalMemoryKind().IsSet(xiiGALExternalMemoryKind::Exportable))
   {
+    slot.m_Exchange.Retire(slot.m_Exchange.GetFence());
     return;
   }
 
   auto pDevice = xiiGALDevice::GetDefaultDevice();
-  if (message.m_bSharedTextureAccepted)
+  if (message.m_bSharedTextureAccepted && !pDevice->IsDeviceLost())
   {
     auto pCommand = pDevice->CreateCommandList({.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
     if (pCommand)
@@ -183,7 +190,7 @@ void xiiEngineProcessViewContext::ReturnFrameSlot(const xiiViewFrameConsumedMsgT
       pCommand->End();
       if (result.Succeeded())
       {
-        slot.m_uiFenceValue = pDevice->GetCommandQueue()->Submit(pCommand);
+        slot.m_Exchange.Retire(pDevice->GetCommandQueue()->Submit(pCommand));
         return;
       }
     }
@@ -191,18 +198,19 @@ void xiiEngineProcessViewContext::ReturnFrameSlot(const xiiViewFrameConsumedMsgT
 
   // This allocation will never be written again. An imported allocation has its
   // own native reference, and GAL defers the producer's native destruction.
+  slot.m_Exchange.Retire(slot.m_Exchange.GetFence());
   slot.m_pTarget.Clear();
   slot.m_pTexture.Clear();
   m_bSharingFailed = true;
   xiiLog::Warning("Could not return shared viewport ownership. Using offscreen readback presentation.");
 }
 
-void xiiEngineProcessViewContext::SendViewMessage(xiiEditorEngineViewMsg* pViewMsg)
+bool xiiEngineProcessViewContext::SendViewMessage(xiiEditorEngineViewMsg* pViewMsg)
 {
   pViewMsg->m_DocumentGuid = GetDocumentContext()->GetDocumentGuid();
   pViewMsg->m_uiViewID     = m_uiViewID;
 
-  GetDocumentContext()->SendProcessMessage(pViewMsg);
+  return GetDocumentContext()->SendProcessMessage(pViewMsg);
 }
 
 xiiResult xiiEngineProcessViewContext::UpdateRenderTarget(xiiUInt16 uiWidth, xiiUInt16 uiHeight, bool bShared)
@@ -211,8 +219,8 @@ xiiResult xiiEngineProcessViewContext::UpdateRenderTarget(xiiUInt16 uiWidth, xii
 
   if (m_uiRenderSlot < m_FrameSlots.GetCount())
   {
-    m_FrameSlots[m_uiRenderSlot].m_State = FrameSlotState::Available;
-    m_uiRenderSlot                       = XII_MAX_VIEWPORT_FRAME_SLOTS;
+    m_FrameSlots[m_uiRenderSlot].m_Exchange.CancelProduction();
+    m_uiRenderSlot = XII_MAX_VIEWPORT_FRAME_SLOTS;
   }
   if (uiWidth == 0 || uiHeight == 0)
   {
@@ -229,17 +237,23 @@ xiiResult xiiEngineProcessViewContext::UpdateRenderTarget(xiiUInt16 uiWidth, xii
     features.m_NativeFence == xiiGALDeviceFeatureState::Enabled &&
     features.m_ExternalMemory == xiiGALDeviceFeatureState::Enabled &&
     features.m_ExternalSemaphore == xiiGALDeviceFeatureState::Enabled;
-  const xiiUInt64  uiCompleted = pDevice->GetCommandQueue()->GetCompletedFenceValue();
+  const xiiUInt64 uiCompleted = pDevice->GetCommandQueue()->GetCompletedFenceValue();
+  if (pDevice->IsDeviceLost())
+  {
+    return XII_FAILURE;
+  }
+  const auto       uiAvailable = static_cast<xiiUInt32>(std::ranges::count_if(m_FrameSlots, [uiCompleted](const FrameSlot& slot) { return slot.m_Exchange.IsAvailable(uiCompleted); }));
+  xiiStringBuilder sStat;
+  sStat.SetFormat("Editor/Viewport {}/Occupied slots", m_uiViewID);
+  xiiStats::SetStat(sStat, m_FrameSlots.GetCount() - uiAvailable);
+  sStat.SetFormat("Editor/Viewport {}/Available slots", m_uiViewID);
+  xiiStats::SetStat(sStat, uiAvailable);
   const xiiSizeU32 size(uiWidth, uiHeight);
   xiiUInt8         uiSelected = XII_MAX_VIEWPORT_FRAME_SLOTS;
   for (xiiUInt8 uiIndex = 0; uiIndex < m_FrameSlots.GetCount(); ++uiIndex)
   {
     auto& slot = m_FrameSlots[uiIndex];
-    if (slot.m_State == FrameSlotState::Returning && slot.m_uiFenceValue <= uiCompleted)
-    {
-      slot.m_State = FrameSlotState::Available;
-    }
-    if (slot.m_State != FrameSlotState::Available)
+    if (!slot.m_Exchange.IsAvailable(uiCompleted))
     {
       continue;
     }
@@ -270,8 +284,8 @@ xiiResult xiiEngineProcessViewContext::UpdateRenderTarget(xiiUInt16 uiWidth, xii
   m_bViewportSetup = true;
   SetupRenderTarget({}, slot.m_pTarget, uiWidth, uiHeight);
   m_bViewportSetup = false;
-  slot.m_State     = FrameSlotState::Rendering;
-  m_uiRenderSlot   = uiSelected;
+  slot.m_Exchange.BeginProduction(uiCompleted);
+  m_uiRenderSlot = uiSelected;
   return XII_SUCCESS;
 }
 
@@ -321,8 +335,13 @@ void xiiEngineProcessViewContext::PresentFrame()
   auto  pDevice              = xiiGALDevice::GetDefaultDevice();
   // The ViewTarget's terminal use is on the graphics queue. Preserve that
   // submission's lifetime even if the graph only partially executed.
-  slot.m_State                   = FrameSlotState::Returning;
-  slot.m_uiFenceValue            = pDevice->GetCommandQueue()->GetNextFenceValue() - 1;
+  const xiiUInt64 uiRenderFence = pDevice->GetCommandQueue()->GetNextFenceValue() - 1U;
+  bool            bQueued       = false;
+  XII_SCOPE_EXIT(if (!bQueued) slot.m_Exchange.Retire(uiRenderFence));
+  if (pDevice->IsDeviceLost())
+  {
+    return;
+  }
   const auto               size  = slot.m_pTexture->GetDescription().m_Size;
   xiiViewFrameMsgToEditor& frame = slot.m_Frame;
   if (const auto* pWorld = GetDocumentContext()->GetWorld())
@@ -390,15 +409,14 @@ void xiiEngineProcessViewContext::PresentFrame()
   }
   {
     XII_PROFILE_SCOPE("Viewport: Submit output");
-    slot.m_uiFenceValue = pDevice->GetCommandQueue()->Submit(pCommand);
+    slot.m_Exchange.QueuePublication(frame.m_uiFrameID, pDevice->GetCommandQueue()->Submit(pCommand));
   }
-  slot.m_uiFrameID = frame.m_uiFrameID;
-  slot.m_State     = FrameSlotState::Publishing;
+  bQueued = true;
 }
 
 void xiiEngineProcessViewContext::PublishCompletedFrames()
 {
-  const bool bPending = std::ranges::any_of(m_FrameSlots, [](const FrameSlot& slot) { return slot.m_State == FrameSlotState::Publishing; });
+  const bool bPending = std::ranges::any_of(m_FrameSlots, [](const FrameSlot& slot) { return slot.m_Exchange.HasPendingPublication(); });
   if (!bPending)
   {
     return;
@@ -407,9 +425,13 @@ void xiiEngineProcessViewContext::PublishCompletedFrames()
   XII_PROFILE_SCOPE("Viewport: Collect completed outputs");
   auto            pDevice     = xiiGALDevice::GetDefaultDevice();
   const xiiUInt64 uiCompleted = pDevice->GetCommandQueue()->GetCompletedFenceValue();
+  if (pDevice->IsDeviceLost())
+  {
+    return;
+  }
   for (auto& slot : m_FrameSlots)
   {
-    if (slot.m_State != FrameSlotState::Publishing || slot.m_uiFenceValue > uiCompleted)
+    if (!slot.m_Exchange.IsReadyToPublish(uiCompleted))
     {
       continue;
     }
@@ -455,7 +477,7 @@ void xiiEngineProcessViewContext::PublishCompletedFrames()
       slot.m_pReadback->RecycleStagingTexture(capture.m_pStagingTexture);
       if (result.Failed())
       {
-        slot.m_State = FrameSlotState::Available;
+        slot.m_Exchange.Retire(slot.m_Exchange.GetFence());
         continue;
       }
     }
@@ -464,8 +486,20 @@ void xiiEngineProcessViewContext::PublishCompletedFrames()
     // This also keeps pending producer work off the editor's presentation queue.
     XII_PROFILE_SCOPE("Viewport: Send completed frame");
     slot.m_PublishedAt = xiiTime::Now();
-    slot.m_State       = FrameSlotState::Published;
-    SendViewMessage(&frame);
+    if (SendViewMessage(&frame))
+    {
+      slot.m_Exchange.Publish(uiCompleted);
+    }
+    else
+    {
+      slot.m_Exchange.Retire(slot.m_Exchange.GetFence());
+      if (!slot.m_pReadback)
+      {
+        // The release completed, but the receiver never got this allocation.
+        slot.m_pTarget.Clear();
+        slot.m_pTexture.Clear();
+      }
+    }
   }
 }
 

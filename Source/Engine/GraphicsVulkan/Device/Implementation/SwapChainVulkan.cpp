@@ -643,7 +643,15 @@ void xiiGALSwapChainVulkan::WaitForPresentQueueIdle()
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
 
   pDeviceVulkan->LockCommandQueueAndRun(xiiGALCommandQueueFlags::Graphics, [&pDeviceVulkan](const vk::Queue& vkQueue) -> void {
-    VK_ASSERT_DEV(vkQueue.waitIdle(pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+    const vk::Result result = vkQueue.waitIdle(pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+    if (result == vk::Result::eErrorDeviceLost)
+    {
+      pDeviceVulkan->ReportDeviceLoss();
+    }
+    else
+    {
+      VK_ASSERT_DEV(result);
+    }
   });
 }
 
@@ -843,6 +851,9 @@ xiiResult xiiGALSwapChainVulkan::TryAcquireBackBuffer(xiiSharedPtr<xiiGALTexture
     case vk::Result::eErrorSurfaceLostKHR:
       m_bRecreatePending = true;
       return XII_SUCCESS;
+    case vk::Result::eErrorDeviceLost:
+      m_pDevice.Downcast<xiiGALDeviceVulkan>()->ReportDeviceLoss();
+      return XII_FAILURE;
     default:
       return XII_FAILURE;
   }
@@ -942,9 +953,21 @@ void xiiGALSwapChainVulkan::Present()
       vkPresentInformation.pWaitSemaphores    = &vkDrawCompleteSemaphore;
       vkPresentInformation.waitSemaphoreCount = 1U;
 
-      pDeviceVulkan->LockCommandQueueAndRun(xiiGALCommandQueueFlags::Graphics, [&pDeviceVulkan, &vkPresentInformation](const vk::Queue& vkQueue) -> void {
-        XII_IGNORE_UNUSED(vkQueue.presentKHR(&vkPresentInformation, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+      pDeviceVulkan->LockCommandQueueAndRun(xiiGALCommandQueueFlags::Graphics, [&](const vk::Queue& vkQueue) {
+        const vk::Result status = vkQueue.presentKHR(&vkPresentInformation, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+        if (status != vk::Result::eSuccess && result == vk::Result::eSuccess)
+        {
+          result = status;
+        }
       });
+    }
+
+    if (result == vk::Result::eErrorDeviceLost)
+    {
+      pDeviceVulkan->ReportDeviceLoss();
+      m_bIsImageAcquired = false;
+      m_pBackBufferTexture.Clear();
+      return;
     }
 
     if (m_Description.m_bDeferredAcquire)
