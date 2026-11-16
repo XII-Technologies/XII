@@ -845,11 +845,12 @@ void xiiQtEngineViewWidget::RecreateEngineViewport()
   }
 
   auto* presentation              = new xiiQtSharedTextureWidget(this);
-  presentation->m_OnFrameConsumed = [this](xiiUInt64 frameID, bool shared) {
+  presentation->m_OnFrameConsumed = [this](xiiUInt8 uiSlotIndex, xiiUInt64 uiFrameID, bool bShared) {
     xiiViewFrameConsumedMsgToEngine message;
     message.m_uiViewID               = GetViewID();
-    message.m_uiFrameID              = frameID;
-    message.m_bSharedTextureAccepted = shared;
+    message.m_uiSlotIndex            = uiSlotIndex;
+    message.m_uiFrameID              = uiFrameID;
+    message.m_bSharedTextureAccepted = bShared;
     m_pDocumentWindow->GetDocument()->SendMessageToEngine(&message);
   };
   m_pViewportWidget = presentation;

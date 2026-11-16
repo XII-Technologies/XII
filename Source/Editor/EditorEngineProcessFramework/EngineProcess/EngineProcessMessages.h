@@ -264,14 +264,17 @@ class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiViewDestroyedResponseMsgToEditor :
   XII_ADD_DYNAMIC_REFLECTION(xiiViewDestroyedResponseMsgToEditor, xiiEditorEngineViewMsg);
 };
 
-/// One completed offscreen frame. A single frame per view may be outstanding.
+/// Offscreen frame published by a view. Each slot has at most one outstanding frame.
+inline constexpr xiiUInt8 XII_MAX_VIEWPORT_FRAME_SLOTS = 3U;
+
 class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiViewFrameMsgToEditor : public xiiEditorEngineViewMsg
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiViewFrameMsgToEditor, xiiEditorEngineViewMsg);
 
 public:
   xiiUInt64                       m_uiFrameID      = 0;
-  xiiUInt64                       m_uiTextureID    = 0;
+  xiiUInt64                       m_uiTextureID    = 0; ///< Unique allocation identity within the view.
+  xiiUInt8                        m_uiSlotIndex    = 0;
   xiiUInt32                       m_uiRenderWidth  = 0;
   xiiUInt32                       m_uiRenderHeight = 0;
   xiiRenderConfiguration          m_EffectiveRenderConfiguration;
@@ -289,6 +292,7 @@ class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiViewFrameConsumedMsgToEngine : pub
 
 public:
   xiiUInt64 m_uiFrameID              = 0;
+  xiiUInt8  m_uiSlotIndex            = 0;
   bool      m_bSharedTextureAccepted = false;
 };
 

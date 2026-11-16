@@ -38,7 +38,10 @@ xiiQtSharedTextureWidget::~xiiQtSharedTextureWidget()
   if (windowHandle())
     windowHandle()->removeEventFilter(this);
   DestroySwapChain();
-  m_pImportedTexture.Clear();
+  for (auto& slot : m_ImportedSlots)
+  {
+    slot.m_pTexture.Clear();
+  }
   m_pPresentationTexture.Clear();
   if (--s_uiWidgetCount == 0 && s_pDevice)
   {
@@ -145,9 +148,9 @@ void xiiQtSharedTextureWidget::SetFrame(const xiiViewFrameMsgToEditor& frame)
 {
   const bool shared   = frame.m_Memory.m_Type.IsSet(xiiGALExternalMemoryKind::Exportable);
   bool       accepted = false;
-  if (frame.m_uiWidth == 0 || frame.m_uiHeight == 0 || EnsureDevice().Failed())
+  if (frame.m_uiSlotIndex >= XII_MAX_VIEWPORT_FRAME_SLOTS || frame.m_uiWidth == 0 || frame.m_uiHeight == 0 || EnsureDevice().Failed())
   {
-    m_OnFrameConsumed(frame.m_uiFrameID, false);
+    m_OnFrameConsumed(frame.m_uiSlotIndex, frame.m_uiFrameID, false);
     return;
   }
   s_pDevice->BeginFrame();
@@ -160,15 +163,16 @@ void xiiQtSharedTextureWidget::SetFrame(const xiiViewFrameMsgToEditor& frame)
     description.m_BindFlags = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::ShaderResource;
     if (shared)
     {
-      if (m_uiTextureID != frame.m_uiTextureID || !m_pImportedTexture)
+      auto& slot = m_ImportedSlots[frame.m_uiSlotIndex];
+      if (slot.m_uiTextureID != frame.m_uiTextureID || !slot.m_pTexture)
       {
-        m_pImportedTexture.Clear();
+        slot.m_pTexture.Clear();
         description.m_ExternalMemory = frame.m_Memory;
-        m_pImportedTexture           = s_pDevice->CreateTexture(description, nullptr, xiiGALExternalMemoryKind::Imported);
+        slot.m_pTexture              = s_pDevice->CreateTexture(description, nullptr, xiiGALExternalMemoryKind::Imported);
         description.m_ExternalMemory = {};
-        m_uiTextureID                = frame.m_uiTextureID;
+        slot.m_uiTextureID           = frame.m_uiTextureID;
       }
-      if (m_pImportedTexture)
+      if (slot.m_pTexture)
       {
         if (!m_pPresentationTexture || m_pPresentationTexture->GetDescription().m_Size != description.m_Size)
           m_pPresentationTexture = s_pDevice->CreateTexture(description);
@@ -176,10 +180,10 @@ void xiiQtSharedTextureWidget::SetFrame(const xiiViewFrameMsgToEditor& frame)
         if (command && m_pPresentationTexture)
         {
           command->Begin();
-          const auto acquired = m_pImportedTexture->AcquireExternalMemory(command);
+          const auto acquired = slot.m_pTexture->AcquireExternalMemory(command);
           if (acquired.Succeeded())
-            command->CopyTexture(m_pImportedTexture, m_pPresentationTexture);
-          const auto released = acquired.Succeeded() ? m_pImportedTexture->ReleaseExternalMemory(command) : XII_FAILURE;
+            command->CopyTexture(slot.m_pTexture, m_pPresentationTexture);
+          const auto released = acquired.Succeeded() ? slot.m_pTexture->ReleaseExternalMemory(command) : XII_FAILURE;
           command->End();
           if (released.Succeeded())
           {
@@ -205,7 +209,7 @@ void xiiQtSharedTextureWidget::SetFrame(const xiiViewFrameMsgToEditor& frame)
     if (m_pPresentationTexture && PresentTexture().Failed() && isVisible())
       xiiLog::Error("Could not present the editor viewport through GAL.");
   }
-  m_OnFrameConsumed(frame.m_uiFrameID, accepted);
+  m_OnFrameConsumed(frame.m_uiSlotIndex, frame.m_uiFrameID, accepted);
 }
 
 xiiResult xiiQtSharedTextureWidget::PresentTexture()

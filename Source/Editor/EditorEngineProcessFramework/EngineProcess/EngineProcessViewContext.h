@@ -5,6 +5,8 @@
 #include <EditorEngineProcessFramework/EditorEngineProcessFrameworkDLL.h>
 
 #include <Core/Graphics/Camera.h>
+#include <EditorEngineProcessFramework/EngineProcess/EngineProcessMessages.h>
+#include <Foundation/Containers/StaticArray.h>
 #include <GraphicsCore/Pipeline/Declarations.h>
 #include <GraphicsCore/Pipeline/RenderPipelineProfileConfig.h>
 
@@ -85,23 +87,41 @@ protected:
 
 
 private:
-  xiiSharedPtr<xiiGALTexture>      m_pViewportTexture;
-  xiiSharedPtr<xiiGALTextureView>  m_pViewportTarget;
-  xiiUInt64                        m_uiTextureID    = 0;
-  xiiUInt64                        m_uiFrameID      = 0;
-  bool                             m_bViewportSetup = false;
-  bool                             m_bFramePending  = false;
-  bool                             m_bExternalOwner = false;
-  bool                             m_bRenderedFrame = false;
-  bool                             m_bSharingFailed = false;
-  xiiString                        m_sScreenshot;
-  xiiEngineProcessDocumentContext* m_pDocumentContext;
-  const xiiPlatformProfile*        m_pPipelineProfile = nullptr;
-  xiiString                        m_sPipelineReference;
-  xiiEditorRenderPipelineUsage     m_PipelineUsage               = xiiEditorRenderPipelineUsage::Main;
-  bool                             m_bPipelinePolicySelected     = false;
-  bool                             m_bShowNavigationGizmo        = false;
-  bool                             m_bNavigationHovered          = false;
-  xiiInt32                         m_iNavigationHoveredAxis      = -1;
-  float                            m_fNavigationDevicePixelRatio = 1.0f;
+  enum class FrameSlotState : xiiUInt8
+  {
+    Available,
+    Rendering,
+    Published,
+    Returning,
+  };
+
+  struct FrameSlot
+  {
+    xiiSharedPtr<xiiGALTexture>     m_pTexture;
+    xiiSharedPtr<xiiGALTextureView> m_pTarget;
+    xiiUInt64                       m_uiTextureID  = 0;
+    xiiUInt64                       m_uiFrameID    = 0;
+    xiiUInt64                       m_uiFenceValue = 0;
+    FrameSlotState                  m_State        = FrameSlotState::Available;
+  };
+
+  xiiResult CreateFrameSlot(FrameSlot& ref_slot, xiiSizeU32 size, bool bShared);
+  void      ReturnFrameSlot(const xiiViewFrameConsumedMsgToEngine& message);
+
+  xiiStaticArray<FrameSlot, XII_MAX_VIEWPORT_FRAME_SLOTS> m_FrameSlots;
+  xiiUInt8                                                m_uiRenderSlot   = XII_MAX_VIEWPORT_FRAME_SLOTS;
+  xiiUInt64                                               m_uiTextureID    = 0;
+  xiiUInt64                                               m_uiFrameID      = 0;
+  bool                                                    m_bViewportSetup = false;
+  bool                                                    m_bSharingFailed = false;
+  xiiString                                               m_sScreenshot;
+  xiiEngineProcessDocumentContext*                        m_pDocumentContext;
+  const xiiPlatformProfile*                               m_pPipelineProfile = nullptr;
+  xiiString                                               m_sPipelineReference;
+  xiiEditorRenderPipelineUsage                            m_PipelineUsage               = xiiEditorRenderPipelineUsage::Main;
+  bool                                                    m_bPipelinePolicySelected     = false;
+  bool                                                    m_bShowNavigationGizmo        = false;
+  bool                                                    m_bNavigationHovered          = false;
+  xiiInt32                                                m_iNavigationHoveredAxis      = -1;
+  float                                                   m_fNavigationDevicePixelRatio = 1.0f;
 };
