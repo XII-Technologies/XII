@@ -53,6 +53,9 @@ macro(xii_include_xiiExport)
 
   # include the modified file, so that the CMake targets become known
   get_property(SDK_IMPORTS_BEFORE DIRECTORY PROPERTY IMPORTED_TARGETS)
+  if(EXISTS "${XII_OUTPUT_DIRECTORY_DLL}/xiiNuGetTargets.cmake")
+    include("${XII_OUTPUT_DIRECTORY_DLL}/xiiNuGetTargets.cmake")
+  endif()
   include(${IMP_FILE})
   get_property(SDK_IMPORTS_AFTER DIRECTORY PROPERTY IMPORTED_TARGETS)
   list(REMOVE_ITEM SDK_IMPORTS_AFTER ${SDK_IMPORTS_BEFORE})
@@ -73,12 +76,17 @@ function(xii_stage_external_runtime TARGET_NAME)
   get_property(SDK_RUNTIME_TARGETS GLOBAL PROPERTY XII_SDK_RUNTIME_TARGETS)
   foreach(SDK_TARGET IN LISTS SDK_RUNTIME_TARGETS)
     get_target_property(SDK_TARGET_TYPE ${SDK_TARGET} TYPE)
-    if(SDK_TARGET_TYPE STREQUAL "SHARED_LIBRARY")
+    get_target_property(NUGET_PACKAGE ${SDK_TARGET} XII_NUGET_PACKAGE)
+    if(SDK_TARGET_TYPE STREQUAL "SHARED_LIBRARY" AND NOT NUGET_PACKAGE)
       add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE:${SDK_TARGET}>" "$<TARGET_FILE_DIR:${TARGET_NAME}>"
         VERBATIM)
     endif()
   endforeach()
+
+  if(SDK_RUNTIME_TARGETS)
+    xii_nuget_stage_runtime(TARGET ${TARGET_NAME} LIBRARIES ${SDK_RUNTIME_TARGETS})
+  endif()
 
   if(TARGET Foundation)
     get_target_property(NETWORK_FILES Foundation XII_NETWORK_RUNTIME_FILES)

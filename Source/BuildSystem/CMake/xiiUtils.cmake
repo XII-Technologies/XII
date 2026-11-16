@@ -515,6 +515,11 @@ function(xii_finalize_projects)
     message(STATUS "Including '${FINALIZE_FILE}'")
     include("${FINALIZE_FILE}")
   endforeach()
+  get_property(NUGET_TARGETS GLOBAL PROPERTY XII_NUGET_TARGETS)
+  if(NUGET_TARGETS)
+    xii_nuget_export_targets(FILE "${XII_OUTPUT_DIRECTORY_DLL}/xiiNuGetTargets.cmake" TARGETS ${NUGET_TARGETS})
+  endif()
+
 endfunction()
 
 # #####################################

@@ -3,6 +3,40 @@
 # Private maintained providers, compiled separately so their build flags never change engine targets.
 # Runtime libraries are staged beside Foundation and exported through SDK runtime metadata.
 function(xii_link_network_providers TARGET_NAME)
+  xii_pull_all_vars()
+  if(XII_CMAKE_PLATFORM_WINDOWS)
+    xii_nuget_fetch_package(PACKAGE Microsoft.Native.Quic.MsQuic.OpenSSL VERSION 2.6.4
+      SHA256 370baf73845ac516a7acb53394ebf889ca947f7826a0e74f8f8c332b3627adb5 OUT_PACKAGE_DIR MSQUIC_PACKAGE)
+    xii_nuget_fetch_package(PACKAGE openssl-native VERSION 3.5.9
+      SHA256 5884c788d624b8a9d9d0510d13f02a9ce487fc0bb570418b8d53444205423d42 OUT_PACKAGE_DIR OPENSSL_PACKAGE)
+    if(XII_CMAKE_ARCHITECTURE_ARM AND XII_CMAKE_ARCHITECTURE_64BIT)
+      set(PACKAGE_ARCH arm64)
+    elseif(XII_CMAKE_ARCHITECTURE_64BIT)
+      set(PACKAGE_ARCH x64)
+    else()
+      message(FATAL_ERROR "Windows networking NuGet providers support x64 and ARM64.")
+    endif()
+    # These private C ABIs own their allocations. The OpenSSL DLLs use a static CRT, and the
+    # official MsQuic OpenSSL DLL includes its own TLS implementation and uses the system UCRT.
+    xii_nuget_import_native_library(TARGET xiiNuget::OpenSSLCrypto PACKAGE_DIR "${OPENSSL_PACKAGE}"
+      TYPE SHARED PLATFORM Windows ARCHITECTURE "${PACKAGE_ARCH}" ABI C CRT STATIC
+      LOCATION "runtimes/win-${PACKAGE_ARCH}/native/libcrypto-3-${PACKAGE_ARCH}.dll"
+      IMPLIB "lib/win-${PACKAGE_ARCH}/native/libcrypto.lib" INCLUDE_DIRS include)
+    xii_nuget_import_native_library(TARGET xiiNuget::OpenSSL PACKAGE_DIR "${OPENSSL_PACKAGE}"
+      TYPE SHARED PLATFORM Windows ARCHITECTURE "${PACKAGE_ARCH}" ABI C CRT STATIC
+      LOCATION "runtimes/win-${PACKAGE_ARCH}/native/libssl-3-${PACKAGE_ARCH}.dll"
+      IMPLIB "lib/win-${PACKAGE_ARCH}/native/libssl.lib" INCLUDE_DIRS include
+      LINK_LIBRARIES xiiNuget::OpenSSLCrypto)
+    xii_nuget_import_native_library(TARGET xiiNuget::MsQuic PACKAGE_DIR "${MSQUIC_PACKAGE}"
+      TYPE SHARED PLATFORM Windows ARCHITECTURE "${PACKAGE_ARCH}" ABI C CRT DYNAMIC
+      LOCATION "build/native/bin/${PACKAGE_ARCH}/msquic.dll" IMPLIB "build/native/lib/${PACKAGE_ARCH}/msquic.lib"
+      SYMBOLS "build/native/bin/${PACKAGE_ARCH}/msquic.pdb" INCLUDE_DIRS build/native/include)
+    add_custom_target(NetworkProviders)
+    target_link_libraries(${TARGET_NAME} PRIVATE xiiNuget::MsQuic xiiNuget::OpenSSL)
+    set_property(GLOBAL PROPERTY XII_NETWORK_PROVIDER_INCLUDE "${MSQUIC_PACKAGE}/build/native/include;${OPENSSL_PACKAGE}/include")
+    set_property(GLOBAL PROPERTY XII_NETWORK_PROVIDER_LINK xiiNuget::MsQuic xiiNuget::OpenSSL)
+    return()
+  endif()
   find_package(Python3 3.12 REQUIRED COMPONENTS Interpreter)
   find_package(Perl REQUIRED)
   set(XII_NETWORK_DEPENDENCY_ARCHIVE_CACHE "${XII_ROOT}/Workspace/shared/NetworkDependencyArchives" CACHE PATH "Verified OpenSSL and MsQuic source archive cache (may be prefilled for offline builds)")
@@ -20,15 +54,7 @@ function(xii_link_network_providers TARGET_NAME)
   else()
     message(FATAL_ERROR "The pinned networking provider build supports x64 and arm64 targets.")
   endif()
-  if(WIN32)
-    if(PROVIDER_ARCH STREQUAL "arm64")
-      set(SSL_SUFFIX arm64)
-    else()
-      set(SSL_SUFFIX x64)
-    endif()
-    set(RUNTIME_NAMES "libssl-3-${SSL_SUFFIX}.dll;libcrypto-3-${SSL_SUFFIX}.dll;msquic.dll")
-    set(PROVIDER_LINK "${PROVIDER_LIB}/msquic.lib" "${PROVIDER_LIB}/libssl.lib" "${PROVIDER_LIB}/libcrypto.lib")
-  elseif(APPLE)
+  if(APPLE)
     set(RUNTIME_NAMES libssl.3.dylib libcrypto.3.dylib libmsquic.2.dylib)
     set(PROVIDER_LINK "${PROVIDER_BIN}/libmsquic.2.dylib" "${PROVIDER_BIN}/libssl.3.dylib" "${PROVIDER_BIN}/libcrypto.3.dylib")
   else()
