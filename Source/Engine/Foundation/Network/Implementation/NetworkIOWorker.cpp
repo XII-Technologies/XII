@@ -625,3 +625,22 @@ xiiNetworkError xiiNetworkIOContext::SetDeadline(xiiNetworkIOOperation operation
   xiiNetworkIOInternal::Wake(worker);
   return {};
 }
+
+xiiNetworkError xiiNetworkIOContext::ShutdownSocket(xiiNetworkIORegistration registration, xiiNetworkShutdown direction)
+{
+  return WithRegistration(*m_pRuntime, registration, [&](auto&, auto& entry) {
+    if (entry.m_Kind != xiiNetworkIOInternal::SocketKind::Tcp)
+    {
+      return xiiNetworkError(xiiNetworkErrorCode::UnsupportedOperation);
+    }
+    if (!entry.m_bActive)
+    {
+      return xiiNetworkError(xiiNetworkErrorCode::ShuttingDown);
+    }
+    if (entry.m_Write.m_pHead != nullptr)
+    {
+      return xiiNetworkError(xiiNetworkErrorCode::InProgress);
+    }
+    return std::get<xiiTcpSocket>(entry.m_Socket).Shutdown(direction);
+  });
+}

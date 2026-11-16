@@ -76,6 +76,28 @@ const char* xiiNetworkError::GetCodeName() const
       return "ShuttingDown";
     case xiiNetworkErrorCode::NotRunning:
       return "NotRunning";
+    case xiiNetworkErrorCode::ProtocolViolation:
+      return "ProtocolViolation";
+    case xiiNetworkErrorCode::ProtocolMismatch:
+      return "ProtocolMismatch";
+    case xiiNetworkErrorCode::AuthenticationFailed:
+      return "AuthenticationFailed";
+    case xiiNetworkErrorCode::CertificateUntrusted:
+      return "CertificateUntrusted";
+    case xiiNetworkErrorCode::CertificateExpired:
+      return "CertificateExpired";
+    case xiiNetworkErrorCode::HostnameMismatch:
+      return "HostnameMismatch";
+    case xiiNetworkErrorCode::TlsError:
+      return "TlsError";
+    case xiiNetworkErrorCode::SessionExpired:
+      return "SessionExpired";
+    case xiiNetworkErrorCode::ChannelClosed:
+      return "ChannelClosed";
+    case xiiNetworkErrorCode::UnsupportedCapability:
+      return "UnsupportedCapability";
+    case xiiNetworkErrorCode::DatagramLost:
+      return "DatagramLost";
   }
   return "Unknown";
 }

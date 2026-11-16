@@ -8,10 +8,12 @@
 #include <Foundation/Containers/DynamicArray.h>
 #include <Foundation/Containers/HashTable.h>
 #include <Foundation/FoundationInternal.h>
+#include <Foundation/Network/Implementation/NetworkNativeThread.h>
 #include <Foundation/Network/NetworkIOContext.h>
 #include <Foundation/Strings/String.h>
 #include <Foundation/Threading/ConditionVariable.h>
 #include <Foundation/Threading/Mutex.h>
+#include <Foundation/Threading/ThreadSignal.h>
 #include <Foundation/Types/UniquePtr.h>
 
 #include <atomic>
@@ -123,11 +125,6 @@ namespace xiiNetworkIOInternal
     bool                      m_bWaitForReadiness = false;
   };
 
-  struct NativeThread
-  {
-    void* m_pData = nullptr;
-  };
-
   /// One affinity shard, native wait resource and I/O worker. All mutable operation state is shard-locked.
   /// Windows shards use completion ports; POSIX shards use readiness with one-shot/dispatch filters.
   struct Worker
@@ -187,9 +184,6 @@ namespace xiiNetworkIOInternal
   void                      DestroyOperation(Operation& operation);
   void                      DestroyRegistration(Registration& registration);
 
-  xiiNetworkError StartThread(NativeThread& thread, void (*pFunction)(void*), void* pUserData);
-  void            JoinThread(NativeThread& thread);
-
   xiiUInt32 BuildSendSpans(const Operation& operation, xiiArrayPtr<const xiiUInt8>* out_pSpans, xiiUInt32 uiLimit);
   xiiUInt32 BuildReceiveSpans(Operation& operation, xiiArrayPtr<xiiUInt8>* out_pSpans, xiiUInt32 uiLimit);
 } // namespace xiiNetworkIOInternal
@@ -241,6 +235,7 @@ public:
   xiiUInt32                                            m_uiAcceptRequests     = 0;
   xiiUInt32                                            m_uiSubmissionCount    = 0;
   xiiUInt64                                            m_uiBackpressureEvents = 0;
+  xiiThreadSignal*                                     m_pCompletionSignal    = nullptr;
   mutable xiiConditionVariable                         m_Completions;
   xiiDynamicArray<xiiNetworkIOInternal::Operation*>    m_CompletionRing;
   xiiUInt32                                            m_uiCompletionHead  = 0;

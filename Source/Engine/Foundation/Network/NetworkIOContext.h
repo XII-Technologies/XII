@@ -52,6 +52,9 @@ public:
   [[nodiscard]] xiiNetworkError Register(xiiUdpSocket&& socket, xiiNetworkIORegistration& out_registration);
   /// Requests removal, rejecting new work immediately. Existing operations still complete exactly once.
   [[nodiscard]] xiiNetworkError Deregister(xiiNetworkIORegistration registration);
+  /// Half-close a TCP registration after its write queue drains. Pending writes/connects reject
+  /// shutdown with InProgress; pending receives remain valid. UDP/listeners reject this operation.
+  [[nodiscard]] xiiNetworkError ShutdownSocket(xiiNetworkIORegistration registration, xiiNetworkShutdown direction);
   [[nodiscard]] xiiNetworkError GetLocalEndpoint(xiiNetworkIORegistration registration, xiiNetworkEndpoint& out_endpoint) const;
   [[nodiscard]] xiiNetworkError GetPeerEndpoint(xiiNetworkIORegistration registration, xiiNetworkEndpoint& out_endpoint) const;
 
@@ -77,5 +80,6 @@ public:
   [[nodiscard]] xiiNetworkIOStatistics GetStatistics() const;
 
 private:
+  friend class xiiNetworkIOContextAccess;
   xiiNetworkIORuntime* m_pRuntime = nullptr;
 };

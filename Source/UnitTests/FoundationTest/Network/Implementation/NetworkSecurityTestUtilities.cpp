@@ -1,0 +1,174 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
+#include <FoundationTest/FoundationTestPCH.h>
+
+#include <Foundation/IO/OSFile.h>
+#include <Foundation/Types/Uuid.h>
+#include <Foundation/Utilities/ConversionUtils.h>
+#include <FoundationTest/Network/Implementation/NetworkSecurityTestUtilities.h>
+#include <openssl/err.h>
+#include <openssl/pem.h>
+#include <openssl/ssl.h>
+#include <openssl/x509v3.h>
+
+namespace
+{
+  bool AddTestExtension(X509* pCertificate, X509* pIssuer, int iId, const char* szValue)
+  {
+    X509V3_CTX context = {};
+    X509V3_set_ctx(&context, pIssuer, pCertificate, nullptr, nullptr, 0);
+    X509_EXTENSION* pExtension = X509V3_EXT_conf_nid(nullptr, &context, iId, szValue);
+    const bool      bAdded     = pExtension != nullptr && X509_add_ext(pCertificate, pExtension, -1) == 1;
+    X509_EXTENSION_free(pExtension);
+    return bAdded;
+  }
+
+  X509* MakeTestCertificate(EVP_PKEY* pKey, X509* pIssuer, EVP_PKEY* pIssuerKey, long iSerial, const char* szName, bool bExpired, bool bClient, const char* szCaConstraints = nullptr)
+  {
+    X509* pCertificate = X509_new();
+    if (pCertificate == nullptr)
+    {
+      return nullptr;
+    }
+    X509_NAME* pName  = X509_get_subject_name(pCertificate);
+    const bool bCa    = szCaConstraints != nullptr;
+    const bool bRoot  = pIssuer == nullptr;
+    bool       bValid = X509_set_version(pCertificate, 2) == 1 && ASN1_INTEGER_set(X509_get_serialNumber(pCertificate), iSerial) == 1 &&
+      X509_gmtime_adj(X509_getm_notBefore(pCertificate), -86400) != nullptr &&
+      X509_gmtime_adj(X509_getm_notAfter(pCertificate), bExpired ? -3600 : 86400) != nullptr && X509_set_pubkey(pCertificate, pKey) == 1 &&
+      X509_NAME_add_entry_by_txt(pName, "CN", MBSTRING_ASC, reinterpret_cast<const unsigned char*>(szName), -1, -1, 0) == 1 &&
+      X509_set_issuer_name(pCertificate, bRoot ? pName : X509_get_subject_name(pIssuer)) == 1;
+    bValid = bValid && AddTestExtension(pCertificate, bRoot ? pCertificate : pIssuer, NID_basic_constraints, bCa ? szCaConstraints : "critical,CA:FALSE") &&
+      AddTestExtension(pCertificate, bRoot ? pCertificate : pIssuer, NID_key_usage, bCa ? "critical,keyCertSign,cRLSign" : "critical,digitalSignature") &&
+      AddTestExtension(pCertificate, bRoot ? pCertificate : pIssuer, NID_subject_key_identifier, "hash");
+    if (!bRoot)
+    {
+      bValid = bValid && AddTestExtension(pCertificate, pIssuer, NID_authority_key_identifier, "keyid:always");
+    }
+    if (!bCa)
+    {
+      bValid = bValid && AddTestExtension(pCertificate, pIssuer, NID_ext_key_usage, bClient ? "clientAuth" : "serverAuth") &&
+        AddTestExtension(pCertificate, pIssuer, NID_subject_alt_name, "DNS:localhost,IP:127.0.0.1,IP:::1");
+    }
+    if (!bValid || X509_sign(pCertificate, bRoot ? pKey : pIssuerKey, EVP_sha256()) <= 0)
+    {
+      X509_free(pCertificate);
+      return nullptr;
+    }
+    return pCertificate;
+  }
+
+  bool WriteTestPem(xiiStringView sPath, X509* pCertificate, EVP_PKEY* pKey, X509* pIntermediate = nullptr)
+  {
+    BIO* pBio = BIO_new(BIO_s_mem());
+    if (pBio == nullptr)
+    {
+      return false;
+    }
+    bool bWritten = pCertificate != nullptr ? PEM_write_bio_X509(pBio, pCertificate) == 1 : PEM_write_bio_PrivateKey(pBio, pKey, nullptr, nullptr, 0, nullptr, nullptr) == 1;
+    if (pIntermediate != nullptr)
+    {
+      bWritten = bWritten && PEM_write_bio_X509(pBio, pIntermediate) == 1;
+    }
+    char*      pData  = nullptr;
+    const long iBytes = BIO_get_mem_data(pBio, &pData);
+    xiiOSFile  file;
+    bWritten = bWritten && iBytes > 0 && file.Open(sPath, xiiFileOpenMode::Write).Succeeded() && file.Write(pData, static_cast<xiiUInt64>(iBytes)).Succeeded();
+    BIO_free(pBio);
+    return bWritten;
+  }
+} // namespace
+
+NetworkSecurityTestCertificates::~NetworkSecurityTestCertificates()
+{
+  DeleteFiles().IgnoreResult();
+}
+
+xiiResult NetworkSecurityTestCertificates::DeleteFiles()
+{
+  if (m_sFilePrefix.IsEmpty())
+  {
+    return XII_SUCCESS;
+  }
+  bool bDeleted = true;
+  for (const char* szName : {"ca.pem", "server.pem", "server.key", "client.pem", "client.key", "expired.pem", "expired.key"})
+  {
+    bDeleted &= xiiOSFile::DeleteFile(Path(szName)).Succeeded();
+  }
+  if (bDeleted)
+  {
+    m_sFilePrefix.Clear();
+    return XII_SUCCESS;
+  }
+  return XII_FAILURE;
+}
+
+xiiString NetworkSecurityTestCertificates::Path(xiiStringView sName) const
+{
+  return xiiStringBuilder(m_sFilePrefix, "-", sName);
+}
+
+xiiNetworkSecurityConfig NetworkSecurityTestCertificates::Configuration(xiiStringView sIdentity) const
+{
+  xiiNetworkSecurityConfig configuration;
+  configuration.m_bUseSystemTrust   = false;
+  configuration.m_sTrustAnchorsFile = Path("ca.pem");
+  if (!sIdentity.IsEmpty())
+  {
+    xiiStringBuilder sName(sIdentity);
+    sName.Append(".pem");
+    configuration.m_sCertificateChainFile = Path(sName);
+    sName.Set(sIdentity, ".key");
+    configuration.m_sPrivateKeyFile = Path(sName);
+  }
+  return configuration;
+}
+
+xiiResult NetworkSecurityTestCertificates::Initialize(bool bIntermediate)
+{
+  if (OPENSSL_init_ssl(OPENSSL_INIT_NO_LOAD_CONFIG, nullptr) != 1)
+  {
+    return XII_FAILURE;
+  }
+  xiiStringBuilder sUuid;
+  xiiConversionUtils::ToString(xiiUuid::MakeUuid(), sUuid);
+  xiiStringBuilder sDirectory(xiiTestFramework::GetInstance()->GetAbsOutputPath());
+  sDirectory.AppendPath("Certificates");
+  if (!XII_TEST_BOOL(xiiOSFile::CreateDirectoryStructure(sDirectory).Succeeded()))
+  {
+    return XII_FAILURE;
+  }
+  sDirectory.AppendPath(sUuid);
+  m_sFilePrefix              = sDirectory;
+  EVP_PKEY* pCaKey           = EVP_EC_gen("prime256v1");
+  X509*     pCa              = pCaKey != nullptr ? MakeTestCertificate(pCaKey, nullptr, nullptr, 1, "XII ephemeral test CA", false, false, bIntermediate ? "critical,CA:TRUE,pathlen:1" : "critical,CA:TRUE,pathlen:0") : nullptr;
+  bool      bValid           = pCa != nullptr && WriteTestPem(Path("ca.pem"), pCa, nullptr);
+  long      iSerial          = 2;
+  EVP_PKEY* pIntermediateKey = bIntermediate ? EVP_EC_gen("prime256v1") : nullptr;
+  X509*     pIntermediate    = pIntermediateKey != nullptr && pCa != nullptr ?
+    MakeTestCertificate(pIntermediateKey, pCa, pCaKey, iSerial++, "XII ephemeral intermediate", false, false, "critical,CA:TRUE,pathlen:0") :
+    nullptr;
+  bValid                     = bValid && (!bIntermediate || pIntermediate != nullptr);
+  X509*     pIssuer          = pIntermediate != nullptr ? pIntermediate : pCa;
+  EVP_PKEY* pIssuerKey       = pIntermediate != nullptr ? pIntermediateKey : pCaKey;
+  for (const char* szIdentity : {"server", "client", "expired"})
+  {
+    EVP_PKEY*        pKey         = EVP_EC_gen("prime256v1");
+    X509*            pCertificate = pKey != nullptr && pCa != nullptr ? MakeTestCertificate(pKey, pIssuer, pIssuerKey, iSerial++, szIdentity, xiiStringUtils::IsEqual(szIdentity, "expired"), xiiStringUtils::IsEqual(szIdentity, "client")) : nullptr;
+    xiiStringBuilder sName(szIdentity, ".pem");
+    bValid = bValid && pCertificate != nullptr && WriteTestPem(Path(sName), pCertificate, nullptr, pIntermediate);
+    sName.Set(szIdentity, ".key");
+    bValid = bValid && pKey != nullptr && WriteTestPem(Path(sName), nullptr, pKey);
+    X509_free(pCertificate);
+    EVP_PKEY_free(pKey);
+  }
+  X509_free(pIntermediate);
+  EVP_PKEY_free(pIntermediateKey);
+  X509_free(pCa);
+  EVP_PKEY_free(pCaKey);
+  if (!bValid)
+  {
+    ERR_print_errors_fp(stderr);
+  }
+  return bValid ? XII_SUCCESS : XII_FAILURE;
+}
