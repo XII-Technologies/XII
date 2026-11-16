@@ -102,7 +102,8 @@ xiiQtEngineViewWidget::~xiiQtEngineViewWidget()
 void xiiQtEngineViewWidget::SyncToEngine()
 {
   static_cast<xiiQtSharedTextureWidget*>(m_pViewportWidget)->SetVSyncEnabled(m_pViewConfig->m_bVSync);
-  if (!xiiEditorEngineProcessConnection::GetSingleton()->CanSendViewRedraw())
+  const auto* pEngine = xiiEditorEngineProcessConnection::GetSingleton();
+  if (!pEngine->IsEngineSetup() || pEngine->IsProcessCrashed())
   {
     return;
   }

@@ -66,11 +66,17 @@ void xiiEditorEngineProcessConnection::HandleIPCEvent(const xiiProcessCommunicat
 
 void xiiEditorEngineProcessConnection::UIServicesTickEventHandler(const xiiQtUiServices::TickEvent& e)
 {
-  if (e.m_Type == xiiQtUiServices::TickEvent::Type::EndFrame && CanSendViewRedraw())
+  if (e.m_Type == xiiQtUiServices::TickEvent::Type::EndFrame && IsEngineSetup() && !IsProcessCrashed() && m_uiRedrawCountSent == m_uiRedrawCountReceived)
   {
+    for (auto it = m_PendingViewRedraws.GetIterator(); it.IsValid(); ++it)
+    {
+      SendMessageImmediately(&it.Value());
+    }
+    m_PendingViewRedraws.Clear();
+
     xiiSyncWithProcessMsgToEngine marker;
     marker.m_uiRedrawCount = m_uiRedrawCountSent + 1;
-    if (SendMessage(&marker))
+    if (SendMessageImmediately(&marker))
     {
       m_uiRedrawCountSent = marker.m_uiRedrawCount;
     }
@@ -92,6 +98,17 @@ void xiiEditorEngineProcessConnection::DestroyEngineConnection(xiiAssetDocument*
 {
   pDocument->SendDocumentOpenMessage(false);
 
+  for (auto it = m_PendingViewRedraws.GetIterator(); it.IsValid();)
+  {
+    if (it.Value().m_DocumentGuid == pDocument->GetGuid())
+    {
+      it = m_PendingViewRedraws.Remove(it);
+    }
+    else
+    {
+      ++it;
+    }
+  }
   m_DocumentByGuid.Remove(pDocument->GetGuid());
 
   delete pDocument->GetEditorEngineConnection();
@@ -299,6 +316,7 @@ void xiiEditorEngineProcessConnection::ShutdownProcess()
   if (m_TickEventSubscriptionID != 0)
     xiiQtUiServices::s_TickEvent.RemoveEventHandler(m_TickEventSubscriptionID);
 
+  m_PendingViewRedraws.Clear();
   m_bClientIsConfigured     = false;
   m_bProcessShouldBeRunning = false;
   m_IPC.CloseConnection();
@@ -309,6 +327,24 @@ void xiiEditorEngineProcessConnection::ShutdownProcess()
 }
 
 bool xiiEditorEngineProcessConnection::SendMessage(xiiProcessMessage* pMessage)
+{
+  if (const auto* pRedraw = xiiDynamicCast<const xiiViewRedrawMsgToEngine*>(pMessage))
+  {
+    if (!IsEngineSetup() || IsProcessCrashed())
+    {
+      return false;
+    }
+    m_PendingViewRedraws.Insert(pRedraw->m_uiViewID, *pRedraw);
+    return true;
+  }
+  if (const auto* pDestroyed = xiiDynamicCast<const xiiViewDestroyedMsgToEngine*>(pMessage))
+  {
+    m_PendingViewRedraws.Remove(pDestroyed->m_uiViewID);
+  }
+  return SendMessageImmediately(pMessage);
+}
+
+bool xiiEditorEngineProcessConnection::SendMessageImmediately(xiiProcessMessage* pMessage)
 {
   bool bResult = m_IPC.SendMessage(pMessage);
 
