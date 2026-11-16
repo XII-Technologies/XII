@@ -71,6 +71,7 @@ XII_CREATE_SIMPLE_TEST(EditorViews, Settings)
     message.m_DocumentGuid                     = xiiUuid::MakeUuid();
     message.m_uiViewID                         = 7;
     message.m_uiFrameID                        = 19;
+    message.m_uiSlotIndex                      = 2;
     message.m_uiTextureID                      = 3;
     message.m_uiWidth                          = 128;
     message.m_uiHeight                         = 96;
@@ -81,6 +82,7 @@ XII_CREATE_SIMPLE_TEST(EditorViews, Settings)
     message.m_Memory.m_uiSize                  = 65536;
     message.m_Memory.m_uiProcessId             = 789;
     message.m_Memory.m_uiMemoryTypeIndex       = 2;
+    message.m_Memory.m_DriverUUID              = xiiUuid::MakeUuid();
     message.m_Memory.m_DeviceUUID              = xiiUuid::MakeUuid();
     xiiDefaultMemoryStreamStorage storage;
     xiiMemoryStreamWriter         writer(&storage);
@@ -91,12 +93,14 @@ XII_CREATE_SIMPLE_TEST(EditorViews, Settings)
     XII_TEST_BOOL(copy.m_DocumentGuid == message.m_DocumentGuid);
     XII_TEST_INT(copy.m_uiViewID, 7);
     XII_TEST_INT(copy.m_uiFrameID, 19);
+    XII_TEST_INT(copy.m_uiSlotIndex, 2);
     XII_TEST_INT(copy.m_uiTextureID, 3);
     XII_TEST_INT(copy.m_uiWidth, 128);
     XII_TEST_INT(copy.m_uiHeight, 96);
     XII_TEST_BOOL(copy.m_Memory == message.m_Memory);
     XII_TEST_BOOL(copy.m_Pixels.IsEmpty());
     xiiViewFrameConsumedMsgToEngine consumed;
+    consumed.m_uiSlotIndex            = message.m_uiSlotIndex;
     consumed.m_uiFrameID              = 19;
     consumed.m_bSharedTextureAccepted = true;
     storage.Clear();
@@ -105,6 +109,7 @@ XII_CREATE_SIMPLE_TEST(EditorViews, Settings)
     xiiViewFrameConsumedMsgToEngine consumedCopy;
     xiiMemoryStreamReader           consumedReader(&storage);
     xiiReflectionSerializer::ReadObjectPropertiesFromBinary(consumedReader, *consumedCopy.GetDynamicRTTI(), &consumedCopy);
+    XII_TEST_INT(consumedCopy.m_uiSlotIndex, 2);
     XII_TEST_INT(consumedCopy.m_uiFrameID, 19);
     XII_TEST_BOOL(consumedCopy.m_bSharedTextureAccepted);
   }

@@ -5,8 +5,12 @@
 #include <EditorEngineProcessFramework/EditorEngineProcessFrameworkDLL.h>
 
 #include <Core/Graphics/Camera.h>
+#include <EditorEngineProcessFramework/EngineProcess/EngineProcessMessages.h>
+#include <Foundation/Containers/StaticArray.h>
 #include <GraphicsCore/Pipeline/Declarations.h>
 #include <GraphicsCore/Pipeline/RenderPipelineProfileConfig.h>
+#include <GraphicsFoundation/Tools/ResourceExchangeSlot.h>
+#include <GraphicsFoundation/Tools/TextureReadback.h>
 
 /// Engine-owned view purposes. Scene previews and scene editors share the authored Editor pipeline.
 enum class xiiEditorRenderPipelineUsage
@@ -45,8 +49,11 @@ public:
   /// Consumes this frame's redraw request without discarding camera or pipeline state.
   virtual void SuspendRendering();
 
-  /// Publishes a rendered offscreen frame; called after world render submissions.
+  /// Queues the selected target for export or readback after world render submissions.
   void PresentFrame();
+
+  /// Publishes GPU-complete frames without blocking on the graphics queue.
+  void PublishCompletedFrames();
 
   /// Focuses camera on the given object
   static bool FocusCameraOnObject(xiiCamera& inout_camera, const xiiBoundingBoxSphere& objectBounds, float fFov, const xiiVec3& vViewDir);
@@ -70,7 +77,7 @@ protected:
   /// Clears all hit fields on failure; document and view routing fields remain unchanged.
   /// Gizmos do not report a surface normal. The caller sends or combines the result.
   xiiResult PickGizmoAtPixel(xiiUInt32 x, xiiUInt32 y, xiiViewPickingResultMsgToEditor& out_result) const;
-  void      SendViewMessage(xiiEditorEngineViewMsg* pViewMsg);
+  bool      SendViewMessage(xiiEditorEngineViewMsg* pViewMsg);
   xiiResult UpdateRenderTarget(xiiUInt16 uiWidth, xiiUInt16 uiHeight, bool bShared);
 
   virtual void SetCamera(const xiiViewRedrawMsgToEngine* pMsg);
@@ -85,23 +92,34 @@ protected:
 
 
 private:
-  xiiSharedPtr<xiiGALTexture>      m_pViewportTexture;
-  xiiSharedPtr<xiiGALTextureView>  m_pViewportTarget;
-  xiiUInt64                        m_uiTextureID    = 0;
-  xiiUInt64                        m_uiFrameID      = 0;
-  bool                             m_bViewportSetup = false;
-  bool                             m_bFramePending  = false;
-  bool                             m_bExternalOwner = false;
-  bool                             m_bRenderedFrame = false;
-  bool                             m_bSharingFailed = false;
-  xiiString                        m_sScreenshot;
-  xiiEngineProcessDocumentContext* m_pDocumentContext;
-  const xiiPlatformProfile*        m_pPipelineProfile = nullptr;
-  xiiString                        m_sPipelineReference;
-  xiiEditorRenderPipelineUsage     m_PipelineUsage               = xiiEditorRenderPipelineUsage::Main;
-  bool                             m_bPipelinePolicySelected     = false;
-  bool                             m_bShowNavigationGizmo        = false;
-  bool                             m_bNavigationHovered          = false;
-  xiiInt32                         m_iNavigationHoveredAxis      = -1;
-  float                            m_fNavigationDevicePixelRatio = 1.0f;
+  struct FrameSlot
+  {
+    xiiSharedPtr<xiiGALTexture>         m_pTexture;
+    xiiSharedPtr<xiiGALTextureView>     m_pTarget;
+    xiiUInt64                           m_uiTextureID = 0;
+    xiiUniquePtr<xiiGALTextureReadback> m_pReadback;
+    xiiViewFrameMsgToEditor             m_Frame;
+    xiiTime                             m_PublishedAt;
+    xiiGALResourceExchangeSlot          m_Exchange;
+  };
+
+  xiiResult CreateFrameSlot(FrameSlot& ref_slot, xiiSizeU32 size, bool bShared);
+  void      ReturnFrameSlot(const xiiViewFrameConsumedMsgToEngine& message);
+
+  xiiStaticArray<FrameSlot, XII_MAX_VIEWPORT_FRAME_SLOTS> m_FrameSlots;
+  xiiUInt8                                                m_uiRenderSlot   = XII_MAX_VIEWPORT_FRAME_SLOTS;
+  xiiUInt64                                               m_uiTextureID    = 0;
+  xiiUInt64                                               m_uiFrameID      = 0;
+  bool                                                    m_bViewportSetup = false;
+  bool                                                    m_bSharingFailed = false;
+  xiiString                                               m_sScreenshot;
+  xiiEngineProcessDocumentContext*                        m_pDocumentContext;
+  const xiiPlatformProfile*                               m_pPipelineProfile = nullptr;
+  xiiString                                               m_sPipelineReference;
+  xiiEditorRenderPipelineUsage                            m_PipelineUsage               = xiiEditorRenderPipelineUsage::Main;
+  bool                                                    m_bPipelinePolicySelected     = false;
+  bool                                                    m_bShowNavigationGizmo        = false;
+  bool                                                    m_bNavigationHovered          = false;
+  xiiInt32                                                m_iNavigationHoveredAxis      = -1;
+  float                                                   m_fNavigationDevicePixelRatio = 1.0f;
 };

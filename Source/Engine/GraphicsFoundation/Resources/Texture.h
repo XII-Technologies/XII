@@ -186,15 +186,8 @@ public:
   /// Returns the external memory kind flags for this texture.
   [[nodiscard]] XII_ALWAYS_INLINE xiiBitflags<xiiGALExternalMemoryKind> GetExternalMemoryKind() const { return m_ExternalMemoryDescription.m_Type; }
 
-  /// Returns the external memory description for this texture.
-  [[nodiscard]] XII_ALWAYS_INLINE const xiiGALExternalMemoryDescription& GetExternalMemoryDescription() const { return m_ExternalMemoryDescription; }
-
-  /// Acquire a binary-semaphore shared texture after the external consumer has submitted its release.
-  /// The command list must be a recording graphics list. Submit it before rendering into this texture.
-  virtual xiiResult AcquireExternalMemory(xiiGALCommandList*) { return XII_FAILURE; }
-  /// Release the texture to an external API in General layout and signal its binary semaphore.
-  /// Submit this graphics list after all rendering into the texture has been submitted.
-  virtual xiiResult ReleaseExternalMemory(xiiGALCommandList*) { return XII_FAILURE; }
+  /// Shared textures transfer ownership on the graphics queue in General layout.
+  [[nodiscard]] const xiiGALExternalMemoryDescription& GetExternalMemoryDescription() const override { return m_ExternalMemoryDescription; }
 
   /// Returns the calculated memory consumption for texture.
   [[nodiscard]] virtual xiiUInt64 GetMemoryConsumption() const;

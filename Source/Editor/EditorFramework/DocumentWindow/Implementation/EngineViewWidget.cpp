@@ -101,14 +101,20 @@ xiiQtEngineViewWidget::~xiiQtEngineViewWidget()
 
 void xiiQtEngineViewWidget::SyncToEngine()
 {
+  static_cast<xiiQtSharedTextureWidget*>(m_pViewportWidget)->SetVSyncEnabled(m_pViewConfig->m_bVSync);
+  const auto* pEngine = xiiEditorEngineProcessConnection::GetSingleton();
+  if (!pEngine->IsEngineSetup() || pEngine->IsProcessCrashed())
+  {
+    return;
+  }
+
   xiiViewRedrawMsgToEngine cam;
   if (!xiiViewRenderMode::IsSupportedVisualizationMode(m_pViewConfig->m_RenderMode) ||
       (xiiViewRenderMode::IsRayTracingVisualizationMode(m_pViewConfig->m_RenderMode) && xiiEditorEngineProcessConnection::GetSingleton()->IsEngineSetup() &&
        !xiiEditorEngineProcessConnection::GetSingleton()->IsProcessCrashed() && !xiiEditorEngineProcessConnection::GetSingleton()->SupportsRayTracingModes()))
     m_pViewConfig->m_RenderMode = xiiViewRenderMode::Default;
-  cam.m_bShowFrameStats     = m_pViewConfig->m_bShowFrameStats;
-  cam.m_RenderConfiguration = m_pViewConfig->m_RenderConfiguration;
-  static_cast<xiiQtSharedTextureWidget*>(m_pViewportWidget)->SetVSyncEnabled(m_pViewConfig->m_bVSync);
+  cam.m_bShowFrameStats      = m_pViewConfig->m_bShowFrameStats;
+  cam.m_RenderConfiguration  = m_pViewConfig->m_RenderConfiguration;
   cam.m_RenderMode           = m_pViewConfig->m_RenderMode;
   cam.m_bShowNavigationGizmo = IsNavigationGizmoEnabled();
   if (m_pNavigationGizmo)
@@ -845,11 +851,12 @@ void xiiQtEngineViewWidget::RecreateEngineViewport()
   }
 
   auto* presentation              = new xiiQtSharedTextureWidget(this);
-  presentation->m_OnFrameConsumed = [this](xiiUInt64 frameID, bool shared) {
+  presentation->m_OnFrameConsumed = [this](xiiUInt8 uiSlotIndex, xiiUInt64 uiFrameID, bool bShared) {
     xiiViewFrameConsumedMsgToEngine message;
     message.m_uiViewID               = GetViewID();
-    message.m_uiFrameID              = frameID;
-    message.m_bSharedTextureAccepted = shared;
+    message.m_uiSlotIndex            = uiSlotIndex;
+    message.m_uiFrameID              = uiFrameID;
+    message.m_bSharedTextureAccepted = bShared;
     m_pDocumentWindow->GetDocument()->SendMessageToEngine(&message);
   };
   m_pViewportWidget = presentation;

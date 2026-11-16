@@ -117,6 +117,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSwapChainCreationDescription
                                                                                                            ///  \note When xiiGALSurfaceTransform::Optimal is used, the engine will select the most optimal surface transformation. An application may request a specific transform and the engine will try to use that. If the transform is not available, the engine will select the most optimal transform. After the swap chain has been created, this member will contain the actual transform selected by the engine.
   xiiUInt32 m_uiBufferCount         = 2U;                                                                  ///< The number of buffers in the swap chain.
   float     m_fDefaultDepthValue    = 1.0F;                                                                ///< Default depth value, which is used as the optimized depth clear value in D3D12.
+  bool      m_bDeferredAcquire      = false;                                                               ///< The client calls TryAcquireBackBuffer before rendering. Supported by Vulkan.
   xiiUInt8  m_uiDefaultStencilValue = 0U;                                                                  ///< Default stencil value, which is used as the optimized clear value in D3D12.
 };
 
@@ -553,6 +554,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALExternalMemoryDescription : public xiiHa
   xiiUInt32                              m_uiMemoryTypeIndex       = 0U;                              ///< Memory type index that is compatible with the external memory handle. This is used to ensure that the imported memory can be used with the graphics device.
   xiiUInt64                              m_uiNativeSemaphoreHandle = 0U;                              ///< Native external semaphore handle (e.g., HANDLE on Windows, file descriptor on Linux). Used when importing semaphores for synchronization.
   xiiUuid                                m_DeviceUUID;                                                ///< Vulkan physical device UUID; interop must use the same GPU.
+  xiiUuid                                m_DriverUUID;                                                ///< Vulkan driver identity for opaque native handles.
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALExternalMemoryDescription);

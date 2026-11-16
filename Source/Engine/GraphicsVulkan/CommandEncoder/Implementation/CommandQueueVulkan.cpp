@@ -119,7 +119,15 @@ xiiUInt64 xiiGALCommandQueueVulkan::SubmitPlatform(xiiGALCommandList* pCommandLi
     for (const auto& secondary : pCommandListVulkan->m_CommandListData.m_SecondaryCommandLists)
       StampQueries(*static_cast<xiiGALCommandListVulkan*>(secondary.Borrow()));
 
-    VK_ASSERT_DEV(vkQueue.submit(1U, &vkSubmitInformation, syncPoint.m_vkFence, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+    const vk::Result result = vkQueue.submit(1U, &vkSubmitInformation, syncPoint.m_vkFence, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+    if (result == vk::Result::eErrorDeviceLost)
+    {
+      pDeviceVulkan->ReportDeviceLoss();
+    }
+    else
+    {
+      VK_ASSERT_DEV(result);
+    }
 
     m_uiLastSyncPointValue = syncPoint.m_uiValue;
   });
@@ -143,7 +151,15 @@ xiiUInt64 xiiGALCommandQueueVulkan::WaitForIdle()
   const xiiUInt64 uiFenceValue = m_uiNextFenceValue.PostIncrement();
 
   pDeviceVulkan->LockCommandQueueAndRun(m_Description.m_QueueFlags, [pDeviceVulkan](const vk::Queue& vkQueue) -> void {
-    VK_ASSERT_DEV(vkQueue.waitIdle(pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+    const vk::Result result = vkQueue.waitIdle(pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+    if (result == vk::Result::eErrorDeviceLost)
+    {
+      pDeviceVulkan->ReportDeviceLoss();
+    }
+    else
+    {
+      VK_ASSERT_DEV(result);
+    }
   });
 
   m_pQueueFence->Wait(xiiMath::MaxValue<xiiUInt64>());

@@ -69,7 +69,15 @@ void xiiEngineProcessDocumentContext::UpdateDocumentContexts()
   XII_PROFILE_SCOPE("UpdateDocumentContexts");
   for (auto it = s_DocumentContexts.GetIterator(); it.IsValid(); ++it)
   {
-    it.Value()->UpdateDocumentContext();
+    auto& context = *it.Value();
+    context.UpdateDocumentContext();
+    for (auto* pView : context.m_ViewContexts)
+    {
+      if (pView)
+      {
+        pView->PublishCompletedFrames();
+      }
+    }
   }
 }
 
@@ -82,6 +90,7 @@ void xiiEngineProcessDocumentContext::FinishFrame()
       if (view)
       {
         view->PresentFrame();
+        view->PublishCompletedFrames();
         view->SuspendRendering();
       }
     if (context.m_pThumbnailViewContext)
@@ -214,9 +223,9 @@ void xiiEngineProcessDocumentContext::Deinitialize()
   m_bInitializationStarted = false;
 }
 
-void xiiEngineProcessDocumentContext::SendProcessMessage(xiiProcessMessage* pMsg)
+bool xiiEngineProcessDocumentContext::SendProcessMessage(xiiProcessMessage* pMsg)
 {
-  m_pIPC->SendMessage(pMsg);
+  return m_pIPC->SendMessage(pMsg);
 }
 
 void xiiEngineProcessDocumentContext::HandleMessage(const xiiEditorEngineDocumentMsg* pMsg)
@@ -339,6 +348,10 @@ void xiiEngineProcessDocumentContext::HandleMessage(const xiiEditorEngineDocumen
     {
       if (m_ViewContexts[pViewMsg->m_uiViewID] == nullptr)
       {
+        if (xiiDynamicCast<const xiiViewFrameConsumedMsgToEngine*>(pViewMsg))
+        {
+          return;
+        }
         if (!xiiEditorEngineProcessApp::GetSingleton()->IsRemoteMode())
         {
           m_ViewContexts[pViewMsg->m_uiViewID] = CreateViewContext();

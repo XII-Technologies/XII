@@ -56,6 +56,10 @@ xiiUInt64 xiiGALCpuWaitOnlyFenceVulkan::InternalGetCompletedValue()
     }
     else
     {
+      if (status == vk::Result::eErrorDeviceLost)
+      {
+        m_pDeviceVulkan->ReportDeviceLoss();
+      }
       break;
     }
   }
@@ -118,6 +122,14 @@ void xiiGALCpuWaitOnlyFenceVulkan::Wait(xiiUInt64 uiValue)
     if (vkFenceStatus == vk::Result::eNotReady)
     {
       vkFenceStatus = vkLogicalDevice.waitForFences(1U, &syncData.m_vkFence, vk::True, xiiMath::MaxValue<xiiUInt64>(), m_pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+    }
+
+    if (vkFenceStatus == vk::Result::eErrorDeviceLost)
+    {
+      // Leave the native fence in the owning pool for device teardown.
+      m_pDeviceVulkan->ReportDeviceLoss();
+      m_SyncPoints.PopFront();
+      continue;
     }
 
     XII_ASSERT_DEV(vkFenceStatus == vk::Result::eSuccess, "Failed to wait for Vulkan fence. FenceValue={}, RequestedValue={}, Result={}.", syncData.m_uiValue, uiValue, vk::to_string(vkFenceStatus).data());

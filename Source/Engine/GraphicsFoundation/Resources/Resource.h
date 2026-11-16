@@ -7,12 +7,27 @@
 #include <GraphicsFoundation/Declarations/DeviceObject.h>
 #include <GraphicsFoundation/Declarations/GraphicsTypes.h>
 
+struct xiiGALExternalMemoryDescription;
+class xiiGALCommandList;
+
 /// Base class for all GAL resources (textures, buffers, etc).
 class XII_GRAPHICSFOUNDATION_DLL xiiGALResource : public xiiGALDeviceObject
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiGALResource, xiiGALDeviceObject);
 
 public:
+  /// Borrowed native handles remain valid while the exporting resource is retained.
+  [[nodiscard]] virtual const xiiGALExternalMemoryDescription& GetExternalMemoryDescription() const;
+
+  /// Record an external ownership acquire and a binary semaphore wait on a primary command list.
+  /// Submit only after the matching release has been submitted. Use the acquired queue family
+  /// for local accesses unless the workload explicitly transfers ownership.
+  virtual xiiResult AcquireExternalMemory(xiiGALCommandList*) { return XII_FAILURE; }
+
+  /// Record an external ownership release and a binary semaphore signal after local accesses.
+  /// Preserve submission order and stop local access until ownership is acquired again.
+  virtual xiiResult ReleaseExternalMemory(xiiGALCommandList*) { return XII_FAILURE; }
+
   /// This sets the buffer usage state.
   ///
   /// \note This method does not perform state transition, but resets the buffer state to the given value.

@@ -2,7 +2,6 @@
 
 #include <GraphicsVulkan/GraphicsVulkanPCH.h>
 
-#include <Foundation/System/Process.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <GraphicsFoundation/Utilities/TextureUtilities.h>
 #include <GraphicsVulkan/CommandEncoder/CommandListVulkan.h>
@@ -12,12 +11,7 @@
 #include <GraphicsVulkan/Pools/StagingBufferPoolVulkan.h>
 #include <GraphicsVulkan/Resources/TextureViewVulkan.h>
 #include <GraphicsVulkan/Resources/TextureVulkan.h>
-
-#if XII_ENABLED(XII_PLATFORM_LINUX)
-#  include <errno.h>
-#  include <sys/syscall.h>
-#  include <unistd.h>
-#endif
+#include <GraphicsVulkan/Utilities/ExternalMemoryVulkan.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALTextureVulkan, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
@@ -78,9 +72,16 @@ xiiGALTextureVulkan::~xiiGALTextureVulkan()
   // Prevent releasing the native object.
   if (m_vkImage != VK_NULL_HANDLE && m_Description.m_pExistingNativeObject == nullptr)
   {
-    if (m_ExternalMemoryDescription.m_Type == xiiGALExternalMemoryKind::Imported)
+    if (m_bImportedImage)
     {
-      pDeviceVulkan->SafeReleaseDeviceObject(std::move(m_vkImage), VK_NULL_HANDLE, std::move(m_ImageMemoryAllocationInfo.m_vkDeviceMemory));
+      if (m_vkImportedMemory)
+      {
+        pDeviceVulkan->SafeReleaseDeviceObject(std::move(m_vkImage), VK_NULL_HANDLE, std::move(m_vkImportedMemory));
+      }
+      else
+      {
+        pDeviceVulkan->GetVulkanLogicalDevice().destroyImage(m_vkImage, nullptr, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+      }
     }
     else
     {
@@ -136,20 +137,29 @@ xiiResult xiiGALTextureVulkan::InitPlatform(const xiiGALTextureData* pInitialDat
         xiiLog::Error("External sparse textures are not supported.");
         return XII_FAILURE;
       }
+      if (externalMemoryKind != xiiGALExternalMemoryKind::Imported && externalMemoryKind != xiiGALExternalMemoryKind::Exportable)
+      {
+        return XII_FAILURE;
+      }
+      if (externalMemoryKind == xiiGALExternalMemoryKind::Imported && pInitialData)
+      {
+        return XII_FAILURE;
+      }
       if (pDeviceVulkan->GetFeatures().m_NativeFence != xiiGALDeviceFeatureState::Enabled)
       {
-        xiiLog::Error("Exportable external memory for sparse textures requires the NativeFence device feature to be enabled.");
+        xiiLog::Error("Texture external memory requires the NativeFence device feature to be enabled.");
         return XII_FAILURE;
       }
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS)
-      vkExternalMemoryImageCreateInfo.handleTypes = vk::ExternalMemoryHandleTypeFlagBits::eOpaqueWin32;
-#elif XII_ENABLED(XII_PLATFORM_LINUX)
-      vkExternalMemoryImageCreateInfo.handleTypes = vk::ExternalMemoryHandleTypeFlagBits::eOpaqueFd;
-#endif
+      const auto handleType = xiiVulkanExternalMemory::GetHandleType();
+      if (handleType == vk::ExternalMemoryHandleTypeFlagBits{})
+      {
+        return XII_FAILURE;
+      }
+      vkExternalMemoryImageCreateInfo.handleTypes = handleType;
 
       vk::PhysicalDeviceExternalImageFormatInfo externalFormat;
-      externalFormat.handleType = static_cast<vk::ExternalMemoryHandleTypeFlagBits>(static_cast<VkExternalMemoryHandleTypeFlags>(vkExternalMemoryImageCreateInfo.handleTypes));
+      externalFormat.handleType = handleType;
       vk::PhysicalDeviceImageFormatInfo2 formatInfo;
       formatInfo.pNext  = &externalFormat;
       formatInfo.format = vkImageCreateInfo.format;
@@ -192,23 +202,7 @@ xiiResult xiiGALTextureVulkan::InitPlatform(const xiiGALTextureData* pInitialDat
         allocationCreateInfo.m_MemoryCategory = xiiGALMemoryCategory::Textures;
       allocationCreateInfo.m_Usage = xiiVulkanMemoryUsage::Auto;
 
-      if (externalMemoryKind.IsSet(xiiGALExternalMemoryKind::Exportable))
-      {
-        allocationCreateInfo.m_bExportSharedAllocation = true;
-      }
-
-      if (!externalMemoryKind.IsSet(xiiGALExternalMemoryKind::Imported))
-      {
-        VK_SUCCEED_OR_RETURN_XII_FAILURE(pVulkanMemoryAllocator->CreateImage(vkImageCreateInfo, allocationCreateInfo, m_vkImage, m_ImageMemoryAllocation, &m_ImageMemoryAllocationInfo));
-      }
-      else if (externalMemoryKind == xiiGALExternalMemoryKind::Imported)
-      {
-        vk::Device vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
-
-        VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.createImage(&vkImageCreateInfo, nullptr, &m_vkImage, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
-      }
-
-      XII_SUCCEED_OR_RETURN(InitializeImageExternalMemoryProperties(externalMemoryKind));
+      VK_SUCCEED_OR_RETURN_XII_FAILURE(pVulkanMemoryAllocator->CreateImage(vkImageCreateInfo, allocationCreateInfo, m_vkImage, m_ImageMemoryAllocation, &m_ImageMemoryAllocationInfo));
 
       SetResourceState(xiiGALResourceStateFlags::Undefined);
 
@@ -269,6 +263,7 @@ xiiResult xiiGALTextureVulkan::InitPlatform(const xiiGALTextureData* pInitialDat
       }
       else if (externalMemoryKind == xiiGALExternalMemoryKind::Imported)
       {
+        m_bImportedImage           = true;
         vk::Device vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
 
         VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.createImage(&vkImageCreateInfo, nullptr, &m_vkImage, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
@@ -479,168 +474,64 @@ void xiiGALTextureVulkan::InitializeSparseTextureProperties()
 xiiResult xiiGALTextureVulkan::InitializeImageExternalMemoryProperties(xiiBitflags<xiiGALExternalMemoryKind> externalMemoryKind)
 {
   if (externalMemoryKind.IsNoFlagSet())
-    return XII_SUCCESS;
-  auto                           device   = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-  const auto                     logical  = device->GetVulkanLogicalDevice();
-  const auto&                    dispatch = device->GetVulkanDynamicDispatchLoader();
-  vk::PhysicalDeviceIDProperties id;
-  vk::PhysicalDeviceProperties2  properties;
-  properties.pNext = &id;
-  device->GetVulkanPhysicalDevice().getProperties2(&properties, dispatch);
-  xiiUuid uuid;
-  xiiMemoryUtils::Copy(reinterpret_cast<xiiUInt8*>(&uuid), id.deviceUUID.data(), sizeof(uuid));
-  const bool imported = externalMemoryKind.IsSet(xiiGALExternalMemoryKind::Imported);
-  if (imported)
   {
-    if (m_ExternalMemoryDescription.m_DeviceUUID != uuid)
-    {
-      xiiLog::Error("External image import requires the exporting Vulkan physical device.");
-      return XII_FAILURE;
-    }
-    xiiGALExternalMemoryDescription local;
-    XII_SUCCEED_OR_RETURN(m_ExternalMemoryDescription.DuplicateHandles(local));
-    m_ExternalMemoryDescription        = local;
-    m_ExternalMemoryDescription.m_Type = xiiGALExternalMemoryKind::Imported;
-  }
-  else
-  {
-    m_ExternalMemoryDescription.m_Type = xiiGALExternalMemoryKind::Exportable;
-    m_ExternalMemoryDescription.m_Flags |= xiiGALExternalMemoryFlags::SharedAccess;
-    m_ExternalMemoryDescription.m_uiProcessId       = xiiProcess::GetCurrentProcessID();
-    m_ExternalMemoryDescription.m_uiSize            = m_ImageMemoryAllocationInfo.m_uiSize;
-    m_ExternalMemoryDescription.m_uiMemoryTypeIndex = m_ImageMemoryAllocationInfo.m_uiMemoryType;
-    m_ExternalMemoryDescription.m_DeviceUUID        = uuid;
-  }
-  m_bOwnsExternalHandles = true;
-
-  vk::ExportSemaphoreCreateInfo exportSemaphore;
-#if XII_ENABLED(XII_PLATFORM_WINDOWS)
-  exportSemaphore.handleTypes = vk::ExternalSemaphoreHandleTypeFlagBits::eOpaqueWin32;
-#elif XII_ENABLED(XII_PLATFORM_LINUX)
-  exportSemaphore.handleTypes = vk::ExternalSemaphoreHandleTypeFlagBits::eOpaqueFd;
-#else
-  xiiLog::Error("Vulkan external image handles are unavailable on this platform.");
-  return XII_FAILURE;
-#endif
-  vk::SemaphoreTypeCreateInfo type;
-  type.semaphoreType = m_ExternalMemoryDescription.m_Flags.IsSet(xiiGALExternalMemoryFlags::BinarySemaphore) ? vk::SemaphoreType::eBinary : vk::SemaphoreType::eTimeline;
-  type.pNext         = imported ? nullptr : &exportSemaphore;
-  vk::SemaphoreCreateInfo semaphoreInfo;
-  semaphoreInfo.pNext = &type;
-  VK_SUCCEED_OR_RETURN_XII_FAILURE(logical.createSemaphore(&semaphoreInfo, nullptr, &m_vkExternalMemorySemaphore, dispatch));
-
-  if (!imported)
-  {
-#if XII_ENABLED(XII_PLATFORM_WINDOWS)
-    vk::MemoryGetWin32HandleInfoKHR memoryInfo;
-    memoryInfo.memory     = m_ImageMemoryAllocationInfo.m_vkDeviceMemory;
-    memoryInfo.handleType = vk::ExternalMemoryHandleTypeFlagBits::eOpaqueWin32;
-    HANDLE memory         = nullptr;
-    VK_SUCCEED_OR_RETURN_XII_FAILURE(logical.getMemoryWin32HandleKHR(&memoryInfo, &memory, dispatch));
-    m_ExternalMemoryDescription.m_uiNativeHandle = reinterpret_cast<xiiUInt64>(memory);
-    vk::SemaphoreGetWin32HandleInfoKHR semaphore;
-    semaphore.semaphore  = m_vkExternalMemorySemaphore;
-    semaphore.handleType = vk::ExternalSemaphoreHandleTypeFlagBits::eOpaqueWin32;
-    HANDLE handle        = nullptr;
-    VK_SUCCEED_OR_RETURN_XII_FAILURE(logical.getSemaphoreWin32HandleKHR(&semaphore, &handle, dispatch));
-    m_ExternalMemoryDescription.m_uiNativeSemaphoreHandle = reinterpret_cast<xiiUInt64>(handle);
-#elif XII_ENABLED(XII_PLATFORM_LINUX)
-    vk::MemoryGetFdInfoKHR memoryInfo;
-    memoryInfo.memory     = m_ImageMemoryAllocationInfo.m_vkDeviceMemory;
-    memoryInfo.handleType = vk::ExternalMemoryHandleTypeFlagBits::eOpaqueFd;
-    int memory            = -1;
-    VK_SUCCEED_OR_RETURN_XII_FAILURE(logical.getMemoryFdKHR(&memoryInfo, &memory, dispatch));
-    m_ExternalMemoryDescription.m_uiNativeHandle = memory;
-    vk::SemaphoreGetFdInfoKHR semaphore;
-    semaphore.semaphore  = m_vkExternalMemorySemaphore;
-    semaphore.handleType = vk::ExternalSemaphoreHandleTypeFlagBits::eOpaqueFd;
-    int handle           = -1;
-    VK_SUCCEED_OR_RETURN_XII_FAILURE(logical.getSemaphoreFdKHR(&semaphore, &handle, dispatch));
-    m_ExternalMemoryDescription.m_uiNativeSemaphoreHandle = handle;
-#endif
     return XII_SUCCESS;
   }
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS)
-  vk::ImportSemaphoreWin32HandleInfoKHR semaphoreImport;
-  semaphoreImport.semaphore  = m_vkExternalMemorySemaphore;
-  semaphoreImport.handleType = vk::ExternalSemaphoreHandleTypeFlagBits::eOpaqueWin32;
-  semaphoreImport.handle     = reinterpret_cast<HANDLE>(m_ExternalMemoryDescription.m_uiNativeSemaphoreHandle);
-  VK_SUCCEED_OR_RETURN_XII_FAILURE(logical.importSemaphoreWin32HandleKHR(&semaphoreImport, dispatch));
-  vk::ImportMemoryWin32HandleInfoKHR memoryImport;
-  memoryImport.handleType = vk::ExternalMemoryHandleTypeFlagBits::eOpaqueWin32;
-  memoryImport.handle     = reinterpret_cast<HANDLE>(m_ExternalMemoryDescription.m_uiNativeHandle);
-#elif XII_ENABLED(XII_PLATFORM_LINUX)
-  vk::ImportSemaphoreFdInfoKHR semaphoreImport;
-  semaphoreImport.semaphore  = m_vkExternalMemorySemaphore;
-  semaphoreImport.handleType = vk::ExternalSemaphoreHandleTypeFlagBits::eOpaqueFd;
-  semaphoreImport.fd         = static_cast<int>(m_ExternalMemoryDescription.m_uiNativeSemaphoreHandle);
-  VK_SUCCEED_OR_RETURN_XII_FAILURE(logical.importSemaphoreFdKHR(&semaphoreImport, dispatch));
-  // Successful FD imports transfer ownership to Vulkan.
-  m_ExternalMemoryDescription.m_uiNativeSemaphoreHandle = 0;
-  vk::ImportMemoryFdInfoKHR memoryImport;
-  memoryImport.handleType = vk::ExternalMemoryHandleTypeFlagBits::eOpaqueFd;
-  memoryImport.fd         = static_cast<int>(m_ExternalMemoryDescription.m_uiNativeHandle);
-#endif
-#if XII_ENABLED(XII_PLATFORM_WINDOWS) || XII_ENABLED(XII_PLATFORM_LINUX)
-  vk::MemoryRequirements requirements;
-  logical.getImageMemoryRequirements(m_vkImage, &requirements, dispatch);
-  if (m_ExternalMemoryDescription.m_uiSize < requirements.size || m_ExternalMemoryDescription.m_uiMemoryTypeIndex >= 32 || !(requirements.memoryTypeBits & (1U << m_ExternalMemoryDescription.m_uiMemoryTypeIndex)))
-    return XII_FAILURE;
   vk::MemoryDedicatedAllocateInfo dedicated;
-  dedicated.image    = m_vkImage;
-  memoryImport.pNext = &dedicated;
-  vk::MemoryAllocateInfo allocation;
-  allocation.pNext           = &memoryImport;
-  allocation.allocationSize  = m_ExternalMemoryDescription.m_uiSize;
-  allocation.memoryTypeIndex = m_ExternalMemoryDescription.m_uiMemoryTypeIndex;
-  VK_SUCCEED_OR_RETURN_XII_FAILURE(logical.allocateMemory(&allocation, nullptr, &m_ImageMemoryAllocationInfo.m_vkDeviceMemory, dispatch));
-#  if XII_ENABLED(XII_PLATFORM_LINUX)
-  m_ExternalMemoryDescription.m_uiNativeHandle = 0;
-#  endif
-  VK_SUCCEED_OR_RETURN_XII_FAILURE(logical.bindImageMemory(m_vkImage, m_ImageMemoryAllocationInfo.m_vkDeviceMemory, 0, dispatch));
-#endif
-  return XII_SUCCESS;
+  dedicated.image = m_vkImage;
+  return xiiVulkanExternalMemory::Initialize(*m_pDevice.Downcast<xiiGALDeviceVulkan>(), externalMemoryKind, m_ImageMemoryAllocationInfo,
+                                             dedicated, m_ExternalMemoryDescription, m_vkExternalMemorySemaphore,
+                                             m_vkImportedMemory, m_bOwnsExternalHandles);
 }
 
 xiiResult xiiGALTextureVulkan::AcquireExternalMemory(xiiGALCommandList* pCommandList)
 {
-  auto* command = xiiDynamicCast<xiiGALCommandListVulkan*>(pCommandList);
-  if (!command || command->GetDevice() != m_pDevice || command->GetRecordingState() != xiiGALCommandList::RecordingState::Recording ||
-      !command->GetDescription().m_QueueFlags.IsSet(xiiGALCommandQueueFlags::Graphics) || !m_vkExternalMemorySemaphore || !m_ExternalMemoryDescription.m_Flags.IsSet(xiiGALExternalMemoryFlags::BinarySemaphore))
+  auto  pDevice  = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  auto* pCommand = xiiVulkanExternalMemory::GetTransferCommandList(pCommandList, *pDevice, m_ExternalMemoryDescription, m_vkExternalMemorySemaphore);
+  if (!pCommand || !pCommand->GetDescription().m_QueueFlags.AreAllSet(xiiGALCommandQueueFlags::Graphics) ||
+      xiiGALResourceFormat::IsDepthFormat(m_Description.m_Format))
+  {
     return XII_FAILURE;
-  command->AddWaitSemaphore(m_vkExternalMemorySemaphore, vk::PipelineStageFlagBits::eAllCommands);
-  command->FlushBarriers();
+  }
+  pCommand->AddWaitSemaphore(m_vkExternalMemorySemaphore, vk::PipelineStageFlagBits::eAllCommands);
+  pCommand->FlushBarriers();
   vk::ImageMemoryBarrier barrier;
   barrier.image               = m_vkImage;
   barrier.oldLayout           = vk::ImageLayout::eGeneral;
   barrier.newLayout           = vk::ImageLayout::eGeneral;
   barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_EXTERNAL;
-  barrier.dstQueueFamilyIndex = m_pDevice.Downcast<xiiGALDeviceVulkan>()->GetCommandQueueInformation(xiiGALCommandQueueFlags::Graphics).m_uiQueueFamilyIndex;
+  barrier.dstQueueFamilyIndex = pDevice->GetCommandQueueInformation(xiiGALCommandQueueFlags::Graphics).m_uiQueueFamilyIndex;
   barrier.dstAccessMask       = vk::AccessFlagBits::eMemoryRead | vk::AccessFlagBits::eMemoryWrite;
-  barrier.subresourceRange    = {vk::ImageAspectFlagBits::eColor, 0, m_Description.m_uiMipLevels, 0, m_Description.m_uiArraySizeOrDepth};
-  command->GetVulkanCommandBuffer().pipelineBarrier(vk::PipelineStageFlagBits::eTopOfPipe, vk::PipelineStageFlagBits::eAllCommands, {}, 0, nullptr, 0, nullptr, 1, &barrier, m_pDevice.Downcast<xiiGALDeviceVulkan>()->GetVulkanDynamicDispatchLoader());
+  barrier.subresourceRange    = {vk::ImageAspectFlagBits::eColor, 0, m_Description.m_uiMipLevels, 0, m_Description.Is3D() ? 1U : m_Description.m_uiArraySizeOrDepth};
+  pCommand->GetVulkanCommandBuffer().pipelineBarrier(vk::PipelineStageFlagBits::eTopOfPipe, vk::PipelineStageFlagBits::eAllCommands, {}, 0, nullptr, 0, nullptr, 1, &barrier, pDevice->GetVulkanDynamicDispatchLoader());
   SetVulkanImageLayout(vk::ImageLayout::eGeneral);
   return XII_SUCCESS;
 }
 
 xiiResult xiiGALTextureVulkan::ReleaseExternalMemory(xiiGALCommandList* pCommandList)
 {
-  auto* command = xiiDynamicCast<xiiGALCommandListVulkan*>(pCommandList);
-  if (!command || command->GetDevice() != m_pDevice || command->GetRecordingState() != xiiGALCommandList::RecordingState::Recording ||
-      !command->GetDescription().m_QueueFlags.IsSet(xiiGALCommandQueueFlags::Graphics) || !m_vkExternalMemorySemaphore || !m_ExternalMemoryDescription.m_Flags.IsSet(xiiGALExternalMemoryFlags::BinarySemaphore))
+  auto  pDevice  = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  auto* pCommand = xiiVulkanExternalMemory::GetTransferCommandList(pCommandList, *pDevice, m_ExternalMemoryDescription, m_vkExternalMemorySemaphore);
+  if (!pCommand || !pCommand->GetDescription().m_QueueFlags.AreAllSet(xiiGALCommandQueueFlags::Graphics) ||
+      xiiGALResourceFormat::IsDepthFormat(m_Description.m_Format))
+  {
     return XII_FAILURE;
-  command->FlushBarriers();
+  }
+  // Transition locally before the ownership release. Both halves of the
+  // external transfer use the same layout and subresource range.
+  pCommand->TransitionImageLayout(this, vk::ImageLayout::eGeneral);
+  pCommand->FlushBarriers();
   vk::ImageMemoryBarrier barrier;
   barrier.image               = m_vkImage;
-  barrier.oldLayout           = GetVulkanImageLayout();
+  barrier.oldLayout           = vk::ImageLayout::eGeneral;
   barrier.newLayout           = vk::ImageLayout::eGeneral;
-  barrier.srcQueueFamilyIndex = m_pDevice.Downcast<xiiGALDeviceVulkan>()->GetCommandQueueInformation(xiiGALCommandQueueFlags::Graphics).m_uiQueueFamilyIndex;
+  barrier.srcQueueFamilyIndex = pDevice->GetCommandQueueInformation(xiiGALCommandQueueFlags::Graphics).m_uiQueueFamilyIndex;
   barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_EXTERNAL;
   barrier.srcAccessMask       = vk::AccessFlagBits::eMemoryRead | vk::AccessFlagBits::eMemoryWrite;
-  barrier.subresourceRange    = {vk::ImageAspectFlagBits::eColor, 0, m_Description.m_uiMipLevels, 0, m_Description.m_uiArraySizeOrDepth};
-  command->GetVulkanCommandBuffer().pipelineBarrier(vk::PipelineStageFlagBits::eAllCommands, vk::PipelineStageFlagBits::eBottomOfPipe, {}, 0, nullptr, 0, nullptr, 1, &barrier, m_pDevice.Downcast<xiiGALDeviceVulkan>()->GetVulkanDynamicDispatchLoader());
-  command->AddSignalSemaphore(m_vkExternalMemorySemaphore);
+  barrier.subresourceRange    = {vk::ImageAspectFlagBits::eColor, 0, m_Description.m_uiMipLevels, 0, m_Description.Is3D() ? 1U : m_Description.m_uiArraySizeOrDepth};
+  pCommand->GetVulkanCommandBuffer().pipelineBarrier(vk::PipelineStageFlagBits::eAllCommands, vk::PipelineStageFlagBits::eBottomOfPipe, {}, 0, nullptr, 0, nullptr, 1, &barrier, pDevice->GetVulkanDynamicDispatchLoader());
+  pCommand->AddSignalSemaphore(m_vkExternalMemorySemaphore);
   SetVulkanImageLayout(vk::ImageLayout::eGeneral);
   return XII_SUCCESS;
 }

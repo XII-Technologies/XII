@@ -72,7 +72,7 @@ public:
   /// Returns the document type for which this context was created. Useful in case a context may be used for multiple document types.
   xiiStringView GetDocumentType() const { return m_sDocumentType; }
 
-  void         SendProcessMessage(xiiProcessMessage* pMsg = nullptr);
+  bool         SendProcessMessage(xiiProcessMessage* pMsg = nullptr);
   virtual void HandleMessage(const xiiEditorEngineDocumentMsg* pMsg);
 
   static xiiEngineProcessDocumentContext* GetDocumentContext(xiiUuid guid);

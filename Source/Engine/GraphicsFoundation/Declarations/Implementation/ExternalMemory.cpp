@@ -14,7 +14,7 @@
 #endif
 
 // clang-format off
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGALExternalMemoryDescription, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiGALExternalMemoryDescription>)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGALExternalMemoryDescription, xiiNoBase, 2, xiiRTTIDefaultAllocator<xiiGALExternalMemoryDescription>)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -26,6 +26,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGALExternalMemoryDescription, xiiNoBase, 1, x
     XII_MEMBER_PROPERTY("ProcessID", m_uiProcessId),
     XII_MEMBER_PROPERTY("MemoryTypeIndex", m_uiMemoryTypeIndex),
     XII_MEMBER_PROPERTY("DeviceUUID", m_DeviceUUID),
+    XII_MEMBER_PROPERTY("DriverUUID", m_DriverUUID),
   }
   XII_END_PROPERTIES;
 }
@@ -34,6 +35,16 @@ XII_END_STATIC_REFLECTED_TYPE;
 
 xiiResult xiiGALExternalMemoryDescription::DuplicateHandles(xiiGALExternalMemoryDescription& out_description) const
 {
+  if (m_uiProcessId == 0 || m_uiNativeHandle == 0 || m_uiNativeSemaphoreHandle == 0)
+  {
+    return XII_FAILURE;
+  }
+#if XII_ENABLED(XII_PLATFORM_LINUX)
+  if (m_uiProcessId > xiiMath::MaxValue<pid_t>() || m_uiNativeHandle > xiiMath::MaxValue<int>() || m_uiNativeSemaphoreHandle > xiiMath::MaxValue<int>())
+  {
+    return XII_FAILURE;
+  }
+#endif
   xiiGALExternalMemoryDescription duplicate = *this;
   duplicate.m_uiNativeHandle                = 0;
   duplicate.m_uiNativeSemaphoreHandle       = 0;

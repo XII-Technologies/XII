@@ -9,6 +9,7 @@
 #include <Foundation/Application/Config/PluginConfig.h>
 #include <Foundation/Communication/Event.h>
 #include <Foundation/Configuration/Singleton.h>
+#include <Foundation/Containers/HashTable.h>
 #include <Foundation/Types/UniquePtr.h>
 #include <GuiFoundation/UIServices/UIServices.moc.h>
 
@@ -88,6 +89,7 @@ public:
 
 private:
   void Initialize(const xiiRTTI* pFirstAllowedMessageType);
+  bool SendMessageImmediately(xiiProcessMessage* pMessage);
   void HandleIPCEvent(const xiiProcessCommunicationChannel::Event& e);
   void UIServicesTickEventHandler(const xiiQtUiServices::TickEvent& e);
   bool ConnectToRemoteProcess();
@@ -101,6 +103,10 @@ private:
   xiiEventSubscriptionID m_TickEventSubscriptionID = 0;
   xiiUInt32              m_uiRedrawCountSent       = 0;
   xiiUInt32              m_uiRedrawCountReceived   = 0;
+
+  // View IDs are unique within the editor process. Keep one latest request per
+  // view until the engine accepts another redraw batch.
+  xiiHashTable<xiiUInt32, xiiViewRedrawMsgToEngine> m_PendingViewRedraws;
 
   xiiEditorProcessCommunicationChannel                     m_IPC;
   xiiUniquePtr<xiiEditorProcessRemoteCommunicationChannel> m_pRemoteProcess;
