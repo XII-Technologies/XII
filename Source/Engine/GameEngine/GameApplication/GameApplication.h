@@ -8,15 +8,15 @@
 
 #include <Core/Console/ConsoleFunction.h>
 #include <Core/GameApplication/GameApplicationBase.h>
-#include <Foundation/Communication/IpcChannel.h>
-#include <Foundation/Communication/IpcProcessMessageProtocol.h>
 #include <Foundation/Configuration/CVar.h>
 #include <Foundation/IO/OSFile.h>
+#include <Foundation/Network/NetworkChannel.h>
 #include <Foundation/Threading/DelegateTask.h>
 #include <Foundation/Types/UniquePtr.h>
 #include <GameEngine/Configuration/GameApplicationSettings.h>
 
 class xiiQuakeConsole;
+class xiiPlayerSessionProtocol;
 struct xiiGALDeviceCreationDescription;
 
 // TODO: update comments below
@@ -102,18 +102,22 @@ protected:
   void         InitializeManagedSession();
   void         PumpSession();
   virtual void ReportStatus(xiiStringView sStage, xiiStringView sDetail, float fProgress = -1.0F);
+  void         SendManagedStatus(float fProgress, xiiNetworkMessage* out_pSubmission = nullptr);
 
-  xiiString                                  m_sInstance;
-  xiiString                                  m_sSession;
-  xiiString                                  m_sStage = "initializing";
-  xiiString                                  m_sDetail;
-  xiiString                                  m_sManagedWritableDirectory;
-  xiiUniquePtr<xiiIpcChannel>                m_pSessionChannel;
-  xiiUniquePtr<xiiIpcProcessMessageProtocol> m_pSessionProtocol;
-  xiiTime                                    m_LastStatus;
-  xiiTime                                    m_LastConnectAttempt;
-  bool                                       m_bSessionConnected = false;
-  xiiOSFile                                  m_ManagedPreferencesLock;
+  xiiString                              m_sInstance;
+  xiiString                              m_sSession;
+  xiiString                              m_sStage = "initializing";
+  xiiString                              m_sDetail;
+  xiiString                              m_sManagedWritableDirectory;
+  xiiUniquePtr<xiiPlayerSessionProtocol> m_pSessionProtocol;
+  xiiNetworkConnection                   m_SessionConnection;
+  xiiNetworkChannel                      m_SessionChannel;
+  xiiTime                                m_LastStatus;
+  xiiTime                                m_SessionDeadline;
+  xiiUInt32                              m_uiExpectedEditorProcessId = 0;
+  bool                                   m_bSessionConnected         = false;
+  bool                                   m_bSessionProtocolReady     = false;
+  xiiOSFile                              m_ManagedPreferencesLock;
 
   void Init_ConfigureInput() override;
   void Init_ConfigureCVars() override;

@@ -15,31 +15,27 @@ xiiProcessCommunicationChannel::~xiiProcessCommunicationChannel()
 
 bool xiiProcessCommunicationChannel::SendMessage(xiiProcessMessage* pMessage)
 {
-  if (m_pFirstAllowedMessageType != nullptr)
-  {
-    // ignore all messages that are not the first allowed message
-    // this is necessary to make sure that during an engine restart we don't accidentally send stray messages while
-    // the engine is not yet correctly set up
-    if (!pMessage->GetDynamicRTTI()->IsDerivedFrom(m_pFirstAllowedMessageType))
-    {
-      xiiLog::Warning("[IPC]Ignored send message of type {} because it is not a {}", pMessage->GetDynamicRTTI()->GetTypeName(), m_pFirstAllowedMessageType->GetTypeName());
-      return false;
-    }
+  if (m_pProtocol == nullptr)
+    return false;
 
-    m_pFirstAllowedMessageType = nullptr;
-  }
-
-  {
-    if (m_pProtocol == nullptr)
-      return false;
-
+  if (m_pFirstAllowedMessageType == nullptr)
     return m_pProtocol->Send(pMessage);
+
+  // Ignore stray messages while the engine is being restarted and set up.
+  if (!pMessage->GetDynamicRTTI()->IsDerivedFrom(m_pFirstAllowedMessageType))
+  {
+    xiiLog::Warning("[IPC] Ignored message of type {} while waiting for {}", pMessage->GetDynamicRTTI()->GetTypeName(), m_pFirstAllowedMessageType->GetTypeName());
+    return false;
   }
+  if (!m_pProtocol->Send(pMessage))
+    return false;
+  m_pFirstAllowedMessageType = nullptr;
+  return true;
 }
 
 bool xiiProcessCommunicationChannel::ProcessMessages()
 {
-  if (!m_pProtocol)
+  if (!m_pProtocol || m_bDispatchingMessage)
     return false;
 
   return m_pProtocol->ProcessMessages();
@@ -55,6 +51,8 @@ void xiiProcessCommunicationChannel::WaitForMessages()
 
 void xiiProcessCommunicationChannel::MessageFunc(const xiiIpcProcessMessageProtocol::Event& msg)
 {
+  m_bDispatchingMessage = true;
+  XII_SCOPE_EXIT(m_bDispatchingMessage = false);
   const xiiProcessMessage* pMsg  = msg.m_pMessage;
   const xiiRTTI*           pRtti = pMsg->GetDynamicRTTI();
 
@@ -85,60 +83,23 @@ void xiiProcessCommunicationChannel::MessageFunc(const xiiIpcProcessMessageProto
   msg.m_bInterruptMessageProcessing = e.m_bInterruptMessageProcessing;
 }
 
-xiiResult xiiProcessCommunicationChannel::WaitForMessage(const xiiRTTI* pMessageType, xiiTime timeout, WaitForMessageCallback* pMessageCallack)
+xiiResult xiiProcessCommunicationChannel::WaitForMessage(const xiiRTTI* pMessageType, xiiTime timeout, WaitForMessageCallback* pMessageCallback)
 {
-  XII_ASSERT_DEV(m_pProtocol != nullptr && m_pChannel != nullptr, "Need to connect first before waiting for a message.");
-  // XII_ASSERT_DEV(xiiThreadUtils::IsMainThread(), "This function is not thread safe");
-  XII_ASSERT_DEV(m_pWaitForMessageType == nullptr, "Already waiting for another message!");
+  if (!m_pProtocol || !IsConnected() || pMessageType == nullptr || !timeout.IsPositive() ||
+      m_bDispatchingMessage || m_pWaitForMessageType != nullptr)
+    return XII_FAILURE;
 
-  m_pWaitForMessageType = pMessageType;
-  if (pMessageCallack)
-  {
-    m_WaitForMessageCallback = *pMessageCallack;
-  }
-  else
-  {
-    m_WaitForMessageCallback = WaitForMessageCallback();
-  }
+  m_pWaitForMessageType    = pMessageType;
+  m_WaitForMessageCallback = pMessageCallback ? *pMessageCallback : WaitForMessageCallback();
+  XII_SCOPE_EXIT(m_pWaitForMessageType = nullptr; m_WaitForMessageCallback = {});
 
-  XII_SCOPE_EXIT(m_WaitForMessageCallback = WaitForMessageCallback(););
-
-  const xiiTime tStart = xiiTime::Now();
-
+  const auto deadline = xiiTime::Now() + timeout;
   while (m_pWaitForMessageType != nullptr)
   {
-    if (timeout == xiiTime())
-    {
-      m_pProtocol->WaitForMessages().IgnoreResult();
-    }
-    else
-    {
-      xiiTime tTimeLeft = timeout - (xiiTime::Now() - tStart);
-
-      if (tTimeLeft < xiiTime::MakeZero())
-      {
-        // Don't time out if a debugger is attached to make stepping easier.
-        if (xiiSystemInformation::IsDebuggerAttached())
-        {
-          tTimeLeft = xiiTime::MakeFromSeconds(1);
-        }
-        else
-        {
-          m_pWaitForMessageType = nullptr;
-          xiiLog::Dev("Reached time-out of {0} seconds while waiting for {1}", xiiArgF(timeout.GetSeconds(), 1), pMessageType->GetTypeName());
-          return XII_FAILURE;
-        }
-      }
-
-      m_pProtocol->WaitForMessages(tTimeLeft).IgnoreResult();
-    }
-
-    if (!m_pChannel->IsConnected())
-    {
-      m_pWaitForMessageType = nullptr;
-      xiiLog::Dev("Lost connection while waiting for {}", pMessageType->GetTypeName());
+    const auto remaining = deadline - xiiTime::Now();
+    if (!remaining.IsPositive() || !IsConnected())
       return XII_FAILURE;
-    }
+    m_pProtocol->WaitForMessages(remaining).IgnoreResult();
   }
 
   return XII_SUCCESS;
@@ -146,6 +107,8 @@ xiiResult xiiProcessCommunicationChannel::WaitForMessage(const xiiRTTI* pMessage
 
 xiiResult xiiProcessCommunicationChannel::WaitForConnection(xiiTime timeout)
 {
+  if (m_pChannel == nullptr || !timeout.IsPositive())
+    return XII_FAILURE;
   if (m_pChannel->IsConnected())
   {
     return XII_SUCCESS;
@@ -172,22 +135,13 @@ xiiResult xiiProcessCommunicationChannel::WaitForConnection(xiiTime timeout)
     return XII_SUCCESS;
   }
 
-  if (timeout == xiiTime())
-  {
-    waitForConnectionSignal.WaitForSignal();
-  }
-  else
-  {
-    if (waitForConnectionSignal.WaitForSignal(timeout) == xiiThreadSignal::WaitResult::Timeout)
-    {
-      return XII_FAILURE;
-    }
-  }
+  if (waitForConnectionSignal.WaitForSignal(timeout) == xiiThreadSignal::WaitResult::Timeout)
+    return XII_FAILURE;
 
   return m_pChannel->IsConnected() ? XII_SUCCESS : XII_FAILURE;
 }
 
 bool xiiProcessCommunicationChannel::IsConnected() const
 {
-  return m_pChannel->IsConnected();
+  return m_pChannel != nullptr && m_pChannel->IsConnected();
 }

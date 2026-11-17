@@ -6,6 +6,7 @@
 #include <Foundation/Network/NetworkResolver.h>
 #include <Foundation/Network/UdpSocket.h>
 #include <Foundation/Strings/StringBuilder.h>
+#include <Foundation/System/Process.h>
 #include <Foundation/Threading/Implementation/OSThread.h>
 #include <Foundation/Threading/ThreadUtils.h>
 #include <Foundation/Time/Time.h>
@@ -1160,6 +1161,7 @@ XII_CREATE_SIMPLE_TEST(NetworkTransport, LocalHost)
     XII_TEST_BOOL(info.m_Session.IsValid());
     XII_TEST_BOOL(info.m_Capabilities.m_bAuthenticated && !info.m_Capabilities.m_bEncrypted);
     XII_TEST_BOOL(!info.m_sAuthenticatedIdentity.IsEmpty());
+    XII_TEST_INT(info.m_uiLocalPeerProcessId, xiiProcess::GetCurrentProcessID());
     if (!HostTestEvent(server, xiiNetworkEventType::Connected, event))
     {
       return;
@@ -1167,6 +1169,7 @@ XII_CREATE_SIMPLE_TEST(NetworkTransport, LocalHost)
     servers[uiIndex] = event.m_Connection;
     XII_TEST_BOOL(server.GetConnectionInfo(servers[uiIndex], info).Succeeded());
     XII_TEST_BOOL(!info.m_sAuthenticatedIdentity.IsEmpty());
+    XII_TEST_INT(info.m_uiLocalPeerProcessId, xiiProcess::GetCurrentProcessID());
     XII_TEST_BOOL(client.GetDefaultChannel(clients[uiIndex], channels[uiIndex]).Succeeded());
   }
   xiiNetworkChannelConfiguration unordered;

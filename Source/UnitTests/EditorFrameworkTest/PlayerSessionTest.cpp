@@ -11,6 +11,7 @@
 #include <Foundation/Threading/ThreadUtils.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <Foundation/Utilities/AssetFileHeader.h>
+#include <GameEngine/GameApplication/PlayerSessionProtocol.h>
 #include <QApplication>
 
 XII_CREATE_SIMPLE_TEST_GROUP(PlayerSessions);
@@ -199,7 +200,31 @@ XII_CREATE_SIMPLE_TEST(PlayerSessions, ManagedProcesses)
     xiiPlayerLaunchConfig peer;
     peer.m_sApplication = xiiStringBuilder(xiiOSFile::GetApplicationDirectory(), "/EditorFrameworkTest.exe");
     peer.m_Arguments.PushBack("-playerSessionIgnoreStopPeer");
-    XII_TEST_BOOL(sessions.Launch(peer, projectA, {}).Succeeded());
+    const auto index = sessions.GetInstanceCount();
+    if (!XII_TEST_BOOL(sessions.Launch(peer, projectA, {}).Succeeded()))
+      return;
+
+    // A process under the same OS account can connect at the transport layer, but it is
+    // not the owned child and cannot enroll the session or publish application status.
+    xiiPlayerSessionProtocol unexpected;
+    xiiNetworkLocalEndpoint  endpoint;
+    xiiNetworkConnection     connection;
+    if (!XII_TEST_RESULT(unexpected.StartPlayer([](xiiNetworkChannel, const xiiPlayerSceneMessage&) {}, [](xiiNetworkChannel, const xiiPlayerStopMessage&) {})) ||
+        !XII_TEST_RESULT(xiiNetworkLocalEndpoint::Make(sessions.GetInstanceId(index), endpoint).GetResult()) ||
+        !XII_TEST_RESULT(unexpected.GetHost().Connect(endpoint, {}, connection).GetResult()))
+      return;
+    bool       bRejected         = false;
+    const auto rejectionDeadline = xiiTime::Now() + xiiTime::MakeFromSeconds(5);
+    while (!bRejected && xiiTime::Now() < rejectionDeadline)
+    {
+      sessions.Tick();
+      xiiNetworkEvent event;
+      if (unexpected.GetHost().WaitForEvent(event, xiiTime::MakeFromMilliseconds(10)).Succeeded())
+        bRejected = event.m_Connection == connection && event.m_Type == xiiNetworkEventType::Closed;
+    }
+    XII_TEST_BOOL(bRejected);
+    XII_TEST_STRING(sessions.GetInstanceState(index), "launching");
+
     const auto begin = xiiTime::Now();
     sessions.Shutdown();
     XII_TEST_BOOL((xiiTime::Now() - begin).GetSeconds() < 7.5);

@@ -11,7 +11,7 @@
 #include <Foundation/Threading/ThreadUtils.h>
 #include <Foundation/Types/UniquePtr.h>
 #include <Foundation/Utilities/CommandLineUtils.h>
-#include <GameEngine/GameApplication/PlayerMessages.h>
+#include <GameEngine/GameApplication/PlayerSessionProtocol.h>
 #include <TestFramework/Utilities/TestSetup.h>
 
 // Production asset plugins resolve application data during subsystem startup.
@@ -36,8 +36,7 @@ public:
 
   Execution Run() override
   {
-    // A real pipe/protocol peer exercises startup response delivery without creating a GPU
-    // device or adding a simulated operation to the Editor. Only the test executable uses it.
+    // The test executable can act as a child process without creating a GPU device.
     auto* pCommand = xiiCommandLineUtils::GetGlobalInstance();
     if (pCommand->HasOption("-playerSessionIgnoreStopPeer"))
     {
@@ -46,26 +45,7 @@ public:
     }
     if (pCommand->HasOption("-playerSessionCleanExitPeer"))
     {
-      xiiUniquePtr<xiiIpcChannel>                                 channel = xiiIpcChannel::CreatePipeChannel(pCommand->GetStringOption("-player-ipc"), xiiIpcChannel::Mode::Client);
-      xiiThreadSignal                                             connected;
-      xiiEvent<const xiiIpcChannelEvent&, xiiMutex>::Unsubscriber subscription;
-      channel->m_Events.AddEventHandler([&](const xiiIpcChannelEvent& event) {
-        if (event.m_Type == xiiIpcChannelEvent::Connected)
-          connected.RaiseSignal();
-      },
-                                        subscription);
-      xiiIpcProcessMessageProtocol protocol(channel.Borrow());
-      channel->Connect();
-      if (!channel->IsConnected())
-        connected.WaitForSignal(xiiTime::MakeFromSeconds(5));
-      xiiPlayerStatusMessage message;
-      message.m_sInstance = pCommand->GetStringOption("-player-instance");
-      message.m_sStage    = "running";
-      const bool ready    = protocol.Send(&message);
-      message.m_sStage    = "stopping";
-      protocol.Send(&message);
-      xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(250));
-      SetReturnCode(ready ? 0 : 1);
+      SetReturnCode(RunPlayerSessionPeer(*pCommand).Succeeded() ? 0 : 1);
       return Execution::Quit;
     }
     if (pCommand->HasOption("-playerSessionExitPeer"))
@@ -107,6 +87,43 @@ public:
   }
 
 private:
+  static xiiResult RunPlayerSessionPeer(const xiiCommandLineUtils& command)
+  {
+    xiiPlayerSessionProtocol protocol;
+    XII_SUCCEED_OR_RETURN(protocol.StartPlayer([](xiiNetworkChannel, const xiiPlayerSceneMessage&) {}, [](xiiNetworkChannel, const xiiPlayerStopMessage&) {}));
+    xiiNetworkLocalEndpoint endpoint;
+    xiiNetworkConnection    connection;
+    XII_SUCCEED_OR_RETURN(xiiNetworkLocalEndpoint::Make(command.GetStringOption("-player-ipc"), endpoint).GetResult());
+    XII_SUCCEED_OR_RETURN(protocol.GetHost().Connect(endpoint, {}, connection).GetResult());
+
+    xiiNetworkChannel channel;
+    xiiNetworkEvent   event;
+    const auto        deadline = xiiTime::Now() + xiiTime::MakeFromSeconds(5);
+    while (!protocol.IsReady(channel))
+    {
+      const auto remaining = deadline - xiiTime::Now();
+      if (!remaining.IsPositive() || protocol.GetHost().WaitForEvent(event, remaining).Failed() || event.m_Type == xiiNetworkEventType::Closed)
+        return XII_FAILURE;
+      if (event.m_Type == xiiNetworkEventType::Connected)
+      {
+        if (event.m_Connection != connection || event.m_pSessionInfo == nullptr ||
+            event.m_pSessionInfo->m_ConnectionInfo.m_uiLocalPeerProcessId != command.GetUIntOption("-player-editor-pid"))
+          return XII_FAILURE;
+        channel = event.m_pSessionInfo->m_DefaultChannel;
+      }
+      XII_SUCCEED_OR_RETURN(protocol.ProcessEvent(std::move(event)));
+    }
+
+    xiiPlayerStatusMessage message;
+    message.m_sInstance = command.GetStringOption("-player-instance");
+    message.m_sStage    = "running";
+    XII_SUCCEED_OR_RETURN(protocol.Send(channel, message).GetResult());
+    xiiNetworkMessage submission;
+    message.m_sStage = "stopping";
+    XII_SUCCEED_OR_RETURN(protocol.Send(channel, message, &submission).GetResult());
+    return protocol.WaitForFinalStatus(submission, xiiTime::MakeFromSeconds(2));
+  }
+
   xiiQtEditorApp* m_pEditorApp;
 };
 
