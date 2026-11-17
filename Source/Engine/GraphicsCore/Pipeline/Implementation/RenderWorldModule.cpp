@@ -7,9 +7,9 @@
 #include <Core/World/Component.h>
 #include <Core/World/GameObject.h>
 #include <Core/World/World.h>
-#include <Foundation/Communication/GlobalEvent.h>
 #include <Foundation/Configuration/CVar.h>
 #include <Foundation/Configuration/Startup.h>
+#include <Foundation/Events/GlobalEvent.h>
 #include <Foundation/Profiling/Profiling.h>
 #include <GraphicsCore/Components/Lights/LightComponent.h>
 #include <GraphicsCore/Components/Render/RenderComponent.h>

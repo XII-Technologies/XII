@@ -2,8 +2,8 @@
 
 #pragma once
 
-#include <Foundation/Communication/Event.h>
 #include <Foundation/Containers/HybridArray.h>
+#include <Foundation/Events/Event.h>
 #include <GuiFoundation/GuiFoundationDLL.h>
 #include <GuiFoundation/PropertyGrid/Implementation/PropertyEventHandler.h>
 #include <ToolsFoundation/Object/DocumentObjectManager.h>

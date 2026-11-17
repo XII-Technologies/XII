@@ -3,8 +3,8 @@
 #pragma once
 
 #include <Core/World/SpatialSystem.h>
-#include <Foundation/Communication/Event.h>
 #include <Foundation/Containers/IdTable.h>
+#include <Foundation/Events/Event.h>
 #include <Foundation/SimdMath/SimdVec4i.h>
 #include <Foundation/Types/UniquePtr.h>
 

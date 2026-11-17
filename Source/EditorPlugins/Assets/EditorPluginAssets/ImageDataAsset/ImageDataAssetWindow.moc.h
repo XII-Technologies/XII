@@ -5,7 +5,7 @@
 #include <EditorPluginAssets/EditorPluginAssetsDLL.h>
 
 #include <EditorFramework/DocumentWindow/EngineDocumentWindow.moc.h>
-#include <Foundation/Communication/Event.h>
+#include <Foundation/Events/Event.h>
 #include <GuiFoundation/DocumentWindow/DocumentWindow.moc.h>
 #include <GuiFoundation/Widgets/ImageWidget.moc.h>
 #include <ToolsFoundation/Object/DocumentObjectManager.h>

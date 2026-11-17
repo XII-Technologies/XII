@@ -6,7 +6,7 @@
 #include <Core/Messages/EventMessage.h>
 #include <Core/ResourceManager/ResourceHandle.h>
 #include <Core/World/WorldModule.h>
-#include <Foundation/Communication/Message.h>
+#include <Foundation/Messaging/Message.h>
 
 struct xiiGameObjectHandle;
 struct xiiSkeletonResourceDescriptor;

@@ -3,7 +3,7 @@
 #pragma once
 
 #include <Core/World/World.h>
-#include <Foundation/Communication/Message.h>
+#include <Foundation/Messaging/Message.h>
 
 /// Base class for all messages that are sent as 'events'
 struct XII_CORE_DLL xiiEventMessage : public xiiMessage

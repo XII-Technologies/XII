@@ -5,8 +5,8 @@
 #include <ToolsFoundation/ToolsFoundationDLL.h>
 
 #include <Foundation/Application/Config/ProjectManifest.h>
-#include <Foundation/Communication/Event.h>
 #include <Foundation/Configuration/Singleton.h>
+#include <Foundation/Events/Event.h>
 #include <Foundation/Threading/AtomicInteger.h>
 #include <Foundation/Types/Status.h>
 #include <Foundation/Types/Uuid.h>

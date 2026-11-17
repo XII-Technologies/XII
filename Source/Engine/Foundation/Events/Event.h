@@ -2,10 +2,13 @@
 
 #pragma once
 
-#include <Foundation/Containers/HybridArray.h>
-#include <Foundation/Threading/Lock.h>
+#include <Foundation/Containers/Deque.h>
+#include <Foundation/Containers/DynamicArray.h>
 #include <Foundation/Threading/Mutex.h>
 #include <Foundation/Types/Delegate.h>
+
+#include <atomic>
+#include <type_traits>
 
 /// Identifies an event subscription. Zero is always an invalid subscription ID.
 using xiiEventSubscriptionID = xiiUInt32;
@@ -13,8 +16,8 @@ using xiiEventSubscriptionID = xiiUInt32;
 /// Specifies the type of xiiEvent implementation to use
 enum class xiiEventType
 {
-  Default,        /// Default implementation. Does not support modifying the event while broadcasting.
-  CopyOnBroadcast /// CopyOnBroadcast implementation. Supports modifying the event while broadcasting.
+  Default,        ///< Invokes registered handlers directly.
+  CopyOnBroadcast ///< Invokes a snapshot of the registered handlers.
 };
 
 /// This class propagates event information to registered event handlers.
@@ -26,9 +29,17 @@ enum class xiiEventType
 /// To pass information to the handlers, create a custom struct with event information
 /// and then pass a (const) reference to that data through Broadcast().
 ///
-/// If you need to modify the event while broadcasting, for example inside one of the registered event handlers,
-/// set EventType = xiiEventType::CopyOnBroadcast. Each broadcast will then copy the event handler array before signaling them, allowing
-/// modifications during broadcasting.
+/// Broadcast is synchronous and invokes handlers in registration order. The default event skips handlers
+/// removed before their turn. New handlers are visible to subsequent broadcasts, including allowed recursive
+/// broadcasts. Register handlers on a default event with xiiNoMutex outside its callbacks.
+///
+/// A default event with a mutex serializes dispatch and registration. Its callbacks run under the event mutex
+/// and must avoid lock-order inversions. Use xiiCopyOnBroadcastEvent when callbacks need to run outside that lock.
+/// A snapshot owns copies of its delegates, so it requires copyable handlers. Removing a handler from the event
+/// leaves any already-captured snapshots intact. Drain those broadcasts before destroying a receiver or unloading code.
+///
+/// Destruction of the event must be synchronized with dispatch, registration and access through Unsubscriber.
+/// An event using xiiNoMutex also requires external synchronization for concurrent access.
 ///
 /// \note A class holding a xiiEvent member needs to provide public access to the member for external code to
 /// be able to register as an event handler. To make it possible to prevent external code from also raising events,
@@ -54,61 +65,32 @@ public:
 
   public:
     Unsubscriber() = default;
-    Unsubscriber(Unsubscriber&& other)
-    {
-      m_pEvent         = other.m_pEvent;
-      m_SubscriptionID = other.m_SubscriptionID;
-      other.Clear();
-    }
+    Unsubscriber(Unsubscriber&& other);
     ~Unsubscriber() { Unsubscribe(); }
 
-    void operator=(Unsubscriber&& other)
-    {
-      Unsubscribe();
+    void operator=(Unsubscriber&& other);
 
-      m_pEvent         = other.m_pEvent;
-      m_SubscriptionID = other.m_SubscriptionID;
-      other.Clear();
-    }
+    /// Removes the subscription, if any. Serialize operations on the same token.
+    void Unsubscribe();
 
-    /// If the unsubscriber holds a valid subscription, it will be removed from the target xiiEvent.
-    void Unsubscribe()
-    {
-      if (m_SubscriptionID == 0)
-      {
-        return;
-      }
-
-      m_pEvent->RemoveEventHandler(m_SubscriptionID);
-      Clear();
-    }
-
-    /// Checks whether this unsubscriber has a valid subscription.
-    bool IsSubscribed() const { return m_SubscriptionID != 0; }
-
-    /// Resets the unsubscriber. Use when the target xiiEvent may have been destroyed and automatic unsubscription cannot be executed
-    /// anymore.
-    void Clear()
-    {
-      m_pEvent         = nullptr;
-      m_SubscriptionID = 0;
-    }
+    /// Returns whether the registration is still active. Removal, clearing and event destruction invalidate it.
+    bool IsSubscribed() const { return m_pEvent.load(std::memory_order_acquire) != nullptr; }
 
   private:
     friend class xiiEventBase<EventData, MutexType, EventType>;
 
-    const xiiEventBase<EventData, MutexType, EventType>* m_pEvent         = nullptr;
-    xiiEventSubscriptionID                               m_SubscriptionID = 0;
+    std::atomic<const xiiEventBase*> m_pEvent{nullptr};
   };
 
   /// Implementation specific constants.
   enum
   {
     /// Whether the uiMaxRecursionDepth parameter to Broadcast() is supported in this implementation or not.
-    RecursionDepthSupported = (EventType == xiiEventType::Default || xiiConversionTest<MutexType, xiiNoMutex>::sameType == 1) ? 1 : 0,
+    RecursionDepthSupported = EventType == xiiEventType::Default || std::is_same_v < MutexType,
+    xiiNoMutex >,
 
     /// Default value for the maximum recursion depth of Broadcast.
-    /// As limiting the recursion depth is not supported when EventType == xiiEventType::CopyAndBroadcast and MutexType != xiiNoMutex
+    /// As limiting the recursion depth is not supported when EventType == xiiEventType::CopyOnBroadcast and MutexType != xiiNoMutex
     /// the default value for that case is the maximum.
     MaxRecursionDepthDefault = RecursionDepthSupported ? 0 : 255
   };
@@ -146,13 +128,18 @@ public:
   /// Returns true, if no event handlers are registered.
   bool IsEmpty() const;
 
-  // it would be a problem if the xiiEvent moves in memory, for instance the Unsubscriber's would point to invalid memory
   XII_DISALLOW_COPY_AND_ASSIGN(xiiEventBase);
 
 private:
-  // Used to detect recursive broadcasts and then throw asserts at you.
-  xiiUInt8                       m_uiRecursionDepth   = 0;
-  mutable xiiEventSubscriptionID m_NextSubscriptionID = 0;
+  xiiEventSubscriptionID AddEventHandler(Handler&& handler, Unsubscriber* pUnsubscriber) const;
+  void                   TransferSubscription(Unsubscriber& ref_source, Unsubscriber& ref_destination) const;
+  void                   RemoveSubscription(Unsubscriber& ref_unsubscriber) const;
+  void                   RemoveHandlerAt(xiiUInt32 uiIndex) const;
+  void                   RemoveInactiveHandlers();
+
+  xiiUInt16                      m_uiRecursionDepth     = 0;
+  mutable bool                   m_bHasInactiveHandlers = false;
+  mutable xiiEventSubscriptionID m_uiNextSubscriptionID = 0;
 
   mutable MutexType m_Mutex;
 
@@ -163,11 +150,13 @@ private:
   struct HandlerData
   {
     Handler                m_Handler;
-    xiiEventSubscriptionID m_SubscriptionID;
+    xiiEventSubscriptionID m_uiSubscriptionID = 0;
+    Unsubscriber*          m_pUnsubscriber    = nullptr;
   };
 
-  /// A dynamic array allows to have zero overhead as long as no event handlers are registered.
-  mutable xiiDynamicArray<HandlerData> m_EventHandlers;
+  // A reentrant registration must leave the currently executing delegate at a stable address.
+  using HandlerStorage = std::conditional_t<EventType == xiiEventType::Default && !std::is_same_v<MutexType, xiiNoMutex>, xiiDeque<HandlerData>, xiiDynamicArray<HandlerData>>;
+  mutable HandlerStorage m_EventHandlers;
 };
 
 /// Can be used when xiiEvent is used without any additional data
@@ -187,4 +176,4 @@ public:
 template <typename EventData, typename MutexType = xiiNoMutex, typename AllocatorWrapper = xiiDefaultAllocatorWrapper>
 using xiiCopyOnBroadcastEvent = xiiEvent<EventData, MutexType, AllocatorWrapper, xiiEventType::CopyOnBroadcast>;
 
-#include <Foundation/Communication/Implementation/Event_inl.h>
+#include <Foundation/Events/Implementation/Event_inl.h>

@@ -15,7 +15,17 @@ class XII_FOUNDATION_DLL xiiAbstractMessageHandler
 public:
   virtual ~xiiAbstractMessageHandler() = default;
 
-  XII_ALWAYS_INLINE void operator()(void* pInstance, xiiMessage& ref_msg) { (*m_DispatchFunc)(this, pInstance, ref_msg); }
+  XII_ALWAYS_INLINE void operator()(void* pInstance, xiiMessage& ref_msg)
+  {
+    if (m_bIsConst)
+    {
+      (*m_ConstDispatchFunc)(this, pInstance, ref_msg);
+    }
+    else
+    {
+      (*m_DispatchFunc)(this, pInstance, ref_msg);
+    }
+  }
 
   XII_FORCE_INLINE void operator()(const void* pInstance, xiiMessage& ref_msg)
   {

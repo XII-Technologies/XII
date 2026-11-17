@@ -6,7 +6,7 @@
 
 #include <EditorFramework/Assets/AssetBrowserFilter.moc.h>
 #include <EditorFramework/ui_AssetBrowserWidget.h>
-#include <Foundation/Communication/Event.h>
+#include <Foundation/Events/Event.h>
 #include <ToolsFoundation/FileSystem/FileSystemModel.h>
 #include <ToolsFoundation/Project/ToolsProject.h>
 

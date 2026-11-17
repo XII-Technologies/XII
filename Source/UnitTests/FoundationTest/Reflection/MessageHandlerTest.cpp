@@ -2,7 +2,7 @@
 
 #include <FoundationTest/FoundationTestPCH.h>
 
-#include <Foundation/Communication/Message.h>
+#include <Foundation/Messaging/Message.h>
 #include <Foundation/Reflection/Reflection.h>
 
 #ifdef GetMessage
@@ -135,6 +135,11 @@ XII_CREATE_SIMPLE_TEST(Reflection, MessageHandler)
     subMsg.m_iValue = 4;
     handled         = pRTTI->DispatchMessage(&test, subMsg); // should do nothing
     XII_TEST_BOOL(!handled);
+
+    GetMessage getMsg;
+    getMsg.m_iValue = 0;
+    XII_TEST_BOOL(pRTTI->DispatchMessage(&test, getMsg));
+    XII_TEST_INT(getMsg.m_iValue, 4);
 
     XII_TEST_INT(test.m_iValue, 4);
   }

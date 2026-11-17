@@ -4,8 +4,8 @@
 
 #include <ToolsFoundation/ToolsFoundationDLL.h>
 
-#include <Foundation/Communication/Event.h>
 #include <Foundation/Containers/HybridArray.h>
+#include <Foundation/Events/Event.h>
 #include <ToolsFoundation/Document/Document.h>
 
 struct XII_TOOLSFOUNDATION_DLL xiiActiveDocumentChange

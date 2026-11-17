@@ -2,8 +2,8 @@
 
 #pragma once
 
-#include <Foundation/Communication/Event.h>
 #include <Foundation/Configuration/Singleton.h>
+#include <Foundation/Events/Event.h>
 #include <Foundation/Strings/FormatString.h>
 #include <Foundation/Time/Time.h>
 #include <Foundation/Types/Status.h>

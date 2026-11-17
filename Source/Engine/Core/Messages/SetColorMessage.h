@@ -3,7 +3,7 @@
 #pragma once
 
 #include <Core/CoreDLL.h>
-#include <Foundation/Communication/Message.h>
+#include <Foundation/Messaging/Message.h>
 
 /// Describes how a color should be applied to another color.
 struct xiiSetColorMode
@@ -45,7 +45,4 @@ struct XII_CORE_DLL xiiMsgSetColor : public xiiMessage
 
   /// Applies m_Color using m_Mode to the given color.
   void ModifyColor(xiiColorGammaUB& ref_color) const;
-
-  virtual void Serialize(xiiStreamWriter& ref_stream) const override;
-  virtual void Deserialize(xiiStreamReader& ref_stream, xiiUInt8 uiTypeVersion) override;
 };

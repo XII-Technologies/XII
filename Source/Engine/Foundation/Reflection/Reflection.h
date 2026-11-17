@@ -6,6 +6,7 @@
 
 #include <Foundation/Basics.h>
 
+#include <Foundation/Messaging/MessageHandler.h>
 #include <Foundation/Reflection/Implementation/AbstractProperty.h>
 #include <Foundation/Reflection/Implementation/ArrayProperty.h>
 #include <Foundation/Reflection/Implementation/BitflagsProperty.h>
@@ -16,7 +17,6 @@
 #include <Foundation/Reflection/Implementation/FunctionProperty.h>
 #include <Foundation/Reflection/Implementation/MapProperty.h>
 #include <Foundation/Reflection/Implementation/MemberProperty.h>
-#include <Foundation/Reflection/Implementation/MessageHandler.h>
 #include <Foundation/Reflection/Implementation/PropertyAttributes.h>
 #include <Foundation/Reflection/Implementation/RTTI.h>
 #include <Foundation/Reflection/Implementation/SetProperty.h>

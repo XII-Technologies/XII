@@ -2,17 +2,19 @@
 
 #pragma once
 
-#include <Foundation/Communication/Message.h>
 #include <Foundation/Containers/Deque.h>
+#include <Foundation/Messaging/Message.h>
 #include <Foundation/Threading/Lock.h>
 #include <Foundation/Threading/Mutex.h>
 
-/// Implementation of a message queue on top of a deque.
+/// A FIFO of borrowed message pointers and metadata, with optional sorting.
 ///
-/// Enqueue and TryDequeue/TryPeek methods are thread safe all the others are not. To ensure
-/// thread safety for all methods the queue can be locked using xiiLock like a mutex.
-/// Every entry consists of a pointer to a message and some meta data.
-/// Lifetime of the enqueued messages needs to be managed by the user.
+/// The caller owns message storage. Copying the queue copies entries and their pointers.
+/// Erasing entries or destroying the queue releases only queue storage.
+///
+/// Enqueue(), TryDequeue() and TryPeek() acquire the queue mutex. Use xiiLock for compound operations
+/// and other access to a shared queue. Hold it for as long as a borrowed entry reference is needed.
+/// Concurrent access to the messages themselves requires separate synchronization.
 /// \see xiiMessage
 template <typename MetaDataType>
 class xiiMessageQueueBase
@@ -53,7 +55,7 @@ public:
   /// Returns true, if the queue does not contain any elements.
   bool IsEmpty() const;
 
-  /// Destructs all elements and sets the count to zero. Does not deallocate any data.
+  /// Removes all entries and retains the queue capacity.
   void Clear();
 
   /// Expands the queue so it can at least store the given capacity.
@@ -68,7 +70,8 @@ public:
   /// Dequeues the first element if the queue is not empty and returns true. Returns false if the queue is empty. This method is thread safe.
   bool TryDequeue(xiiMessage*& out_pMessage, MetaDataType& out_metaData); // [tested]
 
-  /// Gives the first element if the queue is not empty and returns true. Returns false if the queue is empty. This method is thread safe.
+  /// Copies the front pointer and metadata if present. The caller must ensure that the pointed-to
+  /// message stays alive after this method releases the queue lock.
   bool TryPeek(xiiMessage*& out_pMessage, MetaDataType& out_metaData); // [tested]
 
   /// Returns the first element in the queue. Not thread safe.
@@ -107,4 +110,4 @@ public:
   void operator=(const xiiMessageQueueBase<MetaDataType>& rhs);
 };
 
-#include <Foundation/Communication/Implementation/MessageQueue_inl.h>
+#include <Foundation/Messaging/Implementation/MessageQueue_inl.h>

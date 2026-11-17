@@ -6,7 +6,7 @@
 
 #include <EditorFramework/CodeGen/CppSettings.h>
 #include <EditorFramework/Settings/EditorSettings.h>
-#include <Foundation/Communication/Event.h>
+#include <Foundation/Events/Event.h>
 #include <Foundation/Types/Status.h>
 #include <Foundation/Types/VariantType.h>
 

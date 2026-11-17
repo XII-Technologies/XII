@@ -5,8 +5,8 @@
 
 #include <Core/ResourceManager/Implementation/ResourceManagerState.h>
 #include <Core/ResourceManager/ResourceManager.h>
-#include <Foundation/Communication/GlobalEvent.h>
 #include <Foundation/Configuration/Startup.h>
+#include <Foundation/Events/GlobalEvent.h>
 #include <Foundation/IO/FileSystem/FileSystem.h>
 #include <Foundation/Profiling/Profiling.h>
 

@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <Foundation/Communication/Event.h>
+#include <Foundation/Events/Event.h>
 #include <Foundation/Strings/String.h>
 #include <Foundation/Types/Status.h>
 #include <GuiFoundation/GuiFoundationDLL.h>

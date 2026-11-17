@@ -2,8 +2,8 @@
 
 #pragma once
 
-#include <Foundation/Communication/Event.h>
 #include <Foundation/Containers/IdTable.h>
+#include <Foundation/Events/Event.h>
 #include <ToolsFoundation/Reflection/ReflectedType.h>
 
 class xiiPhantomRTTI;

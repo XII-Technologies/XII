@@ -8,7 +8,7 @@
 
 #include <Core/Graphics/Camera.h>
 #include <Core/World/World.h>
-#include <Foundation/Communication/Event.h>
+#include <Foundation/Events/Event.h>
 #include <GraphicsCore/Declarations.h>
 #include <GraphicsCore/Pipeline/Declarations.h>
 

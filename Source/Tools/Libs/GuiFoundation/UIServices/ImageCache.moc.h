@@ -2,11 +2,11 @@
 
 #pragma once
 
-#include <Foundation/Communication/Event.h>
 #include <Foundation/Configuration/Singleton.h>
 #include <Foundation/Containers/Deque.h>
 #include <Foundation/Containers/Map.h>
 #include <Foundation/Containers/Set.h>
+#include <Foundation/Events/Event.h>
 #include <Foundation/Strings/HashedString.h>
 #include <Foundation/Threading/Mutex.h>
 #include <Foundation/Time/Time.h>

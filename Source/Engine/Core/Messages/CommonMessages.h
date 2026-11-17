@@ -4,7 +4,7 @@
 
 #include <Core/Messages/EventMessage.h>
 #include <Core/World/Declarations.h>
-#include <Foundation/Communication/Message.h>
+#include <Foundation/Messaging/Message.h>
 
 /// Common message for components that can be toggled between playing and paused states
 struct XII_CORE_DLL xiiMsgSetPlaying : public xiiMessage

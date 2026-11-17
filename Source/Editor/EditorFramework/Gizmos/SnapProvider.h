@@ -4,7 +4,7 @@
 
 #include <EditorFramework/EditorFrameworkDLL.h>
 
-#include <Foundation/Communication/Event.h>
+#include <Foundation/Events/Event.h>
 #include <Foundation/Math/Declarations.h>
 
 struct xiiEditorAppEvent;

@@ -2,9 +2,9 @@
 
 #pragma once
 
-#include <Foundation/Communication/Event.h>
 #include <Foundation/Containers/HybridArray.h>
 #include <Foundation/Containers/Map.h>
+#include <Foundation/Events/Event.h>
 #include <Foundation/IO/FileSystem/Implementation/DataDirType.h>
 #include <Foundation/IO/OSFile.h>
 #include <Foundation/Threading/Mutex.h>

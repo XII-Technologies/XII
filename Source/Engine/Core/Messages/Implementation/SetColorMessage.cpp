@@ -60,18 +60,4 @@ void xiiMsgSetColor::ModifyColor(xiiColorGammaUB& ref_color) const
   ref_color = temp;
 }
 
-void xiiMsgSetColor::Serialize(xiiStreamWriter& ref_stream) const
-{
-  ref_stream << m_Color;
-  ref_stream << m_Mode;
-}
-
-void xiiMsgSetColor::Deserialize(xiiStreamReader& ref_stream, xiiUInt8 uiTypeVersion)
-{
-  XII_IGNORE_UNUSED(uiTypeVersion);
-
-  ref_stream >> m_Color;
-  ref_stream >> m_Mode;
-}
-
 XII_STATICLINK_FILE(Core, Core_Messages_Implementation_SetColorMessage);
