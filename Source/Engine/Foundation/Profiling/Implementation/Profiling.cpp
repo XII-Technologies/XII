@@ -3,7 +3,6 @@
 #include <Foundation/FoundationPCH.h>
 
 #include <Foundation/Application/Application.h>
-#include <Foundation/Communication/DataTransfer.h>
 #include <Foundation/Configuration/CVar.h>
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Containers/IdTable.h>
@@ -17,23 +16,6 @@
 
 #if XII_ENABLED(XII_USE_PROFILING)
 
-class xiiProfileCaptureDataTransfer : public xiiDataTransfer
-{
-private:
-  virtual void OnTransferRequest() override
-  {
-    xiiDataTransferObject dto(*this, "Capture", "application/json", "json");
-
-    xiiProfilingSystem::ProfilingData profilingData;
-    xiiProfilingSystem::Capture(profilingData);
-    profilingData.Write(dto.GetWriter()).IgnoreResult();
-
-    dto.Transmit();
-  }
-};
-
-static xiiProfileCaptureDataTransfer s_ProfileCaptureDataTransfer;
-
 // clang-format off
 XII_BEGIN_SUBSYSTEM_DECLARATION(Foundation, ProfilingSystem)
 
@@ -42,11 +24,9 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(Foundation, ProfilingSystem)
   ON_BASESYSTEMS_STARTUP
   {
     xiiProfilingSystem::Initialize();
-    s_ProfileCaptureDataTransfer.EnableDataTransfer("Profiling Capture");
   }
   ON_CORESYSTEMS_SHUTDOWN
   {
-    s_ProfileCaptureDataTransfer.DisableDataTransfer();
     xiiProfilingSystem::Reset();
   }
 
