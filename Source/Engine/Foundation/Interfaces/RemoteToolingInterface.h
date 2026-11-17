@@ -2,14 +2,31 @@
 
 #pragma once
 
-class xiiRemoteInterface;
+#include <Foundation/Basics.h>
+#include <Foundation/Containers/HybridArray.h>
+#include <Foundation/Strings/String.h>
 
-/// Interface to give access to the FileServe client for additional tooling needs.
-///
-/// For now, this interface just gives access to the xiiRemoteInterface that is used to communicate with the FileServe server.
-/// This allows for maximum flexibility sending and receiving custom messages.
-class xiiRemoteToolingInterface
+struct xiiRemoteShaderPermutation
+{
+  xiiString m_sName;
+  xiiString m_sValue;
+};
+
+struct xiiRemoteShaderCompileRequest
+{
+  xiiString                                      m_sShader;
+  xiiString                                      m_sPlatform;
+  xiiHybridArray<xiiRemoteShaderPermutation, 16> m_Permutations;
+};
+
+/// Remote shader compilation capability used by the rendering backend.
+class XII_FOUNDATION_DLL xiiRemoteToolingInterface
 {
 public:
-  virtual xiiRemoteInterface* GetRemoteInterface() = 0;
+  virtual bool      IsShaderCompilationAvailable() const                                                    = 0;
+  virtual xiiResult CompileShader(const xiiRemoteShaderCompileRequest& request, xiiStringBuilder& out_sLog) = 0;
+
+protected:
+  xiiRemoteToolingInterface();
+  ~xiiRemoteToolingInterface();
 };

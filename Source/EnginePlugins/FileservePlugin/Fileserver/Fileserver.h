@@ -6,6 +6,8 @@
 #include <Foundation/Communication/RemoteInterface.h>
 #include <Foundation/Configuration/Singleton.h>
 #include <Foundation/Containers/HashTable.h>
+#include <Foundation/IO/OSFile.h>
+#include <Foundation/Interfaces/RemoteToolingInterface.h>
 #include <Foundation/Types/UniquePtr.h>
 #include <Foundation/Types/Uuid.h>
 
@@ -91,15 +93,30 @@ public:
 
   static xiiResult SendConnectionInfo(const char* szClientAddress, xiiUInt16 uiMyPort, const xiiArrayPtr<xiiStringBuilder>& myIPs, xiiTime timeout = xiiTime::MakeFromSeconds(10));
 
-  using ClientMessageHandler = xiiDelegate<void(xiiFileserveClientContext&, xiiRemoteMessage&, xiiRemoteInterface&, xiiDelegate<void(const char*)>)>;
+  using ShaderCompileHandler = xiiDelegate<xiiResult(const xiiFileserveClientContext&, const xiiRemoteShaderCompileRequest&, xiiStringBuilder&)>;
 
-  void SetCustomMessageHandler(xiiUInt32 uiSystemID, ClientMessageHandler handler);
+  void SetShaderCompileHandler(ShaderCompileHandler handler);
 
 private:
+  struct Upload
+  {
+    ~Upload();
+
+    xiiUuid   m_Id;
+    xiiString m_sRelativePath;
+    xiiString m_sDestination;
+    xiiString m_sStagingPath;
+    xiiOSFile m_File;
+    xiiTime   m_Deadline;
+    xiiUInt32 m_uiSize     = 0;
+    xiiUInt32 m_uiReceived = 0;
+    xiiUInt16 m_uiDataDir  = 0xffff;
+  };
+
   void                       NetworkEventHandler(const xiiRemoteEvent& e);
   xiiFileserveClientContext& DetermineClient(xiiRemoteMessage& msg);
   void                       NetworkMsgHandler(xiiRemoteMessage& msg);
-  void                       UnknownNetworkMsgHandler(xiiRemoteMessage& msg);
+  void                       HandleShaderCompileRequest(xiiRemoteMessage& msg);
   void                       HandleMountRequest(xiiFileserveClientContext& client, xiiRemoteMessage& msg);
   void                       HandleUnmountRequest(xiiFileserveClientContext& client, xiiRemoteMessage& msg);
   void                       HandleFileRequest(xiiFileserveClientContext& client, xiiRemoteMessage& msg);
@@ -107,15 +124,11 @@ private:
   void                       HandleUploadFileHeader(xiiFileserveClientContext& client, xiiRemoteMessage& msg);
   void                       HandleUploadFileTransfer(xiiFileserveClientContext& client, xiiRemoteMessage& msg);
   void                       HandleUploadFileFinished(xiiFileserveClientContext& client, xiiRemoteMessage& msg);
-  void                       LogCustomActivity(const char* szText);
+  void                       SendUploadResult(xiiUuid id, bool bSucceeded);
 
   xiiHashTable<xiiUInt32, xiiFileserveClientContext> m_Clients;
   xiiUniquePtr<xiiRemoteInterface>                   m_pNetwork;
-  xiiDynamicArray<xiiUInt8>                          m_SendToClient;   // ie. 'downloads' from server to client
-  xiiDynamicArray<xiiUInt8>                          m_SentFromClient; // ie. 'uploads' from client to server
-  xiiStringBuilder                                   m_sCurFileUpload;
-  xiiUuid                                            m_FileUploadGuid;
-  xiiUInt32                                          m_uiFileUploadSize;
+  xiiHashTable<xiiUInt32, xiiUniquePtr<Upload>>      m_Uploads;
   xiiUInt16                                          m_uiPort = 1042;
-  xiiMap<xiiUInt32, ClientMessageHandler>            m_CustomMessageHandlers;
+  ShaderCompileHandler                               m_ShaderCompileHandler;
 };

@@ -30,7 +30,7 @@ void xiiFileserverApp::AfterCoreSystemsStartup()
 
   xiiPlugin::LoadPlugin("xiiShaderCompiler", xiiPluginLoadFlags::PluginIsOptional).IgnoreResult();
 
-  xiiFileserver::GetSingleton()->SetCustomMessageHandler('SHDR', xiiMakeDelegate(&xiiFileserverApp::ShaderMessageHandler, this));
+  xiiFileserver::GetSingleton()->SetShaderCompileHandler(xiiMakeDelegate(&xiiFileserverApp::CompileShader, this));
 
   // TODO: CommandLine Option
   m_CloseAppTimeout = xiiTime::MakeFromSeconds(xiiCommandLineUtils::GetGlobalInstance()->GetIntOption("-fs_close_timeout", 0));

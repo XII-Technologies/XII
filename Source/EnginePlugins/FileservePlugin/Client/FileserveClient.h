@@ -6,6 +6,7 @@
 
 #include <Foundation/Communication/RemoteInterface.h>
 #include <Foundation/Configuration/Singleton.h>
+#include <Foundation/IO/OSFile.h>
 #include <Foundation/Interfaces/RemoteToolingInterface.h>
 #include <Foundation/Types/UniquePtr.h>
 #include <Foundation/Types/Uuid.h>
@@ -37,8 +38,8 @@ public:
 
   /// xiiRemoteToolingInterface
 
-  /// Returns the network connection interface.
-  xiiRemoteInterface* GetRemoteInterface() override { return m_pNetwork.Borrow(); }
+  bool      IsShaderCompilationAvailable() const override;
+  xiiResult CompileShader(const xiiRemoteShaderCompileRequest& request, xiiStringBuilder& out_sLog) override;
 
   /// Can be called at startup to go through multiple sources and search for a valid server address
   ///
@@ -75,7 +76,7 @@ public:
   ///
   /// The timeout defines how long the code will wait for a connection.
   /// Positive numbers are a regular timeout.
-  /// A zero timeout means the application will wait indefinitely.
+  /// Zero or durations above 120 seconds use the 120-second connection limit.
   /// A negative number means to either wait that time, or whatever was specified through the command-line.
   /// The timeout can be specified with the command line switch "-fs_timeout X" (in seconds).
   xiiResult EnsureConnected(xiiTime timeout = xiiTime::MakeFromSeconds(-5));
@@ -119,12 +120,14 @@ private:
   void             NetworkMsgHandler(xiiRemoteMessage& msg);
   void             HandleFileTransferMsg(xiiRemoteMessage& msg);
   void             HandleFileTransferFinishedMsg(xiiRemoteMessage& msg);
-  static void      WriteMetaFile(xiiStringBuilder sCachedMetaFile, xiiInt64 iFileTimeStamp, xiiUInt64 uiFileHash);
-  void             WriteDownloadToDisk(xiiStringBuilder sCachedFile);
+  static xiiResult WriteMetaFile(xiiStringView sCachedMetaFile, xiiInt64 iFileTimeStamp, xiiUInt64 uiFileHash);
+  xiiResult        CommitDownload(xiiStringView sCachedFile, xiiUInt64 uiHash);
+  void             DiscardDownload();
   xiiResult        DownloadFile(xiiUInt16 uiDataDirID, const char* szFile, bool bForceThisDataDir, xiiStringBuilder* out_pFullPath);
   void             DetermineCacheStatus(xiiUInt16 uiDataDirID, const char* szFile, FileCacheStatus& out_Status) const;
-  void             UploadFile(xiiUInt16 uiDataDirID, const char* szFile, const xiiDynamicArray<xiiUInt8>& fileContent);
+  xiiResult        UploadFile(xiiUInt16 uiDataDirID, xiiStringView sFile, xiiOSFile& ref_file);
   void             InvalidateFileCache(xiiUInt16 uiDataDirID, xiiStringView sFile, xiiUInt64 uiHash);
+  void             InvalidateAllCache();
   static xiiResult TryReadFileserveConfig(const char* szFile, xiiStringBuilder& out_Result);
   xiiResult        TryConnectWithFileserver(const char* szAddress, xiiTime timeout) const;
   void             FillFileStatusCache(const char* szFile);
@@ -138,11 +141,21 @@ private:
   bool                             m_bDownloading              = false;
   bool                             m_bFailedToConnect          = false;
   bool                             m_bWaitingForUploadFinished = false;
+  bool                             m_bUploadSucceeded          = false;
+  xiiUuid                          m_UploadRequest;
   xiiUuid                          m_CurFileRequestGuid;
   xiiStringBuilder                 m_sCurFileRequest;
   xiiUniquePtr<xiiRemoteInterface> m_pNetwork;
-  xiiDynamicArray<xiiUInt8>        m_Download;
-  xiiTime                          m_CurrentTime;
+  xiiOSFile                        m_DownloadFile;
+  xiiString                        m_sDownloadStagingPath;
+  xiiUInt32                        m_uiDownloadSize        = 0;
+  xiiUInt32                        m_uiDownloadReceived    = 0;
+  xiiUInt16                        m_uiDownloadDataDir     = 0xffff;
+  bool                             m_bDownloadSucceeded    = false;
+  bool                             m_bDownloadStaged       = false;
+  bool                             m_bShaderCompiling      = false;
+  bool                             m_bForceDownloadDataDir = false;
+  bool                             m_bReloadResources      = false;
   xiiHybridArray<xiiString, 4>     m_TryServerAddresses;
 
   xiiMap<xiiString, xiiUInt16> m_FileDataDir;
