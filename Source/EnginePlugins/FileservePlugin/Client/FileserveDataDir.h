@@ -3,7 +3,6 @@
 #pragma once
 
 #include <FileservePlugin/Client/FileserveClient.h>
-#include <Foundation/Communication/RemoteInterface.h>
 #include <Foundation/Containers/HybridArray.h>
 #include <Foundation/Containers/Map.h>
 #include <Foundation/IO/FileSystem/DataDirTypeFolder.h>

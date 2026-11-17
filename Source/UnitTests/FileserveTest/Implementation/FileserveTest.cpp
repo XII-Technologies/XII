@@ -141,16 +141,7 @@ XII_CREATE_SIMPLE_TEST(Fileserve, NativeDiscoveryAndVfs)
     return;
   file.Close();
 
-  xiiFileserver server;
-  XII_SCOPE_EXIT(server.StopServer());
   const auto uiProcess = static_cast<xiiUInt32>(xiiProcess::GetCurrentProcessID());
-  for (xiiUInt32 i = 0; i < 8 && !server.IsServerRunning(); ++i)
-  {
-    server.SetPort(static_cast<xiiUInt16>(25000 + (uiProcess + i) % 25000));
-    server.StartServer();
-  }
-  if (!XII_TEST_BOOL(server.IsServerRunning()))
-    return;
 
   xiiStringBuilder sLocalName;
   sLocalName.SetFormat("xii-fs-test-{}", uiProcess);
@@ -169,6 +160,10 @@ XII_CREATE_SIMPLE_TEST(Fileserve, NativeDiscoveryAndVfs)
     xiiStringBuilder sDiscoveryPort;
     sDiscoveryPort.SetFormat("{}", 20000 + uiProcess % 4000);
     const xiiStringBuilder sTrust(sCertificateDirectory, "/ca.pem");
+    pCommand->InjectCustomArgument("-fs_transport");
+    pCommand->InjectCustomArgument(sTransport);
+    pCommand->InjectCustomArgument("-fs_bind");
+    pCommand->InjectCustomArgument("127.0.0.1");
     pCommand->InjectCustomArgument("-fs_discovery_port");
     pCommand->InjectCustomArgument(sDiscoveryPort);
     pCommand->InjectCustomArgument("-fs_cert");
@@ -177,6 +172,8 @@ XII_CREATE_SIMPLE_TEST(Fileserve, NativeDiscoveryAndVfs)
     pCommand->InjectCustomArgument(xiiStringBuilder(sCertificateDirectory, "/host.key"));
     pCommand->InjectCustomArgument("-fs_ca");
     pCommand->InjectCustomArgument(sTrust);
+    child.AddArgument("-fs_transport");
+    child.AddArgument(sTransport);
     child.AddArgument("-fs_discovery_port");
     child.AddArgument(sDiscoveryPort);
     child.AddArgument("-fs_discovery_transport");
@@ -191,6 +188,16 @@ XII_CREATE_SIMPLE_TEST(Fileserve, NativeDiscoveryAndVfs)
     child.AddArgument(sTrust);
     sDestination = "127.0.0.1";
   }
+  xiiFileserver server;
+  XII_SCOPE_EXIT(server.StopServer());
+  for (xiiUInt32 i = 0; i < 8 && !server.IsServerRunning(); ++i)
+  {
+    server.SetPort(static_cast<xiiUInt16>(25000 + (uiProcess + i) % 25000));
+    server.StartServer();
+  }
+  if (!XII_TEST_BOOL(server.IsServerRunning()))
+    return;
+
   if (bMeasure)
   {
     child.AddArgument("-fs_measure");
