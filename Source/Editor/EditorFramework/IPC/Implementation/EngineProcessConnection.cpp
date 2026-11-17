@@ -180,7 +180,7 @@ void xiiEditorEngineProcessConnection::Initialize(const xiiRTTI* pFirstAllowedMe
 #endif
 
 
-  if (m_IPC.StartClientProcess(EditorEngineProcessExecutableName, args, false, pFirstAllowedMessageType).Failed())
+  if (m_IPC.StartClientProcess(EditorEngineProcessExecutableName, args, xiiProcessMessageDomain::Engine, pFirstAllowedMessageType).Failed())
   {
     m_bProcessCrashed = true;
     xiiLog::Error("EngineProcess crashed on startup.");

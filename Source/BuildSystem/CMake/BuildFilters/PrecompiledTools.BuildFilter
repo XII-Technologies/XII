@@ -2,7 +2,6 @@
 
 set_property(GLOBAL PROPERTY XII_BUILD_FILTER_PrecompiledTools
   ArchiveTool
-  enet
   Texture
   Core
   Foundation

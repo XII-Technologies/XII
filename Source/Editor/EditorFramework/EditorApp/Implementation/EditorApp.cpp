@@ -1,7 +1,9 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #include <EditorFramework/EditorFrameworkPCH.h>
+
 #include <EditorFramework/Project/PlayerSession.h>
+#include <Foundation/IO/MemoryStream.h>
 
 #include <EditorFramework/Assets/AssetCurator.h>
 #include <EditorFramework/Assets/AssetProcessor.h>

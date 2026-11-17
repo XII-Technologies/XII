@@ -2,6 +2,8 @@
 
 #include <EditorFramework/EditorFrameworkPCH.h>
 
+#include <Foundation/Network/Reflection/NetworkAttributes.h>
+
 #include <EditorFramework/Assets/Declarations.h>
 
 // clang-format off
@@ -22,8 +24,8 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiTransformStatus, xiiNoBase, 1, xiiRTTIDefault
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_ENUM_MEMBER_PROPERTY("Result", xiiTransformResult, m_Result),
-    XII_MEMBER_PROPERTY("Message", m_sMessage),
+    XII_ENUM_MEMBER_PROPERTY("Result", xiiTransformResult, m_Result)->AddAttributes(new xiiNetworkAttribute(1)),
+    XII_MEMBER_PROPERTY("Message", m_sMessage)->AddAttributes(new xiiNetworkAttribute(2)),
   }
   XII_END_PROPERTIES;
 }

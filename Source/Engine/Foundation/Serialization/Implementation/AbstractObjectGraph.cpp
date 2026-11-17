@@ -2,6 +2,8 @@
 
 #include <Foundation/FoundationPCH.h>
 
+#include <Foundation/Network/Reflection/NetworkAttributes.h>
+
 #include <Foundation/Logging/Log.h>
 #include <Foundation/Serialization/AbstractObjectGraph.h>
 #include <Foundation/Serialization/ApplyNativePropertyChangesContext.h>
@@ -20,11 +22,11 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiDiffOperation, xiiNoBase, 1, xiiRTTIDefaultAl
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_ENUM_MEMBER_PROPERTY("Operation", xiiObjectChangeType, m_Operation),
-    XII_MEMBER_PROPERTY("Node", m_Node),
-    XII_MEMBER_PROPERTY("Property", m_sProperty),
-    XII_MEMBER_PROPERTY("Index", m_Index),
-    XII_MEMBER_PROPERTY("Value", m_Value),
+    XII_ENUM_MEMBER_PROPERTY("Operation", xiiObjectChangeType, m_Operation)->AddAttributes(new xiiNetworkAttribute(1)),
+    XII_MEMBER_PROPERTY("Node", m_Node)->AddAttributes(new xiiNetworkAttribute(2)),
+    XII_MEMBER_PROPERTY("Property", m_sProperty)->AddAttributes(new xiiNetworkAttribute(3)),
+    XII_MEMBER_PROPERTY("Index", m_Index)->AddAttributes(new xiiNetworkAttribute(4)),
+    XII_MEMBER_PROPERTY("Value", m_Value)->AddAttributes(new xiiNetworkAttribute(5)),
   }
   XII_END_PROPERTIES;
 }

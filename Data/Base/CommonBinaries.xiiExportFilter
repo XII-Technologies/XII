@@ -34,5 +34,4 @@
 /zstd.dll
 /zlib.dll
 /stb.dll
-/enet.dll
 #endif

@@ -306,7 +306,7 @@ XII_CREATE_SIMPLE_TEST(EditorSplash, ResponsiveDisconnectedProcess)
   bool                                 bProcessedEvents = false;
   const QStringList                    arguments        = {QStringLiteral("-noGui"), QStringLiteral("-filter"), QStringLiteral("NoStartupTestChildTests"), QStringLiteral("-NoSplash")};
   const xiiString                      exe              = xiiOSFile::GetApplicationPath();
-  XII_TEST_RESULT(channel.StartClientProcess(exe.GetData(), arguments, false));
+  XII_TEST_RESULT(channel.StartClientProcess(exe.GetData(), arguments, xiiProcessMessageDomain::Engine));
   XII_SCOPE_EXIT(channel.CloseConnection());
   QTimer::singleShot(0, qApp, [&]() { bProcessedEvents = true; });
   XII_TEST_BOOL(channel.WaitForStartup().Failed()); // This short-lived child does not connect to the IPC server.
@@ -320,7 +320,7 @@ XII_CREATE_SIMPLE_TEST(EditorSplash, QuitWhileWaitingForProcess)
   XII_SCOPE_EXIT(xiiEditorSplashScreenTest::InteractiveWait(editor, false));
   xiiEditorProcessCommunicationChannel channel;
   const xiiString                      exe = xiiOSFile::GetApplicationPath();
-  XII_TEST_RESULT(channel.StartClientProcess(exe.GetData(), {QStringLiteral("-noGui"), QStringLiteral("-filter"), QStringLiteral("NoStartupTestChildTests")}, false));
+  XII_TEST_RESULT(channel.StartClientProcess(exe.GetData(), {QStringLiteral("-noGui"), QStringLiteral("-filter"), QStringLiteral("NoStartupTestChildTests")}, xiiProcessMessageDomain::Engine));
   XII_SCOPE_EXIT(channel.CloseConnection());
   QTimer::singleShot(0, qApp, []() {
     QEvent quit(QEvent::Quit);
@@ -337,7 +337,7 @@ XII_CREATE_SIMPLE_TEST(EditorSplash, StartupIpcResponse)
   XII_SCOPE_EXIT(xiiEditorSplashScreenTest::InteractiveWait(editor, false));
   xiiEditorProcessCommunicationChannel channel;
   const xiiString                      exe = xiiOSFile::GetApplicationPath();
-  XII_TEST_RESULT(channel.StartClientProcess(exe.GetData(), {QStringLiteral("-splashIpcTestPeer")}, false));
+  XII_TEST_RESULT(channel.StartClientProcess(exe.GetData(), {QStringLiteral("-splashIpcTestPeer")}, xiiProcessMessageDomain::Engine));
   XII_SCOPE_EXIT(channel.CloseConnection());
   XII_TEST_RESULT(channel.WaitForStartup());
   // Includes a response already queued before the GUI starts waiting, avoiding a lost wakeup.

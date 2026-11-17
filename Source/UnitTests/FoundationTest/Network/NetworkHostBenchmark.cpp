@@ -4,108 +4,10 @@
 #include <FoundationTest/Network/Implementation/NetworkHostTestUtilities.h>
 #include <FoundationTest/Network/Implementation/NetworkSecurityTestUtilities.h>
 
-#include <Foundation/Communication/IpcChannel.h>
-#include <Foundation/Threading/ThreadSignal.h>
 #include <Foundation/Utilities/CommandLineUtils.h>
 #include <algorithm>
-#include <atomic>
 
 using namespace xiiNetworkHostTestUtilities;
-
-namespace
-{
-#if XII_ENABLED(XII_PLATFORM_WINDOWS) || XII_ENABLED(XII_PLATFORM_LINUX)
-  void BenchmarkLegacyPipe(xiiArrayPtr<const xiiUInt8> payload, xiiUInt32 uiBlocks)
-  {
-    const auto                  timeout = xiiTime::MakeFromSeconds(5);
-    xiiThreadSignal             ready, connected, echoed, delivered;
-    std::atomic<xiiUInt32>      received{0};
-    const auto                  name   = MakeLocalTestEndpoint("legacy-bench");
-    xiiUniquePtr<xiiIpcChannel> server = xiiIpcChannel::CreatePipeChannel(name.GetName(), xiiIpcChannel::Mode::Server);
-    xiiUniquePtr<xiiIpcChannel> client = xiiIpcChannel::CreatePipeChannel(name.GetName(), xiiIpcChannel::Mode::Client);
-    if (!XII_TEST_BOOL(server != nullptr && client != nullptr))
-    {
-      return;
-    }
-    decltype(server->m_Events)::Unsubscriber serverSubscription;
-    decltype(client->m_Events)::Unsubscriber clientSubscription;
-    server->m_Events.AddEventHandler([&](const xiiIpcChannelEvent& event) {
-      if (event.m_Type == xiiIpcChannelEvent::Connecting)
-      {
-        ready.RaiseSignal();
-      }
-    },
-                                     serverSubscription);
-    client->m_Events.AddEventHandler([&](const xiiIpcChannelEvent& event) {
-      if (event.m_Type == xiiIpcChannelEvent::Connected)
-      {
-        connected.RaiseSignal();
-      }
-    },
-                                     clientSubscription);
-    server->SetReceiveCallback([&](xiiArrayPtr<const xiiUInt8> bytes) {
-      if (bytes.GetCount() == 64)
-      {
-        server->Send(bytes);
-      }
-      else
-      {
-        ++received;
-        delivered.RaiseSignal();
-      }
-    });
-    client->SetReceiveCallback([&](xiiArrayPtr<const xiiUInt8>) { echoed.RaiseSignal(); });
-
-    server->Connect();
-    if (!XII_TEST_BOOL(ready.WaitForSignal(timeout) == xiiThreadSignal::WaitResult::Signaled))
-    {
-      return;
-    }
-    const auto connectStart = xiiTime::Now();
-    client->Connect();
-    if (!XII_TEST_BOOL(connected.WaitForSignal(timeout) == xiiThreadSignal::WaitResult::Signaled))
-    {
-      return;
-    }
-    const auto establish = xiiTime::Now() - connectStart;
-    const auto start     = xiiTime::Now();
-    for (xiiUInt32 uiBatch = 0; uiBatch < uiBlocks; ++uiBatch)
-    {
-      for (xiiUInt32 uiMessage = 0; uiMessage < 32; ++uiMessage)
-      {
-        if (!XII_TEST_BOOL(client->Send(payload)))
-        {
-          return;
-        }
-      }
-      const auto deadline = xiiTime::Now() + timeout;
-      while (received.load() < (uiBatch + 1) * 32)
-      {
-        const auto remaining = deadline - xiiTime::Now();
-        if (!XII_TEST_BOOL(remaining.IsPositive() && delivered.WaitForSignal(remaining) == xiiThreadSignal::WaitResult::Signaled))
-        {
-          return;
-        }
-      }
-    }
-    const double fThroughput     = 32.0 * uiBlocks * payload.GetCount() / (1024.0 * 1024.0 * (xiiTime::Now() - start).GetSeconds());
-    double       fRoundTrip[128] = {};
-    for (double& ref_sample : fRoundTrip)
-    {
-      const auto begin = xiiTime::Now();
-      if (!XII_TEST_BOOL(client->Send(payload.GetSubArray(0, 64)) && echoed.WaitForSignal(timeout) == xiiThreadSignal::WaitResult::Signaled))
-      {
-        return;
-      }
-      ref_sample = (xiiTime::Now() - begin).GetMicroseconds();
-    }
-    std::sort(std::begin(fRoundTrip), std::end(fRoundTrip));
-    xiiTestFramework::Output(xiiTestOutput::Details,
-                             "Legacy pipe: 1 client, %.1f us establish, %.2f MiB/s, %.1f/%.1f us 64-byte echo p50/p99",
-                             establish.GetMicroseconds(), fThroughput, fRoundTrip[63], fRoundTrip[126]);
-  }
-#endif
-} // namespace
 
 XII_CREATE_SIMPLE_TEST(NetworkTransport, HostTransportBenchmark)
 {
@@ -316,10 +218,4 @@ XII_CREATE_SIMPLE_TEST(NetworkTransport, HostTransportBenchmark)
                              static_cast<unsigned long long>(pool.m_uiAllocations), static_cast<unsigned long long>(pool.m_uiReuses),
                              static_cast<unsigned long long>(pool.m_uiBackpressureEvents));
   }
-#if XII_ENABLED(XII_PLATFORM_WINDOWS) || XII_ENABLED(XII_PLATFORM_LINUX)
-  if (uiConnections == 1)
-  {
-    BenchmarkLegacyPipe(uiPayload, uiBlocks);
-  }
-#endif
 }

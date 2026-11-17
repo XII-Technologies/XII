@@ -2,6 +2,8 @@
 
 #include <Foundation/FoundationPCH.h>
 
+#include <Foundation/Network/Reflection/NetworkAttributes.h>
+
 #include <Foundation/Logging/LogEntry.h>
 
 // clang-format off
@@ -14,11 +16,11 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiLogEntry, xiiNoBase, 1, xiiRTTIDefaultAllocat
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_MEMBER_PROPERTY("Msg", m_sMsg),
-    XII_MEMBER_PROPERTY("Tag", m_sTag),
-    XII_ENUM_MEMBER_PROPERTY("Type", xiiLogMsgType, m_Type),
-    XII_MEMBER_PROPERTY("Indentation", m_uiIndentation),
-    XII_MEMBER_PROPERTY("Time", m_fSeconds),
+    XII_MEMBER_PROPERTY("Msg", m_sMsg)->AddAttributes(new xiiNetworkAttribute(1)),
+    XII_MEMBER_PROPERTY("Tag", m_sTag)->AddAttributes(new xiiNetworkAttribute(2)),
+    XII_ENUM_MEMBER_PROPERTY("Type", xiiLogMsgType, m_Type)->AddAttributes(new xiiNetworkAttribute(3)),
+    XII_MEMBER_PROPERTY("Indentation", m_uiIndentation)->AddAttributes(new xiiNetworkAttribute(4)),
+    XII_MEMBER_PROPERTY("Time", m_fSeconds)->AddAttributes(new xiiNetworkAttribute(5)),
   }
   XII_END_PROPERTIES;
 }

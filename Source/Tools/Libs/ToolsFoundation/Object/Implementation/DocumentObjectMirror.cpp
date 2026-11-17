@@ -2,6 +2,8 @@
 
 #include <ToolsFoundation/ToolsFoundationPCH.h>
 
+#include <Foundation/Network/Reflection/NetworkAttributes.h>
+
 #include <Foundation/IO/MemoryStream.h>
 #include <Foundation/Logging/Log.h>
 #include <Foundation/Serialization/BinarySerializer.h>
@@ -13,10 +15,10 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiObjectChange, xiiNoBase, 1, xiiRTTIDefaultAll
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_MEMBER_PROPERTY("Change", m_Change),
-    XII_MEMBER_PROPERTY("Root", m_Root),
-    XII_ARRAY_MEMBER_PROPERTY("Steps", m_Steps),
-    XII_MEMBER_PROPERTY("Graph", m_GraphData),
+    XII_MEMBER_PROPERTY("Change", m_Change)->AddAttributes(new xiiNetworkAttribute(1)),
+    XII_MEMBER_PROPERTY("Root", m_Root)->AddAttributes(new xiiNetworkAttribute(2)),
+    XII_ARRAY_MEMBER_PROPERTY("Steps", m_Steps)->AddAttributes(new xiiNetworkAttribute(3)),
+    XII_MEMBER_PROPERTY("Graph", m_GraphData)->AddAttributes(new xiiNetworkAttribute(4)),
   }
   XII_END_PROPERTIES;
 }

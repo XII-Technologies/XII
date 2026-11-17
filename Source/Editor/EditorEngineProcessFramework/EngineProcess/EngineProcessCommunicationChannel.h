@@ -7,9 +7,9 @@
 class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiEngineProcessCommunicationChannel : public xiiProcessCommunicationChannel
 {
 public:
-  xiiResult ConnectToHostProcess();
+  xiiResult ConnectToHostProcess(xiiProcessMessageDomain domain = xiiProcessMessageDomain::Engine);
 
-  /// Releases the protocol and channel while the Core message loop is still running.
+  /// Releases the network session and transport before subsystem shutdown.
   /// Safe to call repeatedly, including before connecting.
   void CloseConnection();
 

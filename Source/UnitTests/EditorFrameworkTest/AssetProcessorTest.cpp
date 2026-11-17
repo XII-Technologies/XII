@@ -95,7 +95,7 @@ void TestAssetProcessor(xiiQtEditorApp& editor, xiiStringView projectDirectory)
 #else
   const char* executable = "xiiEditorProcessor";
 #endif
-  if (!XII_TEST_RESULT(processor.StartClientProcess(executable, args, false)) || !XII_TEST_RESULT(processor.WaitForConnection(xiiTime::MakeFromSeconds(30))))
+  if (!XII_TEST_RESULT(processor.StartClientProcess(executable, args, xiiProcessMessageDomain::Asset)) || !XII_TEST_RESULT(processor.WaitForConnection(xiiTime::MakeFromSeconds(30))))
     return;
 
   xiiTransformStatus           response;

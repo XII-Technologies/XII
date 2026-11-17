@@ -5,9 +5,7 @@
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessMessages.h>
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
 #include <Foundation/Application/Application.h>
-#include <Foundation/Communication/IpcChannel.h>
-#include <Foundation/Communication/IpcProcessMessageProtocol.h>
-#include <Foundation/Threading/ThreadSignal.h>
+#include <Foundation/Network/NetworkLocalEndpoint.h>
 #include <Foundation/Threading/ThreadUtils.h>
 #include <Foundation/Types/UniquePtr.h>
 #include <Foundation/Utilities/CommandLineUtils.h>
@@ -55,25 +53,20 @@ public:
     }
     if (pCommand->HasOption("-splashIpcTestPeer"))
     {
-      xiiUniquePtr<xiiIpcChannel>                                 peer = xiiIpcChannel::CreatePipeChannel(pCommand->GetStringOption("-IPC"), xiiIpcChannel::Mode::Client);
-      xiiThreadSignal                                             connected;
-      xiiThreadSignal                                             disconnected;
-      xiiEvent<const xiiIpcChannelEvent&, xiiMutex>::Unsubscriber subscription;
-      peer->m_Events.AddEventHandler([&](const xiiIpcChannelEvent& e) {
-        if (e.m_Type == xiiIpcChannelEvent::Connected)
-          connected.RaiseSignal();
-        else if (e.m_Type == xiiIpcChannelEvent::Disconnected)
-          disconnected.RaiseSignal();
-      },
-                                     subscription);
-      xiiIpcProcessMessageProtocol protocol(peer.Borrow());
-      peer->Connect();
-      if (!peer->IsConnected())
-        connected.WaitForSignal(xiiTime::MakeFromSeconds(5));
+      class Peer final : public xiiProcessCommunicationChannel
+      {
+      public:
+        using xiiProcessCommunicationChannel::ConnectLocal;
+      };
+      Peer                       peer;
+      xiiNetworkLocalEndpoint    endpoint;
       xiiProjectReadyMsgToEditor response;
-      const bool                 bSent = peer->IsConnected() && protocol.Send(&response);
-      if (bSent)
-        disconnected.WaitForSignal(xiiTime::MakeFromSeconds(5));
+      const bool                 bSent = xiiNetworkLocalEndpoint::Make(pCommand->GetStringOption("-IPC"), endpoint).Succeeded() &&
+        peer.ConnectLocal(endpoint, xiiProcessMessageDomain::Engine, pCommand->GetUIntOption("-PID")).Succeeded() &&
+        peer.WaitForConnection(xiiTime::MakeFromSeconds(5)).Succeeded() && peer.SendMessage(&response);
+      const auto deadline = xiiTime::Now() + xiiTime::MakeFromSeconds(5);
+      while (bSent && peer.IsConnected() && xiiTime::Now() < deadline)
+        peer.WaitForMessages();
       SetReturnCode(bSent ? 0 : 1);
       return Execution::Quit;
     }

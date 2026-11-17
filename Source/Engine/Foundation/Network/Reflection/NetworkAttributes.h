@@ -25,7 +25,7 @@ public:
   double   m_fMaximum           = 1;
 };
 
-/// Optional wire identity preservation across type renaming. Never required for type eligibility.
+/// Preserves wire identity across type renaming. Explicitly opts empty message types into the registry.
 class XII_FOUNDATION_DLL xiiNetworkIdentityAttribute : public xiiPropertyAttribute
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiNetworkIdentityAttribute, xiiPropertyAttribute);

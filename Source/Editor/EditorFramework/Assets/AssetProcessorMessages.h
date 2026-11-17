@@ -4,8 +4,8 @@
 
 #include <EditorFramework/EditorFrameworkDLL.h>
 
+#include <EditorEngineProcessFramework/IPC/ProcessCommunicationChannel.h>
 #include <EditorFramework/Assets/Declarations.h>
-#include <Foundation/Communication/RemoteMessage.h>
 #include <Foundation/Logging/LogEntry.h>
 
 class XII_EDITORFRAMEWORK_DLL xiiProcessAssetMsg : public xiiProcessMessage

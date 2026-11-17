@@ -2,6 +2,8 @@
 
 #include <Foundation/FoundationPCH.h>
 
+#include <Foundation/Network/Reflection/NetworkAttributes.h>
+
 #include <Foundation/Reflection/PropertyPath.h>
 #include <Foundation/Reflection/ReflectionUtils.h>
 #include <Foundation/Types/UniquePtr.h>
@@ -11,8 +13,8 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiPropertyPathStep, xiiNoBase, 1, xiiRTTIDefaul
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_MEMBER_PROPERTY("Property", m_sProperty),
-    XII_MEMBER_PROPERTY("Index", m_Index),
+    XII_MEMBER_PROPERTY("Property", m_sProperty)->AddAttributes(new xiiNetworkAttribute(1)),
+    XII_MEMBER_PROPERTY("Index", m_Index)->AddAttributes(new xiiNetworkAttribute(2)),
   }
   XII_END_PROPERTIES;
 }

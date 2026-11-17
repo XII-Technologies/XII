@@ -2,11 +2,92 @@
 
 #include <ToolsFoundation/ToolsFoundationPCH.h>
 
+#include <Foundation/Network/Reflection/NetworkAttributes.h>
+
 #include <Foundation/Reflection/ReflectionUtils.h>
 #include <Foundation/Serialization/AbstractObjectGraph.h>
 #include <Foundation/Serialization/GraphPatch.h>
+#include <Foundation/Types/ScopeExit.h>
 #include <ToolsFoundation/Reflection/PhantomRttiManager.h>
 #include <ToolsFoundation/Reflection/ReflectedType.h>
+
+namespace
+{
+  constexpr xiiUInt32 MaximumNetworkAttributes = 64;
+
+  bool IsNetworkAttributeType(const xiiRTTI* pType)
+  {
+    const xiiRTTI* const types[] = {
+      xiiGetStaticRTTI<xiiReadOnlyAttribute>(), xiiGetStaticRTTI<xiiHiddenAttribute>(),
+      xiiGetStaticRTTI<xiiCategoryAttribute>(), xiiGetStaticRTTI<xiiTitleAttribute>(),
+      xiiGetStaticRTTI<xiiColorAttribute>(), xiiGetStaticRTTI<xiiExposeColorAlphaAttribute>(),
+      xiiGetStaticRTTI<xiiSuffixAttribute>(), xiiGetStaticRTTI<xiiMinValueTextAttribute>(),
+      xiiGetStaticRTTI<xiiDefaultValueAttribute>(), xiiGetStaticRTTI<xiiClampValueAttribute>(),
+      xiiGetStaticRTTI<xiiGroupAttribute>(), xiiGetStaticRTTI<xiiInDevelopmentAttribute>(),
+      xiiGetStaticRTTI<xiiTagSetWidgetAttribute>(), xiiGetStaticRTTI<xiiNoTemporaryTransactionsAttribute>(),
+      xiiGetStaticRTTI<xiiExposedParametersAttribute>(), xiiGetStaticRTTI<xiiDynamicDefaultValueAttribute>(),
+      xiiGetStaticRTTI<xiiContainerAttribute>(), xiiGetStaticRTTI<xiiFileBrowserAttribute>(),
+      xiiGetStaticRTTI<xiiExternalFileBrowserAttribute>(), xiiGetStaticRTTI<xiiAssetBrowserAttribute>(),
+      xiiGetStaticRTTI<xiiDynamicEnumAttribute>(), xiiGetStaticRTTI<xiiDynamicStringEnumAttribute>(),
+      xiiGetStaticRTTI<xiiDynamicBitflagsAttribute>(), xiiGetStaticRTTI<xiiSphereManipulatorAttribute>(),
+      xiiGetStaticRTTI<xiiCapsuleManipulatorAttribute>(), xiiGetStaticRTTI<xiiBoxManipulatorAttribute>(),
+      xiiGetStaticRTTI<xiiNonUniformBoxManipulatorAttribute>(), xiiGetStaticRTTI<xiiConeLengthManipulatorAttribute>(),
+      xiiGetStaticRTTI<xiiConeAngleManipulatorAttribute>(), xiiGetStaticRTTI<xiiTransformManipulatorAttribute>(),
+      xiiGetStaticRTTI<xiiBoneManipulatorAttribute>(), xiiGetStaticRTTI<xiiBoxVisualizerAttribute>(),
+      xiiGetStaticRTTI<xiiSphereVisualizerAttribute>(), xiiGetStaticRTTI<xiiCapsuleVisualizerAttribute>(),
+      xiiGetStaticRTTI<xiiCylinderVisualizerAttribute>(), xiiGetStaticRTTI<xiiDirectionVisualizerAttribute>(),
+      xiiGetStaticRTTI<xiiConeVisualizerAttribute>()};
+    return xiiMakeArrayPtr(types).Contains(pType);
+  }
+
+  bool IsNetworkAttributeProperty(const xiiAbstractProperty* pProperty)
+  {
+    return pProperty->GetCategory() == xiiPropertyCategory::Member &&
+      !pProperty->GetFlags().IsAnySet(xiiPropertyFlags::Pointer | xiiPropertyFlags::ReadOnly) &&
+      (pProperty->GetFlags().IsAnySet(xiiPropertyFlags::StandardType | xiiPropertyFlags::IsEnum | xiiPropertyFlags::Bitflags) ||
+       pProperty->GetSpecificType() == xiiGetStaticRTTI<xiiVariant>());
+  }
+
+  bool IsNetworkAttributeValue(const xiiVariant& value, xiiUInt32 uiDepth = 0)
+  {
+    if (uiDepth > 4)
+      return false;
+    switch (value.GetType())
+    {
+      case xiiVariantType::TypedObject:
+      case xiiVariantType::TypedPointer:
+        return false;
+      case xiiVariantType::String:
+        return value.Get<xiiString>().GetElementCount() <= 4096;
+      case xiiVariantType::StringView:
+        return value.Get<xiiStringView>().GetElementCount() <= 4096;
+      case xiiVariantType::VariantArray:
+        if (value.Get<xiiVariantArray>().GetCount() > MaximumNetworkAttributes)
+          return false;
+        for (const auto& child : value.Get<xiiVariantArray>())
+          if (!IsNetworkAttributeValue(child, uiDepth + 1))
+            return false;
+        return true;
+      case xiiVariantType::VariantDictionary:
+        if (value.Get<xiiVariantDictionary>().GetCount() > MaximumNetworkAttributes)
+          return false;
+        for (const auto& child : value.Get<xiiVariantDictionary>())
+          if (!IsNetworkAttributeValue(child.Value(), uiDepth + 1))
+            return false;
+        return true;
+      default:
+        return true;
+    }
+  }
+
+  xiiNetworkAttribute* NetworkAttributeListField()
+  {
+    auto* attribute                   = new xiiNetworkAttribute(1000, true);
+    attribute->m_uiMaximumElements    = MaximumNetworkAttributes;
+    attribute->m_uiMaximumStringBytes = 4096;
+    return attribute;
+  }
+} // namespace
 
 // clang-format off
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiAttributeHolder, xiiNoBase, 1, xiiRTTINoAllocator)
@@ -15,6 +96,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiAttributeHolder, xiiNoBase, 1, xiiRTTINoAlloc
   XII_BEGIN_PROPERTIES
   {
     XII_ARRAY_ACCESSOR_PROPERTY("Attributes", GetCount, GetValue, SetValue, Insert, Remove)->AddFlags(xiiPropertyFlags::PointerOwner),
+    XII_ACCESSOR_PROPERTY("AuthoringMetadata", GetNetworkAttributes, SetNetworkAttributes)->AddAttributes(new xiiTemporaryAttribute(), new xiiHiddenAttribute(), NetworkAttributeListField()),
   }
   XII_END_PROPERTIES;
 }
@@ -22,6 +104,66 @@ XII_END_STATIC_REFLECTED_TYPE;
 // clang-format on
 
 xiiAttributeHolder::xiiAttributeHolder() = default;
+
+xiiVariantArray xiiAttributeHolder::GetNetworkAttributes() const
+{
+  xiiVariantArray result;
+  for (xiiUInt32 i = 0; i < GetCount() && result.GetCount() < MaximumNetworkAttributes; ++i)
+  {
+    const auto* attribute = GetValue(i);
+    if (attribute == nullptr || !IsNetworkAttributeType(attribute->GetDynamicRTTI()))
+      continue;
+    const auto*          type = attribute->GetDynamicRTTI();
+    xiiVariantDictionary fields;
+    fields.Insert("type", xiiString(type->GetTypeName()));
+    xiiHybridArray<const xiiAbstractProperty*, 16> properties;
+    type->GetAllProperties(properties);
+    for (const auto* property : properties)
+    {
+      if (!IsNetworkAttributeProperty(property))
+        continue;
+      const auto value = xiiReflectionUtils::GetMemberPropertyValue(static_cast<const xiiAbstractMemberProperty*>(property), attribute);
+      if (IsNetworkAttributeValue(value))
+        fields.Insert(property->GetPropertyName(), value);
+    }
+    result.PushBack(std::move(fields));
+  }
+  return result;
+}
+
+void xiiAttributeHolder::SetNetworkAttributes(xiiVariantArray attributes)
+{
+  for (const auto* attribute : m_Attributes)
+    if (attribute)
+      attribute->GetDynamicRTTI()->GetAllocator()->Deallocate(const_cast<xiiPropertyAttribute*>(attribute));
+  m_Attributes.Clear();
+  m_ReferenceAttributes.Clear();
+  for (const auto& entry : attributes.GetArrayPtr().GetSubArray(0, xiiMath::Min(attributes.GetCount(), MaximumNetworkAttributes)))
+  {
+    if (!entry.IsA<xiiVariantDictionary>())
+      continue;
+    const auto& fields = entry.Get<xiiVariantDictionary>();
+    const auto* name   = fields.GetValue("type");
+    if (name == nullptr || !name->IsA<xiiString>())
+      continue;
+    const auto* type = xiiRTTI::FindTypeByName(name->Get<xiiString>());
+    if (!IsNetworkAttributeType(type) || !type->GetAllocator()->CanAllocate())
+      continue;
+    xiiPropertyAttribute* attribute = type->GetAllocator()->Allocate<xiiPropertyAttribute>();
+    for (const auto& field : fields)
+    {
+      const auto* property = type->FindPropertyByName(field.Key());
+      if (property == nullptr || !IsNetworkAttributeProperty(property) || !IsNetworkAttributeValue(field.Value()))
+        continue;
+      const auto* member   = static_cast<const xiiAbstractMemberProperty*>(property);
+      const auto  original = xiiReflectionUtils::GetMemberPropertyValue(member, attribute);
+      if (property->GetSpecificType() == xiiGetStaticRTTI<xiiVariant>() || original.GetType() == field.Value().GetType() ||
+          (original.IsA<xiiStringView>() && field.Value().IsA<xiiString>()))
+        xiiReflectionUtils::SetMemberPropertyValue(member, attribute, field.Value());
+    }
+    m_Attributes.PushBack(attribute);
+  }
+}
 
 xiiAttributeHolder::xiiAttributeHolder(const xiiAttributeHolder& rhs)
 {
@@ -90,11 +232,11 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiReflectedPropertyDescriptor, xiiAttributeHold
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_ENUM_MEMBER_PROPERTY("Category", xiiPropertyCategory, m_Category),
-    XII_MEMBER_PROPERTY("Name", m_sName),
-    XII_MEMBER_PROPERTY("Type", m_sType),
-    XII_BITFLAGS_MEMBER_PROPERTY("Flags", xiiPropertyFlags, m_Flags),
-    XII_MEMBER_PROPERTY("ConstantValue", m_ConstantValue),
+    XII_ENUM_MEMBER_PROPERTY("Category", xiiPropertyCategory, m_Category)->AddAttributes(new xiiNetworkAttribute(1)),
+    XII_MEMBER_PROPERTY("Name", m_sName)->AddAttributes(new xiiNetworkAttribute(2)),
+    XII_MEMBER_PROPERTY("Type", m_sType)->AddAttributes(new xiiNetworkAttribute(3)),
+    XII_BITFLAGS_MEMBER_PROPERTY("Flags", xiiPropertyFlags, m_Flags)->AddAttributes(new xiiNetworkAttribute(4)),
+    XII_MEMBER_PROPERTY("ConstantValue", m_ConstantValue)->AddAttributes(new xiiNetworkAttribute(5)),
   }
   XII_END_PROPERTIES;
 }
@@ -197,8 +339,8 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiFunctionArgumentDescriptor, xiiNoBase, 1, xii
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_MEMBER_PROPERTY("Type", m_sType),
-    XII_BITFLAGS_MEMBER_PROPERTY("Flags", xiiPropertyFlags, m_Flags),
+    XII_MEMBER_PROPERTY("Type", m_sType)->AddAttributes(new xiiNetworkAttribute(1)),
+    XII_BITFLAGS_MEMBER_PROPERTY("Flags", xiiPropertyFlags, m_Flags)->AddAttributes(new xiiNetworkAttribute(2)),
   }
   XII_END_PROPERTIES;
 }
@@ -222,11 +364,11 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiReflectedFunctionDescriptor, xiiAttributeHold
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_MEMBER_PROPERTY("Name", m_sName),
-    XII_BITFLAGS_MEMBER_PROPERTY("Flags", xiiPropertyFlags, m_Flags),
-    XII_ENUM_MEMBER_PROPERTY("Type", xiiFunctionType, m_Type),
-    XII_MEMBER_PROPERTY("ReturnValue", m_ReturnValue),
-    XII_ARRAY_MEMBER_PROPERTY("Arguments", m_Arguments),
+    XII_MEMBER_PROPERTY("Name", m_sName)->AddAttributes(new xiiNetworkAttribute(1)),
+    XII_BITFLAGS_MEMBER_PROPERTY("Flags", xiiPropertyFlags, m_Flags)->AddAttributes(new xiiNetworkAttribute(2)),
+    XII_ENUM_MEMBER_PROPERTY("Type", xiiFunctionType, m_Type)->AddAttributes(new xiiNetworkAttribute(3)),
+    XII_MEMBER_PROPERTY("ReturnValue", m_ReturnValue)->AddAttributes(new xiiNetworkAttribute(4)),
+    XII_ARRAY_MEMBER_PROPERTY("Arguments", m_Arguments)->AddAttributes(new xiiNetworkAttribute(5)),
   }
   XII_END_PROPERTIES;
 }
@@ -267,13 +409,13 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiReflectedTypeDescriptor, xiiAttributeHolder, 
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_MEMBER_PROPERTY("TypeName", m_sTypeName),
-    XII_MEMBER_PROPERTY("PluginName", m_sPluginName),
-    XII_MEMBER_PROPERTY("ParentTypeName", m_sParentTypeName),
-    XII_BITFLAGS_MEMBER_PROPERTY("Flags", xiiTypeFlags, m_Flags),
-    XII_ARRAY_MEMBER_PROPERTY("Properties", m_Properties),
-    XII_ARRAY_MEMBER_PROPERTY("Functions", m_Functions),
-    XII_MEMBER_PROPERTY("TypeVersion", m_uiTypeVersion),
+    XII_MEMBER_PROPERTY("TypeName", m_sTypeName)->AddAttributes(new xiiNetworkAttribute(1)),
+    XII_MEMBER_PROPERTY("PluginName", m_sPluginName)->AddAttributes(new xiiNetworkAttribute(2)),
+    XII_MEMBER_PROPERTY("ParentTypeName", m_sParentTypeName)->AddAttributes(new xiiNetworkAttribute(3)),
+    XII_BITFLAGS_MEMBER_PROPERTY("Flags", xiiTypeFlags, m_Flags)->AddAttributes(new xiiNetworkAttribute(4)),
+    XII_ARRAY_MEMBER_PROPERTY("Properties", m_Properties)->AddAttributes(new xiiNetworkAttribute(5)),
+    XII_ARRAY_MEMBER_PROPERTY("Functions", m_Functions)->AddAttributes(new xiiNetworkAttribute(6)),
+    XII_MEMBER_PROPERTY("TypeVersion", m_uiTypeVersion)->AddAttributes(new xiiNetworkAttribute(7)),
   }
   XII_END_PROPERTIES;
 }

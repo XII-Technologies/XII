@@ -75,7 +75,7 @@ void xiiEngineProcessGameApplication::AfterCoreSystemsStartup()
   // skip project creation at this point
   // SUPER::AfterCoreSystemsStartup();
 
-#if XII_DISABLED(XII_PLATFORM_WINDOWS) && XII_DISABLED(XII_PLATFORM_LINUX)
+#if XII_DISABLED(XII_PLATFORM_WINDOWS) && XII_DISABLED(XII_PLATFORM_LINUX) && XII_DISABLED(XII_PLATFORM_OSX)
   {
     // on all 'mobile' platforms, we assume we are in remote mode
     xiiEditorEngineProcessApp::GetSingleton()->SetRemoteMode();
@@ -100,12 +100,14 @@ void xiiEngineProcessGameApplication::AfterCoreSystemsStartup()
 
 void xiiEngineProcessGameApplication::ConnectToHost()
 {
-  XII_VERIFY(m_IPC.ConnectToHostProcess().Succeeded(), "Failed to connect to host.");
-
   m_IPC.m_Events.AddEventHandler(xiiMakeDelegate(&xiiEngineProcessGameApplication::EventHandlerIPC, this));
-
-  // wait indefinitely (not necessary anymore, should work regardless)
-  // m_IPC.WaitForMessage(xiiGetStaticRTTI<xiiSetupProjectMsgToEngine>(), xiiTime());
+  if (m_IPC.ConnectToHostProcess().Failed())
+  {
+    xiiLog::Error("Failed to start EngineProcess communication.");
+    SetReturnCode(1);
+    RequestQuit();
+    return;
+  }
 }
 
 void xiiEngineProcessGameApplication::DisableErrorReport()
@@ -397,8 +399,11 @@ void xiiEngineProcessGameApplication::EventHandlerIPC(const xiiEngineProcessComm
     XII_PROFILE_SCOPE(sRedrawScope.GetView());
 
     xiiSyncWithProcessMsgToEditor msg;
-    msg.m_uiRedrawCount     = pMsg->m_uiRedrawCount;
-    m_uiRedrawCountReceived = msg.m_uiRedrawCount;
+    msg.m_uiRedrawCount = pMsg->m_uiRedrawCount;
+    if (xiiGALDevice::HasDefaultDevice())
+    {
+      m_uiRedrawCountReceived = msg.m_uiRedrawCount;
+    }
 
     // Clear the main views after rendering to prevent duplicate rendering or premature update requests when the editor runs in lockstep with the engine.
     // If multiple xiiSyncWithProcessMsgToEngine messages are queued, exit the message processing loop to render the current frame immediately.
@@ -474,7 +479,11 @@ void xiiEngineProcessGameApplication::EventHandlerIPC(const xiiEngineProcessComm
     SendProjectReadyMessage();
     return;
   }
-  else if (const auto* pMsg1 = xiiDynamicCast<const xiiReloadResourceMsgToEngine*>(e.m_pMessage))
+
+  if (m_sProjectDirectory.IsEmpty() || !m_sInitializationFailure.IsEmpty())
+    return;
+
+  if (const auto* pMsg1 = xiiDynamicCast<const xiiReloadResourceMsgToEngine*>(e.m_pMessage))
   {
     XII_PROFILE_SCOPE("ReloadResource");
 

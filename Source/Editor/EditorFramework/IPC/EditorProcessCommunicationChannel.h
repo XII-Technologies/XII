@@ -15,7 +15,9 @@ class QProcess;
 class XII_EDITORFRAMEWORK_DLL xiiEditorProcessCommunicationChannel : public xiiProcessCommunicationChannel
 {
 public:
-  xiiResult StartClientProcess(const char* szProcess, const QStringList& args, bool bRemote, const xiiRTTI* pFirstAllowedMessageType = nullptr, xiiUInt32 uiMemSize = 1024 * 1024 * 10);
+  ~xiiEditorProcessCommunicationChannel();
+
+  xiiResult StartClientProcess(const char* szProcess, const QStringList& args, xiiProcessMessageDomain domain, const xiiRTTI* pFirstAllowedMessageType = nullptr);
 
   bool IsClientAlive() const;
 
@@ -36,11 +38,11 @@ class XII_EDITORFRAMEWORK_DLL xiiEditorProcessRemoteCommunicationChannel : publi
 public:
   xiiResult ConnectToServer(const char* szAddress);
 
-  bool IsConnected() const;
-
   void CloseConnection();
 
   void TryConnect();
 
 private:
+  xiiString m_sAddress;
+  xiiTime   m_RetryAt;
 };
