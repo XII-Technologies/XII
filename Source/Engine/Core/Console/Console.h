@@ -3,11 +3,11 @@
 #pragma once
 
 #include <Core/Console/ConsoleFunction.h>
-#include <Foundation/Events/Event.h>
 #include <Foundation/Configuration/CVar.h>
 #include <Foundation/Containers/Deque.h>
 #include <Foundation/Containers/Map.h>
 #include <Foundation/Containers/StaticArray.h>
+#include <Foundation/Events/Event.h>
 #include <Foundation/Strings/StringBuilder.h>
 #include <Foundation/Threading/Mutex.h>
 #include <Foundation/Types/RefCounted.h>

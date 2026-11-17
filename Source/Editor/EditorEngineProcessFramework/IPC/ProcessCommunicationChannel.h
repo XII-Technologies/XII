@@ -4,8 +4,8 @@
 
 #include <EditorEngineProcessFramework/EditorEngineProcessFrameworkDLL.h>
 
-#include <Foundation/Events/Event.h>
 #include <Foundation/Communication/IpcProcessMessageProtocol.h>
+#include <Foundation/Events/Event.h>
 #include <Foundation/Time/Time.h>
 #include <Foundation/Types/Delegate.h>
 #include <Foundation/Types/UniquePtr.h>

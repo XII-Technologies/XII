@@ -4,8 +4,8 @@
 
 #include <Core/CoreDLL.h>
 #include <Core/Input/Declarations.h>
-#include <Foundation/Events/Event.h>
 #include <Foundation/Containers/Map.h>
+#include <Foundation/Events/Event.h>
 #include <Foundation/Reflection/Reflection.h>
 #include <Foundation/Strings/String.h>
 #include <Foundation/Time/Time.h>

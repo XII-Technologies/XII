@@ -2,10 +2,10 @@
 
 #pragma once
 
-#include <Foundation/Events/Event.h>
 #include <Foundation/Containers/IdTable.h>
 #include <Foundation/Containers/Map.h>
 #include <Foundation/Containers/Set.h>
+#include <Foundation/Events/Event.h>
 #include <Foundation/Strings/HashedString.h>
 #include <Foundation/Types/Enum.h>
 #include <Foundation/Types/Variant.h>

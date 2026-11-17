@@ -2,8 +2,8 @@
 
 #pragma once
 
-#include <Foundation/Messaging/Message.h>
 #include <Foundation/Containers/Deque.h>
+#include <Foundation/Messaging/Message.h>
 #include <Foundation/Threading/Lock.h>
 #include <Foundation/Threading/Mutex.h>
 

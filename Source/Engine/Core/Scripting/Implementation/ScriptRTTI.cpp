@@ -3,8 +3,8 @@
 #include <Core/CorePCH.h>
 
 #include <Core/Scripting/ScriptRTTI.h>
-#include <Foundation/Messaging/Message.h>
 #include <Foundation/Memory/CommonAllocators.h>
+#include <Foundation/Messaging/Message.h>
 #include <Foundation/Reflection/ReflectionUtils.h>
 
 xiiScriptRTTI::xiiScriptRTTI(xiiStringView sName, const xiiRTTI* pParentType, FunctionList&& functions, MessageHandlerList&& messageHandlers) :

@@ -9,9 +9,9 @@
 #include <EditorFramework/IPC/EngineProcessConnection.h>
 #include <Foundation/Application/Config/FileSystemConfig.h>
 #include <Foundation/Application/Config/PluginConfig.h>
-#include <Foundation/Events/Event.h>
 #include <Foundation/Configuration/Singleton.h>
 #include <Foundation/Containers/Set.h>
+#include <Foundation/Events/Event.h>
 #include <Foundation/Logging/HTMLWriter.h>
 #include <Foundation/Strings/String.h>
 #include <Foundation/Types/Bitflags.h>

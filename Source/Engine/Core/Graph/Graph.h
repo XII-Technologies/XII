@@ -5,8 +5,8 @@
 #include <Core/CoreDLL.h>
 
 #include <Core/Graph/GraphEvents.h>
-#include <Foundation/Events/Event.h>
 #include <Foundation/Containers/DynamicArray.h>
+#include <Foundation/Events/Event.h>
 #include <Foundation/Types/UniquePtr.h>
 
 struct xiiGraphHandleMap;

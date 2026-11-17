@@ -3,9 +3,9 @@
 #pragma once
 
 #include <Foundation/Basics.h>
-#include <Foundation/Events/Event.h>
 #include <Foundation/Containers/HybridArray.h>
 #include <Foundation/DataProcessing/Stream/ProcessingStream.h>
+#include <Foundation/Events/Event.h>
 
 class xiiProcessingStreamProcessor;
 class xiiProcessingStreamGroup;

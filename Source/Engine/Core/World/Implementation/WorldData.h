@@ -2,10 +2,10 @@
 
 #pragma once
 
-#include <Foundation/Messaging/MessageQueue.h>
 #include <Foundation/Containers/HashTable.h>
 #include <Foundation/Math/Random.h>
 #include <Foundation/Memory/FrameAllocator.h>
+#include <Foundation/Messaging/MessageQueue.h>
 #include <Foundation/Threading/DelegateTask.h>
 #include <Foundation/Time/Clock.h>
 #include <Foundation/Types/SharedPtr.h>

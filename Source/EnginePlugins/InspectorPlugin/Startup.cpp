@@ -2,9 +2,9 @@
 
 #include <InspectorPlugin/InspectorPluginPCH.h>
 
-#include <Foundation/Events/GlobalEvent.h>
 #include <Foundation/Communication/Telemetry.h>
 #include <Foundation/Configuration/Startup.h>
+#include <Foundation/Events/GlobalEvent.h>
 
 namespace StartupDetail
 {

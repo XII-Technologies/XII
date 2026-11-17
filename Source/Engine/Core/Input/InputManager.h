@@ -3,9 +3,9 @@
 #pragma once
 
 #include <Core/Input/InputDevice.h>
-#include <Foundation/Events/Event.h>
 #include <Foundation/Containers/DynamicArray.h>
 #include <Foundation/Containers/Map.h>
+#include <Foundation/Events/Event.h>
 
 /// A struct that defines how to register an input action.
 struct XII_CORE_DLL xiiInputActionConfig

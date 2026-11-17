@@ -86,7 +86,8 @@ public:
   enum
   {
     /// Whether the uiMaxRecursionDepth parameter to Broadcast() is supported in this implementation or not.
-    RecursionDepthSupported = EventType == xiiEventType::Default || std::is_same_v<MutexType, xiiNoMutex>,
+    RecursionDepthSupported = EventType == xiiEventType::Default || std::is_same_v < MutexType,
+    xiiNoMutex >,
 
     /// Default value for the maximum recursion depth of Broadcast.
     /// As limiting the recursion depth is not supported when EventType == xiiEventType::CopyOnBroadcast and MutexType != xiiNoMutex
