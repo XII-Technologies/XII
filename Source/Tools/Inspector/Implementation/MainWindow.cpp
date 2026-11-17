@@ -27,6 +27,38 @@ xiiQtMainWindow::xiiQtMainWindow() :
   QMainWindow()
 {
   s_pWidget = this;
+  m_DiagnosticsClient.SetSampleHandler([](const xiiTelemetrySample& sample) {
+    if (sample.m_uiSource == xiiTelemetrySources::Counters)
+      xiiQtMainWidget::ReceiveDiagnostics(sample);
+    else if (sample.m_uiSource == xiiTelemetrySources::Logs)
+      xiiQtLogDockWidget::ReceiveDiagnostics(sample);
+    else if (sample.m_uiSource == xiiTelemetrySources::Memory)
+      xiiQtMemoryWidget::ReceiveDiagnostics(sample);
+    else if (sample.m_uiSource == xiiTelemetrySources::GlobalEvents)
+      xiiQtGlobalEventsWidget::ReceiveDiagnostics(sample);
+    else if (sample.m_uiSource == xiiTelemetrySources::Plugins)
+      xiiQtPluginsWidget::ReceiveDiagnostics(sample);
+    else if (sample.m_uiSource == xiiTelemetrySources::Subsystems)
+      xiiQtSubsystemsWidget::ReceiveDiagnostics(sample);
+    else if (sample.m_uiSource == xiiTelemetrySources::Input)
+      xiiQtInputWidget::ReceiveDiagnostics(sample);
+    else if (sample.m_uiSource == xiiTelemetrySources::Time)
+      xiiQtTimeWidget::ReceiveDiagnostics(sample);
+    else if (sample.m_uiSource == xiiTelemetrySources::Files)
+      xiiQtFileWidget::ReceiveDiagnostics(sample);
+    else if (sample.m_uiSource == xiiTelemetrySources::Application)
+      xiiQtMainWindow::ReceiveDiagnostics(sample);
+    else if (sample.m_uiSource == xiiTelemetrySources::Reflection)
+      xiiQtReflectionWidget::ReceiveDiagnostics(sample);
+    else if (sample.m_uiSource == xiiTelemetrySources::Resources)
+      xiiQtResourceWidget::ReceiveDiagnostics(sample);
+    else if (sample.m_uiSource == xiiTelemetrySources::CVars)
+      xiiQtCVarsWidget::ReceiveDiagnostics(sample);
+    else if ((sample.m_uiSource == xiiTelemetrySources::Profiling || sample.m_uiSource == xiiTelemetrySources::ProfileHistory) && xiiQtProfilingWidget::s_pWidget)
+      xiiQtProfilingWidget::s_pWidget->ReceiveDiagnostics(sample);
+    else if (sample.m_uiSource == xiiTelemetrySources::RenderGraphs && xiiQtRenderGraphWidget::s_pWidget)
+      xiiQtRenderGraphWidget::s_pWidget->ReceiveDiagnostics(sample);
+  });
 
   setupUi(this);
 
@@ -60,8 +92,10 @@ xiiQtMainWindow::xiiQtMainWindow() :
   xiiQtReflectionWidget*   pReflectionWidget   = new xiiQtReflectionWidget(m_pDockManager);
   xiiQtResourceWidget*     pResourceWidget     = new xiiQtResourceWidget(m_pDockManager);
   auto*                    pRenderGraphWidget  = new xiiQtRenderGraphWidget(m_pDockManager);
-  auto*                    pProfilingWidget    = new xiiQtProfilingWidget(m_pDockManager);
-  auto*                    pRenderingWidget    = new xiiQtProfilingWidget(m_pDockManager, true, pProfilingWidget->GetSession());
+  pRenderGraphWidget->SetClient(&m_DiagnosticsClient);
+  auto* pProfilingWidget                    = new xiiQtProfilingWidget(m_pDockManager);
+  pProfilingWidget->GetSession()->m_pClient = &m_DiagnosticsClient;
+  auto* pRenderingWidget                    = new xiiQtProfilingWidget(m_pDockManager, true, pProfilingWidget->GetSession());
   menuWindows->addAction(pRenderingWidget->toggleViewAction());
   menuWindows->addAction(pRenderGraphWidget->toggleViewAction());
   menuWindows->addAction(pProfilingWidget->toggleViewAction());
@@ -210,51 +244,85 @@ void xiiQtMainWindow::UpdateNetworkTimeOut()
 
 void xiiQtMainWindow::UpdateNetwork()
 {
-  bool bResetStats = false;
-
+  m_DiagnosticsClient.Update();
+  xiiNetworkRpcResult         command;
+  xiiTelemetryCommandResponse response;
+  for (xiiUInt32 i = 0; i < 32 && m_DiagnosticsClient.TryGetCommandResult(command, response); ++i)
+    xiiQtCVarsWidget::ReceiveCommandResult(command, response);
+  bool bReady = m_DiagnosticsClient.IsReady();
+  if (bReady && m_ExpectedInstance.IsValid() && m_ExpectedInstance != m_DiagnosticsClient.GetServerInfo().m_Instance)
   {
-    static xiiUInt32 uiServerID = 0;
-    static bool      bConnected = false;
-    static xiiString sLastServerName;
-
-    if (xiiTelemetry::IsConnectedToServer())
+    m_DiagnosticsClient.Shutdown();
+    bReady = false;
+    xiiQtLogDockWidget::s_pWidget->Log("The discovered application instance changed; reconnect explicitly.");
+  }
+  if (bReady && m_uiCatalogRevision != m_DiagnosticsClient.GetServerInfo().m_uiCatalogRevision)
+  {
+    m_uiCatalogRevision = m_DiagnosticsClient.GetServerInfo().m_uiCatalogRevision;
+    m_bDiagnosticsReady = false;
+  }
+  if (bReady && !m_bDiagnosticsReady)
+  {
+    ++m_uiDiagnosticsGeneration;
+    xiiTelemetrySubscription counters;
+    counters.m_uiSource               = xiiTelemetrySources::Counters;
+    counters.m_uiGeneration           = m_uiDiagnosticsGeneration;
+    counters.m_uiRequestId            = ++m_uiDiagnosticsRequest;
+    counters.m_uiIntervalMilliseconds = 100;
+    m_DiagnosticsClient.Subscribe(counters).IgnoreResult();
+    m_DiagnosticsSubscribed.Clear();
+  }
+  struct SourceView
+  {
+    xiiUInt64         m_uiSource;
+    ads::CDockWidget* m_pView;
+    xiiUInt32         m_uiInterval;
+  };
+  const SourceView views[] = {
+    {xiiTelemetrySources::Logs, xiiQtLogDockWidget::s_pWidget, 33},
+    {xiiTelemetrySources::Memory, xiiQtMemoryWidget::s_pWidget, 200},
+    {xiiTelemetrySources::Plugins, xiiQtPluginsWidget::s_pWidget, 1000},
+    {xiiTelemetrySources::Subsystems, xiiQtSubsystemsWidget::s_pWidget, 1000},
+    {xiiTelemetrySources::GlobalEvents, xiiQtGlobalEventsWidget::s_pWidget, 500},
+    {xiiTelemetrySources::Input, xiiQtInputWidget::s_pWidget, 100},
+    {xiiTelemetrySources::Time, xiiQtTimeWidget::s_pWidget, 33},
+    {xiiTelemetrySources::Files, xiiQtFileWidget::s_pWidget, 33},
+    {xiiTelemetrySources::Reflection, xiiQtReflectionWidget::s_pWidget, 5000},
+    {xiiTelemetrySources::Resources, xiiQtResourceWidget::s_pWidget, 500},
+    {xiiTelemetrySources::CVars, xiiQtCVarsWidget::s_pWidget, 500},
+    {xiiTelemetrySources::Application, xiiQtMainWidget::s_pWidget, 33},
+  };
+  for (const auto& view : views)
+  {
+    const bool visible = m_DiagnosticsClient.IsSourceAvailable(view.m_uiSource) && view.m_pView->isVisible() && !view.m_pView->isClosed();
+    if (!bReady || visible == m_DiagnosticsSubscribed.Contains(view.m_uiSource))
+      continue;
+    xiiTelemetrySubscription request;
+    request.m_uiSource               = view.m_uiSource;
+    request.m_uiGeneration           = m_uiDiagnosticsGeneration;
+    request.m_uiRequestId            = ++m_uiDiagnosticsRequest;
+    request.m_uiIntervalMilliseconds = view.m_uiInterval;
+    request.m_bEnabled               = visible;
+    if (m_DiagnosticsClient.Subscribe(request).Succeeded())
     {
-      if (uiServerID != xiiTelemetry::GetServerID())
-      {
-        uiServerID  = xiiTelemetry::GetServerID();
-        bResetStats = true;
-
-        xiiStringBuilder s;
-        s.SetFormat("Connected to new Server with ID {0}", uiServerID);
-
-        xiiQtLogDockWidget::s_pWidget->Log(s.GetData());
-      }
-      else if (!bConnected)
-      {
-        xiiQtLogDockWidget::s_pWidget->Log("Reconnected to Server.");
-      }
-
-      if (sLastServerName != xiiTelemetry::GetServerName())
-      {
-        sLastServerName = xiiTelemetry::GetServerName();
-        setWindowTitle(QString("xiiInspector - %1").arg(sLastServerName.GetData()));
-      }
-
-      bConnected = true;
-    }
-    else
-    {
-      if (bConnected)
-      {
-        xiiQtLogDockWidget::s_pWidget->Log("Lost Connection to Server.");
-        setWindowTitle(QString("xiiInspector - disconnected"));
-        sLastServerName.Clear();
-      }
-
-      bConnected = false;
+      if (visible)
+        m_DiagnosticsSubscribed.Insert(view.m_uiSource);
+      else
+        m_DiagnosticsSubscribed.Remove(view.m_uiSource);
     }
   }
+  m_bDiagnosticsReady = bReady;
+  bool bResetStats    = false;
 
+  if (bReady && !(m_LastInstance == m_DiagnosticsClient.GetServerInfo().m_Instance))
+  {
+    m_LastInstance = m_DiagnosticsClient.GetServerInfo().m_Instance;
+    bResetStats    = true;
+  }
+  if (bReady)
+    setWindowTitle(QString("xiiInspector - %1").arg(QString::fromUtf8(m_DiagnosticsClient.GetServerInfo().m_sApplication.GetData())));
+  else
+    setWindowTitle("xiiInspector - disconnected");
   if (bResetStats)
   {
     xiiQtMainWidget::s_pWidget->ResetStats();
@@ -285,8 +353,50 @@ void xiiQtMainWindow::UpdateNetwork()
 
   for (xiiInt32 i = 0; i < 10; ++i)
     m_pStatHistoryWidgets[i]->UpdateStats();
+}
 
-  xiiTelemetry::PerFrameUpdate();
+xiiResult xiiQtMainWindow::ConnectDiagnostics(xiiStringView sAddress, xiiUuid expectedInstance)
+{
+  auto resetView = [&] {
+    m_ExpectedInstance  = expectedInstance;
+    m_LastInstance      = {};
+    m_bDiagnosticsReady = false;
+    xiiQtProfilingWidget::s_pWidget->GetSession()->ResetConnection();
+  };
+  xiiTelemetryConfiguration config;
+  config.m_sApplication = "XII Inspector";
+  const bool bLocal     = sAddress.StartsWith("local:");
+  if (bLocal)
+  {
+    sAddress.Shrink(6, 0);
+    xiiNetworkLocalEndpoint endpoint;
+    XII_SUCCEED_OR_RETURN(xiiNetworkLocalEndpoint::Make(sAddress, endpoint).GetResult());
+    config.m_Network.m_Transport      = xiiNetworkTransportType::Local;
+    config.m_Network.m_Authentication = xiiNetworkAuthenticationPolicy::LocalUser;
+    resetView();
+    return m_DiagnosticsClient.Connect(config, endpoint).GetResult();
+  }
+
+  if (sAddress.TrimWordStart("quic://"))
+    config.m_Network.m_Transport = xiiNetworkTransportType::SecureDatagram;
+  else if (!sAddress.TrimWordStart("tls://"))
+    return XII_FAILURE;
+
+  xiiNetworkEndpoint endpoint;
+  XII_SUCCEED_OR_RETURN(xiiNetworkEndpoint::Parse(sAddress, endpoint).GetResult());
+  const auto*              command = xiiCommandLineUtils::GetGlobalInstance();
+  xiiNetworkSecurityConfig security;
+  security.m_sCertificateChainFile = command->GetStringOption("-DiagnosticsCert");
+  security.m_sPrivateKeyFile       = command->GetStringOption("-DiagnosticsKey");
+  security.m_sTrustAnchorsFile     = command->GetStringOption("-DiagnosticsCA");
+  security.m_sApplicationProtocol  = "xii-diagnostics/2";
+  security.m_bUseSystemTrust       = false;
+  config.m_Network.m_pCredentials  = XII_DEFAULT_NEW(xiiNetworkCredentials);
+  XII_SUCCEED_OR_RETURN(config.m_Network.m_pCredentials->Load(security).GetResult());
+  xiiNetworkConnectOptions options;
+  options.m_sServerName = command->GetStringOption("-DiagnosticsServerName");
+  resetView();
+  return m_DiagnosticsClient.Connect(config, endpoint, options).GetResult();
 }
 
 void xiiQtMainWindow::DockWidgetVisibilityChanged(bool bVisible)
@@ -331,7 +441,7 @@ void xiiQtMainWindow::UpdateAlwaysOnTop()
   bool bNewState = bOnTop;
   XII_IGNORE_UNUSED(bNewState);
 
-  if (m_OnTopMode == Always || (m_OnTopMode == WhenConnected && xiiTelemetry::IsConnectedToServer()))
+  if (m_OnTopMode == Always || (m_OnTopMode == WhenConnected && m_DiagnosticsClient.IsReady()))
     bNewState = true;
   else
     bNewState = false;
@@ -351,50 +461,33 @@ void xiiQtMainWindow::UpdateAlwaysOnTop()
   }
 }
 
-void xiiQtMainWindow::ProcessTelemetry(void* pUnuseed)
+void xiiQtMainWindow::ReceiveDiagnostics(const xiiTelemetrySample& sample)
 {
-  if (!s_pWidget)
+  if (!s_pWidget || sample.m_Records.GetCount() != 1)
     return;
+  const auto& row = sample.m_Records[0];
+  xiiString   sSourceFile, sFunction, sExpression, sMessage;
+  xiiUInt32   uiLine;
+  if (!row.Read("file", sSourceFile) || !row.Read("line", uiLine) || !row.Read("function", sFunction) || !row.Read("expression", sExpression) || !row.Read("message", sMessage))
+    return;
+  xiiQtLogDockWidget::s_pWidget->Log("");
+  xiiQtLogDockWidget::s_pWidget->Log("<<< Application Assertion >>>");
+  xiiQtLogDockWidget::s_pWidget->Log("");
 
-  xiiTelemetryMessage Msg;
+  xiiQtLogDockWidget::s_pWidget->Log(xiiFmt("    Expression: '{0}'", sExpression));
+  xiiQtLogDockWidget::s_pWidget->Log("");
 
-  while (xiiTelemetry::RetrieveMessage(' APP', Msg) == XII_SUCCESS)
-  {
-    switch (Msg.GetMessageID())
-    {
-      case 'ASRT':
-      {
-        xiiString sSourceFile, sFunction, sExpression, sMessage;
-        xiiUInt32 uiLine = 0;
+  xiiQtLogDockWidget::s_pWidget->Log(xiiFmt("    Message: '{0}'", sMessage));
+  xiiQtLogDockWidget::s_pWidget->Log("");
 
-        Msg.GetReader() >> sSourceFile;
-        Msg.GetReader() >> uiLine;
-        Msg.GetReader() >> sFunction;
-        Msg.GetReader() >> sExpression;
-        Msg.GetReader() >> sMessage;
+  xiiQtLogDockWidget::s_pWidget->Log(xiiFmt("   File: '{0}'", sSourceFile));
 
-        xiiQtLogDockWidget::s_pWidget->Log("");
-        xiiQtLogDockWidget::s_pWidget->Log("<<< Application Assertion >>>");
-        xiiQtLogDockWidget::s_pWidget->Log("");
+  xiiQtLogDockWidget::s_pWidget->Log(xiiFmt("   Line: {0}", uiLine));
 
-        xiiQtLogDockWidget::s_pWidget->Log(xiiFmt("    Expression: '{0}'", sExpression));
-        xiiQtLogDockWidget::s_pWidget->Log("");
+  xiiQtLogDockWidget::s_pWidget->Log(xiiFmt("   In Function: '{0}'", sFunction));
 
-        xiiQtLogDockWidget::s_pWidget->Log(xiiFmt("    Message: '{0}'", sMessage));
-        xiiQtLogDockWidget::s_pWidget->Log("");
+  xiiQtLogDockWidget::s_pWidget->Log("");
 
-        xiiQtLogDockWidget::s_pWidget->Log(xiiFmt("   File: '{0}'", sSourceFile));
-
-        xiiQtLogDockWidget::s_pWidget->Log(xiiFmt("   Line: {0}", uiLine));
-
-        xiiQtLogDockWidget::s_pWidget->Log(xiiFmt("   In Function: '{0}'", sFunction));
-
-        xiiQtLogDockWidget::s_pWidget->Log("");
-
-        xiiQtLogDockWidget::s_pWidget->Log(">>> Application Assertion <<<");
-        xiiQtLogDockWidget::s_pWidget->Log("");
-      }
-      break;
-    }
-  }
+  xiiQtLogDockWidget::s_pWidget->Log(">>> Application Assertion <<<");
+  xiiQtLogDockWidget::s_pWidget->Log("");
 }

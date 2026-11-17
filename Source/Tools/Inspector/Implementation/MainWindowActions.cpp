@@ -2,7 +2,6 @@
 
 #include <Inspector/InspectorPCH.h>
 
-#include <Foundation/Communication/Telemetry.h>
 #include <Inspector/CVarsWidget.moc.h>
 #include <Inspector/FileWidget.moc.h>
 #include <Inspector/GlobalEventsWidget.moc.h>

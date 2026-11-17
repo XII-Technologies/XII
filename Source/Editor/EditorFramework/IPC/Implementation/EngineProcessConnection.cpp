@@ -147,11 +147,6 @@ void xiiEditorEngineProcessConnection::Initialize(const xiiRTTI* pFirstAllowedMe
     }
   }
 
-  // set up the EditorEngineProcess telemetry server on a different port
-  {
-    args << "-TelemetryPort";
-    args << xiiCommandLineUtils::GetGlobalInstance()->GetStringOption("-TelemetryPort", 0, "1050").GetData(tmp);
-  }
 
   {
     xiiStringBuilder sRelativeData;

@@ -2,9 +2,10 @@
 
 #include <Inspector/InspectorPCH.h>
 
-#include <Foundation/Communication/Telemetry.h>
+#include <Foundation/Diagnostics/TelemetryService.h>
 #include <GuiFoundation/UIServices/UIServices.moc.h>
 #include <Inspector/CVarsWidget.moc.h>
+#include <Inspector/LogDockWidget.moc.h>
 #include <Inspector/MainWindow.moc.h>
 #include <qcombobox.h>
 #include <qlineedit.h>
@@ -14,21 +15,22 @@
 class xiiCommandInterpreterInspector : public xiiCommandInterpreter
 {
 public:
-  virtual void Interpret(xiiCommandInterpreterState& inout_state) override
+  explicit xiiCommandInterpreterInspector(xiiTelemetryClient& client) : m_Client(client) {}
+  void Interpret(xiiCommandInterpreterState& state) override
   {
-    xiiTelemetryMessage Msg;
-    Msg.SetMessageID('CMD', 'EXEC');
-    Msg.GetWriter() << inout_state.m_sInput;
-    xiiTelemetry::SendToServer(Msg);
+    xiiNetworkRpcRequest request;
+    if (m_Client.Console(state.m_sInput, false, request).Failed())
+      xiiQtLogDockWidget::s_pWidget->Log("Console request could not be submitted.");
+  }
+  void AutoComplete(xiiCommandInterpreterState& state) override
+  {
+    xiiNetworkRpcRequest request;
+    if (m_Client.Console(state.m_sInput, true, request).Failed())
+      xiiQtLogDockWidget::s_pWidget->Log("Completion request could not be submitted.");
   }
 
-  virtual void AutoComplete(xiiCommandInterpreterState& inout_state) override
-  {
-    xiiTelemetryMessage Msg;
-    Msg.SetMessageID('CMD', 'COMP');
-    Msg.GetWriter() << inout_state.m_sInput;
-    xiiTelemetry::SendToServer(Msg);
-  }
+private:
+  xiiTelemetryClient& m_Client;
 };
 
 xiiQtCVarsWidget* xiiQtCVarsWidget::s_pWidget = nullptr;
@@ -49,153 +51,107 @@ xiiQtCVarsWidget::xiiQtCVarsWidget(ads::CDockManager* pDockManager, QWidget* pPa
   connect(CVarWidget, &xiiQtCVarWidget::onIntChanged, this, &xiiQtCVarsWidget::IntChanged);
   connect(CVarWidget, &xiiQtCVarWidget::onStringChanged, this, &xiiQtCVarsWidget::StringChanged);
 
-  CVarWidget->GetConsole().SetCommandInterpreter(XII_DEFAULT_NEW(xiiCommandInterpreterInspector));
+  CVarWidget->GetConsole().SetCommandInterpreter(XII_DEFAULT_NEW(xiiCommandInterpreterInspector, xiiQtMainWindow::s_pWidget->GetDiagnosticsClient()));
 
   ResetStats();
 }
 
 void xiiQtCVarsWidget::ResetStats()
 {
-  m_CVarsBackup = m_CVars;
   m_CVars.Clear();
   CVarWidget->Clear();
 }
 
-void xiiQtCVarsWidget::ProcessTelemetry(void* pUnuseed)
+void xiiQtCVarsWidget::ReceiveDiagnostics(const xiiTelemetrySample& sample)
 {
   if (!s_pWidget)
     return;
-
-  xiiTelemetryMessage msg;
-
-  bool bUpdateCVarsTable = false;
-  bool bFillCVarsTable   = false;
-
-  while (xiiTelemetry::RetrieveMessage('CVAR', msg) == XII_SUCCESS)
+  xiiMap<xiiString, xiiCVarWidgetData> values;
+  bool                                 changed = false;
+  for (const auto& row : sample.m_Records)
   {
-    if (msg.GetMessageID() == ' CLR')
+    xiiString         name;
+    xiiCVarWidgetData data;
+    if (!row.Read("name", name) || !row.Read("plugin", data.m_sPlugin) || !row.Read("description", data.m_sDescription) || !row.Read("type", data.m_uiType))
+      continue;
+    bool valid = false;
+    switch (data.m_uiType)
     {
-      s_pWidget->m_CVars.Clear();
+      case xiiCVarType::Bool:
+        valid = row.Read("value", data.m_bValue);
+        break;
+      case xiiCVarType::Int:
+        valid = row.Read("value", data.m_iValue);
+        break;
+      case xiiCVarType::Float:
+        valid = row.Read("value", data.m_fValue);
+        break;
+      case xiiCVarType::Double:
+        valid = row.Read("value", data.m_dValue);
+        break;
+      case xiiCVarType::String:
+        valid = row.Read("value", data.m_sValue);
+        break;
+      default:
+        break;
     }
-
-    if (msg.GetMessageID() == 'SYNC')
-    {
-      for (auto it = s_pWidget->m_CVars.GetIterator(); it.IsValid(); ++it)
-      {
-        auto var = s_pWidget->m_CVarsBackup.Find(it.Key());
-
-        if (var.IsValid() && it.Value().m_uiType == var.Value().m_uiType)
-        {
-          it.Value().m_bValue = var.Value().m_bValue;
-          it.Value().m_fValue = var.Value().m_fValue;
-          it.Value().m_dValue = var.Value().m_dValue;
-          it.Value().m_sValue = var.Value().m_sValue;
-          it.Value().m_iValue = var.Value().m_iValue;
-        }
-      }
-
-      s_pWidget->CVarWidget->RebuildCVarUI(s_pWidget->m_CVars);
-
-      s_pWidget->SyncAllCVarsToServer();
-    }
-
-    if (msg.GetMessageID() == 'DATA')
-    {
-      xiiString sName;
-      msg.GetReader() >> sName;
-
-      xiiCVarWidgetData& sd = s_pWidget->m_CVars[sName];
-
-      msg.GetReader() >> sd.m_sPlugin;
-      msg.GetReader() >> sd.m_uiType;
-      msg.GetReader() >> sd.m_sDescription;
-
-      switch (sd.m_uiType)
-      {
-        case xiiCVarType::Bool:
-          msg.GetReader() >> sd.m_bValue;
-          break;
-        case xiiCVarType::Float:
-          msg.GetReader() >> sd.m_fValue;
-          break;
-        case xiiCVarType::Double:
-          msg.GetReader() >> sd.m_dValue;
-        case xiiCVarType::Int:
-          msg.GetReader() >> sd.m_iValue;
-          break;
-        case xiiCVarType::String:
-          msg.GetReader() >> sd.m_sValue;
-          break;
-      }
-
-      if (sd.m_bNewEntry)
-        bUpdateCVarsTable = true;
-
-      bFillCVarsTable = true;
-    }
+    if (!valid)
+      continue;
+    const auto old = s_pWidget->m_CVars.Find(name);
+    changed |= !old.IsValid() || old.Value().m_uiType != data.m_uiType || old.Value().m_sDescription != data.m_sDescription ||
+      old.Value().m_sPlugin != data.m_sPlugin || old.Value().m_bValue != data.m_bValue || old.Value().m_iValue != data.m_iValue ||
+      old.Value().m_fValue != data.m_fValue || old.Value().m_dValue != data.m_dValue || old.Value().m_sValue != data.m_sValue;
+    values.Insert(name, std::move(data));
   }
-
-  if (bUpdateCVarsTable)
-    s_pWidget->CVarWidget->RebuildCVarUI(s_pWidget->m_CVars);
-  else if (bFillCVarsTable)
+  changed |= values.GetCount() != s_pWidget->m_CVars.GetCount();
+  s_pWidget->m_CVars     = std::move(values);
+  const auto permissions = xiiQtMainWindow::s_pWidget->GetDiagnosticsClient().GetServerInfo().m_uiPermissions;
+  s_pWidget->CVarWidget->CVarsView->setEditTriggers((permissions & static_cast<xiiUInt8>(xiiTelemetryPermission::Configure)) ? QAbstractItemView::AllEditTriggers : QAbstractItemView::NoEditTriggers);
+  s_pWidget->CVarWidget->ConsoleInput->setEnabled((permissions & static_cast<xiiUInt8>(xiiTelemetryPermission::Console)) != 0);
+  if (changed)
     s_pWidget->CVarWidget->UpdateCVarUI(s_pWidget->m_CVars);
 }
 
-void xiiQtCVarsWidget::ProcessTelemetryConsole(void* pUnuseed)
+void xiiQtCVarsWidget::ReceiveCommandResult(const xiiNetworkRpcResult& result, const xiiTelemetryCommandResponse& response)
 {
   if (!s_pWidget)
     return;
-
-  xiiTelemetryMessage msg;
-  xiiStringBuilder    tmp;
-
-  while (xiiTelemetry::RetrieveMessage('CMD', msg) == XII_SUCCESS)
+  if (result.m_Error.Failed() || response.m_uiError != 0)
   {
-    if (msg.GetMessageID() == 'RES')
-    {
-      msg.GetReader() >> tmp;
-      s_pWidget->CVarWidget->AddConsoleStrings(tmp);
-    }
+    const auto error = result.m_Error.Failed() ? result.m_Error : xiiNetworkDataError(static_cast<xiiNetworkDataErrorCode>(response.m_uiError));
+    xiiQtLogDockWidget::s_pWidget->Log(xiiFmt("Diagnostics command {} failed: {}", result.m_Request.m_uiId, error.GetCodeName()));
   }
-}
-
-void xiiQtCVarsWidget::SyncAllCVarsToServer()
-{
-  for (auto it = m_CVars.GetIterator(); it.IsValid(); ++it)
-    SendCVarUpdateToServer(it.Key().GetData(), it.Value());
+  else if (result.m_uiMethod == 2 || result.m_uiMethod == 3)
+    s_pWidget->CVarWidget->AddConsoleStrings(xiiStringBuilder(response.m_sOutput));
 }
 
 void xiiQtCVarsWidget::SendCVarUpdateToServer(xiiStringView sName, const xiiCVarWidgetData& cvd)
 {
-  xiiTelemetryMessage Msg;
-  Msg.SetMessageID('SVAR', ' SET');
-  Msg.GetWriter() << sName;
-  Msg.GetWriter() << cvd.m_uiType;
-
+  xiiVariant value;
   switch (cvd.m_uiType)
   {
     case xiiCVarType::Bool:
-      Msg.GetWriter() << cvd.m_bValue;
+      value = cvd.m_bValue;
       break;
-
-    case xiiCVarType::Float:
-      Msg.GetWriter() << cvd.m_fValue;
-      break;
-
-    case xiiCVarType::Double:
-      Msg.GetWriter() << cvd.m_dValue;
-      break;
-
     case xiiCVarType::Int:
-      Msg.GetWriter() << cvd.m_iValue;
+      value = cvd.m_iValue;
       break;
-
+    case xiiCVarType::Float:
+      value = cvd.m_fValue;
+      break;
+    case xiiCVarType::Double:
+      value = cvd.m_dValue;
+      break;
     case xiiCVarType::String:
-      Msg.GetWriter() << cvd.m_sValue;
+      value = cvd.m_sValue;
       break;
+    default:
+      return;
   }
-
-  xiiTelemetry::SendToServer(Msg);
+  xiiNetworkRpcRequest request;
+  const auto           error = xiiQtMainWindow::s_pWidget->GetDiagnosticsClient().SetCVar(sName, value, request);
+  if (error.Failed())
+    xiiQtLogDockWidget::s_pWidget->Log(xiiFmt("Configuration request could not be submitted: {}", error.GetCodeName()));
 }
 
 void xiiQtCVarsWidget::BoolChanged(xiiStringView sCVar, bool newValue)

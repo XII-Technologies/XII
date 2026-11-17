@@ -2,219 +2,64 @@
 
 #include <InspectorPlugin/InspectorPluginPCH.h>
 
-#include <Foundation/Communication/Telemetry.h>
+#include <Foundation/Application/Application.h>
 #include <Foundation/Configuration/CVar.h>
+#include <Foundation/Diagnostics/TelemetryService.h>
 
-static void TelemetryMessage(void* pPassThrough)
+namespace
 {
-  xiiTelemetryMessage Msg;
-
-  while (xiiTelemetry::RetrieveMessage('SVAR', Msg) == XII_SUCCESS)
+  void Collect(xiiTelemetryService& service, xiiUInt64 source)
   {
-    if (Msg.GetMessageID() == ' SET')
+    xiiTelemetrySample sample;
+    sample.m_uiSource               = source;
+    sample.m_fTimestampMicroseconds = xiiTime::Now().GetMicroseconds();
+    for (auto* variable = xiiCVar::GetFirstInstance(); variable; variable = variable->GetNextInstance())
     {
-      xiiString sCVar;
-      xiiUInt8  uiType;
-
-      float     fValue;
-      double    dValue;
-      xiiInt32  iValue;
-      bool      bValue;
-      xiiString sValue;
-
-      Msg.GetReader() >> sCVar;
-      Msg.GetReader() >> uiType;
-
-      switch (uiType)
+      if (sample.m_Records.GetCount() == 4096)
       {
-        case xiiCVarType::Double:
-          Msg.GetReader() >> dValue;
-          break;
-        case xiiCVarType::Float:
-          Msg.GetReader() >> fValue;
+        ++sample.m_uiDropped;
+        continue;
+      }
+      auto& row = sample.m_Records.ExpandAndGetRef().m_Fields;
+      row.Insert("name", xiiString(variable->GetName()));
+      row.Insert("plugin", xiiString(variable->GetPluginName()));
+      row.Insert("description", xiiString(variable->GetDescription()));
+      row.Insert("type", static_cast<xiiUInt8>(variable->GetType()));
+      switch (variable->GetType())
+      {
+        case xiiCVarType::Bool:
+          row.Insert("value", static_cast<xiiCVarBool*>(variable)->GetValue());
           break;
         case xiiCVarType::Int:
-          Msg.GetReader() >> iValue;
+          row.Insert("value", static_cast<xiiCVarInt*>(variable)->GetValue());
           break;
-        case xiiCVarType::Bool:
-          Msg.GetReader() >> bValue;
+        case xiiCVarType::Float:
+          row.Insert("value", static_cast<xiiCVarFloat*>(variable)->GetValue());
+          break;
+        case xiiCVarType::Double:
+          row.Insert("value", static_cast<xiiCVarDouble*>(variable)->GetValue());
           break;
         case xiiCVarType::String:
-          Msg.GetReader() >> sValue;
+          row.Insert("value", xiiString(static_cast<xiiCVarString*>(variable)->GetValue()));
+          break;
+        default:
           break;
       }
-
-      xiiCVar* pCVar = xiiCVar::GetFirstInstance();
-
-      while (pCVar)
-      {
-        if (((xiiUInt8)pCVar->GetType() == uiType) && (pCVar->GetName() == sCVar))
-        {
-          switch (uiType)
-          {
-            case xiiCVarType::Double:
-              *((xiiCVarDouble*)pCVar) = dValue;
-              break;
-            case xiiCVarType::Float:
-              *((xiiCVarFloat*)pCVar) = fValue;
-              break;
-            case xiiCVarType::Int:
-              *((xiiCVarInt*)pCVar) = iValue;
-              break;
-            case xiiCVarType::Bool:
-              *((xiiCVarBool*)pCVar) = bValue;
-              break;
-            case xiiCVarType::String:
-              *((xiiCVarString*)pCVar) = sValue;
-              break;
-          }
-        }
-
-        pCVar = pCVar->GetNextInstance();
-      }
     }
+    service.Publish(std::move(sample)).IgnoreResult();
   }
-}
-
-static void SendCVarTelemetry(xiiCVar* pCVar)
-{
-  xiiTelemetryMessage msg;
-  msg.SetMessageID('CVAR', 'DATA');
-  msg.GetWriter() << pCVar->GetName();
-  msg.GetWriter() << pCVar->GetPluginName();
-  // msg.GetWriter() << (xiiUInt8) pCVar->GetFlags().GetValue(); // currently not used
-  msg.GetWriter() << (xiiUInt8)pCVar->GetType();
-  msg.GetWriter() << pCVar->GetDescription();
-
-  switch (pCVar->GetType())
-  {
-    case xiiCVarType::Double:
-    {
-      const double val = ((xiiCVarDouble*)pCVar)->GetValue();
-      msg.GetWriter() << val;
-    }
-    break;
-    case xiiCVarType::Float:
-    {
-      const float val = ((xiiCVarFloat*)pCVar)->GetValue();
-      msg.GetWriter() << val;
-    }
-    break;
-    case xiiCVarType::Int:
-    {
-      const xiiInt32 val = ((xiiCVarInt*)pCVar)->GetValue();
-      msg.GetWriter() << val;
-    }
-    break;
-    case xiiCVarType::Bool:
-    {
-      const bool val = ((xiiCVarBool*)pCVar)->GetValue();
-      msg.GetWriter() << val;
-    }
-    break;
-    case xiiCVarType::String:
-    {
-      xiiStringView val = ((xiiCVarString*)pCVar)->GetValue();
-      msg.GetWriter() << val;
-    }
-    break;
-
-      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
-  }
-
-  xiiTelemetry::Broadcast(xiiTelemetry::Reliable, msg);
-}
-
-static void SendAllCVarTelemetry()
-{
-  if (!xiiTelemetry::IsConnectedToClient())
-    return;
-
-  // Clear
-  {
-    xiiTelemetryMessage msg;
-    xiiTelemetry::Broadcast(xiiTelemetry::Reliable, 'CVAR', ' CLR', nullptr, 0);
-  }
-
-  xiiCVar* pCVar = xiiCVar::GetFirstInstance();
-
-  while (pCVar)
-  {
-    SendCVarTelemetry(pCVar);
-
-    pCVar = pCVar->GetNextInstance();
-  }
-
-  {
-    xiiTelemetryMessage msg;
-    xiiTelemetry::Broadcast(xiiTelemetry::Reliable, 'CVAR', 'SYNC', nullptr, 0);
-  }
-}
-
-namespace CVarsDetail
-{
-
-  static void TelemetryEventsHandler(const xiiTelemetry::TelemetryEventData& e)
-  {
-    switch (e.m_EventType)
-    {
-      case xiiTelemetry::TelemetryEventData::ConnectedToClient:
-        SendAllCVarTelemetry();
-        break;
-
-      default:
-        break;
-    }
-  }
-
-  static void CVarEventHandler(const xiiCVarEvent& e)
-  {
-    if (!xiiTelemetry::IsConnectedToClient())
-      return;
-
-    switch (e.m_EventType)
-    {
-      case xiiCVarEvent::ValueChanged:
-        SendCVarTelemetry(e.m_pCVar);
-        break;
-
-      case xiiCVarEvent::ListOfVarsChanged:
-        SendAllCVarTelemetry();
-        break;
-
-      default:
-        break;
-    }
-  }
-
-  static void PluginEventHandler(const xiiPluginEvent& e)
-  {
-    switch (e.m_EventType)
-    {
-      case xiiPluginEvent::AfterPluginChanges:
-        SendAllCVarTelemetry();
-        break;
-
-      default:
-        break;
-    }
-  }
-} // namespace CVarsDetail
-
+} // namespace
 void AddCVarEventHandler()
 {
-  xiiTelemetry::AddEventHandler(CVarsDetail::TelemetryEventsHandler);
-  xiiTelemetry::AcceptMessagesForSystem('SVAR', true, TelemetryMessage, nullptr);
-
-  xiiCVar::s_AllCVarEvents.AddEventHandler(CVarsDetail::CVarEventHandler);
-  xiiPlugin::Events().AddEventHandler(CVarsDetail::PluginEventHandler);
+  xiiTelemetrySourceInfo source;
+  source.m_uiId                          = xiiTelemetrySources::CVars;
+  source.m_sName                         = "Configuration variables";
+  source.m_sCategory                     = "Configuration";
+  source.m_uiMinimumIntervalMilliseconds = 500;
+  source.m_bSnapshot = source.m_bLatestOnly = true;
+  XII_VERIFY(xiiApplication::GetApplicationInstance()->CreateTelemetryService().RegisterSource(source, Collect).Succeeded(), "Duplicate CVar source.");
 }
-
 void RemoveCVarEventHandler()
 {
-  xiiPlugin::Events().RemoveEventHandler(CVarsDetail::PluginEventHandler);
-  xiiCVar::s_AllCVarEvents.RemoveEventHandler(CVarsDetail::CVarEventHandler);
-
-  xiiTelemetry::RemoveEventHandler(CVarsDetail::TelemetryEventsHandler);
-  xiiTelemetry::AcceptMessagesForSystem('SVAR', false);
+  xiiApplication::GetApplicationInstance()->GetTelemetryService()->UnregisterSource(xiiTelemetrySources::CVars);
 }

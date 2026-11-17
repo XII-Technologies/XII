@@ -2,7 +2,6 @@
 
 #include <InspectorPlugin/InspectorPluginPCH.h>
 
-#include <Foundation/Communication/Telemetry.h>
 #include <Foundation/IO/FileSystem/FileSystem.h>
 
 static xiiInt32                                                                            s_iDataDirCounter = 0;

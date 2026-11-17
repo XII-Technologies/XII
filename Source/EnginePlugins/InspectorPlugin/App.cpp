@@ -2,7 +2,8 @@
 
 #include <InspectorPlugin/InspectorPluginPCH.h>
 
-#include <Foundation/Communication/Telemetry.h>
+#include <Foundation/Application/Application.h>
+#include <Foundation/Diagnostics/TelemetryService.h>
 #include <Foundation/System/SystemInformation.h>
 #include <Foundation/Threading/Thread.h>
 #include <Foundation/Utilities/Stats.h>
@@ -11,25 +12,18 @@ static xiiAssertHandler g_PreviousAssertHandler = nullptr;
 
 static bool TelemetryAssertHandler(const char* szSourceFile, xiiUInt32 uiLine, const char* szFunction, const char* szExpression, const char* szAssertMsg)
 {
-  if (xiiTelemetry::IsConnectedToClient())
+  if (auto* service = xiiApplication::GetApplicationInstance()->GetTelemetryService(); service && service->IsCollecting(xiiTelemetrySources::Application))
   {
-    xiiTelemetryMessage msg;
-    msg.SetMessageID(' APP', 'ASRT');
-    msg.GetWriter() << szSourceFile;
-    msg.GetWriter() << uiLine;
-    msg.GetWriter() << szFunction;
-    msg.GetWriter() << szExpression;
-    msg.GetWriter() << szAssertMsg;
-
-    xiiTelemetry::Broadcast(xiiTelemetry::Reliable, msg);
-
-    // messages might not arrive, if the network does not get enough time to transmit them
-    // since we are crashing the application in (half) 'a second', we need to make sure the network traffic has indeed been sent
-    for (xiiUInt32 i = 0; i < 5; ++i)
-    {
-      xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(100));
-      xiiTelemetry::UpdateNetwork();
-    }
+    xiiTelemetrySample sample;
+    sample.m_uiSource               = xiiTelemetrySources::Application;
+    sample.m_fTimestampMicroseconds = xiiTime::Now().GetMicroseconds();
+    auto& fields                    = sample.m_Records.ExpandAndGetRef().m_Fields;
+    fields.Insert("file", xiiString(szSourceFile));
+    fields.Insert("line", uiLine);
+    fields.Insert("function", xiiString(szFunction));
+    fields.Insert("expression", xiiString(szExpression));
+    fields.Insert("message", xiiString(szAssertMsg));
+    service->Publish(std::move(sample)).IgnoreResult();
   }
 
   if (g_PreviousAssertHandler)
@@ -40,6 +34,11 @@ static bool TelemetryAssertHandler(const char* szSourceFile, xiiUInt32 uiLine, c
 
 void AddTelemetryAssertHandler()
 {
+  xiiTelemetrySourceInfo source;
+  source.m_uiId      = xiiTelemetrySources::Application;
+  source.m_sName     = "Application assertions";
+  source.m_sCategory = "Application";
+  XII_VERIFY(xiiApplication::GetApplicationInstance()->CreateTelemetryService().RegisterSource(source).Succeeded(), "Duplicate application source.");
   g_PreviousAssertHandler = xiiGetAssertHandler();
   xiiSetAssertHandler(TelemetryAssertHandler);
 }
@@ -48,6 +47,7 @@ void RemoveTelemetryAssertHandler()
 {
   xiiSetAssertHandler(g_PreviousAssertHandler);
   g_PreviousAssertHandler = nullptr;
+  xiiApplication::GetApplicationInstance()->GetTelemetryService()->UnregisterSource(xiiTelemetrySources::Application);
 }
 
 void SetAppStats()

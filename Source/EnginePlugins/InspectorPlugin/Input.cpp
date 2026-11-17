@@ -3,122 +3,86 @@
 #include <InspectorPlugin/InspectorPluginPCH.h>
 
 #include <Core/Input/InputManager.h>
-#include <Foundation/Communication/Telemetry.h>
+#include <Foundation/Application/Application.h>
+#include <Foundation/Diagnostics/TelemetryService.h>
 
-namespace InputDetail
+namespace
 {
-  static void SendInputSlotData(xiiStringView sInputSlot)
+  void Collect(xiiTelemetryService& service, xiiUInt64 id)
   {
-    float fValue = 0.0f;
+    xiiTelemetrySample sample;
+    sample.m_uiSource               = id;
+    sample.m_fTimestampMicroseconds = xiiTime::Now().GetMicroseconds();
 
-    xiiTelemetryMessage msg;
-    msg.SetMessageID('INPT', 'SLOT');
-    msg.GetWriter() << sInputSlot;
-    msg.GetWriter() << xiiInputManager::GetInputSlotFlags(sInputSlot).GetValue();
-    msg.GetWriter() << (xiiUInt8)xiiInputManager::GetInputSlotState(sInputSlot, &fValue);
-    msg.GetWriter() << fValue;
-    msg.GetWriter() << xiiInputManager::GetInputSlotDeadZone(sInputSlot);
-
-    xiiTelemetry::Broadcast(xiiTelemetry::Reliable, msg);
-  }
-
-  static void SendInputActionData(xiiStringView sInputSet, xiiStringView sInputAction)
-  {
-    float fValue = 0.0f;
-
-    const xiiInputActionConfig cfg = xiiInputManager::GetInputActionConfig(sInputSet, sInputAction);
-
-    xiiTelemetryMessage msg;
-    msg.SetMessageID('INPT', 'ACTN');
-    msg.GetWriter() << sInputSet;
-    msg.GetWriter() << sInputAction;
-    msg.GetWriter() << (xiiUInt8)xiiInputManager::GetInputActionState(sInputSet, sInputAction, &fValue);
-    msg.GetWriter() << fValue;
-    msg.GetWriter() << cfg.m_bApplyTimeScaling;
-
-    for (xiiUInt32 i = 0; i < xiiInputActionConfig::MaxInputSlotAlternatives; ++i)
+    xiiDynamicArray<xiiStringView> slots;
+    xiiInputManager::RetrieveAllKnownInputSlots(slots);
+    for (const auto& name : slots)
     {
-      msg.GetWriter() << cfg.m_sInputSlotTrigger[i];
-      msg.GetWriter() << cfg.m_fInputSlotScale[i];
-    }
-
-    xiiTelemetry::Broadcast(xiiTelemetry::Reliable, msg);
-  }
-
-  static void SendAllInputSlots()
-  {
-    xiiDynamicArray<xiiStringView> InputSlots;
-    xiiInputManager::RetrieveAllKnownInputSlots(InputSlots);
-
-    for (xiiUInt32 i = 0; i < InputSlots.GetCount(); ++i)
-    {
-      SendInputSlotData(InputSlots[i]);
-    }
-  }
-
-  static void SendAllInputActions()
-  {
-    xiiDynamicArray<xiiString> InputSetNames;
-    xiiInputManager::GetAllInputSets(InputSetNames);
-
-    for (xiiUInt32 s = 0; s < InputSetNames.GetCount(); ++s)
-    {
-      xiiHybridArray<xiiString, 24> InputActions;
-
-      xiiInputManager::GetAllInputActions(InputSetNames[s].GetData(), InputActions);
-
-      for (xiiUInt32 a = 0; a < InputActions.GetCount(); ++a)
+      if (sample.m_Records.GetCount() == 4096)
       {
-        SendInputActionData(InputSetNames[s].GetData(), InputActions[a].GetData());
+        ++sample.m_uiDropped;
+        continue;
+      }
+      auto& row   = sample.m_Records.ExpandAndGetRef().m_Fields;
+      float value = 0;
+      row.Insert("kind", xiiUInt8(0));
+      row.Insert("name", xiiString(name));
+      row.Insert("state", static_cast<xiiUInt8>(xiiInputManager::GetInputSlotState(name, &value)));
+      row.Insert("value", value);
+      row.Insert("flags", static_cast<xiiUInt32>(xiiInputManager::GetInputSlotFlags(name).GetValue()));
+      row.Insert("deadZone", xiiInputManager::GetInputSlotDeadZone(name));
+    }
+    xiiDynamicArray<xiiString> sets;
+    xiiInputManager::GetAllInputSets(sets);
+    for (const auto& set : sets)
+    {
+      xiiHybridArray<xiiString, 24> actions;
+      xiiInputManager::GetAllInputActions(set, actions);
+      for (const auto& name : actions)
+      {
+        if (sample.m_Records.GetCount() == 4096)
+        {
+          ++sample.m_uiDropped;
+          continue;
+        }
+        auto&      row    = sample.m_Records.ExpandAndGetRef().m_Fields;
+        const auto config = xiiInputManager::GetInputActionConfig(set, name);
+        float      value  = 0;
+        row.Insert("kind", xiiUInt8(1));
+        row.Insert("name", name);
+        row.Insert("set", set);
+        row.Insert("state", static_cast<xiiUInt8>(xiiInputManager::GetInputActionState(set, name, &value)));
+        row.Insert("value", value);
+        row.Insert("timeScaling", config.m_bApplyTimeScaling);
+        for (xiiUInt32 i = 0; i < xiiInputActionConfig::MaxInputSlotAlternatives; ++i)
+        {
+          xiiStringBuilder key;
+          key.SetFormat("trigger{}", i);
+          row.Insert(key, config.m_sInputSlotTrigger[i]);
+          key.SetFormat("scale{}", i);
+          row.Insert(key, config.m_fInputSlotScale[i]);
+        }
       }
     }
+    service.Publish(std::move(sample)).IgnoreResult();
   }
-
-  static void TelemetryEventsHandler(const xiiTelemetry::TelemetryEventData& e)
-  {
-    if (!xiiTelemetry::IsConnectedToClient())
-      return;
-
-    switch (e.m_EventType)
-    {
-      case xiiTelemetry::TelemetryEventData::ConnectedToClient:
-        SendAllInputSlots();
-        SendAllInputActions();
-        break;
-
-      default:
-        break;
-    }
-  }
-
-  static void InputManagerEventHandler(const xiiInputManager::InputEventData& e)
-  {
-    if (!xiiTelemetry::IsConnectedToClient())
-      return;
-
-    switch (e.m_EventType)
-    {
-      case xiiInputManager::InputEventData::InputActionChanged:
-        SendInputActionData(e.m_sInputSet, e.m_sInputAction);
-        break;
-      case xiiInputManager::InputEventData::InputSlotChanged:
-        SendInputSlotData(e.m_sInputSlot);
-        break;
-
-      default:
-        break;
-    }
-  }
-} // namespace InputDetail
+} // namespace
 
 void AddInputEventHandler()
 {
-  xiiTelemetry::AddEventHandler(InputDetail::TelemetryEventsHandler);
-  xiiInputManager::AddEventHandler(InputDetail::InputManagerEventHandler);
+  auto&                  service = xiiApplication::GetApplicationInstance()->CreateTelemetryService();
+  xiiTelemetrySourceInfo info;
+  info.m_uiId                          = xiiTelemetrySources::Input;
+  info.m_sName                         = "Input slots and actions";
+  info.m_sCategory                     = "Input";
+  info.m_uiMinimumIntervalMilliseconds = 100;
+  info.m_bSnapshot                     = true;
+  info.m_bLatestOnly                   = true;
+  XII_VERIFY(service.RegisterSource(info, Collect).Succeeded(), "Duplicate diagnostics source.");
 }
 
 void RemoveInputEventHandler()
 {
-  xiiInputManager::RemoveEventHandler(InputDetail::InputManagerEventHandler);
-  xiiTelemetry::RemoveEventHandler(InputDetail::TelemetryEventsHandler);
+  if (auto* service = xiiApplication::GetApplicationInstance()->GetTelemetryService())
+    service->UnregisterSource(xiiTelemetrySources::Input);
 }

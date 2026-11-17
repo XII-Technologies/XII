@@ -2,7 +2,7 @@
 
 #include <Inspector/InspectorPCH.h>
 
-#include <Foundation/Communication/Telemetry.h>
+#include <Foundation/Diagnostics/TelemetryService.h>
 #include <Inspector/MainWindow.moc.h>
 #include <Inspector/ResourceWidget.moc.h>
 #include <QComboBox>
@@ -469,82 +469,55 @@ void xiiQtResourceWidget::on_ButtonSave_clicked()
   QDesktopServices::openUrl(QUrl::fromLocalFile(sFile));
 }
 
-void xiiQtResourceWidget::ProcessTelemetry(void* pUnuseed)
+void xiiQtResourceWidget::ReceiveDiagnostics(const xiiTelemetrySample& sample)
 {
   if (!s_pWidget)
     return;
-
-  xiiTelemetryMessage Msg;
-
-  while (xiiTelemetry::RetrieveMessage('RESM', Msg) == XII_SUCCESS)
+  const auto* complete = sample.m_Fields.GetValue("complete");
+  if (complete && complete->IsA<bool>() && complete->Get<bool>())
+    for (auto it = s_pWidget->m_Resources.GetIterator(); it.IsValid(); ++it)
+    {
+      it.Value().m_LoadingState.m_State = xiiResourceState::Invalid;
+      it.Value().m_bUpdate              = true;
+    }
+  for (const auto& row : sample.m_Records)
   {
-    s_pWidget->m_bUpdateTable = true;
-
-    xiiUInt64 uiResourceNameHash = 0;
-    Msg.GetReader() >> uiResourceNameHash;
-
-    ResourceData& rd = s_pWidget->m_Resources[uiResourceNameHash];
-    rd.m_bUpdate     = true;
-
-    if (Msg.GetMessageID() == ' SET')
+    xiiUInt64    id;
+    ResourceData data;
+    xiiUInt8     priority, flags, state;
+    if (!row.Read("id", id) || !row.Read("name", data.m_sResourceID) || !row.Read("type", data.m_sResourceType) ||
+        !row.Read("description", data.m_sResourceDescription) || !row.Read("priority", priority) || !row.Read("flags", flags) || !row.Read("state", state) ||
+        !row.Read("discardable", data.m_LoadingState.m_uiQualityLevelsDiscardable) || !row.Read("loadable", data.m_LoadingState.m_uiQualityLevelsLoadable) ||
+        !row.Read("cpuBytes", data.m_Memory.m_uiMemoryCPU) || !row.Read("gpuBytes", data.m_Memory.m_uiMemoryGPU) ||
+        priority > static_cast<xiiUInt8>(xiiResourcePriority::VeryLow) || state > static_cast<xiiUInt8>(xiiResourceState::Loaded))
+      continue;
+    data.m_Priority             = static_cast<xiiResourcePriority>(priority);
+    data.m_Flags                = static_cast<xiiResourceFlags::Enum>(flags);
+    data.m_LoadingState.m_State = static_cast<xiiResourceState>(state);
+    ResourceData* old           = nullptr;
+    if (s_pWidget->m_Resources.TryGetValue(id, old))
+      data.m_pMainItem = old->m_pMainItem;
+    else if (s_pWidget->m_Resources.GetCount() >= 8192)
     {
-      Msg.GetReader() >> rd.m_sResourceID;
-
-      Msg.GetReader() >> rd.m_sResourceType;
-
-      if (!s_pWidget->m_ResourceTypes.Contains(rd.m_sResourceType))
-      {
-        s_pWidget->m_bUpdateTypeBox = true;
-        s_pWidget->m_ResourceTypes.Insert(rd.m_sResourceType);
-      }
-
-      xiiUInt8 uiPriority = 0;
-      Msg.GetReader() >> uiPriority;
-      rd.m_Priority = (xiiResourcePriority)uiPriority;
-
-      xiiUInt8 uiFlags = 0;
-      Msg.GetReader() >> uiFlags;
-      rd.m_Flags.Clear();
-      rd.m_Flags.Add((xiiResourceFlags::Enum)uiFlags);
-
-      xiiUInt8 uiLoadingState = 0;
-      Msg.GetReader() >> uiLoadingState;
-
-      rd.m_LoadingState.m_State = (xiiResourceState)uiLoadingState;
-      Msg.GetReader() >> rd.m_LoadingState.m_uiQualityLevelsDiscardable;
-      Msg.GetReader() >> rd.m_LoadingState.m_uiQualityLevelsLoadable;
-
-      Msg.GetReader() >> rd.m_Memory.m_uiMemoryCPU;
-      Msg.GetReader() >> rd.m_Memory.m_uiMemoryGPU;
-      Msg.GetReader() >> rd.m_sResourceDescription;
+      bool removed = false;
+      for (auto it = s_pWidget->m_Resources.GetIterator(); it.IsValid(); ++it)
+        if (it.Value().m_LoadingState.m_State == xiiResourceState::Invalid)
+        {
+          if (it.Value().m_pMainItem)
+            s_pWidget->Table->removeRow(s_pWidget->Table->row(it.Value().m_pMainItem));
+          s_pWidget->m_Resources.Remove(it);
+          removed = true;
+          break;
+        }
+      if (!removed)
+        continue;
     }
-
-    if (Msg.GetMessageID() == 'UPDT')
+    if (!s_pWidget->m_ResourceTypes.Contains(data.m_sResourceType) && s_pWidget->m_ResourceTypes.GetCount() < 8192)
     {
-      xiiUInt8 uiPriority = 0;
-      Msg.GetReader() >> uiPriority;
-      rd.m_Priority = (xiiResourcePriority)uiPriority;
-
-      xiiUInt8 uiFlags = 0;
-      Msg.GetReader() >> uiFlags;
-      rd.m_Flags.Clear();
-      rd.m_Flags.Add((xiiResourceFlags::Enum)uiFlags);
-
-      xiiUInt8 uiLoadingState = 0;
-      Msg.GetReader() >> uiLoadingState;
-
-      rd.m_LoadingState.m_State = (xiiResourceState)uiLoadingState;
-      Msg.GetReader() >> rd.m_LoadingState.m_uiQualityLevelsDiscardable;
-      Msg.GetReader() >> rd.m_LoadingState.m_uiQualityLevelsLoadable;
-
-      Msg.GetReader() >> rd.m_Memory.m_uiMemoryCPU;
-      Msg.GetReader() >> rd.m_Memory.m_uiMemoryGPU;
+      s_pWidget->m_ResourceTypes.Insert(data.m_sResourceType);
+      s_pWidget->m_bUpdateTypeBox = true;
     }
-
-    if (Msg.GetMessageID() == ' DEL')
-    {
-      rd.m_Flags.Remove(xiiResourceFlags::IsQueuedForLoading);
-      rd.m_LoadingState.m_State = xiiResourceState::Invalid;
-    }
+    s_pWidget->m_Resources.Insert(id, std::move(data));
   }
+  s_pWidget->m_bUpdateTable = true;
 }

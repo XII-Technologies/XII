@@ -3,60 +3,45 @@
 #include <InspectorPlugin/InspectorPluginPCH.h>
 
 #include <Core/Console/Console.h>
-#include <Foundation/Communication/Telemetry.h>
-#include <Foundation/Configuration/CVar.h>
-
-static void TelemetryMessage(void* pPassThrough)
-{
-  xiiTelemetryMessage Msg;
-  xiiStringBuilder    input;
-
-  while (xiiTelemetry::RetrieveMessage('CMD', Msg) == XII_SUCCESS)
-  {
-    if (Msg.GetMessageID() == 'EXEC' || Msg.GetMessageID() == 'COMP')
-    {
-      Msg.GetReader() >> input;
-
-      if (xiiConsole::GetMainConsole())
-      {
-        if (auto pInt = xiiConsole::GetMainConsole()->GetCommandInterpreter())
-        {
-          xiiCommandInterpreterState s;
-          s.m_sInput = input;
-
-          xiiStringBuilder encoded;
-
-          if (Msg.GetMessageID() == 'EXEC')
-          {
-            pInt->Interpret(s);
-          }
-          else
-          {
-            pInt->AutoComplete(s);
-            encoded.AppendFormat(";;00||<{}", s.m_sInput);
-          }
-
-          for (const auto& l : s.m_sOutput)
-          {
-            encoded.AppendFormat(";;{}||{}", xiiArgI((xiiInt32)l.m_Type, 2, true), l.m_sText);
-          }
-
-          xiiTelemetryMessage msg;
-          msg.SetMessageID('CMD', 'RES');
-          msg.GetWriter() << encoded;
-          xiiTelemetry::Broadcast(xiiTelemetry::Reliable, msg);
-        }
-      }
-    }
-  }
-}
+#include <Foundation/Application/Application.h>
+#include <Foundation/Diagnostics/TelemetryService.h>
 
 void AddConsoleEventHandler()
 {
-  xiiTelemetry::AcceptMessagesForSystem('CMD', true, TelemetryMessage, nullptr);
+  xiiApplication::GetApplicationInstance()->CreateTelemetryService().SetConsoleHandler([](xiiStringView input, bool complete) {
+    xiiTelemetryCommandResponse response;
+    auto*                       console     = xiiConsole::GetMainConsole();
+    auto*                       interpreter = console ? console->GetCommandInterpreter().Borrow() : nullptr;
+    if (!interpreter)
+    {
+      response.m_uiError = static_cast<xiiUInt8>(xiiNetworkDataErrorCode::UnknownRpc);
+      return response;
+    }
+    xiiCommandInterpreterState state;
+    state.m_sInput = input;
+    xiiStringBuilder output;
+    if (complete)
+    {
+      interpreter->AutoComplete(state);
+      output.AppendFormat(";;00||<{}", state.m_sInput);
+    }
+    else
+      interpreter->Interpret(state);
+    for (const auto& line : state.m_sOutput)
+    {
+      if (line.m_sText.GetElementCount() > 32768 || output.GetElementCount() + line.m_sText.GetElementCount() > 60000)
+      {
+        response.m_uiError = static_cast<xiiUInt8>(xiiNetworkDataErrorCode::SizeLimit);
+        break;
+      }
+      output.AppendFormat(";;{}||{}", xiiArgI(static_cast<xiiInt32>(line.m_Type), 2, true), line.m_sText);
+    }
+    response.m_sOutput = output;
+    return response;
+  });
 }
 
 void RemoveConsoleEventHandler()
 {
-  xiiTelemetry::AcceptMessagesForSystem('CMD', false);
+  xiiApplication::GetApplicationInstance()->GetTelemetryService()->SetConsoleHandler({});
 }

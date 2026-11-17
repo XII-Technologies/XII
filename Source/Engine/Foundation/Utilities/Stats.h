@@ -12,7 +12,7 @@
 ///
 /// This can be used by a game to store (and continuously update) information about the internal game state. Other tools can then
 /// display this information in a convenient manner. For example the stats can be shown on screen. The data is also transmitted through
-/// xiiTelemetry, and the xiiInspector tool will display the information.
+/// diagnostics sources when InspectorPlugin is loaded and a client subscribes.
 class XII_FOUNDATION_DLL xiiStats
 {
 public:
@@ -20,13 +20,13 @@ public:
 
   /// Removes the stat with the given name.
   ///
-  /// This will also send a 'remove' message through xiiTelemetry, such that external tools can remove it from their list.
+  /// Subscribers observe removal in the next source snapshot.
   static void RemoveStat(xiiStringView sStatName);
 
   /// Sets the value of the given stat, adds it if it did not exist before.
   ///
   /// sStatName may contain slashes (but not backslashes) to define groups and subgroups, which can be used by tools such as xiiInspector to display the stats in a hierarchical way.
-  /// This function will also send the name and value of the stat through xiiTelemetry, such that tools like xiiInspector will show the changed value.
+  /// Instrumentation is local and independent of network delivery.
   static void SetStat(xiiStringView sStatName, const xiiVariant& value);
 
   /// Returns the value of the given stat. Returns an invalid xiiVariant, if the stat did not exist before.

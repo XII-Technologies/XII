@@ -171,7 +171,7 @@ xiiStatus xiiQtPlayerSession::Launch(const xiiPlayerLaunchConfig& config, xiiStr
   auto reserved = [](xiiStringView arg) {
     return arg.IsEqual_NoCase("-player-session") || arg.IsEqual_NoCase("-player-instance") ||
       arg.IsEqual_NoCase("-player-ipc") || arg.IsEqual_NoCase("-player-editor-pid") || arg.IsEqual_NoCase("-player-temp") ||
-      arg.IsEqual_NoCase("-TelemetryPort") || arg.IsEqual_NoCase("-project") ||
+      arg.IsEqual_NoCase("-DiagnosticsEndpoint") || arg.IsEqual_NoCase("-project") ||
       arg.IsEqual_NoCase("-player-index") || arg.IsEqual_NoCase("-role") || arg.IsEqual_NoCase("-connect") || arg.IsEqual_NoCase("-port");
   };
   for (const auto& arg : config.m_Arguments)
@@ -236,7 +236,7 @@ xiiStatus xiiQtPlayerSession::Launch(const xiiPlayerLaunchConfig& config, xiiStr
   for (xiiUInt32 attempt = 0; attempt < 1000; ++attempt)
   {
     portLocks.Clear();
-    for (xiiUInt32 port = firstPort; port < firstPort + 2 * config.m_uiInstances; ++port)
+    for (xiiUInt32 port = firstPort; port < firstPort + config.m_uiInstances; ++port)
     {
       auto             lease = XII_DEFAULT_NEW(xiiOSFile);
       xiiStringBuilder path;
@@ -275,7 +275,7 @@ xiiStatus xiiQtPlayerSession::Launch(const xiiPlayerLaunchConfig& config, xiiStr
     pInstance->m_sProject           = project;
     pInstance->m_sConfigurationName = config.m_sName;
     pInstance->m_uiFirstPort        = firstPort;
-    pInstance->m_uiPortCount        = config.m_uiInstances * 2;
+    pInstance->m_uiPortCount        = config.m_uiInstances;
     pInstance->m_sRole              = config.m_sRole == "server-clients" ? (i == 0 ? "server" : "client") : config.m_sRole.GetData();
     m_Instances.PushBack(std::move(instance));
     auto& option               = options[i];
@@ -294,8 +294,6 @@ xiiStatus xiiQtPlayerSession::Launch(const xiiPlayerLaunchConfig& config, xiiStr
     option.AddArgument("{}", xiiProcess::GetCurrentProcessID());
     option.AddArgument("-player-temp");
     option.AddArgument(pInstance->m_TemporaryDirectory.path().toUtf8().constData());
-    option.AddArgument("-TelemetryPort");
-    option.AddArgument("{}", firstPort + config.m_uiInstances + i);
     xiiStringBuilder windowTitle;
     windowTitle.SetFormat("{} - {} [{}] ({})", project.GetFileNameAndExtension(), config.m_sName, pInstance->m_sId.GetLast(8), pInstance->m_sRole);
     option.AddArgument("-window-title");

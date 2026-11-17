@@ -2,101 +2,58 @@
 
 #include <InspectorPlugin/InspectorPluginPCH.h>
 
-#include <Foundation/Communication/Telemetry.h>
+#include <Foundation/Application/Application.h>
 #include <Foundation/Configuration/Startup.h>
-#include <Foundation/Events/GlobalEvent.h>
+#include <Foundation/Diagnostics/TelemetryService.h>
 
-namespace StartupDetail
+namespace
 {
-  static void     SendSubsystemTelemetry();
-  static xiiInt32 s_iSendSubSystemTelemetry = 0;
-} // namespace StartupDetail
-
-XII_ON_GLOBAL_EVENT(xiiStartup_StartupCoreSystems_End)
-{
-  StartupDetail::SendSubsystemTelemetry();
-}
-
-XII_ON_GLOBAL_EVENT(xiiStartup_StartupHighLevelSystems_End)
-{
-  StartupDetail::SendSubsystemTelemetry();
-}
-
-XII_ON_GLOBAL_EVENT(xiiStartup_ShutdownCoreSystems_End)
-{
-  StartupDetail::SendSubsystemTelemetry();
-}
-
-XII_ON_GLOBAL_EVENT(xiiStartup_ShutdownHighLevelSystems_End)
-{
-  StartupDetail::SendSubsystemTelemetry();
-}
-
-namespace StartupDetail
-{
-  static void SendSubsystemTelemetry()
+  void Collect(xiiTelemetryService& service, xiiUInt64 id)
   {
-    if (s_iSendSubSystemTelemetry <= 0)
-      return;
+    xiiTelemetrySample sample;
+    sample.m_uiSource               = id;
+    sample.m_fTimestampMicroseconds = xiiTime::Now().GetMicroseconds();
 
-    xiiTelemetry::Broadcast(xiiTelemetry::Reliable, 'STRT', ' CLR', nullptr, 0);
-
-    xiiSubSystem* pSub = xiiSubSystem::GetFirstInstance();
-
-    while (pSub)
+    for (auto* system = xiiSubSystem::GetFirstInstance(); system; system = system->GetNextInstance())
     {
-      xiiTelemetryMessage msg;
-      msg.SetMessageID('STRT', 'SYST');
-      msg.GetWriter() << pSub->GetGroupName();
-      msg.GetWriter() << pSub->GetSubSystemName();
-      msg.GetWriter() << pSub->GetPluginName();
-
-      for (xiiUInt32 i = 0; i < xiiStartupStage::ENUM_COUNT; ++i)
-        msg.GetWriter() << pSub->IsStartupPhaseDone((xiiStartupStage::Enum)i);
-
-      xiiUInt8 uiDependencies = 0;
-      while (pSub->GetDependency(uiDependencies) != nullptr)
-        ++uiDependencies;
-
-      msg.GetWriter() << uiDependencies;
-
-      for (xiiUInt8 i = 0; i < uiDependencies; ++i)
-        msg.GetWriter() << pSub->GetDependency(i);
-
-      xiiTelemetry::Broadcast(xiiTelemetry::Reliable, msg);
-
-      pSub = pSub->GetNextInstance();
+      if (sample.m_Records.GetCount() == 4096)
+      {
+        ++sample.m_uiDropped;
+        continue;
+      }
+      auto& row = sample.m_Records.ExpandAndGetRef().m_Fields;
+      row.Insert("group", xiiString(system->GetGroupName()));
+      row.Insert("name", xiiString(system->GetSubSystemName()));
+      row.Insert("plugin", xiiString(system->GetPluginName()));
+      xiiUInt32 stages = 0;
+      for (xiiUInt32 stage = 0; stage < xiiStartupStage::ENUM_COUNT; ++stage)
+        if (system->IsStartupPhaseDone(static_cast<xiiStartupStage::Enum>(stage)))
+          stages |= 1U << stage;
+      row.Insert("stages", stages);
+      xiiStringBuilder dependencies;
+      for (xiiUInt32 dependency = 0; dependency < 256 && !system->GetDependency(dependency).IsEmpty(); ++dependency)
+        dependencies.AppendWithSeparator(" | ", system->GetDependency(dependency));
+      row.Insert("dependencies", xiiString(dependencies));
     }
+    service.Publish(std::move(sample)).IgnoreResult();
   }
-
-  static void TelemetryEventsHandler(const xiiTelemetry::TelemetryEventData& e)
-  {
-    if (!xiiTelemetry::IsConnectedToClient())
-      return;
-
-    switch (e.m_EventType)
-    {
-      case xiiTelemetry::TelemetryEventData::ConnectedToClient:
-        SendSubsystemTelemetry();
-        break;
-
-      default:
-        break;
-    }
-  }
-} // namespace StartupDetail
+} // namespace
 
 void AddStartupEventHandler()
 {
-  ++StartupDetail::s_iSendSubSystemTelemetry;
-  xiiTelemetry::AddEventHandler(StartupDetail::TelemetryEventsHandler);
+  auto&                  service = xiiApplication::GetApplicationInstance()->CreateTelemetryService();
+  xiiTelemetrySourceInfo info;
+  info.m_uiId                          = xiiTelemetrySources::Subsystems;
+  info.m_sName                         = "Subsystem lifecycle";
+  info.m_sCategory                     = "Runtime";
+  info.m_uiMinimumIntervalMilliseconds = 1000;
+  info.m_bSnapshot                     = true;
+  info.m_bLatestOnly                   = true;
+  XII_VERIFY(service.RegisterSource(info, Collect).Succeeded(), "Duplicate diagnostics source.");
 }
 
 void RemoveStartupEventHandler()
 {
-  --StartupDetail::s_iSendSubSystemTelemetry;
-  xiiTelemetry::RemoveEventHandler(StartupDetail::TelemetryEventsHandler);
+  if (auto* service = xiiApplication::GetApplicationInstance()->GetTelemetryService())
+    service->UnregisterSource(xiiTelemetrySources::Subsystems);
 }
-
-
-XII_STATICLINK_FILE(InspectorPlugin, InspectorPlugin_Startup);

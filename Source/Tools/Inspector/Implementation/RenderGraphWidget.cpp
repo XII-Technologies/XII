@@ -99,13 +99,7 @@ xiiQtRenderGraphWidget::xiiQtRenderGraphWidget(ads::CDockManager* manager) : xii
 }
 
 xiiQtRenderGraphWidget::~xiiQtRenderGraphWidget() { s_pWidget = nullptr; }
-void xiiQtRenderGraphWidget::ProcessTelemetry(void*)
-{
-  if (s_pWidget)
-  {
-    s_pWidget->ReceiveMessages();
-  }
-}
+
 
 bool xiiQtRenderGraphWidget::ApplyCapture(const QJsonObject& object)
 {

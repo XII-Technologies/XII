@@ -2,7 +2,7 @@
 
 #include <Inspector/InspectorPCH.h>
 
-#include <Foundation/Communication/Telemetry.h>
+#include <Foundation/Diagnostics/TelemetryService.h>
 #include <GuiFoundation/GuiFoundationDLL.h>
 #include <GuiFoundation/UIServices/UIServices.moc.h>
 #include <Inspector/MainWindow.moc.h>
@@ -99,66 +99,22 @@ void xiiQtSubsystemsWidget::UpdateSubSystems()
   TableSubsystems->resizeColumnsToContents();
 }
 
-void xiiQtSubsystemsWidget::ProcessTelemetry(void* pUnuseed)
+void xiiQtSubsystemsWidget::ReceiveDiagnostics(const xiiTelemetrySample& sample)
 {
   if (!s_pWidget)
     return;
-
-  xiiTelemetryMessage Msg;
-
-  while (xiiTelemetry::RetrieveMessage('STRT', Msg) == XII_SUCCESS)
+  s_pWidget->m_Subsystems.Clear();
+  for (const auto& row : sample.m_Records)
   {
-    switch (Msg.GetMessageID())
-    {
-      case ' CLR':
-      {
-        s_pWidget->m_Subsystems.Clear();
-        s_pWidget->m_bUpdateSubsystems = true;
-      }
-      break;
-
-      case 'SYST':
-      {
-        xiiString sGroup, sSystem;
-
-        Msg.GetReader() >> sGroup;
-        Msg.GetReader() >> sSystem;
-
-        xiiStringBuilder sFinalName = sGroup.GetData();
-        sFinalName.Append("::");
-        sFinalName.Append(sSystem.GetData());
-
-        SubsystemData& ssd = s_pWidget->m_Subsystems[sFinalName.GetData()];
-
-        Msg.GetReader() >> ssd.m_sPlugin;
-
-        for (xiiUInt32 i = 0; i < xiiStartupStage::ENUM_COUNT; ++i)
-          Msg.GetReader() >> ssd.m_bStartupDone[i];
-
-        xiiUInt8 uiDependencies = 0;
-        Msg.GetReader() >> uiDependencies;
-
-        xiiStringBuilder sAllDeps;
-
-        xiiString sDep;
-        for (xiiUInt8 i = 0; i < uiDependencies; ++i)
-        {
-          Msg.GetReader() >> sDep;
-
-          if (sAllDeps.IsEmpty())
-            sAllDeps = sDep.GetData();
-          else
-          {
-            sAllDeps.Append(" | ");
-            sAllDeps.Append(sDep.GetData());
-          }
-        }
-
-        ssd.m_sDependencies = sAllDeps.GetData();
-
-        s_pWidget->m_bUpdateSubsystems = true;
-      }
-      break;
-    }
+    xiiString     name, group;
+    xiiUInt32     stages;
+    SubsystemData data;
+    if (!row.Read("name", name) || !row.Read("group", group) || !row.Read("plugin", data.m_sPlugin) || !row.Read("stages", stages) || !row.Read("dependencies", data.m_sDependencies))
+      continue;
+    for (xiiUInt32 i = 0; i < xiiStartupStage::ENUM_COUNT; ++i)
+      data.m_bStartupDone[i] = (stages & (1U << i)) != 0;
+    xiiStringBuilder key(group, "::", name);
+    s_pWidget->m_Subsystems.Insert(key, data);
   }
+  s_pWidget->m_bUpdateSubsystems = true;
 }

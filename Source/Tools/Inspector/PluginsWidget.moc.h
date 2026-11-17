@@ -2,6 +2,8 @@
 
 #pragma once
 
+struct xiiTelemetrySample;
+
 #include <Foundation/Basics.h>
 #include <Foundation/Containers/Map.h>
 #include <Foundation/Strings/String.h>
@@ -19,7 +21,7 @@ public:
   static xiiQtPluginsWidget* s_pWidget;
 
 public:
-  static void ProcessTelemetry(void* pUnuseed);
+  static void ReceiveDiagnostics(const xiiTelemetrySample& sample);
 
   void ResetStats();
   void UpdateStats();

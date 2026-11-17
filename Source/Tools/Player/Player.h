@@ -25,7 +25,6 @@ protected:
   void      AfterCoreSystemsShutdown() override;
   void      Init_FileSystem_ConfigureDataDirs() override;
   void      Init_ConfigureCVars() override;
-  void      Init_ConfigureTelemetry() override;
 
 private:
   void       DetermineProjectPath();
@@ -43,7 +42,6 @@ private:
   xiiLogWriter::HTML           m_Log;
   xiiEventSubscriptionID       m_LogSubscription = 0;
   xiiOSFile                    m_UserSettingsLock;
-  xiiOSFile                    m_TelemetryPortLease;
   xiiString                    m_sOwnedTemporaryDirectory;
   xiiGameApplicationSettings   m_PersistedSettings;
   bool                         m_bRuntimeSettingsCommitted = false;

@@ -135,7 +135,7 @@ xiiStatus xiiPlayerLaunchConfig::ValidateRuntimeArguments(xiiArrayPtr<const xiiS
       maximum = 1.0;
       integer = false;
     }
-    else if (arg.IsEqual_NoCase("-port") || arg.IsEqual_NoCase("-TelemetryPort"))
+    else if (arg.IsEqual_NoCase("-port"))
     {
       minimum = 0;
       maximum = 65535;

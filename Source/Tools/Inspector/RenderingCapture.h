@@ -12,6 +12,8 @@ class QHBoxLayout;
 class QCheckBox;
 class QLineEdit;
 class QLabel;
+class xiiTelemetryClient;
+struct xiiTelemetrySample;
 
 /// Shared capture controls. UI owns all parsed data; telemetry never retains engine references.
 class xiiQtRenderingCapture : public ads::CDockWidget
@@ -21,7 +23,8 @@ public:
   ~xiiQtRenderingCapture() override = default;
   void         ResetStats();
   void         RequestCapture();
-  void         ReceiveMessages();
+  void         ReceiveDiagnostics(const xiiTelemetrySample& sample);
+  void         SetClient(xiiTelemetryClient* pClient) { m_pClient = pClient; }
   bool         LoadCapture(const QByteArray& bytes);
   virtual bool ApplyCapture(const QJsonObject& object) = 0;
 
@@ -39,7 +42,10 @@ protected:
   QJsonObject  m_Document;
 
 private:
-  xiiUInt32     m_uiSystem;
-  QElapsedTimer m_RequestTime;
-  bool          m_bPending = false;
+  xiiUInt32           m_uiSystem;
+  QElapsedTimer       m_RequestTime;
+  bool                m_bPending         = false;
+  bool                m_bReceivedCapture = false;
+  xiiTelemetryClient* m_pClient          = nullptr;
+  xiiUInt64           m_uiRequest        = 0;
 };

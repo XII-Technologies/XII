@@ -8,8 +8,8 @@
 #include <Core/World/WorldModuleConfig.h>
 #include <Foundation/Application/Config/FileSystemConfig.h>
 #include <Foundation/Application/Config/PluginConfig.h>
-#include <Foundation/Communication/Telemetry.h>
 #include <Foundation/Configuration/CVar.h>
+#include <Foundation/Diagnostics/TelemetryService.h>
 #include <Foundation/IO/Archive/DataDirTypeArchive.h>
 #include <Foundation/IO/FileSystem/DataDirTypeFolder.h>
 #include <Foundation/IO/FileSystem/FileReader.h>
@@ -21,7 +21,6 @@
 #include <Foundation/Utilities/CommandLineOptions.h>
 
 xiiCommandLineOptionBool   opt_DisableConsoleOutput("app", "-disableConsoleOutput", "Disables logging to the standard console window.", false);
-xiiCommandLineOptionInt    opt_TelemetryPort("app", "-TelemetryPort", "The network port over which telemetry is sent.", xiiTelemetry::s_uiPort);
 xiiCommandLineOptionString opt_Profile("app", "-profile", "The platform profile to use.", "Default");
 
 xiiString xiiGameApplicationBase::GetBaseDataDirectoryPath() const
@@ -102,9 +101,12 @@ void xiiGameApplicationBase::BaseInit_ConfigureLogging()
 void xiiGameApplicationBase::Init_ConfigureTelemetry()
 {
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-  xiiTelemetry::s_uiPort = static_cast<xiiUInt16>(opt_TelemetryPort.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified));
-  xiiTelemetry::SetServerName(GetApplicationName());
-  xiiTelemetry::CreateServer();
+  auto&      diagnostics      = CreateTelemetryService();
+  const auto diagnosticResult = diagnostics.StartFromCommandLine(GetApplicationName());
+  if (diagnosticResult.Failed())
+    xiiLog::Warning("Could not start diagnostics. {}", diagnosticResult.GetCodeName());
+  else if (!diagnostics.GetLocalEndpointName().IsEmpty())
+    xiiLog::Info("Diagnostics endpoint 'local:{}'.", diagnostics.GetLocalEndpointName());
 #endif
 }
 

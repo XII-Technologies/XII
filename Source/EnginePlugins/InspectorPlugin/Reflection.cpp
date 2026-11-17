@@ -2,26 +2,12 @@
 
 #include <InspectorPlugin/InspectorPluginPCH.h>
 
-#include <Foundation/Communication/Telemetry.h>
+#include <Foundation/Application/Application.h>
+#include <Foundation/Diagnostics/TelemetryService.h>
 #include <Foundation/Reflection/Reflection.h>
 
-namespace ReflectionDetail
+namespace
 {
-
-  static void SendBasicTypesGroup()
-  {
-    xiiTelemetryMessage msg;
-    msg.SetMessageID('RFLC', 'DATA');
-    msg.GetWriter() << "Basic Types";
-    msg.GetWriter() << "";
-    msg.GetWriter() << 0;
-    msg.GetWriter() << "";
-    msg.GetWriter() << (xiiUInt32)0U;
-    msg.GetWriter() << (xiiUInt32)0U;
-
-    xiiTelemetry::Broadcast(xiiTelemetry::Reliable, msg);
-  }
-
   static xiiStringView GetParentType(const xiiRTTI* pRTTI)
   {
     if (pRTTI->GetParentType())
@@ -37,98 +23,58 @@ namespace ReflectionDetail
     return {};
   }
 
-  static void SendReflectionTelemetry(const xiiRTTI* pRTTI)
+  void Collect(xiiTelemetryService& service, xiiUInt64 source)
   {
-    xiiTelemetryMessage msg;
-    msg.SetMessageID('RFLC', 'DATA');
-    msg.GetWriter() << pRTTI->GetTypeName();
-    msg.GetWriter() << GetParentType(pRTTI);
-    msg.GetWriter() << pRTTI->GetTypeSize();
-    msg.GetWriter() << pRTTI->GetPluginName();
-
-    {
-      auto properties = pRTTI->GetProperties();
-
-      msg.GetWriter() << properties.GetCount();
-
-      for (auto& prop : properties)
+    xiiTelemetrySample sample;
+    sample.m_uiSource               = source;
+    sample.m_fTimestampMicroseconds = xiiTime::Now().GetMicroseconds();
+    auto& basic                     = sample.m_Records.ExpandAndGetRef().m_Fields;
+    basic.Insert("name", xiiString("Basic Types"));
+    basic.Insert("parent", xiiString());
+    basic.Insert("plugin", xiiString());
+    basic.Insert("size", xiiUInt32(0));
+    basic.Insert("properties", xiiUInt32(0));
+    xiiRTTI::ForEachType([&](const xiiRTTI* type) {
+      if (sample.m_Records.GetCount() == 4096)
       {
-        msg.GetWriter() << prop->GetPropertyName();
-        msg.GetWriter() << (xiiInt8)prop->GetCategory();
-
-        const xiiRTTI* pType = prop->GetSpecificType();
-        msg.GetWriter() << (pType ? pType->GetTypeName() : "<Unknown Type>");
+        ++sample.m_uiDropped;
+        return;
       }
-    }
-
-    {
-      const xiiArrayPtr<xiiAbstractMessageHandler*>& Messages = pRTTI->GetMessageHandlers();
-
-      msg.GetWriter() << Messages.GetCount();
-
-      for (xiiUInt32 i = 0; i < Messages.GetCount(); ++i)
+      auto& fields = sample.m_Records.ExpandAndGetRef().m_Fields;
+      fields.Insert("name", xiiString(type->GetTypeName()));
+      fields.Insert("parent", xiiString(GetParentType(type)));
+      fields.Insert("plugin", xiiString(type->GetPluginName()));
+      fields.Insert("size", type->GetTypeSize());
+      const auto properties = type->GetProperties();
+      const auto count      = xiiMath::Min(properties.GetCount(), 64U);
+      fields.Insert("properties", count);
+      sample.m_uiDropped += properties.GetCount() - count;
+      for (xiiUInt32 i = 0; i < count; ++i)
       {
-        msg.GetWriter() << Messages[i]->GetMessageId();
+        xiiStringBuilder key;
+        key.SetFormat("name{}", i);
+        fields.Insert(key, xiiString(properties[i]->GetPropertyName()));
+        key.SetFormat("category{}", i);
+        fields.Insert(key, static_cast<xiiInt8>(properties[i]->GetCategory()));
+        key.SetFormat("type{}", i);
+        fields.Insert(key, properties[i]->GetSpecificType() ? xiiString(properties[i]->GetSpecificType()->GetTypeName()) : xiiString("<Unknown Type>"));
       }
-    }
-
-    xiiTelemetry::Broadcast(xiiTelemetry::Reliable, msg);
+    });
+    service.Publish(std::move(sample)).IgnoreResult();
   }
-
-  static void SendAllReflectionTelemetry()
-  {
-    if (!xiiTelemetry::IsConnectedToClient())
-      return;
-
-    // clear
-    {
-      xiiTelemetryMessage msg;
-      xiiTelemetry::Broadcast(xiiTelemetry::Reliable, 'RFLC', ' CLR', nullptr, 0);
-    }
-
-    SendBasicTypesGroup();
-
-    xiiRTTI::ForEachType([](const xiiRTTI* pRtti) { SendReflectionTelemetry(pRtti); });
-  }
-
-
-  static void TelemetryEventsHandler(const xiiTelemetry::TelemetryEventData& e)
-  {
-    switch (e.m_EventType)
-    {
-      case xiiTelemetry::TelemetryEventData::ConnectedToClient:
-        SendAllReflectionTelemetry();
-        break;
-
-      default:
-        break;
-    }
-  }
-
-  static void PluginEventHandler(const xiiPluginEvent& e)
-  {
-    switch (e.m_EventType)
-    {
-      case xiiPluginEvent::AfterPluginChanges:
-        SendAllReflectionTelemetry();
-        break;
-
-      default:
-        break;
-    }
-  }
-} // namespace ReflectionDetail
+} // namespace
 
 void AddReflectionEventHandler()
 {
-  xiiTelemetry::AddEventHandler(ReflectionDetail::TelemetryEventsHandler);
-
-  xiiPlugin::Events().AddEventHandler(ReflectionDetail::PluginEventHandler);
+  xiiTelemetrySourceInfo info;
+  info.m_uiId                          = xiiTelemetrySources::Reflection;
+  info.m_sName                         = "Reflection metadata";
+  info.m_sCategory                     = "Runtime";
+  info.m_uiMinimumIntervalMilliseconds = 5000;
+  info.m_bSnapshot = info.m_bLatestOnly = true;
+  XII_VERIFY(xiiApplication::GetApplicationInstance()->CreateTelemetryService().RegisterSource(info, Collect).Succeeded(), "Duplicate reflection source.");
 }
-
 void RemoveReflectionEventHandler()
 {
-  xiiPlugin::Events().RemoveEventHandler(ReflectionDetail::PluginEventHandler);
-
-  xiiTelemetry::RemoveEventHandler(ReflectionDetail::TelemetryEventsHandler);
+  xiiApplication::GetApplicationInstance()->GetTelemetryService()->UnregisterSource(xiiTelemetrySources::Reflection);
 }

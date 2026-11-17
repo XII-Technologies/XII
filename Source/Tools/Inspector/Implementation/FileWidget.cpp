@@ -2,7 +2,7 @@
 
 #include <Inspector/InspectorPCH.h>
 
-#include <Foundation/Communication/Telemetry.h>
+#include <Foundation/Diagnostics/TelemetryService.h>
 #include <Foundation/IO/OSFile.h>
 #include <GuiFoundation/GuiFoundationDLL.h>
 #include <Inspector/FileWidget.moc.h>
@@ -54,181 +54,98 @@ void xiiQtFileWidget::ResetStats()
   Table->sortByColumn(0, Qt::DescendingOrder);
 }
 
-void xiiQtFileWidget::ProcessTelemetry(void* pUnuseed)
+void xiiQtFileWidget::ReceiveDiagnostics(const xiiTelemetrySample& sample)
 {
-  if (!s_pWidget)
+  if (!s_pWidget || sample.m_Records.GetCount() != 1)
     return;
-
-  xiiTelemetryMessage Msg;
-
-  while (xiiTelemetry::RetrieveMessage('FILE', Msg) == XII_SUCCESS)
+  const auto& row = sample.m_Records[0];
+  xiiInt32    id;
+  xiiUInt8    operation, mode, threads;
+  xiiString   path, destination;
+  bool        success;
+  xiiUInt64   bytes;
+  xiiTime     duration;
+  if (!row.Read("id", id) || !row.Read("operation", operation) || !row.Read("mode", mode) || !row.Read("threads", threads) ||
+      !row.Read("path", path) || !row.Read("destination", destination) || !row.Read("success", success) || !row.Read("bytes", bytes) ||
+      !row.Read("duration", duration) || id <= 0 || duration.IsNegative() || !xiiMath::IsFinite(duration.GetSeconds()) ||
+      operation < static_cast<xiiUInt8>(xiiTelemetryFileOperation::Open) || operation > static_cast<xiiUInt8>(xiiTelemetryFileOperation::Casing) ||
+      (operation == static_cast<xiiUInt8>(xiiTelemetryFileOperation::Open) && mode != xiiFileOpenMode::Read && mode != xiiFileOpenMode::Write && mode != xiiFileOpenMode::Append))
+    return;
+  if (s_pWidget->m_FileOps.GetCount() >= 10000 && !s_pWidget->m_FileOps.Contains(id))
   {
-    s_pWidget->m_bUpdateTable = true;
-
-    xiiInt32 iFileID = 0;
-    Msg.GetReader() >> iFileID;
-
-    s_pWidget->m_iMaxID = xiiMath::Max(s_pWidget->m_iMaxID, iFileID);
-    FileOpData& data    = s_pWidget->m_FileOps[iFileID];
-
-    if (data.m_StartTime.GetSeconds() == 0.0)
-      data.m_StartTime = xiiTime::Now();
-
-    switch (Msg.GetMessageID())
+    auto oldest = s_pWidget->m_FileOps.GetIterator();
+    for (auto it = s_pWidget->m_FileOps.GetIterator(); it.IsValid(); ++it)
+      if (it.Key() < oldest.Key())
+        oldest = it;
+    s_pWidget->m_FileOps.Remove(oldest);
+  }
+  auto& data                = s_pWidget->m_FileOps[id];
+  s_pWidget->m_iMaxID       = xiiMath::Max(s_pWidget->m_iMaxID, id);
+  s_pWidget->m_bUpdateTable = true;
+  if (data.m_StartTime == xiiTime::MakeZero())
+    data.m_StartTime = xiiTime::Now();
+  switch (static_cast<xiiTelemetryFileOperation>(operation))
+  {
+    case xiiTelemetryFileOperation::Open:
+      data.m_sFile = path;
+      if (mode == xiiFileOpenMode::Read)
+        data.m_State = success ? OpenReading : OpenReadingFailed;
+      else if (mode == xiiFileOpenMode::Write || mode == xiiFileOpenMode::Append)
+        data.m_State = success ? OpenWriting : OpenWritingFailed;
+      break;
+    case xiiTelemetryFileOperation::Close:
+      if (data.m_State == OpenReading)
+        data.m_State = ClosedReading;
+      else if (data.m_State == OpenWriting)
+        data.m_State = ClosedWriting;
+      break;
+    case xiiTelemetryFileOperation::Read:
+      data.m_uiBytesAccessed += bytes;
+      if (data.m_State == None)
+        data.m_State = OpenReading;
+      break;
+    case xiiTelemetryFileOperation::Write:
+      data.m_uiBytesAccessed += bytes;
+      if (data.m_State == None)
+        data.m_State = OpenWriting;
+      if (!success)
+        data.m_State = OpenWritingFailed;
+      break;
+    case xiiTelemetryFileOperation::Exists:
+      data.m_sFile = path;
+      data.m_State = success ? FileExists : FileExistsFailed;
+      break;
+    case xiiTelemetryFileOperation::Delete:
+      data.m_sFile = path;
+      data.m_State = success ? FileDelete : FileDeleteFailed;
+      break;
+    case xiiTelemetryFileOperation::CreateDirectory:
+      data.m_sFile = path;
+      data.m_State = success ? CreateDirs : CreateDirsFailed;
+      break;
+    case xiiTelemetryFileOperation::Copy:
     {
-      case 'OPEN':
-      {
-        xiiUInt8 uiMode   = 0;
-        bool     bSuccess = false;
-
-        Msg.GetReader() >> data.m_sFile;
-        Msg.GetReader() >> uiMode;
-        Msg.GetReader() >> bSuccess;
-
-        switch (uiMode)
-        {
-          case xiiFileOpenMode::Write:
-          case xiiFileOpenMode::Append:
-            data.m_State = bSuccess ? OpenWriting : OpenWritingFailed;
-            break;
-          case xiiFileOpenMode::Read:
-            data.m_State = bSuccess ? OpenReading : OpenReadingFailed;
-            break;
-          default:
-            XII_REPORT_FAILURE("Unknown File Open Mode {0}", uiMode);
-            break;
-        }
-      }
-      break;
-      case 'CLOS':
-      {
-        switch (data.m_State)
-        {
-          case OpenReading:
-            data.m_State = ClosedReading;
-            break;
-          case OpenWriting:
-            data.m_State = ClosedWriting;
-            break;
-          default:
-
-            // dangling 'read' or 'write', just ignore it
-            s_pWidget->m_FileOps.Remove(iFileID);
-            return;
-        }
-      }
-      break;
-      case 'WRIT':
-      {
-        xiiUInt64 uiSize;
-        bool      bSuccess = false;
-
-        Msg.GetReader() >> uiSize;
-        Msg.GetReader() >> bSuccess;
-
-        data.m_uiBytesAccessed += uiSize;
-
-        if (data.m_State == None)
-          data.m_State = OpenWriting;
-
-        if (!bSuccess)
-          data.m_State = OpenWritingFailed;
-      }
-      break;
-      case 'READ':
-      {
-        xiiUInt64 uiRead;
-        Msg.GetReader() >> uiRead;
-
-        data.m_uiBytesAccessed += uiRead;
-
-        if (data.m_State == None)
-          data.m_State = OpenReading;
-      }
-      break;
-
-      case 'EXST':
-      {
-        bool bSuccess;
-
-        Msg.GetReader() >> data.m_sFile;
-        Msg.GetReader() >> bSuccess;
-
-        data.m_State = bSuccess ? FileExists : FileExistsFailed;
-      }
-      break;
-
-      case ' DEL':
-      {
-        bool bSuccess;
-
-        Msg.GetReader() >> data.m_sFile;
-        Msg.GetReader() >> bSuccess;
-
-        data.m_State = bSuccess ? FileDelete : FileDeleteFailed;
-      }
-      break;
-
-      case 'CDIR':
-      {
-        bool bSuccess;
-
-        Msg.GetReader() >> data.m_sFile;
-        Msg.GetReader() >> bSuccess;
-
-        data.m_State = bSuccess ? CreateDirs : CreateDirsFailed;
-      }
-      break;
-
-      case 'COPY':
-      {
-        bool      bSuccess;
-        xiiString sFile1, sFile2;
-
-        Msg.GetReader() >> sFile1;
-        Msg.GetReader() >> sFile2;
-        Msg.GetReader() >> bSuccess;
-
-        xiiStringBuilder s;
-        s.SetFormat("'{0}' -> '{1}'", sFile1, sFile2);
-        data.m_sFile = s.GetData();
-
-        data.m_State = bSuccess ? FileCopy : FileCopyFailed;
-      }
-      break;
-
-      case 'STAT':
-      {
-        bool bSuccess;
-
-        Msg.GetReader() >> data.m_sFile;
-        Msg.GetReader() >> bSuccess;
-
-        data.m_State = bSuccess ? FileStat : FileStatFailed;
-      }
-      break;
-
-      case 'CASE':
-      {
-        bool bSuccess;
-
-        Msg.GetReader() >> data.m_sFile;
-        Msg.GetReader() >> bSuccess;
-
-        data.m_State = bSuccess ? FileCasing : FileCasingFailed;
-      }
+      xiiStringBuilder text;
+      text.SetFormat("'{}' -> '{}'", path, destination);
+      data.m_sFile = text;
+      data.m_State = success ? FileCopy : FileCopyFailed;
       break;
     }
-
-    double dTime = 0.0;
-    Msg.GetReader() >> dTime;
-    data.m_BlockedDuration += xiiTime::MakeFromSeconds(dTime);
-
-    xiiUInt8 uiThreadTypes = 0;
-    Msg.GetReader() >> uiThreadTypes;
-    data.m_uiThreadTypes |= uiThreadTypes;
+    case xiiTelemetryFileOperation::Stat:
+      data.m_sFile = path;
+      data.m_State = success ? FileStat : FileStatFailed;
+      break;
+    case xiiTelemetryFileOperation::Casing:
+      data.m_sFile = path;
+      data.m_State = success ? FileCasing : FileCasingFailed;
+      break;
+    default:
+      return;
   }
+  data.m_BlockedDuration += duration;
+  data.m_uiThreadTypes |= threads & 7;
 }
+
 
 QTableWidgetItem* xiiQtFileWidget::GetStateString(FileOpState State) const
 {

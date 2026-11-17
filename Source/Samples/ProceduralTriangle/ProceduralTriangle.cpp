@@ -3,8 +3,8 @@
 #include <Foundation/Application/Application.h>
 #include <Foundation/Types/UniquePtr.h>
 
-#include <Foundation/Communication/Telemetry.h>
 #include <Foundation/Configuration/Startup.h>
+#include <Foundation/Diagnostics/TelemetryService.h>
 #include <Foundation/IO/DirectoryWatcher.h>
 #include <Foundation/IO/FileSystem/DataDirTypeFolder.h>
 #include <Foundation/IO/FileSystem/FileSystem.h>
@@ -210,7 +210,8 @@ public:
     }
 
     // Make sure telemetry is sent out regularly.
-    xiiTelemetry::PerFrameUpdate();
+    if (auto* diagnostics = GetTelemetryService())
+      diagnostics->Update();
 
     // Needs to be called once per frame
     xiiResourceManager::PerFrameUpdate();
@@ -244,10 +245,10 @@ public:
     xiiGlobalLog::AddLogWriter(xiiLogWriter::VisualStudio::LogMessageHandler);
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-    xiiTelemetry::SetServerName("Procedural Triangle");
 
-    // Activate xiiTelemetry such that the inspector plugin can use the network connection.
-    xiiTelemetry::CreateServer();
+    // Start the application-owned diagnostics service for Inspector subscriptions.
+    if (const auto error = CreateTelemetryService().StartFromCommandLine(GetApplicationName()); error.Failed())
+      xiiLog::Warning("Could not start diagnostics: {}", error.GetCodeName());
 
     // Load the inspector plugin.
     // The plugin contains automatic configuration code (through the xiiStartup system), so it will configure itself properly when the engine is initialized by calling xiiStartup::StartupCore().
@@ -395,7 +396,8 @@ public:
 
   void BeforeHighLevelSystemsShutdown() override
   {
-    xiiTelemetry::CloseConnection();
+    if (auto* diagnostics = GetTelemetryService())
+      diagnostics->Shutdown();
 
 #if XII_ENABLED(USE_DIRECTORY_WATCHER)
     m_pDirectoryWatcher->CloseDirectory();

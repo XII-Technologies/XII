@@ -2,8 +2,9 @@
 
 #include <Inspector/InspectorPCH.h>
 
-#include <Foundation/Communication/Telemetry.h>
+#include <Foundation/Diagnostics/TelemetryService.h>
 #include <GuiFoundation/GuiFoundationDLL.h>
+#include <Inspector/MainWindow.moc.h>
 #include <Inspector/MemoryWidget.moc.h>
 #include <QGraphicsPathItem>
 #include <QGraphicsView>
@@ -101,7 +102,7 @@ void xiiQtMemoryWidget::UpdateStats()
   if (!isVisible())
     return;
 
-  if (!xiiTelemetry::IsConnectedToServer())
+  if (!xiiQtMainWindow::s_pWidget->GetDiagnosticsClient().IsReady())
   {
     ListAllocators->setEnabled(false);
 
@@ -382,72 +383,47 @@ void xiiQtMemoryWidget::CustomContextMenuRequested(const QPoint& pos)
   m.exec(ListAllocators->viewport()->mapToGlobal(pos));
 }
 
-void xiiQtMemoryWidget::ProcessTelemetry(void* pUnuseed)
+void xiiQtMemoryWidget::ReceiveDiagnostics(const xiiTelemetrySample& sample)
 {
-  if (s_pWidget == nullptr)
+  if (!s_pWidget)
     return;
-
-  xiiTelemetryMessage Msg;
-
-  while (xiiTelemetry::RetrieveMessage(' MEM', Msg) == XII_SUCCESS)
+  for (auto it = s_pWidget->m_AllocatorData.GetIterator(); it.IsValid(); ++it)
+    it.Value().m_bStillInUse = false;
+  for (const auto& row : sample.m_Records)
   {
-    if (Msg.GetMessageID() == 'BGN')
+    xiiUInt32 id, parent;
+    xiiString name;
+    xiiUInt64 allocations, deallocations, bytes;
+    if (!row.Read("id", id) || !row.Read("parent", parent) || !row.Read("name", name) || !row.Read("allocations", allocations) ||
+        !row.Read("deallocations", deallocations) || !row.Read("bytes", bytes) || deallocations > allocations)
+      continue;
+    auto& data         = s_pWidget->m_AllocatorData[id];
+    data.m_bStillInUse = data.m_bReceivedData = true;
+    data.m_sName                              = name;
+    data.m_uiParentId                         = parent;
+    if (data.m_uiColor == 0xFF)
     {
-      for (auto it : s_pWidget->m_AllocatorData)
-      {
-        it.Value().m_bStillInUse = false;
-      }
+      data.m_uiColor                  = s_pWidget->m_uiColorsUsed++;
+      s_pWidget->m_bAllocatorsChanged = true;
     }
-
-    if (Msg.GetMessageID() == 'END')
+    data.m_uiAllocs                = allocations;
+    data.m_uiDeallocs              = deallocations;
+    data.m_uiLiveAllocs            = allocations - deallocations;
+    data.m_uiMaxUsedMemoryRecently = xiiMath::Max(data.m_uiMaxUsedMemoryRecently, bytes);
+    data.m_uiMaxUsedMemory         = xiiMath::Max(data.m_uiMaxUsedMemory, bytes);
+  }
+  for (auto it = s_pWidget->m_AllocatorData.GetIterator(); it.IsValid();)
+  {
+    if (!it.Value().m_bStillInUse)
     {
-      for (auto it = s_pWidget->m_AllocatorData.GetIterator(); it.IsValid();)
-      {
-        if (!it.Value().m_bStillInUse)
-        {
-          s_pWidget->m_bAllocatorsChanged = true;
-          it                              = s_pWidget->m_AllocatorData.Remove(it);
-        }
-        else
-        {
-          ++it;
-        }
-      }
+      s_pWidget->m_bAllocatorsChanged = true;
+      it                              = s_pWidget->m_AllocatorData.Remove(it);
     }
-
-    if (Msg.GetMessageID() == 'STAT')
-    {
-      xiiString sAllocatorName;
-      xiiUInt32 uiAllocatorId;
-      xiiUInt32 uiParentId;
-
-      xiiAllocator::Stats MemStat;
-      Msg.GetReader() >> uiAllocatorId;
-      Msg.GetReader() >> sAllocatorName;
-      Msg.GetReader() >> uiParentId;
-      Msg.GetReader() >> MemStat;
-
-      AllocatorData& ad  = s_pWidget->m_AllocatorData[uiAllocatorId];
-      ad.m_bStillInUse   = true;
-      ad.m_bReceivedData = true;
-      ad.m_sName         = sAllocatorName;
-      ad.m_uiParentId    = uiParentId;
-
-      if (ad.m_uiColor == 0xFF)
-      {
-        ad.m_uiColor = s_pWidget->m_uiColorsUsed;
-        ++s_pWidget->m_uiColorsUsed;
-        s_pWidget->m_bAllocatorsChanged = true;
-      }
-
-      ad.m_uiAllocs                = MemStat.m_uiAllocationCount;
-      ad.m_uiDeallocs              = MemStat.m_uiDeallocationCount;
-      ad.m_uiLiveAllocs            = MemStat.m_uiAllocationCount - MemStat.m_uiDeallocationCount;
-      ad.m_uiMaxUsedMemoryRecently = xiiMath::Max(ad.m_uiMaxUsedMemoryRecently, MemStat.m_uiAllocationSize);
-      ad.m_uiMaxUsedMemory         = xiiMath::Max(ad.m_uiMaxUsedMemory, MemStat.m_uiAllocationSize);
-    }
+    else
+      ++it;
   }
 }
+
 
 void xiiQtMemoryWidget::on_ListAllocators_itemChanged(QTreeWidgetItem* item)
 {

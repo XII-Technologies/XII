@@ -5,6 +5,7 @@
 #include <Foundation/Basics.h>
 #include <Foundation/Configuration/CVar.h>
 #include <Foundation/Containers/Map.h>
+#include <Foundation/Diagnostics/TelemetryService.h>
 #include <Foundation/Strings/String.h>
 #include <GuiFoundation/Widgets/CVarWidget.moc.h>
 #include <Inspector/ui_CVarsWidget.h>
@@ -28,8 +29,8 @@ private Q_SLOTS:
   void StringChanged(xiiStringView sCVar, xiiStringView sNewValue);
 
 public:
-  static void ProcessTelemetry(void* pUnuseed);
-  static void ProcessTelemetryConsole(void* pUnuseed);
+  static void ReceiveDiagnostics(const xiiTelemetrySample& sample);
+  static void ReceiveCommandResult(const xiiNetworkRpcResult& result, const xiiTelemetryCommandResponse& response);
 
   void ResetStats();
 
@@ -37,8 +38,6 @@ private:
   // void UpdateCVarsTable(bool bRecreate);
 
   void SendCVarUpdateToServer(xiiStringView sName, const xiiCVarWidgetData& cvd);
-  void SyncAllCVarsToServer();
 
   xiiMap<xiiString, xiiCVarWidgetData> m_CVars;
-  xiiMap<xiiString, xiiCVarWidgetData> m_CVarsBackup;
 };

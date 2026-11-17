@@ -2,6 +2,8 @@
 
 #pragma once
 
+struct xiiTelemetrySample;
+
 #include <Foundation/Basics.h>
 #include <Foundation/Containers/HashTable.h>
 #include <Foundation/Strings/String.h>
@@ -27,7 +29,7 @@ private Q_SLOTS:
   virtual void on_ComboThread_currentIndexChanged(int state);
 
 public:
-  static void ProcessTelemetry(void* pUnuseed);
+  static void ReceiveDiagnostics(const xiiTelemetrySample& sample);
 
   void ResetStats();
   void UpdateStats();

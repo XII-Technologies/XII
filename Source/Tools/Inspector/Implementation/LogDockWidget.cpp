@@ -2,7 +2,8 @@
 
 #include <Inspector/InspectorPCH.h>
 
-#include <Foundation/Communication/Telemetry.h>
+#include <Foundation/Diagnostics/TelemetryProtocol.h>
+#include <Foundation/Diagnostics/TelemetryService.h>
 #include <Foundation/Logging/LogEntry.h>
 #include <GuiFoundation/Models/LogModel.moc.h>
 #include <Inspector/LogDockWidget.moc.h>
@@ -28,6 +29,32 @@ void xiiQtLogDockWidget::ResetStats()
   LogWidget->GetLog()->Clear();
 }
 
+void xiiQtLogDockWidget::ReceiveDiagnostics(const xiiTelemetrySample& sample)
+{
+  if (s_pWidget && sample.m_uiDropped != 0)
+    s_pWidget->Log(xiiFmt("Diagnostics omitted {} log samples before this entry.", sample.m_uiDropped));
+  if (s_pWidget == nullptr)
+    return;
+  const auto* type        = sample.m_Fields.GetValue("type");
+  const auto* indentation = sample.m_Fields.GetValue("indentation");
+  const auto* tag         = sample.m_Fields.GetValue("tag");
+  const auto* text        = sample.m_Fields.GetValue("text");
+  if (type == nullptr || !type->IsA<xiiInt32>() || indentation == nullptr || !indentation->IsA<xiiUInt32>() ||
+      tag == nullptr || !tag->IsA<xiiString>() || text == nullptr || !text->IsA<xiiString>())
+    return;
+  const auto value = type->Get<xiiInt32>();
+  if (value < xiiLogMsgType::Flush || value >= xiiLogMsgType::ENUM_COUNT)
+    return;
+  xiiLogEntry entry;
+  entry.m_Type          = static_cast<xiiLogMsgType::Enum>(value);
+  entry.m_uiIndentation = static_cast<xiiUInt8>(xiiMath::Min(indentation->Get<xiiUInt32>(), 255U));
+  entry.m_sTag          = tag->Get<xiiString>();
+  entry.m_sMsg          = text->Get<xiiString>();
+  if (const auto* seconds = sample.m_Fields.GetValue("seconds"); seconds != nullptr && seconds->IsA<double>())
+    entry.m_fSeconds = seconds->Get<double>();
+  s_pWidget->LogWidget->GetLog()->AddLogMsg(entry);
+}
+
 void xiiQtLogDockWidget::Log(const xiiFormatString& text)
 {
   xiiStringBuilder tmp;
@@ -37,29 +64,4 @@ void xiiQtLogDockWidget::Log(const xiiFormatString& text)
   lm.m_Type          = xiiLogMsgType::InfoMsg;
   lm.m_uiIndentation = 0;
   LogWidget->GetLog()->AddLogMsg(lm);
-}
-
-void xiiQtLogDockWidget::ProcessTelemetry(void* pUnuseed)
-{
-  if (!s_pWidget)
-    return;
-
-  xiiTelemetryMessage Msg;
-
-  while (xiiTelemetry::RetrieveMessage(' LOG', Msg) == XII_SUCCESS)
-  {
-    xiiLogEntry lm;
-    xiiInt8     iEventType = 0;
-
-    Msg.GetReader() >> iEventType;
-    Msg.GetReader() >> lm.m_uiIndentation;
-    Msg.GetReader() >> lm.m_sTag;
-    Msg.GetReader() >> lm.m_sMsg;
-
-    if (iEventType == xiiLogMsgType::EndGroup)
-      Msg.GetReader() >> lm.m_fSeconds;
-
-    lm.m_Type = (xiiLogMsgType::Enum)iEventType;
-    s_pWidget->LogWidget->GetLog()->AddLogMsg(lm);
-  }
 }

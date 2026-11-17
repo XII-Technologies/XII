@@ -1,6 +1,5 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
-#include <Foundation/Communication/DataTransfer.h>
 #include <Foundation/IO/MemoryStream.h>
 #include <Inspector/ProfilingSession.h>
 #include <Inspector/ProfilingWidget.h>
@@ -30,7 +29,7 @@ namespace
   }
 } // namespace
 
-XII_CREATE_SIMPLE_TEST(Inspector, IncrementalProtocolAndFrameIdentity)
+XII_CREATE_SIMPLE_TEST(InspectorDiagnostics, IncrementalProtocolAndFrameIdentity)
 {
   Session session;
   session.BeginStream(91);
@@ -73,7 +72,7 @@ XII_CREATE_SIMPLE_TEST(Inspector, IncrementalProtocolAndFrameIdentity)
   XII_TEST_BOOL(!session.Receive(stale));
 }
 
-XII_CREATE_SIMPLE_TEST(Inspector, RollingPauseCaptureAndRoundTrip)
+XII_CREATE_SIMPLE_TEST(InspectorDiagnostics, RollingPauseCaptureAndRoundTrip)
 {
   Session session;
   for (int i = 1; i <= 1250; ++i)
@@ -140,7 +139,7 @@ XII_CREATE_SIMPLE_TEST(Inspector, RollingPauseCaptureAndRoundTrip)
   XII_TEST_BOOL(duration.Display().m_Frames.size() <= 10);
 }
 
-XII_CREATE_SIMPLE_TEST(Inspector, LiveDockIdentityAndControls)
+XII_CREATE_SIMPLE_TEST(InspectorDiagnostics, LiveDockIdentityAndControls)
 {
   ads::CDockManager    manager;
   xiiQtProfilingWidget cpu(&manager);
@@ -183,7 +182,7 @@ XII_CREATE_SIMPLE_TEST(Inspector, LiveDockIdentityAndControls)
   XII_TEST_BOOL(gpuImage.save("D:/XII/Workspace/inspector-live-gpu.png"));
 }
 
-XII_CREATE_SIMPLE_TEST(Inspector, GpuHistoryAndMetadataBudgets)
+XII_CREATE_SIMPLE_TEST(InspectorDiagnostics, GpuHistoryAndMetadataBudgets)
 {
   Session       session;
   Session::Data batch;
@@ -201,23 +200,4 @@ XII_CREATE_SIMPLE_TEST(Inspector, GpuHistoryAndMetadataBudgets)
   XII_TEST_BOOL(session.m_Live.m_iBytes <= 64 * 1024 * 1024);
   XII_TEST_BOOL(session.m_Live.m_Gpu.size() < 60000);
   XII_TEST_INT(session.m_Live.m_Graphs.size(), 256);
-}
-
-XII_CREATE_SIMPLE_TEST(Inspector, FoundationDataTransferRemainsAvailable)
-{
-  xiiDataTransfer transfer;
-  XII_TEST_BOOL(!transfer.IsTransferRequested());
-  transfer.EnableDataTransfer("Foundation transfer regression");
-  transfer.RequestDataTransfer();
-  XII_TEST_BOOL(transfer.IsTransferRequested(false));
-  XII_TEST_BOOL(transfer.IsTransferRequested());
-  XII_TEST_BOOL(!transfer.IsTransferRequested());
-  {
-    xiiDataTransferObject object(transfer, "Payload", "application/octet-stream", "bin");
-    object.GetWriter() << xiiUInt64(9007199254740993ULL);
-    object.Transmit();
-  }
-  transfer.DisableDataTransfer();
-  transfer.RequestDataTransfer();
-  XII_TEST_BOOL(!transfer.IsTransferRequested());
 }

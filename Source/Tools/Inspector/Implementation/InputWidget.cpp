@@ -2,7 +2,7 @@
 
 #include <Inspector/InspectorPCH.h>
 
-#include <Foundation/Communication/Telemetry.h>
+#include <Foundation/Diagnostics/TelemetryService.h>
 #include <GuiFoundation/GuiFoundationDLL.h>
 #include <GuiFoundation/UIServices/UIServices.moc.h>
 #include <Inspector/InputWidget.moc.h>
@@ -73,86 +73,57 @@ void xiiQtInputWidget::ClearActions()
   }
 }
 
-void xiiQtInputWidget::ProcessTelemetry(void* pUnuseed)
+void xiiQtInputWidget::ReceiveDiagnostics(const xiiTelemetrySample& sample)
 {
   if (!s_pWidget)
     return;
-
-  xiiTelemetryMessage msg;
-
-  bool bUpdateSlotTable   = false;
-  bool bFillSlotTable     = false;
-  bool bUpdateActionTable = false;
-  bool bFillActionTable   = false;
-
-  while (xiiTelemetry::RetrieveMessage('INPT', msg) == XII_SUCCESS)
+  s_pWidget->m_InputSlots.Clear();
+  s_pWidget->m_InputActions.Clear();
+  for (const auto& row : sample.m_Records)
   {
-    if (msg.GetMessageID() == 'SLOT')
+    xiiUInt8  kind, state;
+    xiiString name;
+    float     value;
+    if (!row.Read("kind", kind) || !row.Read("state", state) || !row.Read("name", name) || !row.Read("value", value) || state > xiiKeyState::Released)
+      continue;
+    if (kind == 0)
     {
-      xiiString sSlotName;
-      msg.GetReader() >> sSlotName;
-
-      SlotData& sd = s_pWidget->m_InputSlots[sSlotName];
-
-      msg.GetReader() >> sd.m_uiSlotFlags;
-
-      xiiUInt8 uiKeyState = 0;
-      msg.GetReader() >> uiKeyState;
-      sd.m_KeyState = (xiiKeyState::Enum)uiKeyState;
-
-      msg.GetReader() >> sd.m_fValue;
-      msg.GetReader() >> sd.m_fDeadZone;
-
-      if (sd.m_iTableRow == -1)
-        bUpdateSlotTable = true;
-
-      bFillSlotTable = true;
+      SlotData  data;
+      xiiUInt32 flags;
+      if (!row.Read("flags", flags) || !row.Read("deadZone", data.m_fDeadZone))
+        continue;
+      data.m_uiSlotFlags = static_cast<decltype(data.m_uiSlotFlags)>(flags);
+      data.m_KeyState    = static_cast<xiiKeyState::Enum>(state);
+      data.m_fValue      = value;
+      s_pWidget->m_InputSlots.Insert(name, data);
     }
-
-    if (msg.GetMessageID() == 'ACTN')
+    else if (kind == 1)
     {
-      xiiString sInputSetName;
-      msg.GetReader() >> sInputSetName;
-
-      xiiString sActionName;
-      msg.GetReader() >> sActionName;
-
-      xiiStringBuilder sFinalName = sInputSetName.GetData();
-      sFinalName.Append("::");
-      sFinalName.Append(sActionName.GetData());
-
-      ActionData& sd = s_pWidget->m_InputActions[sFinalName.GetData()];
-
-      xiiUInt8 uiKeyState = 0;
-      msg.GetReader() >> uiKeyState;
-      sd.m_KeyState = (xiiKeyState::Enum)uiKeyState;
-
-      msg.GetReader() >> sd.m_fValue;
-      msg.GetReader() >> sd.m_bUseTimeScaling;
-
+      xiiString  set;
+      ActionData data;
+      if (!row.Read("set", set) || !row.Read("timeScaling", data.m_bUseTimeScaling))
+        continue;
+      data.m_KeyState = static_cast<xiiKeyState::Enum>(state);
+      data.m_fValue   = value;
+      bool valid      = true;
       for (xiiUInt32 i = 0; i < xiiInputActionConfig::MaxInputSlotAlternatives; ++i)
       {
-        msg.GetReader() >> sd.m_sTrigger[i];
-        msg.GetReader() >> sd.m_fTriggerScaling[i];
+        xiiStringBuilder key;
+        key.SetFormat("trigger{}", i);
+        valid &= row.Read(key, data.m_sTrigger[i]);
+        key.SetFormat("scale{}", i);
+        valid &= row.Read(key, data.m_fTriggerScaling[i]);
       }
-
-      if (sd.m_iTableRow == -1)
-        bUpdateActionTable = true;
-
-      bFillActionTable = true;
+      if (!valid)
+        continue;
+      xiiStringBuilder key(set, "::", name);
+      s_pWidget->m_InputActions.Insert(key, data);
     }
   }
-
-  if (bUpdateSlotTable)
-    s_pWidget->UpdateSlotTable(true);
-  else if (bFillSlotTable)
-    s_pWidget->UpdateSlotTable(false);
-
-  if (bUpdateActionTable)
-    s_pWidget->UpdateActionTable(true);
-  else if (bFillActionTable)
-    s_pWidget->UpdateActionTable(false);
+  s_pWidget->UpdateSlotTable(true);
+  s_pWidget->UpdateActionTable(true);
 }
+
 
 void xiiQtInputWidget::UpdateSlotTable(bool bRecreate)
 {

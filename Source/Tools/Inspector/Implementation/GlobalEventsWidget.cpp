@@ -2,7 +2,7 @@
 
 #include <Inspector/InspectorPCH.h>
 
-#include <Foundation/Communication/Telemetry.h>
+#include <Foundation/Diagnostics/TelemetryService.h>
 #include <GuiFoundation/GuiFoundationDLL.h>
 #include <GuiFoundation/UIServices/UIServices.moc.h>
 #include <Inspector/GlobalEventsWidget.moc.h>
@@ -43,46 +43,22 @@ void xiiQtGlobalEventsWidget::ResetStats()
   }
 }
 
-void xiiQtGlobalEventsWidget::ProcessTelemetry(void* pUnuseed)
+void xiiQtGlobalEventsWidget::ReceiveDiagnostics(const xiiTelemetrySample& sample)
 {
   if (!s_pWidget)
     return;
-
-  xiiTelemetryMessage msg;
-
-  bool bUpdateTable = false;
-  bool bFillTable   = false;
-
-  while (xiiTelemetry::RetrieveMessage('EVNT', msg) == XII_SUCCESS)
+  s_pWidget->m_Events.Clear();
+  for (const auto& row : sample.m_Records)
   {
-    if (msg.GetMessageID() == ' CLR')
-    {
-      s_pWidget->m_Events.Clear();
-    }
-
-    if (msg.GetMessageID() == 'DATA')
-    {
-      xiiString sName;
-      msg.GetReader() >> sName;
-
-      GlobalEventsData& sd = s_pWidget->m_Events[sName];
-
-      msg.GetReader() >> sd.m_uiTimesFired;
-      msg.GetReader() >> sd.m_uiNumHandlers;
-      msg.GetReader() >> sd.m_uiNumHandlersOnce;
-
-      if (sd.m_iTableRow == -1)
-        bUpdateTable = true;
-
-      bFillTable = true;
-    }
+    xiiString        name;
+    GlobalEventsData data;
+    if (!row.Read("name", name) || !row.Read("fired", data.m_uiTimesFired) || !row.Read("handlers", data.m_uiNumHandlers) || !row.Read("once", data.m_uiNumHandlersOnce))
+      continue;
+    s_pWidget->m_Events.Insert(name, data);
   }
-
-  if (bUpdateTable)
-    s_pWidget->UpdateTable(true);
-  else if (bFillTable)
-    s_pWidget->UpdateTable(false);
+  s_pWidget->UpdateTable(true);
 }
+
 
 void xiiQtGlobalEventsWidget::UpdateTable(bool bRecreate)
 {
