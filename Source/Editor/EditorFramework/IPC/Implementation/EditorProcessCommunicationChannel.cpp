@@ -10,6 +10,7 @@
 #include <Foundation/System/Process.h>
 #include <QEventLoop>
 #include <QThread>
+#include <QTimer>
 
 xiiResult xiiEditorProcessCommunicationChannel::WaitForStartup(const xiiRTTI* pResponseType)
 {
@@ -28,6 +29,11 @@ xiiResult xiiEditorProcessCommunicationChannel::WaitForStartup(const xiiRTTI* pR
                                        channelSubscription);
   QObject::connect(m_pClientProcess, &QProcess::finished, &loop, &QEventLoop::quit);
   QObject::connect(m_pClientProcess, &QProcess::errorOccurred, &loop, &QEventLoop::quit);
+  QTimer deadline;
+  deadline.setSingleShot(true);
+  deadline.setTimerType(Qt::PreciseTimer);
+  QObject::connect(&deadline, &QTimer::timeout, &loop, &QEventLoop::quit);
+  deadline.start(pResponseType ? 60000 : 30000);
   bool                                 bReceived = false;
   xiiEvent<const Event&>::Unsubscriber messageSubscription;
   if (pResponseType)
@@ -38,7 +44,7 @@ xiiResult xiiEditorProcessCommunicationChannel::WaitForStartup(const xiiRTTI* pR
     },
                              messageSubscription);
   }
-  while (IsClientAlive())
+  while (deadline.isActive() && IsClientAlive())
   {
     if (pEditor->WasStartupQuitRequested())
       return XII_FAILURE;
@@ -52,8 +58,7 @@ xiiResult xiiEditorProcessCommunicationChannel::WaitForStartup(const xiiRTTI* pR
     }
     else if (IsConnected())
       return XII_SUCCESS;
-    // Existing waits are unbounded. Keep that contract, but service expose, timers and IPC
-    // notifications while editing commands remain excluded. No polling or artificial delay.
+    // Keep startup repaint and shutdown notifications available while editing commands are excluded.
     loop.exec(QEventLoop::ExcludeUserInputEvents);
   }
   return XII_FAILURE;

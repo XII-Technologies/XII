@@ -131,7 +131,7 @@ public:
   EngineStatus GetEngineStatus() const { return m_EngineStatus; }
 
   /// Waits for GetEngineStatus to return Loaded or returns a failure reason.
-  xiiStatus WaitForEngineStatusLoaded(xiiTime timeout = {}) const;
+  xiiStatus WaitForEngineStatusLoaded(xiiTime timeout = xiiTime::MakeFromSeconds(30)) const;
 
   /// Passed into xiiEngineProcessDocumentContext::Initialize on the engine process side. Allows the document to provide additional data to the engine process during context creation.
   virtual xiiVariant GetCreateEngineMetaData() const { return xiiVariant(); }
