@@ -576,11 +576,11 @@ namespace xiiNetworkIOInternal
       operation.m_pNativeData     = pData;
       operation.m_pWorker->m_Statistics.m_uiInternalMemoryBytes += sizeof(NetworkIocpOperation);
     }
-    auto& native         = *static_cast<NetworkIocpOperation*>(operation.m_pNativeData);
-    native.m_Overlapped  = {};
-    native.m_pOperation  = &operation;
-    native.m_uiFlags     = 0;
-    native.m_Address     = {};
+    auto& native        = *static_cast<NetworkIocpOperation*>(operation.m_pNativeData);
+    native.m_Overlapped = {};
+    native.m_pOperation = &operation;
+    native.m_uiFlags    = 0;
+    native.m_Address    = {};
     if (registration.IsLocal())
     {
       return SubmitLocalPipe(operation, native.m_Overlapped);
@@ -814,9 +814,9 @@ namespace xiiNetworkIOInternal
 
   void CancelNative(Operation& operation)
   {
-    auto&        native       = *static_cast<NetworkIocpOperation*>(operation.m_pNativeData);
-    auto&        registration = *operation.m_pRegistration;
-    const auto   hSocket      = registration.GetNativeHandle();
+    auto&      native       = *static_cast<NetworkIocpOperation*>(operation.m_pNativeData);
+    auto&      registration = *operation.m_pRegistration;
+    const auto hSocket      = registration.GetNativeHandle();
     if (!::CancelIoEx(reinterpret_cast<HANDLE>(hSocket), &native.m_Overlapped) && ::GetLastError() != ERROR_NOT_FOUND)
     {
       // A provider that cannot cancel an individual request must be aborted at socket scope.

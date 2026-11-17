@@ -325,12 +325,12 @@ namespace xiiNetworkIOInternal
 
   NativeAttempt Submit(Operation& operation)
   {
-    Registration&             registration = *operation.m_pRegistration;
+    Registration& registration = *operation.m_pRegistration;
     if (registration.IsLocal())
     {
       return SubmitLocalPosix(operation);
     }
-    const auto                kind         = operation.m_Result.m_Kind;
+    const auto                kind = operation.m_Result.m_Kind;
     xiiNetworkOperationResult result;
     switch (kind)
     {

@@ -55,24 +55,24 @@ namespace xiiNetworkIOInternal
   struct Registration
   {
     std::variant<xiiTcpSocket, xiiTcpListener, xiiUdpSocket, xiiNetworkLocalSocket> m_Socket;
-    SocketKind                                               m_Kind = SocketKind::Tcp;
-    xiiNetworkIORegistration                                 m_Handle;
-    xiiUInt64                                                m_uiNativeToken     = 0;
-    xiiUInt32                                                m_uiPendingCount    = 0;
-    xiiUInt32                                                m_uiNativeInterest  = 0;
-    xiiUInt32                                                m_uiActiveAccepts   = 0;
-    bool                                                     m_bActive           = false;
-    bool                                                     m_bClosing          = false;
-    bool                                                     m_bWriteFirst       = false;
-    bool                                                     m_bReadyQueued      = false;
-    bool                                                     m_bNativeRegistered = false;
-    void*                                                    m_pNativeData       = nullptr;
-    Registration*                                            m_pReadyPrevious    = nullptr;
-    Registration*                                            m_pReadyNext        = nullptr;
-    OperationQueue                                           m_Read;
-    OperationQueue                                           m_Write;
-    xiiNetworkSocket&                                        GetSocket();
-    const xiiNetworkSocket&                                  GetSocket() const;
+    SocketKind                                                                      m_Kind = SocketKind::Tcp;
+    xiiNetworkIORegistration                                                        m_Handle;
+    xiiUInt64                                                                       m_uiNativeToken     = 0;
+    xiiUInt32                                                                       m_uiPendingCount    = 0;
+    xiiUInt32                                                                       m_uiNativeInterest  = 0;
+    xiiUInt32                                                                       m_uiActiveAccepts   = 0;
+    bool                                                                            m_bActive           = false;
+    bool                                                                            m_bClosing          = false;
+    bool                                                                            m_bWriteFirst       = false;
+    bool                                                                            m_bReadyQueued      = false;
+    bool                                                                            m_bNativeRegistered = false;
+    void*                                                                           m_pNativeData       = nullptr;
+    Registration*                                                                   m_pReadyPrevious    = nullptr;
+    Registration*                                                                   m_pReadyNext        = nullptr;
+    OperationQueue                                                                  m_Read;
+    OperationQueue                                                                  m_Write;
+    xiiNetworkSocket&                                                               GetSocket();
+    const xiiNetworkSocket&                                                         GetSocket() const;
     bool                                                                            IsLocal() const { return std::holds_alternative<xiiNetworkLocalSocket>(m_Socket); }
     xiiNetworkLocalSocket&                                                          GetLocalSocket() { return std::get<xiiNetworkLocalSocket>(m_Socket); }
     const xiiNetworkLocalSocket&                                                    GetLocalSocket() const { return std::get<xiiNetworkLocalSocket>(m_Socket); }

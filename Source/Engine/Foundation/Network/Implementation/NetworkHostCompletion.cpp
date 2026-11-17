@@ -253,10 +253,10 @@ void xiiNetworkHostRuntime::DriveListener(Listener& listener, xiiTime now, xiiTi
     if (listener.m_uiPendingIO == 0)
     {
       xiiNetworkEvent event;
-      event.m_Type     = xiiNetworkEventType::ListenerClosed;
-      event.m_Listener = listener.m_Handle;
+      event.m_Type                 = xiiNetworkEventType::ListenerClosed;
+      event.m_Listener             = listener.m_Handle;
       event.m_LocalServiceEndpoint = listener.m_LocalServiceEndpoint;
-      event.m_Error    = listener.m_Error;
+      event.m_Error                = listener.m_Error;
       Publish(std::move(event));
       listener.m_bTerminalPublished = true;
     }

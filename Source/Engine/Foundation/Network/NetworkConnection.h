@@ -78,9 +78,9 @@ struct XII_FOUNDATION_DLL xiiNetworkConnectionInfo
   xiiTime         m_EstablishmentTime;
   xiiNetworkError m_TerminalError;
 
-  xiiNetworkConnectionState       m_State = xiiNetworkConnectionState::Closed;
-  xiiNetworkEndpoint              m_LocalEndpoint;
-  xiiNetworkEndpoint              m_RemoteEndpoint;
+  xiiNetworkConnectionState m_State = xiiNetworkConnectionState::Closed;
+  xiiNetworkEndpoint        m_LocalEndpoint;
+  xiiNetworkEndpoint        m_RemoteEndpoint;
   /// On Local connections this names the listener service on both peers.
   xiiNetworkLocalEndpoint         m_LocalServiceEndpoint;
   xiiNetworkTransportCapabilities m_Capabilities;

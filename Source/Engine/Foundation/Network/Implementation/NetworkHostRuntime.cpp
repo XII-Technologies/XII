@@ -180,7 +180,7 @@ bool xiiNetworkHostRuntime::PeerEvent(Peer& peer, xiiNetworkEventType type, xiiN
   {
     event.m_pSessionTicket = peer.m_pTicket;
   }
-  event.m_Endpoint = peer.m_Info.m_RemoteEndpoint;
+  event.m_Endpoint             = peer.m_Info.m_RemoteEndpoint;
   event.m_LocalServiceEndpoint = peer.m_Info.m_LocalServiceEndpoint;
   if (type == xiiNetworkEventType::ReconnectScheduled)
   {
