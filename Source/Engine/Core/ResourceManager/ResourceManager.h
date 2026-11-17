@@ -204,7 +204,7 @@ public:
   /// are loaded at the moment. Destroy the returned object as soon as possible as it
   /// holds the entire resource manager locked.
   template <typename ResourceType>
-  static xiiLockedObject<xiiMutex, xiiDynamicArray<xiiResource*>> GetAllResourcesOfType();
+  static xiiLockedObject<xiiMutex, xiiDynamicArray<xiiResource*>> GetAllResourcesOfType(xiiUInt32 uiMaximumResources = xiiInvalidIndex);
 
   ///@}
   /// \name Unloading resources

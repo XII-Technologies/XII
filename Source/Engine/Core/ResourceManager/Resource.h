@@ -52,6 +52,18 @@ public:
     xiiUInt64 m_uiMemoryGPU;
   };
 
+  struct ContentStats
+  {
+    xiiString        m_sDescription;
+    MemoryUsage      m_Memory;
+    xiiResourceState m_State         = xiiResourceState::Unloaded;
+    xiiUInt8         m_uiDiscardable = 0, m_uiLoadable = 0;
+  };
+
+  /// Copies content-loader metadata without waiting for virtual resource update work. The caller
+  /// retains resource ownership; false means a concurrent metadata commit should be sampled later.
+  bool TryCaptureContentStats(ContentStats& out_stats) const;
+
   /// Returns the unique ID that identifies this resource. On a file resource this might be a path. Can also be a GUID or any other
   /// scheme that uniquely identifies the resource.
   XII_ALWAYS_INLINE xiiStringView GetResourceID() const { return m_sUniqueID; }
@@ -243,6 +255,7 @@ private:
   xiiString                     m_sResourceDescription;
   MemoryUsage                   m_MemoryUsage;
   xiiMutex                      m_MemoryUsageMutex;
+  mutable xiiMutex              m_ContentStatsMutex;
   xiiBitflags<xiiResourceFlags> m_Flags;
 
   xiiTime             m_LastAcquire;

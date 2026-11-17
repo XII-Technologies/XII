@@ -259,7 +259,7 @@ XII_FORCE_INLINE void xiiResourceManager::EndAcquireResourcePointer(xiiResource*
 }
 
 template <typename ResourceType>
-xiiLockedObject<xiiMutex, xiiDynamicArray<xiiResource*>> xiiResourceManager::GetAllResourcesOfType()
+xiiLockedObject<xiiMutex, xiiDynamicArray<xiiResource*>> xiiResourceManager::GetAllResourcesOfType(xiiUInt32 uiMaximumResources)
 {
   const xiiRTTI* pBaseType = xiiGetStaticRTTI<ResourceType>();
 
@@ -282,10 +282,12 @@ xiiLockedObject<xiiMutex, xiiDynamicArray<xiiResource*>> xiiResourceManager::Get
     {
       const LoadedResources& lr = GetLoadedResources()[pDerivedType];
 
-      container.Reserve(container.GetCount() + lr.m_Resources.GetCount());
+      container.Reserve(container.GetCount() + xiiMath::Min(lr.m_Resources.GetCount(), uiMaximumResources - container.GetCount()));
 
       for (auto itResource : lr.m_Resources)
       {
+        if (container.GetCount() == uiMaximumResources)
+          return loadedResourcesLock;
         container.PushBack(itResource.Value());
       }
     }

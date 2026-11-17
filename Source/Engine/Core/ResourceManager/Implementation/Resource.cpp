@@ -115,7 +115,21 @@ void xiiResource::PrintHandleStackTraces()
 
 void xiiResource::SetResourceDescription(xiiStringView sDescription)
 {
+  XII_LOCK(m_ContentStatsMutex);
   m_sResourceDescription = sDescription;
+}
+
+bool xiiResource::TryCaptureContentStats(ContentStats& out_stats) const
+{
+  if (m_ContentStatsMutex.TryLock().Failed())
+    return false;
+  XII_SCOPE_EXIT(m_ContentStatsMutex.Unlock());
+  out_stats.m_sDescription  = m_sResourceDescription;
+  out_stats.m_Memory        = m_MemoryUsage;
+  out_stats.m_State         = m_LoadingState;
+  out_stats.m_uiDiscardable = m_uiQualityLevelsDiscardable;
+  out_stats.m_uiLoadable    = m_uiQualityLevelsLoadable;
+  return true;
 }
 
 void xiiResource::SetUniqueID(xiiStringView sUniqueID, bool bIsReloadable)
@@ -145,9 +159,12 @@ void xiiResource::CallUnloadData(Unload WhatToUnload)
   XII_ASSERT_DEV(ld.m_uiQualityLevelsDiscardable != 0xFF, "UnloadData() did not fill out m_uiQualityLevelsDiscardable correctly");
   XII_ASSERT_DEV(ld.m_uiQualityLevelsLoadable != 0xFF, "UnloadData() did not fill out m_uiQualityLevelsLoadable correctly");
 
-  m_LoadingState               = ld.m_State;
-  m_uiQualityLevelsDiscardable = ld.m_uiQualityLevelsDiscardable;
-  m_uiQualityLevelsLoadable    = ld.m_uiQualityLevelsLoadable;
+  {
+    XII_LOCK(m_ContentStatsMutex);
+    m_LoadingState               = ld.m_State;
+    m_uiQualityLevelsDiscardable = ld.m_uiQualityLevelsDiscardable;
+    m_uiQualityLevelsLoadable    = ld.m_uiQualityLevelsLoadable;
+  }
 }
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
@@ -194,9 +211,12 @@ void xiiResource::CallUpdateContent(xiiStreamReader* pStream, const xiiResourceL
 
   IncResourceChangeCounter();
 
-  m_uiQualityLevelsDiscardable = ld.m_uiQualityLevelsDiscardable;
-  m_uiQualityLevelsLoadable    = ld.m_uiQualityLevelsLoadable;
-  m_LoadingState               = ld.m_State;
+  {
+    XII_LOCK(m_ContentStatsMutex);
+    m_uiQualityLevelsDiscardable = ld.m_uiQualityLevelsDiscardable;
+    m_uiQualityLevelsLoadable    = ld.m_uiQualityLevelsLoadable;
+    m_LoadingState               = ld.m_State;
+  }
 
   xiiResourceEvent e;
   e.m_pResource = this;
@@ -276,9 +296,12 @@ void xiiResource::VerifyAfterCreateResource(const xiiResourceLoadDescription& ld
 
   IncResourceChangeCounter();
 
-  m_LoadingState               = ld.m_State;
-  m_uiQualityLevelsDiscardable = ld.m_uiQualityLevelsDiscardable;
-  m_uiQualityLevelsLoadable    = ld.m_uiQualityLevelsLoadable;
+  {
+    XII_LOCK(m_ContentStatsMutex);
+    m_LoadingState               = ld.m_State;
+    m_uiQualityLevelsDiscardable = ld.m_uiQualityLevelsDiscardable;
+    m_uiQualityLevelsLoadable    = ld.m_uiQualityLevelsLoadable;
+  }
 
   RefreshMemoryUsage();
 
@@ -299,7 +322,10 @@ void xiiResource::RefreshMemoryUsage()
   UpdateMemoryUsage(usage);
   XII_ASSERT_DEV(usage.m_uiMemoryCPU != 0xFFFFFFFF, "Resource '{}' did not update CPU memory usage", GetResourceID());
   XII_ASSERT_DEV(usage.m_uiMemoryGPU != 0xFFFFFFFF, "Resource '{}' did not update GPU memory usage", GetResourceID());
-  m_MemoryUsage = usage;
+  {
+    XII_LOCK(m_ContentStatsMutex);
+    m_MemoryUsage = usage;
+  }
 }
 
 XII_STATICLINK_FILE(Core, Core_ResourceManager_Implementation_Resource);
