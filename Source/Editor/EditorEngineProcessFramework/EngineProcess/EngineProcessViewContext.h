@@ -34,6 +34,8 @@ class xiiGALTextureView;
 /// Represents a view context in the engine process that is used to render a view for an editor document. It is responsible for creating a view, setting up the render target and handling view messages from the editor process.
 class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiEngineProcessViewContext
 {
+  XII_DISALLOW_COPY_AND_ASSIGN(xiiEngineProcessViewContext);
+
 public:
   xiiEngineProcessViewContext(xiiEngineProcessDocumentContext* pContext);
   virtual ~xiiEngineProcessViewContext();
