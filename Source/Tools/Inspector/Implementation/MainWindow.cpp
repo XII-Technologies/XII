@@ -245,6 +245,10 @@ void xiiQtMainWindow::UpdateNetworkTimeOut()
 void xiiQtMainWindow::UpdateNetwork()
 {
   m_DiagnosticsClient.Update();
+  const auto error = m_DiagnosticsClient.GetConnectionError();
+  if (error.Failed() && error.m_Code != m_LastDiagnosticsError)
+    xiiQtLogDockWidget::s_pWidget->Log(xiiFmt("Diagnostics connection ended: {} (native error {}).", error.GetCodeName(), error.m_iNativeCode));
+  m_LastDiagnosticsError = error.m_Code;
   xiiNetworkRpcResult         command;
   xiiTelemetryCommandResponse response;
   for (xiiUInt32 i = 0; i < 32 && m_DiagnosticsClient.TryGetCommandResult(command, response); ++i)
@@ -358,9 +362,10 @@ void xiiQtMainWindow::UpdateNetwork()
 xiiResult xiiQtMainWindow::ConnectDiagnostics(xiiStringView sAddress, xiiUuid expectedInstance)
 {
   auto resetView = [&] {
-    m_ExpectedInstance  = expectedInstance;
-    m_LastInstance      = {};
-    m_bDiagnosticsReady = false;
+    m_ExpectedInstance     = expectedInstance;
+    m_LastInstance         = {};
+    m_bDiagnosticsReady    = false;
+    m_LastDiagnosticsError = xiiNetworkErrorCode::Success;
     xiiQtProfilingWidget::s_pWidget->GetSession()->ResetConnection();
   };
   xiiTelemetryConfiguration config;
