@@ -35,6 +35,9 @@ public:
   /// Returns the entire map of stats, can be used to display them.
   static const MapType& GetAllStats() { return s_Stats; }
 
+  /// Copies a bounded snapshot under the statistics lock. Returns the number of omitted entries.
+  static xiiUInt32 Capture(MapType& out_stats, xiiUInt32 uiMaximumEntries);
+
   /// The event data that is broadcast whenever a stat is changed.
   struct StatsEventData
   {
