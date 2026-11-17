@@ -163,7 +163,8 @@ xiiResult xiiTelemetryDiscovery::Enumerate(xiiDynamicArray<xiiTelemetryInstance>
     const auto* entry = readdir(files);
     if (entry == nullptr)
       return errno == 0 ? XII_SUCCESS : XII_FAILURE;
-    const xiiStringView name(entry->d_name);
+    const char*         szName = entry->d_name;
+    const xiiStringView name(szName);
     if (name.EndsWith(".instance"))
       ReadAdvertisement(xiiStringBuilder(directory, "/", name), out_instances);
   }
