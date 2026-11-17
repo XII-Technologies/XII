@@ -598,11 +598,11 @@ xiiNetworkError xiiNetworkIOContext::GetPeerEndpoint(xiiNetworkIORegistration re
   });
 }
 
-xiiNetworkError xiiNetworkIOContext::GetLocalPeerIdentity(xiiNetworkIORegistration registration, xiiString& out_sIdentity) const
+xiiNetworkError xiiNetworkIOContext::GetLocalPeerIdentity(xiiNetworkIORegistration registration, xiiString& out_sIdentity, xiiUInt32* out_pProcessId) const
 {
   return WithRegistration(*m_pRuntime, registration, [&](auto&, auto& entry) {
     return entry.IsLocal() && xiiNetworkIOInternal::LocalSocketAccess::IsConnected(entry.GetLocalSocket()) ?
-      xiiNetworkIOInternal::LocalSocketAccess::PeerIdentity(entry.GetLocalSocket(), out_sIdentity) :
+      xiiNetworkIOInternal::LocalSocketAccess::PeerIdentity(entry.GetLocalSocket(), out_sIdentity, out_pProcessId) :
       xiiNetworkError(xiiNetworkErrorCode::NotConnected);
   });
 }

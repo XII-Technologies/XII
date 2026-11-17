@@ -273,6 +273,7 @@ namespace
       auto& sIdentity = LocalSocketAccess::Identity(socket);
       if (sIdentity.IsEmpty() && operation.m_CancelReason.Succeeded())
       {
+        ULONG uiPeerProcessId = 0;
         error = VerifyLocalPipeClient(hPipe, sIdentity);
         if (error.Failed())
         {
@@ -282,6 +283,10 @@ namespace
           sIdentity.Clear();
           operation.m_pRegistration->m_bClosing = true;
           return {error, 0};
+        }
+        if (::GetNamedPipeClientProcessId(hPipe, &uiPeerProcessId))
+        {
+          LocalSocketAccess::PeerProcessId(socket) = uiPeerProcessId;
         }
       }
     }
@@ -323,6 +328,11 @@ namespace
       LocalSocketAccess::SetEndpoint(socket, endpoint);
       LocalSocketAccess::SetConnected(socket);
       LocalSocketAccess::Identity(socket) = std::move(sSid);
+      ULONG uiPeerProcessId               = 0;
+      if (::GetNamedPipeServerProcessId(hPeer, &uiPeerProcessId))
+      {
+        LocalSocketAccess::PeerProcessId(socket) = uiPeerProcessId;
+      }
       return {};
     }
     const auto hPipe    = reinterpret_cast<HANDLE>(LocalSocketAccess::Native(socket));
@@ -392,13 +402,17 @@ namespace xiiNetworkIOInternal
     return error;
   }
 
-  xiiNetworkError LocalSocketAccess::PeerIdentity(const xiiNetworkLocalSocket& socket, xiiString& out_sIdentity)
+  xiiNetworkError LocalSocketAccess::PeerIdentity(const xiiNetworkLocalSocket& socket, xiiString& out_sIdentity, xiiUInt32* out_pProcessId)
   {
     if (socket.m_sPeerIdentity.IsEmpty())
     {
       return xiiNetworkError(xiiNetworkErrorCode::InProgress);
     }
     out_sIdentity = socket.m_sPeerIdentity;
+    if (out_pProcessId != nullptr)
+    {
+      *out_pProcessId = socket.m_uiPeerProcessId;
+    }
     return {};
   }
 

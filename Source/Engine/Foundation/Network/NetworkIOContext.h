@@ -55,7 +55,7 @@ public:
   [[nodiscard]] xiiNetworkError Register(xiiNetworkLocalSocket&& socket, xiiNetworkIORegistration& out_registration);
   [[nodiscard]] xiiNetworkError OpenLocal(xiiNetworkIORegistration& out_registration);
   [[nodiscard]] xiiNetworkError ListenLocal(const xiiNetworkLocalEndpoint& endpoint, xiiNetworkIORegistration& out_registration, xiiInt32 iBacklog = 128);
-  [[nodiscard]] xiiNetworkError GetLocalPeerIdentity(xiiNetworkIORegistration registration, xiiString& out_sIdentity) const;
+  [[nodiscard]] xiiNetworkError GetLocalPeerIdentity(xiiNetworkIORegistration registration, xiiString& out_sIdentity, xiiUInt32* out_pProcessId = nullptr) const;
   /// Requests removal, rejecting new work immediately. Existing operations still complete exactly once.
   [[nodiscard]] xiiNetworkError Deregister(xiiNetworkIORegistration registration);
   /// Half-close a TCP registration after its write queue drains. Pending writes/connects reject

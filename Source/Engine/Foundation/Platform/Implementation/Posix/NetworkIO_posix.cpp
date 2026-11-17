@@ -229,7 +229,7 @@ namespace xiiNetworkIOInternal
     return {};
   }
 
-  xiiNetworkError LocalSocketAccess::PeerIdentity(const xiiNetworkLocalSocket& socket, xiiString& out_sIdentity)
+  xiiNetworkError LocalSocketAccess::PeerIdentity(const xiiNetworkLocalSocket& socket, xiiString& out_sIdentity, xiiUInt32* out_pProcessId)
   {
     const int iSocket = static_cast<int>(socket.m_uiNativeHandle);
     uid_t     uid     = {};
@@ -241,11 +241,21 @@ namespace xiiNetworkIOInternal
       return xiiNetworkError(xiiNetworkErrorCode::AuthenticationFailed);
     }
     uid = credentials.uid;
+    const pid_t peerPid = credentials.pid;
 #  else
     gid_t gid = {};
     if (::getpeereid(iSocket, &uid, &gid) != 0)
     {
       return xiiNetworkError(xiiNetworkErrorCode::AuthenticationFailed);
+    }
+    pid_t peerPid = 0;
+    if (out_pProcessId != nullptr)
+    {
+      socklen_t uiSize = sizeof(peerPid);
+      if (::getsockopt(iSocket, SOL_LOCAL, LOCAL_PEERPID, &peerPid, &uiSize) != 0 || uiSize != sizeof(peerPid))
+      {
+        peerPid = 0;
+      }
     }
 #  endif
     if (uid != ::geteuid())
@@ -255,6 +265,10 @@ namespace xiiNetworkIOInternal
     xiiStringBuilder identity;
     identity.SetFormat("uid:{0}", static_cast<xiiUInt32>(uid));
     out_sIdentity = identity;
+    if (out_pProcessId != nullptr)
+    {
+      *out_pProcessId = peerPid > 0 ? static_cast<xiiUInt32>(peerPid) : 0;
+    }
     return {};
   }
 
