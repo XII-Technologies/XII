@@ -16,6 +16,20 @@ enum class xiiTelemetryPermission : xiiUInt8
   Console   = 8
 };
 
+enum class xiiTelemetryFileOperation : xiiUInt8
+{
+  Open            = 1,
+  Close           = 2,
+  Read            = 3,
+  Write           = 4,
+  Exists          = 5,
+  Delete          = 6,
+  CreateDirectory = 7,
+  Copy            = 8,
+  Stat            = 9,
+  Casing          = 10
+};
+
 namespace xiiTelemetrySources
 {
   inline constexpr xiiUInt64 Counters       = 0x5849495354415432ULL;
@@ -23,6 +37,17 @@ namespace xiiTelemetrySources
   inline constexpr xiiUInt64 Profiling      = 0x58494950524F4632ULL;
   inline constexpr xiiUInt64 RenderGraphs   = 0x5849494752415032ULL;
   inline constexpr xiiUInt64 ProfileHistory = 0x5849494849535432ULL;
+  inline constexpr xiiUInt64 Memory         = 0x5849494D454D3032ULL;
+  inline constexpr xiiUInt64 Plugins        = 0x584949504C554732ULL;
+  inline constexpr xiiUInt64 GlobalEvents   = 0x58494945564E5432ULL;
+  inline constexpr xiiUInt64 Input          = 0x584949494E505432ULL;
+  inline constexpr xiiUInt64 Files          = 0x58494946494C4532ULL;
+  inline constexpr xiiUInt64 Time           = 0x58494954494D4532ULL;
+  inline constexpr xiiUInt64 Subsystems     = 0x5849495359535432ULL;
+  inline constexpr xiiUInt64 Reflection     = 0x58494952464C4332ULL;
+  inline constexpr xiiUInt64 Resources      = 0x5849495245534D32ULL;
+  inline constexpr xiiUInt64 CVars          = 0x5849494356415232ULL;
+  inline constexpr xiiUInt64 Application    = 0x5849494150503032ULL;
 } // namespace xiiTelemetrySources
 
 struct XII_FOUNDATION_DLL xiiTelemetrySourceInfo
@@ -36,10 +61,13 @@ struct XII_FOUNDATION_DLL xiiTelemetrySourceInfo
   bool      m_bSnapshot                     = false;
   /// Latest-only sources coalesce pending measurements when a client's sampling interval is slower.
   bool m_bLatestOnly = false;
+  /// Zero is continuous; nonzero bounds collection after each enabled request.
+  xiiUInt32 m_uiCollectionWindowMilliseconds = 0;
 };
 
 struct XII_FOUNDATION_DLL xiiTelemetryHello
 {
+  xiiUInt64                               m_uiCatalogRevision = 0;
   xiiUuid                                 m_Instance;
   xiiString                               m_sApplication;
   xiiUInt32                               m_uiProcessId   = 0;
@@ -57,19 +85,36 @@ struct XII_FOUNDATION_DLL xiiTelemetrySubscription
   bool      m_bSnapshot              = false;
 };
 
-/// Source-specific scalar fields and explicitly versioned dense binary data.
+/// Bounded rows for atomic source snapshots. Values have no object construction semantics.
+struct XII_FOUNDATION_DLL xiiTelemetryRecord
+{
+  xiiVariantDictionary m_Fields;
+
+  template <typename T>
+  bool Read(xiiStringView sField, T& out_value) const
+  {
+    const auto* value = m_Fields.GetValue(sField);
+    if (value == nullptr || !value->IsA<T>())
+      return false;
+    out_value = value->Get<T>();
+    return true;
+  }
+};
+
+/// Source-specific scalar fields, atomic table snapshots, and versioned dense binary data.
 /// Payload size and collection retention are bounded independently.
 struct XII_FOUNDATION_DLL xiiTelemetrySample
 {
-  xiiUInt64            m_uiSource               = 0;
-  xiiUInt64            m_uiGeneration           = 0;
-  xiiUInt64            m_uiSequence             = 0;
-  xiiUInt64            m_uiDropped              = 0;
-  xiiUInt32            m_uiKind                 = 0;
-  xiiUInt32            m_uiEncodingVersion      = 1;
-  double               m_fTimestampMicroseconds = 0;
-  xiiVariantDictionary m_Fields;
-  xiiDataBuffer        m_Data;
+  xiiUInt64                           m_uiSource               = 0;
+  xiiUInt64                           m_uiGeneration           = 0;
+  xiiUInt64                           m_uiSequence             = 0;
+  xiiUInt64                           m_uiDropped              = 0;
+  xiiUInt32                           m_uiKind                 = 0;
+  xiiUInt32                           m_uiEncodingVersion      = 1;
+  double                              m_fTimestampMicroseconds = 0;
+  xiiVariantDictionary                m_Fields;
+  xiiDynamicArray<xiiTelemetryRecord> m_Records;
+  xiiDataBuffer                       m_Data;
 };
 
 struct XII_FOUNDATION_DLL xiiTelemetrySubscriptionResult
@@ -84,5 +129,6 @@ struct XII_FOUNDATION_DLL xiiTelemetrySubscriptionResult
 XII_DECLARE_REFLECTABLE_TYPE(XII_FOUNDATION_DLL, xiiTelemetrySourceInfo);
 XII_DECLARE_REFLECTABLE_TYPE(XII_FOUNDATION_DLL, xiiTelemetryHello);
 XII_DECLARE_REFLECTABLE_TYPE(XII_FOUNDATION_DLL, xiiTelemetrySubscription);
+XII_DECLARE_REFLECTABLE_TYPE(XII_FOUNDATION_DLL, xiiTelemetryRecord);
 XII_DECLARE_REFLECTABLE_TYPE(XII_FOUNDATION_DLL, xiiTelemetrySample);
 XII_DECLARE_REFLECTABLE_TYPE(XII_FOUNDATION_DLL, xiiTelemetrySubscriptionResult);

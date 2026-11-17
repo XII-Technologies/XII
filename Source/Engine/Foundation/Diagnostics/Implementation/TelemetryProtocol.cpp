@@ -28,7 +28,9 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiTelemetrySourceInfo, xiiNoBase, 1, xiiRTTIDef
     XII_MEMBER_PROPERTY("Permission", m_uiPermission)->AddAttributes(new xiiNetworkAttribute(6)),
     XII_MEMBER_PROPERTY("Snapshot", m_bSnapshot)->AddAttributes(new xiiNetworkAttribute(7)),
     XII_MEMBER_PROPERTY("LatestOnly", m_bLatestOnly)->AddAttributes(new xiiNetworkAttribute(8)),
+    XII_MEMBER_PROPERTY("CollectionWindow", m_uiCollectionWindowMilliseconds)->AddAttributes(new xiiNetworkAttribute(9)),
   } XII_END_PROPERTIES;
+  XII_BEGIN_ATTRIBUTES { new xiiNetworkIdentityAttribute(0x5849494432000001ULL) } XII_END_ATTRIBUTES;
 } XII_END_STATIC_REFLECTED_TYPE;
 
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiTelemetryHello, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiTelemetryHello>)
@@ -40,7 +42,9 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiTelemetryHello, xiiNoBase, 1, xiiRTTIDefaultA
     XII_MEMBER_PROPERTY("Process", m_uiProcessId)->AddAttributes(new xiiNetworkAttribute(3)),
     XII_MEMBER_PROPERTY("Permissions", m_uiPermissions)->AddAttributes(new xiiNetworkAttribute(4)),
     XII_ARRAY_MEMBER_PROPERTY("Sources", m_Sources)->AddAttributes(BoundedField(5, 64)),
+    XII_MEMBER_PROPERTY("CatalogRevision", m_uiCatalogRevision)->AddAttributes(new xiiNetworkAttribute(6)),
   } XII_END_PROPERTIES;
+  XII_BEGIN_ATTRIBUTES { new xiiNetworkIdentityAttribute(0x5849494432000002ULL) } XII_END_ATTRIBUTES;
 } XII_END_STATIC_REFLECTED_TYPE;
 
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiTelemetrySubscription, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiTelemetrySubscription>)
@@ -54,6 +58,16 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiTelemetrySubscription, xiiNoBase, 1, xiiRTTID
     XII_MEMBER_PROPERTY("Enabled", m_bEnabled)->AddAttributes(new xiiNetworkAttribute(5)),
     XII_MEMBER_PROPERTY("Snapshot", m_bSnapshot)->AddAttributes(new xiiNetworkAttribute(6)),
   } XII_END_PROPERTIES;
+  XII_BEGIN_ATTRIBUTES { new xiiNetworkIdentityAttribute(0x5849494432000003ULL) } XII_END_ATTRIBUTES;
+} XII_END_STATIC_REFLECTED_TYPE;
+
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiTelemetryRecord, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiTelemetryRecord>)
+{
+  XII_BEGIN_PROPERTIES
+  {
+    XII_MEMBER_PROPERTY("Fields", m_Fields)->AddAttributes(BoundedField(1, 256)),
+  } XII_END_PROPERTIES;
+  XII_BEGIN_ATTRIBUTES { new xiiNetworkIdentityAttribute(0x5849494432000004ULL) } XII_END_ATTRIBUTES;
 } XII_END_STATIC_REFLECTED_TYPE;
 
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiTelemetrySample, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiTelemetrySample>)
@@ -69,7 +83,9 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiTelemetrySample, xiiNoBase, 1, xiiRTTIDefault
     XII_MEMBER_PROPERTY("TimestampUs", m_fTimestampMicroseconds)->AddAttributes(new xiiNetworkAttribute(7)),
     XII_MEMBER_PROPERTY("Fields", m_Fields)->AddAttributes(BoundedField(8, 256)),
     XII_MEMBER_PROPERTY("Data", m_Data)->AddAttributes(BoundedField(9, 16 * 1024 * 1024)),
+    XII_ARRAY_MEMBER_PROPERTY("Records", m_Records)->AddAttributes(BoundedField(10, 4096)),
   } XII_END_PROPERTIES;
+  XII_BEGIN_ATTRIBUTES { new xiiNetworkIdentityAttribute(0x5849494432000005ULL) } XII_END_ATTRIBUTES;
 } XII_END_STATIC_REFLECTED_TYPE;
 
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiTelemetrySubscriptionResult, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiTelemetrySubscriptionResult>)
@@ -82,6 +98,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiTelemetrySubscriptionResult, xiiNoBase, 1, xi
     XII_MEMBER_PROPERTY("Interval", m_uiIntervalMilliseconds)->AddAttributes(new xiiNetworkAttribute(4)),
     XII_MEMBER_PROPERTY("Error", m_uiError)->AddAttributes(new xiiNetworkAttribute(5)),
   } XII_END_PROPERTIES;
+  XII_BEGIN_ATTRIBUTES { new xiiNetworkIdentityAttribute(0x5849494432000006ULL) } XII_END_ATTRIBUTES;
 } XII_END_STATIC_REFLECTED_TYPE;
 // clang-format on
 

@@ -4,6 +4,7 @@
 
 #include <Foundation/Basics.h>
 
+#include <Foundation/Diagnostics/TelemetryCommands.h>
 #include <Foundation/Diagnostics/TelemetryProtocol.h>
 #include <Foundation/Network/Messaging/NetworkReflectionEndpoint.h>
 #include <Foundation/Types/Delegate.h>
@@ -13,9 +14,11 @@ struct XII_FOUNDATION_DLL xiiTelemetryConfiguration
   xiiTelemetryConfiguration() { m_Network.m_uiMaximumConnections = 8; }
   xiiNetworkHostConfiguration m_Network;
   xiiString                   m_sApplication;
-  xiiUInt32                   m_uiMaximumQueuedSamples = 1024;
-  xiiUInt64                   m_uiMaximumQueuedBytes   = 32 * 1024 * 1024;
-  xiiUInt64                   m_uiMaximumClientBytes   = 32 * 1024 * 1024;
+  xiiUInt32                   m_uiMaximumPublicationsPerUpdate     = 64;
+  xiiUInt64                   m_uiMaximumPublicationBytesPerUpdate = 32 * 1024 * 1024;
+  xiiUInt32                   m_uiMaximumQueuedSamples             = 1024;
+  xiiUInt64                   m_uiMaximumQueuedBytes               = 32 * 1024 * 1024;
+  xiiUInt64                   m_uiMaximumClientBytes               = 32 * 1024 * 1024;
   /// Read and capture are separate permissions. Mutating permissions require explicit configuration.
   xiiUInt8 m_uiPermissions = static_cast<xiiUInt8>(xiiTelemetryPermission::Read) | static_cast<xiiUInt8>(xiiTelemetryPermission::Capture);
 };
@@ -29,9 +32,12 @@ struct XII_FOUNDATION_DLL xiiTelemetryStatistics
   xiiUInt64 m_uiSamplesCollected   = 0;
   xiiUInt64 m_uiSamplesDropped     = 0;
   xiiUInt64 m_uiPublishedBytes     = 0;
+  xiiUInt64 m_uiSamplesPublished   = 0;
   xiiUInt64 m_uiBackpressureEvents = 0;
   xiiTime   m_CollectionTime;
   xiiTime   m_PublicationTime;
+  xiiTime   m_SerializationTime;
+  xiiTime   m_MaximumPublicationDelay;
 };
 
 class xiiTelemetryServiceState;
@@ -43,7 +49,9 @@ struct XII_FOUNDATION_DLL xiiTelemetrySubscriber
 };
 
 /// Application-owned diagnostics. Registration, collection, Update, and lifecycle run on the owning
-/// application thread. Publish may run on producer threads and never performs network operations.
+/// application thread. IsCollecting, RecordDropped, and Publish may run on producer threads.
+/// Producer operations never perform network I/O. A service starts one host; create a fresh service
+/// after Shutdown. Client Connect creates a fresh host for each connection.
 /// Stop producers and unregister their callbacks before destroying the service or unloading a plugin.
 class XII_FOUNDATION_DLL xiiTelemetryService final
 {
@@ -61,22 +69,30 @@ public:
 
   xiiNetworkError Start(const xiiTelemetryConfiguration& configuration, Authorize authorize = {});
   /// Starts same-user diagnostics with a unique native endpoint unless a name is supplied.
-  xiiNetworkError StartLocal(xiiStringView sApplication, xiiStringView sEndpointName = {});
+  xiiNetworkError StartLocal(xiiStringView sApplication, xiiStringView sEndpointName = {}, xiiUInt8 uiPermissions = 3);
   xiiStringView   GetLocalEndpointName() const;
+  xiiNetworkError StartFromCommandLine(xiiStringView sApplication);
   xiiNetworkError Listen(const xiiNetworkLocalEndpoint& endpoint);
-  xiiNetworkError Listen(const xiiNetworkEndpoint& endpoint);
+  xiiNetworkError Listen(const xiiNetworkEndpoint& endpoint, xiiNetworkEndpoint* out_endpoint = nullptr);
   void            Shutdown();
   void            Update();
+
+  void SetConsoleHandler(xiiTelemetryCommands::Console console);
 
   xiiResult RegisterSource(const xiiTelemetrySourceInfo& info, Collect collect = {}, Demand demand = {});
   void      UnregisterSource(xiiUInt64 uiSource);
   bool      IsCollecting(xiiUInt64 uiSource) const;
+  /// Producer-side loss accounting; never waits on collection or network locks.
+  void RecordDropped(xiiUInt64 uiSource, xiiUInt64 uiCount = 1);
   /// Admission transfers ownership on success. Rejection preserves the caller's sample.
   xiiResult Publish(xiiTelemetrySample&& sample, xiiNetworkChannel recipient = {});
+  /// Shares one collected payload across an explicit, generation-scoped set of consumers.
+  xiiResult Publish(xiiTelemetrySample&& sample, xiiArrayPtr<const xiiTelemetrySubscriber> recipients);
   /// Caller-thread snapshot for encoders with independent per-consumer dictionaries.
   void GetSubscribers(xiiUInt64 uiSource, xiiDynamicArray<xiiTelemetrySubscriber>& out_subscribers) const;
   /// Explicit offline collection. No network initialization or subscribers are required.
-  xiiResult                Capture(xiiUInt64 uiSource, Snapshot snapshot);
+  xiiResult Capture(xiiUInt64 uiSource, Snapshot snapshot);
+  /// Owning-thread query. Queue occupancy includes shared input and pending client deliveries.
   xiiTelemetryStatistics   GetStatistics() const;
   xiiNetworkHostStatistics GetNetworkStatistics() const;
   xiiUuid                  GetInstanceId() const;
@@ -106,8 +122,14 @@ public:
   void                     Update();
   bool                     IsReady() const;
   const xiiTelemetryHello& GetServerInfo() const;
+  bool                     IsSourceAvailable(xiiUInt64 uiSource) const;
+  xiiNetworkError          GetConnectionInfo(xiiNetworkConnectionInfo& out_info) const;
   xiiNetworkError          GetConnectionError() const;
   xiiNetworkDataError      Subscribe(const xiiTelemetrySubscription& subscription);
+  xiiNetworkDataError      SetCVar(xiiStringView sName, const xiiVariant& value, xiiNetworkRpcRequest& out_request);
+  xiiNetworkDataError      Console(xiiStringView sCommand, bool bComplete, xiiNetworkRpcRequest& out_request);
+  xiiNetworkDataError      CancelCommand(xiiNetworkRpcRequest request);
+  bool                     TryGetCommandResult(xiiNetworkRpcResult& out_result, xiiTelemetryCommandResponse& out_response);
   void                     SetSampleHandler(SampleHandler handler);
   void                     SetSubscriptionHandler(SubscriptionHandler handler);
 
