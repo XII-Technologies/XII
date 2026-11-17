@@ -8,8 +8,6 @@
 
 #include <GraphicsFoundation/ShaderCompiler/Descriptors.h>
 
-class xiiRemoteMessage;
-
 /// Shader compiler interface.
 /// Custom shader compilers need to derive from this class and implement the pure virtual interface functions.
 /// Instances are created via reflection, so each implementation must be properly reflected.
@@ -51,8 +49,6 @@ private:
 
   bool PassThroughUnknownCommandCB(xiiStringView sCmd) { return sCmd == "version"; }
 
-  void ShaderCompileMsg(xiiRemoteMessage& msg);
-
   xiiResult FileOpen(xiiStringView sAbsoluteFile, xiiDynamicArray<xiiUInt8>& fileContent, xiiTimestamp& out_fileModification);
 
   struct ShaderData
@@ -72,6 +68,4 @@ private:
 
   xiiSet<xiiString> m_IncludeFiles;
 
-  bool      m_bCompileShaderRemotely    = false;
-  xiiResult m_RemoteShaderCompileResult = XII_FAILURE;
 };

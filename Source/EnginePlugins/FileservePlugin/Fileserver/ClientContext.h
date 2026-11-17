@@ -5,6 +5,9 @@
 #include <FileservePlugin/FileservePluginDLL.h>
 #include <Foundation/Containers/HybridArray.h>
 #include <Foundation/Strings/String.h>
+#include <Foundation/Strings/StringBuilder.h>
+
+class xiiOSFile;
 
 enum class xiiFileserveFileState
 {
@@ -26,6 +29,7 @@ public:
     xiiString m_sPathOnServer;
     xiiString m_sMountPoint;
     bool      m_bMounted = false;
+    bool      m_bWritable = false;
   };
 
   struct FileStatus
@@ -35,7 +39,10 @@ public:
     xiiUInt64 m_uiFileSize = 0;
   };
 
-  xiiFileserveFileState GetFileStatus(xiiUInt16& inout_uiDataDirID, const char* szRequestedFile, FileStatus& inout_status, xiiDynamicArray<xiiUInt8>& out_fileContent, bool bForceThisDataDir) const;
+  static bool           IsValidRelativePath(xiiStringView sPath);
+  static xiiResult      ResolveFilePath(xiiStringView sRoot, xiiStringView sRelativePath, xiiStringBuilder& out_sFile, bool bDirectory = false);
+  static xiiResult      HashFile(xiiOSFile& ref_file, xiiUInt64 uiSize, xiiUInt64& out_uiHash);
+  xiiFileserveFileState GetFileStatus(xiiUInt16& inout_uiDataDirID, xiiStringView sRequestedFile, FileStatus& inout_status, xiiOSFile& out_file, bool bForceThisDataDir) const;
 
   bool                       m_bLostConnection = false;
   xiiUInt32                  m_uiApplicationID = 0;

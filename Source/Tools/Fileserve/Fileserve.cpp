@@ -5,6 +5,7 @@
 #include <Fileserve/Fileserve.h>
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/IO/FileSystem/FileSystem.h>
+#include <Foundation/Types/ScopeExit.h>
 #include <Foundation/Utilities/CommandLineUtils.h>
 #include <GraphicsFoundation/ShaderCompiler/ShaderCompiler.h>
 #include <GraphicsFoundation/ShaderCompiler/ShaderManager.h>
@@ -104,81 +105,53 @@ void xiiFileserverApp::FileserverEventHandler(const xiiFileserverEvent& e)
   }
 }
 
-void xiiFileserverApp::ShaderMessageHandler(xiiFileserveClientContext& ref_ctxt, xiiRemoteMessage& ref_msg, xiiRemoteInterface& ref_clientChannel, xiiDelegate<void(const char*)> logActivity)
+xiiResult xiiFileserverApp::CompileShader(const xiiFileserveClientContext& client, const xiiRemoteShaderCompileRequest& request, xiiStringBuilder& out_sLog)
 {
-  if (ref_msg.GetMessageID() == 'CMPL')
+  XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("FileServe"));
+  bool bHasOutput = false;
+  for (const auto& dir : client.m_MountedDataDirs)
   {
-    for (auto& dd : ref_ctxt.m_MountedDataDirs)
+    if (!dir.m_bMounted)
+      continue;
+
+    const bool bOutput = dir.m_sRootName.IsEqual_NoCase("shadercache");
+    if (bOutput && (!dir.m_bWritable || bHasOutput))
     {
-      xiiFileSystem::AddDataDirectory(dd.m_sPathOnServer, "FileServe", dd.m_sRootName, xiiDataDirUsage::AllowWrites).IgnoreResult();
+      out_sLog = "Remote shader compilation requires one writable shadercache mount.";
+      return XII_FAILURE;
     }
 
-    auto& r = ref_msg.GetReader();
-
-    xiiStringBuilder                              tmp;
-    xiiStringBuilder                              sFile, sPlatform;
-    xiiUInt32                                     uiPermutationVariableCount;
-    xiiHybridArray<xiiGALPermutationVariable, 16> permutationVariables;
-
-    r >> sFile;
-    r >> sPlatform;
-    r >> uiPermutationVariableCount;
-    permutationVariables.SetCount(uiPermutationVariableCount);
-
-    tmp.SetFormat("Compiling Shader '{}' - '{}'", sFile, sPlatform);
-
-    for (auto& pv : permutationVariables)
+    const auto usage = bOutput ? xiiDataDirUsage::AllowWrites : xiiDataDirUsage::ReadOnly;
+    if (xiiFileSystem::AddDataDirectory(dir.m_sPathOnServer, "FileServe", dir.m_sRootName, usage).Failed())
     {
-      r >> pv.m_sName;
-      r >> pv.m_sValue;
-
-      tmp.AppendWithSeparator(" | ", pv.m_sName, "=", pv.m_sValue);
+      out_sLog = "Could not open a FileServe shader data directory.";
+      return XII_FAILURE;
     }
-
-    logActivity(tmp);
-
-    // enable runtime shader compilation and set the shader cache directories (this only works, if the user doesn't change the default values)
-    // the 'active platform' value should never be used during shader compilation, because there it is passed in
-    xiiGALShaderManager::Configure("FILESERVE_UNUSED", true);
-
-    xiiLogSystemToBuffer log;
-    xiiLogSystemScope    ls(&log);
-
-    xiiGALShaderCompiler shaderCompiler;
-    xiiResult            result = shaderCompiler.CompileShaderPermutationForPlatforms(sFile, permutationVariables, xiiLog::GetThreadLocalLogSystem(), sPlatform);
-
-    xiiFileSystem::RemoveDataDirectoryGroup("FileServe");
-
-    if (result.Succeeded())
-    {
-      // invalidate read cache to not short-circuit the next file read operation
-      xiiRemoteMessage msg2('FSRV', 'INVC');
-      ref_clientChannel.Send(xiiRemoteTransmitMode::Reliable, msg2);
-    }
-    else
-    {
-      logActivity("[ERROR] Shader Compilation failed:");
-
-      xiiHybridArray<xiiStringView, 32> lines;
-      log.m_sBuffer.Split(false, lines, "\n", "\r");
-
-      for (auto line : lines)
-      {
-        tmp.Set(">   ", line);
-        logActivity(tmp);
-      }
-    }
-
-    {
-      xiiRemoteMessage msg2('SHDR', 'CRES');
-      msg2.GetWriter() << (result == XII_SUCCESS);
-      msg2.GetWriter() << log.m_sBuffer;
-
-      ref_clientChannel.Send(xiiRemoteTransmitMode::Reliable, msg2);
-    }
+    bHasOutput |= bOutput;
   }
-}
 
+  if (!bHasOutput)
+  {
+    out_sLog = "Remote shader compilation requires a writable shadercache mount.";
+    return XII_FAILURE;
+  }
+
+  xiiHybridArray<xiiGALPermutationVariable, 16> permutations;
+  for (const auto& entry : request.m_Permutations)
+  {
+    auto& permutation = permutations.ExpandAndGetRef();
+    permutation.m_sName.Assign(entry.m_sName);
+    permutation.m_sValue.Assign(entry.m_sValue);
+  }
+
+  xiiGALShaderManager::Configure("FILESERVE_UNUSED", true);
+  xiiLogSystemToBuffer log;
+  xiiLogSystemScope    scope(&log);
+  xiiGALShaderCompiler compiler;
+  const auto           result = compiler.CompileShaderPermutationForPlatforms(request.m_sShader, permutations, &log, request.m_sPlatform);
+  out_sLog                    = log.m_sBuffer;
+  return result;
+}
 void xiiFileserverApp::SetStyleSheet()
 {
 #ifdef XII_USE_QT

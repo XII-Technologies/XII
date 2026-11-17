@@ -4,7 +4,6 @@
 
 #include <FileservePlugin/Fileserver/Fileserver.h>
 #include <Foundation/Application/Application.h>
-#include <Foundation/Communication/RemoteInterface.h>
 #include <Foundation/Types/UniquePtr.h>
 
 /// A stand-alone application for the xiiFileServer.
@@ -34,7 +33,7 @@ public:
   void                              FileserverEventHandlerConsole(const xiiFileserverEvent& e);
   void                              FileserverEventHandler(const xiiFileserverEvent& e);
 
-  void ShaderMessageHandler(xiiFileserveClientContext& ref_ctxt, xiiRemoteMessage& ref_msg, xiiRemoteInterface& ref_clientChannel, xiiDelegate<void(const char*)> logActivity);
+  xiiResult CompileShader(const xiiFileserveClientContext& client, const xiiRemoteShaderCompileRequest& request, xiiStringBuilder& out_sLog);
 
   void SetStyleSheet();
 
