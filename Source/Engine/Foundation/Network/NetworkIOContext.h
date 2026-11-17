@@ -10,6 +10,7 @@
 #include <Foundation/Network/NetworkResolver.h>
 #include <Foundation/Network/TcpListener.h>
 #include <Foundation/Network/UdpSocket.h>
+#include <Foundation/Strings/String.h>
 
 class xiiNetworkIORuntime;
 
@@ -50,12 +51,19 @@ public:
   [[nodiscard]] xiiNetworkError Register(xiiTcpSocket&& socket, xiiNetworkIORegistration& out_registration);
   [[nodiscard]] xiiNetworkError Register(xiiTcpListener&& listener, xiiNetworkIORegistration& out_registration);
   [[nodiscard]] xiiNetworkError Register(xiiUdpSocket&& socket, xiiNetworkIORegistration& out_registration);
+  /// Accept transfers the connected stream via m_AcceptedLocalSocket. Register it with this context.
+  [[nodiscard]] xiiNetworkError Register(xiiNetworkLocalSocket&& socket, xiiNetworkIORegistration& out_registration);
+  [[nodiscard]] xiiNetworkError OpenLocal(xiiNetworkIORegistration& out_registration);
+  [[nodiscard]] xiiNetworkError ListenLocal(const xiiNetworkLocalEndpoint& endpoint, xiiNetworkIORegistration& out_registration, xiiInt32 iBacklog = 128);
+  [[nodiscard]] xiiNetworkError GetLocalPeerIdentity(xiiNetworkIORegistration registration, xiiString& out_sIdentity) const;
   /// Requests removal, rejecting new work immediately. Existing operations still complete exactly once.
   [[nodiscard]] xiiNetworkError Deregister(xiiNetworkIORegistration registration);
   /// Half-close a TCP registration after its write queue drains. Pending writes/connects reject
   /// shutdown with InProgress; pending receives remain valid. UDP/listeners reject this operation.
   [[nodiscard]] xiiNetworkError ShutdownSocket(xiiNetworkIORegistration registration, xiiNetworkShutdown direction);
   [[nodiscard]] xiiNetworkError GetLocalEndpoint(xiiNetworkIORegistration registration, xiiNetworkEndpoint& out_endpoint) const;
+  /// Returns the named listener service used by a local listener or connected local stream.
+  [[nodiscard]] xiiNetworkError GetLocalEndpoint(xiiNetworkIORegistration registration, xiiNetworkLocalEndpoint& out_endpoint) const;
   [[nodiscard]] xiiNetworkError GetPeerEndpoint(xiiNetworkIORegistration registration, xiiNetworkEndpoint& out_endpoint) const;
 
   [[nodiscard]] xiiNetworkError AcquireBuffer(xiiUInt32 uiCount, xiiNetworkIOBuffer& out_buffer);
@@ -63,6 +71,7 @@ public:
   /// Each accepted operation reserves completion capacity and retains buffers through native completion.
   [[nodiscard]] xiiNetworkError Accept(xiiNetworkIORegistration listener, xiiNetworkIOOperation& out_operation, const xiiNetworkIOOptions& options = {});
   [[nodiscard]] xiiNetworkError Connect(xiiNetworkIORegistration socket, const xiiNetworkEndpoint& endpoint, xiiNetworkIOOperation& out_operation, const xiiNetworkIOOptions& options = {});
+  [[nodiscard]] xiiNetworkError Connect(xiiNetworkIORegistration socket, const xiiNetworkLocalEndpoint& endpoint, xiiNetworkIOOperation& out_operation, const xiiNetworkIOOptions& options = {});
   [[nodiscard]] xiiNetworkError Send(xiiNetworkIORegistration socket, xiiNetworkIOBuffers&& buffers, xiiNetworkIOOperation& out_operation, const xiiNetworkIOOptions& options = {});
   [[nodiscard]] xiiNetworkError Receive(xiiNetworkIORegistration socket, xiiNetworkIOBuffers&& buffers, xiiNetworkIOOperation& out_operation, const xiiNetworkIOOptions& options = {});
   [[nodiscard]] xiiNetworkError SendTo(xiiNetworkIORegistration socket, const xiiNetworkEndpoint& destination, xiiNetworkIOBuffers&& buffers, xiiNetworkIOOperation& out_operation, const xiiNetworkIOOptions& options = {});

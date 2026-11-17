@@ -7,6 +7,7 @@
 #include <Foundation/Containers/DynamicArray.h>
 #include <Foundation/Network/NetworkIOBuffer.h>
 #include <Foundation/Network/NetworkIOOperation.h>
+#include <Foundation/Network/NetworkLocalSocket.h>
 #include <Foundation/Network/TcpSocket.h>
 
 /// Move-only completion record, delivered only through caller-driven dequeue operations.
@@ -31,6 +32,8 @@ struct XII_FOUNDATION_DLL xiiNetworkIOResult
   xiiNetworkIOBuffers                 m_Buffers;
   xiiNetworkEndpoint                  m_Endpoint;
   xiiTcpSocket                        m_AcceptedSocket;
+  xiiNetworkLocalEndpoint             m_LocalEndpoint;
+  xiiNetworkLocalSocket               m_AcceptedLocalSocket;
   xiiDynamicArray<xiiNetworkEndpoint> m_ResolvedEndpoints;
   [[nodiscard]] bool                  Succeeded() const { return m_Error.Succeeded(); }
   [[nodiscard]] bool                  Failed() const { return m_Error.Failed(); }

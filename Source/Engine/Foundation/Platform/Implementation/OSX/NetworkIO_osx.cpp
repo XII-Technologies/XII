@@ -151,7 +151,7 @@ namespace xiiNetworkIOInternal
       return;
     }
     auto&           state    = *static_cast<NetworkKqueueState*>(worker.m_pNativeData);
-    const uintptr_t uiSocket = static_cast<uintptr_t>(xiiNetworkSocketAccess::BorrowNativeHandle(registration.GetSocket()));
+    const uintptr_t uiSocket = static_cast<uintptr_t>(registration.GetNativeHandle());
     for (xiiUInt32 uiBit = 1; uiBit <= 2; uiBit <<= 1)
     {
       if ((registration.m_uiNativeInterest & uiBit) != 0)
@@ -169,7 +169,7 @@ namespace xiiNetworkIOInternal
   {
     auto&           state      = *static_cast<NetworkKqueueState*>(worker.m_pNativeData);
     const xiiUInt32 uiInterest = (registration.m_Read.m_pHead != nullptr ? 1U : 0U) | (registration.m_Write.m_pHead != nullptr ? 2U : 0U);
-    const uintptr_t uiSocket   = static_cast<uintptr_t>(xiiNetworkSocketAccess::BorrowNativeHandle(registration.GetSocket()));
+    const uintptr_t uiSocket   = static_cast<uintptr_t>(registration.GetNativeHandle());
     for (xiiUInt32 uiBit = 1; uiBit <= 2; uiBit <<= 1)
     {
       struct kevent event = {};
