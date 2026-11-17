@@ -27,12 +27,13 @@ struct xiiFileserver::Download
   xiiString                             m_sPath;
   xiiUuid                               m_Id;
   xiiTime                               m_Deadline;
-  xiiUInt32                             m_uiClientId  = 0;
-  xiiUInt32                             m_uiSent      = 0;
-  xiiUInt16                             m_uiDataDir   = 0;
-  xiiUInt16                             m_uiChunkSize = 0;
-  bool                                  m_bChunkReady = false;
-  bool                                  m_bSentChunk  = false;
+  xiiUInt32                             m_uiClientId     = 0;
+  xiiUInt32                             m_uiSent         = 0;
+  xiiUInt32                             m_uiAcknowledged = 0;
+  xiiUInt16                             m_uiDataDir      = 0;
+  xiiUInt16                             m_uiChunkSize    = 0;
+  bool                                  m_bChunkReady    = false;
+  bool                                  m_bSentChunk     = false;
   xiiUInt8                              m_Chunk[xiiFileserveTransfer::ChunkBytes];
 };
 
@@ -181,10 +182,17 @@ bool xiiFileserver::UpdateServer()
   }
   for (auto it = m_Downloads.GetIterator(); it.IsValid();)
   {
+    const auto uiSent = it.Value()->m_uiSent;
     if (PumpDownload(*it.Value()))
-      it = m_Downloads.Remove(it);
+    {
+      it         = m_Downloads.Remove(it);
+      bProcessed = true;
+    }
     else
+    {
+      bProcessed |= it.Value()->m_uiSent != uiSent;
       ++it;
+    }
   }
   return bProcessed;
 }
@@ -232,6 +240,9 @@ void xiiFileserver::NetworkMsgHandler(xiiFileserveClientContext& client, xiiArra
       break;
     case Operation::Read:
       HandleFileRequest(client, data);
+      break;
+    case Operation::DownloadProgress:
+      HandleDownloadProgress(client, data);
       break;
     case Operation::Delete:
       HandleDeleteFileRequest(client, data);
@@ -380,6 +391,22 @@ void xiiFileserver::HandleFileRequest(xiiFileserveClientContext& client, xiiArra
   m_Downloads.Insert(client.m_uiApplicationID, std::move(download));
 }
 
+void xiiFileserver::HandleDownloadProgress(xiiFileserveClientContext& client, xiiArrayPtr<const xiiUInt8> data)
+{
+  const auto* pStored = m_Downloads.GetValue(client.m_uiApplicationID);
+  if (pStored == nullptr || data.GetCount() != 16 + sizeof(xiiUInt32))
+    return;
+
+  auto&                    download = **pStored;
+  xiiRawMemoryStreamReader reader(data.GetPtr(), data.GetCount());
+  xiiUuid                  request;
+  xiiUInt32                uiReceived = 0;
+  reader >> request;
+  if (request == download.m_Id && reader.ReadDWordValue(&uiReceived).Succeeded() && uiReceived == download.m_uiSent &&
+      uiReceived - download.m_uiAcknowledged == xiiFileserveTransfer::TransferWindowBytes)
+    download.m_uiAcknowledged = uiReceived;
+}
+
 bool xiiFileserver::PumpDownload(Download& download)
 {
   if (xiiTime::Now() >= download.m_Deadline)
@@ -398,6 +425,8 @@ bool xiiFileserver::PumpDownload(Download& download)
        (!download.m_bSentChunk || download.m_uiSent < e.m_uiSizeTotal);
        ++i)
   {
+    if (download.m_uiSent - download.m_uiAcknowledged >= xiiFileserveTransfer::TransferWindowBytes)
+      return false;
     if (!download.m_bChunkReady)
     {
       download.m_uiChunkSize = static_cast<xiiUInt16>(xiiMath::Min(xiiFileserveTransfer::ChunkBytes, e.m_uiSizeTotal - download.m_uiSent));
@@ -545,7 +574,7 @@ void xiiFileserver::HandleUploadFileTransfer(xiiFileserveClientContext& client, 
 
   xiiUInt16           uiChunkSize = 0;
   constexpr xiiUInt32 uiHeader    = 16 + sizeof(uiChunkSize);
-  if (reader.ReadWordValue(&uiChunkSize).Failed() || uiChunkSize == 0 ||
+  if (reader.ReadWordValue(&uiChunkSize).Failed() || uiChunkSize == 0 || uiChunkSize > xiiFileserveTransfer::ChunkBytes ||
       data.GetCount() != uiHeader + uiChunkSize || uiChunkSize > upload.m_uiSize - upload.m_uiReceived ||
       upload.m_File.Write(data.GetPtr() + uiHeader, uiChunkSize).Failed())
   {
@@ -554,6 +583,13 @@ void xiiFileserver::HandleUploadFileTransfer(xiiFileserveClientContext& client, 
     return;
   }
   upload.m_uiReceived += uiChunkSize;
+  if (upload.m_uiReceived < upload.m_uiSize && upload.m_uiReceived % xiiFileserveTransfer::TransferWindowBytes == 0)
+  {
+    Request progress(Operation::UploadProgress);
+    progress.GetWriter() << request;
+    progress.GetWriter() << upload.m_uiReceived;
+    SendResponse(client.m_Channel, progress);
+  }
 
   xiiFileserverEvent e;
   e.m_Type        = xiiFileserverEvent::Type::FileUploading;

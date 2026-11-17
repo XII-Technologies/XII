@@ -9,6 +9,7 @@
 #include <Foundation/IO/FileSystem/FileSystem.h>
 #include <Foundation/IO/FileSystem/FileWriter.h>
 #include <Foundation/System/Process.h>
+#include <Foundation/Threading/Semaphore.h>
 #include <Foundation/Threading/ThreadUtils.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <Foundation/Utilities/CommandLineUtils.h>
@@ -31,14 +32,25 @@ namespace
 
   xiiResult RunClientFixture()
   {
-    const bool         bMeasure         = xiiCommandLineUtils::GetGlobalInstance()->HasOption("-fs_measure");
+    const auto&        command          = *xiiCommandLineUtils::GetGlobalInstance();
+    const bool         bMeasure         = command.HasOption("-fs_measure");
+    const bool         bSecond          = command.HasOption("-fs_test_direct");
     const auto         uiDownloadBlocks = bMeasure ? MeasuredDownloadBlocks : DefaultDownloadBlocks;
     const auto         uiUploadBlocks   = bMeasure ? MeasuredUploadBlocks : DefaultUploadBlocks;
     xiiFileserveClient client;
-    XII_SUCCEED_OR_RETURN(client.WaitForServerInfo(xiiTime::MakeFromSeconds(15)));
+    if (!bSecond)
+      XII_SUCCEED_OR_RETURN(client.WaitForServerInfo(xiiTime::MakeFromSeconds(15)));
     XII_SUCCEED_OR_RETURN(client.EnsureConnected(xiiTime::MakeFromSeconds(3)));
     XII_SUCCEED_OR_RETURN(xiiFileSystem::AddDataDirectory(">phase4-test/", "Phase4Fixture", "remote", xiiDataDirUsage::AllowWrites));
     XII_SCOPE_EXIT(xiiFileSystem::RemoveDataDirectoryGroup("Phase4Fixture"));
+    if (command.HasOption("-fs_test_ready"))
+    {
+      xiiSemaphore ready, start;
+      XII_SUCCEED_OR_RETURN(ready.Open(command.GetStringOption("-fs_test_ready")));
+      XII_SUCCEED_OR_RETURN(start.Open(command.GetStringOption("-fs_test_start")));
+      ready.ReturnToken();
+      XII_SUCCEED_OR_RETURN(start.TryAcquireToken(xiiTime::MakeFromSeconds(15)));
+    }
 
     xiiFileReader reader;
     const auto    emptyStart = xiiTime::Now();
@@ -76,10 +88,20 @@ namespace
                   uiDownloadBlocks * sizeof(actual) / (1024.0 * 1024.0 * downloadTime.GetSeconds()), cacheTime.GetMilliseconds() / 1000.0);
     }
 
-    xiiFileSystem::DeleteFile(":remote/delete.dat");
+    xiiRemoteShaderCompileRequest shader;
+    shader.m_sShader   = "fixture.xiiShader";
+    shader.m_sPlatform = "fixture";
+    shader.m_Permutations.PushBack({"CHECK", "ON"});
+    xiiStringBuilder shaderLog;
+    XII_SUCCEED_OR_RETURN(client.CompileShader(shader, shaderLog));
+    if (shaderLog != "fixture shader reply")
+      return XII_FAILURE;
+
+    if (!bSecond)
+      xiiFileSystem::DeleteFile(":remote/delete.dat");
     const auto    uploadStart = xiiTime::Now();
     xiiFileWriter writer;
-    XII_SUCCEED_OR_RETURN(writer.Open(":remote/upload.dat"));
+    XII_SUCCEED_OR_RETURN(writer.Open(bSecond ? ":remote/upload-second.dat" : ":remote/upload.dat"));
     Fill(expected, 81);
     for (xiiUInt32 i = 0; i < uiUploadBlocks; ++i)
       XII_SUCCEED_OR_RETURN(writer.WriteBytes(expected, sizeof(expected)));
@@ -122,6 +144,8 @@ XII_CREATE_SIMPLE_TEST(Fileserve, NativeDiscoveryAndVfs)
   pCommand->InjectCustomArgument("phase4-test");
   pCommand->InjectCustomArgument("-fs_write_roots");
   pCommand->InjectCustomArgument("phase4-test");
+  pCommand->InjectCustomArgument("-fs_shader_platforms");
+  pCommand->InjectCustomArgument("fixture");
 
   xiiOSFile file;
   xiiUInt8  data[4096];
@@ -138,6 +162,9 @@ XII_CREATE_SIMPLE_TEST(Fileserve, NativeDiscoveryAndVfs)
     return;
   file.Close();
   if (!XII_TEST_RESULT(file.Open(xiiStringBuilder(sRoot, "/delete.dat"), xiiFileOpenMode::Write)))
+    return;
+  file.Close();
+  if (!XII_TEST_RESULT(file.Open(xiiStringBuilder(sRoot, "/fixture.xiiShader"), xiiFileOpenMode::Write)))
     return;
   file.Close();
 
@@ -166,6 +193,8 @@ XII_CREATE_SIMPLE_TEST(Fileserve, NativeDiscoveryAndVfs)
     pCommand->InjectCustomArgument("127.0.0.1");
     pCommand->InjectCustomArgument("-fs_discovery_port");
     pCommand->InjectCustomArgument(sDiscoveryPort);
+    pCommand->InjectCustomArgument("-fs_discovery_name");
+    pCommand->InjectCustomArgument("localhost");
     pCommand->InjectCustomArgument("-fs_cert");
     pCommand->InjectCustomArgument(xiiStringBuilder(sCertificateDirectory, "/host.pem"));
     pCommand->InjectCustomArgument("-fs_key");
@@ -180,6 +209,8 @@ XII_CREATE_SIMPLE_TEST(Fileserve, NativeDiscoveryAndVfs)
     child.AddArgument(sTransport);
     child.AddArgument("-fs_discovery_bind");
     child.AddArgument("127.0.0.1");
+    child.AddArgument("-fs_server_name");
+    child.AddArgument("localhost");
     child.AddArgument("-fs_cert");
     child.AddArgument(xiiStringBuilder(sCertificateDirectory, "/device.pem"));
     child.AddArgument("-fs_key");
@@ -190,6 +221,15 @@ XII_CREATE_SIMPLE_TEST(Fileserve, NativeDiscoveryAndVfs)
   }
   xiiFileserver server;
   XII_SCOPE_EXIT(server.StopServer());
+  xiiUInt32 uiShaderRequests = 0;
+  server.SetShaderCompileHandler([&](const xiiFileserveClientContext&, const xiiRemoteShaderCompileRequest& request, xiiStringBuilder& out_sLog) -> xiiResult {
+    if (request.m_sShader != "fixture.xiiShader" || request.m_sPlatform != "fixture" || request.m_Permutations.GetCount() != 1 ||
+        request.m_Permutations[0].m_sName != "CHECK" || request.m_Permutations[0].m_sValue != "ON")
+      return XII_FAILURE;
+    ++uiShaderRequests;
+    out_sLog = "fixture shader reply";
+    return XII_SUCCESS;
+  });
   for (xiiUInt32 i = 0; i < 8 && !server.IsServerRunning(); ++i)
   {
     server.SetPort(static_cast<xiiUInt16>(25000 + (uiProcess + i) % 25000));
@@ -209,9 +249,44 @@ XII_CREATE_SIMPLE_TEST(Fileserve, NativeDiscoveryAndVfs)
   child.AddArgument(xiiStringBuilder(sOutput, "/Client"));
   child.AddArgument("-fs_no_save");
 
-  xiiProcess process;
+  const bool       bConcurrent = sCertificateDirectory.IsEmpty() && !bMeasure;
+  xiiStringBuilder readyName, startName;
+  xiiSemaphore     ready, start;
+  if (bConcurrent)
+  {
+    readyName.SetFormat("xii-fs-r-{}", uiProcess);
+    startName.SetFormat("xii-fs-s-{}", uiProcess);
+    if (!XII_TEST_RESULT(ready.Create(0, readyName)) || !XII_TEST_RESULT(start.Create(0, startName)))
+      return;
+    child.AddArgument("-fs_test_ready");
+    child.AddArgument(readyName);
+    child.AddArgument("-fs_test_start");
+    child.AddArgument(startName);
+  }
+  child.m_bHideConsoleWindow = true;
+
+  xiiProcess process, secondary;
   if (!XII_TEST_RESULT(process.Launch(child)))
     return;
+  if (bConcurrent)
+  {
+    xiiProcessOptions other;
+    other.m_sProcess           = child.m_sProcess;
+    other.m_bHideConsoleWindow = true;
+    other.AddArgument("-fileserve-test-client");
+    other.AddArgument("-fs_test_direct");
+    other.AddArgument("-fs_server");
+    other.AddArgument("127.0.0.1:{}", server.GetPort());
+    other.AddArgument("-fs_cache_dir");
+    other.AddArgument(xiiStringBuilder(sOutput, "/Client2"));
+    other.AddArgument("-fs_test_ready");
+    other.AddArgument(readyName);
+    other.AddArgument("-fs_test_start");
+    other.AddArgument(startName);
+    other.AddArgument("-fs_no_save");
+    if (!XII_TEST_RESULT(secondary.Launch(other)))
+      return;
+  }
 
   xiiStringBuilder addresses[] = {xiiStringBuilder("127.0.0.1")};
   const auto       deadline    = xiiTime::Now() + xiiTime::MakeFromSeconds(10);
@@ -224,14 +299,39 @@ XII_CREATE_SIMPLE_TEST(Fileserve, NativeDiscoveryAndVfs)
   if (!XII_TEST_BOOL(bDiscovered))
     return;
 
+  if (bConcurrent)
+  {
+    xiiUInt32  uiReady       = 0;
+    const auto readyDeadline = xiiTime::Now() + xiiTime::MakeFromSeconds(5);
+    while (uiReady != 2 && xiiTime::Now() < readyDeadline)
+    {
+      server.UpdateServer();
+      if (ready.TryAcquireToken(xiiTime::MakeFromMilliseconds(5)).Succeeded())
+        ++uiReady;
+    }
+    if (!XII_TEST_INT(uiReady, 2))
+      return;
+    start.ReturnToken();
+    start.ReturnToken();
+  }
   const auto transferDeadline = xiiTime::Now() + xiiTime::MakeFromSeconds(bMeasure ? 120 : 15);
-  while (process.GetState() == xiiProcessState::Running && xiiTime::Now() < transferDeadline)
+  while ((process.GetState() == xiiProcessState::Running || secondary.GetState() == xiiProcessState::Running) && xiiTime::Now() < transferDeadline)
   {
     if (!server.UpdateServer())
       xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(1));
   }
   if (!XII_TEST_BOOL(process.GetState() == xiiProcessState::Finished) || !XII_TEST_INT(process.GetExitCode(), 0))
     return;
+  if (bConcurrent && (!XII_TEST_BOOL(secondary.GetState() == xiiProcessState::Finished) || !XII_TEST_INT(secondary.GetExitCode(), 0)))
+    return;
+  XII_TEST_INT(uiShaderRequests, bConcurrent ? 2 : 1);
+  if (bConcurrent)
+  {
+    if (!XII_TEST_RESULT(file.Open(xiiStringBuilder(sRoot, "/upload-second.dat"), xiiFileOpenMode::Read)))
+      return;
+    XII_TEST_INT(file.GetFileSize(), uiUploadBlocks * sizeof(data));
+    file.Close();
+  }
 
   XII_TEST_BOOL(!xiiOSFile::ExistsFile(xiiStringBuilder(sRoot, "/delete.dat")));
   if (!XII_TEST_RESULT(file.Open(xiiStringBuilder(sRoot, "/upload.dat"), xiiFileOpenMode::Read)))

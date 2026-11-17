@@ -24,7 +24,6 @@ struct xiiFileserverEvent
     ServerStarted,
     ServerStopped,
     ClientConnected,
-    ClientReconnected, // connected again after a disconnect
     ClientDisconnected,
     MountDataDir,
     MountDataDirFailed,
@@ -36,7 +35,6 @@ struct xiiFileserverEvent
     FileUploadRequest,
     FileUploading,
     FileUploadFinished,
-    AreYouThereRequest,
     LogCustomActivity,
   };
 
@@ -123,6 +121,7 @@ private:
   void HandleMountRequest(xiiFileserveClientContext& client, xiiArrayPtr<const xiiUInt8> data);
   void HandleUnmountRequest(xiiFileserveClientContext& client, xiiArrayPtr<const xiiUInt8> data);
   void HandleFileRequest(xiiFileserveClientContext& client, xiiArrayPtr<const xiiUInt8> data);
+  void HandleDownloadProgress(xiiFileserveClientContext& client, xiiArrayPtr<const xiiUInt8> data);
   void HandleDeleteFileRequest(xiiFileserveClientContext& client, xiiArrayPtr<const xiiUInt8> data);
   void HandleUploadFileHeader(xiiFileserveClientContext& client, xiiArrayPtr<const xiiUInt8> data);
   void HandleUploadFileTransfer(xiiFileserveClientContext& client, xiiArrayPtr<const xiiUInt8> data);

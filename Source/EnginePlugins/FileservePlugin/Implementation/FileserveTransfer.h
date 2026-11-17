@@ -17,16 +17,18 @@ namespace xiiFileserveTransfer
     UploadChunk,
     UploadEnd,
     UploadResult,
+    UploadProgress,
     DownloadChunk,
     DownloadResult,
+    DownloadProgress,
     Reload,
-    Invalidate,
     CompileShader,
     ShaderResult
   };
 
-  constexpr xiiUInt32 ChunkBytes  = 16 * 1024;
-  constexpr xiiUInt32 PacketBytes = 64 * 1024 + 128;
+  constexpr xiiUInt32 ChunkBytes          = 16 * 1024;
+  constexpr xiiUInt32 TransferWindowBytes = 16 * ChunkBytes;
+  constexpr xiiUInt32 PacketBytes         = 64 * 1024 + 128;
 
   /// A FileServe operation and its typed field sequence. The host supplies all framing.
   class Request final

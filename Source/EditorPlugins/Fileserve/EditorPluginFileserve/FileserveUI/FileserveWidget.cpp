@@ -266,15 +266,6 @@ void xiiQtFileserveWidget::FileserverEventHandler(const xiiFileserverEvent& e)
     }
     break;
 
-    case xiiFileserverEvent::Type::ClientReconnected:
-    {
-      LogActivity("", xiiFileserveActivityType::ClientReconnected);
-      m_Clients[e.m_uiClientID].m_bConnected = true;
-
-      UpdateClientList();
-    }
-    break;
-
     case xiiFileserverEvent::Type::ClientDisconnected:
     {
       LogActivity("", xiiFileserveActivityType::ClientDisconnect);
@@ -394,12 +385,6 @@ void xiiQtFileserveWidget::FileserverEventHandler(const xiiFileserverEvent& e)
     {
       TransferLabel->setText(QString());
       Progress->reset();
-    }
-    break;
-
-    case xiiFileserverEvent::Type::AreYouThereRequest:
-    {
-      LogActivity("Client searching for Server", xiiFileserveActivityType::Other);
     }
     break;
 

@@ -352,6 +352,7 @@ xiiResult xiiFileserveClient::UploadFile(xiiUInt16 uiDataDirID, xiiStringView sF
     return XII_FAILURE;
 
   m_UploadRequest             = xiiUuid::MakeUuid();
+  m_uiUploadAcknowledged      = 0;
   m_bUploadSucceeded          = false;
   m_bWaitingForUploadFinished = true;
   XII_SCOPE_EXIT(m_bWaitingForUploadFinished = false; m_UploadRequest = {});
@@ -382,6 +383,14 @@ xiiResult xiiFileserveClient::UploadFile(xiiUInt16 uiDataDirID, xiiStringView sF
     XII_SUCCEED_OR_RETURN(SendRequest(msg, deadline));
     ProcessNetworkEvents();
     uiRemaining -= uiChunkSize;
+    const auto uiSent = uiFileSize - uiRemaining;
+    if (uiRemaining != 0 && uiSent % xiiFileserveTransfer::TransferWindowBytes == 0)
+    {
+      while (m_uiUploadAcknowledged < uiSent && m_bWaitingForUploadFinished && m_Channel.IsValid() && xiiTime::Now() < deadline)
+        ProcessNetworkEvents(deadline - xiiTime::Now());
+      if (m_uiUploadAcknowledged != uiSent)
+        return XII_FAILURE;
+    }
   }
 
   if (uiRemaining != 0 || !m_bWaitingForUploadFinished || !m_Channel.IsValid())
@@ -528,9 +537,17 @@ void xiiFileserveClient::NetworkMsgHandler(Operation operation, xiiArrayPtr<cons
         }
       }
       break;
-    case Operation::Invalidate:
-      if (data.IsEmpty())
-        InvalidateAllCache();
+    case Operation::UploadProgress:
+      if (m_bWaitingForUploadFinished && data.GetCount() == 16 + sizeof(xiiUInt32))
+      {
+        xiiRawMemoryStreamReader reader(data.GetPtr(), data.GetCount());
+        xiiUuid                  request;
+        xiiUInt32                uiReceived = 0;
+        reader >> request;
+        if (request == m_UploadRequest && reader.ReadDWordValue(&uiReceived).Succeeded() &&
+            uiReceived > m_uiUploadAcknowledged && uiReceived - m_uiUploadAcknowledged == xiiFileserveTransfer::TransferWindowBytes)
+          m_uiUploadAcknowledged = uiReceived;
+      }
       break;
     case Operation::ShaderResult:
       if (m_ShaderResponse.IsValid())
@@ -664,6 +681,17 @@ void xiiFileserveClient::HandleFileTransferMsg(xiiArrayPtr<const xiiUInt8> data)
   }
 
   m_uiDownloadReceived += uiChunkSize;
+  if (m_uiDownloadReceived < uiFileSize && m_uiDownloadReceived % xiiFileserveTransfer::TransferWindowBytes == 0)
+  {
+    Request progress(Operation::DownloadProgress);
+    progress.GetWriter() << request;
+    progress.GetWriter() << m_uiDownloadReceived;
+    if (progress.Send(*m_pNetwork, m_Channel).Failed())
+    {
+      m_pNetwork->Disconnect(m_Channel.m_Connection, false).IgnoreResult();
+      m_bDownloading = false;
+    }
+  }
 }
 
 void xiiFileserveClient::HandleFileTransferFinishedMsg(xiiArrayPtr<const xiiUInt8> data)

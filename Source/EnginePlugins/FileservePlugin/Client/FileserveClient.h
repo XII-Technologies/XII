@@ -153,6 +153,7 @@ private:
   bool                                           m_bWaitingForUploadFinished = false;
   bool                                           m_bUploadSucceeded          = false;
   xiiUuid                                        m_UploadRequest;
+  xiiUInt32                                      m_uiUploadAcknowledged = 0;
   xiiUuid                                        m_CurFileRequestGuid;
   xiiStringBuilder                               m_sCurFileRequest;
   xiiUniquePtr<xiiNetworkHost>                   m_pNetwork;
