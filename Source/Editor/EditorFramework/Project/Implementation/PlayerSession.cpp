@@ -245,13 +245,13 @@ xiiStatus xiiQtPlayerSession::Launch(const xiiPlayerLaunchConfig& config, xiiStr
         break;
       portLocks.PushBack(std::move(lease));
     }
-    if (portLocks.GetCount() == 2 * config.m_uiInstances)
+    if (portLocks.GetCount() == config.m_uiInstances)
       break;
     if (config.m_uiBasePort != 0)
       return xiiStatus("The port block is leased by another session. Select another base port.");
     firstPort = firstPort + 32 > 52000 ? 20000 : firstPort + 32;
   }
-  if (portLocks.GetCount() != 2 * config.m_uiInstances)
+  if (portLocks.GetCount() != config.m_uiInstances)
     return xiiStatus("No free Player port block is available.");
 
   // Keep bounded terminal history; never discard a live instance or its process handle.

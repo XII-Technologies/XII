@@ -45,7 +45,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 xiiResult xiiPlayerLaunchConfig::Validate() const
 {
   if (m_sName.IsEmpty() || m_uiInstances < 1 || m_uiInstances > 16 ||
-      m_uiBasePort > 65535 - 2 * m_uiInstances || m_InstanceArguments.GetCount() > m_uiInstances)
+      m_uiBasePort > 65536 - m_uiInstances || m_InstanceArguments.GetCount() > m_uiInstances)
     return XII_FAILURE;
   if (m_sRole != "standalone" && m_sRole != "server" && m_sRole != "client" && m_sRole != "server-clients")
     return XII_FAILURE;
