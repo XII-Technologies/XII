@@ -1717,9 +1717,21 @@ xiiInt32 xiiNetworkHostTestUtilities::RunLocalTransferClient(xiiStringView sName
     return 3;
   }
 
-  // Wait without reading, so the parent's large write has pending native work when it terminates us.
+  if (context.Receive(client, std::move(result.m_Buffers), operation).Failed() ||
+      context.WaitForCompletion(result, timeout).Failed() || result.Failed() || result.m_Buffers[0].GetBytes()[0] != 1)
+  {
+    return 4;
+  }
+  result.m_Buffers[0].GetBytes()[0] = 43;
+  if (context.Send(client, std::move(result.m_Buffers), operation).Failed() ||
+      context.WaitForCompletion(result, timeout).Failed() || result.Failed())
+  {
+    return 5;
+  }
+
+  // Stop reading after acknowledging the first byte, leaving the rest of the transfer pending.
   context.WaitForCompletion(result, timeout).IgnoreResult();
-  return 4;
+  return 6;
 }
 
 XII_CREATE_SIMPLE_TEST(NetworkAsync, LocalProcessTermination)
@@ -1765,11 +1777,16 @@ XII_CREATE_SIMPLE_TEST(NetworkAsync, LocalProcessTermination)
   }
   std::memset(lease.GetBytes().GetPtr(), 1, PayloadBytes);
   buffers.PushBack(std::move(lease));
-  if (!AsyncCheck(context.Send(server, std::move(buffers), operation)) || !XII_TEST_BOOL(child.Terminate().Succeeded()) || !AsyncWait(context, result))
+  xiiNetworkIOOperation write;
+  if (!AsyncCheck(context.Receive(server, std::move(result.m_Buffers), operation)) ||
+      !AsyncCheck(context.Send(server, std::move(buffers), write)) ||
+      !AsyncWait(context, result) || !AsyncCheck(result.m_Error) ||
+      !XII_TEST_BOOL(result.m_Operation == operation && result.m_Buffers[0].GetBytes()[0] == 43) ||
+      !XII_TEST_BOOL(child.Terminate().Succeeded()) || !AsyncWait(context, result))
   {
     return;
   }
-  XII_TEST_BOOL(result.m_Operation == operation && result.Failed());
+  XII_TEST_BOOL(result.m_Operation == write && result.Failed());
   XII_TEST_BOOL(result.m_uiBytesTransferred < PayloadBytes);
   XII_TEST_BOOL(result.m_Buffers.GetCount() == 1 && result.m_Buffers[0].IsValid());
   XII_TEST_BOOL(!context.TryGetCompletion(result));
