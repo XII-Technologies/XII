@@ -1109,6 +1109,10 @@ XII_CREATE_SIMPLE_TEST(NetworkTransport, LocalHost)
   XII_TEST_BOOL(xiiNetworkLocalEndpoint::Make("Service", invalid).Failed());
   XII_TEST_BOOL(xiiNetworkLocalEndpoint::Make(xiiStringView("ok\0suffix", 9), invalid).Failed());
   XII_TEST_BOOL(!invalid.IsValid());
+  XII_TEST_BOOL(invalid.GetName().IsEmpty());
+  xiiNetworkLocalEndpoint shortName;
+  XII_TEST_BOOL(xiiNetworkLocalEndpoint::Make("test-name", shortName).Succeeded());
+  XII_TEST_BOOL(shortName.GetName() == "test-name"_xiisv);
 
   auto configuration                                = HostTestConfiguration(xiiNetworkTransportType::Local);
   configuration.m_IO.m_uiMaxTransferBytesPerAttempt = 1024;

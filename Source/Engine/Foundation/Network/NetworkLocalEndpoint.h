@@ -14,7 +14,7 @@ public:
   /// Accepts 1 to 48 lowercase ASCII letters, digits, hyphens or underscores.
   [[nodiscard]] static xiiNetworkError Make(xiiStringView sName, xiiNetworkLocalEndpoint& out_endpoint);
   [[nodiscard]] bool                   IsValid() const { return m_szName[0] != '\0'; }
-  [[nodiscard]] xiiStringView          GetName() const { return m_szName; }
+  [[nodiscard]] xiiStringView          GetName() const { return xiiStringView(static_cast<const char*>(m_szName)); }
   bool                                 operator==(const xiiNetworkLocalEndpoint&) const = default;
 
 private:
