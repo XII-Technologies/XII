@@ -4,14 +4,12 @@
 #include <EditorFramework/Project/PlayerSession.h>
 #include <Foundation/Algorithm/HashingUtils.h>
 #include <Foundation/Application/Config/ProjectManifest.h>
-#include <Foundation/Communication/IpcChannel.h>
-#include <Foundation/Communication/IpcProcessMessageProtocol.h>
 #include <Foundation/IO/OSFile.h>
 #include <Foundation/System/Process.h>
 #include <Foundation/Threading/ThreadUtils.h>
 #include <Foundation/Utilities/CommandLineUtils.h>
 #include <Foundation/Utilities/ConversionUtils.h>
-#include <GameEngine/GameApplication/PlayerMessages.h>
+#include <GameEngine/GameApplication/PlayerSessionProtocol.h>
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
@@ -51,8 +49,8 @@ struct xiiQtPlayerSession::Instance
   bool                                       m_bShutdownReported = false;
   bool                                       m_bFinalized        = false;
   bool                                       m_bFailure          = false;
-  xiiUniquePtr<xiiIpcChannel>                m_pChannel;
-  xiiUniquePtr<xiiIpcProcessMessageProtocol> m_pProtocol;
+  xiiNetworkListener                         m_Listener;
+  xiiNetworkChannel                          m_Channel;
   QTemporaryDir                              m_TemporaryDirectory;
   xiiDynamicArray<xiiUniquePtr<xiiOSFile>>   m_PortLocks;
   xiiMutex                                   m_LogMutex;
@@ -172,7 +170,7 @@ xiiStatus xiiQtPlayerSession::Launch(const xiiPlayerLaunchConfig& config, xiiStr
   // passed directly to the process API, including paths with spaces; no shell is involved.
   auto reserved = [](xiiStringView arg) {
     return arg.IsEqual_NoCase("-player-session") || arg.IsEqual_NoCase("-player-instance") ||
-      arg.IsEqual_NoCase("-player-ipc") || arg.IsEqual_NoCase("-player-temp") ||
+      arg.IsEqual_NoCase("-player-ipc") || arg.IsEqual_NoCase("-player-editor-pid") || arg.IsEqual_NoCase("-player-temp") ||
       arg.IsEqual_NoCase("-TelemetryPort") || arg.IsEqual_NoCase("-project") ||
       arg.IsEqual_NoCase("-player-index") || arg.IsEqual_NoCase("-role") || arg.IsEqual_NoCase("-connect") || arg.IsEqual_NoCase("-port");
   };
@@ -215,6 +213,14 @@ xiiStatus xiiQtPlayerSession::Launch(const xiiPlayerLaunchConfig& config, xiiStr
     const auto validation = xiiPlayerLaunchConfig::ValidateRuntimeArguments(option.m_Arguments);
     if (validation.Failed())
       return validation;
+  }
+
+  if (!m_pControl)
+  {
+    auto pControl = XII_DEFAULT_NEW(xiiPlayerSessionProtocol);
+    if (pControl->StartEditor(xiiMakeDelegate(&xiiQtPlayerSession::HandleStatus, this)).Failed())
+      return xiiStatus("Cannot start the managed Player control host.");
+    m_pControl = std::move(pControl);
   }
 
   const xiiString session   = QUuid::createUuid().toString(QUuid::Id128).toUtf8().constData();
@@ -284,6 +290,8 @@ xiiStatus xiiQtPlayerSession::Launch(const xiiPlayerLaunchConfig& config, xiiStr
     option.AddArgument("{}", i);
     option.AddArgument("-player-ipc");
     option.AddArgument(pInstance->m_sId);
+    option.AddArgument("-player-editor-pid");
+    option.AddArgument("{}", xiiProcess::GetCurrentProcessID());
     option.AddArgument("-player-temp");
     option.AddArgument(pInstance->m_TemporaryDirectory.path().toUtf8().constData());
     option.AddArgument("-TelemetryPort");
@@ -335,9 +343,11 @@ xiiStatus xiiQtPlayerSession::Launch(const xiiPlayerLaunchConfig& config, xiiStr
       if (characters > 8192)
         pInstance->m_LogTail.Shrink(characters - 8192, 0);
     };
-    option.m_onStdError   = option.m_onStdOut;
-    pInstance->m_pChannel = xiiIpcChannel::CreatePipeChannel(pInstance->m_sId, xiiIpcChannel::Mode::Server);
-    if (!pInstance->m_pChannel || !pInstance->m_TemporaryDirectory.isValid())
+    option.m_onStdError = option.m_onStdOut;
+    xiiNetworkLocalEndpoint endpoint;
+    if (!pInstance->m_TemporaryDirectory.isValid() ||
+        xiiNetworkLocalEndpoint::Make(pInstance->m_sId, endpoint).Failed() ||
+        m_pControl->GetHost().Listen(endpoint, pInstance->m_Listener).Failed())
     {
       pInstance->m_bFailure = true;
       pInstance->m_sState   = "failed";
@@ -345,44 +355,9 @@ xiiStatus xiiQtPlayerSession::Launch(const xiiPlayerLaunchConfig& config, xiiStr
       StopSession(session);
       return xiiStatus(pInstance->m_sDetail.GetView());
     }
-    pInstance->m_pProtocol = XII_DEFAULT_NEW(xiiIpcProcessMessageProtocol, pInstance->m_pChannel.Borrow());
-    pInstance->m_pProtocol->m_MessageEvent.AddEventHandler([pInstance](const xiiIpcProcessMessageProtocol::Event& e) {
-      const auto* status = xiiDynamicCast<const xiiPlayerStatusMessage*>(e.m_pMessage);
-      if (!status || status->m_sInstance != pInstance->m_sId)
-        return;
-      pInstance->m_LastMessage     = xiiTime::Now();
-      pInstance->m_uiSceneRevision = status->m_uiSceneRevision;
-      pInstance->m_bReady |= status->m_sStage == "running";
-      if (status->m_sStage == "failed")
-      {
-        pInstance->m_bFailure       = true;
-        pInstance->m_sFailureDetail = status->m_sDetail;
-      }
-      else if (status->m_sStage == "running")
-      {
-        pInstance->m_bFailure = false;
-        pInstance->m_sFailureDetail.Clear();
-      }
-      if (status->m_sStage == "stopping" || status->m_sStage == "exited")
-      {
-        pInstance->m_bShutdownReported = true;
-        if (!pInstance->m_StopDeadline.IsPositive())
-          pInstance->m_StopDeadline = xiiTime::Now() + xiiTime::MakeFromSeconds(5);
-      }
-      if (!pInstance->m_bStopRequested)
-        pInstance->m_sState = status->m_sStage == "exited" ? xiiStringView("stopping") : status->m_sStage.GetView();
-      pInstance->m_sDetail = status->m_sDetail;
-      if (status->m_fProgress >= 0.0f)
-      {
-        xiiStringBuilder detail;
-        detail.SetFormat("{} ({}%%)", status->m_sDetail, xiiMath::RoundToInt(status->m_fProgress * 100.0f));
-        pInstance->m_sDetail = detail;
-      }
-    });
-    pInstance->m_pChannel->Connect();
-    // Connect() is asynchronous. Player retries until the private server reaches Connecting.
     if (pInstance->m_Process.Launch(option).Failed())
     {
+      CloseControlConnection(*pInstance);
       pInstance->m_bFailure = true;
       pInstance->m_sState   = "failed";
       pInstance->m_sDetail  = "Process creation failed. Check the executable, dependencies and access rights.";
@@ -401,12 +376,13 @@ xiiResult xiiQtPlayerSession::TransitionInstance(xiiUInt32 uiIndex, xiiStringVie
   if (sScene.IsEmpty() || uiIndex >= m_Instances.GetCount())
     return XII_FAILURE;
   auto& instance = *m_Instances[uiIndex];
-  if (instance.m_bStopRequested || !instance.m_pProtocol || !instance.m_pChannel->IsConnected())
+  if (instance.m_bStopRequested || !m_pControl || !m_pControl->IsReady(instance.m_Channel))
     return XII_FAILURE;
   xiiPlayerSceneMessage message;
+  message.m_sInstance          = instance.m_sId;
   message.m_sScene             = sScene;
   message.m_sPreloadCollection = sPreloadCollection;
-  return instance.m_pProtocol->Send(&message) ? XII_SUCCESS : XII_FAILURE;
+  return m_pControl->Send(instance.m_Channel, message).GetResult();
 }
 
 xiiResult xiiQtPlayerSession::CancelTransition(xiiUInt32 uiIndex)
@@ -414,11 +390,12 @@ xiiResult xiiQtPlayerSession::CancelTransition(xiiUInt32 uiIndex)
   if (uiIndex >= m_Instances.GetCount())
     return XII_FAILURE;
   auto& instance = *m_Instances[uiIndex];
-  if (instance.m_bStopRequested || !instance.m_pProtocol || !instance.m_pChannel->IsConnected())
+  if (instance.m_bStopRequested || !m_pControl || !m_pControl->IsReady(instance.m_Channel))
     return XII_FAILURE;
   xiiPlayerSceneMessage message;
-  message.m_bCancel = true;
-  return instance.m_pProtocol->Send(&message) ? XII_SUCCESS : XII_FAILURE;
+  message.m_sInstance = instance.m_sId;
+  message.m_bCancel   = true;
+  return m_pControl->Send(instance.m_Channel, message).GetResult();
 }
 
 void xiiQtPlayerSession::StopInstance(xiiUInt32 uiIndex)
@@ -465,26 +442,127 @@ void xiiQtPlayerSession::Shutdown()
       xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(10));
   }
   m_Instances.Clear(); // Owned process destructors terminate/join any remaining children.
+  m_pControl.Clear();
+}
+
+void xiiQtPlayerSession::CloseControlConnection(Instance& instance)
+{
+  if (instance.m_Channel.IsValid())
+    m_pControl->GetHost().Disconnect(instance.m_Channel.m_Connection, false).IgnoreResult();
+  if (instance.m_Listener.IsValid())
+    m_pControl->GetHost().CloseListener(instance.m_Listener).IgnoreResult();
+  instance.m_Channel  = {};
+  instance.m_Listener = {};
+}
+
+void xiiQtPlayerSession::ProcessControlEvents()
+{
+  if (!m_pControl)
+    return;
+
+  auto& host = m_pControl->GetHost();
+  m_pControl->Update();
+  xiiNetworkEvent event;
+  for (xiiUInt32 uiEvent = 0; uiEvent < 256 && host.TryGetEvent(event); ++uiEvent)
+  {
+    const auto connection = event.m_Connection;
+    if (event.m_Type == xiiNetworkEventType::Connected)
+    {
+      Instance* pInstance = nullptr;
+      for (const auto& instance : m_Instances)
+        if (instance->m_Listener.IsValid() && instance->m_sId == event.m_LocalServiceEndpoint.GetName())
+        {
+          pInstance = instance.Borrow();
+          break;
+        }
+      if (pInstance == nullptr || pInstance->m_Channel.IsValid() || event.m_pSessionInfo == nullptr ||
+          event.m_pSessionInfo->m_ConnectionInfo.m_uiLocalPeerProcessId == 0 ||
+          event.m_pSessionInfo->m_ConnectionInfo.m_uiLocalPeerProcessId != pInstance->m_Process.GetProcessID())
+      {
+        host.Disconnect(connection, false).IgnoreResult();
+        continue;
+      }
+      pInstance->m_Channel = event.m_pSessionInfo->m_DefaultChannel;
+      host.CloseListener(pInstance->m_Listener).IgnoreResult();
+      pInstance->m_Listener = {};
+    }
+    const bool bClosed = event.m_Type == xiiNetworkEventType::Closed;
+    if (m_pControl->ProcessEvent(std::move(event)).Failed() || bClosed)
+    {
+      for (auto& instance : m_Instances)
+        if (instance->m_Channel.IsValid() && instance->m_Channel.m_Connection == connection)
+        {
+          if (!bClosed)
+            host.Disconnect(connection, false).IgnoreResult();
+          instance->m_Channel = {};
+          break;
+        }
+    }
+  }
+}
+
+void xiiQtPlayerSession::HandleStatus(xiiNetworkChannel channel, const xiiPlayerStatusMessage& status)
+{
+  for (auto& instance : m_Instances)
+  {
+    if (instance->m_Channel != channel || instance->m_sId != status.m_sInstance)
+      continue;
+    instance->m_LastMessage     = xiiTime::Now();
+    instance->m_uiSceneRevision = status.m_uiSceneRevision;
+    instance->m_bReady |= status.m_sStage == "running";
+    if (status.m_sStage == "failed")
+    {
+      instance->m_bFailure       = true;
+      instance->m_sFailureDetail = status.m_sDetail;
+    }
+    else if (status.m_sStage == "running")
+    {
+      instance->m_bFailure = false;
+      instance->m_sFailureDetail.Clear();
+    }
+    if (status.m_sStage == "stopping" || status.m_sStage == "exited")
+    {
+      instance->m_bShutdownReported = true;
+      if (!instance->m_StopDeadline.IsPositive())
+        instance->m_StopDeadline = xiiTime::Now() + xiiTime::MakeFromSeconds(5);
+    }
+    else if (instance->m_bStopRequested && !instance->m_bShutdownReported)
+    {
+      // A status after stop admission means the child may have refreshed its schemas during
+      // startup. Reissue this idempotent command after status confirms the child can communicate.
+      instance->m_bStopSent = false;
+    }
+    if (!instance->m_bStopRequested)
+      instance->m_sState = status.m_sStage == "exited" ? xiiStringView("stopping") : status.m_sStage.GetView();
+    instance->m_sDetail = status.m_sDetail;
+    if (status.m_fProgress >= 0.0f && status.m_fProgress <= 1.0f)
+    {
+      xiiStringBuilder detail;
+      detail.SetFormat("{} ({}%%)", status.m_sDetail, xiiMath::RoundToInt(status.m_fProgress * 100.0f));
+      instance->m_sDetail = detail;
+    }
+    break;
+  }
 }
 
 void xiiQtPlayerSession::Tick()
 {
+  ProcessControlEvents();
   m_pTable->setRowCount(m_Instances.GetCount());
   for (xiiUInt32 i = 0; i < m_Instances.GetCount(); ++i)
   {
     auto& instance = *m_Instances[i];
-    if (instance.m_pProtocol)
-      instance.m_pProtocol->ProcessMessages();
     const bool running = instance.m_Process.GetState() == xiiProcessState::Running;
     if (running)
     {
-      const bool connected = instance.m_pChannel && instance.m_pChannel->IsConnected();
+      const bool connected = m_pControl && m_pControl->IsReady(instance.m_Channel);
       if (connected && instance.m_bStopRequested && !instance.m_bStopSent)
       {
         xiiPlayerStopMessage stop;
-        instance.m_bStopSent = instance.m_pProtocol->Send(&stop);
+        stop.m_sInstance     = instance.m_sId;
+        instance.m_bStopSent = m_pControl->Send(instance.m_Channel, stop).Succeeded();
       }
-      if ((instance.m_bConnected && !connected && !instance.m_bStopRequested && !instance.m_bShutdownReported && xiiTime::Now() - instance.m_LastMessage > xiiTime::MakeFromSeconds(2)) ||
+      if ((instance.m_bConnected && !instance.m_Channel.IsValid() && !instance.m_bStopRequested && !instance.m_bShutdownReported && xiiTime::Now() - instance.m_LastMessage > xiiTime::MakeFromSeconds(2)) ||
           (!instance.m_bConnected && xiiTime::Now() - instance.m_Started > xiiTime::MakeFromSeconds(30)))
       {
         if (!instance.m_bFailure)
@@ -530,8 +608,7 @@ void xiiQtPlayerSession::Tick()
         detail.SetFormat("Exit code {}. {}", exitCode, instance.m_sFailureDetail.IsEmpty() ? instance.m_sDetail : instance.m_sFailureDetail);
         instance.m_sDetail = detail;
       }
-      instance.m_pProtocol.Clear();
-      instance.m_pChannel.Clear();
+      CloseControlConnection(instance);
     }
     if (!instance.m_PortLocks.IsEmpty())
     {
@@ -544,7 +621,8 @@ void xiiQtPlayerSession::Tick()
     }
     const xiiStringBuilder shortId(instance.m_sId.GetLast(8));
     const QString          cells[] = {QString::fromUtf8(shortId.GetData()), QString::fromUtf8(instance.m_sProject.GetData()), QString::fromUtf8(instance.m_sRole.GetData()),
-                                      QString::number(instance.m_Process.GetProcessID()), QString::fromUtf8(instance.m_sState.GetData()), QString::fromUtf8(instance.m_sDetail.GetData())};
+                                      instance.m_Process.GetState() == xiiProcessState::NotStarted ? QString() : QString::number(instance.m_Process.GetProcessID()),
+                                      QString::fromUtf8(instance.m_sState.GetData()), QString::fromUtf8(instance.m_sDetail.GetData())};
     for (int column = 0; column < 6; ++column)
     {
       auto* item = m_pTable->item(i, column);

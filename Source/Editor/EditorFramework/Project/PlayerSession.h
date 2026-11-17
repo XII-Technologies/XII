@@ -13,9 +13,12 @@
 class QTableWidget;
 class QPlainTextEdit;
 class QTimer;
+class xiiPlayerSessionProtocol;
+class xiiPlayerStatusMessage;
+struct xiiNetworkChannel;
 
 /// Editor-owned child processes. Closing this window hides it; editor shutdown stops and joins all children.
-/// All control is through owned process handles and unique per-instance pipes, never executable-name/PID searches.
+/// Each child uses a unique Local endpoint on the session's shared network host.
 class XII_EDITORFRAMEWORK_DLL xiiQtPlayerSession final : public QDialog
 {
 public:
@@ -41,7 +44,12 @@ public:
 
 private:
   struct Instance;
+  void ProcessControlEvents();
+  void HandleStatus(xiiNetworkChannel channel, const xiiPlayerStatusMessage& status);
+  void CloseControlConnection(Instance& instance);
+
   xiiDynamicArray<xiiUniquePtr<Instance>> m_Instances;
+  xiiUniquePtr<xiiPlayerSessionProtocol>  m_pControl;
   QTableWidget*                           m_pTable        = nullptr;
   QPlainTextEdit*                         m_pLog          = nullptr;
   QTimer*                                 m_pTimer        = nullptr;

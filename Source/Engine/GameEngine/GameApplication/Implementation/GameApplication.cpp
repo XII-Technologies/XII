@@ -19,7 +19,7 @@
 #include <Foundation/Utilities/CommandLineUtils.h>
 #include <GameEngine/Configuration/InputConfig.h>
 #include <GameEngine/GameApplication/GameApplication.h>
-#include <GameEngine/GameApplication/PlayerMessages.h>
+#include <GameEngine/GameApplication/PlayerSessionProtocol.h>
 #include <GameEngine/GameApplication/WindowOutputTarget.h>
 #include <GraphicsCore/Components/Render/CameraComponent.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
@@ -469,7 +469,7 @@ XII_STATICLINK_FILE(GameEngine, GameEngine_GameApplication_Implementation_GameAp
 
 void xiiGameApplication::InitializeManagedSession()
 {
-  if (m_pSessionChannel)
+  if (m_pSessionProtocol)
     return;
   auto* command = xiiCommandLineUtils::GetGlobalInstance();
   m_sSession    = command->GetStringOption("-player-session");
@@ -484,7 +484,10 @@ void xiiGameApplication::InitializeManagedSession()
         return false;
     return true;
   };
-  if (!validIdentifier(m_sSession) || !validIdentifier(m_sInstance) || command->GetStringOption("-player-ipc") != m_sInstance)
+  xiiNetworkLocalEndpoint endpoint;
+  m_uiExpectedEditorProcessId = command->GetUIntOption("-player-editor-pid");
+  if (!validIdentifier(m_sSession) || !validIdentifier(m_sInstance) || command->GetStringOption("-player-ipc") != m_sInstance ||
+      xiiNetworkLocalEndpoint::Make(m_sInstance, endpoint).Failed() || m_uiExpectedEditorProcessId == 0)
   {
     xiiLog::Error("Invalid managed Player identity or private IPC endpoint.");
     SetReturnCode(2);
@@ -500,32 +503,35 @@ void xiiGameApplication::InitializeManagedSession()
     return;
   }
   m_sAppProjectPath = project;
-  m_pSessionChannel = xiiIpcChannel::CreatePipeChannel(m_sInstance, xiiIpcChannel::Mode::Client);
-  if (!m_pSessionChannel)
-  {
-    SetReturnCode(2);
-    RequestQuit();
-    return;
-  }
-  m_pSessionProtocol = XII_DEFAULT_NEW(xiiIpcProcessMessageProtocol, m_pSessionChannel.Borrow());
-  m_pSessionProtocol->m_MessageEvent.AddEventHandler([this](const xiiIpcProcessMessageProtocol::Event& event) {
-    if (const auto* scene = xiiDynamicCast<const xiiPlayerSceneMessage*>(event.m_pMessage))
+  auto       pProtocol = XII_DEFAULT_NEW(xiiPlayerSessionProtocol);
+  const auto onScene   = [this](xiiNetworkChannel channel, const xiiPlayerSceneMessage& scene) {
+    if (channel == m_SessionChannel && scene.m_sInstance == m_sInstance)
     {
       if (auto* state = xiiGameState::GetActiveGameState())
       {
-        if (scene->m_bCancel)
+        if (scene.m_bCancel)
           state->CancelBackgroundSceneLoading();
-        else if (state->TransitionToScene(scene->m_sScene, scene->m_sPreloadCollection).Failed())
+        else if (state->TransitionToScene(scene.m_sScene, scene.m_sPreloadCollection).Failed())
           ReportStatus("failed", "Invalid scene transition request; provide a nonempty scene reference.");
       }
     }
-    if (event.m_pMessage->IsInstanceOf<xiiPlayerStopMessage>())
+  };
+  const auto onStop = [this](xiiNetworkChannel channel, const xiiPlayerStopMessage& stop) {
+    if (channel == m_SessionChannel && stop.m_sInstance == m_sInstance)
     {
       ReportStatus("stopping", "Graceful stop requested by editor.");
       RequestQuit();
     }
-  });
-  m_pSessionChannel->Connect();
+  };
+  if (pProtocol->StartPlayer(onScene, onStop).Failed() || pProtocol->GetHost().Connect(endpoint, {}, m_SessionConnection).Failed())
+  {
+    xiiLog::Error("Cannot start the managed Player control connection.");
+    SetReturnCode(2);
+    RequestQuit();
+    return;
+  }
+  m_SessionDeadline  = xiiTime::Now() + xiiTime::MakeFromSeconds(30);
+  m_pSessionProtocol = std::move(pProtocol);
 }
 
 void xiiGameApplication::AfterCoreSystemsStartup()
@@ -599,25 +605,54 @@ xiiApplication::Execution xiiGameApplication::Run()
 
 void xiiGameApplication::PumpSession()
 {
-  if (!m_pSessionChannel)
+  if (!m_pSessionProtocol)
     return;
-  if (m_pSessionChannel->GetConnectionState() == xiiIpcChannel::ConnectionState::Disconnected &&
-      xiiTime::Now() - m_LastConnectAttempt > xiiTime::MakeFromMilliseconds(200))
+  m_pSessionProtocol->Update();
+  xiiNetworkEvent event;
+  for (xiiUInt32 uiEvent = 0; uiEvent < 64 && m_pSessionProtocol->GetHost().TryGetEvent(event); ++uiEvent)
   {
-    if (m_bSessionConnected)
+    if (event.m_Connection != m_SessionConnection)
+      continue;
+    if (event.m_Type == xiiNetworkEventType::Connected)
     {
+      if (event.m_pSessionInfo == nullptr || event.m_pSessionInfo->m_ConnectionInfo.m_uiLocalPeerProcessId != m_uiExpectedEditorProcessId)
+      {
+        xiiLog::Error("Managed Player control endpoint belongs to an unexpected process.");
+        m_pSessionProtocol->GetHost().Disconnect(m_SessionConnection, false).IgnoreResult();
+        SetReturnCode(2);
+        RequestQuit();
+        return;
+      }
+      m_SessionChannel = event.m_pSessionInfo->m_DefaultChannel;
+    }
+    const bool bClosed = event.m_Type == xiiNetworkEventType::Closed;
+    if (m_pSessionProtocol->ProcessEvent(std::move(event)).Failed() || bClosed)
+    {
+      m_SessionChannel = {};
+      if (!m_bSessionConnected)
+      {
+        xiiLog::Error("Managed Player control connection closed before schema negotiation completed.");
+        SetReturnCode(2);
+      }
       RequestQuit();
       return;
     }
-    m_LastConnectAttempt = xiiTime::Now();
-    m_pSessionChannel->Connect();
   }
-  m_pSessionProtocol->ProcessMessages();
-  if (m_pSessionChannel->IsConnected())
+  const bool bWasReady    = m_bSessionProtocolReady;
+  m_bSessionProtocolReady = m_pSessionProtocol->IsReady(m_SessionChannel);
+  if (m_bSessionProtocolReady)
   {
+    if (!bWasReady)
+      SendManagedStatus(-1.0F);
     m_bSessionConnected = true;
     if (xiiTime::Now() - m_LastStatus > xiiTime::MakeFromSeconds(1))
       ReportStatus(m_sStage, m_sDetail);
+  }
+  else if (!m_bSessionConnected && xiiTime::Now() >= m_SessionDeadline)
+  {
+    xiiLog::Error("Managed Player control schema negotiation timed out.");
+    SetReturnCode(2);
+    RequestQuit();
   }
 }
 
@@ -630,7 +665,12 @@ void xiiGameApplication::ReportStatus(xiiStringView sStage, xiiStringView sDetai
   if (m_sDetail != sDetail)
     m_sDetail = sDetail;
   m_LastStatus = xiiTime::Now();
-  if (m_pSessionChannel && m_pSessionChannel->IsConnected())
+  SendManagedStatus(fProgress);
+}
+
+void xiiGameApplication::SendManagedStatus(float fProgress, xiiNetworkMessage* out_pSubmission)
+{
+  if (m_pSessionProtocol && m_SessionChannel.IsValid())
   {
     xiiPlayerStatusMessage status;
     status.m_sInstance = m_sInstance;
@@ -639,7 +679,7 @@ void xiiGameApplication::ReportStatus(xiiStringView sStage, xiiStringView sDetai
     status.m_fProgress = fProgress;
     if (const auto* state = xiiGameState::GetActiveGameState())
       status.m_uiSceneRevision = state->GetWorldRevision();
-    m_pSessionProtocol->Send(&status);
+    m_pSessionProtocol->Send(m_SessionChannel, status, out_pSubmission).IgnoreResult();
   }
 }
 
@@ -694,9 +734,13 @@ void xiiGameApplication::BeforeHighLevelSystemsShutdown()
 void xiiGameApplication::BeforeCoreSystemsShutdown()
 {
   SUPER::BeforeCoreSystemsShutdown();
-  ReportStatus("exited", "Shutdown complete");
+  m_sStage  = "exited";
+  m_sDetail = "Shutdown complete";
+  xiiNetworkMessage submission;
+  SendManagedStatus(-1.0F, &submission);
+  if (submission.IsValid())
+    m_pSessionProtocol->WaitForFinalStatus(submission, xiiTime::MakeFromMilliseconds(500)).IgnoreResult();
   m_pSessionProtocol.Clear();
-  m_pSessionChannel.Clear();
   m_ManagedPreferencesLock.Close();
 }
 
