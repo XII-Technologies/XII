@@ -4,12 +4,14 @@
 
 #include <Foundation/Diagnostics/TelemetryDiscovery.h>
 #include <Foundation/Network/NetworkLocalEndpoint.h>
+#include <Foundation/Types/ScopeExit.h>
 #include <Foundation/Utilities/ConversionUtils.h>
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
 #  include <Foundation/Basics/Platform/Windows/IncludeWindows.h>
 #else
 #  include <cerrno>
+#  include <dirent.h>
 #  include <sys/stat.h>
 #  include <unistd.h>
 #endif
@@ -38,6 +40,7 @@ namespace
   xiiResult Read(xiiStringView sPath, xiiTelemetryInstance& out_instance)
   {
     xiiOSFile file;
+    file.SetRetryOnSharingViolation(false);
     XII_SUCCEED_OR_RETURN(file.Open(sPath, xiiFileOpenMode::Read));
     const auto size = file.GetFileSize();
     if (size == 0 || size > 2048)
@@ -57,6 +60,35 @@ namespace
     out_instance.m_sEndpoint    = endpoint.GetName();
     out_instance.m_sApplication = lines[4];
     return out_instance.m_Instance.IsValid() ? XII_SUCCESS : XII_FAILURE;
+  }
+
+  void ReadAdvertisement(const xiiStringBuilder& path, xiiDynamicArray<xiiTelemetryInstance>& out_instances)
+  {
+    // Advertisements have UUID-only basenames; never derive paths from their contents.
+    if (!xiiConversionUtils::IsStringUuid(path.GetFileName()))
+      return;
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+    const auto attributes = GetFileAttributesW(xiiStringWChar(path).GetData());
+    if (attributes == INVALID_FILE_ATTRIBUTES || (attributes & (FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_REPARSE_POINT)) != 0)
+      return;
+#else
+    struct stat status = {};
+    if (lstat(path.GetData(), &status) != 0 || !S_ISREG(status.st_mode) || status.st_uid != geteuid())
+      return;
+#endif
+    xiiStringBuilder lease(path, ".lease");
+    xiiOSFile        probe;
+    probe.SetRetryOnSharingViolation(false);
+    if (probe.Open(lease, xiiFileOpenMode::Write, xiiFileShareMode::Exclusive).Succeeded())
+    {
+      xiiOSFile::DeleteFile(path).IgnoreResult();
+      probe.Close();
+      xiiOSFile::DeleteFile(lease).IgnoreResult();
+      return;
+    }
+    xiiTelemetryInstance instance;
+    if (Read(path, instance).Succeeded())
+      out_instances.PushBack(std::move(instance));
   }
 } // namespace
 
@@ -109,7 +141,7 @@ xiiResult xiiTelemetryDiscovery::Enumerate(xiiDynamicArray<xiiTelemetryInstance>
   out_instances.Clear();
   xiiStringBuilder directory;
   XII_SUCCEED_OR_RETURN(Directory(directory));
-#if XII_ENABLED(XII_SUPPORTS_FILE_ITERATORS)
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
   xiiFileSystemIterator files;
   files.StartSearch(xiiStringBuilder(directory, "/*.instance"), xiiFileSystemIteratorFlags::ReportFiles);
   xiiUInt32 inspected = 0;
@@ -117,27 +149,26 @@ xiiResult xiiTelemetryDiscovery::Enumerate(xiiDynamicArray<xiiTelemetryInstance>
   {
     xiiStringBuilder path;
     files.GetStats().GetFullPath(path);
-    // Advertisements have UUID-only basenames; never derive paths from their contents.
-    if (!xiiConversionUtils::IsStringUuid(path.GetFileName()))
-      continue;
-    xiiStringBuilder lease(path, ".lease");
-    xiiOSFile        probe;
-    probe.SetRetryOnSharingViolation(false);
-    if (probe.Open(lease, xiiFileOpenMode::Write, xiiFileShareMode::Exclusive).Succeeded())
-    {
-      xiiOSFile::DeleteFile(path).IgnoreResult();
-      probe.Close();
-      xiiOSFile::DeleteFile(lease).IgnoreResult();
-      continue;
-    }
-    xiiTelemetryInstance instance;
-    if (Read(path, instance).Succeeded())
-      out_instances.PushBack(std::move(instance));
+    ReadAdvertisement(path, out_instances);
   }
-  return XII_SUCCESS;
 #else
-  return XII_FAILURE;
+  DIR* files = opendir(directory.GetData());
+  if (files == nullptr)
+    return XII_FAILURE;
+  XII_SCOPE_EXIT(closedir(files));
+  // macOS does not provide xiiFileSystemIterator. Use the same discovery scan on all POSIX targets.
+  for (xiiUInt32 inspected = 0; inspected < 256; ++inspected)
+  {
+    errno             = 0;
+    const auto* entry = readdir(files);
+    if (entry == nullptr)
+      return errno == 0 ? XII_SUCCESS : XII_FAILURE;
+    const xiiStringView name(entry->d_name);
+    if (name.EndsWith(".instance"))
+      ReadAdvertisement(xiiStringBuilder(directory, "/", name), out_instances);
+  }
 #endif
+  return XII_SUCCESS;
 }
 
 XII_STATICLINK_FILE(Foundation, Foundation_Diagnostics_Implementation_TelemetryDiscovery);

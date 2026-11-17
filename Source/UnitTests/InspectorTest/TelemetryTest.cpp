@@ -94,8 +94,13 @@ XII_CREATE_SIMPLE_TEST(InspectorDiagnostics, PluginTelemetryRoundTrip)
 {
   xiiStringBuilder address;
   address.SetFormat("inspector-{}-{}", xiiProcess::GetCurrentProcessID(), xiiArgU(xiiTime::Now().GetMicroseconds(), 1, false, 16));
-  xiiStringBuilder readyName(address, "-ready"), unloadName(address, "-unload");
-  xiiSemaphore     ready, unload;
+  // Keep named semaphore identities below Darwin's length limit.
+  xiiUInt64 nonce, unused;
+  xiiUuid::MakeUuid().GetValues(nonce, unused);
+  xiiStringBuilder readyName, unloadName;
+  readyName.SetFormat("xii-diag-{}-r", xiiArgU(nonce, 16, true, 16));
+  unloadName.SetFormat("xii-diag-{}-u", xiiArgU(nonce, 16, true, 16));
+  xiiSemaphore ready, unload;
   if (!XII_TEST_RESULT(ready.Create(0, readyName)) || !XII_TEST_RESULT(unload.Create(0, unloadName)))
     return;
   xiiProcessOptions options;
