@@ -4,6 +4,8 @@ Foundation's `Network/` API provides native IPv4/IPv6 addressing, OS name resolu
 
 For operation-oriented native I/O, bounded workers, buffer ownership and completion delivery, see [Asynchronous Networking](AsyncNetworking.md).
 
+For application diagnostics over the native host and reflection protocol, see [Telemetry and diagnostics](TelemetryDiagnostics.md).
+
 ## Organization and platform integration
 
 - `xiiNetworkAddress` stores up to sixteen network-order address bytes, a numeric IPv6 scope and a family. Default construction is invalid; wildcard addresses are valid values. IPv4-mapped IPv6 addresses remain IPv6 values. Equality and hashes include the scope and exclude padding. Numeric formatting uses lowercase hexadecimal and the first longest compressible IPv6 zero run. Mapped addresses format in hexadecimal as well.
