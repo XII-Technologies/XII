@@ -28,5 +28,7 @@ enum class xiiNetworkAuthenticationPolicy : xiiUInt8
 {
   Certificate,
   Application,
-  AnonymousDevelopment
+  AnonymousDevelopment,
+  /// Native same-user identity. Available only for the Local transport.
+  LocalUser
 };

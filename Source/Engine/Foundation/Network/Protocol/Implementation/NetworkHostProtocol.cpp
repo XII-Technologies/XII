@@ -473,7 +473,20 @@ void xiiNetworkHostRuntime::Frame(Peer& peer, xiiNetworkFrame&& frame, xiiNetwor
         reject(xiiNetworkErrorCode::AuthenticationFailed);
         return;
       }
-      peer.m_Authorization.m_sIdentity = m_Capabilities.m_bAuthenticated ? CertificateIdentity(peer.m_Certificate) : xiiString("development");
+      if (m_Configuration.m_Authentication == xiiNetworkAuthenticationPolicy::LocalUser)
+      {
+        const auto error = m_IO.GetLocalPeerIdentity(peer.m_Registration, peer.m_Authorization.m_sIdentity);
+        if (error.Failed())
+        {
+          reject(xiiNetworkErrorCode::AuthenticationFailed);
+          return;
+        }
+        peer.m_Authorization.m_bMayResumeSession = false;
+      }
+      else
+      {
+        peer.m_Authorization.m_sIdentity = m_Capabilities.m_bAuthenticated ? CertificateIdentity(peer.m_Certificate) : xiiString("development");
+      }
       SendWelcome(peer);
     }
     xiiNetworkSecurityInternal::ClearSecret(frame.m_Payload.GetBytes());
@@ -517,7 +530,19 @@ void xiiNetworkHostRuntime::Frame(Peer& peer, xiiNetworkFrame&& frame, xiiNetwor
     peer.m_uiMaximumChannels                     = uiMaximumChannels;
     peer.m_Info.m_Session                        = session;
     peer.m_Info.m_bSessionResumed                = uiResumed != 0;
-    peer.m_Info.m_sAuthenticatedIdentity         = m_Capabilities.m_bAuthenticated ? CertificateIdentity(peer.m_Certificate) : xiiString("development");
+    if (m_Configuration.m_Authentication == xiiNetworkAuthenticationPolicy::LocalUser)
+    {
+      const auto error = m_IO.GetLocalPeerIdentity(peer.m_Registration, peer.m_Info.m_sAuthenticatedIdentity);
+      if (error.Failed())
+      {
+        reject(xiiNetworkErrorCode::AuthenticationFailed);
+        return;
+      }
+    }
+    else
+    {
+      peer.m_Info.m_sAuthenticatedIdentity = m_Capabilities.m_bAuthenticated ? CertificateIdentity(peer.m_Certificate) : xiiString("development");
+    }
     peer.m_Authorization.m_sIdentity             = sIdentity;
     peer.m_Authorization.m_bMaySend              = (uiPermissions & 1) != 0;
     peer.m_Authorization.m_bMayOpenChannels      = (uiPermissions & 2) != 0;
@@ -579,6 +604,7 @@ void xiiNetworkHostRuntime::Frame(Peer& peer, xiiNetworkFrame&& frame, xiiNetwor
       return;
     }
     peer.m_bDisconnectSent = true;
+    peer.m_bLocalDisconnectReceived = peer.m_Info.m_LocalServiceEndpoint.IsValid();
     Close(peer, xiiNetworkError(uiCode == 0 ? xiiNetworkErrorCode::ConnectionClosed : static_cast<xiiNetworkErrorCode>(uiCode)), true);
     return;
   }

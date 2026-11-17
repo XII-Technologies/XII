@@ -181,6 +181,7 @@ namespace xiiNetworkHostInternal
     bool                                      m_bCloseRequested      = false;
     bool                                      m_bGraceful            = true;
     bool                                      m_bDisconnectSent      = false;
+    bool                                      m_bLocalDisconnectReceived = false;
     bool                                      m_bShutdownSent        = false;
     bool                                      m_bDeregistered        = false;
     bool                                      m_bPeerEof             = false;
@@ -208,6 +209,7 @@ namespace xiiNetworkHostInternal
     xiiNetworkListener       m_Handle;
     xiiNetworkIORegistration m_Registration;
     xiiNetworkEndpoint       m_Endpoint;
+    xiiNetworkLocalEndpoint  m_LocalServiceEndpoint;
     xiiDeque<xiiUInt32>      m_SendQueue;
     xiiNetworkQuicListener*  m_pQuic = nullptr;
     TokenBucket              m_SendTokens;

@@ -29,8 +29,11 @@ xiiNetworkError xiiNetworkHostRuntime::Start(const xiiNetworkHostConfiguration& 
     return xiiNetworkError(xiiNetworkErrorCode::AlreadyOpen);
   }
   const bool bSecure = configuration.m_Transport == xiiNetworkTransportType::TlsTcp || configuration.m_Transport == xiiNetworkTransportType::SecureDatagram;
-  if (configuration.m_Transport > xiiNetworkTransportType::SecureDatagram || configuration.m_Authentication > xiiNetworkAuthenticationPolicy::AnonymousDevelopment ||
-      (!bSecure && (!configuration.m_bAllowInsecureDevelopment || configuration.m_Authentication != xiiNetworkAuthenticationPolicy::AnonymousDevelopment)) ||
+  const bool bLocal  = configuration.m_Transport == xiiNetworkTransportType::Local;
+  if (configuration.m_Transport > xiiNetworkTransportType::Local || configuration.m_Authentication > xiiNetworkAuthenticationPolicy::LocalUser ||
+      (bLocal != (configuration.m_Authentication == xiiNetworkAuthenticationPolicy::LocalUser)) ||
+      (bLocal && configuration.m_pCredentials != nullptr) ||
+      (!bSecure && !bLocal && (!configuration.m_bAllowInsecureDevelopment || configuration.m_Authentication != xiiNetworkAuthenticationPolicy::AnonymousDevelopment)) ||
       (bSecure && (configuration.m_pCredentials == nullptr || !configuration.m_pCredentials->IsLoaded())) ||
       (configuration.m_Authentication == xiiNetworkAuthenticationPolicy::AnonymousDevelopment && !configuration.m_bAllowInsecureDevelopment) ||
       !configuration.m_Protocol.IsValid() || configuration.m_uiMinimumProtocolVersion == 0 || configuration.m_uiMaximumProtocolVersion < configuration.m_uiMinimumProtocolVersion ||
@@ -58,7 +61,7 @@ xiiNetworkError xiiNetworkHostRuntime::Start(const xiiNetworkHostConfiguration& 
   m_pCredentials  = configuration.m_pCredentials;
   m_Configuration.m_pCredentials.Clear();
   m_Capabilities.m_bEncrypted                 = bSecure;
-  m_Capabilities.m_bAuthenticated             = bSecure;
+  m_Capabilities.m_bAuthenticated             = bSecure || bLocal;
   m_Capabilities.m_bConnectionless            = configuration.m_Transport == xiiNetworkTransportType::NativeUdp;
   m_Capabilities.m_uiDeliveryModes            = m_Capabilities.m_bConnectionless ? xiiNetworkDeliveryMask(xiiNetworkDeliveryMode::UnreliableUnsequenced) : xiiNetworkDeliveryMask(xiiNetworkDeliveryMode::ReliableOrdered);
   m_Capabilities.m_uiMaximumUnreliablePayload = m_Capabilities.m_bConnectionless ? xiiMath::Min(configuration.m_uiMaximumMessageBytes, 65507U) : 0U;
@@ -178,6 +181,7 @@ bool xiiNetworkHostRuntime::PeerEvent(Peer& peer, xiiNetworkEventType type, xiiN
     event.m_pSessionTicket = peer.m_pTicket;
   }
   event.m_Endpoint = peer.m_Info.m_RemoteEndpoint;
+  event.m_LocalServiceEndpoint = peer.m_Info.m_LocalServiceEndpoint;
   if (type == xiiNetworkEventType::ReconnectScheduled)
   {
     event.m_ReconnectDelay = xiiMath::Max(peer.m_ReconnectAt - xiiTime::Now(), xiiTime::MakeZero());
@@ -339,6 +343,7 @@ xiiNetworkError xiiNetworkHostRuntime::AllocatePeer(bool bIncoming, Peer*& out_p
     peer.m_RequestedSession                                                            = {};
     peer.m_bAllowFreshSession                                                          = false;
     peer.m_bDisconnectSent                                                             = false;
+    peer.m_bLocalDisconnectReceived                                                    = false;
     peer.m_bShutdownSent                                                               = false;
     peer.m_bTerminalPublished = peer.m_bTerminalConsumed = false;
     peer.m_bAuthorizationReady = peer.m_bAcceptAuthorization = false;

@@ -132,6 +132,28 @@ void xiiNetworkHostRuntime::StartAttempt(Peer& peer)
     StartTransport(peer);
     return;
   }
+  if (peer.m_Info.m_LocalServiceEndpoint.IsValid())
+  {
+    peer.m_Info.m_State = xiiNetworkConnectionState::Connecting;
+    auto error          = m_IO.OpenLocal(peer.m_Registration);
+    if (error.Succeeded())
+    {
+      xiiNetworkIOOperation operation;
+      xiiNetworkIOOptions   options;
+      options.m_uiUserData = peer.m_uiAttempt;
+      options.m_Timeout    = xiiMath::Max(peer.m_Deadline - xiiTime::Now(), xiiTime::MakeZero());
+      error                = m_IO.Connect(peer.m_Registration, peer.m_Info.m_LocalServiceEndpoint, operation, options);
+    }
+    if (error.Failed())
+    {
+      Close(peer, error);
+    }
+    else
+    {
+      ++peer.m_uiPendingIO;
+    }
+    return;
+  }
   if (peer.m_Endpoints.IsEmpty())
   {
     peer.m_Info.m_State = xiiNetworkConnectionState::Resolving;
@@ -194,6 +216,11 @@ void xiiNetworkHostRuntime::StartAttempt(Peer& peer)
 
 void xiiNetworkHostRuntime::StartTransport(Peer& peer)
 {
+  if (peer.m_Info.m_LocalServiceEndpoint.IsValid())
+  {
+    BeginProtocol(peer);
+    return;
+  }
   auto error = m_IO.GetLocalEndpoint(peer.m_Registration, peer.m_Info.m_LocalEndpoint);
   if (error.Succeeded())
   {
@@ -715,6 +742,16 @@ void xiiNetworkHostRuntime::DrivePeer(Peer& peer, xiiTime now, xiiTime& ref_next
           m_WorkSignal.RaiseSignal();
         }
       }
+      else if (peer.m_Info.m_LocalServiceEndpoint.IsValid())
+      {
+        // Pipes have no write half-close. The ordered Disconnect frame acknowledges the peer's drain.
+        if (peer.m_bLocalDisconnectReceived)
+        {
+          Close(peer, peer.m_CloseError);
+          m_WorkSignal.RaiseSignal();
+          return;
+        }
+      }
       else if (!peer.m_bShutdownSent)
       {
         const auto error = m_IO.ShutdownSocket(peer.m_Registration, xiiNetworkShutdown::Send);
@@ -1058,6 +1095,7 @@ void xiiNetworkHostRuntime::FinishClose(Peer& peer)
       peer.m_Info.m_State = xiiNetworkConnectionState::Reconnecting;
       peer.m_bClosing = peer.m_bDeregistered = peer.m_bPeerEof = peer.m_bTlsClosed = false;
       peer.m_bDisconnectSent = peer.m_bShutdownSent = peer.m_bCipherSendPending = false;
+      peer.m_bLocalDisconnectReceived                                           = false;
       peer.m_bHelloReceived = peer.m_bWelcomeReceived = peer.m_bReadyReceived = peer.m_bActivated = false;
       peer.m_bProtocolRejected                                                                    = false;
       peer.m_bAuthorizationReady = peer.m_bAcceptAuthorization = false;

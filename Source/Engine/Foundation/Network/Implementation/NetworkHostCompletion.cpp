@@ -66,10 +66,19 @@ void xiiNetworkHostRuntime::CompleteIO(xiiNetworkIOResult&& result)
       if (!m_bStopping.load() && AllocatePeer(true, pPeer).Succeeded())
       {
         XII_LOCK(pPeer->m_Mutex);
-        auto error = ConfigureTcp(result.m_AcceptedSocket);
-        if (error.Succeeded())
+        xiiNetworkError error;
+        if (result.m_AcceptedLocalSocket.IsOpen())
         {
-          error = m_IO.Register(std::move(result.m_AcceptedSocket), pPeer->m_Registration);
+          pPeer->m_Info.m_LocalServiceEndpoint = result.m_LocalEndpoint;
+          error                                = m_IO.Register(std::move(result.m_AcceptedLocalSocket), pPeer->m_Registration);
+        }
+        else
+        {
+          error = ConfigureTcp(result.m_AcceptedSocket);
+          if (error.Succeeded())
+          {
+            error = m_IO.Register(std::move(result.m_AcceptedSocket), pPeer->m_Registration);
+          }
         }
         pPeer->m_bInUse = true;
         if (error.Failed())
@@ -246,6 +255,7 @@ void xiiNetworkHostRuntime::DriveListener(Listener& listener, xiiTime now, xiiTi
       xiiNetworkEvent event;
       event.m_Type     = xiiNetworkEventType::ListenerClosed;
       event.m_Listener = listener.m_Handle;
+      event.m_LocalServiceEndpoint = listener.m_LocalServiceEndpoint;
       event.m_Error    = listener.m_Error;
       Publish(std::move(event));
       listener.m_bTerminalPublished = true;
@@ -314,7 +324,8 @@ void xiiNetworkHostRuntime::DriveListener(Listener& listener, xiiTime now, xiiTi
   }
   else
   {
-    while (listener.m_uiPendingIO < 4)
+    const xiiUInt32 uiAcceptTarget = listener.m_LocalServiceEndpoint.IsValid() ? 1 : 4;
+    while (listener.m_uiPendingIO < uiAcceptTarget)
     {
       xiiNetworkIOOperation operation;
       const auto            error = m_IO.Accept(listener.m_Registration, operation, options);

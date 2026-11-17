@@ -4,6 +4,7 @@
 
 #include <Foundation/Basics.h>
 #include <Foundation/Network/NetworkEndpoint.h>
+#include <Foundation/Network/NetworkLocalEndpoint.h>
 #include <Foundation/Network/Transport/NetworkTransport.h>
 #include <Foundation/Strings/String.h>
 #include <Foundation/Time/Time.h>
@@ -80,6 +81,8 @@ struct XII_FOUNDATION_DLL xiiNetworkConnectionInfo
   xiiNetworkConnectionState       m_State = xiiNetworkConnectionState::Closed;
   xiiNetworkEndpoint              m_LocalEndpoint;
   xiiNetworkEndpoint              m_RemoteEndpoint;
+  /// On Local connections this names the listener service on both peers.
+  xiiNetworkLocalEndpoint         m_LocalServiceEndpoint;
   xiiNetworkTransportCapabilities m_Capabilities;
   xiiNetworkConnectionStatistics  m_Statistics;
   xiiUuid                         m_Session;
