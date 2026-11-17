@@ -534,6 +534,7 @@ void xiiEngineProcessGameApplication::EventHandlerIPC(const xiiEngineProcessComm
       xiiProfilingUtils::SaveProfilingCapture(pMsg1->m_sPayload).IgnoreResult();
 
       xiiSaveProfilingResponseToEditor response;
+      response.m_RequestId = pMsg1->m_RequestId;
       xiiStringBuilder                 sAbsPath;
       if (xiiFileSystem::ResolvePath(pMsg1->m_sPayload, &sAbsPath, nullptr).Succeeded())
       {
@@ -670,6 +671,7 @@ void xiiEngineProcessGameApplication::EventHandlerIPC(const xiiEngineProcessComm
 xiiEngineProcessDocumentContext* xiiEngineProcessGameApplication::CreateDocumentContext(const xiiDocumentOpenMsgToEngine* pMsg)
 {
   xiiDocumentOpenResponseMsgToEditor m;
+  m.m_RequestId                                     = pMsg->m_RequestId;
   m.m_DocumentGuid                                  = pMsg->m_DocumentGuid;
   xiiEngineProcessDocumentContext* pDocumentContext = xiiEngineProcessDocumentContext::GetDocumentContext(pMsg->m_DocumentGuid);
 

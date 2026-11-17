@@ -70,10 +70,11 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiProjectReadyMsgToEditor, 3, xiiRTTIDefaultAl
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSimpleConfigMsgToEngine, 1, xiiRTTIDefaultAllocator<xiiSimpleConfigMsgToEngine>)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSimpleConfigMsgToEngine, 2, xiiRTTIDefaultAllocator<xiiSimpleConfigMsgToEngine>)
 {
   XII_BEGIN_PROPERTIES
   {
+    XII_MEMBER_PROPERTY("RequestId", m_RequestId),
     XII_MEMBER_PROPERTY("WhatToDo", m_sWhatToDo),
     XII_MEMBER_PROPERTY("Payload", m_sPayload),
     XII_MEMBER_PROPERTY("PayloadValue", m_fPayload),
@@ -82,10 +83,11 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSimpleConfigMsgToEngine, 1, xiiRTTIDefaultAl
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSaveProfilingResponseToEditor, 1, xiiRTTIDefaultAllocator<xiiSaveProfilingResponseToEditor>)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSaveProfilingResponseToEditor, 2, xiiRTTIDefaultAllocator<xiiSaveProfilingResponseToEditor>)
 {
   XII_BEGIN_PROPERTIES
   {
+    XII_MEMBER_PROPERTY("RequestId", m_RequestId),
     XII_MEMBER_PROPERTY("ProfilingFile", m_sProfilingFile),
   }
   XII_END_PROPERTIES;
@@ -240,10 +242,11 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiEditorEngineViewMsg, 1, xiiRTTINoAllocator)
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDocumentOpenMsgToEngine, 1, xiiRTTIDefaultAllocator<xiiDocumentOpenMsgToEngine>)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDocumentOpenMsgToEngine, 2, xiiRTTIDefaultAllocator<xiiDocumentOpenMsgToEngine>)
 {
   XII_BEGIN_PROPERTIES
   {
+    XII_MEMBER_PROPERTY("RequestId", m_RequestId),
     XII_MEMBER_PROPERTY("DocumentOpen", m_bDocumentOpen),
     XII_MEMBER_PROPERTY("DocumentType", m_sDocumentType),
     XII_MEMBER_PROPERTY("DocumentMetaData", m_DocumentMetaData),
@@ -255,10 +258,11 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDocumentClearMsgToEngine, 1, xiiRTTIDefaultAllocator<xiiDocumentClearMsgToEngine>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDocumentOpenResponseMsgToEditor, 2, xiiRTTIDefaultAllocator<xiiDocumentOpenResponseMsgToEditor>)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDocumentOpenResponseMsgToEditor, 3, xiiRTTIDefaultAllocator<xiiDocumentOpenResponseMsgToEditor>)
 {
   XII_BEGIN_PROPERTIES
   {
+    XII_MEMBER_PROPERTY("RequestId", m_RequestId),
     XII_MEMBER_PROPERTY("Succeeded", m_bSucceeded),
     XII_MEMBER_PROPERTY("Failure", m_sFailure),
   }
@@ -384,10 +388,11 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSimpleDocumentConfigMsgToEditor, 1, xiiRTTID
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiExportDocumentMsgToEngine, 1, xiiRTTIDefaultAllocator<xiiExportDocumentMsgToEngine>)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiExportDocumentMsgToEngine, 2, xiiRTTIDefaultAllocator<xiiExportDocumentMsgToEngine>)
 {
   XII_BEGIN_PROPERTIES
   {
+    XII_MEMBER_PROPERTY("RequestId", m_RequestId),
     XII_MEMBER_PROPERTY("OutputFile", m_sOutputFile),
     XII_MEMBER_PROPERTY("AssetHash", m_uiAssetHash),
     XII_MEMBER_PROPERTY("AssetVersion", m_uiVersion),
@@ -396,10 +401,11 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiExportDocumentMsgToEngine, 1, xiiRTTIDefault
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiExportDocumentMsgToEditor, 1, xiiRTTIDefaultAllocator<xiiExportDocumentMsgToEditor>)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiExportDocumentMsgToEditor, 2, xiiRTTIDefaultAllocator<xiiExportDocumentMsgToEditor>)
 {
   XII_BEGIN_PROPERTIES
   {
+    XII_MEMBER_PROPERTY("RequestId", m_RequestId),
     XII_MEMBER_PROPERTY("OutputSuccess", m_bOutputSuccess),
     XII_MEMBER_PROPERTY("FailureMsg", m_sFailureMsg),
   }
@@ -407,10 +413,11 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiExportDocumentMsgToEditor, 1, xiiRTTIDefault
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiCreateThumbnailMsgToEngine, 1, xiiRTTIDefaultAllocator<xiiCreateThumbnailMsgToEngine>)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiCreateThumbnailMsgToEngine, 2, xiiRTTIDefaultAllocator<xiiCreateThumbnailMsgToEngine>)
 {
   XII_BEGIN_PROPERTIES
   {
+    XII_MEMBER_PROPERTY("RequestId", m_RequestId),
     XII_MEMBER_PROPERTY("Width", m_uiWidth),
     XII_MEMBER_PROPERTY("Height", m_uiHeight),
     XII_ARRAY_MEMBER_PROPERTY("ViewExcludeTags", m_ViewExcludeTags),
@@ -419,10 +426,11 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiCreateThumbnailMsgToEngine, 1, xiiRTTIDefaul
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiCreateThumbnailMsgToEditor, 1, xiiRTTIDefaultAllocator<xiiCreateThumbnailMsgToEditor>)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiCreateThumbnailMsgToEditor, 2, xiiRTTIDefaultAllocator<xiiCreateThumbnailMsgToEditor>)
 {
   XII_BEGIN_PROPERTIES
   {
+    XII_MEMBER_PROPERTY("RequestId", m_RequestId),
     XII_MEMBER_PROPERTY("ThumbnailData", m_ThumbnailData),
   }
   XII_END_PROPERTIES;

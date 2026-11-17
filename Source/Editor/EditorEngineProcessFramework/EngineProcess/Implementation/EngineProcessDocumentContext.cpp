@@ -292,6 +292,7 @@ void xiiEngineProcessDocumentContext::HandleMessage(const xiiEditorEngineDocumen
 
     xiiExportDocumentMsgToEditor ret;
     ret.m_DocumentGuid = pMsg->m_DocumentGuid;
+    ret.m_RequestId    = pExportMsg->m_RequestId;
 
     xiiStatus res        = ExportDocument(pExportMsg);
     ret.m_bOutputSuccess = res.Succeeded();
@@ -536,6 +537,7 @@ void xiiEngineProcessDocumentContext::UpdateDocumentContext()
     {
       xiiCreateThumbnailMsgToEditor ret;
       ret.m_DocumentGuid = GetDocumentGuid();
+      ret.m_RequestId    = m_ThumbnailRequestId;
 
       // Readback itself succeeds even when extraction or pipeline execution failed,
       // leaving an untouched black target. Never publish that as a valid thumbnail.
@@ -578,18 +580,27 @@ xiiStatus xiiEngineProcessDocumentContext::ExportDocument(const xiiExportDocumen
 void xiiEngineProcessDocumentContext::CreateThumbnailViewContext(const xiiCreateThumbnailMsgToEngine* pMsg)
 {
   XII_ASSERT_DEV(!xiiEditorEngineProcessApp::GetSingleton()->IsRemoteMode(), "Wrong mode for thumbnail creation");
-  XII_ASSERT_DEV(m_pThumbnailViewContext == nullptr, "Thumbnail rendering already in progress.");
+  if (m_pThumbnailViewContext != nullptr)
+  {
+    xiiCreateThumbnailMsgToEditor response;
+    response.m_DocumentGuid = GetDocumentGuid();
+    response.m_RequestId    = pMsg->m_RequestId;
+    SendProcessMessage(&response);
+    return;
+  }
   static_assert((ThumbnailSuperscaleFactor & (ThumbnailSuperscaleFactor - 1)) == 0, "ThumbnailSuperscaleFactor must be power of 2.");
   if (pMsg->m_uiWidth == 0 || pMsg->m_uiHeight == 0 || pMsg->m_uiWidth > xiiMath::MaxValue<xiiUInt16>() / ThumbnailSuperscaleFactor || pMsg->m_uiHeight > xiiMath::MaxValue<xiiUInt16>() / ThumbnailSuperscaleFactor)
   {
     xiiLog::Error("Invalid thumbnail dimensions: {0}x{1}.", pMsg->m_uiWidth, pMsg->m_uiHeight);
     xiiCreateThumbnailMsgToEditor response;
     response.m_DocumentGuid = GetDocumentGuid();
+    response.m_RequestId    = pMsg->m_RequestId;
     SendProcessMessage(&response);
     return;
   }
 
   m_uiThumbnailConvergenceFrames = 0;
+  m_ThumbnailRequestId           = pMsg->m_RequestId;
   m_uiThumbnailWidth             = pMsg->m_uiWidth * ThumbnailSuperscaleFactor;
   m_uiThumbnailHeight            = pMsg->m_uiHeight * ThumbnailSuperscaleFactor;
   m_pThumbnailViewContext        = CreateViewContext();
@@ -619,6 +630,7 @@ void xiiEngineProcessDocumentContext::CreateThumbnailViewContext(const xiiCreate
     DestroyThumbnailViewContext();
     xiiCreateThumbnailMsgToEditor response;
     response.m_DocumentGuid = GetDocumentGuid();
+    response.m_RequestId    = pMsg->m_RequestId;
     SendProcessMessage(&response);
     return;
   }
@@ -641,6 +653,7 @@ void xiiEngineProcessDocumentContext::DestroyThumbnailViewContext()
 
   DestroyViewContext(m_pThumbnailViewContext);
   m_pThumbnailViewContext = nullptr;
+  m_ThumbnailRequestId    = {};
 
   m_pThumbnailColorRT.Clear();
 

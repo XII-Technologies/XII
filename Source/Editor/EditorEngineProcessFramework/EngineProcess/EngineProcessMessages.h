@@ -76,6 +76,7 @@ class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiSimpleConfigMsgToEngine : public x
   XII_ADD_DYNAMIC_REFLECTION(xiiSimpleConfigMsgToEngine, xiiEditorEngineMsg);
 
 public:
+  xiiUuid   m_RequestId;
   xiiString m_sWhatToDo;
   xiiString m_sPayload;
   double    m_fPayload;
@@ -86,6 +87,7 @@ class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiSaveProfilingResponseToEditor : pu
   XII_ADD_DYNAMIC_REFLECTION(xiiSaveProfilingResponseToEditor, xiiEditorEngineMsg);
 
 public:
+  xiiUuid   m_RequestId;
   xiiString m_sProfilingFile;
 };
 
@@ -229,6 +231,7 @@ class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiDocumentOpenMsgToEngine : public x
 public:
   xiiDocumentOpenMsgToEngine() { m_bDocumentOpen = false; }
 
+  xiiUuid    m_RequestId;
   bool       m_bDocumentOpen;
   xiiString  m_sDocumentType;
   xiiVariant m_DocumentMetaData;
@@ -250,6 +253,7 @@ class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiDocumentOpenResponseMsgToEditor : 
 public:
   xiiDocumentOpenResponseMsgToEditor() = default;
 
+  xiiUuid   m_RequestId;
   bool      m_bSucceeded = false;
   xiiString m_sFailure;
 };
@@ -360,6 +364,7 @@ class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiExportDocumentMsgToEngine : public
 public:
   xiiExportDocumentMsgToEngine() = default;
 
+  xiiUuid   m_RequestId;
   xiiString m_sOutputFile;
   xiiUInt64 m_uiAssetHash = 0;
   xiiUInt16 m_uiVersion   = 0;
@@ -370,6 +375,7 @@ class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiExportDocumentMsgToEditor : public
   XII_ADD_DYNAMIC_REFLECTION(xiiExportDocumentMsgToEditor, xiiEditorEngineDocumentMsg);
 
 public:
+  xiiUuid   m_RequestId;
   bool      m_bOutputSuccess = false;
   xiiString m_sFailureMsg;
 };
@@ -379,6 +385,7 @@ class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiCreateThumbnailMsgToEngine : publi
   XII_ADD_DYNAMIC_REFLECTION(xiiCreateThumbnailMsgToEngine, xiiEditorEngineDocumentMsg);
 
 public:
+  xiiUuid                      m_RequestId;
   xiiUInt16                    m_uiWidth  = 0;
   xiiUInt16                    m_uiHeight = 0;
   xiiHybridArray<xiiString, 1> m_ViewExcludeTags;
@@ -390,6 +397,7 @@ class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiCreateThumbnailMsgToEditor : publi
 
 public:
   xiiCreateThumbnailMsgToEditor() = default;
+  xiiUuid       m_RequestId;
   xiiDataBuffer m_ThumbnailData; ///< Raw 8-bit RGBA data (256x256x4 bytes)
 };
 

@@ -586,15 +586,19 @@ xiiStatus xiiAssetDocument::RemoteExport(const xiiAssetFileHeader& header, xiiSt
   range.BeginNextStep(sOutputTarget);
 
   xiiExportDocumentMsgToEngine msg;
+  msg.m_RequestId   = xiiUuid::MakeUuid();
   msg.m_sOutputFile = sOutputTarget;
   msg.m_uiAssetHash = header.GetFileHash();
   msg.m_uiVersion   = header.GetFileVersion();
 
-  GetEditorEngineConnection()->SendMessage(&msg);
+  if (!SendMessageToEngine(&msg))
+    return xiiStatus("The engine process could not accept the export request.");
 
   xiiStatus                                              status(XII_SUCCESS);
-  xiiProcessCommunicationChannel::WaitForMessageCallback callback = [&status](xiiProcessMessage* pMsg) -> bool {
+  xiiProcessCommunicationChannel::WaitForMessageCallback callback = [&status, &msg](xiiProcessMessage* pMsg) -> bool {
     xiiExportDocumentMsgToEditor* pMsg2 = xiiDynamicCast<xiiExportDocumentMsgToEditor*>(pMsg);
+    if (pMsg2->m_RequestId != msg.m_RequestId)
+      return false;
 
     if (!pMsg2->m_bOutputSuccess)
     {
@@ -638,17 +642,21 @@ xiiStatus xiiAssetDocument::RemoteCreateThumbnail(const ThumbnailInfo& thumbnail
 
   SyncObjectsToEngine();
   xiiCreateThumbnailMsgToEngine msg;
+  msg.m_RequestId = xiiUuid::MakeUuid();
   msg.m_uiWidth  = xiiThumbnailSize;
   msg.m_uiHeight = xiiThumbnailSize;
   for (const xiiStringView& tag : viewExclusionTags)
   {
     msg.m_ViewExcludeTags.PushBack(tag);
   }
-  GetEditorEngineConnection()->SendMessage(&msg);
+  if (!SendMessageToEngine(&msg))
+    return xiiStatus("The engine process could not accept the thumbnail request.");
 
   xiiDataBuffer                                          data;
-  xiiProcessCommunicationChannel::WaitForMessageCallback callback = [&data](xiiProcessMessage* pMsg) -> bool {
+  xiiProcessCommunicationChannel::WaitForMessageCallback callback = [&data, &msg](xiiProcessMessage* pMsg) -> bool {
     xiiCreateThumbnailMsgToEditor* pThumbnailMsg = xiiDynamicCast<xiiCreateThumbnailMsgToEditor*>(pMsg);
+    if (pThumbnailMsg->m_RequestId != msg.m_RequestId)
+      return false;
     data                                         = pThumbnailMsg->m_ThumbnailData;
     return true;
   };
