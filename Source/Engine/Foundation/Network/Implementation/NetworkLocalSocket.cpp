@@ -18,6 +18,7 @@ xiiNetworkLocalSocket& xiiNetworkLocalSocket::operator=(xiiNetworkLocalSocket&& 
     Close();
     m_Endpoint          = std::exchange(other.m_Endpoint, {});
     m_sPeerIdentity     = std::move(other.m_sPeerIdentity);
+    m_uiPeerProcessId   = std::exchange(other.m_uiPeerProcessId, 0);
     m_uiNativeHandle    = std::exchange(other.m_uiNativeHandle, InvalidHandle);
     m_uiContextId       = std::exchange(other.m_uiContextId, 0);
     m_uiDirectoryHandle = std::exchange(other.m_uiDirectoryHandle, InvalidHandle);
@@ -36,6 +37,7 @@ void xiiNetworkLocalSocket::Close()
   xiiNetworkIOInternal::LocalSocketAccess::Close(*this);
   m_Endpoint = {};
   m_sPeerIdentity.Clear();
-  m_uiContextId = 0;
+  m_uiPeerProcessId = 0;
+  m_uiContextId     = 0;
   m_bOpen = m_bListener = m_bConnected = false;
 }

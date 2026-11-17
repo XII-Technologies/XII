@@ -205,6 +205,7 @@ void xiiEditorEngineProcessConnection::ActivateRemoteProcess(const xiiAssetDocum
     return;
 
   xiiDocumentOpenMsgToEngine request;
+  request.m_RequestId        = xiiUuid::MakeUuid();
   request.m_DocumentGuid     = pDocument->GetGuid();
   request.m_bDocumentOpen    = true;
   request.m_sDocumentType    = pDocument->GetDocumentTypeDescriptor()->m_sDocumentTypeName;
@@ -217,9 +218,9 @@ void xiiEditorEngineProcessConnection::ActivateRemoteProcess(const xiiAssetDocum
 
   xiiDocumentOpenResponseMsgToEditor response;
   response.m_DocumentGuid                                         = request.m_DocumentGuid;
-  xiiProcessCommunicationChannel::WaitForMessageCallback callback = [&response](xiiProcessMessage* message) -> bool {
+  xiiProcessCommunicationChannel::WaitForMessageCallback callback = [&response, &request](xiiProcessMessage* message) -> bool {
     const auto* opened = xiiDynamicCast<const xiiDocumentOpenResponseMsgToEditor*>(message);
-    if (!opened || opened->m_DocumentGuid != response.m_DocumentGuid)
+    if (!opened || opened->m_DocumentGuid != request.m_DocumentGuid || opened->m_RequestId != request.m_RequestId)
       return false;
     response.m_bSucceeded = opened->m_bSucceeded;
     response.m_sFailure   = opened->m_sFailure;

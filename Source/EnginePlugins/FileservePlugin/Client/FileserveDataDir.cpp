@@ -3,8 +3,8 @@
 #include <FileservePlugin/FileservePluginPCH.h>
 
 #include <FileservePlugin/Client/FileserveDataDir.h>
+#include <FileservePlugin/Fileserver/ClientContext.h>
 #include <Foundation/Algorithm/HashingUtils.h>
-#include <Foundation/Communication/RemoteInterfaceEnet.h>
 #include <Foundation/Logging/Log.h>
 
 void xiiDataDirectory::FileserveType::ReloadExternalConfigs()
@@ -44,8 +44,7 @@ xiiDataDirectoryReader* xiiDataDirectory::FileserveType::OpenFileToRead(xiiStrin
 
 xiiDataDirectoryWriter* xiiDataDirectory::FileserveType::OpenFileToWrite(xiiStringView sFile, xiiFileShareMode::Enum FileShareMode)
 {
-  // fileserve cannot handle absolute paths, which is actually already ruled out at creation time, so this is just an optimization
-  if (xiiPathUtils::IsAbsolutePath(sFile))
+  if (!xiiFileserveClientContext::IsValidRelativePath(sFile))
     return nullptr;
 
   return FolderType::OpenFileToWrite(sFile, FileShareMode);
@@ -77,6 +76,9 @@ void xiiDataDirectory::FileserveType::RemoveDataDirectory()
 
 void xiiDataDirectory::FileserveType::DeleteFile(xiiStringView sFile)
 {
+  if (!xiiFileserveClientContext::IsValidRelativePath(sFile))
+    return;
+
   if (xiiFileserveClient::GetSingleton())
   {
     xiiFileserveClient::GetSingleton()->DeleteFile(m_uiDataDirID, sFile);
@@ -182,9 +184,8 @@ void xiiDataDirectory::FileserveType::FinishedWriting(FolderWriter* pWriter)
     return;
   }
 
-  xiiDynamicArray<xiiUInt8> content;
-  file.ReadAll(content);
-  file.Close();
-
-  xiiFileserveClient::GetSingleton()->UploadFile(m_uiDataDirID, pWriter->GetFilePath(), content);
+  if (xiiFileserveClient::GetSingleton()->UploadFile(m_uiDataDirID, pWriter->GetFilePath(), file).Failed())
+  {
+    xiiLog::Error("Could not upload FileServe file '{}'.", sAbsPath);
+  }
 }

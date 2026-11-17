@@ -475,7 +475,7 @@ void xiiNetworkHostRuntime::Frame(Peer& peer, xiiNetworkFrame&& frame, xiiNetwor
       }
       if (m_Configuration.m_Authentication == xiiNetworkAuthenticationPolicy::LocalUser)
       {
-        const auto error = m_IO.GetLocalPeerIdentity(peer.m_Registration, peer.m_Authorization.m_sIdentity);
+        const auto error = m_IO.GetLocalPeerIdentity(peer.m_Registration, peer.m_Authorization.m_sIdentity, &peer.m_Info.m_uiLocalPeerProcessId);
         if (error.Failed())
         {
           reject(xiiNetworkErrorCode::AuthenticationFailed);
@@ -532,7 +532,7 @@ void xiiNetworkHostRuntime::Frame(Peer& peer, xiiNetworkFrame&& frame, xiiNetwor
     peer.m_Info.m_bSessionResumed                = uiResumed != 0;
     if (m_Configuration.m_Authentication == xiiNetworkAuthenticationPolicy::LocalUser)
     {
-      const auto error = m_IO.GetLocalPeerIdentity(peer.m_Registration, peer.m_Info.m_sAuthenticatedIdentity);
+      const auto error = m_IO.GetLocalPeerIdentity(peer.m_Registration, peer.m_Info.m_sAuthenticatedIdentity, &peer.m_Info.m_uiLocalPeerProcessId);
       if (error.Failed())
       {
         reject(xiiNetworkErrorCode::AuthenticationFailed);

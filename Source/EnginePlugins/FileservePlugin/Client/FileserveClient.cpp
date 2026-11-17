@@ -3,14 +3,19 @@
 #include <FileservePlugin/FileservePluginPCH.h>
 
 #include <FileservePlugin/Client/FileserveClient.h>
+#include <FileservePlugin/Discovery/FileserveDiscovery.h>
 #include <FileservePlugin/Fileserver/ClientContext.h>
+#include <Foundation/Algorithm/HashStream.h>
+#include <Foundation/Communication/GlobalEvent.h>
 #include <Foundation/Communication/RemoteInterfaceEnet.h>
-#include <Foundation/Events/GlobalEvent.h>
 #include <Foundation/IO/FileSystem/FileWriter.h>
 #include <Foundation/IO/FileSystem/Implementation/DataDirType.h>
 #include <Foundation/Logging/Log.h>
+#include <Foundation/Strings/UnicodeUtils.h>
+#include <Foundation/Threading/ThreadUtils.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <Foundation/Utilities/CommandLineUtils.h>
+#include <cstring>
 
 XII_IMPLEMENT_SINGLETON(xiiFileserveClient);
 
@@ -49,8 +54,6 @@ xiiFileserveClient::xiiFileserveClient() :
 
   if (xiiCommandLineUtils::GetGlobalInstance()->GetBoolOption("-fs_off"))
     s_bEnableFileserve = false;
-
-  m_CurrentTime = xiiTime::Now();
 }
 
 xiiFileserveClient::~xiiFileserveClient()
@@ -60,6 +63,7 @@ xiiFileserveClient::~xiiFileserveClient()
 
 void xiiFileserveClient::ShutdownConnection()
 {
+  ClearState();
   if (m_pNetwork)
   {
     xiiLog::Dev("Shutting down fileserve client");
@@ -73,9 +77,11 @@ void xiiFileserveClient::ClearState()
 {
   m_bDownloading              = false;
   m_bWaitingForUploadFinished = false;
+  m_UploadRequest             = {};
+  m_bReloadResources          = false;
   m_CurFileRequestGuid        = xiiUuid();
   m_sCurFileRequest.Clear();
-  m_Download.Clear();
+  DiscardDownload();
 }
 
 xiiResult xiiFileserveClient::EnsureConnected(xiiTime timeout)
@@ -86,10 +92,15 @@ xiiResult xiiFileserveClient::EnsureConnected(xiiTime timeout)
 
   if (m_pNetwork == nullptr)
   {
-    m_pNetwork = xiiRemoteInterfaceEnet::Make(); /// \todo Somehow abstract this away ?
-
-    m_sFileserveCacheFolder     = xiiOSFile::GetUserDataFolder("xiiFileserve/Cache");
-    m_sFileserveCacheMetaFolder = xiiOSFile::GetUserDataFolder("xiiFileserve/Meta");
+    xiiStringBuilder sServerCache;
+    sServerCache.SetFormat("{0}", xiiArgU(xiiHashingUtils::xxHash64String(m_sServerConnectionAddress), 16, true, 16));
+    xiiStringBuilder sCacheRoot = xiiCommandLineUtils::GetGlobalInstance()->GetStringOption("-fs_cache_dir");
+    if (sCacheRoot.IsEmpty())
+      sCacheRoot = xiiOSFile::GetUserDataFolder("xiiFileserve");
+    if (!sCacheRoot.IsAbsolutePath())
+      return XII_FAILURE;
+    m_sFileserveCacheFolder     = xiiStringBuilder(sCacheRoot, "/Cache/", sServerCache);
+    m_sFileserveCacheMetaFolder = xiiStringBuilder(sCacheRoot, "/Meta/", sServerCache);
 
     if (xiiOSFile::CreateDirectoryStructure(m_sFileserveCacheFolder).Failed())
     {
@@ -102,6 +113,7 @@ xiiResult xiiFileserveClient::EnsureConnected(xiiTime timeout)
       xiiLog::Error("Could not create fileserve cache folder '{0}'", m_sFileserveCacheMetaFolder);
       return XII_FAILURE;
     }
+    m_pNetwork = xiiRemoteInterfaceEnet::Make();
   }
 
   if (!m_pNetwork->IsConnectedToServer())
@@ -109,13 +121,15 @@ xiiResult xiiFileserveClient::EnsureConnected(xiiTime timeout)
     ClearState();
     m_bFailedToConnect = true;
 
-    if (m_pNetwork->ConnectToServer('XIFS', m_sServerConnectionAddress).Failed())
+    if (m_pNetwork->ConnectToServer(XII_FILESERVE_TRANSFER_PROTOCOL, m_sServerConnectionAddress).Failed())
       return XII_FAILURE;
 
     if (timeout.GetSeconds() < 0)
     {
       timeout = xiiTime::MakeFromSeconds(xiiCommandLineUtils::GetGlobalInstance()->GetFloatOption("-fs_timeout", -timeout.GetSeconds()));
     }
+    if (!timeout.IsPositive() || timeout > xiiTime::MakeFromSeconds(120))
+      timeout = xiiTime::MakeFromSeconds(120);
 
     if (m_pNetwork->WaitForConnectionToServer(timeout).Failed())
     {
@@ -139,23 +153,33 @@ xiiResult xiiFileserveClient::EnsureConnected(xiiTime timeout)
 
 void xiiFileserveClient::UpdateClient()
 {
-  XII_LOCK(m_Mutex);
-  if (m_pNetwork == nullptr || m_bFailedToConnect || !s_bEnableFileserve)
-    return;
-
-  if (!m_pNetwork->IsConnectedToServer())
+  bool bReloadResources = false;
   {
-    if (EnsureConnected().Failed())
+    XII_LOCK(m_Mutex);
+    if (m_pNetwork == nullptr || m_bFailedToConnect || !s_bEnableFileserve)
+      return;
+
+    if (!m_pNetwork->IsConnectedToServer())
     {
-      xiiLog::Error("Fileserve connection was lost and could not be re-established.");
-      ShutdownConnection();
+      if (EnsureConnected().Failed())
+      {
+        xiiLog::Error("Fileserve connection was lost and could not be re-established.");
+        ShutdownConnection();
+      }
+      return;
     }
-    return;
+
+    m_pNetwork->ExecuteAllMessageHandlers();
+
+    if (m_bReloadResources && !m_bDownloading && !m_bWaitingForUploadFinished)
+    {
+      m_bReloadResources = false;
+      bReloadResources   = true;
+    }
   }
 
-  m_CurrentTime = xiiTime::Now();
-
-  m_pNetwork->ExecuteAllMessageHandlers();
+  if (bReloadResources)
+    XII_BROADCAST_EVENT(xiiResourceManager_ReloadAllResources);
 }
 
 void xiiFileserveClient::AddServerAddressToTry(xiiStringView sAddress)
@@ -173,84 +197,173 @@ void xiiFileserveClient::AddServerAddressToTry(xiiStringView sAddress)
   m_sServerConnectionAddress = sAddress;
 }
 
-void xiiFileserveClient::UploadFile(xiiUInt16 uiDataDirID, const char* szFile, const xiiDynamicArray<xiiUInt8>& fileContent)
+bool xiiFileserveClient::IsShaderCompilationAvailable() const
 {
   XII_LOCK(m_Mutex);
-
-  if (m_pNetwork == nullptr)
-    return;
-
-  // update meta state and cache
-  {
-    const xiiString& sMountPoint = m_MountedDataDirs[uiDataDirID].m_sMountPoint;
-    xiiStringBuilder sCachedMetaFile;
-    BuildPathInCache(szFile, sMountPoint, nullptr, &sCachedMetaFile);
-
-    xiiUInt64 uiHash = 1;
-
-    if (!fileContent.IsEmpty())
-    {
-      uiHash = xiiHashingUtils::xxHash64(fileContent.GetData(), fileContent.GetCount(), uiHash);
-    }
-
-    WriteMetaFile(sCachedMetaFile, 0, uiHash);
-
-    InvalidateFileCache(uiDataDirID, szFile, uiHash);
-  }
-
-  const xiiUInt32 uiFileSize = fileContent.GetCount();
-
-  xiiUuid uploadGuid = xiiUuid::MakeUuid();
-
-  {
-    xiiRemoteMessage msg;
-    msg.SetMessageID('FSRV', 'UPLH');
-    msg.GetWriter() << uploadGuid;
-    msg.GetWriter() << uiFileSize;
-    msg.GetWriter() << uiDataDirID;
-    msg.GetWriter() << szFile;
-    m_pNetwork->Send(xiiRemoteTransmitMode::Reliable, msg);
-  }
-
-  xiiUInt32 uiNextByte = 0;
-
-  // send the file over in multiple packages of 1KB each
-  // send at least one package, even for empty files
-
-  while (uiNextByte < fileContent.GetCount())
-  {
-    const xiiUInt16 uiChunkSize = (xiiUInt16)xiiMath::Min<xiiUInt32>(1024, fileContent.GetCount() - uiNextByte);
-
-    xiiRemoteMessage msg;
-    msg.GetWriter() << uploadGuid;
-    msg.GetWriter() << uiChunkSize;
-    msg.GetWriter().WriteBytes(&fileContent[uiNextByte], uiChunkSize).IgnoreResult();
-
-    msg.SetMessageID('FSRV', 'UPLD');
-    m_pNetwork->Send(xiiRemoteTransmitMode::Reliable, msg);
-
-    uiNextByte += uiChunkSize;
-  }
-
-  // continuously update the network until we know the server has received the big chunk of data
-  m_bWaitingForUploadFinished = true;
-
-  // final message to server
-  {
-    xiiRemoteMessage msg('FSRV', 'UPLF');
-    msg.GetWriter() << uploadGuid;
-    msg.GetWriter() << uiDataDirID;
-    msg.GetWriter() << szFile;
-
-    m_pNetwork->Send(xiiRemoteTransmitMode::Reliable, msg);
-  }
-
-  while (m_bWaitingForUploadFinished)
-  {
-    UpdateClient();
-  }
+  return m_pNetwork && m_pNetwork->IsConnectedToServer();
 }
 
+xiiResult xiiFileserveClient::CompileShader(const xiiRemoteShaderCompileRequest& request, xiiStringBuilder& out_sLog)
+{
+  XII_LOCK(m_Mutex);
+  out_sLog = "Invalid or unavailable FileServe shader compilation request.";
+  if (!m_pNetwork || !m_pNetwork->IsConnectedToServer() || m_bShaderCompiling || m_bDownloading ||
+      m_bWaitingForUploadFinished || request.m_Permutations.GetCount() > 64 ||
+      !xiiFileserveClientContext::IsValidRelativePath(request.m_sShader) || request.m_sPlatform.GetElementCount() > 96)
+    return XII_FAILURE;
+
+  for (const auto& permutation : request.m_Permutations)
+  {
+    if (permutation.m_sName.GetElementCount() > 96 || permutation.m_sValue.GetElementCount() > 96)
+      return XII_FAILURE;
+  }
+
+  const auto id       = xiiUuid::MakeUuid();
+  m_bShaderCompiling  = true;
+  bool      bComplete = false;
+  xiiResult result    = XII_FAILURE;
+  m_pNetwork->SetMessageHandler('SHDR', [&](xiiRemoteMessage& message) {
+    constexpr xiiUInt32 uiHeaderSize = 16 + sizeof(xiiUInt8) + sizeof(xiiUInt32);
+    const auto          bytes        = message.GetMessageData();
+    if (bComplete || message.GetMessageID() != 'CRES' || bytes.GetCount() < uiHeaderSize)
+      return;
+
+    auto&   reader = message.GetReader();
+    xiiUuid responseId;
+    reader >> responseId;
+    if (responseId != id)
+      return;
+
+    bComplete             = true;
+    xiiUInt8  uiSucceeded = 0;
+    xiiUInt32 uiLogBytes  = 0;
+    if (reader.ReadBytes(&uiSucceeded, sizeof(uiSucceeded)) != sizeof(uiSucceeded) ||
+        reader.ReadDWordValue(&uiLogBytes).Failed() || uiSucceeded > 1 || uiLogBytes > 64 * 1024 ||
+        uiLogBytes != bytes.GetCount() - uiHeaderSize)
+      return;
+
+    const auto* pLog = reinterpret_cast<const char*>(bytes.GetPtr() + uiHeaderSize);
+    if (!xiiUnicodeUtils::IsValidUtf8(pLog, pLog + uiLogBytes) || std::memchr(pLog, '\0', uiLogBytes) != nullptr)
+      return;
+    out_sLog = xiiStringView(pLog, pLog + uiLogBytes);
+    result   = uiSucceeded == 1 ? XII_SUCCESS : XII_FAILURE;
+  });
+  XII_SCOPE_EXIT(m_pNetwork->SetMessageHandler('SHDR', {}); m_bShaderCompiling = false);
+
+  xiiRemoteMessage msg('SHDR', 'CMPL');
+  msg.GetWriter() << id;
+  msg.GetWriter() << request.m_sShader;
+  msg.GetWriter() << request.m_sPlatform;
+  msg.GetWriter() << request.m_Permutations.GetCount();
+  for (const auto& permutation : request.m_Permutations)
+  {
+    msg.GetWriter() << permutation.m_sName;
+    msg.GetWriter() << permutation.m_sValue;
+  }
+  m_pNetwork->Send(xiiRemoteTransmitMode::Reliable, msg);
+
+  const auto deadline = xiiTime::Now() + xiiTime::MakeFromSeconds(120);
+  while (!bComplete && m_pNetwork->IsConnectedToServer() && xiiTime::Now() < deadline)
+  {
+    m_pNetwork->UpdateRemoteInterface();
+    if (m_pNetwork->ExecuteAllMessageHandlers() == 0)
+      xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(1));
+  }
+  if (!bComplete)
+    out_sLog = "FileServe disconnected or the shader compilation deadline expired.";
+  if (result.Succeeded())
+    InvalidateAllCache();
+  return result;
+}
+
+xiiResult xiiFileserveClient::UploadFile(xiiUInt16 uiDataDirID, xiiStringView sFile, xiiOSFile& ref_file)
+{
+  XII_LOCK(m_Mutex);
+  if (!m_pNetwork || !m_pNetwork->IsConnectedToServer() || m_bDownloading || m_bWaitingForUploadFinished ||
+      uiDataDirID >= m_MountedDataDirs.GetCount() || !m_MountedDataDirs[uiDataDirID].m_bMounted ||
+      !xiiFileserveClientContext::IsValidRelativePath(sFile))
+    return XII_FAILURE;
+
+  const auto uiFileSize = ref_file.GetFileSize();
+  if (uiFileSize > xiiMath::MaxValue<xiiUInt32>())
+    return XII_FAILURE;
+
+  // The local writer has already changed the cached payload. Until the server confirms the
+  // upload, neither the in-memory cache nor its metadata can describe the new contents.
+  const xiiStringBuilder sFilePath(sFile);
+  xiiStringBuilder       sCachedMetaFile;
+  BuildPathInCache(sFilePath, m_MountedDataDirs[uiDataDirID].m_sMountPoint, nullptr, &sCachedMetaFile);
+  InvalidateFileCache(uiDataDirID, sFile, 0);
+  if (xiiOSFile::DeleteFile(sCachedMetaFile).Failed())
+    return XII_FAILURE;
+
+  m_UploadRequest             = xiiUuid::MakeUuid();
+  m_bUploadSucceeded          = false;
+  m_bWaitingForUploadFinished = true;
+  XII_SCOPE_EXIT(m_bWaitingForUploadFinished = false; m_UploadRequest = {});
+
+  {
+    xiiRemoteMessage msg('FSRV', 'UPLH');
+    msg.GetWriter() << m_UploadRequest;
+    msg.GetWriter() << static_cast<xiiUInt32>(uiFileSize);
+    msg.GetWriter() << uiDataDirID;
+    msg.GetWriter() << sFile;
+    m_pNetwork->Send(xiiRemoteTransmitMode::Reliable, msg);
+  }
+
+  xiiHashStreamWriter64 hash(1);
+  xiiUInt8              bytes[16 * 1024];
+  xiiUInt64             uiRemaining = uiFileSize;
+  const auto            deadline    = xiiTime::Now() + xiiTime::MakeFromSeconds(120);
+  while (uiRemaining != 0 && m_bWaitingForUploadFinished && m_pNetwork->IsConnectedToServer() && xiiTime::Now() < deadline)
+  {
+    const auto uiChunkSize = static_cast<xiiUInt16>(xiiMath::Min<xiiUInt64>(sizeof(bytes), uiRemaining));
+    if (ref_file.Read(bytes, uiChunkSize) != uiChunkSize || hash.WriteBytes(bytes, uiChunkSize).Failed())
+      return XII_FAILURE;
+
+    xiiRemoteMessage msg('FSRV', 'UPLD');
+    msg.GetWriter() << m_UploadRequest;
+    msg.GetWriter() << uiChunkSize;
+    XII_SUCCEED_OR_RETURN(msg.GetWriter().WriteBytes(bytes, uiChunkSize));
+    m_pNetwork->Send(xiiRemoteTransmitMode::Reliable, msg);
+    m_pNetwork->UpdateRemoteInterface();
+    m_pNetwork->ExecuteAllMessageHandlers();
+
+    uiRemaining -= uiChunkSize;
+  }
+
+  if (uiRemaining != 0 || !m_bWaitingForUploadFinished || !m_pNetwork->IsConnectedToServer())
+    return XII_FAILURE;
+
+  const xiiUInt64 uiHash = uiFileSize == 0 ? 1 : hash.GetHashValue();
+  {
+    xiiRemoteMessage msg('FSRV', 'UPLF');
+    msg.GetWriter() << m_UploadRequest;
+    msg.GetWriter() << uiDataDirID;
+    msg.GetWriter() << sFile;
+    msg.GetWriter() << uiHash;
+
+    m_pNetwork->Send(xiiRemoteTransmitMode::Reliable, msg);
+  }
+
+  while (m_bWaitingForUploadFinished && m_pNetwork->IsConnectedToServer() && xiiTime::Now() < deadline)
+  {
+    m_pNetwork->UpdateRemoteInterface();
+    if (m_pNetwork->ExecuteAllMessageHandlers() == 0)
+      xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(1));
+  }
+
+  if (!m_bUploadSucceeded)
+    return XII_FAILURE;
+
+  if (WriteMetaFile(sCachedMetaFile, 0, uiHash).Failed())
+  {
+    xiiOSFile::DeleteFile(sCachedMetaFile).IgnoreResult();
+    xiiLog::Warning("Could not write FileServe cache metadata for '{}'.", sFile);
+  }
+  InvalidateFileCache(uiDataDirID, sFile, uiHash);
+  return XII_SUCCESS;
+}
 
 void xiiFileserveClient::InvalidateFileCache(xiiUInt16 uiDataDirID, xiiStringView sFile, xiiUInt64 uiHash)
 {
@@ -349,51 +462,51 @@ void xiiFileserveClient::NetworkMsgHandler(xiiRemoteMessage& msg)
     return;
   }
 
-  static bool s_bReloadResources = false;
-
   if (msg.GetMessageID() == 'RLDR')
   {
-    s_bReloadResources = true;
-  }
-
-  if (!m_bDownloading && s_bReloadResources)
-  {
-    XII_BROADCAST_EVENT(xiiResourceManager_ReloadAllResources);
-    s_bReloadResources = false;
+    InvalidateAllCache();
+    m_bReloadResources = true;
     return;
   }
-
-  if (msg.GetMessageID() == 'RLDR')
-    return;
 
   if (msg.GetMessageID() == 'UACK')
   {
-    m_bWaitingForUploadFinished = false;
+    if (m_bWaitingForUploadFinished && msg.GetMessageData().GetCount() == 16 + sizeof(xiiUInt8))
+    {
+      xiiUuid  request;
+      xiiUInt8 uiSuccess = 0;
+      msg.GetReader() >> request;
+      if (request == m_UploadRequest && msg.GetReader().ReadBytes(&uiSuccess, sizeof(uiSuccess)) == sizeof(uiSuccess))
+      {
+        m_bWaitingForUploadFinished = false;
+        m_bUploadSucceeded          = uiSuccess == 1;
+      }
+    }
     return;
   }
 
   if (msg.GetMessageID() == 'INVC')
   {
-    // Invalidate caches, so that next read will go to the server.
-
-    for (auto& dd : m_MountedDataDirs)
-    {
-      for (auto& it : dd.m_CacheStatus)
-      {
-        it.Value().m_LastCheck = xiiTime::MakeZero();
-      }
-    }
-
+    InvalidateAllCache();
     return;
   }
 
   xiiLog::Error("Unknown FSRV message: '{0}' - {1} bytes", msg.GetMessageID(), msg.GetMessageData().GetCount());
 }
 
+void xiiFileserveClient::InvalidateAllCache()
+{
+  for (auto& dir : m_MountedDataDirs)
+  {
+    for (auto& entry : dir.m_CacheStatus)
+      entry.Value().m_LastCheck = xiiTime::MakeZero();
+  }
+}
+
 xiiUInt16 xiiFileserveClient::MountDataDirectory(xiiStringView sDataDirectory, xiiStringView sRootName)
 {
   XII_LOCK(m_Mutex);
-  if (!m_pNetwork->IsConnectedToServer())
+  if (!m_pNetwork || !m_pNetwork->IsConnectedToServer() || m_MountedDataDirs.GetCount() >= 4096)
     return 0xffff;
 
   xiiStringBuilder sRoot = sRootName;
@@ -425,13 +538,15 @@ xiiUInt16 xiiFileserveClient::MountDataDirectory(xiiStringView sDataDirectory, x
 void xiiFileserveClient::UnmountDataDirectory(xiiUInt16 uiDataDir)
 {
   XII_LOCK(m_Mutex);
-  if (!m_pNetwork->IsConnectedToServer())
+  if (uiDataDir >= m_MountedDataDirs.GetCount() || !m_MountedDataDirs[uiDataDir].m_bMounted)
     return;
 
-  xiiRemoteMessage msg('FSRV', 'UMNT');
-  msg.GetWriter() << uiDataDir;
-
-  m_pNetwork->Send(xiiRemoteTransmitMode::Reliable, msg);
+  if (m_pNetwork && m_pNetwork->IsConnectedToServer())
+  {
+    xiiRemoteMessage msg('FSRV', 'UMNT');
+    msg.GetWriter() << uiDataDir;
+    m_pNetwork->Send(xiiRemoteTransmitMode::Reliable, msg);
+  }
 
   auto& dd      = m_MountedDataDirs[uiDataDir];
   dd.m_bMounted = false;
@@ -440,7 +555,8 @@ void xiiFileserveClient::UnmountDataDirectory(xiiUInt16 uiDataDir)
 void xiiFileserveClient::DeleteFile(xiiUInt16 uiDataDir, xiiStringView sFile)
 {
   XII_LOCK(m_Mutex);
-  if (!m_pNetwork->IsConnectedToServer())
+  if (!m_pNetwork || !m_pNetwork->IsConnectedToServer() || uiDataDir >= m_MountedDataDirs.GetCount() ||
+      !m_MountedDataDirs[uiDataDir].m_bMounted || !xiiFileserveClientContext::IsValidRelativePath(sFile))
     return;
 
   InvalidateFileCache(uiDataDir, sFile, 0);
@@ -454,158 +570,193 @@ void xiiFileserveClient::DeleteFile(xiiUInt16 uiDataDir, xiiStringView sFile)
 
 void xiiFileserveClient::HandleFileTransferMsg(xiiRemoteMessage& msg)
 {
-  XII_LOCK(m_Mutex);
-  {
-    xiiUuid fileRequestGuid;
-    msg.GetReader() >> fileRequestGuid;
+  if (!m_bDownloading || msg.GetMessageData().GetCount() < sizeof(xiiUuid))
+    return;
 
-    if (fileRequestGuid != m_CurFileRequestGuid)
+  auto&   reader = msg.GetReader();
+  xiiUuid request;
+  reader >> request;
+  if (request != m_CurFileRequestGuid)
+    return;
+
+  xiiUInt16           uiChunkSize  = 0;
+  xiiUInt32           uiFileSize   = 0;
+  constexpr xiiUInt32 uiHeaderSize = 16 + sizeof(uiChunkSize) + sizeof(uiFileSize);
+  if (reader.ReadWordValue(&uiChunkSize).Failed() || reader.ReadDWordValue(&uiFileSize).Failed() ||
+      msg.GetMessageData().GetCount() != uiHeaderSize + uiChunkSize ||
+      (m_bDownloadStaged && uiFileSize != m_uiDownloadSize) || m_uiDownloadReceived > uiFileSize ||
+      uiChunkSize > uiFileSize - m_uiDownloadReceived || (uiChunkSize == 0 && (uiFileSize != 0 || m_bDownloadStaged)))
+  {
+    m_bDownloading = false;
+    return;
+  }
+
+  if (!m_bDownloadStaged)
+  {
+    xiiStringBuilder sRequestId;
+    xiiConversionUtils::ToString(request, sRequestId);
+    xiiStringBuilder sStagingPath(m_sFileserveCacheFolder, "/.transfers/", sRequestId);
+    if (m_DownloadFile.Open(sStagingPath, xiiFileOpenMode::Write).Failed())
     {
-      // xiiLog::Debug("Fileserver is answering someone else");
+      m_bDownloading = false;
       return;
     }
+    m_sDownloadStagingPath = sStagingPath;
+    m_uiDownloadSize       = uiFileSize;
+    m_bDownloadStaged      = true;
   }
 
-  xiiUInt16 uiChunkSize = 0;
-  msg.GetReader() >> uiChunkSize;
-
-  xiiUInt32 uiFileSize = 0;
-  msg.GetReader() >> uiFileSize;
-
-  // make sure we don't need to reallocate
-  m_Download.Reserve(uiFileSize);
-
-  if (uiChunkSize > 0)
+  if (m_DownloadFile.Write(msg.GetMessageData().GetPtr() + uiHeaderSize, uiChunkSize).Failed())
   {
-    const xiiUInt32 uiStartPos = m_Download.GetCount();
-    m_Download.SetCountUninitialized(uiStartPos + uiChunkSize);
-    msg.GetReader().ReadBytes(&m_Download[uiStartPos], uiChunkSize);
+    m_bDownloading = false;
+    return;
   }
-}
 
+  m_uiDownloadReceived += uiChunkSize;
+}
 
 void xiiFileserveClient::HandleFileTransferFinishedMsg(xiiRemoteMessage& msg)
 {
-  XII_LOCK(m_Mutex);
+  if (!m_bDownloading || msg.GetMessageData().GetCount() < sizeof(xiiUuid))
+    return;
+
+  auto&   reader = msg.GetReader();
+  xiiUuid request;
+  reader >> request;
+  if (request != m_CurFileRequestGuid)
+    return;
+
   XII_SCOPE_EXIT(m_bDownloading = false);
-
-  {
-    xiiUuid fileRequestGuid;
-    msg.GetReader() >> fileRequestGuid;
-
-    if (fileRequestGuid != m_CurFileRequestGuid)
-    {
-      // xiiLog::Debug("Fileserver is answering someone else");
-      return;
-    }
-  }
-
-  xiiFileserveFileState fileState;
-  {
-    xiiInt8 iFileStatus = 0;
-    msg.GetReader() >> iFileStatus;
-    fileState = (xiiFileserveFileState)iFileStatus;
-  }
-
-  xiiInt64 iFileTimeStamp = 0;
-  msg.GetReader() >> iFileTimeStamp;
-
-  xiiUInt64 uiFileHash = 0;
-  msg.GetReader() >> uiFileHash;
-
-  xiiUInt16 uiFoundInDataDir = 0;
-  msg.GetReader() >> uiFoundInDataDir;
-
-  if (uiFoundInDataDir == 0xffff) // file does not exist on server in any data dir
-  {
-    m_FileDataDir[m_sCurFileRequest] = 0; // placeholder
-
-    for (xiiUInt32 i = 0; i < m_MountedDataDirs.GetCount(); ++i)
-    {
-      auto& ref       = m_MountedDataDirs[i].m_CacheStatus[m_sCurFileRequest];
-      ref.m_FileHash  = 0;
-      ref.m_TimeStamp = 0;
-      ref.m_LastCheck = m_CurrentTime;
-    }
-
-    return;
-  }
-  else
-  {
-    m_FileDataDir[m_sCurFileRequest] = uiFoundInDataDir;
-
-    auto& ref       = m_MountedDataDirs[uiFoundInDataDir].m_CacheStatus[m_sCurFileRequest];
-    ref.m_FileHash  = uiFileHash;
-    ref.m_TimeStamp = iFileTimeStamp;
-    ref.m_LastCheck = m_CurrentTime;
-  }
-
-  // nothing changed
-  if (fileState == xiiFileserveFileState::SameTimestamp || fileState == xiiFileserveFileState::NonExistantEither)
+  constexpr xiiUInt32 uiResponseSize = 16 + sizeof(xiiInt8) + sizeof(xiiInt64) + sizeof(xiiUInt64) + sizeof(xiiUInt16);
+  if (msg.GetMessageData().GetCount() != uiResponseSize)
     return;
 
-  const xiiString& sMountPoint = m_MountedDataDirs[uiFoundInDataDir].m_sMountPoint;
+  xiiInt8   iFileState = 0;
+  xiiInt64  iTimestamp = 0;
+  xiiUInt64 uiHash     = 0;
+  xiiUInt16 uiDataDir  = 0;
+  reader >> iFileState;
+  reader >> iTimestamp;
+  reader >> uiHash;
+  reader >> uiDataDir;
+
+  const auto state = static_cast<xiiFileserveFileState>(iFileState);
+  if (state < xiiFileserveFileState::NonExistant || state > xiiFileserveFileState::Different)
+    return;
+
+  if (uiDataDir == 0xffff)
+  {
+    if (!m_bDownloadStaged && !m_bForceDownloadDataDir &&
+        (state == xiiFileserveFileState::NonExistant || state == xiiFileserveFileState::NonExistantEither))
+    {
+      for (auto& dir : m_MountedDataDirs)
+      {
+        if (dir.m_bMounted)
+          dir.m_CacheStatus[m_sCurFileRequest] = {0, 0, xiiTime::Now()};
+      }
+      m_FileDataDir[m_sCurFileRequest] = m_uiDownloadDataDir;
+      m_bDownloadSucceeded             = true;
+    }
+    return;
+  }
+
+  if (uiDataDir >= m_MountedDataDirs.GetCount() || !m_MountedDataDirs[uiDataDir].m_bMounted ||
+      (m_bForceDownloadDataDir && uiDataDir != m_uiDownloadDataDir) || (m_bDownloadStaged != (state == xiiFileserveFileState::Different)))
+    return;
+
+  auto&            dir    = m_MountedDataDirs[uiDataDir];
+  auto&            status = dir.m_CacheStatus[m_sCurFileRequest];
   xiiStringBuilder sCachedFile, sCachedMetaFile;
-  BuildPathInCache(m_sCurFileRequest, sMountPoint, &sCachedFile, &sCachedMetaFile);
+  BuildPathInCache(m_sCurFileRequest, dir.m_sMountPoint, &sCachedFile, &sCachedMetaFile);
 
-  if (fileState == xiiFileserveFileState::NonExistant)
+  switch (state)
   {
-    // remove them from the cache as well, if they still exist there
-    xiiOSFile::DeleteFile(sCachedFile).IgnoreResult();
-    xiiOSFile::DeleteFile(sCachedMetaFile).IgnoreResult();
-    return;
+    case xiiFileserveFileState::Different:
+      if (uiHash == 0 || CommitDownload(sCachedFile, uiHash).Failed())
+        return;
+      if (WriteMetaFile(sCachedMetaFile, iTimestamp, uiHash).Failed())
+      {
+        xiiOSFile::DeleteFile(sCachedMetaFile).IgnoreResult();
+        return;
+      }
+      break;
+
+    case xiiFileserveFileState::SameTimestamp:
+    case xiiFileserveFileState::SameHash:
+      if (uiHash == 0 || status.m_FileHash != uiHash || !xiiOSFile::ExistsFile(sCachedFile))
+        return;
+      if (state == xiiFileserveFileState::SameHash && WriteMetaFile(sCachedMetaFile, iTimestamp, uiHash).Failed())
+        return;
+      break;
+
+    case xiiFileserveFileState::NonExistant:
+    case xiiFileserveFileState::NonExistantEither:
+      if (uiHash != 0 || !xiiOSFile::DeleteFile(sCachedFile).Succeeded() || !xiiOSFile::DeleteFile(sCachedMetaFile).Succeeded())
+        return;
+      break;
+
+    default:
+      return;
   }
 
-  // timestamp changed, but hash is still the same -> update timestamp
-  if (fileState == xiiFileserveFileState::SameHash)
-  {
-    WriteMetaFile(sCachedMetaFile, iFileTimeStamp, uiFileHash);
-  }
-
-  if (fileState == xiiFileserveFileState::Different)
-  {
-    WriteDownloadToDisk(sCachedFile);
-    WriteMetaFile(sCachedMetaFile, iFileTimeStamp, uiFileHash);
-  }
+  status = {iTimestamp, uiHash, xiiTime::Now()};
+  if (!m_bForceDownloadDataDir)
+    m_FileDataDir[m_sCurFileRequest] = uiDataDir;
+  m_bDownloadSucceeded = true;
 }
 
-
-void xiiFileserveClient::WriteMetaFile(xiiStringBuilder sCachedMetaFile, xiiInt64 iFileTimeStamp, xiiUInt64 uiFileHash)
+xiiResult xiiFileserveClient::WriteMetaFile(xiiStringView sCachedMetaFile, xiiInt64 iFileTimeStamp, xiiUInt64 uiFileHash)
 {
-  xiiOSFile file;
-  if (file.Open(sCachedMetaFile, xiiFileOpenMode::Write).Succeeded())
-  {
-    file.Write(&iFileTimeStamp, sizeof(xiiInt64)).IgnoreResult();
-    file.Write(&uiFileHash, sizeof(xiiUInt64)).IgnoreResult();
+  xiiStringBuilder sId;
+  xiiConversionUtils::ToString(xiiUuid::MakeUuid(), sId);
+  const xiiStringBuilder sStagingPath(sCachedMetaFile, ".", sId, ".tmp");
+  xiiOSFile              file;
+  XII_SUCCEED_OR_RETURN(file.Open(sStagingPath, xiiFileOpenMode::Write));
+  XII_SCOPE_EXIT(file.Close(); xiiOSFile::DeleteFile(sStagingPath).IgnoreResult());
 
-    file.Close();
-  }
-  else
-  {
-    xiiLog::Error("Failed to write meta file to '{0}'", sCachedMetaFile);
-  }
+  XII_SUCCEED_OR_RETURN(file.Write(&iFileTimeStamp, sizeof(iFileTimeStamp)));
+  XII_SUCCEED_OR_RETURN(file.Write(&uiFileHash, sizeof(uiFileHash)));
+  file.Close();
+  xiiFileStats stat;
+  if (xiiOSFile::GetFileStats(sStagingPath, stat).Failed() || stat.m_uiFileSize != sizeof(iFileTimeStamp) + sizeof(uiFileHash))
+    return XII_FAILURE;
+
+  return xiiOSFile::AtomicReplaceFile(sStagingPath, sCachedMetaFile);
 }
 
-void xiiFileserveClient::WriteDownloadToDisk(xiiStringBuilder sCachedFile)
+xiiResult xiiFileserveClient::CommitDownload(xiiStringView sCachedFile, xiiUInt64 uiExpectedHash)
 {
-  XII_LOCK(m_Mutex);
-  xiiOSFile file;
-  if (file.Open(sCachedFile, xiiFileOpenMode::Write).Succeeded())
-  {
-    if (!m_Download.IsEmpty())
-      file.Write(m_Download.GetData(), m_Download.GetCount()).IgnoreResult();
+  if (!m_bDownloadStaged || m_uiDownloadReceived != m_uiDownloadSize)
+    return XII_FAILURE;
 
-    file.Close();
-  }
-  else
+  m_DownloadFile.Close();
+  xiiOSFile verifiedFile;
+  XII_SUCCEED_OR_RETURN(verifiedFile.Open(m_sDownloadStagingPath, xiiFileOpenMode::Read));
+  xiiUInt64 uiHash = 0;
+  if (xiiFileserveClientContext::HashFile(verifiedFile, m_uiDownloadSize, uiHash).Failed() || uiHash != uiExpectedHash)
+    return XII_FAILURE;
+
+  verifiedFile.Close();
+  const xiiStringBuilder sDestination(sCachedFile);
+  XII_SUCCEED_OR_RETURN(xiiOSFile::CreateDirectoryStructure(sDestination.GetFileDirectory()));
+  return xiiOSFile::AtomicReplaceFile(m_sDownloadStagingPath, sCachedFile);
+}
+
+void xiiFileserveClient::DiscardDownload()
+{
+  m_DownloadFile.Close();
+  if (!m_sDownloadStagingPath.IsEmpty())
   {
-    xiiLog::Error("Failed to write download to '{0}'", sCachedFile);
+    xiiOSFile::DeleteFile(m_sDownloadStagingPath).IgnoreResult();
+    m_sDownloadStagingPath.Clear();
   }
+  m_bDownloadStaged    = false;
+  m_uiDownloadSize     = 0;
+  m_uiDownloadReceived = 0;
 }
 
 xiiResult xiiFileserveClient::DownloadFile(xiiUInt16 uiDataDirID, const char* szFile, bool bForceThisDataDir, xiiStringBuilder* out_pFullPath)
 {
-  // bForceThisDataDir = true;
   XII_LOCK(m_Mutex);
   if (m_bDownloading)
   {
@@ -613,11 +764,8 @@ xiiResult xiiFileserveClient::DownloadFile(xiiUInt16 uiDataDirID, const char* sz
     return XII_FAILURE;
   }
 
-  XII_ASSERT_DEV(uiDataDirID < m_MountedDataDirs.GetCount(), "Invalid data dir index {0}", uiDataDirID);
-  XII_ASSERT_DEV(m_MountedDataDirs[uiDataDirID].m_bMounted, "Data directory {0} is not mounted", uiDataDirID);
-  XII_ASSERT_DEV(!m_bDownloading, "Cannot start a download, while one is still running");
-
-  if (!m_pNetwork->IsConnectedToServer())
+  if (!m_pNetwork || !m_pNetwork->IsConnectedToServer() || uiDataDirID >= m_MountedDataDirs.GetCount() ||
+      !m_MountedDataDirs[uiDataDirID].m_bMounted || !xiiFileserveClientContext::IsValidRelativePath(szFile))
     return XII_FAILURE;
 
   bool bCachedYet    = false;
@@ -627,12 +775,13 @@ xiiResult xiiFileserveClient::DownloadFile(xiiUInt16 uiDataDirID, const char* sz
     FillFileStatusCache(szFile);
   }
 
-  const xiiUInt16        uiUseDataDirCache = bForceThisDataDir ? uiDataDirID : itFileDataDir.Value();
+  const auto             uiCachedDir       = itFileDataDir.Value();
+  const auto             uiUseDataDirCache = bForceThisDataDir || !m_MountedDataDirs[uiCachedDir].m_bMounted ? uiDataDirID : uiCachedDir;
   const FileCacheStatus& CacheStatus       = m_MountedDataDirs[uiUseDataDirCache].m_CacheStatus[szFile];
 
-  if (m_CurrentTime - CacheStatus.m_LastCheck < xiiTime::MakeFromSeconds(5.0f))
+  if (xiiTime::Now() - CacheStatus.m_LastCheck < xiiTime::MakeFromSeconds(5.0f))
   {
-    if (CacheStatus.m_FileHash == 0) // file does not exist
+    if (CacheStatus.m_FileHash == 0 || uiUseDataDirCache != uiDataDirID)
       return XII_FAILURE;
 
     if (out_pFullPath)
@@ -641,10 +790,13 @@ xiiResult xiiFileserveClient::DownloadFile(xiiUInt16 uiDataDirID, const char* sz
     return XII_SUCCESS;
   }
 
-  m_Download.Clear();
-  m_sCurFileRequest    = szFile;
-  m_CurFileRequestGuid = xiiUuid::MakeUuid();
-  m_bDownloading       = true;
+  m_sCurFileRequest       = szFile;
+  m_CurFileRequestGuid    = xiiUuid::MakeUuid();
+  m_uiDownloadDataDir     = uiUseDataDirCache;
+  m_bForceDownloadDataDir = bForceThisDataDir;
+  m_bDownloadSucceeded    = false;
+  m_bDownloading          = true;
+  XII_SCOPE_EXIT(m_bDownloading = false; DiscardDownload());
 
   xiiRemoteMessage msg('FSRV', 'READ');
   msg.GetWriter() << uiUseDataDirCache;
@@ -656,11 +808,16 @@ xiiResult xiiFileserveClient::DownloadFile(xiiUInt16 uiDataDirID, const char* sz
 
   m_pNetwork->Send(xiiRemoteTransmitMode::Reliable, msg);
 
-  while (m_bDownloading)
+  const auto deadline = xiiTime::Now() + xiiTime::MakeFromSeconds(120);
+  while (m_bDownloading && m_pNetwork->IsConnectedToServer() && xiiTime::Now() < deadline)
   {
     m_pNetwork->UpdateRemoteInterface();
-    m_pNetwork->ExecuteAllMessageHandlers();
+    if (m_pNetwork->ExecuteAllMessageHandlers() == 0)
+      xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(1));
   }
+
+  if (!m_bDownloadSucceeded)
+    return XII_FAILURE;
 
   if (bForceThisDataDir)
   {
@@ -711,8 +868,17 @@ void xiiFileserveClient::DetermineCacheStatus(xiiUInt16 uiDataDirID, const char*
       return;
     }
 
-    meta.Read(&out_Status.m_TimeStamp, sizeof(xiiInt64));
-    meta.Read(&out_Status.m_FileHash, sizeof(xiiUInt64));
+    xiiOSFile file;
+    xiiUInt64 uiActualHash = 0;
+    if (meta.GetFileSize() != sizeof(xiiInt64) + sizeof(xiiUInt64) ||
+        meta.Read(&out_Status.m_TimeStamp, sizeof(xiiInt64)) != sizeof(xiiInt64) ||
+        meta.Read(&out_Status.m_FileHash, sizeof(xiiUInt64)) != sizeof(xiiUInt64) ||
+        file.Open(sAbsPathFile, xiiFileOpenMode::Read).Failed() ||
+        xiiFileserveClientContext::HashFile(file, file.GetFileSize(), uiActualHash).Failed() ||
+        out_Status.m_FileHash != uiActualHash)
+    {
+      out_Status = {};
+    }
   }
 }
 
@@ -775,7 +941,7 @@ xiiResult xiiFileserveClient::TryConnectWithFileserver(const char* szAddress, xi
   xiiLog::Info("File server address: '{0}' ({1} sec)", szAddress, timeout.GetSeconds());
 
   xiiUniquePtr<xiiRemoteInterfaceEnet> network = xiiRemoteInterfaceEnet::Make(); /// \todo Abstract this somehow ?
-  if (network->ConnectToServer('XIFS', szAddress, false).Failed())
+  if (network->ConnectToServer(XII_FILESERVE_TRANSFER_PROTOCOL, szAddress, false).Failed())
     return XII_FAILURE;
 
   bool bServerFound = false;
@@ -810,79 +976,37 @@ xiiResult xiiFileserveClient::TryConnectWithFileserver(const char* szAddress, xi
   m_sServerConnectionAddress = szAddress;
 
   // always store the IP that was successful in the user directory
-  SaveCurrentConnectionInfoToDisk().IgnoreResult();
+  if (!xiiCommandLineUtils::GetGlobalInstance()->GetBoolOption("-fs_no_save"))
+    SaveCurrentConnectionInfoToDisk().IgnoreResult();
   return XII_SUCCESS;
 }
 
-xiiResult xiiFileserveClient::WaitForServerInfo(xiiTime timeout /*= xiiTime::MakeFromSeconds(60.0 * 5)*/)
+xiiResult xiiFileserveClient::WaitForServerInfo(xiiTime timeout)
 {
-  XII_LOCK(m_Mutex);
-  if (!s_bEnableFileserve)
+  if (!s_bEnableFileserve || !timeout.IsPositive())
     return XII_FAILURE;
 
-  xiiUInt16                           uiPort = 1042;
-  xiiHybridArray<xiiStringBuilder, 4> sServerIPs;
+  const auto                 deadline = xiiTime::Now() + timeout;
+  xiiUInt16                  uiPort   = 0;
+  xiiDynamicArray<xiiString> addresses;
+  XII_SUCCEED_OR_RETURN(xiiFileserveDiscovery::Receive(uiPort, addresses, timeout));
 
+  for (const auto& ip : addresses)
   {
-    xiiUniquePtr<xiiRemoteInterfaceEnet> network = xiiRemoteInterfaceEnet::Make(); /// \todo Abstract this somehow ?
-    network->SetMessageHandler('FSRV', [&sServerIPs, &uiPort](xiiRemoteMessage& ref_msg) {
-        switch (ref_msg.GetMessageID())
-        {
-          case 'MYIP':
-            ref_msg.GetReader() >> uiPort;
+    const auto remaining = deadline - xiiTime::Now();
+    if (!remaining.IsPositive())
+      break;
 
-            xiiUInt8 uiCount = 0;
-            ref_msg.GetReader() >> uiCount;
-
-            sServerIPs.SetCount(uiCount);
-            for (xiiUInt32 i = 0; i < uiCount; ++i)
-            {
-              ref_msg.GetReader() >> sServerIPs[i];
-            }
-
-            break;
-        } });
-
-    XII_SUCCEED_OR_RETURN(network->StartServer('XIIP', "2042", false));
-
-    xiiTime tStart = xiiTime::Now();
-    while (xiiTime::Now() - tStart < timeout && sServerIPs.IsEmpty())
-    {
-      xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(1));
-
-      network->UpdateRemoteInterface();
-      network->ExecuteAllMessageHandlers();
-    }
-
-    network->ShutdownConnection();
-  }
-
-  if (sServerIPs.IsEmpty())
-    return XII_FAILURE;
-
-  // network connections are unreliable and surprisingly slow sometimes
-  // we just got an IP from a server, so we know it's there and we should be able to connect to it
-  // still this often fails the first few times
-  // so we try this several times and waste some time in between and hope that at some point the connection succeeds
-  for (xiiUInt32 i = 0; i < 8; ++i)
-  {
     xiiStringBuilder sAddress;
-    for (auto& ip : sServerIPs)
-    {
-      sAddress.SetFormat("{0}:{1}", ip, uiPort);
-
-      xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(500));
-
-      if (TryConnectWithFileserver(sAddress, xiiTime::MakeFromSeconds(3)).Succeeded())
-        return XII_SUCCESS;
-    }
-
-    xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(1000));
+    if (ip.FindSubString(":") != nullptr)
+      sAddress.SetFormat("[{}]:{}", ip, uiPort);
+    else
+      sAddress.SetFormat("{}:{}", ip, uiPort);
+    if (TryConnectWithFileserver(sAddress, xiiMath::Min(remaining, xiiTime::MakeFromSeconds(3))).Succeeded())
+      return XII_SUCCESS;
   }
-
   return XII_FAILURE;
 }
-
 xiiResult xiiFileserveClient::SaveCurrentConnectionInfoToDisk() const
 {
   XII_LOCK(m_Mutex);

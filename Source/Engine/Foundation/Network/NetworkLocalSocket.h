@@ -34,6 +34,7 @@ private:
   static constexpr xiiUInt64 InvalidHandle = ~xiiUInt64{0};
   xiiNetworkLocalEndpoint    m_Endpoint;
   xiiString                  m_sPeerIdentity;
+  xiiUInt32                  m_uiPeerProcessId   = 0;
   xiiUInt64                  m_uiNativeHandle    = InvalidHandle;
   xiiUInt64                  m_uiContextId       = 0;
   xiiUInt64                  m_uiDirectoryHandle = InvalidHandle;

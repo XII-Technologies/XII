@@ -2,7 +2,6 @@
 
 #include <GraphicsFoundation/GraphicsFoundationPCH.h>
 
-#include <Foundation/Communication/RemoteInterface.h>
 #include <Foundation/Configuration/Singleton.h>
 #include <Foundation/IO/FileSystem/DeferredFileWriter.h>
 #include <Foundation/IO/FileSystem/FileReader.h>
@@ -189,40 +188,24 @@ xiiResult xiiGALShaderCompiler::CompileShaderPermutationForPlatforms(xiiStringVi
 {
   XII_PROFILE_SCOPE("xiiGALShaderCompiler::CompileShaderPermutationForPlatforms");
 
-  if (xiiRemoteToolingInterface* pTooling = xiiSingletonRegistry::GetSingletonInstance<xiiRemoteToolingInterface>())
+  if (auto* pTooling = xiiSingletonRegistry::GetSingletonInstance<xiiRemoteToolingInterface>(); pTooling != nullptr && pTooling->IsShaderCompilationAvailable())
   {
-    auto pNet = pTooling->GetRemoteInterface();
-
-    if (pNet && pNet->IsConnectedToServer())
+    xiiRemoteShaderCompileRequest request;
+    request.m_sShader   = sFile;
+    request.m_sPlatform = sPlatform;
+    for (const auto& permutation : permutationVariables)
     {
-      m_bCompileShaderRemotely = true;
-
-      pNet->SetMessageHandler('SHDR', xiiMakeDelegate(&xiiGALShaderCompiler::ShaderCompileMsg, this));
-
-      xiiRemoteMessage msg('SHDR', 'CMPL');
-      msg.GetWriter() << sFile;
-      msg.GetWriter() << sPlatform;
-      msg.GetWriter() << permutationVariables.GetCount();
-      for (auto& pv : permutationVariables)
-      {
-        msg.GetWriter() << pv.m_sName;
-        msg.GetWriter() << pv.m_sValue;
-      }
-
-      pNet->Send(xiiRemoteTransmitMode::Reliable, msg);
-
-      while (m_bCompileShaderRemotely)
-      {
-        pNet->UpdateRemoteInterface();
-        pNet->ExecuteAllMessageHandlers();
-      }
-
-      pNet->SetMessageHandler('SHDR', {});
-
-      return m_RemoteShaderCompileResult;
+      auto& entry    = request.m_Permutations.ExpandAndGetRef();
+      entry.m_sName  = permutation.m_sName.GetView();
+      entry.m_sValue = permutation.m_sValue.GetView();
     }
-  }
 
+    xiiStringBuilder sLog;
+    const auto       result = pTooling->CompileShader(request, sLog);
+    if (result.Failed())
+      xiiLog::Error(pLog, "Remote shader compilation failed: {}", sLog);
+    return result;
+  }
   xiiStringBuilder sFileContent, sTemp;
 
   {
@@ -678,27 +661,6 @@ void xiiGALShaderCompiler::WriteFailedShaderSource(xiiGALShaderProgramData& spd,
 
         xiiLog::Info(pLog, "Failed shader source written to '{0}'", sShaderStageFile);
       }
-    }
-  }
-}
-
-void xiiGALShaderCompiler::ShaderCompileMsg(xiiRemoteMessage& msg)
-{
-  if (msg.GetMessageID() == 'CRES')
-  {
-    m_bCompileShaderRemotely    = false;
-    m_RemoteShaderCompileResult = XII_SUCCESS;
-
-    bool bSucceeded = false;
-    msg.GetReader() >> bSucceeded;
-    m_RemoteShaderCompileResult = bSucceeded ? XII_SUCCESS : XII_FAILURE;
-
-    xiiStringBuilder sLog;
-    msg.GetReader() >> sLog;
-
-    if (!bSucceeded)
-    {
-      xiiLog::Error("Shader compilation failed:\n{}", sLog);
     }
   }
 }

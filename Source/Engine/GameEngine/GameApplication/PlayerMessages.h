@@ -4,13 +4,13 @@
 
 #include <GameEngine/GameEngineDLL.h>
 
-#include <Foundation/Communication/RemoteMessage.h>
+#include <Foundation/Reflection/Reflection.h>
 #include <Foundation/Strings/String.h>
 
-/// Private per-instance pipe; messages are pumped on the application/editor thread.
-class XII_GAMEENGINE_DLL xiiPlayerStatusMessage : public xiiProcessMessage
+/// Managed Player status on the application/editor thread.
+class XII_GAMEENGINE_DLL xiiPlayerStatusMessage : public xiiReflectedClass
 {
-  XII_ADD_DYNAMIC_REFLECTION(xiiPlayerStatusMessage, xiiProcessMessage);
+  XII_ADD_DYNAMIC_REFLECTION(xiiPlayerStatusMessage, xiiReflectedClass);
 
 public:
   xiiString m_sInstance;
@@ -20,17 +20,21 @@ public:
   float     m_fProgress       = -1.0F; ///< Negative is indeterminate (IO/initialization).
 };
 
-class XII_GAMEENGINE_DLL xiiPlayerStopMessage : public xiiProcessMessage
+class XII_GAMEENGINE_DLL xiiPlayerStopMessage : public xiiReflectedClass
 {
-  XII_ADD_DYNAMIC_REFLECTION(xiiPlayerStopMessage, xiiProcessMessage);
+  XII_ADD_DYNAMIC_REFLECTION(xiiPlayerStopMessage, xiiReflectedClass);
+
+public:
+  xiiString m_sInstance;
 };
 
 /// A runtime transition request for a single owned instance. Cancellation preserves its active world.
-class XII_GAMEENGINE_DLL xiiPlayerSceneMessage : public xiiProcessMessage
+class XII_GAMEENGINE_DLL xiiPlayerSceneMessage : public xiiReflectedClass
 {
-  XII_ADD_DYNAMIC_REFLECTION(xiiPlayerSceneMessage, xiiProcessMessage);
+  XII_ADD_DYNAMIC_REFLECTION(xiiPlayerSceneMessage, xiiReflectedClass);
 
 public:
+  xiiString m_sInstance;
   xiiString m_sScene;
   xiiString m_sPreloadCollection;
   bool      m_bCancel = false;

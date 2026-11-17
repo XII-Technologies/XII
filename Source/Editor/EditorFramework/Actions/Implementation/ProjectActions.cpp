@@ -739,12 +739,18 @@ void xiiProjectAction::Execute(const xiiVariant& value)
     case xiiProjectAction::ButtonType::SaveProfiling:
     {
       const char* szEditorProfilingFile = ":appdata/profilingEditor.json";
+      const auto  requestId             = xiiUuid::MakeUuid();
       {
         // Start capturing profiling data on engine process
         xiiSimpleConfigMsgToEngine msg;
+        msg.m_RequestId = requestId;
         msg.m_sWhatToDo = "SaveProfiling";
         msg.m_sPayload  = ":appdata/profilingEngine.json";
-        xiiEditorEngineProcessConnection::GetSingleton()->SendMessage(&msg);
+        if (!xiiEditorEngineProcessConnection::GetSingleton()->SendMessage(&msg))
+        {
+          xiiLog::Error("The engine process could not accept the profiling capture request.");
+          return;
+        }
       }
       if (xiiProfilingUtils::SaveProfilingCapture(szEditorProfilingFile).Failed())
         return;
@@ -753,7 +759,9 @@ void xiiProjectAction::Execute(const xiiVariant& value)
       {
         // Wait for engine process response
         auto Callback = [&](xiiProcessMessage* pMsg) -> bool {
-          auto pSimpleCfg      = static_cast<xiiSaveProfilingResponseToEditor*>(pMsg);
+          auto pSimpleCfg = static_cast<xiiSaveProfilingResponseToEditor*>(pMsg);
+          if (pSimpleCfg->m_RequestId != requestId)
+            return false;
           sEngineProfilingFile = pSimpleCfg->m_sProfilingFile;
           return true;
         };
