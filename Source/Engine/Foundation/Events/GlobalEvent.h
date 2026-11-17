@@ -24,6 +24,11 @@
 /// Also one should never assume any specific order of execution, all event handlers should be completely independent
 /// from each other.
 ///
+/// Prefer a typed xiiEvent on the subsystem that owns new notifications. This registry remains the source
+/// of Inspector's named event statistics. Broadcasts are synchronous and static registrations follow their
+/// owning DLL's lifetime. Serialize registry access with plugin loading and unloading, and finish active
+/// callbacks before unloading their DLL.
+///
 /// To create a global event handler, simply add this code inside a cpp file:
 ///
 /// XII_ON_GLOBAL_EVENT(EventName)
@@ -36,6 +41,7 @@
 class XII_FOUNDATION_DLL xiiGlobalEvent : public xiiEnumerable<xiiGlobalEvent>
 {
   XII_DECLARE_ENUMERABLE_CLASS(xiiGlobalEvent);
+  XII_DISALLOW_COPY_AND_ASSIGN(xiiGlobalEvent);
 
 public:
   struct XII_FOUNDATION_DLL EventData
@@ -81,7 +87,7 @@ private:
   static EventMap s_KnownEvents;
 };
 
-/// Use this macro to broadcast an event. Pass 0 to 4 parameters of type aeGlobalEventParam to it.
+/// Broadcasts a named event with up to four xiiVariant arguments.
 #define XII_BROADCAST_EVENT(name, ...) xiiGlobalEvent::Broadcast(#name, ##__VA_ARGS__);
 
 /// Use this macro to handle an event every time it is broadcast (place function code in curly brackets after it)
