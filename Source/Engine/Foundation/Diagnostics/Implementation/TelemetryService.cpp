@@ -780,19 +780,30 @@ xiiTelemetryClient::~xiiTelemetryClient()
 }
 xiiNetworkError xiiTelemetryClient::Connect(const xiiTelemetryConfiguration& configuration, const xiiNetworkLocalEndpoint& endpoint)
 {
-  Shutdown();
-  const auto started = m_pState->Start(configuration);
+  const auto started = PrepareConnection(configuration);
   if (started.Failed())
     return started;
   return m_pState->m_Host.Connect(endpoint, {}, m_pState->m_Connection);
 }
 xiiNetworkError xiiTelemetryClient::Connect(const xiiTelemetryConfiguration& configuration, const xiiNetworkEndpoint& endpoint, const xiiNetworkConnectOptions& options)
 {
-  Shutdown();
-  const auto started = m_pState->Start(configuration);
+  const auto started = PrepareConnection(configuration);
   if (started.Failed())
     return started;
   return m_pState->m_Host.Connect(endpoint, options, m_pState->m_Connection);
+}
+xiiNetworkError xiiTelemetryClient::PrepareConnection(const xiiTelemetryConfiguration& configuration)
+{
+  Shutdown();
+  auto sample = std::move(m_pState->m_Sample);
+  auto result = std::move(m_pState->m_Result);
+  // Network hosts and I/O contexts are single-use. A fresh host also gives reconnections an
+  // independent handle namespace, so late completions cannot refer to the new session.
+  XII_DEFAULT_DELETE(m_pState);
+  m_pState           = XII_DEFAULT_NEW(xiiTelemetryClientState);
+  m_pState->m_Sample = std::move(sample);
+  m_pState->m_Result = std::move(result);
+  return m_pState->Start(configuration);
 }
 void xiiTelemetryClient::Shutdown()
 {

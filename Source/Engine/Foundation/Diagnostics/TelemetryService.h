@@ -112,5 +112,6 @@ public:
   void                     SetSubscriptionHandler(SubscriptionHandler handler);
 
 private:
+  xiiNetworkError          PrepareConnection(const xiiTelemetryConfiguration& configuration);
   xiiTelemetryClientState* m_pState;
 };
