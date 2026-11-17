@@ -3,6 +3,7 @@
 #include <FileservePlugin/FileservePluginPCH.h>
 
 #include <FileservePlugin/Client/FileserveClient.h>
+#include <FileservePlugin/Discovery/FileserveDiscovery.h>
 #include <FileservePlugin/Fileserver/Fileserver.h>
 #include <Foundation/Algorithm/HashingUtils.h>
 #include <Foundation/Communication/RemoteInterfaceEnet.h>
@@ -480,38 +481,5 @@ void xiiFileserver::LogCustomActivity(const char* szText)
 
 xiiResult xiiFileserver::SendConnectionInfo(const char* szClientAddress, xiiUInt16 uiMyPort, const xiiArrayPtr<xiiStringBuilder>& myIPs, xiiTime timeout)
 {
-  xiiStringBuilder sAddress = szClientAddress;
-  sAddress.Append(":2042"); // hard-coded port
-
-  xiiUniquePtr<xiiRemoteInterfaceEnet> network = xiiRemoteInterfaceEnet::Make();
-  XII_SUCCEED_OR_RETURN(network->ConnectToServer('XIIP', sAddress, false));
-
-  if (network->WaitForConnectionToServer(timeout).Failed())
-  {
-    network->ShutdownConnection();
-    return XII_FAILURE;
-  }
-
-  const xiiUInt8 uiCount = static_cast<xiiUInt8>(myIPs.GetCount());
-
-  xiiRemoteMessage msg('FSRV', 'MYIP');
-  msg.GetWriter() << uiMyPort;
-  msg.GetWriter() << uiCount;
-
-  for (const auto& info : myIPs)
-  {
-    msg.GetWriter() << info;
-  }
-
-  network->Send(xiiRemoteTransmitMode::Reliable, msg);
-
-  // make sure the message is out, before we shut down
-  for (xiiUInt32 i = 0; i < 10; ++i)
-  {
-    network->UpdateRemoteInterface();
-    xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(1));
-  }
-
-  network->ShutdownConnection();
-  return XII_SUCCESS;
+  return xiiFileserveDiscovery::Send(szClientAddress, uiMyPort, myIPs, timeout);
 }

@@ -199,7 +199,7 @@ void xiiQtFileserveWidget::on_ConnectClient_clicked()
   }
 
   bool ok = false;
-  sIP     = QInputDialog::getText(this, "Connect to Device", "Device IP:", QLineEdit::Normal, sIP, &ok);
+  sIP     = QInputDialog::getText(this, "Connect to Device", "Device address (IP, DNS name, or local:<endpoint>)", QLineEdit::Normal, sIP, &ok);
   if (!ok)
     return;
 

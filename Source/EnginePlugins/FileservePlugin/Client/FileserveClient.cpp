@@ -3,6 +3,7 @@
 #include <FileservePlugin/FileservePluginPCH.h>
 
 #include <FileservePlugin/Client/FileserveClient.h>
+#include <FileservePlugin/Discovery/FileserveDiscovery.h>
 #include <FileservePlugin/Fileserver/ClientContext.h>
 #include <Foundation/Communication/GlobalEvent.h>
 #include <Foundation/Communication/RemoteInterfaceEnet.h>
@@ -814,75 +815,32 @@ xiiResult xiiFileserveClient::TryConnectWithFileserver(const char* szAddress, xi
   return XII_SUCCESS;
 }
 
-xiiResult xiiFileserveClient::WaitForServerInfo(xiiTime timeout /*= xiiTime::MakeFromSeconds(60.0 * 5)*/)
+xiiResult xiiFileserveClient::WaitForServerInfo(xiiTime timeout)
 {
-  XII_LOCK(m_Mutex);
-  if (!s_bEnableFileserve)
+  if (!s_bEnableFileserve || !timeout.IsPositive())
     return XII_FAILURE;
 
-  xiiUInt16                           uiPort = 1042;
-  xiiHybridArray<xiiStringBuilder, 4> sServerIPs;
+  const auto                 deadline = xiiTime::Now() + timeout;
+  xiiUInt16                  uiPort   = 0;
+  xiiDynamicArray<xiiString> addresses;
+  XII_SUCCEED_OR_RETURN(xiiFileserveDiscovery::Receive(uiPort, addresses, timeout));
 
+  for (const auto& ip : addresses)
   {
-    xiiUniquePtr<xiiRemoteInterfaceEnet> network = xiiRemoteInterfaceEnet::Make(); /// \todo Abstract this somehow ?
-    network->SetMessageHandler('FSRV', [&sServerIPs, &uiPort](xiiRemoteMessage& ref_msg) {
-        switch (ref_msg.GetMessageID())
-        {
-          case 'MYIP':
-            ref_msg.GetReader() >> uiPort;
+    const auto remaining = deadline - xiiTime::Now();
+    if (!remaining.IsPositive())
+      break;
 
-            xiiUInt8 uiCount = 0;
-            ref_msg.GetReader() >> uiCount;
-
-            sServerIPs.SetCount(uiCount);
-            for (xiiUInt32 i = 0; i < uiCount; ++i)
-            {
-              ref_msg.GetReader() >> sServerIPs[i];
-            }
-
-            break;
-        } });
-
-    XII_SUCCEED_OR_RETURN(network->StartServer('XIIP', "2042", false));
-
-    xiiTime tStart = xiiTime::Now();
-    while (xiiTime::Now() - tStart < timeout && sServerIPs.IsEmpty())
-    {
-      xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(1));
-
-      network->UpdateRemoteInterface();
-      network->ExecuteAllMessageHandlers();
-    }
-
-    network->ShutdownConnection();
-  }
-
-  if (sServerIPs.IsEmpty())
-    return XII_FAILURE;
-
-  // network connections are unreliable and surprisingly slow sometimes
-  // we just got an IP from a server, so we know it's there and we should be able to connect to it
-  // still this often fails the first few times
-  // so we try this several times and waste some time in between and hope that at some point the connection succeeds
-  for (xiiUInt32 i = 0; i < 8; ++i)
-  {
     xiiStringBuilder sAddress;
-    for (auto& ip : sServerIPs)
-    {
-      sAddress.SetFormat("{0}:{1}", ip, uiPort);
-
-      xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(500));
-
-      if (TryConnectWithFileserver(sAddress, xiiTime::MakeFromSeconds(3)).Succeeded())
-        return XII_SUCCESS;
-    }
-
-    xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(1000));
+    if (ip.FindSubString(":") != nullptr)
+      sAddress.SetFormat("[{}]:{}", ip, uiPort);
+    else
+      sAddress.SetFormat("{}:{}", ip, uiPort);
+    if (TryConnectWithFileserver(sAddress, xiiMath::Min(remaining, xiiTime::MakeFromSeconds(3))).Succeeded())
+      return XII_SUCCESS;
   }
-
   return XII_FAILURE;
 }
-
 xiiResult xiiFileserveClient::SaveCurrentConnectionInfoToDisk() const
 {
   XII_LOCK(m_Mutex);
