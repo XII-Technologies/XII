@@ -4,7 +4,7 @@
 
 #include <Core/CoreDLL.h>
 #include <Core/World/SpatialData.h>
-#include <Foundation/Communication/Message.h>
+#include <Foundation/Messaging/Message.h>
 #include <Foundation/Math/BoundingBoxSphere.h>
 
 struct XII_CORE_DLL xiiMsgUpdateLocalBounds : public xiiMessage

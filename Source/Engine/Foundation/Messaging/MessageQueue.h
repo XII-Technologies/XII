@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <Foundation/Communication/Message.h>
+#include <Foundation/Messaging/Message.h>
 #include <Foundation/Containers/Deque.h>
 #include <Foundation/Threading/Lock.h>
 #include <Foundation/Threading/Mutex.h>
@@ -107,4 +107,4 @@ public:
   void operator=(const xiiMessageQueueBase<MetaDataType>& rhs);
 };
 
-#include <Foundation/Communication/Implementation/MessageQueue_inl.h>
+#include <Foundation/Messaging/Implementation/MessageQueue_inl.h>

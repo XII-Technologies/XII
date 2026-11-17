@@ -4,7 +4,7 @@
 
 #include <GameEngine/GameEngineDLL.h>
 
-#include <Foundation/Communication/Message.h>
+#include <Foundation/Messaging/Message.h>
 
 /// Message that is sent to all game objects when a scene or prefab is being exported.
 /// This message can be handled in scripts or custom components to e.g. remove editor only objects/components or save custom data.

@@ -2,7 +2,7 @@
 
 #include <Core/CorePCH.h>
 
-#include <Foundation/Communication/GlobalEvent.h>
+#include <Foundation/Events/GlobalEvent.h>
 #include <Foundation/Communication/Telemetry.h>
 #include <Foundation/Configuration/CVar.h>
 #include <Foundation/Configuration/Singleton.h>

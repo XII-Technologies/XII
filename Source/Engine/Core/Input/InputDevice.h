@@ -4,7 +4,7 @@
 
 #include <Core/CoreDLL.h>
 #include <Core/Input/Declarations.h>
-#include <Foundation/Communication/Event.h>
+#include <Foundation/Events/Event.h>
 #include <Foundation/Containers/Map.h>
 #include <Foundation/Reflection/Reflection.h>
 #include <Foundation/Strings/String.h>

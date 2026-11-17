@@ -2,7 +2,7 @@
 
 #include <Foundation/FoundationPCH.h>
 
-#include <Foundation/Communication/GlobalEvent.h>
+#include <Foundation/Events/GlobalEvent.h>
 #include <Foundation/Logging/Log.h>
 
 XII_ENUMERABLE_CLASS_IMPLEMENTATION(xiiGlobalEvent);

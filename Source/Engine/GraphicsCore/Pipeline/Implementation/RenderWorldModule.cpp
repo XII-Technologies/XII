@@ -7,7 +7,7 @@
 #include <Core/World/Component.h>
 #include <Core/World/GameObject.h>
 #include <Core/World/World.h>
-#include <Foundation/Communication/GlobalEvent.h>
+#include <Foundation/Events/GlobalEvent.h>
 #include <Foundation/Configuration/CVar.h>
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Profiling/Profiling.h>

@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <Foundation/Communication/Event.h>
+#include <Foundation/Events/Event.h>
 #include <Foundation/Configuration/Plugin.h>
 #include <Foundation/Strings/String.h>
 #include <Foundation/Types/Bitflags.h>

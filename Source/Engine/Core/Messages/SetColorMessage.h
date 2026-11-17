@@ -3,7 +3,7 @@
 #pragma once
 
 #include <Core/CoreDLL.h>
-#include <Foundation/Communication/Message.h>
+#include <Foundation/Messaging/Message.h>
 
 /// Describes how a color should be applied to another color.
 struct xiiSetColorMode

@@ -4,7 +4,7 @@
 
 #include <ToolsFoundation/ToolsFoundationDLL.h>
 
-#include <Foundation/Communication/Event.h>
+#include <Foundation/Events/Event.h>
 #include <Foundation/Containers/HashTable.h>
 #include <Foundation/Reflection/ReflectionUtils.h>
 #include <Foundation/Serialization/AbstractObjectGraph.h>

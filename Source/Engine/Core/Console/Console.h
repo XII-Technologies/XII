@@ -3,7 +3,7 @@
 #pragma once
 
 #include <Core/Console/ConsoleFunction.h>
-#include <Foundation/Communication/Event.h>
+#include <Foundation/Events/Event.h>
 #include <Foundation/Configuration/CVar.h>
 #include <Foundation/Containers/Deque.h>
 #include <Foundation/Containers/Map.h>

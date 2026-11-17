@@ -2,7 +2,7 @@
 
 #include <FoundationTest/FoundationTestPCH.h>
 
-#include <Foundation/Communication/MessageQueue.h>
+#include <Foundation/Messaging/MessageQueue.h>
 
 namespace
 {

@@ -3,7 +3,7 @@
 #pragma once
 
 #include <Foundation/Basics.h>
-#include <Foundation/Communication/Event.h>
+#include <Foundation/Events/Event.h>
 #include <Foundation/Communication/RemoteMessage.h>
 #include <Foundation/Containers/Deque.h>
 #include <Foundation/Containers/HashTable.h>

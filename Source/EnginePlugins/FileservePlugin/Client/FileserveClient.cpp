@@ -4,7 +4,7 @@
 
 #include <FileservePlugin/Client/FileserveClient.h>
 #include <FileservePlugin/Fileserver/ClientContext.h>
-#include <Foundation/Communication/GlobalEvent.h>
+#include <Foundation/Events/GlobalEvent.h>
 #include <Foundation/Communication/RemoteInterfaceEnet.h>
 #include <Foundation/IO/FileSystem/FileWriter.h>
 #include <Foundation/IO/FileSystem/Implementation/DataDirType.h>

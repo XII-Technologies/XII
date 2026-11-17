@@ -4,7 +4,7 @@
 
 #include <GraphicsCore/GraphicsCoreDLL.h>
 
-#include <Foundation/Communication/Event.h>
+#include <Foundation/Events/Event.h>
 #include <Foundation/Strings/StringBuilder.h>
 #include <Foundation/Threading/Mutex.h>
 #include <Foundation/Types/ArrayPtr.h>

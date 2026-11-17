@@ -7,7 +7,7 @@
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessMessages.h>
 #include <EditorFramework/IPC/EditorProcessCommunicationChannel.h>
 #include <Foundation/Application/Config/PluginConfig.h>
-#include <Foundation/Communication/Event.h>
+#include <Foundation/Events/Event.h>
 #include <Foundation/Configuration/Singleton.h>
 #include <Foundation/Containers/HashTable.h>
 #include <Foundation/Types/UniquePtr.h>

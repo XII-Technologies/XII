@@ -3,7 +3,7 @@
 #pragma once
 
 #include <Foundation/Basics.h>
-#include <Foundation/Communication/Event.h>
+#include <Foundation/Events/Event.h>
 #include <Foundation/Reflection/Reflection.h>
 
 class xiiStreamReader;

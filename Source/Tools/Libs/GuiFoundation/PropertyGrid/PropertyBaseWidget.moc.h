@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <Foundation/Communication/Event.h>
+#include <Foundation/Events/Event.h>
 #include <Foundation/Containers/HybridArray.h>
 #include <GuiFoundation/GuiFoundationDLL.h>
 #include <GuiFoundation/PropertyGrid/Implementation/PropertyEventHandler.h>

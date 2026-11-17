@@ -2,7 +2,7 @@
 
 #include <FoundationTest/FoundationTestPCH.h>
 
-#include <Foundation/Communication/Message.h>
+#include <Foundation/Messaging/Message.h>
 #include <Foundation/Logging/Log.h>
 #include <Foundation/Reflection/Reflection.h>
 #include <Foundation/Time/Time.h>

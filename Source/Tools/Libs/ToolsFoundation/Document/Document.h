@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <Foundation/Communication/Event.h>
+#include <Foundation/Events/Event.h>
 #include <Foundation/Logging/Log.h>
 #include <Foundation/Strings/String.h>
 #include <Foundation/Threading/Implementation/TaskSystemDeclarations.h>

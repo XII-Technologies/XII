@@ -2,7 +2,7 @@
 
 #include <FoundationTest/FoundationTestPCH.h>
 
-#include <Foundation/Communication/Event.h>
+#include <Foundation/Events/Event.h>
 
 XII_CREATE_SIMPLE_TEST_GROUP(Communication);
 

@@ -187,4 +187,4 @@ public:
 template <typename EventData, typename MutexType = xiiNoMutex, typename AllocatorWrapper = xiiDefaultAllocatorWrapper>
 using xiiCopyOnBroadcastEvent = xiiEvent<EventData, MutexType, AllocatorWrapper, xiiEventType::CopyOnBroadcast>;
 
-#include <Foundation/Communication/Implementation/Event_inl.h>
+#include <Foundation/Events/Implementation/Event_inl.h>

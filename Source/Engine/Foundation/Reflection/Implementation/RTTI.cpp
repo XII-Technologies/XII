@@ -5,7 +5,7 @@
 #include <Foundation/Reflection/Implementation/AbstractProperty.h>
 #include <Foundation/Reflection/Implementation/MessageHandler.h>
 
-#include <Foundation/Communication/Message.h>
+#include <Foundation/Messaging/Message.h>
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Containers/HashTable.h>
 

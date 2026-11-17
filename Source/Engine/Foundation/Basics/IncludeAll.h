@@ -21,11 +21,11 @@
 #include <Foundation/Types/VarianceTypes.h>
 #include <Foundation/Types/Variant.h>
 
-#include <Foundation/Communication/Event.h>
-#include <Foundation/Communication/GlobalEvent.h>
+#include <Foundation/Events/Event.h>
+#include <Foundation/Events/GlobalEvent.h>
 #include <Foundation/Communication/IpcProcessMessageProtocol.h>
-#include <Foundation/Communication/Message.h>
-#include <Foundation/Communication/MessageQueue.h>
+#include <Foundation/Messaging/Message.h>
+#include <Foundation/Messaging/MessageQueue.h>
 
 #include <Foundation/Configuration/Plugin.h>
 #include <Foundation/Configuration/Singleton.h>

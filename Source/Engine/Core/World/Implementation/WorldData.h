@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <Foundation/Communication/MessageQueue.h>
+#include <Foundation/Messaging/MessageQueue.h>
 #include <Foundation/Containers/HashTable.h>
 #include <Foundation/Math/Random.h>
 #include <Foundation/Memory/FrameAllocator.h>

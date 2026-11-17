@@ -5,7 +5,7 @@
 /// \file
 
 #include <Foundation/Basics.h>
-#include <Foundation/Communication/Event.h>
+#include <Foundation/Events/Event.h>
 #include <Foundation/IO/Stream.h>
 #include <Foundation/Reflection/Reflection.h>
 #include <Foundation/Time/Time.h>

@@ -3,7 +3,7 @@
 #include <Core/CorePCH.h>
 
 #include <Core/Scripting/ScriptRTTI.h>
-#include <Foundation/Communication/Message.h>
+#include <Foundation/Messaging/Message.h>
 #include <Foundation/Memory/CommonAllocators.h>
 #include <Foundation/Reflection/ReflectionUtils.h>
 

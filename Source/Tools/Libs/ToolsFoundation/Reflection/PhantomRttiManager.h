@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <Foundation/Communication/Event.h>
+#include <Foundation/Events/Event.h>
 #include <Foundation/Containers/IdTable.h>
 #include <ToolsFoundation/Reflection/ReflectedType.h>
 

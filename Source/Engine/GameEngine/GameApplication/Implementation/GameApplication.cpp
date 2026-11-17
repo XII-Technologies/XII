@@ -7,7 +7,7 @@
 #include <Core/Interfaces/SoundInterface.h>
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Core/World/World.h>
-#include <Foundation/Communication/GlobalEvent.h>
+#include <Foundation/Events/GlobalEvent.h>
 #include <Foundation/Communication/Telemetry.h>
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/IO/FileSystem/FileReader.h>

@@ -2,7 +2,7 @@
 
 #include <Foundation/FoundationPCH.h>
 
-#include <Foundation/Communication/Message.h>
+#include <Foundation/Messaging/Message.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMessage, 1, xiiRTTINoAllocator)
@@ -40,4 +40,4 @@ xiiUniquePtr<xiiMessage> xiiMessage::ReplicatePackedMessage(xiiStreamReader& ref
   return pMsg;
 }
 
-XII_STATICLINK_FILE(Foundation, Foundation_Communication_Implementation_Message);
+XII_STATICLINK_FILE(Foundation, Foundation_Messaging_Implementation_Message);

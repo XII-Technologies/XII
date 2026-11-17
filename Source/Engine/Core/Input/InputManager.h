@@ -3,7 +3,7 @@
 #pragma once
 
 #include <Core/Input/InputDevice.h>
-#include <Foundation/Communication/Event.h>
+#include <Foundation/Events/Event.h>
 #include <Foundation/Containers/DynamicArray.h>
 #include <Foundation/Containers/Map.h>
 

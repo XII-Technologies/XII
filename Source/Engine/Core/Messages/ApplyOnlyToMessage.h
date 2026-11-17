@@ -3,7 +3,7 @@
 #pragma once
 
 #include <Core/World/Declarations.h>
-#include <Foundation/Communication/Message.h>
+#include <Foundation/Messaging/Message.h>
 
 struct XII_CORE_DLL xiiMsgOnlyApplyToObject : public xiiMessage
 {

@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <Foundation/Communication/Event.h>
+#include <Foundation/Events/Event.h>
 #include <Foundation/Configuration/Singleton.h>
 #include <Foundation/Containers/Deque.h>
 #include <Foundation/Containers/Map.h>

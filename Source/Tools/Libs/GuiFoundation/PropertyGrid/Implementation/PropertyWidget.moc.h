@@ -4,7 +4,7 @@
 
 #include <GuiFoundation/GuiFoundationDLL.h>
 
-#include <Foundation/Communication/Event.h>
+#include <Foundation/Events/Event.h>
 #include <Foundation/Containers/HybridArray.h>
 #include <Foundation/Types/Variant.h>
 #include <GuiFoundation/PropertyGrid/PropertyBaseWidget.moc.h>

@@ -4,7 +4,7 @@
 
 #include <GraphicsCore/GraphicsCoreDLL.h>
 
-#include <Foundation/Communication/Message.h>
+#include <Foundation/Messaging/Message.h>
 #include <GraphicsCore/Pipeline/Declarations.h>
 #include <GraphicsCore/Pipeline/ExtractedRenderData.h>
 #include <GraphicsCore/Pipeline/RenderExtraction.h>
