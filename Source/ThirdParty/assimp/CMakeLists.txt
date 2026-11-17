@@ -20,7 +20,11 @@ endif()
 xii_create_target(SHARED_LIBRARY ${PROJECT_NAME} NO_XII_PREFIX NO_UNITY NO_WARNINGS_AS_ERRORS ENABLE_RTTI NO_DEBUG MANUAL_SOURCE_FILES "${SRC_FILES}")
 
 target_compile_definitions(${PROJECT_NAME} PUBLIC ASSIMP_DLL)
-target_compile_definitions(${PROJECT_NAME} PRIVATE ASSIMP_BUILD_DLL_EXPORT HAVE_UNISTD_H)
+target_compile_definitions(${PROJECT_NAME} PRIVATE ASSIMP_BUILD_DLL_EXPORT)
+
+if (XII_CMAKE_PLATFORM_POSIX)
+  target_compile_definitions(${PROJECT_NAME} PRIVATE HAVE_UNISTD_H)
+endif()
 
 target_include_directories(${PROJECT_NAME} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
 
@@ -90,3 +94,10 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
   ASSIMP_BUILD_NO_COMPRESSED_X
   ASSIMP_BUILD_NO_STEP_IMPORTER
 )
+
+if(XII_CMAKE_COMPILER_MSVC)
+  target_compile_options(${PROJECT_NAME} PRIVATE
+    /wd4996  # Deprecated function
+    /wd4244  # Conversion from 'type1' to 'type2', possible loss of data
+  )
+endif()
