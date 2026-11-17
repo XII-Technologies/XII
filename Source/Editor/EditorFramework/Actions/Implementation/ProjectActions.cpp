@@ -759,7 +759,7 @@ void xiiProjectAction::Execute(const xiiVariant& value)
       {
         // Wait for engine process response
         auto Callback = [&](xiiProcessMessage* pMsg) -> bool {
-          auto pSimpleCfg      = static_cast<xiiSaveProfilingResponseToEditor*>(pMsg);
+          auto pSimpleCfg = static_cast<xiiSaveProfilingResponseToEditor*>(pMsg);
           if (pSimpleCfg->m_RequestId != requestId)
             return false;
           sEngineProfilingFile = pSimpleCfg->m_sProfilingFile;

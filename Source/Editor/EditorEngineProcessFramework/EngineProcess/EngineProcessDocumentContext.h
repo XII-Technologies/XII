@@ -221,9 +221,9 @@ private:
 
   xiiUInt8                     m_uiThumbnailConvergenceFrames = 0;
   xiiUuid                      m_ThumbnailRequestId;
-  xiiUInt16                    m_uiThumbnailWidth             = 0;
-  xiiUInt16                    m_uiThumbnailHeight            = 0;
-  xiiEngineProcessViewContext* m_pThumbnailViewContext        = nullptr;
+  xiiUInt16                    m_uiThumbnailWidth      = 0;
+  xiiUInt16                    m_uiThumbnailHeight     = 0;
+  xiiEngineProcessViewContext* m_pThumbnailViewContext = nullptr;
   xiiSharedPtr<xiiGALTexture>  m_pThumbnailColorRT;
   bool                         m_bWorldSimStateBeforeThumbnail = false;
   xiiString                    m_sDocumentType;

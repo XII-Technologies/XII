@@ -643,8 +643,8 @@ xiiStatus xiiAssetDocument::RemoteCreateThumbnail(const ThumbnailInfo& thumbnail
   SyncObjectsToEngine();
   xiiCreateThumbnailMsgToEngine msg;
   msg.m_RequestId = xiiUuid::MakeUuid();
-  msg.m_uiWidth  = xiiThumbnailSize;
-  msg.m_uiHeight = xiiThumbnailSize;
+  msg.m_uiWidth   = xiiThumbnailSize;
+  msg.m_uiHeight  = xiiThumbnailSize;
   for (const xiiStringView& tag : viewExclusionTags)
   {
     msg.m_ViewExcludeTags.PushBack(tag);
@@ -657,7 +657,7 @@ xiiStatus xiiAssetDocument::RemoteCreateThumbnail(const ThumbnailInfo& thumbnail
     xiiCreateThumbnailMsgToEditor* pThumbnailMsg = xiiDynamicCast<xiiCreateThumbnailMsgToEditor*>(pMsg);
     if (pThumbnailMsg->m_RequestId != msg.m_RequestId)
       return false;
-    data                                         = pThumbnailMsg->m_ThumbnailData;
+    data = pThumbnailMsg->m_ThumbnailData;
     return true;
   };
 

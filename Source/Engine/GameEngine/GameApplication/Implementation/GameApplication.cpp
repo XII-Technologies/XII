@@ -502,7 +502,7 @@ void xiiGameApplication::InitializeManagedSession()
     RequestQuit();
     return;
   }
-  m_sAppProjectPath = project;
+  m_sAppProjectPath    = project;
   auto       pProtocol = XII_DEFAULT_NEW(xiiPlayerSessionProtocol);
   const auto onScene   = [this](xiiNetworkChannel channel, const xiiPlayerSceneMessage& scene) {
     if (channel == m_SessionChannel && scene.m_sInstance == m_sInstance)

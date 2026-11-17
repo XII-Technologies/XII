@@ -38,6 +38,6 @@ void xiiNetworkLocalSocket::Close()
   m_Endpoint = {};
   m_sPeerIdentity.Clear();
   m_uiPeerProcessId = 0;
-  m_uiContextId = 0;
+  m_uiContextId     = 0;
   m_bOpen = m_bListener = m_bConnected = false;
 }

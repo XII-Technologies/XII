@@ -240,7 +240,7 @@ namespace xiiNetworkIOInternal
     {
       return xiiNetworkError(xiiNetworkErrorCode::AuthenticationFailed);
     }
-    uid = credentials.uid;
+    uid                 = credentials.uid;
     const pid_t peerPid = credentials.pid;
 #  else
     gid_t gid = {};

@@ -88,11 +88,11 @@ struct XII_FOUNDATION_DLL xiiNetworkConnectionInfo
   xiiUuid                         m_Session;
   xiiString                       m_sAuthenticatedIdentity;
   /// Native peer process ID at Local session establishment. Zero when unavailable.
-  xiiUInt32                       m_uiLocalPeerProcessId  = 0;
-  xiiUInt64                       m_uiNegotiatedFeatures  = 0;
-  xiiUInt32                       m_uiProtocolVersion     = 0;
-  xiiUInt32                       m_uiMaximumMessageBytes = 0;
-  xiiUInt32                       m_uiReconnectAttempts   = 0;
-  bool                            m_bIncoming             = false;
-  bool                            m_bSessionResumed       = false;
+  xiiUInt32 m_uiLocalPeerProcessId  = 0;
+  xiiUInt64 m_uiNegotiatedFeatures  = 0;
+  xiiUInt32 m_uiProtocolVersion     = 0;
+  xiiUInt32 m_uiMaximumMessageBytes = 0;
+  xiiUInt32 m_uiReconnectAttempts   = 0;
+  bool      m_bIncoming             = false;
+  bool      m_bSessionResumed       = false;
 };

@@ -104,20 +104,20 @@ protected:
   virtual void ReportStatus(xiiStringView sStage, xiiStringView sDetail, float fProgress = -1.0F);
   void         SendManagedStatus(float fProgress, xiiNetworkMessage* out_pSubmission = nullptr);
 
-  xiiString                                  m_sInstance;
-  xiiString                                  m_sSession;
-  xiiString                                  m_sStage = "initializing";
-  xiiString                                  m_sDetail;
-  xiiString                                  m_sManagedWritableDirectory;
-  xiiUniquePtr<xiiPlayerSessionProtocol>     m_pSessionProtocol;
-  xiiNetworkConnection                       m_SessionConnection;
-  xiiNetworkChannel                          m_SessionChannel;
-  xiiTime                                    m_LastStatus;
-  xiiTime                                    m_SessionDeadline;
-  xiiUInt32                                  m_uiExpectedEditorProcessId = 0;
-  bool                                       m_bSessionConnected = false;
-  bool                                       m_bSessionProtocolReady     = false;
-  xiiOSFile                                  m_ManagedPreferencesLock;
+  xiiString                              m_sInstance;
+  xiiString                              m_sSession;
+  xiiString                              m_sStage = "initializing";
+  xiiString                              m_sDetail;
+  xiiString                              m_sManagedWritableDirectory;
+  xiiUniquePtr<xiiPlayerSessionProtocol> m_pSessionProtocol;
+  xiiNetworkConnection                   m_SessionConnection;
+  xiiNetworkChannel                      m_SessionChannel;
+  xiiTime                                m_LastStatus;
+  xiiTime                                m_SessionDeadline;
+  xiiUInt32                              m_uiExpectedEditorProcessId = 0;
+  bool                                   m_bSessionConnected         = false;
+  bool                                   m_bSessionProtocolReady     = false;
+  xiiOSFile                              m_ManagedPreferencesLock;
 
   void Init_ConfigureInput() override;
   void Init_ConfigureCVars() override;

@@ -274,7 +274,7 @@ namespace
       if (sIdentity.IsEmpty() && operation.m_CancelReason.Succeeded())
       {
         ULONG uiPeerProcessId = 0;
-        error = VerifyLocalPipeClient(hPipe, sIdentity);
+        error                 = VerifyLocalPipeClient(hPipe, sIdentity);
         if (error.Failed())
         {
           xiiArrayPtr<xiiUInt8> spans[64];

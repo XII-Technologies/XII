@@ -28,33 +28,33 @@
 
 struct xiiQtPlayerSession::Instance
 {
-  xiiString                                  m_sId;
-  xiiString                                  m_sSession;
-  xiiString                                  m_sProject;
-  xiiString                                  m_sRole;
-  xiiString                                  m_sConfigurationName;
-  xiiString                                  m_sState = "launching";
-  xiiString                                  m_sDetail;
-  xiiString                                  m_sFailureDetail;
-  xiiTime                                    m_Started = xiiTime::Now();
-  xiiTime                                    m_StopDeadline;
-  xiiTime                                    m_LastMessage       = xiiTime::Now();
-  xiiUInt32                                  m_uiFirstPort       = 0;
-  xiiUInt32                                  m_uiPortCount       = 0;
-  xiiUInt64                                  m_uiSceneRevision   = 0;
-  bool                                       m_bStopRequested    = false;
-  bool                                       m_bStopSent         = false;
-  bool                                       m_bConnected        = false;
-  bool                                       m_bReady            = false;
-  bool                                       m_bShutdownReported = false;
-  bool                                       m_bFinalized        = false;
-  bool                                       m_bFailure          = false;
-  xiiNetworkListener                         m_Listener;
-  xiiNetworkChannel                          m_Channel;
-  QTemporaryDir                              m_TemporaryDirectory;
-  xiiDynamicArray<xiiUniquePtr<xiiOSFile>>   m_PortLocks;
-  xiiMutex                                   m_LogMutex;
-  xiiStringBuilder                           m_LogTail;
+  xiiString                                m_sId;
+  xiiString                                m_sSession;
+  xiiString                                m_sProject;
+  xiiString                                m_sRole;
+  xiiString                                m_sConfigurationName;
+  xiiString                                m_sState = "launching";
+  xiiString                                m_sDetail;
+  xiiString                                m_sFailureDetail;
+  xiiTime                                  m_Started = xiiTime::Now();
+  xiiTime                                  m_StopDeadline;
+  xiiTime                                  m_LastMessage       = xiiTime::Now();
+  xiiUInt32                                m_uiFirstPort       = 0;
+  xiiUInt32                                m_uiPortCount       = 0;
+  xiiUInt64                                m_uiSceneRevision   = 0;
+  bool                                     m_bStopRequested    = false;
+  bool                                     m_bStopSent         = false;
+  bool                                     m_bConnected        = false;
+  bool                                     m_bReady            = false;
+  bool                                     m_bShutdownReported = false;
+  bool                                     m_bFinalized        = false;
+  bool                                     m_bFailure          = false;
+  xiiNetworkListener                       m_Listener;
+  xiiNetworkChannel                        m_Channel;
+  QTemporaryDir                            m_TemporaryDirectory;
+  xiiDynamicArray<xiiUniquePtr<xiiOSFile>> m_PortLocks;
+  xiiMutex                                 m_LogMutex;
+  xiiStringBuilder                         m_LogTail;
   // Destroy/join the output reader before its callback's mutex and strings.
   xiiProcess m_Process;
 };
@@ -551,8 +551,8 @@ void xiiQtPlayerSession::Tick()
   m_pTable->setRowCount(m_Instances.GetCount());
   for (xiiUInt32 i = 0; i < m_Instances.GetCount(); ++i)
   {
-    auto& instance = *m_Instances[i];
-    const bool running = instance.m_Process.GetState() == xiiProcessState::Running;
+    auto&      instance = *m_Instances[i];
+    const bool running  = instance.m_Process.GetState() == xiiProcessState::Running;
     if (running)
     {
       const bool connected = m_pControl && m_pControl->IsReady(instance.m_Channel);

@@ -535,7 +535,7 @@ void xiiEngineProcessGameApplication::EventHandlerIPC(const xiiEngineProcessComm
 
       xiiSaveProfilingResponseToEditor response;
       response.m_RequestId = pMsg1->m_RequestId;
-      xiiStringBuilder                 sAbsPath;
+      xiiStringBuilder sAbsPath;
       if (xiiFileSystem::ResolvePath(pMsg1->m_sPayload, &sAbsPath, nullptr).Succeeded())
       {
         response.m_sProfilingFile = sAbsPath;
