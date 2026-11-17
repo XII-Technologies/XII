@@ -53,12 +53,20 @@ namespace xiiNetworkIOInternal
 
   xiiNetworkSocket& Registration::GetSocket()
   {
-    return std::visit([](auto& socket) -> xiiNetworkSocket& { return socket; }, m_Socket);
+    return const_cast<xiiNetworkSocket&>(std::as_const(*this).GetSocket());
   }
 
   const xiiNetworkSocket& Registration::GetSocket() const
   {
-    return std::visit([](const auto& socket) -> const xiiNetworkSocket& { return socket; }, m_Socket);
+    if (const auto* pSocket = std::get_if<xiiTcpSocket>(&m_Socket))
+    {
+      return *pSocket;
+    }
+    if (const auto* pSocket = std::get_if<xiiTcpListener>(&m_Socket))
+    {
+      return *pSocket;
+    }
+    return std::get<xiiUdpSocket>(m_Socket);
   }
 
   xiiUInt32 BuildSendSpans(const Operation& operation, xiiArrayPtr<const xiiUInt8>* out_pSpans, xiiUInt32 uiLimit)

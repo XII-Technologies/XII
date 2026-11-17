@@ -140,7 +140,7 @@ namespace xiiNetworkIOInternal
     if (registration.m_bNativeRegistered)
     {
       auto& state = *static_cast<NetworkEpollState*>(worker.m_pNativeData);
-      ::epoll_ctl(state.m_hEpoll, EPOLL_CTL_DEL, static_cast<int>(xiiNetworkSocketAccess::BorrowNativeHandle(registration.GetSocket())), nullptr);
+      ::epoll_ctl(state.m_hEpoll, EPOLL_CTL_DEL, static_cast<int>(registration.GetNativeHandle()), nullptr);
       registration.m_bNativeRegistered = false;
       registration.m_uiNativeInterest  = 0;
     }
@@ -160,7 +160,7 @@ namespace xiiNetworkIOInternal
     event.events         = uiInterest | EPOLLONESHOT | EPOLLRDHUP;
     event.data.u64       = registration.m_uiNativeToken;
     const int iOperation = registration.m_bNativeRegistered ? EPOLL_CTL_MOD : EPOLL_CTL_ADD;
-    if (::epoll_ctl(state.m_hEpoll, iOperation, static_cast<int>(xiiNetworkSocketAccess::BorrowNativeHandle(registration.GetSocket())), &event) != 0)
+    if (::epoll_ctl(state.m_hEpoll, iOperation, static_cast<int>(registration.GetNativeHandle()), &event) != 0)
     {
       return xiiNetworkInternal::TranslateSocketError(errno);
     }

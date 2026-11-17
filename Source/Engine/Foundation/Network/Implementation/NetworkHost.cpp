@@ -62,149 +62,178 @@ xiiNetworkHostRuntime::Channel* xiiNetworkHostRuntime::Find(Peer& peer, xiiNetwo
 }
 bool xiiNetworkHostRuntime::OwnsBuffer(const xiiNetworkIOBuffer& buffer) const { return xiiNetworkIOContextAccess::OwnsBuffer(m_IO, buffer); }
 
-xiiNetworkError xiiNetworkHost::Listen(const xiiNetworkEndpoint& endpoint, xiiNetworkListener& out_listener, xiiInt32 iBacklog, bool bIpv6Only)
+namespace
 {
-  auto& runtime = *m_pRuntime;
-  XII_LOCK(runtime.m_AdmissionMutex);
-  if (!IsRunning())
+  xiiNetworkError ListenAt(xiiNetworkHostRuntime& runtime, const xiiNetworkEndpoint& endpoint, const xiiNetworkLocalEndpoint* pLocalEndpoint,
+                           xiiNetworkListener& out_listener, xiiInt32 iBacklog, bool bIpv6Only)
   {
-    return HostError(xiiNetworkErrorCode::NotRunning);
-  }
-  if (iBacklog != 128 && (runtime.m_Configuration.m_Transport == xiiNetworkTransportType::NativeUdp || runtime.m_pQuic != nullptr))
-  {
-    return HostError(xiiNetworkErrorCode::UnsupportedCapability);
-  }
-  if (runtime.m_Capabilities.m_bEncrypted)
-  {
-    XII_LOCK(runtime.m_CredentialsMutex);
-    if (runtime.m_pCredentials == nullptr || !runtime.m_pCredentials->HasIdentity() ||
-        (runtime.m_Configuration.m_Authentication == xiiNetworkAuthenticationPolicy::Certificate && !runtime.m_pCredentials->GetConfiguration().m_bRequireClientCertificate))
+    XII_LOCK(runtime.m_AdmissionMutex);
+    if (!runtime.m_bRunning.load() || runtime.m_bStopping.load())
     {
-      return HostError(xiiNetworkErrorCode::InvalidArgument);
+      return HostError(xiiNetworkErrorCode::NotRunning);
     }
-  }
-  for (xiiUInt32 uiSlot = 0; uiSlot < runtime.m_Listeners.GetCount(); ++uiSlot)
-  {
-    auto& entry = runtime.m_Listeners[uiSlot];
-    XII_LOCK(entry.m_Mutex);
-    if (entry.m_bInUse || entry.m_Handle.m_uiGeneration == std::numeric_limits<xiiUInt64>::max())
+    const bool bLocal = runtime.m_Configuration.m_Transport == xiiNetworkTransportType::Local;
+    if (bLocal != (pLocalEndpoint != nullptr) || (bLocal && !pLocalEndpoint->IsValid()))
     {
-      continue;
+      return HostError(xiiNetworkErrorCode::InvalidAddress);
     }
-    if (runtime.m_pQuic != nullptr)
+    if (iBacklog != 128 && (runtime.m_Configuration.m_Transport == xiiNetworkTransportType::NativeUdp || runtime.m_pQuic != nullptr))
     {
-      if (!bIpv6Only && endpoint.GetAddress().GetFamily() == xiiNetworkAddressFamily::Ipv6)
+      return HostError(xiiNetworkErrorCode::UnsupportedCapability);
+    }
+    if (runtime.m_Capabilities.m_bEncrypted)
+    {
+      XII_LOCK(runtime.m_CredentialsMutex);
+      if (runtime.m_pCredentials == nullptr || !runtime.m_pCredentials->HasIdentity() ||
+          (runtime.m_Configuration.m_Authentication == xiiNetworkAuthenticationPolicy::Certificate && !runtime.m_pCredentials->GetConfiguration().m_bRequireClientCertificate))
       {
-        return HostError(xiiNetworkErrorCode::UnsupportedCapability);
+        return HostError(xiiNetworkErrorCode::InvalidArgument);
+      }
+    }
+    for (xiiUInt32 uiSlot = 0; uiSlot < runtime.m_Listeners.GetCount(); ++uiSlot)
+    {
+      auto& entry = runtime.m_Listeners[uiSlot];
+      XII_LOCK(entry.m_Mutex);
+      if (entry.m_bInUse || entry.m_Handle.m_uiGeneration == std::numeric_limits<xiiUInt64>::max())
+      {
+        continue;
+      }
+      if (runtime.m_pQuic != nullptr)
+      {
+        if (!bIpv6Only && endpoint.GetAddress().GetFamily() == xiiNetworkAddressFamily::Ipv6)
+        {
+          return HostError(xiiNetworkErrorCode::UnsupportedCapability);
+        }
+        if (!runtime.ReserveEvent())
+        {
+          return HostError(xiiNetworkErrorCode::Backpressure);
+        }
+        const xiiNetworkListener handle = {runtime.m_uiHostId, entry.m_Handle.m_uiGeneration + 1, uiSlot};
+        const auto               error  = runtime.m_pQuic->Listen(endpoint, handle, entry.m_pQuic, entry.m_Endpoint);
+        if (error.Failed())
+        {
+          runtime.ReleaseEvents(1);
+          return error;
+        }
+        entry.m_Handle   = handle;
+        entry.m_bInUse   = true;
+        entry.m_bClosing = entry.m_bDeregistered = entry.m_bTerminalPublished = entry.m_bTerminalConsumed = false;
+        entry.m_Error                                                                                     = {};
+        out_listener                                                                                      = handle;
+        runtime.m_WorkSignal.RaiseSignal();
+        return {};
+      }
+      xiiNetworkError error;
+      if (bLocal)
+      {
+        error = runtime.m_IO.ListenLocal(*pLocalEndpoint, entry.m_Registration, iBacklog);
+      }
+      else if (runtime.m_Configuration.m_Transport == xiiNetworkTransportType::NativeUdp)
+      {
+        xiiUdpSocket socket;
+        error = socket.Open(endpoint.GetAddress().GetFamily());
+        if (error.Succeeded() && endpoint.GetAddress().GetFamily() == xiiNetworkAddressFamily::Ipv6)
+        {
+          error = socket.SetIpv6Only(bIpv6Only);
+        }
+        if (error.Succeeded())
+        {
+          // Some kernels also use socket buffer limits to bound a single datagram.
+          // Retain larger native defaults and reserve room for the configured payload.
+          xiiUInt32  uiSendBytes    = 0;
+          xiiUInt32  uiReceiveBytes = 0;
+          const auto uiPayloadBytes = runtime.m_Capabilities.m_uiMaximumUnreliablePayload;
+          error                     = socket.GetBufferSizes(uiSendBytes, uiReceiveBytes);
+          if (error.Succeeded() && uiSendBytes < uiPayloadBytes)
+          {
+            error = socket.SetSendBufferSize(uiPayloadBytes);
+          }
+          if (error.Succeeded() && uiReceiveBytes < uiPayloadBytes)
+          {
+            error = socket.SetReceiveBufferSize(uiPayloadBytes);
+          }
+        }
+        if (error.Succeeded())
+        {
+          error = socket.Bind(endpoint);
+        }
+        if (error.Succeeded())
+        {
+          error = runtime.m_IO.Register(std::move(socket), entry.m_Registration);
+        }
+      }
+      else
+      {
+        xiiTcpListener socket;
+        error = socket.Open(endpoint.GetAddress().GetFamily());
+        if (error.Succeeded() && endpoint.GetAddress().GetFamily() == xiiNetworkAddressFamily::Ipv6)
+        {
+          error = socket.SetIpv6Only(bIpv6Only);
+        }
+        if (error.Succeeded() && runtime.m_Configuration.m_Tcp.m_bReuseListenerAddress)
+        {
+          error = socket.SetAddressReuse(true);
+        }
+        if (error.Succeeded())
+        {
+          error = socket.Bind(endpoint);
+        }
+        if (error.Succeeded())
+        {
+          error = socket.Listen(iBacklog);
+        }
+        if (error.Succeeded())
+        {
+          error = runtime.m_IO.Register(std::move(socket), entry.m_Registration);
+        }
+      }
+      if (error.Failed())
+      {
+        return error;
+      }
+      if (bLocal)
+      {
+        entry.m_LocalServiceEndpoint = *pLocalEndpoint;
+      }
+      else
+      {
+        error = runtime.m_IO.GetLocalEndpoint(entry.m_Registration, entry.m_Endpoint);
+        if (error.Failed())
+        {
+          runtime.m_IO.Deregister(entry.m_Registration).IgnoreResult();
+          return error;
+        }
       }
       if (!runtime.ReserveEvent())
       {
+        runtime.m_IO.Deregister(entry.m_Registration).IgnoreResult();
         return HostError(xiiNetworkErrorCode::Backpressure);
       }
-      const xiiNetworkListener handle = {runtime.m_uiHostId, entry.m_Handle.m_uiGeneration + 1, uiSlot};
-      const auto               error  = runtime.m_pQuic->Listen(endpoint, handle, entry.m_pQuic, entry.m_Endpoint);
-      if (error.Failed())
-      {
-        runtime.ReleaseEvents(1);
-        return error;
-      }
-      entry.m_Handle   = handle;
-      entry.m_bInUse   = true;
-      entry.m_bClosing = entry.m_bDeregistered = entry.m_bTerminalPublished = entry.m_bTerminalConsumed = false;
-      entry.m_Error                                                                                     = {};
-      out_listener                                                                                      = handle;
+      entry.m_bDeregistered = entry.m_bTerminalPublished = entry.m_bTerminalConsumed = false;
+      entry.m_Error                                                                  = {};
+      entry.m_uiQueuedBytes                                                          = 0;
+      entry.m_Handle                                                                 = {runtime.m_uiHostId, entry.m_Handle.m_uiGeneration + 1, uiSlot};
+      entry.m_bInUse                                                                 = true;
+      entry.m_bClosing                                                               = false;
+      entry.m_uiPendingIO                                                            = 0;
+      entry.m_bReceivePending                                                        = false;
+      entry.m_SendTokens.Reset(runtime.m_Configuration.m_uiPeerSendBurstBytes);
+      out_listener = entry.m_Handle;
       runtime.m_WorkSignal.RaiseSignal();
       return {};
     }
-    xiiNetworkError error;
-    if (runtime.m_Configuration.m_Transport == xiiNetworkTransportType::NativeUdp)
-    {
-      xiiUdpSocket socket;
-      error = socket.Open(endpoint.GetAddress().GetFamily());
-      if (error.Succeeded() && endpoint.GetAddress().GetFamily() == xiiNetworkAddressFamily::Ipv6)
-      {
-        error = socket.SetIpv6Only(bIpv6Only);
-      }
-      if (error.Succeeded())
-      {
-        // Some kernels also use socket buffer limits to bound a single datagram.
-        // Retain larger native defaults and reserve room for the configured payload.
-        xiiUInt32  uiSendBytes    = 0;
-        xiiUInt32  uiReceiveBytes = 0;
-        const auto uiPayloadBytes = runtime.m_Capabilities.m_uiMaximumUnreliablePayload;
-        error                     = socket.GetBufferSizes(uiSendBytes, uiReceiveBytes);
-        if (error.Succeeded() && uiSendBytes < uiPayloadBytes)
-        {
-          error = socket.SetSendBufferSize(uiPayloadBytes);
-        }
-        if (error.Succeeded() && uiReceiveBytes < uiPayloadBytes)
-        {
-          error = socket.SetReceiveBufferSize(uiPayloadBytes);
-        }
-      }
-      if (error.Succeeded())
-      {
-        error = socket.Bind(endpoint);
-      }
-      if (error.Succeeded())
-      {
-        error = runtime.m_IO.Register(std::move(socket), entry.m_Registration);
-      }
-    }
-    else
-    {
-      xiiTcpListener socket;
-      error = socket.Open(endpoint.GetAddress().GetFamily());
-      if (error.Succeeded() && endpoint.GetAddress().GetFamily() == xiiNetworkAddressFamily::Ipv6)
-      {
-        error = socket.SetIpv6Only(bIpv6Only);
-      }
-      if (error.Succeeded() && runtime.m_Configuration.m_Tcp.m_bReuseListenerAddress)
-      {
-        error = socket.SetAddressReuse(true);
-      }
-      if (error.Succeeded())
-      {
-        error = socket.Bind(endpoint);
-      }
-      if (error.Succeeded())
-      {
-        error = socket.Listen(iBacklog);
-      }
-      if (error.Succeeded())
-      {
-        error = runtime.m_IO.Register(std::move(socket), entry.m_Registration);
-      }
-    }
-    if (error.Failed())
-    {
-      return error;
-    }
-    error = runtime.m_IO.GetLocalEndpoint(entry.m_Registration, entry.m_Endpoint);
-    if (error.Failed())
-    {
-      runtime.m_IO.Deregister(entry.m_Registration).IgnoreResult();
-      return error;
-    }
-    if (!runtime.ReserveEvent())
-    {
-      runtime.m_IO.Deregister(entry.m_Registration).IgnoreResult();
-      return HostError(xiiNetworkErrorCode::Backpressure);
-    }
-    entry.m_bDeregistered = entry.m_bTerminalPublished = entry.m_bTerminalConsumed = false;
-    entry.m_Error                                                                  = {};
-    entry.m_uiQueuedBytes                                                          = 0;
-    entry.m_Handle                                                                 = {runtime.m_uiHostId, entry.m_Handle.m_uiGeneration + 1, uiSlot};
-    entry.m_bInUse                                                                 = true;
-    entry.m_bClosing                                                               = false;
-    entry.m_uiPendingIO                                                            = 0;
-    entry.m_bReceivePending                                                        = false;
-    entry.m_SendTokens.Reset(runtime.m_Configuration.m_uiPeerSendBurstBytes);
-    out_listener = entry.m_Handle;
-    runtime.m_WorkSignal.RaiseSignal();
-    return {};
+    return HostError(xiiNetworkErrorCode::Backpressure);
   }
-  return HostError(xiiNetworkErrorCode::Backpressure);
+} // namespace
+
+xiiNetworkError xiiNetworkHost::Listen(const xiiNetworkEndpoint& endpoint, xiiNetworkListener& out_listener, xiiInt32 iBacklog, bool bIpv6Only)
+{
+  return ListenAt(*m_pRuntime, endpoint, nullptr, out_listener, iBacklog, bIpv6Only);
+}
+
+xiiNetworkError xiiNetworkHost::Listen(const xiiNetworkLocalEndpoint& endpoint, xiiNetworkListener& out_listener)
+{
+  return ListenAt(*m_pRuntime, {}, &endpoint, out_listener, 128, true);
 }
 
 xiiNetworkError xiiNetworkHost::CloseListener(xiiNetworkListener handle)
@@ -236,13 +265,37 @@ xiiNetworkError xiiNetworkHost::GetLocalEndpoint(xiiNetworkListener handle, xiiN
   {
     return HostError(xiiNetworkErrorCode::InvalidHandle);
   }
+  if (pListener->m_LocalServiceEndpoint.IsValid())
+  {
+    return HostError(xiiNetworkErrorCode::UnsupportedOperation);
+  }
   out_endpoint = pListener->m_Endpoint;
+  return {};
+}
+
+xiiNetworkError xiiNetworkHost::GetLocalEndpoint(xiiNetworkListener handle, xiiNetworkLocalEndpoint& out_endpoint) const
+{
+  auto* pListener = m_pRuntime->Find(handle);
+  if (pListener == nullptr)
+  {
+    return HostError(xiiNetworkErrorCode::InvalidHandle);
+  }
+  XII_LOCK(pListener->m_Mutex);
+  if (!pListener->m_bInUse || pListener->m_Handle != handle)
+  {
+    return HostError(xiiNetworkErrorCode::InvalidHandle);
+  }
+  if (!pListener->m_LocalServiceEndpoint.IsValid())
+  {
+    return HostError(xiiNetworkErrorCode::UnsupportedOperation);
+  }
+  out_endpoint = pListener->m_LocalServiceEndpoint;
   return {};
 }
 
 namespace
 {
-  xiiNetworkError AdmitConnection(xiiNetworkHostRuntime& runtime, const xiiNetworkEndpoint* pEndpoint, xiiStringView sHost, xiiStringView sService,
+  xiiNetworkError AdmitConnection(xiiNetworkHostRuntime& runtime, const xiiNetworkEndpoint* pEndpoint, const xiiNetworkLocalEndpoint* pLocalEndpoint, xiiStringView sHost, xiiStringView sService,
                                   const xiiNetworkConnectOptions& options, xiiNetworkConnection& out_connection)
   {
     XII_LOCK(runtime.m_AdmissionMutex);
@@ -253,6 +306,11 @@ namespace
     if (runtime.m_Capabilities.m_bConnectionless)
     {
       return HostError(xiiNetworkErrorCode::UnsupportedOperation);
+    }
+    const bool bLocal = runtime.m_Configuration.m_Transport == xiiNetworkTransportType::Local;
+    if (bLocal != (pLocalEndpoint != nullptr) || (bLocal && (!pLocalEndpoint->IsValid() || !options.m_sServerName.IsEmpty())))
+    {
+      return HostError(xiiNetworkErrorCode::InvalidAddress);
     }
     if (sHost.GetElementCount() > 253 || sService.GetElementCount() > 64 || options.m_sServerName.GetElementCount() > 253 ||
         (options.m_pAuthentication != nullptr && runtime.m_Configuration.m_Authentication != xiiNetworkAuthenticationPolicy::Application) ||
@@ -265,7 +323,7 @@ namespace
         retry.m_Mode > xiiNetworkReconnectMode::Exponential || !ValidDuration(retry.m_InitialDelay) || !ValidDuration(retry.m_MaximumDelay) ||
         retry.m_MaximumDelay < retry.m_InitialDelay || !std::isfinite(retry.m_fJitterFraction) || retry.m_fJitterFraction < 0 || retry.m_fJitterFraction > 1 ||
         (retry.m_Mode != xiiNetworkReconnectMode::Disabled && retry.m_uiMaximumAttempts == 0 && !retry.m_bAllowUnboundedRetries) ||
-        (pEndpoint != nullptr && !pEndpoint->GetAddress().IsValid()) || (pEndpoint == nullptr && (sHost.IsEmpty() || sService.IsEmpty())))
+        (pEndpoint != nullptr && !pEndpoint->GetAddress().IsValid()) || (!bLocal && pEndpoint == nullptr && (sHost.IsEmpty() || sService.IsEmpty())))
     {
       return HostError(xiiNetworkErrorCode::InvalidArgument);
     }
@@ -283,6 +341,10 @@ namespace
     {
       pPeer->m_Endpoints.PushBack(*pEndpoint);
     }
+    if (bLocal)
+    {
+      pPeer->m_Info.m_LocalServiceEndpoint = *pLocalEndpoint;
+    }
     pPeer->m_bInUse = true;
     out_connection  = pPeer->m_Handle;
     runtime.m_WorkSignal.RaiseSignal();
@@ -291,11 +353,15 @@ namespace
 } // namespace
 xiiNetworkError xiiNetworkHost::Connect(const xiiNetworkEndpoint& endpoint, const xiiNetworkConnectOptions& options, xiiNetworkConnection& out_connection)
 {
-  return AdmitConnection(*m_pRuntime, &endpoint, {}, {}, options, out_connection);
+  return AdmitConnection(*m_pRuntime, &endpoint, nullptr, {}, {}, options, out_connection);
+}
+xiiNetworkError xiiNetworkHost::Connect(const xiiNetworkLocalEndpoint& endpoint, const xiiNetworkConnectOptions& options, xiiNetworkConnection& out_connection)
+{
+  return AdmitConnection(*m_pRuntime, nullptr, &endpoint, {}, {}, options, out_connection);
 }
 xiiNetworkError xiiNetworkHost::Connect(xiiStringView sHost, xiiStringView sService, const xiiNetworkConnectOptions& options, xiiNetworkConnection& out_connection)
 {
-  return AdmitConnection(*m_pRuntime, nullptr, sHost, sService, options, out_connection);
+  return AdmitConnection(*m_pRuntime, nullptr, nullptr, sHost, sService, options, out_connection);
 }
 
 xiiNetworkError xiiNetworkHost::GetConnectionInfo(xiiNetworkConnection handle, xiiNetworkConnectionInfo& out_info) const

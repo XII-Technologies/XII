@@ -217,21 +217,35 @@ xiiNetworkError xiiNetworkIORuntime::Register(Socket&& socket, xiiNetworkIORegis
   {
     return xiiNetworkError(xiiNetworkErrorCode::NotOpen);
   }
-  if constexpr (std::is_same_v<Socket, xiiTcpListener>)
+  xiiUInt64 uiOwner       = 0;
+  xiiUInt32 uiOwnerWorker = 0;
+  if constexpr (std::is_same_v<Socket, xiiNetworkLocalSocket>)
   {
-    if (socket.GetState() != xiiNetworkSocketState::Listening)
+    uiOwner       = LocalSocketAccess::GetContext(socket);
+    uiOwnerWorker = LocalSocketAccess::GetWorker(socket);
+    if (uiOwner != 0 && uiOwner != m_uiContextId)
+    {
+      return xiiNetworkError(xiiNetworkErrorCode::InvalidHandle);
+    }
+  }
+  else
+  {
+    if constexpr (std::is_same_v<Socket, xiiTcpListener>)
+    {
+      if (socket.GetState() != xiiNetworkSocketState::Listening)
+      {
+        return xiiNetworkError(xiiNetworkErrorCode::InvalidArgument);
+      }
+    }
+    else if (socket.GetState() != xiiNetworkSocketState::Open && socket.GetState() != xiiNetworkSocketState::Connected)
     {
       return xiiNetworkError(xiiNetworkErrorCode::InvalidArgument);
     }
-  }
-  else if (socket.GetState() != xiiNetworkSocketState::Open && socket.GetState() != xiiNetworkSocketState::Connected)
-  {
-    return xiiNetworkError(xiiNetworkErrorCode::InvalidArgument);
-  }
-  const xiiNetworkError mode = socket.SetNonBlocking(true);
-  if (mode.Failed())
-  {
-    return mode;
+    const xiiNetworkError mode = socket.SetNonBlocking(true);
+    if (mode.Failed())
+    {
+      return mode;
+    }
   }
   {
     XII_LOCK(m_PoolMutex);
@@ -242,9 +256,10 @@ xiiNetworkError xiiNetworkIORuntime::Register(Socket&& socket, xiiNetworkIORegis
     }
     ++m_uiRegisteredCount;
   }
-  const xiiUInt32 uiFirst = m_uiNextWorker.fetch_add(1) % m_Workers.GetCount();
+  const xiiUInt32 uiFirst       = uiOwner != 0 ? uiOwnerWorker : m_uiNextWorker.fetch_add(1) % m_Workers.GetCount();
+  const xiiUInt32 uiWorkerCount = uiOwner != 0 ? 1 : m_Workers.GetCount();
   xiiNetworkError error(xiiNetworkErrorCode::Backpressure);
-  for (xiiUInt32 uiAttempt = 0; uiAttempt < m_Workers.GetCount(); ++uiAttempt)
+  for (xiiUInt32 uiAttempt = 0; uiAttempt < uiWorkerCount; ++uiAttempt)
   {
     Worker& worker = *m_Workers[(uiFirst + uiAttempt) % m_Workers.GetCount()];
     XII_LOCK(worker.m_Mutex);
@@ -270,7 +285,11 @@ xiiNetworkError xiiNetworkIORuntime::Register(Socket&& socket, xiiNetworkIORegis
       break;
     }
     registration.m_Socket.template emplace<Socket>(std::forward<Socket>(socket));
-    if constexpr (std::is_same_v<Socket, xiiTcpSocket>)
+    if constexpr (std::is_same_v<Socket, xiiNetworkLocalSocket>)
+    {
+      registration.m_Kind = LocalSocketAccess::IsListener(registration.GetLocalSocket()) ? SocketKind::Listener : SocketKind::Tcp;
+    }
+    else if constexpr (std::is_same_v<Socket, xiiTcpSocket>)
     {
       registration.m_Kind = SocketKind::Tcp;
     }
@@ -413,7 +432,8 @@ void xiiNetworkIORuntime::Retire(Operation& operation)
 }
 
 xiiNetworkError xiiNetworkIORuntime::Submit(xiiNetworkIORegistration handle, xiiNetworkIOOperationKind kind,
-                                            xiiNetworkIOBuffers* pBuffers, const xiiNetworkEndpoint* pEndpoint, const xiiNetworkIOOptions& options, xiiNetworkIOOperation& out_operation)
+                                            xiiNetworkIOBuffers* pBuffers, const xiiNetworkEndpoint* pEndpoint, const xiiNetworkIOOptions& options, xiiNetworkIOOperation& out_operation,
+                                            const xiiNetworkLocalEndpoint* pLocalEndpoint)
 {
   if (m_State.load() != xiiNetworkIOContextState::Running)
   {
@@ -448,7 +468,14 @@ xiiNetworkError xiiNetworkIORuntime::Submit(xiiNetworkIORegistration handle, xii
   {
     return xiiNetworkError(xiiNetworkErrorCode::InvalidArgument);
   }
-  const auto state = pRegistration->GetSocket().GetState();
+  const bool bLocal = pRegistration->IsLocal();
+  if ((pEndpoint != nullptr && bLocal) || (pLocalEndpoint != nullptr && (!bLocal || !pLocalEndpoint->IsValid())))
+  {
+    return xiiNetworkError(xiiNetworkErrorCode::InvalidAddress);
+  }
+  const auto state = !bLocal ? pRegistration->GetSocket().GetState() :
+                               (socketKind == SocketKind::Listener ? xiiNetworkSocketState::Listening :
+                                                                     (LocalSocketAccess::IsConnected(pRegistration->GetLocalSocket()) ? xiiNetworkSocketState::Connected : xiiNetworkSocketState::Open));
   if ((kind == xiiNetworkIOOperationKind::Accept && state != xiiNetworkSocketState::Listening) ||
       (kind == xiiNetworkIOOperationKind::Connect && (state != xiiNetworkSocketState::Open || pRegistration->m_uiPendingCount != 0)))
   {
@@ -504,6 +531,10 @@ xiiNetworkError xiiNetworkIORuntime::Submit(xiiNetworkIORegistration handle, xii
   if (pEndpoint != nullptr)
   {
     pOperation->m_Result.m_Endpoint = *pEndpoint;
+  }
+  if (bLocal)
+  {
+    pOperation->m_Result.m_LocalEndpoint = pLocalEndpoint != nullptr ? *pLocalEndpoint : pRegistration->GetLocalSocket().GetEndpoint();
   }
   if (pBuffers != nullptr)
   {
@@ -762,17 +793,37 @@ xiiUInt64                xiiNetworkIOContext::GetActiveContextCount() { return s
 xiiNetworkError          xiiNetworkIOContext::Register(xiiTcpSocket&& socket, xiiNetworkIORegistration& out_registration) { return m_pRuntime->Register(std::move(socket), out_registration); }
 xiiNetworkError          xiiNetworkIOContext::Register(xiiTcpListener&& listener, xiiNetworkIORegistration& out_registration) { return m_pRuntime->Register(std::move(listener), out_registration); }
 xiiNetworkError          xiiNetworkIOContext::Register(xiiUdpSocket&& socket, xiiNetworkIORegistration& out_registration) { return m_pRuntime->Register(std::move(socket), out_registration); }
-xiiNetworkError          xiiNetworkIOContext::Accept(xiiNetworkIORegistration listener, xiiNetworkIOOperation& out_operation, const xiiNetworkIOOptions& options) { return m_pRuntime->Submit(listener, xiiNetworkIOOperationKind::Accept, nullptr, nullptr, options, out_operation); }
-xiiNetworkError          xiiNetworkIOContext::Connect(xiiNetworkIORegistration socket, const xiiNetworkEndpoint& endpoint, xiiNetworkIOOperation& out_operation, const xiiNetworkIOOptions& options) { return m_pRuntime->Submit(socket, xiiNetworkIOOperationKind::Connect, nullptr, &endpoint, options, out_operation); }
-xiiNetworkError          xiiNetworkIOContext::Send(xiiNetworkIORegistration socket, xiiNetworkIOBuffers&& buffers, xiiNetworkIOOperation& out_operation, const xiiNetworkIOOptions& options) { return m_pRuntime->Submit(socket, xiiNetworkIOOperationKind::Send, &buffers, nullptr, options, out_operation); }
-xiiNetworkError          xiiNetworkIOContext::Receive(xiiNetworkIORegistration socket, xiiNetworkIOBuffers&& buffers, xiiNetworkIOOperation& out_operation, const xiiNetworkIOOptions& options) { return m_pRuntime->Submit(socket, xiiNetworkIOOperationKind::Receive, &buffers, nullptr, options, out_operation); }
-xiiNetworkError          xiiNetworkIOContext::SendTo(xiiNetworkIORegistration socket, const xiiNetworkEndpoint& destination, xiiNetworkIOBuffers&& buffers, xiiNetworkIOOperation& out_operation, const xiiNetworkIOOptions& options) { return m_pRuntime->Submit(socket, xiiNetworkIOOperationKind::SendTo, &buffers, &destination, options, out_operation); }
-xiiNetworkError          xiiNetworkIOContext::ReceiveFrom(xiiNetworkIORegistration socket, xiiNetworkIOBuffers&& buffers, xiiNetworkIOOperation& out_operation, const xiiNetworkIOOptions& options) { return m_pRuntime->Submit(socket, xiiNetworkIOOperationKind::ReceiveFrom, &buffers, nullptr, options, out_operation); }
-xiiNetworkError          xiiNetworkIOContext::Resolve(xiiStringView sHost, xiiStringView sService, xiiNetworkIOOperation& out_operation, xiiNetworkAddressFamily family, xiiNetworkTransport transport, const xiiNetworkIOOptions& options) { return m_pRuntime->Resolve(sHost, sService, family, transport, options, out_operation); }
-bool                     xiiNetworkIOContext::TryGetCompletion(xiiNetworkIOResult& out_result) { return m_pRuntime->TryGetCompletion(out_result); }
-xiiNetworkError          xiiNetworkIOContext::WaitForCompletion(xiiNetworkIOResult& out_result, xiiTime timeout) { return m_pRuntime->WaitForCompletion(out_result, timeout); }
-xiiNetworkIOStatistics   xiiNetworkIOContext::GetStatistics() const { return m_pRuntime->GetStatistics(); }
-xiiNetworkError          xiiNetworkIOContext::AcquireBuffer(xiiUInt32 uiCount, xiiNetworkIOBuffer& out_buffer)
+xiiNetworkError          xiiNetworkIOContext::Register(xiiNetworkLocalSocket&& socket, xiiNetworkIORegistration& out_registration)
+{
+  return m_pRuntime->Register(std::move(socket), out_registration);
+}
+xiiNetworkError xiiNetworkIOContext::OpenLocal(xiiNetworkIORegistration& out_registration)
+{
+  xiiNetworkLocalSocket socket;
+  const auto            error = xiiNetworkIOInternal::LocalSocketAccess::Open(socket);
+  return error.Failed() ? error : Register(std::move(socket), out_registration);
+}
+xiiNetworkError xiiNetworkIOContext::ListenLocal(const xiiNetworkLocalEndpoint& endpoint, xiiNetworkIORegistration& out_registration, xiiInt32 iBacklog)
+{
+  xiiNetworkLocalSocket socket;
+  const auto            error = xiiNetworkIOInternal::LocalSocketAccess::Listen(socket, endpoint, iBacklog);
+  return error.Failed() ? error : Register(std::move(socket), out_registration);
+}
+xiiNetworkError xiiNetworkIOContext::Connect(xiiNetworkIORegistration socket, const xiiNetworkLocalEndpoint& endpoint, xiiNetworkIOOperation& out_operation, const xiiNetworkIOOptions& options)
+{
+  return m_pRuntime->Submit(socket, xiiNetworkIOOperationKind::Connect, nullptr, nullptr, options, out_operation, &endpoint);
+}
+xiiNetworkError        xiiNetworkIOContext::Accept(xiiNetworkIORegistration listener, xiiNetworkIOOperation& out_operation, const xiiNetworkIOOptions& options) { return m_pRuntime->Submit(listener, xiiNetworkIOOperationKind::Accept, nullptr, nullptr, options, out_operation); }
+xiiNetworkError        xiiNetworkIOContext::Connect(xiiNetworkIORegistration socket, const xiiNetworkEndpoint& endpoint, xiiNetworkIOOperation& out_operation, const xiiNetworkIOOptions& options) { return m_pRuntime->Submit(socket, xiiNetworkIOOperationKind::Connect, nullptr, &endpoint, options, out_operation); }
+xiiNetworkError        xiiNetworkIOContext::Send(xiiNetworkIORegistration socket, xiiNetworkIOBuffers&& buffers, xiiNetworkIOOperation& out_operation, const xiiNetworkIOOptions& options) { return m_pRuntime->Submit(socket, xiiNetworkIOOperationKind::Send, &buffers, nullptr, options, out_operation); }
+xiiNetworkError        xiiNetworkIOContext::Receive(xiiNetworkIORegistration socket, xiiNetworkIOBuffers&& buffers, xiiNetworkIOOperation& out_operation, const xiiNetworkIOOptions& options) { return m_pRuntime->Submit(socket, xiiNetworkIOOperationKind::Receive, &buffers, nullptr, options, out_operation); }
+xiiNetworkError        xiiNetworkIOContext::SendTo(xiiNetworkIORegistration socket, const xiiNetworkEndpoint& destination, xiiNetworkIOBuffers&& buffers, xiiNetworkIOOperation& out_operation, const xiiNetworkIOOptions& options) { return m_pRuntime->Submit(socket, xiiNetworkIOOperationKind::SendTo, &buffers, &destination, options, out_operation); }
+xiiNetworkError        xiiNetworkIOContext::ReceiveFrom(xiiNetworkIORegistration socket, xiiNetworkIOBuffers&& buffers, xiiNetworkIOOperation& out_operation, const xiiNetworkIOOptions& options) { return m_pRuntime->Submit(socket, xiiNetworkIOOperationKind::ReceiveFrom, &buffers, nullptr, options, out_operation); }
+xiiNetworkError        xiiNetworkIOContext::Resolve(xiiStringView sHost, xiiStringView sService, xiiNetworkIOOperation& out_operation, xiiNetworkAddressFamily family, xiiNetworkTransport transport, const xiiNetworkIOOptions& options) { return m_pRuntime->Resolve(sHost, sService, family, transport, options, out_operation); }
+bool                   xiiNetworkIOContext::TryGetCompletion(xiiNetworkIOResult& out_result) { return m_pRuntime->TryGetCompletion(out_result); }
+xiiNetworkError        xiiNetworkIOContext::WaitForCompletion(xiiNetworkIOResult& out_result, xiiTime timeout) { return m_pRuntime->WaitForCompletion(out_result, timeout); }
+xiiNetworkIOStatistics xiiNetworkIOContext::GetStatistics() const { return m_pRuntime->GetStatistics(); }
+xiiNetworkError        xiiNetworkIOContext::AcquireBuffer(xiiUInt32 uiCount, xiiNetworkIOBuffer& out_buffer)
 {
   return GetState() == xiiNetworkIOContextState::Running ? m_pRuntime->m_BufferPool.Acquire(uiCount, out_buffer) : xiiNetworkError(xiiNetworkErrorCode::NotRunning);
 }

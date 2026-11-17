@@ -5,8 +5,10 @@
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Threading/ThreadUtils.h>
 #include <Foundation/Utilities/CommandLineUtils.h>
+#include <FoundationTest/Network/Implementation/NetworkHostTestUtilities.h>
 #include <TestFramework/Framework/TestFramework.h>
 #include <TestFramework/Utilities/TestSetup.h>
+#include <cstring>
 #include <iostream>
 
 xiiInt32 xiiConstructionCounter::s_iConstructions     = 0;
@@ -21,6 +23,14 @@ xiiInt32 xiiConstructionCounterRelocatable::s_iDestructionsLast  = 0;
 
 XII_TESTFRAMEWORK_ENTRY_POINT_BEGIN("FoundationTest", "Foundation Tests")
 {
+  if (argc == 3 && std::strcmp(argv[1], "-localTransferClient") == 0)
+  {
+    xiiStartup::StartupCoreSystems();
+    const auto iResult = xiiNetworkHostTestUtilities::RunLocalTransferClient(argv[2]);
+    xiiTestSetup::DeInitTestFramework(true);
+    return iResult;
+  }
+
   xiiCommandLineUtils cmd;
   cmd.SetCommandLine(argc, (const char**)argv, xiiCommandLineUtils::PreferOsArgs);
 

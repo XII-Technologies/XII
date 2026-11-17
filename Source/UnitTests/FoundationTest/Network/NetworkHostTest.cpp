@@ -1100,3 +1100,138 @@ XII_CREATE_SIMPLE_TEST(NetworkTransport, HostQuicTriesResolvedEndpointCandidates
   XII_TEST_BOOL(client.GetConnectionInfo(connection, info).Succeeded());
   XII_TEST_BOOL(info.m_RemoteEndpoint == endpoint);
 }
+
+XII_CREATE_SIMPLE_TEST(NetworkTransport, LocalHost)
+{
+  const auto              endpoint = MakeLocalTestEndpoint("local-host");
+  xiiNetworkLocalEndpoint invalid;
+  XII_TEST_BOOL(xiiNetworkLocalEndpoint::Make("../service", invalid).m_Code == xiiNetworkErrorCode::InvalidAddress);
+  XII_TEST_BOOL(xiiNetworkLocalEndpoint::Make("Service", invalid).Failed());
+  XII_TEST_BOOL(xiiNetworkLocalEndpoint::Make(xiiStringView("ok\0suffix", 9), invalid).Failed());
+  XII_TEST_BOOL(!invalid.IsValid());
+  XII_TEST_BOOL(invalid.GetName().IsEmpty());
+  xiiNetworkLocalEndpoint shortName;
+  XII_TEST_BOOL(xiiNetworkLocalEndpoint::Make("test-name", shortName).Succeeded());
+  XII_TEST_BOOL(shortName.GetName() == "test-name"_xiisv);
+
+  auto configuration                                = HostTestConfiguration(xiiNetworkTransportType::Local);
+  configuration.m_IO.m_uiMaxTransferBytesPerAttempt = 1024;
+  auto wrongPolicy                                  = configuration;
+  wrongPolicy.m_Authentication                      = xiiNetworkAuthenticationPolicy::AnonymousDevelopment;
+  wrongPolicy.m_bAllowInsecureDevelopment           = true;
+  xiiNetworkHost rejected;
+  XII_TEST_BOOL(rejected.Start(wrongPolicy).Failed());
+
+  xiiNetworkHost server;
+  xiiNetworkHost client;
+  if (!XII_TEST_BOOL(server.Start(configuration).Succeeded()) || !XII_TEST_BOOL(client.Start(configuration).Succeeded()))
+  {
+    return;
+  }
+
+  xiiNetworkListener listener;
+  if (!XII_TEST_BOOL(server.Listen(endpoint, listener).Succeeded()))
+  {
+    return;
+  }
+  xiiNetworkLocalEndpoint named;
+  XII_TEST_BOOL(server.GetLocalEndpoint(listener, named).Succeeded());
+  XII_TEST_BOOL(named == endpoint);
+  xiiNetworkEndpoint ip;
+  XII_TEST_BOOL(server.GetLocalEndpoint(listener, ip).Failed());
+  xiiNetworkListener duplicate;
+  XII_TEST_BOOL(server.Listen(endpoint, duplicate).m_Code == xiiNetworkErrorCode::AddressInUse);
+
+  xiiNetworkConnection clients[2];
+  xiiNetworkConnection servers[2];
+  xiiNetworkChannel    channels[2];
+  xiiNetworkEvent      event;
+  for (xiiUInt32 uiIndex = 0; uiIndex < 2; ++uiIndex)
+  {
+    if (!XII_TEST_BOOL(client.Connect(endpoint, {}, clients[uiIndex]).Succeeded()) ||
+        !HostTestEvent(client, xiiNetworkEventType::Connected, event))
+    {
+      return;
+    }
+    XII_TEST_BOOL(event.m_LocalServiceEndpoint == endpoint);
+    XII_TEST_BOOL(event.m_pSessionInfo != nullptr);
+    xiiNetworkConnectionInfo info;
+    XII_TEST_BOOL(client.GetConnectionInfo(clients[uiIndex], info).Succeeded());
+    XII_TEST_BOOL(info.m_Session.IsValid());
+    XII_TEST_BOOL(info.m_Capabilities.m_bAuthenticated && !info.m_Capabilities.m_bEncrypted);
+    XII_TEST_BOOL(!info.m_sAuthenticatedIdentity.IsEmpty());
+    if (!HostTestEvent(server, xiiNetworkEventType::Connected, event))
+    {
+      return;
+    }
+    servers[uiIndex] = event.m_Connection;
+    XII_TEST_BOOL(server.GetConnectionInfo(servers[uiIndex], info).Succeeded());
+    XII_TEST_BOOL(!info.m_sAuthenticatedIdentity.IsEmpty());
+    XII_TEST_BOOL(client.GetDefaultChannel(clients[uiIndex], channels[uiIndex]).Succeeded());
+  }
+  xiiNetworkChannelConfiguration unordered;
+  unordered.m_Delivery = xiiNetworkDeliveryMode::ReliableUnordered;
+  xiiNetworkChannel unsupported;
+  XII_TEST_BOOL(client.OpenChannel(clients[0], unordered, unsupported).Failed());
+
+  xiiDynamicArray<xiiUInt8> payload;
+  payload.SetCount(70 * 1024);
+  for (xiiUInt32 uiIndex = 0; uiIndex < payload.GetCount(); ++uiIndex)
+  {
+    payload[uiIndex] = static_cast<xiiUInt8>(uiIndex % 211);
+  }
+  const xiiUInt8    uiSmall[] = {3, 5, 7};
+  xiiNetworkMessage message;
+  if (!XII_TEST_BOOL(client.Send(channels[0], uiSmall, message).Succeeded()) ||
+      !XII_TEST_BOOL(client.Send(channels[0], payload.GetArrayPtr(), message).Succeeded()) ||
+      !HostTestEvent(server, xiiNetworkEventType::Message, event))
+  {
+    return;
+  }
+  XII_TEST_BOOL(event.m_Connection == servers[0] && event.m_Payload.GetBytes() == xiiArrayPtr<const xiiUInt8>(uiSmall));
+  if (!HostTestEvent(server, xiiNetworkEventType::Message, event))
+  {
+    return;
+  }
+  XII_TEST_BOOL(event.m_Connection == servers[0] && event.m_Payload.GetBytes() == payload.GetArrayPtr());
+  XII_TEST_BOOL(client.Disconnect(clients[0]).Succeeded());
+  if (!HostTestEvent(client, xiiNetworkEventType::Closed, event) ||
+      !HostTestEvent(server, xiiNetworkEventType::Closed, event))
+  {
+    return;
+  }
+  XII_TEST_BOOL(client.CloseListener(listener).m_Code == xiiNetworkErrorCode::InvalidHandle);
+  XII_TEST_BOOL(server.CloseListener(listener).Succeeded());
+  if (HostTestEvent(server, xiiNetworkEventType::ListenerClosed, event))
+  {
+    XII_TEST_BOOL(event.m_LocalServiceEndpoint == endpoint);
+  }
+  XII_TEST_BOOL(client.Send(channels[1], uiSmall, message).Succeeded());
+  if (HostTestEvent(server, xiiNetworkEventType::Message, event))
+  {
+    XII_TEST_BOOL(event.m_Connection == servers[1]);
+  }
+  XII_TEST_BOOL(client.Disconnect(clients[1]).Succeeded());
+  if (!HostTestEvent(client, xiiNetworkEventType::Closed, event) ||
+      !HostTestEvent(server, xiiNetworkEventType::Closed, event))
+  {
+    return;
+  }
+
+  xiiNetworkConnectOptions retryOptions;
+  retryOptions.m_Reconnect.m_Mode              = xiiNetworkReconnectMode::Fixed;
+  retryOptions.m_Reconnect.m_uiMaximumAttempts = 10;
+  retryOptions.m_Reconnect.m_InitialDelay      = xiiTime::MakeFromMilliseconds(25);
+  retryOptions.m_Reconnect.m_fJitterFraction   = 0;
+  xiiNetworkConnection reconnected;
+  if (!XII_TEST_BOOL(client.Connect(endpoint, retryOptions, reconnected).Succeeded()) ||
+      !HostTestEvent(client, xiiNetworkEventType::ReconnectScheduled, event) ||
+      !XII_TEST_BOOL(server.Listen(endpoint, listener).Succeeded()) ||
+      !HostTestEvent(client, xiiNetworkEventType::Connected, event))
+  {
+    return;
+  }
+  XII_TEST_BOOL(reconnected != clients[0] && reconnected != clients[1]);
+  XII_TEST_BOOL(client.Send(channels[1], uiSmall, message).Failed());
+  XII_TEST_BOOL(event.m_pSessionInfo != nullptr && !event.m_pSessionInfo->m_ConnectionInfo.m_bSessionResumed);
+}

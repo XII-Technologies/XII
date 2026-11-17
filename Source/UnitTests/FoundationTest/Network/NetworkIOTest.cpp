@@ -3,13 +3,17 @@
 #include <FoundationTest/FoundationTestPCH.h>
 
 #include <Foundation/Containers/Deque.h>
+#include <Foundation/IO/OSFile.h>
 #include <Foundation/Network/NetworkIOContext.h>
+#include <Foundation/System/Process.h>
 #include <Foundation/Threading/Implementation/OSThread.h>
 #include <Foundation/Threading/ThreadUtils.h>
 #include <Foundation/Time/Time.h>
 #include <Foundation/Types/Delegate.h>
+#include <Foundation/Types/ScopeExit.h>
 #include <Foundation/Utilities/CommandLineUtils.h>
 
+#include <FoundationTest/Network/Implementation/NetworkHostTestUtilities.h>
 #include <FoundationTest/Network/Implementation/NetworkTestUtilities.h>
 
 #include <atomic>
@@ -17,6 +21,18 @@
 #include <cstring>
 #include <source_location>
 #include <utility>
+
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+#  include <Foundation/Basics/Platform/Windows/IncludeWindows.h>
+#  include <Foundation/Strings/StringConversion.h>
+#  include <sddl.h>
+#elif XII_ENABLED(XII_PLATFORM_LINUX) || XII_ENABLED(XII_PLATFORM_OSX)
+#  include <cstdio>
+#  include <sys/socket.h>
+#  include <sys/stat.h>
+#  include <sys/un.h>
+#  include <unistd.h>
+#endif
 
 XII_CREATE_SIMPLE_TEST_GROUP(NetworkAsync);
 
@@ -1529,3 +1545,358 @@ XII_CREATE_SIMPLE_TEST(NetworkAsync, TcpRegisteredHalfClose)
   XII_TEST_INT(result.m_Buffers[0].GetBytes()[0], 42);
   XII_TEST_BOOL(context.ShutdownSocket({}, xiiNetworkShutdown::Send).m_Code == xiiNetworkErrorCode::InvalidHandle);
 }
+
+XII_CREATE_SIMPLE_TEST(NetworkAsync, LocalOperations)
+{
+  const auto                endpoint = xiiNetworkHostTestUtilities::MakeLocalTestEndpoint("local-io");
+  xiiNetworkIOConfiguration configuration;
+  configuration.m_uiMaxOperationsPerSocket     = 1;
+  configuration.m_uiMaxTransferBytesPerAttempt = 17;
+  xiiNetworkIOContext      context;
+  xiiNetworkIORegistration listener, client, server;
+  xiiNetworkIOOperation    accept, connect;
+  if (!AsyncCheck(context.Start(configuration)) || !AsyncCheck(context.ListenLocal(endpoint, listener)))
+  {
+    return;
+  }
+
+  xiiNetworkIOOptions timed;
+  timed.m_Timeout = xiiTime::MakeFromMilliseconds(20);
+  xiiNetworkIOResult result;
+  if (!AsyncCheck(context.Accept(listener, accept, timed)) || !AsyncWait(context, result))
+  {
+    return;
+  }
+  XII_TEST_BOOL(result.m_Operation == accept);
+  XII_TEST_BOOL(result.m_Error.m_Code == xiiNetworkErrorCode::TimedOut);
+  XII_TEST_BOOL(!result.m_AcceptedLocalSocket.IsOpen());
+  XII_TEST_BOOL(context.Cancel(accept).m_Code == xiiNetworkErrorCode::InvalidHandle);
+
+  if (!AsyncCheck(context.OpenLocal(client)) || !AsyncCheck(context.Accept(listener, accept)) || !AsyncCheck(context.Connect(client, endpoint, connect)))
+  {
+    return;
+  }
+  for (xiiUInt32 uiIndex = 0; uiIndex < 2; ++uiIndex)
+  {
+    if (!AsyncWait(context, result) || !AsyncCheck(result.m_Error))
+    {
+      return;
+    }
+    XII_TEST_BOOL(result.m_LocalEndpoint == endpoint);
+    if (result.m_Operation == accept)
+    {
+      XII_TEST_BOOL(result.m_AcceptedLocalSocket.IsOpen());
+      if (!AsyncCheck(context.Register(std::move(result.m_AcceptedLocalSocket), server)))
+      {
+        return;
+      }
+      XII_TEST_BOOL(!result.m_AcceptedLocalSocket.IsOpen());
+    }
+    else
+    {
+      XII_TEST_BOOL(result.m_Operation == connect);
+    }
+  }
+
+  xiiNetworkIOBuffer    lease;
+  xiiNetworkIOOperation read;
+  xiiNetworkIOOperation rejected;
+  xiiNetworkIOBuffers   readBuffers;
+  xiiNetworkIOBuffers   held;
+  if (!AsyncCheck(context.AcquireBuffer(513, lease)))
+  {
+    return;
+  }
+  readBuffers.PushBack(std::move(lease));
+  if (!AsyncCheck(context.AcquireBuffer(1, lease)))
+  {
+    return;
+  }
+  held.PushBack(std::move(lease));
+  if (!AsyncCheck(context.Receive(server, std::move(readBuffers), read)))
+  {
+    return;
+  }
+  XII_TEST_BOOL(context.Receive(server, std::move(held), rejected).m_Code == xiiNetworkErrorCode::Backpressure);
+  XII_TEST_BOOL(held.GetCount() == 1 && held[0].IsValid());
+  if (!AsyncCheck(context.Cancel(read)) || !AsyncWait(context, result))
+  {
+    return;
+  }
+  XII_TEST_BOOL(result.m_Operation == read && result.m_Error.m_Code == xiiNetworkErrorCode::Cancelled);
+  XII_TEST_BOOL(result.m_Buffers.GetCount() == 1 && result.m_Buffers[0].GetCount() == 513);
+  XII_TEST_BOOL(!context.TryGetCompletion(result));
+
+  xiiNetworkIOBuffers writeBuffers;
+  constexpr xiiUInt32 PayloadBytes = 513;
+  if (!AsyncCheck(context.AcquireBuffer(PayloadBytes, lease)))
+  {
+    return;
+  }
+  for (xiiUInt32 uiIndex = 0; uiIndex < PayloadBytes; ++uiIndex)
+  {
+    lease.GetBytes()[uiIndex] = static_cast<xiiUInt8>(uiIndex % 173);
+  }
+  writeBuffers.PushBack(std::move(lease));
+  xiiNetworkIOOperation write;
+  if (!AsyncCheck(context.Receive(server, std::move(result.m_Buffers), read)) ||
+      !AsyncCheck(context.Send(client, std::move(writeBuffers), write)))
+  {
+    return;
+  }
+  for (xiiUInt32 uiIndex = 0; uiIndex < 2; ++uiIndex)
+  {
+    if (!AsyncWait(context, result) || !AsyncCheck(result.m_Error))
+    {
+      return;
+    }
+    XII_TEST_INT(result.m_uiBytesTransferred, PayloadBytes);
+    if (result.m_Operation == read)
+    {
+      for (xiiUInt32 uiByte = 0; uiByte < PayloadBytes; ++uiByte)
+      {
+        XII_TEST_INT(result.m_Buffers[0].GetBytes()[uiByte], uiByte % 173);
+      }
+    }
+    else
+    {
+      XII_TEST_BOOL(result.m_Operation == write);
+    }
+  }
+  xiiString sIdentity;
+  XII_TEST_BOOL(context.GetLocalPeerIdentity(server, sIdentity).Succeeded() && !sIdentity.IsEmpty());
+
+  if (!AsyncCheck(context.Receive(server, std::move(held), read)) || !AsyncCheck(context.Deregister(client)) || !AsyncWait(context, result))
+  {
+    return;
+  }
+  XII_TEST_BOOL(result.m_Operation == read && result.m_Error.m_Code == xiiNetworkErrorCode::ConnectionClosed);
+  XII_TEST_BOOL(context.Cancel(client).m_Code == xiiNetworkErrorCode::InvalidHandle);
+  if (!AsyncCheck(context.Accept(listener, accept)))
+  {
+    return;
+  }
+  context.Shutdown();
+  if (AsyncWait(context, result))
+  {
+    XII_TEST_BOOL(result.m_Operation == accept && result.Failed());
+  }
+  XII_TEST_BOOL(!context.TryGetCompletion(result));
+  context.Shutdown();
+
+  xiiNetworkIOContext rebound;
+  XII_TEST_BOOL(rebound.Start(configuration).Succeeded());
+  XII_TEST_BOOL(rebound.ListenLocal(endpoint, listener).Succeeded());
+}
+
+xiiInt32 xiiNetworkHostTestUtilities::RunLocalTransferClient(xiiStringView sName)
+{
+  xiiNetworkLocalEndpoint  endpoint;
+  xiiNetworkIOContext      context;
+  xiiNetworkIORegistration client;
+  xiiNetworkIOOperation    operation;
+  const auto               timeout = xiiTime::MakeFromSeconds(10);
+  xiiNetworkIOResult       result;
+  if (xiiNetworkLocalEndpoint::Make(sName, endpoint).Failed() || context.Start().Failed() ||
+      context.OpenLocal(client).Failed() || context.Connect(client, endpoint, operation).Failed() ||
+      context.WaitForCompletion(result, timeout).Failed() || result.Failed())
+  {
+    return 1;
+  }
+
+  xiiNetworkIOBuffer marker;
+  if (context.AcquireBuffer(1, marker).Failed())
+  {
+    return 2;
+  }
+  marker.GetBytes()[0] = 42;
+  xiiNetworkIOBuffers buffers;
+  buffers.PushBack(std::move(marker));
+  if (context.Send(client, std::move(buffers), operation).Failed() || context.WaitForCompletion(result, timeout).Failed() || result.Failed())
+  {
+    return 3;
+  }
+
+  if (context.Receive(client, std::move(result.m_Buffers), operation).Failed() ||
+      context.WaitForCompletion(result, timeout).Failed() || result.Failed() || result.m_Buffers[0].GetBytes()[0] != 1)
+  {
+    return 4;
+  }
+  result.m_Buffers[0].GetBytes()[0] = 43;
+  if (context.Send(client, std::move(result.m_Buffers), operation).Failed() ||
+      context.WaitForCompletion(result, timeout).Failed() || result.Failed())
+  {
+    return 5;
+  }
+
+  // Stop reading after acknowledging the first byte, leaving the rest of the transfer pending.
+  context.WaitForCompletion(result, timeout).IgnoreResult();
+  return 6;
+}
+
+XII_CREATE_SIMPLE_TEST(NetworkAsync, LocalProcessTermination)
+{
+  const auto               endpoint = xiiNetworkHostTestUtilities::MakeLocalTestEndpoint("local-child");
+  xiiNetworkIOContext      context;
+  xiiNetworkIORegistration listener, server;
+  xiiNetworkIOOperation    operation;
+  if (!AsyncCheck(context.Start()) || !AsyncCheck(context.ListenLocal(endpoint, listener)) || !AsyncCheck(context.Accept(listener, operation)))
+  {
+    return;
+  }
+
+  xiiProcessOptions options;
+  options.m_sProcess = xiiOSFile::GetApplicationPath();
+  options.m_Arguments.PushBack("-localTransferClient");
+  options.m_Arguments.PushBack(xiiString(endpoint.GetName()));
+  xiiProcess         child;
+  xiiNetworkIOResult result;
+  if (!XII_TEST_BOOL(child.Launch(options).Succeeded()) || !AsyncWait(context, result) || !AsyncCheck(result.m_Error) ||
+      !AsyncCheck(context.Register(std::move(result.m_AcceptedLocalSocket), server)))
+  {
+    return;
+  }
+
+  xiiNetworkIOBuffer lease;
+  if (!AsyncCheck(context.AcquireBuffer(1, lease)))
+  {
+    return;
+  }
+  xiiNetworkIOBuffers buffers;
+  buffers.PushBack(std::move(lease));
+  if (!AsyncCheck(context.Receive(server, std::move(buffers), operation)) || !AsyncWait(context, result) ||
+      !AsyncCheck(result.m_Error) || !XII_TEST_BOOL(result.m_Buffers[0].GetBytes()[0] == 42))
+  {
+    return;
+  }
+
+  constexpr xiiUInt32 PayloadBytes = 4 * 1024 * 1024;
+  if (!AsyncCheck(context.AcquireBuffer(PayloadBytes, lease)))
+  {
+    return;
+  }
+  std::memset(lease.GetBytes().GetPtr(), 1, PayloadBytes);
+  buffers.PushBack(std::move(lease));
+  xiiNetworkIOOperation write;
+  if (!AsyncCheck(context.Receive(server, std::move(result.m_Buffers), operation)) ||
+      !AsyncCheck(context.Send(server, std::move(buffers), write)) ||
+      !AsyncWait(context, result) || !AsyncCheck(result.m_Error) ||
+      !XII_TEST_BOOL(result.m_Operation == operation && result.m_Buffers[0].GetBytes()[0] == 43) ||
+      !XII_TEST_BOOL(child.Terminate().Succeeded()) || !AsyncWait(context, result))
+  {
+    return;
+  }
+  XII_TEST_BOOL(result.m_Operation == write && result.Failed());
+  XII_TEST_BOOL(result.m_uiBytesTransferred < PayloadBytes);
+  XII_TEST_BOOL(result.m_Buffers.GetCount() == 1 && result.m_Buffers[0].IsValid());
+  XII_TEST_BOOL(!context.TryGetCompletion(result));
+}
+
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+XII_CREATE_SIMPLE_TEST(NetworkAsync, LocalRejectsAnonymousPipeClient)
+{
+  const auto               endpoint = xiiNetworkHostTestUtilities::MakeLocalTestEndpoint("local-anon");
+  xiiNetworkIOContext      context;
+  xiiNetworkIORegistration listener, accepted;
+  xiiNetworkIOOperation    operation;
+  if (!AsyncCheck(context.Start()) || !AsyncCheck(context.ListenLocal(endpoint, listener)) || !AsyncCheck(context.Accept(listener, operation)))
+  {
+    return;
+  }
+
+  HANDLE hToken = nullptr;
+  if (!XII_TEST_BOOL(::OpenProcessToken(::GetCurrentProcess(), TOKEN_QUERY, &hToken)))
+  {
+    return;
+  }
+  alignas(TOKEN_USER) xiiUInt8 token[sizeof(TOKEN_USER) + SECURITY_MAX_SID_SIZE] = {};
+  DWORD                        uiTokenSize                                       = 0;
+  const BOOL                   bGotUser                                          = ::GetTokenInformation(hToken, TokenUser, token, sizeof(token), &uiTokenSize);
+  ::CloseHandle(hToken);
+  LPSTR szSid = nullptr;
+  if (!XII_TEST_BOOL(bGotUser && ::ConvertSidToStringSidA(reinterpret_cast<TOKEN_USER*>(token)->User.Sid, &szSid)))
+  {
+    return;
+  }
+  xiiStringBuilder address;
+  address.SetFormat(R"(\\.\pipe\xii-ipc-{0}-{1})", szSid, endpoint.GetName());
+  ::LocalFree(szSid);
+  const HANDLE hPipe = ::CreateFileW(xiiStringWChar(address).GetData(), GENERIC_READ | GENERIC_WRITE, 0, nullptr,
+                                     OPEN_EXISTING, SECURITY_SQOS_PRESENT | SECURITY_ANONYMOUS, nullptr);
+  if (!XII_TEST_BOOL(hPipe != INVALID_HANDLE_VALUE))
+  {
+    return;
+  }
+  auto               closePipe = xiiMakeScopeExit([hPipe]() { ::CloseHandle(hPipe); });
+  xiiNetworkIOResult result;
+  if (!AsyncWait(context, result) || !AsyncCheck(result.m_Error) ||
+      !AsyncCheck(context.Register(std::move(result.m_AcceptedLocalSocket), accepted)))
+  {
+    return;
+  }
+  xiiNetworkIOBuffer buffer;
+  if (!AsyncCheck(context.AcquireBuffer(1, buffer)))
+  {
+    return;
+  }
+  xiiNetworkIOBuffers buffers;
+  buffers.PushBack(std::move(buffer));
+  const xiiUInt8 uiByte    = 1;
+  DWORD          uiWritten = 0;
+  if (AsyncCheck(context.Receive(accepted, std::move(buffers), operation)) &&
+      XII_TEST_BOOL(::WriteFile(hPipe, &uiByte, 1, &uiWritten, nullptr) && uiWritten == 1) &&
+      AsyncWait(context, result))
+  {
+    XII_TEST_BOOL(result.m_Operation == operation && result.m_Error.m_Code == xiiNetworkErrorCode::AuthenticationFailed);
+    XII_TEST_INT(result.m_uiBytesTransferred, 0);
+  }
+}
+#endif
+
+#if XII_ENABLED(XII_PLATFORM_LINUX) || XII_ENABLED(XII_PLATFORM_OSX)
+XII_CREATE_SIMPLE_TEST(NetworkAsync, LocalPreservesReplacedSocket)
+{
+  const auto               endpoint = xiiNetworkHostTestUtilities::MakeLocalTestEndpoint("local-replace");
+  xiiNetworkIOContext      context;
+  xiiNetworkIORegistration listener;
+  if (!AsyncCheck(context.Start()) || !AsyncCheck(context.ListenLocal(endpoint, listener)))
+  {
+    return;
+  }
+  xiiStringBuilder directory;
+  directory.SetFormat("/tmp/xii-ipc-{0}-{1}", static_cast<xiiUInt32>(::geteuid()), endpoint.GetName());
+  xiiStringBuilder path = directory;
+  path.Append("/s");
+  xiiStringBuilder original = directory;
+  original.Append("/original");
+  struct stat entry = {};
+  XII_TEST_BOOL(::lstat(directory.GetData(), &entry) == 0 && (entry.st_mode & (S_IRWXG | S_IRWXO)) == 0);
+  if (!XII_TEST_BOOL(::rename(path.GetData(), original.GetData()) == 0))
+  {
+    return;
+  }
+  auto      removeEntries = xiiMakeScopeExit([&]() {
+    ::unlink(path.GetData());
+    ::unlink(original.GetData());
+    ::rmdir(directory.GetData());
+  });
+  const int iSocket       = ::socket(AF_UNIX, SOCK_STREAM, 0);
+  if (!XII_TEST_BOOL(iSocket >= 0))
+  {
+    return;
+  }
+  auto        closeSocket = xiiMakeScopeExit([iSocket]() { ::close(iSocket); });
+  sockaddr_un replacement = {};
+  replacement.sun_family  = AF_UNIX;
+#  if XII_ENABLED(XII_PLATFORM_OSX)
+  replacement.sun_len = sizeof(replacement);
+#  endif
+  std::memcpy(replacement.sun_path, path.GetData(), path.GetElementCount() + 1);
+  if (!XII_TEST_BOOL(::bind(iSocket, reinterpret_cast<const sockaddr*>(&replacement), sizeof(replacement)) == 0))
+  {
+    return;
+  }
+  context.Shutdown();
+  XII_TEST_BOOL(::lstat(path.GetData(), &entry) == 0 && S_ISSOCK(entry.st_mode));
+}
+#endif

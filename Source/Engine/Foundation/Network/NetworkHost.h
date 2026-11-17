@@ -116,6 +116,7 @@ struct XII_FOUNDATION_DLL xiiNetworkEvent
   xiiNetworkMessage                          m_Message;
   xiiNetworkError                            m_Error;
   xiiNetworkEndpoint                         m_Endpoint;
+  xiiNetworkLocalEndpoint                    m_LocalServiceEndpoint;
   xiiNetworkIOBuffer                         m_Payload;
   xiiSharedPtr<xiiNetworkAuthenticationData> m_pAuthentication;
   xiiNetworkChannelConfiguration             m_ChannelConfiguration;
@@ -153,9 +154,12 @@ public:
   [[nodiscard]] xiiNetworkHostStatistics        GetStatistics() const;
   [[nodiscard]] xiiNetworkError                 GetPeerCertificate(xiiNetworkConnection connection, xiiNetworkCertificate& out_certificate) const;
   [[nodiscard]] xiiNetworkError                 Listen(const xiiNetworkEndpoint& endpoint, xiiNetworkListener& out_listener, xiiInt32 iBacklog = 128, bool bIpv6Only = true);
+  [[nodiscard]] xiiNetworkError                 Listen(const xiiNetworkLocalEndpoint& endpoint, xiiNetworkListener& out_listener);
   [[nodiscard]] xiiNetworkError                 CloseListener(xiiNetworkListener listener);
   [[nodiscard]] xiiNetworkError                 GetLocalEndpoint(xiiNetworkListener listener, xiiNetworkEndpoint& out_endpoint) const;
+  [[nodiscard]] xiiNetworkError                 GetLocalEndpoint(xiiNetworkListener listener, xiiNetworkLocalEndpoint& out_endpoint) const;
   [[nodiscard]] xiiNetworkError                 Connect(const xiiNetworkEndpoint& endpoint, const xiiNetworkConnectOptions& options, xiiNetworkConnection& out_connection);
+  [[nodiscard]] xiiNetworkError                 Connect(const xiiNetworkLocalEndpoint& endpoint, const xiiNetworkConnectOptions& options, xiiNetworkConnection& out_connection);
   [[nodiscard]] xiiNetworkError                 Connect(xiiStringView sHost, xiiStringView sService, const xiiNetworkConnectOptions& options, xiiNetworkConnection& out_connection);
   [[nodiscard]] xiiNetworkError                 GetConnectionInfo(xiiNetworkConnection connection, xiiNetworkConnectionInfo& out_info) const;
   [[nodiscard]] xiiNetworkError                 GetDefaultChannel(xiiNetworkConnection connection, xiiNetworkChannel& out_channel) const;

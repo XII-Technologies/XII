@@ -10,7 +10,8 @@ enum class xiiNetworkTransportType : xiiUInt8
   Tcp,
   TlsTcp,
   NativeUdp,
-  SecureDatagram
+  SecureDatagram,
+  Local
 };
 
 enum class xiiNetworkDeliveryMode : xiiUInt8

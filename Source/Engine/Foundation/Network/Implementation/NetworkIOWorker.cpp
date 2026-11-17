@@ -3,6 +3,7 @@
 #include <Foundation/FoundationPCH.h>
 
 #include <Foundation/Network/Implementation/NetworkIOInternal.h>
+#include <Foundation/Platform/Implementation/NetworkSocketAccess.h>
 #include <Foundation/Profiling/Profiling.h>
 #include <Foundation/Threading/Lock.h>
 
@@ -12,6 +13,11 @@
 
 namespace xiiNetworkIOInternal
 {
+  xiiUInt64 Registration::GetNativeHandle() const
+  {
+    return IsLocal() ? LocalSocketAccess::Native(GetLocalSocket()) : xiiNetworkSocketAccess::BorrowNativeHandle(GetSocket());
+  }
+
   Registration* Worker::Find(xiiNetworkIORegistration handle)
   {
     if (handle.m_uiContextId != m_pRuntime->m_uiContextId || handle.m_uiWorker != m_uiIndex || handle.m_uiSlot >= m_Registrations.GetCount())
@@ -95,7 +101,14 @@ namespace xiiNetworkIOInternal
     }
     Unready(registration);
     Remove(*this, registration);
-    registration.GetSocket().Close().IgnoreResult();
+    if (registration.IsLocal())
+    {
+      registration.GetLocalSocket().Close();
+    }
+    else
+    {
+      registration.GetSocket().Close().IgnoreResult();
+    }
     registration.m_bActive      = false;
     registration.m_bReadyQueued = false;
     m_NativeTokens.Remove(registration.m_uiNativeToken);
@@ -150,6 +163,7 @@ namespace xiiNetworkIOInternal
     if (error.Failed())
     {
       operation.m_Result.m_AcceptedSocket.Close().IgnoreResult();
+      operation.m_Result.m_AcceptedLocalSocket.Close();
       if (error.m_Code == xiiNetworkErrorCode::Cancelled || error.m_Code == xiiNetworkErrorCode::TimedOut)
       {
         operation.m_Result.m_ResolvedEndpoints.Clear();
@@ -370,7 +384,8 @@ namespace xiiNetworkIOInternal
           pCurrent = nullptr;
           break;
         }
-        if (registration.m_Kind == SocketKind::Listener && registration.m_uiActiveAccepts >= configuration.m_uiAcceptConcurrencyPerSocket)
+        const xiiUInt32 uiAcceptLimit = registration.IsLocal() ? 1 : configuration.m_uiAcceptConcurrencyPerSocket;
+        if (registration.m_Kind == SocketKind::Listener && registration.m_uiActiveAccepts >= uiAcceptLimit)
         {
           pCurrent = nullptr;
           break;
@@ -571,12 +586,42 @@ xiiNetworkError xiiNetworkIOContext::Cancel(xiiNetworkIORegistration registratio
 
 xiiNetworkError xiiNetworkIOContext::GetLocalEndpoint(xiiNetworkIORegistration registration, xiiNetworkEndpoint& out_endpoint) const
 {
-  return WithRegistration(*m_pRuntime, registration, [&](auto&, auto& entry) { return entry.GetSocket().GetLocalEndpoint(out_endpoint); });
+  return WithRegistration(*m_pRuntime, registration, [&](auto&, auto& entry) {
+    return entry.IsLocal() ? xiiNetworkError(xiiNetworkErrorCode::UnsupportedOperation) : entry.GetSocket().GetLocalEndpoint(out_endpoint);
+  });
 }
 
 xiiNetworkError xiiNetworkIOContext::GetPeerEndpoint(xiiNetworkIORegistration registration, xiiNetworkEndpoint& out_endpoint) const
 {
-  return WithRegistration(*m_pRuntime, registration, [&](auto&, auto& entry) { return entry.GetSocket().GetPeerEndpoint(out_endpoint); });
+  return WithRegistration(*m_pRuntime, registration, [&](auto&, auto& entry) {
+    return entry.IsLocal() ? xiiNetworkError(xiiNetworkErrorCode::UnsupportedOperation) : entry.GetSocket().GetPeerEndpoint(out_endpoint);
+  });
+}
+
+xiiNetworkError xiiNetworkIOContext::GetLocalPeerIdentity(xiiNetworkIORegistration registration, xiiString& out_sIdentity) const
+{
+  return WithRegistration(*m_pRuntime, registration, [&](auto&, auto& entry) {
+    return entry.IsLocal() && xiiNetworkIOInternal::LocalSocketAccess::IsConnected(entry.GetLocalSocket()) ?
+      xiiNetworkIOInternal::LocalSocketAccess::PeerIdentity(entry.GetLocalSocket(), out_sIdentity) :
+      xiiNetworkError(xiiNetworkErrorCode::NotConnected);
+  });
+}
+
+xiiNetworkError xiiNetworkIOContext::GetLocalEndpoint(xiiNetworkIORegistration registration, xiiNetworkLocalEndpoint& out_endpoint) const
+{
+  return WithRegistration(*m_pRuntime, registration, [&](auto&, auto& entry) {
+    if (!entry.IsLocal())
+    {
+      return xiiNetworkError(xiiNetworkErrorCode::UnsupportedOperation);
+    }
+    const auto& endpoint = entry.GetLocalSocket().GetEndpoint();
+    if (!endpoint.IsValid())
+    {
+      return xiiNetworkError(xiiNetworkErrorCode::NotConnected);
+    }
+    out_endpoint = endpoint;
+    return xiiNetworkError();
+  });
 }
 
 xiiNetworkError xiiNetworkIOContext::Cancel(xiiNetworkIOOperation operation)
@@ -629,7 +674,7 @@ xiiNetworkError xiiNetworkIOContext::SetDeadline(xiiNetworkIOOperation operation
 xiiNetworkError xiiNetworkIOContext::ShutdownSocket(xiiNetworkIORegistration registration, xiiNetworkShutdown direction)
 {
   return WithRegistration(*m_pRuntime, registration, [&](auto&, auto& entry) {
-    if (entry.m_Kind != xiiNetworkIOInternal::SocketKind::Tcp)
+    if (entry.m_Kind != xiiNetworkIOInternal::SocketKind::Tcp || entry.IsLocal())
     {
       return xiiNetworkError(xiiNetworkErrorCode::UnsupportedOperation);
     }

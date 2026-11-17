@@ -13,6 +13,7 @@ xii_link_network_providers(${PROJECT_NAME})
 if(XII_CMAKE_PLATFORM_WINDOWS)
   target_link_libraries(${PROJECT_NAME}
     PRIVATE
+    Advapi32.lib
     Rpcrt4.lib
     Ws2_32.lib
     Iphlpapi.lib

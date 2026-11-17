@@ -8,6 +8,7 @@
 #include <Foundation/Containers/DynamicArray.h>
 #include <Foundation/Containers/HashTable.h>
 #include <Foundation/FoundationInternal.h>
+#include <Foundation/Network/Implementation/NetworkLocalSocketAccess.h>
 #include <Foundation/Network/Implementation/NetworkNativeThread.h>
 #include <Foundation/Network/NetworkIOContext.h>
 #include <Foundation/Strings/String.h>
@@ -53,25 +54,29 @@ namespace xiiNetworkIOInternal
 
   struct Registration
   {
-    std::variant<xiiTcpSocket, xiiTcpListener, xiiUdpSocket> m_Socket;
-    SocketKind                                               m_Kind = SocketKind::Tcp;
-    xiiNetworkIORegistration                                 m_Handle;
-    xiiUInt64                                                m_uiNativeToken     = 0;
-    xiiUInt32                                                m_uiPendingCount    = 0;
-    xiiUInt32                                                m_uiNativeInterest  = 0;
-    xiiUInt32                                                m_uiActiveAccepts   = 0;
-    bool                                                     m_bActive           = false;
-    bool                                                     m_bClosing          = false;
-    bool                                                     m_bWriteFirst       = false;
-    bool                                                     m_bReadyQueued      = false;
-    bool                                                     m_bNativeRegistered = false;
-    void*                                                    m_pNativeData       = nullptr;
-    Registration*                                            m_pReadyPrevious    = nullptr;
-    Registration*                                            m_pReadyNext        = nullptr;
-    OperationQueue                                           m_Read;
-    OperationQueue                                           m_Write;
-    xiiNetworkSocket&                                        GetSocket();
-    const xiiNetworkSocket&                                  GetSocket() const;
+    std::variant<xiiTcpSocket, xiiTcpListener, xiiUdpSocket, xiiNetworkLocalSocket> m_Socket;
+    SocketKind                                                                      m_Kind = SocketKind::Tcp;
+    xiiNetworkIORegistration                                                        m_Handle;
+    xiiUInt64                                                                       m_uiNativeToken     = 0;
+    xiiUInt32                                                                       m_uiPendingCount    = 0;
+    xiiUInt32                                                                       m_uiNativeInterest  = 0;
+    xiiUInt32                                                                       m_uiActiveAccepts   = 0;
+    bool                                                                            m_bActive           = false;
+    bool                                                                            m_bClosing          = false;
+    bool                                                                            m_bWriteFirst       = false;
+    bool                                                                            m_bReadyQueued      = false;
+    bool                                                                            m_bNativeRegistered = false;
+    void*                                                                           m_pNativeData       = nullptr;
+    Registration*                                                                   m_pReadyPrevious    = nullptr;
+    Registration*                                                                   m_pReadyNext        = nullptr;
+    OperationQueue                                                                  m_Read;
+    OperationQueue                                                                  m_Write;
+    xiiNetworkSocket&                                                               GetSocket();
+    const xiiNetworkSocket&                                                         GetSocket() const;
+    bool                                                                            IsLocal() const { return std::holds_alternative<xiiNetworkLocalSocket>(m_Socket); }
+    xiiNetworkLocalSocket&                                                          GetLocalSocket() { return std::get<xiiNetworkLocalSocket>(m_Socket); }
+    const xiiNetworkLocalSocket&                                                    GetLocalSocket() const { return std::get<xiiNetworkLocalSocket>(m_Socket); }
+    xiiUInt64                                                                       GetNativeHandle() const;
   };
 
   /// Stable pool slot: never moved while an executor or the OS can reference it.
@@ -204,7 +209,7 @@ public:
   void                                       ShutdownUnlocked();
   template <typename Socket> xiiNetworkError Register(Socket&& socket, xiiNetworkIORegistration& out_registration);
   xiiNetworkError                            Submit(xiiNetworkIORegistration handle, xiiNetworkIOOperationKind kind, xiiNetworkIOBuffers* pBuffers,
-                                                    const xiiNetworkEndpoint* pEndpoint, const xiiNetworkIOOptions& options, xiiNetworkIOOperation& out_operation);
+                                                    const xiiNetworkEndpoint* pEndpoint, const xiiNetworkIOOptions& options, xiiNetworkIOOperation& out_operation, const xiiNetworkLocalEndpoint* pLocalEndpoint = nullptr);
   xiiNetworkError                            Resolve(xiiStringView sHost, xiiStringView sService, xiiNetworkAddressFamily family, xiiNetworkTransport transport,
                                                      const xiiNetworkIOOptions& options, xiiNetworkIOOperation& out_operation);
   xiiNetworkError                            ValidateOptions(const xiiNetworkIOOptions& options, xiiTime& out_deadline) const;

@@ -7,12 +7,17 @@
 #  include <Foundation/Network/Implementation/NetworkIOInternal.h>
 #  include <Foundation/Platform/Implementation/NetworkPlatform.h>
 #  include <Foundation/Platform/Implementation/NetworkSocketAccess.h>
+#  include <Foundation/Strings/StringConversion.h>
 
+#  include <aclapi.h>
 #  include <mswsock.h>
+#  include <sddl.h>
 
 #  include <algorithm>
 #  include <climits>
 #  include <cstddef>
+#  include <cstdlib>
+#  include <cstring>
 #  include <type_traits>
 
 namespace
@@ -89,7 +94,16 @@ namespace
         code = xiiNetworkErrorCode::ConnectionRefused;
         break;
       case ERROR_BROKEN_PIPE:
+      case ERROR_NO_DATA:
+      case ERROR_PIPE_NOT_CONNECTED:
         code = xiiNetworkErrorCode::ConnectionClosed;
+        break;
+      case ERROR_PIPE_BUSY:
+      case ERROR_FILE_NOT_FOUND:
+        code = xiiNetworkErrorCode::ConnectionRefused;
+        break;
+      case ERROR_ACCESS_DENIED:
+        code = xiiNetworkErrorCode::PermissionDenied;
         break;
       case ERROR_SEM_TIMEOUT:
       case ERROR_TIMEOUT:
@@ -112,6 +126,235 @@ namespace
     return xiiNetworkError(code, static_cast<xiiInt32>(uiError), xiiNetworkErrorDomain::NativeCompletion);
   }
 
+  xiiNetworkError SidText(PSID pSid, xiiString& out_sSid)
+  {
+    LPSTR szSid = nullptr;
+    if (!::ConvertSidToStringSidA(pSid, &szSid))
+    {
+      return NetworkCompletionError(::GetLastError());
+    }
+    out_sSid = szSid;
+    ::LocalFree(szSid);
+    return {};
+  }
+
+  xiiNetworkError TokenSid(bool bThread, xiiString& out_sSid)
+  {
+    HANDLE hToken = nullptr;
+    if (!(bThread ? ::OpenThreadToken(::GetCurrentThread(), TOKEN_QUERY, TRUE, &hToken) :
+                    ::OpenProcessToken(::GetCurrentProcess(), TOKEN_QUERY, &hToken)))
+    {
+      return NetworkCompletionError(::GetLastError());
+    }
+    alignas(TOKEN_USER) xiiUInt8 token[sizeof(TOKEN_USER) + SECURITY_MAX_SID_SIZE] = {};
+    DWORD                        uiSize                                            = 0;
+    const BOOL                   bSuccess                                          = ::GetTokenInformation(hToken, TokenUser, token, sizeof(token), &uiSize);
+    const DWORD                  uiError                                           = bSuccess ? ERROR_SUCCESS : ::GetLastError();
+    const auto                   error                                             = bSuccess ? SidText(reinterpret_cast<TOKEN_USER*>(token)->User.Sid, out_sSid) : NetworkCompletionError(uiError);
+    ::CloseHandle(hToken);
+    return error;
+  }
+
+  xiiStringBuilder LocalPipeName(const xiiNetworkLocalEndpoint& endpoint, xiiStringView sSid)
+  {
+    xiiStringBuilder name;
+    name.SetFormat(R"(\\.\pipe\xii-ipc-{0}-{1})", sSid, endpoint.GetName());
+    return name;
+  }
+
+  HANDLE CreateLocalPipe(const xiiNetworkLocalEndpoint& endpoint, bool bFirst, xiiNetworkError& out_error)
+  {
+    xiiString sSid;
+    out_error = TokenSid(false, sSid);
+    if (out_error.Failed())
+    {
+      return INVALID_HANDLE_VALUE;
+    }
+    xiiStringBuilder descriptor;
+    descriptor.SetFormat("O:{0}D:P(A;;GA;;;{0})", sSid);
+    PSECURITY_DESCRIPTOR pDescriptor = nullptr;
+    if (!::ConvertStringSecurityDescriptorToSecurityDescriptorW(xiiStringWChar(descriptor).GetData(), SDDL_REVISION_1, &pDescriptor, nullptr))
+    {
+      out_error = NetworkCompletionError(::GetLastError());
+      return INVALID_HANDLE_VALUE;
+    }
+    SECURITY_ATTRIBUTES attributes = {sizeof(attributes), pDescriptor, FALSE};
+    const HANDLE        hPipe      = ::CreateNamedPipeW(xiiStringWChar(LocalPipeName(endpoint, sSid)).GetData(),
+                                                        PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED | (bFirst ? FILE_FLAG_FIRST_PIPE_INSTANCE : 0),
+                                                        PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT | PIPE_REJECT_REMOTE_CLIENTS, PIPE_UNLIMITED_INSTANCES, 65536, 65536, 0, &attributes);
+    const DWORD         uiError    = hPipe == INVALID_HANDLE_VALUE ? ::GetLastError() : ERROR_SUCCESS;
+    ::LocalFree(pDescriptor);
+    out_error = NetworkCompletionError(uiError);
+    if (bFirst && uiError == ERROR_ACCESS_DENIED)
+    {
+      out_error.m_Code = xiiNetworkErrorCode::AddressInUse;
+    }
+    return hPipe;
+  }
+
+  xiiNetworkError VerifyLocalPipeOwner(HANDLE hPipe, xiiStringView sExpected)
+  {
+    PSID                 pOwner      = nullptr;
+    PSECURITY_DESCRIPTOR pDescriptor = nullptr;
+    const DWORD          uiError     = ::GetSecurityInfo(hPipe, SE_FILE_OBJECT, OWNER_SECURITY_INFORMATION, &pOwner, nullptr, nullptr, nullptr, &pDescriptor);
+    if (uiError != ERROR_SUCCESS)
+    {
+      return xiiNetworkError(xiiNetworkErrorCode::AuthenticationFailed, static_cast<xiiInt32>(uiError), xiiNetworkErrorDomain::NativeCompletion);
+    }
+    xiiString  sOwner;
+    const auto error = SidText(pOwner, sOwner);
+    ::LocalFree(pDescriptor);
+    return error.Succeeded() && sOwner == sExpected ? xiiNetworkError() : xiiNetworkError(xiiNetworkErrorCode::AuthenticationFailed);
+  }
+
+  xiiNetworkError VerifyLocalPipeClient(HANDLE hPipe, xiiString& out_sSid)
+  {
+    xiiString sExpected;
+    if (TokenSid(false, sExpected).Failed() || !::ImpersonateNamedPipeClient(hPipe))
+    {
+      return xiiNetworkError(xiiNetworkErrorCode::AuthenticationFailed);
+    }
+    const auto error = TokenSid(true, out_sSid);
+    if (!::RevertToSelf())
+    {
+      std::abort(); // A native worker must never run another request with an impersonated token.
+    }
+    return error.Succeeded() && out_sSid == sExpected ? xiiNetworkError() : xiiNetworkError(xiiNetworkErrorCode::AuthenticationFailed);
+  }
+
+  xiiNetworkError AssociateLocalPipe(xiiNetworkIOInternal::Worker& worker, HANDLE hPipe)
+  {
+    const auto& state = *static_cast<NetworkIocpState*>(worker.m_pNativeData);
+    return ::CreateIoCompletionPort(hPipe, state.m_hPort, 1, 0) != nullptr ? xiiNetworkError() : NetworkCompletionError(::GetLastError());
+  }
+
+  xiiNetworkOperationResult FinishLocalPipe(xiiNetworkIOInternal::Operation& operation, xiiNetworkError error, xiiUInt32 uiBytes)
+  {
+    using namespace xiiNetworkIOInternal;
+    auto&      socket = operation.m_pRegistration->GetLocalSocket();
+    const auto hPipe  = reinterpret_cast<HANDLE>(LocalSocketAccess::Native(socket));
+    if (operation.m_Result.m_Kind == xiiNetworkIOOperationKind::Accept)
+    {
+      if (error.Succeeded() && operation.m_CancelReason.Succeeded())
+      {
+        // Keep a listening instance alive before transferring the completed instance.
+        const HANDLE hNext = CreateLocalPipe(socket.GetEndpoint(), false, error);
+        if (error.Succeeded())
+        {
+          error = AssociateLocalPipe(*operation.m_pWorker, hNext);
+          if (error.Failed())
+          {
+            ::CloseHandle(hNext);
+          }
+          else
+          {
+            auto& accepted                      = operation.m_Result.m_AcceptedLocalSocket;
+            LocalSocketAccess::Native(accepted) = reinterpret_cast<xiiUInt64>(hPipe);
+            LocalSocketAccess::SetConnected(accepted);
+            LocalSocketAccess::SetEndpoint(accepted, socket.GetEndpoint());
+            LocalSocketAccess::SetAffinity(accepted, operation.m_pWorker->m_pRuntime->m_uiContextId, operation.m_pWorker->m_uiIndex);
+            LocalSocketAccess::Native(socket) = reinterpret_cast<xiiUInt64>(hNext);
+            return {};
+          }
+        }
+      }
+      if (hPipe != INVALID_HANDLE_VALUE)
+      {
+        ::DisconnectNamedPipe(hPipe);
+      }
+      return {error, 0};
+    }
+    if (operation.m_Result.m_Kind == xiiNetworkIOOperationKind::Receive && error.Succeeded())
+    {
+      if (uiBytes == 0)
+      {
+        return {xiiNetworkError(xiiNetworkErrorCode::ConnectionClosed), 0};
+      }
+      auto& sIdentity = LocalSocketAccess::Identity(socket);
+      if (sIdentity.IsEmpty() && operation.m_CancelReason.Succeeded())
+      {
+        error = VerifyLocalPipeClient(hPipe, sIdentity);
+        if (error.Failed())
+        {
+          xiiArrayPtr<xiiUInt8> spans[64];
+          BuildReceiveSpans(operation, spans, uiBytes);
+          std::memset(spans[0].GetPtr(), 0, uiBytes);
+          sIdentity.Clear();
+          operation.m_pRegistration->m_bClosing = true;
+          return {error, 0};
+        }
+      }
+    }
+    return {error, uiBytes};
+  }
+
+  xiiNetworkIOInternal::NativeAttempt SubmitLocalPipe(xiiNetworkIOInternal::Operation& operation, OVERLAPPED& ref_overlapped)
+  {
+    using namespace xiiNetworkIOInternal;
+    auto&      socket = operation.m_pRegistration->GetLocalSocket();
+    const auto kind   = operation.m_Result.m_Kind;
+    if (kind == xiiNetworkIOOperationKind::Connect)
+    {
+      xiiString sSid;
+      auto      error = TokenSid(false, sSid);
+      if (error.Failed())
+      {
+        return {{error, 0}, false};
+      }
+      const auto&  endpoint = operation.m_Result.m_LocalEndpoint;
+      const HANDLE hPeer    = ::CreateFileW(xiiStringWChar(LocalPipeName(endpoint, sSid)).GetData(),
+                                            FILE_READ_DATA | FILE_WRITE_DATA | FILE_READ_ATTRIBUTES | READ_CONTROL | SYNCHRONIZE,
+                                            0, nullptr, OPEN_EXISTING, FILE_FLAG_OVERLAPPED | SECURITY_SQOS_PRESENT | SECURITY_IDENTIFICATION, nullptr);
+      if (hPeer == INVALID_HANDLE_VALUE)
+      {
+        return {{NetworkCompletionError(::GetLastError()), 0}, false};
+      }
+      error = VerifyLocalPipeOwner(hPeer, sSid);
+      if (error.Succeeded())
+      {
+        error = AssociateLocalPipe(*operation.m_pWorker, hPeer);
+      }
+      if (error.Failed())
+      {
+        ::CloseHandle(hPeer);
+        return {{error, 0}, false};
+      }
+      LocalSocketAccess::Native(socket) = reinterpret_cast<xiiUInt64>(hPeer);
+      LocalSocketAccess::SetEndpoint(socket, endpoint);
+      LocalSocketAccess::SetConnected(socket);
+      LocalSocketAccess::Identity(socket) = std::move(sSid);
+      return {};
+    }
+    const auto hPipe    = reinterpret_cast<HANDLE>(LocalSocketAccess::Native(socket));
+    BOOL       bSuccess = FALSE;
+    if (kind == xiiNetworkIOOperationKind::Accept)
+    {
+      bSuccess = ::ConnectNamedPipe(hPipe, &ref_overlapped);
+    }
+    else if (kind == xiiNetworkIOOperationKind::Send)
+    {
+      xiiArrayPtr<const xiiUInt8> spans[64];
+      BuildSendSpans(operation, spans, operation.m_pWorker->m_pRuntime->m_Configuration.m_uiMaxTransferBytesPerAttempt);
+      bSuccess = ::WriteFile(hPipe, spans[0].GetPtr(), spans[0].GetCount(), nullptr, &ref_overlapped);
+    }
+    else
+    {
+      xiiArrayPtr<xiiUInt8> spans[64];
+      BuildReceiveSpans(operation, spans, operation.m_pWorker->m_pRuntime->m_Configuration.m_uiMaxTransferBytesPerAttempt);
+      bSuccess = ::ReadFile(hPipe, spans[0].GetPtr(), spans[0].GetCount(), nullptr, &ref_overlapped);
+    }
+    const DWORD uiError = bSuccess ? ERROR_SUCCESS : ::GetLastError();
+    if (bSuccess || uiError == ERROR_IO_PENDING)
+    {
+      return {{}, true};
+    }
+    if (kind == xiiNetworkIOOperationKind::Accept)
+    {
+      return {FinishLocalPipe(operation, uiError == ERROR_PIPE_CONNECTED ? xiiNetworkError() : NetworkCompletionError(uiError), 0), false};
+    }
+    return {{NetworkCompletionError(uiError), 0}, false};
+  }
+
   template <typename Function>
   xiiNetworkError NetworkExtension(SOCKET hSocket, GUID guid, Function& out_pFunction)
   {
@@ -126,6 +369,48 @@ namespace
 
 namespace xiiNetworkIOInternal
 {
+  xiiNetworkError LocalSocketAccess::Open(xiiNetworkLocalSocket& ref_socket)
+  {
+    ref_socket.m_bOpen = true;
+    return {};
+  }
+
+  xiiNetworkError LocalSocketAccess::Listen(xiiNetworkLocalSocket& ref_socket, const xiiNetworkLocalEndpoint& endpoint, xiiInt32 iBacklog)
+  {
+    if (!endpoint.IsValid() || iBacklog <= 0)
+    {
+      return xiiNetworkError(xiiNetworkErrorCode::InvalidArgument);
+    }
+    xiiNetworkError error;
+    const HANDLE    hPipe = CreateLocalPipe(endpoint, true, error);
+    if (error.Succeeded())
+    {
+      ref_socket.m_uiNativeHandle = reinterpret_cast<xiiUInt64>(hPipe);
+      ref_socket.m_Endpoint       = endpoint;
+      ref_socket.m_bOpen = ref_socket.m_bListener = true;
+    }
+    return error;
+  }
+
+  xiiNetworkError LocalSocketAccess::PeerIdentity(const xiiNetworkLocalSocket& socket, xiiString& out_sIdentity)
+  {
+    if (socket.m_sPeerIdentity.IsEmpty())
+    {
+      return xiiNetworkError(xiiNetworkErrorCode::InProgress);
+    }
+    out_sIdentity = socket.m_sPeerIdentity;
+    return {};
+  }
+
+  void LocalSocketAccess::Close(xiiNetworkLocalSocket& ref_socket)
+  {
+    if (ref_socket.m_uiNativeHandle != xiiNetworkLocalSocket::InvalidHandle)
+    {
+      ::CloseHandle(reinterpret_cast<HANDLE>(ref_socket.m_uiNativeHandle));
+      ref_socket.m_uiNativeHandle = xiiNetworkLocalSocket::InvalidHandle;
+    }
+  }
+
   xiiTime CurrentThreadCpuTime()
   {
     FILETIME creation = {}, exit = {}, kernel = {}, user = {};
@@ -250,6 +535,12 @@ namespace xiiNetworkIOInternal
 
   xiiNetworkError Associate(Worker& worker, Registration& registration)
   {
+    if (registration.IsLocal())
+    {
+      const auto& socket = registration.GetLocalSocket();
+      const auto  hPipe  = reinterpret_cast<HANDLE>(registration.GetNativeHandle());
+      return hPipe == INVALID_HANDLE_VALUE || LocalSocketAccess::GetContext(socket) != 0 ? xiiNetworkError() : AssociateLocalPipe(worker, hPipe);
+    }
     if (registration.m_pNativeData == nullptr)
     {
       NetworkIocpRegistration* pData = XII_DEFAULT_NEW(NetworkIocpRegistration);
@@ -285,11 +576,15 @@ namespace xiiNetworkIOInternal
       operation.m_pNativeData     = pData;
       operation.m_pWorker->m_Statistics.m_uiInternalMemoryBytes += sizeof(NetworkIocpOperation);
     }
-    auto& native         = *static_cast<NetworkIocpOperation*>(operation.m_pNativeData);
-    native.m_Overlapped  = {};
-    native.m_pOperation  = &operation;
-    native.m_uiFlags     = 0;
-    native.m_Address     = {};
+    auto& native        = *static_cast<NetworkIocpOperation*>(operation.m_pNativeData);
+    native.m_Overlapped = {};
+    native.m_pOperation = &operation;
+    native.m_uiFlags    = 0;
+    native.m_Address    = {};
+    if (registration.IsLocal())
+    {
+      return SubmitLocalPipe(operation, native.m_Overlapped);
+    }
     const SOCKET hSocket = static_cast<SOCKET>(xiiNetworkSocketAccess::BorrowNativeHandle(registration.GetSocket()));
     DWORD        uiBytes = 0;
     int          iResult = SOCKET_ERROR;
@@ -451,6 +746,10 @@ namespace xiiNetworkIOInternal
     auto          error        = event.m_Error;
     xiiUInt32     uiBytes      = event.m_uiBytes;
     const auto    kind         = operation.m_Result.m_Kind;
+    if (registration.IsLocal())
+    {
+      return FinishLocalPipe(operation, error, uiBytes);
+    }
     if (kind == xiiNetworkIOOperationKind::ReceiveFrom &&
         (error.m_iNativeCode == WSAEMSGSIZE || error.m_iNativeCode == ERROR_MORE_DATA || (native.m_uiFlags & MSG_PARTIAL) != 0))
     {
@@ -515,15 +814,22 @@ namespace xiiNetworkIOInternal
 
   void CancelNative(Operation& operation)
   {
-    auto&        native       = *static_cast<NetworkIocpOperation*>(operation.m_pNativeData);
-    auto&        registration = *operation.m_pRegistration;
-    const SOCKET hSocket      = static_cast<SOCKET>(xiiNetworkSocketAccess::BorrowNativeHandle(registration.GetSocket()));
+    auto&      native       = *static_cast<NetworkIocpOperation*>(operation.m_pNativeData);
+    auto&      registration = *operation.m_pRegistration;
+    const auto hSocket      = registration.GetNativeHandle();
     if (!::CancelIoEx(reinterpret_cast<HANDLE>(hSocket), &native.m_Overlapped) && ::GetLastError() != ERROR_NOT_FOUND)
     {
       // A provider that cannot cancel an individual request must be aborted at socket scope.
       // The shard's Winsock lease and operation storage remain alive until IOCP packets drain.
       registration.m_bClosing = true;
-      registration.GetSocket().Close().IgnoreResult();
+      if (registration.IsLocal())
+      {
+        registration.GetLocalSocket().Close();
+      }
+      else
+      {
+        registration.GetSocket().Close().IgnoreResult();
+      }
     }
   }
 

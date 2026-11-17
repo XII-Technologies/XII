@@ -4,25 +4,126 @@
 #include <FoundationTest/Network/Implementation/NetworkHostTestUtilities.h>
 #include <FoundationTest/Network/Implementation/NetworkSecurityTestUtilities.h>
 
+#include <Foundation/Communication/IpcChannel.h>
+#include <Foundation/Threading/ThreadSignal.h>
 #include <Foundation/Utilities/CommandLineUtils.h>
-#include <ctime>
+#include <algorithm>
+#include <atomic>
 
 using namespace xiiNetworkHostTestUtilities;
 
+namespace
+{
+#if XII_ENABLED(XII_PLATFORM_WINDOWS) || XII_ENABLED(XII_PLATFORM_LINUX)
+  void BenchmarkLegacyPipe(xiiArrayPtr<const xiiUInt8> payload, xiiUInt32 uiBlocks)
+  {
+    const auto                  timeout = xiiTime::MakeFromSeconds(5);
+    xiiThreadSignal             ready, connected, echoed, delivered;
+    std::atomic<xiiUInt32>      received{0};
+    const auto                  name   = MakeLocalTestEndpoint("legacy-bench");
+    xiiUniquePtr<xiiIpcChannel> server = xiiIpcChannel::CreatePipeChannel(name.GetName(), xiiIpcChannel::Mode::Server);
+    xiiUniquePtr<xiiIpcChannel> client = xiiIpcChannel::CreatePipeChannel(name.GetName(), xiiIpcChannel::Mode::Client);
+    if (!XII_TEST_BOOL(server != nullptr && client != nullptr))
+    {
+      return;
+    }
+    decltype(server->m_Events)::Unsubscriber serverSubscription;
+    decltype(client->m_Events)::Unsubscriber clientSubscription;
+    server->m_Events.AddEventHandler([&](const xiiIpcChannelEvent& event) {
+      if (event.m_Type == xiiIpcChannelEvent::Connecting)
+      {
+        ready.RaiseSignal();
+      }
+    },
+                                     serverSubscription);
+    client->m_Events.AddEventHandler([&](const xiiIpcChannelEvent& event) {
+      if (event.m_Type == xiiIpcChannelEvent::Connected)
+      {
+        connected.RaiseSignal();
+      }
+    },
+                                     clientSubscription);
+    server->SetReceiveCallback([&](xiiArrayPtr<const xiiUInt8> bytes) {
+      if (bytes.GetCount() == 64)
+      {
+        server->Send(bytes);
+      }
+      else
+      {
+        ++received;
+        delivered.RaiseSignal();
+      }
+    });
+    client->SetReceiveCallback([&](xiiArrayPtr<const xiiUInt8>) { echoed.RaiseSignal(); });
+
+    server->Connect();
+    if (!XII_TEST_BOOL(ready.WaitForSignal(timeout) == xiiThreadSignal::WaitResult::Signaled))
+    {
+      return;
+    }
+    const auto connectStart = xiiTime::Now();
+    client->Connect();
+    if (!XII_TEST_BOOL(connected.WaitForSignal(timeout) == xiiThreadSignal::WaitResult::Signaled))
+    {
+      return;
+    }
+    const auto establish = xiiTime::Now() - connectStart;
+    const auto start     = xiiTime::Now();
+    for (xiiUInt32 uiBatch = 0; uiBatch < uiBlocks; ++uiBatch)
+    {
+      for (xiiUInt32 uiMessage = 0; uiMessage < 32; ++uiMessage)
+      {
+        if (!XII_TEST_BOOL(client->Send(payload)))
+        {
+          return;
+        }
+      }
+      const auto deadline = xiiTime::Now() + timeout;
+      while (received.load() < (uiBatch + 1) * 32)
+      {
+        const auto remaining = deadline - xiiTime::Now();
+        if (!XII_TEST_BOOL(remaining.IsPositive() && delivered.WaitForSignal(remaining) == xiiThreadSignal::WaitResult::Signaled))
+        {
+          return;
+        }
+      }
+    }
+    const double fThroughput     = 32.0 * uiBlocks * payload.GetCount() / (1024.0 * 1024.0 * (xiiTime::Now() - start).GetSeconds());
+    double       fRoundTrip[128] = {};
+    for (double& ref_sample : fRoundTrip)
+    {
+      const auto begin = xiiTime::Now();
+      if (!XII_TEST_BOOL(client->Send(payload.GetSubArray(0, 64)) && echoed.WaitForSignal(timeout) == xiiThreadSignal::WaitResult::Signaled))
+      {
+        return;
+      }
+      ref_sample = (xiiTime::Now() - begin).GetMicroseconds();
+    }
+    std::sort(std::begin(fRoundTrip), std::end(fRoundTrip));
+    xiiTestFramework::Output(xiiTestOutput::Details,
+                             "Legacy pipe: 1 client, %.1f us establish, %.2f MiB/s, %.1f/%.1f us 64-byte echo p50/p99",
+                             establish.GetMicroseconds(), fThroughput, fRoundTrip[63], fRoundTrip[126]);
+  }
+#endif
+} // namespace
+
 XII_CREATE_SIMPLE_TEST(NetworkTransport, HostTransportBenchmark)
 {
-  if (!xiiCommandLineUtils::GetGlobalInstance()->GetBoolOption("-networkTransportBenchmark"))
+  const auto* pCommandLine = xiiCommandLineUtils::GetGlobalInstance();
+  const bool  bLocalOnly   = pCommandLine->GetBoolOption("-networkLocalBenchmark");
+  if (!bLocalOnly && !pCommandLine->GetBoolOption("-networkTransportBenchmark"))
   {
     return;
   }
   NetworkSecurityTestCertificates files;
-  if (!XII_TEST_BOOL(files.Initialize().Succeeded()))
+  if (!bLocalOnly && !XII_TEST_BOOL(files.Initialize().Succeeded()))
   {
     return;
   }
-  constexpr xiiUInt32 uiConnections             = 32;
+  constexpr xiiUInt32 MaxConnections            = 32;
+  const auto          uiConnections             = static_cast<xiiUInt32>(xiiMath::Clamp(pCommandLine->GetIntOption("-networkBenchmarkConnections", MaxConnections), 1, static_cast<xiiInt32>(MaxConnections)));
   constexpr xiiUInt32 uiBatch                   = 32;
-  constexpr xiiUInt32 uiBlocks                  = 8;
+  constexpr xiiUInt32 uiBlocks                  = 128;
   constexpr xiiUInt32 uiPayloadBytes            = 16384;
   xiiUInt8            uiPayload[uiPayloadBytes] = {};
   for (xiiUInt32 uiIndex = 0; uiIndex < uiPayloadBytes; ++uiIndex)
@@ -30,8 +131,14 @@ XII_CREATE_SIMPLE_TEST(NetworkTransport, HostTransportBenchmark)
     uiPayload[uiIndex] = static_cast<xiiUInt8>(uiIndex);
   }
 
-  for (const auto type : {xiiNetworkTransportType::Tcp, xiiNetworkTransportType::TlsTcp, xiiNetworkTransportType::SecureDatagram})
+  for (const auto type : {xiiNetworkTransportType::Tcp, xiiNetworkTransportType::Local, xiiNetworkTransportType::TlsTcp, xiiNetworkTransportType::SecureDatagram})
   {
+    const bool bSecure = type == xiiNetworkTransportType::TlsTcp || type == xiiNetworkTransportType::SecureDatagram;
+    const bool bLocal  = type == xiiNetworkTransportType::Local;
+    if (bLocalOnly && bSecure)
+    {
+      continue;
+    }
     auto serverConfiguration = HostTestConfiguration(type);
     auto clientConfiguration = serverConfiguration;
     for (auto* pConfiguration : {&serverConfiguration, &clientConfiguration})
@@ -42,7 +149,7 @@ XII_CREATE_SIMPLE_TEST(NetworkTransport, HostTransportBenchmark)
       pConfiguration->m_HandshakeTimeout      = xiiTime::MakeFromSeconds(10);
       pConfiguration->m_CloseTimeout          = xiiTime::MakeFromSeconds(3);
     }
-    if (type != xiiNetworkTransportType::Tcp)
+    if (bSecure)
     {
       serverConfiguration.m_pCredentials = XII_DEFAULT_NEW(xiiNetworkCredentials);
       clientConfiguration.m_pCredentials = XII_DEFAULT_NEW(xiiNetworkCredentials);
@@ -59,40 +166,40 @@ XII_CREATE_SIMPLE_TEST(NetworkTransport, HostTransportBenchmark)
     {
       return;
     }
-    xiiNetworkListener listener;
-    xiiNetworkEndpoint endpoint;
-    if (!XII_TEST_BOOL(server.Listen({xiiNetworkAddress::MakeLoopback(xiiNetworkAddressFamily::Ipv4), 0}, listener).Succeeded()) ||
-        !XII_TEST_BOOL(server.GetLocalEndpoint(listener, endpoint).Succeeded()))
+    xiiNetworkListener      listener;
+    xiiNetworkEndpoint      endpoint;
+    xiiNetworkLocalEndpoint local;
+    if (bLocal)
+    {
+      local = MakeLocalTestEndpoint("local-bench");
+      if (!XII_TEST_BOOL(server.Listen(local, listener).Succeeded()))
+      {
+        return;
+      }
+    }
+    else if (!XII_TEST_BOOL(server.Listen({xiiNetworkAddress::MakeLoopback(xiiNetworkAddressFamily::Ipv4), 0}, listener).Succeeded()) ||
+             !XII_TEST_BOOL(server.GetLocalEndpoint(listener, endpoint).Succeeded()))
     {
       return;
     }
 
     const auto               idleStatistics = server.GetStatistics();
     const auto               start          = xiiTime::Now();
-    const auto               cpuStart       = std::clock();
-    xiiNetworkConnection     clients[uiConnections];
-    xiiNetworkConnection     servers[uiConnections];
+    xiiNetworkConnection     clients[MaxConnections];
     xiiNetworkConnectOptions options;
-    options.m_sServerName = "localhost";
-    for (auto& connection : clients)
+    if (bSecure)
     {
-      if (!XII_TEST_BOOL(client.Connect(endpoint, options, connection).Succeeded()))
-      {
-        return;
-      }
+      options.m_sServerName = "localhost";
     }
+    const auto Connect = [&](xiiNetworkConnection& ref_connection) {
+      return bLocal ? client.Connect(local, options, ref_connection) : client.Connect(endpoint, options, ref_connection);
+    };
     xiiNetworkEvent event;
-    for (auto& connection : servers)
-    {
-      if (!HostTestEvent(server, xiiNetworkEventType::Connected, event))
-      {
-        return;
-      }
-      connection = event.m_Connection;
-    }
     for (xiiUInt32 uiIndex = 0; uiIndex < uiConnections; ++uiIndex)
     {
-      if (!HostTestEvent(client, xiiNetworkEventType::Connected, event))
+      if (!XII_TEST_BOOL(Connect(clients[uiIndex]).Succeeded()) ||
+          !HostTestEvent(server, xiiNetworkEventType::Connected, event) ||
+          !HostTestEvent(client, xiiNetworkEventType::Connected, event))
       {
         return;
       }
@@ -101,9 +208,17 @@ XII_CREATE_SIMPLE_TEST(NetworkTransport, HostTransportBenchmark)
     const auto busyStatistics = server.GetStatistics();
     XII_TEST_INT(busyStatistics.m_uiActiveSessions, uiConnections);
     xiiNetworkConnection excess;
-    XII_TEST_BOOL(client.Connect(endpoint, options, excess).m_Code == xiiNetworkErrorCode::Backpressure);
+    XII_TEST_BOOL(Connect(excess).m_Code == xiiNetworkErrorCode::Backpressure);
 
     xiiNetworkChannel channels[4];
+    xiiNetworkChannel peerChannels[MaxConnections];
+    for (xiiUInt32 uiIndex = 0; uiIndex < uiConnections; ++uiIndex)
+    {
+      if (!XII_TEST_BOOL(client.GetDefaultChannel(clients[uiIndex], peerChannels[uiIndex]).Succeeded()))
+      {
+        return;
+      }
+    }
     if (!XII_TEST_BOOL(client.GetDefaultChannel(clients[0], channels[0]).Succeeded()))
     {
       return;
@@ -126,7 +241,10 @@ XII_CREATE_SIMPLE_TEST(NetworkTransport, HostTransportBenchmark)
         for (xiiUInt32 uiIndex = 0; uiIndex < uiBatch; ++uiIndex)
         {
           xiiNetworkMessage message;
-          if (!XII_TEST_BOOL(client.Send(channels[uiMode == 0 ? 0 : uiIndex % 4], uiPayload, message).Succeeded()))
+          const auto        channel = uiMode == 0 ? channels[0] :
+            uiConnections > 1                     ? peerChannels[uiIndex % uiConnections] :
+                                                    channels[uiIndex % 4];
+          if (!XII_TEST_BOOL(client.Send(channel, uiPayload, message).Succeeded()))
           {
             return;
           }
@@ -145,10 +263,11 @@ XII_CREATE_SIMPLE_TEST(NetworkTransport, HostTransportBenchmark)
       fThroughput[uiMode] = static_cast<double>(uiBlocks * uiBatch * uiPayloadBytes) / (1024.0 * 1024.0 * (xiiTime::Now() - begin).GetSeconds());
     }
 
-    const auto          latencyStart     = xiiTime::Now();
-    constexpr xiiUInt32 uiLatencySamples = 32;
+    constexpr xiiUInt32 uiLatencySamples             = 128;
+    double              fRoundTrip[uiLatencySamples] = {};
     for (xiiUInt32 uiIndex = 0; uiIndex < uiLatencySamples; ++uiIndex)
     {
+      const auto        latencyStart = xiiTime::Now();
       xiiNetworkMessage message;
       if (!XII_TEST_BOOL(client.Send(channels[0], xiiArrayPtr<const xiiUInt8>(uiPayload, 64), message).Succeeded()) ||
           !HostTestEvent(server, xiiNetworkEventType::Message, event) ||
@@ -158,12 +277,13 @@ XII_CREATE_SIMPLE_TEST(NetworkTransport, HostTransportBenchmark)
       {
         return;
       }
+      fRoundTrip[uiIndex] = (xiiTime::Now() - latencyStart).GetMicroseconds();
     }
-    const auto latency    = (xiiTime::Now() - latencyStart).GetMicroseconds() / uiLatencySamples;
+    std::sort(std::begin(fRoundTrip), std::end(fRoundTrip));
     const auto churnStart = xiiTime::Now();
-    for (auto connection : clients)
+    for (xiiUInt32 uiIndex = 0; uiIndex < uiConnections; ++uiIndex)
     {
-      if (!XII_TEST_BOOL(client.Disconnect(connection).Succeeded()))
+      if (!XII_TEST_BOOL(client.Disconnect(clients[uiIndex]).Succeeded()))
       {
         return;
       }
@@ -177,19 +297,29 @@ XII_CREATE_SIMPLE_TEST(NetworkTransport, HostTransportBenchmark)
     }
     const auto  churnTime   = xiiTime::Now() - churnStart;
     const auto  elapsed     = xiiTime::Now() - start;
-    const auto  cpuElapsed  = std::clock() - cpuStart;
     const auto  uiPoolDelta = busyStatistics.m_IO.m_BufferPool.m_uiCommittedBytes - xiiMath::Min(busyStatistics.m_IO.m_BufferPool.m_uiCommittedBytes, idleStatistics.m_IO.m_BufferPool.m_uiCommittedBytes);
-    const char* szTransport = type == xiiNetworkTransportType::Tcp ? "TCP" : type == xiiNetworkTransportType::TlsTcp ? "TLS" :
-                                                                                                                       "QUIC";
+    const auto  pool        = server.GetStatistics().m_IO.m_BufferPool;
+    const char* szTransport = bLocal ? "Local" : type == xiiNetworkTransportType::Tcp ? "TCP" :
+      type == xiiNetworkTransportType::TlsTcp                                         ? "TLS" :
+                                                                                        "QUIC";
     xiiTestFramework::Output(xiiTestOutput::Details,
-                             "%s: %u concurrent, %.1f established/s, %.2f MiB/s one channel, %.2f MiB/s four channels, %.1f us 64-byte echo RTT, %.1f closed/s, %llu incremental server pool bytes/peer",
-                             szTransport, uiConnections, uiConnections / establishTime.GetSeconds(), fThroughput[0], fThroughput[1], latency, uiConnections / churnTime.GetSeconds(),
+                             "%s: %u concurrent, %.1f us establish mean, %.2f MiB/s one channel, %.2f MiB/s spread, %.1f/%.1f us 64-byte echo p50/p99, %.1f closed/s, %llu incremental server pool bytes/peer",
+                             szTransport, uiConnections, establishTime.GetMicroseconds() / uiConnections, fThroughput[0], fThroughput[1],
+                             fRoundTrip[63], fRoundTrip[126], uiConnections / churnTime.GetSeconds(),
                              static_cast<unsigned long long>(uiPoolDelta / uiConnections));
-#if XII_ENABLED(XII_PLATFORM_LINUX) || XII_ENABLED(XII_PLATFORM_OSX)
-    xiiTestFramework::Output(xiiTestOutput::Details, "%s: CPU %.3f s / %.3f s elapsed", szTransport, static_cast<double>(cpuElapsed) / CLOCKS_PER_SEC, elapsed.GetSeconds());
-#else
-    XII_IGNORE_UNUSED(cpuElapsed);
-    XII_IGNORE_UNUSED(elapsed);
-#endif
+    client.Shutdown();
+    server.Shutdown();
+    const auto clientIO = client.GetStatistics().m_IO;
+    const auto serverIO = server.GetStatistics().m_IO;
+    xiiTestFramework::Output(xiiTestOutput::Details, "%s: worker CPU %.3f s / %.3f s elapsed, %llu server pool allocations, %llu reuses, %llu backpressure events",
+                             szTransport, (clientIO.m_WorkerCpuTime + serverIO.m_WorkerCpuTime).GetSeconds(), elapsed.GetSeconds(),
+                             static_cast<unsigned long long>(pool.m_uiAllocations), static_cast<unsigned long long>(pool.m_uiReuses),
+                             static_cast<unsigned long long>(pool.m_uiBackpressureEvents));
   }
+#if XII_ENABLED(XII_PLATFORM_WINDOWS) || XII_ENABLED(XII_PLATFORM_LINUX)
+  if (uiConnections == 1)
+  {
+    BenchmarkLegacyPipe(uiPayload, uiBlocks);
+  }
+#endif
 }

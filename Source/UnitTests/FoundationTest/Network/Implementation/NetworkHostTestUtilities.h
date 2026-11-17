@@ -4,10 +4,14 @@
 
 #include <Foundation/Basics.h>
 #include <Foundation/Network/NetworkHost.h>
+#include <Foundation/Strings/StringBuilder.h>
+#include <Foundation/System/Process.h>
 #include <TestFramework/Framework/TestFramework.h>
 
 namespace xiiNetworkHostTestUtilities
 {
+  xiiInt32 RunLocalTransferClient(xiiStringView sName);
+
   inline bool HostTestEvent(xiiNetworkHost& host, xiiNetworkEventType type, xiiNetworkEvent& out_event)
   {
     const auto deadline = xiiTime::Now() + xiiTime::MakeFromSeconds(5);
@@ -54,6 +58,19 @@ namespace xiiNetworkHostTestUtilities
       configuration.m_Authentication            = xiiNetworkAuthenticationPolicy::AnonymousDevelopment;
       configuration.m_bAllowInsecureDevelopment = true;
     }
+    else if (type == xiiNetworkTransportType::Local)
+    {
+      configuration.m_Authentication = xiiNetworkAuthenticationPolicy::LocalUser;
+    }
     return configuration;
+  }
+
+  inline xiiNetworkLocalEndpoint MakeLocalTestEndpoint(xiiStringView sPrefix)
+  {
+    xiiStringBuilder name;
+    name.SetFormat("{0}-{1}-{2}", sPrefix, xiiProcess::GetCurrentProcessID(), static_cast<xiiUInt64>(xiiTime::Now().GetMicroseconds()));
+    xiiNetworkLocalEndpoint endpoint;
+    XII_TEST_BOOL(xiiNetworkLocalEndpoint::Make(name, endpoint).Succeeded());
+    return endpoint;
   }
 } // namespace xiiNetworkHostTestUtilities
