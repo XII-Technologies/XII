@@ -5,9 +5,9 @@
 #include <Core/Interfaces/SoundInterface.h>
 #include <Core/System/Window.h>
 #include <Core/System/WindowManager.h>
-#include <Foundation/Communication/Telemetry.h>
 #include <Foundation/Configuration/Singleton.h>
 #include <Foundation/Configuration/Startup.h>
+#include <Foundation/Diagnostics/TelemetryService.h>
 #include <Foundation/System/Screen.h>
 #include <Foundation/Threading/ThreadUtils.h>
 #include <Foundation/Types/Uuid.h>
@@ -256,50 +256,6 @@ void xiiPlayerApplication::Init_FileSystem_ConfigureDataDirs()
   xiiLog::Info("Player instance '{}', project '{}', writable data '{}'.", m_sInstance, m_sAppProjectPath, directory);
 }
 
-void xiiPlayerApplication::Init_ConfigureTelemetry()
-{
-#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT) && defined(BUILDSYSTEM_ENABLE_ENET_SUPPORT)
-  const auto*            command      = xiiCommandLineUtils::GetGlobalInstance();
-  const bool             explicitPort = command->HasOption("-TelemetryPort");
-  xiiUInt32              port         = command->GetUIntOption("-TelemetryPort", 1040);
-  const xiiStringBuilder directory(xiiOSFile::GetTempDataFolder(), "/xiiPlayer-ports");
-  if (m_sSession.IsEmpty() && xiiOSFile::CreateDirectoryStructure(directory).Failed())
-  {
-    ReportStatus("failed", "Cannot create the telemetry port lease directory.");
-    SetReturnCode(6);
-    RequestQuit();
-    return;
-  }
-  for (xiiUInt32 attempt = 0; attempt < (explicitPort ? 1U : 64U); ++attempt)
-  {
-    if (attempt > 0)
-    {
-      port = 1041 + (xiiHashingUtils::StringHashTo32(xiiHashingUtils::StringHash(m_sInstance)) + attempt) % 18000;
-    }
-    if (m_sSession.IsEmpty())
-    {
-      m_TelemetryPortLease.Close();
-      xiiStringBuilder path;
-      path.SetFormat("{}/{}.lock", directory, port);
-      if (m_TelemetryPortLease.Open(path, xiiFileOpenMode::Write, xiiFileShareMode::Exclusive).Failed())
-      {
-        continue;
-      }
-    }
-    xiiTelemetry::s_uiPort = static_cast<xiiUInt16>(port);
-    xiiTelemetry::SetServerName(m_sInstance);
-    xiiTelemetry::CreateServer();
-    if (xiiTelemetry::GetConnectionMode() == xiiTelemetry::Server)
-    {
-      xiiLog::Info("Player '{}' telemetry listens on UDP port {}.", m_sInstance, port);
-      return;
-    }
-  }
-  ReportStatus("failed", "Cannot bind the telemetry port. Stop the conflicting application or choose -TelemetryPort <free port>.");
-  SetReturnCode(6);
-  RequestQuit();
-#endif
-}
 
 void xiiPlayerApplication::Init_ConfigureCVars()
 {
@@ -726,7 +682,6 @@ void xiiPlayerApplication::BeforeCoreSystemsShutdown()
 void xiiPlayerApplication::AfterCoreSystemsShutdown()
 {
   m_UserSettingsLock.Close();
-  m_TelemetryPortLease.Close();
   if (!m_sOwnedTemporaryDirectory.IsEmpty() && xiiOSFile::DeleteFolder(m_sOwnedTemporaryDirectory).Failed())
   {
     xiiLog::Warning("Cannot remove Player temporary directory '{}'.", m_sOwnedTemporaryDirectory);

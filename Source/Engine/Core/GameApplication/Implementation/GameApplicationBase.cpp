@@ -2,10 +2,10 @@
 
 #include <Core/CorePCH.h>
 
-#include <Foundation/Communication/Telemetry.h>
 #include <Foundation/Configuration/CVar.h>
 #include <Foundation/Configuration/Singleton.h>
 #include <Foundation/Configuration/Startup.h>
+#include <Foundation/Diagnostics/TelemetryService.h>
 #include <Foundation/Events/GlobalEvent.h>
 #include <Foundation/IO/FileSystem/FileWriter.h>
 #include <Foundation/Memory/FrameAllocator.h>
@@ -364,7 +364,8 @@ void xiiGameApplicationBase::BeforeCoreSystemsShutdown()
 
   // Shut down telemetry if it was set up.
   {
-    xiiTelemetry::CloseConnection();
+    if (auto* service = GetTelemetryService())
+      service->Shutdown();
   }
 
   Deinit_ShutdownLogging();
@@ -561,7 +562,8 @@ void xiiGameApplicationBase::Run_PresentImage() {}
 
 void xiiGameApplicationBase::Run_FinishFrame()
 {
-  xiiTelemetry::PerFrameUpdate();
+  if (auto* diagnostics = GetTelemetryService())
+    diagnostics->Update();
   xiiResourceManager::PerFrameUpdate();
   xiiTaskSystem::FinishFrameTasks();
   xiiFrameAllocator::Swap();

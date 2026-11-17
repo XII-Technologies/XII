@@ -2,6 +2,8 @@
 
 #include <Inspector/InspectorPCH.h>
 
+#include <Foundation/Diagnostics/TelemetryService.h>
+#include <Foundation/IO/MemoryStream.h>
 #include <Inspector/CaptureUi.h>
 #include <Inspector/ProfilingWidget.h>
 #include <Inspector/RenderGraphWidget.h>
@@ -585,9 +587,14 @@ xiiQtProfilingWidget::~xiiQtProfilingWidget()
   }
   else
   {
-    if (m_pSession->m_bSubscribed && xiiTelemetry::IsConnectedToServer())
+    if (m_pSession->m_bSubscribed && m_pSession->m_pClient && m_pSession->m_pClient->IsReady())
     {
-      xiiTelemetry::SendToServer('PSTR', 'STOP');
+      xiiTelemetrySubscription subscription;
+      subscription.m_uiRequestId  = ++m_pSession->m_uiSubscriptionRequest;
+      subscription.m_uiSource     = xiiTelemetrySources::Profiling;
+      subscription.m_uiGeneration = m_pSession->m_uiSession;
+      subscription.m_bEnabled     = false;
+      m_pSession->m_pClient->Subscribe(subscription).IgnoreResult();
     }
     s_pWidget = nullptr;
   }
@@ -596,7 +603,8 @@ xiiQtProfilingWidget::~xiiQtProfilingWidget()
 void xiiQtProfilingWidget::Tick()
 {
   m_pSession->UpdateRecording();
-  m_pSnapshot->setEnabled(xiiTelemetry::IsConnectedToServer() && !m_pSession->m_bRecording && !m_pSession->m_bSnapshotPending);
+  m_pSnapshot->setEnabled(m_pSession->m_pClient && m_pSession->m_pClient->IsSourceAvailable(xiiTelemetrySources::ProfileHistory) &&
+                          !m_pSession->m_bRecording && !m_pSession->m_bSnapshotPending);
   if (!m_bRendering && m_pSession->m_bSnapshotPending && m_pSession->m_SnapshotTimer.elapsed() > 5000)
   {
     m_pSession->m_bSnapshotPending = false;
@@ -604,28 +612,36 @@ void xiiQtProfilingWidget::Tick()
   }
   if (!m_bRendering)
   {
-    const bool connected = xiiTelemetry::IsConnectedToServer();
+    const bool connected = (m_pSession->m_pClient && m_pSession->m_pClient->IsReady());
     const bool visible   = (!isClosed() && isVisible()) || (s_pRenderingWidget && !s_pRenderingWidget->isClosed() && s_pRenderingWidget->isVisible());
-    const bool needed    = connected && (m_pSession->m_bRecording || (visible && !m_pSession->m_bPaused));
+    const bool needed    = connected && m_pSession->m_pClient->IsSourceAvailable(xiiTelemetrySources::Profiling) && (m_pSession->m_bRecording || (visible && !m_pSession->m_bPaused));
     if (!connected && m_pSession->m_bSubscribed)
     {
       m_pSession->ResetConnection();
     }
     if (!needed && m_pSession->m_bSubscribed)
     {
-      xiiTelemetry::SendToServer('PSTR', 'STOP');
+      xiiTelemetrySubscription subscription;
+      subscription.m_uiRequestId  = ++m_pSession->m_uiSubscriptionRequest;
+      subscription.m_uiSource     = xiiTelemetrySources::Profiling;
+      subscription.m_uiGeneration = m_pSession->m_uiSession;
+      subscription.m_bEnabled     = false;
+      m_pSession->m_pClient->Subscribe(subscription).IgnoreResult();
       m_pSession->m_bSubscribed = false;
     }
-    if (needed && (!m_pSession->m_bSubscribed || m_SubscriptionTime.elapsed() >= 1000))
+    if (needed && !m_pSession->m_bSubscribed)
     {
       if (!m_pSession->m_bSubscribed)
       {
         m_pSession->BeginStream(quint64(QDateTime::currentMSecsSinceEpoch()));
       }
-      xiiTelemetryMessage message;
-      message.SetMessageID('PSTR', 'SUBS');
-      message.GetWriter() << m_pSession->m_uiSession;
-      xiiTelemetry::SendToServer(message);
+      xiiTelemetrySubscription subscription;
+      subscription.m_uiRequestId            = ++m_pSession->m_uiSubscriptionRequest;
+      subscription.m_uiSource               = xiiTelemetrySources::Profiling;
+      subscription.m_uiGeneration           = m_pSession->m_uiSession;
+      subscription.m_uiIntervalMilliseconds = 33;
+      if (m_pSession->m_pClient->Subscribe(subscription).Failed())
+        m_pSession->m_bSubscribed = false;
       m_SubscriptionTime.restart();
     }
   }
@@ -635,58 +651,28 @@ void xiiQtProfilingWidget::Tick()
   }
 }
 
-void xiiQtProfilingWidget::ProcessTelemetry(void*)
+
+
+void xiiQtProfilingWidget::ReceiveDiagnostics(const xiiTelemetrySample& sample)
 {
-  if (!s_pWidget)
+  auto& session = *m_pSession;
+  if (sample.m_uiSource == xiiTelemetrySources::Profiling && session.m_bSubscribed)
   {
-    return;
-  }
-  auto&               session = *s_pWidget->m_pSession;
-  xiiTelemetryMessage message;
-  while (xiiTelemetry::RetrieveMessage('PSTR', message).Succeeded())
-  {
-    if (message.GetMessageID() != 'BTCH' || !session.m_bSubscribed)
-    {
-      continue;
-    }
-    if (!session.Receive(message.GetReader()))
+    xiiRawMemoryStreamReader reader(sample.m_Data.GetData(), sample.m_Data.GetCount());
+    if (!session.Receive(reader))
     {
       session.m_bSubscribed = false;
-      s_pWidget->m_pStatus->setText(session.m_ProtocolError.isEmpty() ? "Invalid live profiling metadata. Resubscribing." : session.m_ProtocolError);
-      continue;
+      m_pStatus->setText(session.m_ProtocolError.isEmpty() ? "Invalid live profiling metadata. Resubscribing." : session.m_ProtocolError);
     }
-    xiiTelemetryMessage ack;
-    ack.SetMessageID('PSTR', 'ACKN');
-    ack.GetWriter() << session.m_uiSession << session.m_uiSequence;
-    xiiTelemetry::SendToServer(ack);
   }
-  while (xiiTelemetry::RetrieveMessage('PSNP', message).Succeeded())
+  else if (sample.m_uiSource == xiiTelemetrySources::ProfileHistory && session.m_bSnapshotPending)
   {
-    if (!session.m_bSnapshotPending)
-    {
-      continue;
-    }
     session.m_bSnapshotPending = false;
-    xiiUInt32 size             = 0;
-    message.GetReader() >> size;
-    if (size == 0 || size > 16 * 1024 * 1024)
-    {
-      s_pWidget->m_pStatus->setText("Invalid application history snapshot size.");
-      continue;
-    }
-    QByteArray bytes(size, Qt::Uninitialized);
-    if (message.GetReader().ReadBytes(bytes.data(), size) != size)
-    {
-      s_pWidget->m_pStatus->setText("Truncated application history snapshot.");
-    }
-    else if (message.GetMessageID() == 'ERRO')
-    {
-      s_pWidget->m_pStatus->setText(QString::fromUtf8(bytes));
-    }
-    else if (message.GetMessageID() != 'DATA' || !s_pWidget->LoadCapture(bytes))
-    {
-      s_pWidget->m_pStatus->setText("Unsupported application history snapshot. The previous capture is preserved.");
-    }
+    const QByteArray bytes(reinterpret_cast<const char*>(sample.m_Data.GetData()), sample.m_Data.GetCount());
+    if (sample.m_uiKind != 0)
+      m_pStatus->setText(QString::fromUtf8(bytes));
+    else if (!LoadCapture(bytes))
+      m_pStatus->setText("Unsupported application history snapshot. The previous capture is preserved.");
   }
 }
 
@@ -732,14 +718,21 @@ void xiiQtProfilingWidget::RequestCapture()
 
 void xiiQtProfilingWidget::RequestHistorySnapshot()
 {
-  if (!xiiTelemetry::IsConnectedToServer() || m_pSession->m_bSnapshotPending || m_pSession->m_bRecording)
+  if (!m_pSession->m_pClient || !m_pSession->m_pClient->IsSourceAvailable(xiiTelemetrySources::ProfileHistory) ||
+      m_pSession->m_bSnapshotPending || m_pSession->m_bRecording)
   {
     return;
   }
   m_pSession->SetPaused(true);
   m_pSession->m_bSnapshotPending = true;
   m_pSession->m_SnapshotTimer.restart();
-  xiiTelemetry::SendToServer('PSNP', 'CAPT');
+  xiiTelemetrySubscription subscription;
+  subscription.m_uiRequestId  = ++m_pSession->m_uiSubscriptionRequest;
+  subscription.m_uiSource     = xiiTelemetrySources::ProfileHistory;
+  subscription.m_uiGeneration = m_pSession->m_uiSubscriptionRequest;
+  subscription.m_bSnapshot    = true;
+  if (m_pSession->m_pClient->Subscribe(subscription).Failed())
+    m_pSession->m_bSnapshotPending = false;
   Refresh();
   m_pStatus->setText("Waiting for the application's profiling history snapshot…");
 }

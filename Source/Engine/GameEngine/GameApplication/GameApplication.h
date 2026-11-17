@@ -96,7 +96,6 @@ protected:
   void      ApplyViewSettings();
   xiiUInt64 m_uiConfiguredWorldRevision = 0;
   void      Init_FileSystem_ConfigureDataDirs() override;
-  void      Init_ConfigureTelemetry() override;
 
   /// Custom staged startup calls this after core startup, before its first initialization stage.
   void         InitializeManagedSession();

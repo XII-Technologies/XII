@@ -9,11 +9,15 @@
 #include <QVector>
 
 class xiiStreamReader;
+class xiiTelemetryClient;
 
 /// GUI-thread owned session. Reception only appends bounded data; widgets paint on their own timers.
 class xiiInspectorProfilingSession
 {
 public:
+  /// Borrowed from the owning connection; widgets and the session are destroyed first.
+  xiiTelemetryClient* m_pClient               = nullptr;
+  quint64             m_uiSubscriptionRequest = 0;
   struct Scope
   {
     QString m_Name, m_Lane, m_Function;

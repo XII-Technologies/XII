@@ -4,112 +4,57 @@
 
 #include <Core/ResourceManager/Resource.h>
 #include <Core/ResourceManager/ResourceManager.h>
-#include <Foundation/Communication/Telemetry.h>
+#include <Foundation/Application/Application.h>
+#include <Foundation/Diagnostics/TelemetryService.h>
 
-namespace ResourceManagerDetail
+namespace
 {
-
-  static void SendFullResourceInfo(const xiiResource* pRes)
+  void Collect(xiiTelemetryService& service, xiiUInt64 source)
   {
-    xiiTelemetryMessage Msg;
-
-    Msg.SetMessageID('RESM', ' SET');
-
-    Msg.GetWriter() << pRes->GetResourceIDHash();
-    Msg.GetWriter() << pRes->GetResourceID();
-    Msg.GetWriter() << pRes->GetDynamicRTTI()->GetTypeName();
-    Msg.GetWriter() << static_cast<xiiUInt8>(pRes->GetPriority());
-    Msg.GetWriter() << static_cast<xiiUInt8>(pRes->GetBaseResourceFlags().GetValue());
-    Msg.GetWriter() << static_cast<xiiUInt8>(pRes->GetLoadingState());
-    Msg.GetWriter() << pRes->GetNumQualityLevelsDiscardable();
-    Msg.GetWriter() << pRes->GetNumQualityLevelsLoadable();
-    Msg.GetWriter() << pRes->GetMemoryUsage().m_uiMemoryCPU;
-    Msg.GetWriter() << pRes->GetMemoryUsage().m_uiMemoryGPU;
-    Msg.GetWriter() << pRes->GetResourceDescription();
-
-    xiiTelemetry::Broadcast(xiiTelemetry::Reliable, Msg);
-  }
-
-  static void SendSmallResourceInfo(const xiiResource* pRes)
-  {
-    xiiTelemetryMessage Msg;
-
-    Msg.SetMessageID('RESM', 'UPDT');
-
-    Msg.GetWriter() << pRes->GetResourceIDHash();
-    Msg.GetWriter() << static_cast<xiiUInt8>(pRes->GetPriority());
-    Msg.GetWriter() << static_cast<xiiUInt8>(pRes->GetBaseResourceFlags().GetValue());
-    Msg.GetWriter() << static_cast<xiiUInt8>(pRes->GetLoadingState());
-    Msg.GetWriter() << pRes->GetNumQualityLevelsDiscardable();
-    Msg.GetWriter() << pRes->GetNumQualityLevelsLoadable();
-    Msg.GetWriter() << pRes->GetMemoryUsage().m_uiMemoryCPU;
-    Msg.GetWriter() << pRes->GetMemoryUsage().m_uiMemoryGPU;
-
-    xiiTelemetry::Broadcast(xiiTelemetry::Reliable, Msg);
-  }
-
-  static void SendDeleteResourceInfo(const xiiResource* pRes)
-  {
-    xiiTelemetryMessage Msg;
-
-    Msg.SetMessageID('RESM', ' DEL');
-
-    Msg.GetWriter() << pRes->GetResourceIDHash();
-
-    xiiTelemetry::Broadcast(xiiTelemetry::Reliable, Msg);
-  }
-
-  static void SendAllResourceTelemetry() { xiiResourceManager::BroadcastExistsEvent(); }
-
-  static void TelemetryEventsHandler(const xiiTelemetry::TelemetryEventData& e)
-  {
-    switch (e.m_EventType)
+    xiiTelemetrySample sample;
+    sample.m_uiSource               = source;
+    sample.m_fTimestampMicroseconds = xiiTime::Now().GetMicroseconds();
     {
-      case xiiTelemetry::TelemetryEventData::ConnectedToClient:
-        SendAllResourceTelemetry();
-        break;
-
-      default:
-        break;
+      auto resources     = xiiResourceManager::GetAllResourcesOfType<xiiResource>(4096);
+      sample.m_uiDropped = resources->GetCount() == 4096 ? 1 : 0;
+      for (const auto* resource : *resources)
+      {
+        xiiResource::ContentStats content;
+        if (!resource->TryCaptureContentStats(content))
+        {
+          ++sample.m_uiDropped;
+          continue;
+        }
+        auto& row = sample.m_Records.ExpandAndGetRef().m_Fields;
+        row.Insert("id", resource->GetResourceIDHash());
+        row.Insert("name", xiiString(resource->GetResourceID()));
+        row.Insert("type", xiiString(resource->GetDynamicRTTI()->GetTypeName()));
+        row.Insert("priority", static_cast<xiiUInt8>(resource->GetPriority()));
+        row.Insert("flags", static_cast<xiiUInt8>(resource->GetBaseResourceFlags().GetValue()));
+        row.Insert("state", static_cast<xiiUInt8>(content.m_State));
+        row.Insert("discardable", content.m_uiDiscardable);
+        row.Insert("loadable", content.m_uiLoadable);
+        row.Insert("cpuBytes", content.m_Memory.m_uiMemoryCPU);
+        row.Insert("gpuBytes", content.m_Memory.m_uiMemoryGPU);
+        row.Insert("description", content.m_sDescription);
+      }
     }
+    sample.m_Fields.Insert("complete", sample.m_uiDropped == 0);
+    service.Publish(std::move(sample)).IgnoreResult();
   }
-
-  static void ResourceManagerEventHandler(const xiiResourceEvent& e)
-  {
-    if (!xiiTelemetry::IsConnectedToClient())
-      return;
-
-    switch (e.m_Type)
-    {
-      case xiiResourceEvent::Type::ResourceCreated:
-      case xiiResourceEvent::Type::ResourceExists:
-        SendFullResourceInfo(e.m_pResource);
-        return;
-
-      case xiiResourceEvent::Type::ResourceDeleted:
-        SendDeleteResourceInfo(e.m_pResource);
-        return;
-
-      case xiiResourceEvent::Type::ResourceContentUpdated:
-      case xiiResourceEvent::Type::ResourceContentUnloading:
-      case xiiResourceEvent::Type::ResourcePriorityChanged:
-        SendSmallResourceInfo(e.m_pResource);
-        return;
-
-      default:
-        XII_ASSERT_NOT_IMPLEMENTED;
-    }
-  }
-} // namespace ResourceManagerDetail
+} // namespace
 
 void AddResourceManagerEventHandler()
 {
-  xiiTelemetry::AddEventHandler(ResourceManagerDetail::TelemetryEventsHandler);
-  xiiResourceManager::GetResourceEvents().AddEventHandler(ResourceManagerDetail::ResourceManagerEventHandler);
+  xiiTelemetrySourceInfo info;
+  info.m_uiId                          = xiiTelemetrySources::Resources;
+  info.m_sName                         = "Resources";
+  info.m_sCategory                     = "Resources";
+  info.m_uiMinimumIntervalMilliseconds = 500;
+  info.m_bSnapshot = info.m_bLatestOnly = true;
+  XII_VERIFY(xiiApplication::GetApplicationInstance()->CreateTelemetryService().RegisterSource(info, Collect).Succeeded(), "Duplicate resource source.");
 }
-
 void RemoveResourceManagerEventHandler()
 {
-  xiiResourceManager::GetResourceEvents().RemoveEventHandler(ResourceManagerDetail::ResourceManagerEventHandler);
-  xiiTelemetry::RemoveEventHandler(ResourceManagerDetail::TelemetryEventsHandler);
+  xiiApplication::GetApplicationInstance()->GetTelemetryService()->UnregisterSource(xiiTelemetrySources::Resources);
 }

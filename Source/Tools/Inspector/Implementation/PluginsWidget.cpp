@@ -2,7 +2,7 @@
 
 #include <Inspector/InspectorPCH.h>
 
-#include <Foundation/Communication/Telemetry.h>
+#include <Foundation/Diagnostics/TelemetryService.h>
 #include <GuiFoundation/GuiFoundationDLL.h>
 #include <GuiFoundation/UIServices/UIServices.moc.h>
 #include <Inspector/MainWindow.moc.h>
@@ -89,38 +89,19 @@ void xiiQtPluginsWidget::UpdatePlugins()
   TablePlugins->resizeColumnsToContents();
 }
 
-void xiiQtPluginsWidget::ProcessTelemetry(void* pUnuseed)
+void xiiQtPluginsWidget::ReceiveDiagnostics(const xiiTelemetrySample& sample)
 {
   if (!s_pWidget)
     return;
-
-  xiiTelemetryMessage Msg;
-
-  while (xiiTelemetry::RetrieveMessage('PLUG', Msg) == XII_SUCCESS)
+  s_pWidget->m_Plugins.Clear();
+  for (const auto& row : sample.m_Records)
   {
-    switch (Msg.GetMessageID())
-    {
-      case ' CLR':
-      {
-        s_pWidget->m_Plugins.Clear();
-        s_pWidget->m_bUpdatePlugins = true;
-      }
-      break;
-
-      case 'DATA':
-      {
-        xiiString sName;
-
-        Msg.GetReader() >> sName;
-
-        PluginsData& pd = s_pWidget->m_Plugins[sName.GetData()];
-        Msg.GetReader() >> pd.m_bReloadable;
-
-        Msg.GetReader() >> pd.m_sDependencies;
-
-        s_pWidget->m_bUpdatePlugins = true;
-      }
-      break;
-    }
+    xiiString   name;
+    PluginsData data;
+    if (!row.Read("name", name) || !row.Read("dependencies", data.m_sDependencies))
+      continue;
+    data.m_bReloadable = false;
+    s_pWidget->m_Plugins.Insert(name, data);
   }
+  s_pWidget->m_bUpdatePlugins = true;
 }

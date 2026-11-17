@@ -2,6 +2,8 @@
 
 #pragma once
 
+struct xiiTelemetrySample;
+
 #include <Core/ResourceManager/Resource.h>
 #include <Foundation/Basics.h>
 #include <Foundation/Containers/Set.h>
@@ -28,7 +30,7 @@ private Q_SLOTS:
   void on_ButtonSave_clicked();
 
 public:
-  static void ProcessTelemetry(void* pUnuseed);
+  static void ReceiveDiagnostics(const xiiTelemetrySample& sample);
 
   void ResetStats();
   void UpdateStats();

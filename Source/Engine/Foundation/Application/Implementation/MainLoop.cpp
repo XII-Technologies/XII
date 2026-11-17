@@ -4,6 +4,7 @@
 
 #include <Foundation/Application/Application.h>
 #include <Foundation/Configuration/Startup.h>
+#include <Foundation/Diagnostics/TelemetryService.h>
 
 xiiResult xiiRun_Startup(xiiApplication* pApplicationInstance)
 {
@@ -44,7 +45,10 @@ void xiiRun_Shutdown(xiiApplication* pApplicationInstance)
   // Core Systems Shutdown.
   {
     pApplicationInstance->BeforeCoreSystemsShutdown();
+    if (auto* service = pApplicationInstance->GetTelemetryService())
+      service->Shutdown();
     xiiStartup::ShutdownCoreSystems();
+    pApplicationInstance->DestroyTelemetryService();
     pApplicationInstance->AfterCoreSystemsShutdown();
   }
 

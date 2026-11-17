@@ -177,6 +177,8 @@ public:
   ~xiiOSFile();
 
   /// Opens a file for reading or writing. Returns XII_SUCCESS if the file could be opened successfully.
+  /// Disable sharing-violation retries for nonblocking lease probes on Windows. POSIX opens do not retry.
+  void      SetRetryOnSharingViolation(bool bRetry) { m_bRetryOnSharingViolation = bRetry; }
   xiiResult Open(xiiStringView sFile, xiiFileOpenMode::Enum openMode, xiiFileShareMode::Enum fileShareMode = xiiFileShareMode::Default); // [tested]
 
   /// Returns true if a file is currently open.

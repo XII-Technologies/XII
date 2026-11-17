@@ -9,6 +9,8 @@
 #include <Inspector/ui_LogDockWidget.h>
 #include <ads/DockWidget.h>
 
+struct xiiTelemetrySample;
+
 class xiiQtLogDockWidget : public ads::CDockWidget, public Ui_LogDockWidget
 {
 public:
@@ -22,7 +24,7 @@ public:
   static xiiQtLogDockWidget* s_pWidget;
 
 public:
-  static void ProcessTelemetry(void* pUnuseed);
+  static void ReceiveDiagnostics(const xiiTelemetrySample& sample);
 
   void ResetStats();
 };

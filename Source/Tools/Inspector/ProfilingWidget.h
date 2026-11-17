@@ -15,6 +15,7 @@ class QLineEdit;
 class QPushButton;
 class QTreeWidget;
 class xiiQtProfilingPlot;
+struct xiiTelemetrySample;
 
 class xiiQtProfilingWidget : public ads::CDockWidget
 {
@@ -23,7 +24,7 @@ public:
   ~xiiQtProfilingWidget() override;
   static xiiQtProfilingWidget*                 s_pWidget;
   static xiiQtProfilingWidget*                 s_pRenderingWidget;
-  static void                                  ProcessTelemetry(void*);
+  void                                         ReceiveDiagnostics(const xiiTelemetrySample& sample);
   void                                         ResetStats();
   bool                                         ApplyCapture(const QJsonObject& object);
   bool                                         LoadCapture(const QByteArray& bytes);

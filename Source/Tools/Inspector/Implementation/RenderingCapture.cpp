@@ -1,5 +1,6 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#include <Foundation/Diagnostics/TelemetryService.h>
 #include <Inspector/InspectorPCH.h>
 #include <Inspector/RenderingCapture.h>
 #include <QCheckBox>
@@ -42,8 +43,17 @@ xiiQtRenderingCapture::xiiQtRenderingCapture(ads::CDockManager* manager, const c
   connect(timer, &QTimer::timeout, this, [this] {
     if (m_bPending && m_RequestTime.elapsed() > 3000)
     {
+      if (m_pClient && m_pClient->IsReady())
+      {
+        xiiTelemetrySubscription subscription;
+        subscription.m_uiSource     = xiiTelemetrySources::RenderGraphs;
+        subscription.m_uiGeneration = m_uiRequest;
+        subscription.m_uiRequestId  = ++m_uiRequest;
+        subscription.m_bEnabled     = false;
+        m_pClient->Subscribe(subscription).IgnoreResult();
+      }
       m_bPending = false;
-      m_pStatus->setText("No capture received. Check InspectorPlugin is loaded and a render graph is executing.");
+      m_pStatus->setText(m_bReceivedCapture ? "Capture window completed." : "No capture received. Check InspectorPlugin is loaded and a render graph is executing.");
     }
   });
   timer->start(1000);
@@ -59,7 +69,7 @@ void xiiQtRenderingCapture::ResetStats()
 
 void xiiQtRenderingCapture::RequestCapture()
 {
-  if (!xiiTelemetry::IsConnectedToServer())
+  if (!m_pClient || !m_pClient->IsReady())
   {
     m_pStatus->setText("Disconnected. Connect to capture live data, or open a saved capture.");
     return;
@@ -68,45 +78,33 @@ void xiiQtRenderingCapture::RequestCapture()
   {
     return;
   }
-  xiiTelemetry::SendToServer(m_uiSystem, 'CAPT');
-  m_bPending = true;
+  xiiTelemetrySubscription subscription;
+  subscription.m_uiSource               = xiiTelemetrySources::RenderGraphs;
+  subscription.m_uiRequestId            = ++m_uiRequest;
+  subscription.m_uiGeneration           = m_uiRequest;
+  subscription.m_uiIntervalMilliseconds = 100;
+  if (m_pClient->Subscribe(subscription).Failed())
+  {
+    m_pStatus->setText("Capture request was rejected by the connection.");
+    return;
+  }
+  m_bPending         = true;
+  m_bReceivedCapture = false;
   m_RequestTime.restart();
   m_pStatus->setText("Waiting for capture…");
 }
 
-void xiiQtRenderingCapture::ReceiveMessages()
+
+
+void xiiQtRenderingCapture::ReceiveDiagnostics(const xiiTelemetrySample& sample)
 {
-  xiiTelemetryMessage message;
-  while (xiiTelemetry::RetrieveMessage(m_uiSystem, message).Succeeded())
-  {
-    if (message.GetMessageID() != 'DATA' && message.GetMessageID() != 'ERRO')
-    {
-      continue;
-    }
-    xiiUInt32 size = 0;
-    message.GetReader() >> size;
-    if (size == 0 || size > 16 * 1024 * 1024)
-    {
-      m_pStatus->setText("Rejected invalid capture size.");
-      m_bPending = false;
-      continue;
-    }
-    QByteArray bytes(static_cast<int>(size), Qt::Uninitialized);
-    m_bPending = false;
-    if (message.GetReader().ReadBytes(bytes.data(), size) != size)
-    {
-      m_pStatus->setText("Rejected truncated capture.");
-      continue;
-    }
-    if (message.GetMessageID() == 'ERRO')
-    {
-      m_pStatus->setText(QString::fromUtf8(bytes));
-    }
-    else
-    {
-      LoadCapture(bytes);
-    }
-  }
+  if (sample.m_uiSource != xiiTelemetrySources::RenderGraphs || !m_bPending)
+    return;
+  const QByteArray bytes(reinterpret_cast<const char*>(sample.m_Data.GetData()), sample.m_Data.GetCount());
+  if (sample.m_uiKind != 0)
+    m_pStatus->setText(QString::fromUtf8(bytes));
+  else
+    m_bReceivedCapture |= LoadCapture(bytes);
 }
 
 bool xiiQtRenderingCapture::LoadCapture(const QByteArray& bytes)

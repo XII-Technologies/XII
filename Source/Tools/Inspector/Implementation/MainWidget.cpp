@@ -2,7 +2,9 @@
 
 #include <Inspector/InspectorPCH.h>
 
-#include <Foundation/Communication/Telemetry.h>
+#include <Foundation/Diagnostics/TelemetryDiscovery.h>
+#include <Foundation/Diagnostics/TelemetryProtocol.h>
+#include <Foundation/Diagnostics/TelemetryService.h>
 #include <Foundation/Utilities/ConversionUtils.h>
 #include <Inspector/MainWidget.moc.h>
 #include <Inspector/MainWindow.moc.h>
@@ -47,93 +49,106 @@ xiiQtMainWidget::~xiiQtMainWidget()
   SaveFavorites();
 }
 
-void xiiQtMainWidget::ProcessTelemetry(void* pUnused)
+void xiiQtMainWidget::ReceiveDiagnostics(const xiiTelemetrySample& sample)
 {
-  if (!s_pWidget)
+  if (s_pWidget == nullptr)
     return;
 
-  xiiTelemetryMessage Msg;
-
-  while (xiiTelemetry::RetrieveMessage('STAT', Msg) == XII_SUCCESS)
+  xiiMap<xiiString, xiiVariant> values;
+  for (const auto& row : sample.m_Records)
   {
-    switch (Msg.GetMessageID())
+    xiiString   name;
+    const auto* value = row.m_Fields.GetValue("value");
+    if (row.Read("name", name) && value && name.GetElementCount() <= 512)
+      values.Insert(name, *value);
+  }
+  for (auto it = sample.m_Fields.GetIterator(); it.IsValid(); ++it)
+    values.Insert(it.Key(), it.Value());
+  const auto        historyLimit = xiiMath::Min(s_pWidget->m_uiMaxStatSamples,
+                                                static_cast<xiiUInt32>(64 * 1024 * 1024 / (xiiMath::Max(values.GetCount(), 1U) * sizeof(StatSample))));
+  xiiSet<xiiString> retained;
+  for (auto it = values.GetIterator(); it.IsValid(); ++it)
+  {
+    xiiStringBuilder path(it.Key());
+    retained.Insert(path);
+    for (xiiUInt32 level = 0; level < 64; ++level)
     {
-      case ' DEL':
-      {
-        xiiString sStatName;
-        Msg.GetReader() >> sStatName;
-
-        xiiMap<xiiString, StatData>::Iterator it = s_pWidget->m_Stats.Find(sStatName);
-
-        if (!it.IsValid())
-          break;
-
-        if (it.Value().m_pItem)
-          delete it.Value().m_pItem;
-
-        if (it.Value().m_pItemFavorite)
-          delete it.Value().m_pItemFavorite;
-
-        s_pWidget->m_Stats.Remove(it);
-      }
-      break;
-
-      case ' SET':
-      {
-        xiiString sStatName;
-        Msg.GetReader() >> sStatName;
-
-        StatData& sd = s_pWidget->m_Stats[sStatName];
-
-        Msg.GetReader() >> sd.m_Value;
-
-        StatSample ss;
-        ss.m_Value = sd.m_Value.ConvertTo<double>();
-        Msg.GetReader() >> ss.m_AtGlobalTime;
-
-        sd.m_History.PushBack(ss);
-
-        s_pWidget->m_MaxGlobalTime = xiiMath::Max(s_pWidget->m_MaxGlobalTime, ss.m_AtGlobalTime);
-
-        // remove excess samples
-        if (sd.m_History.GetCount() > s_pWidget->m_uiMaxStatSamples)
-          sd.m_History.PopFront(sd.m_History.GetCount() - s_pWidget->m_uiMaxStatSamples);
-
-        if (sd.m_pItem == nullptr)
-        {
-          sd.m_pItem = s_pWidget->CreateStat(sStatName.GetData(), false);
-
-          if (s_pWidget->m_Favorites.Find(sStatName).IsValid())
-            sd.m_pItem->setCheckState(0, Qt::Checked);
-        }
-
-        const xiiString sValue = sd.m_Value.ConvertTo<xiiString>();
-        sd.m_pItem->setData(1, Qt::DisplayRole, sValue.GetData());
-
-        if (sd.m_pItemFavorite)
-          sd.m_pItemFavorite->setData(1, Qt::DisplayRole, sValue.GetData());
-      }
-      break;
+      path.PathParentDirectory();
+      path.Trim("/");
+      if (path.IsEmpty())
+        break;
+      retained.Insert(path);
     }
   }
+  xiiDynamicArray<xiiString> removed;
+  for (auto it = s_pWidget->m_Stats.GetIterator(); it.IsValid(); ++it)
+    if (!retained.Contains(it.Key()))
+      removed.PushBack(it.Key());
+  removed.Sort([](const xiiString& lhs, const xiiString& rhs) { return lhs.GetElementCount() > rhs.GetElementCount(); });
+  for (const auto& name : removed)
+  {
+    auto it = s_pWidget->m_Stats.Find(name);
+    delete it.Value().m_pItem;
+    delete it.Value().m_pItemFavorite;
+    s_pWidget->m_Stats.Remove(it);
+  }
+  for (auto it = values.GetIterator(); it.IsValid(); ++it)
+  {
+    auto& stat   = s_pWidget->m_Stats[it.Key()];
+    stat.m_Value = it.Value();
+    StatSample point;
+    point.m_Value        = stat.m_Value.CanConvertTo<double>() ? stat.m_Value.ConvertTo<double>() : 0;
+    point.m_AtGlobalTime = xiiTime::MakeFromMicroseconds(sample.m_fTimestampMicroseconds);
+    stat.m_History.PushBack(point);
+    if (stat.m_History.GetCount() > historyLimit)
+      stat.m_History.PopFront(stat.m_History.GetCount() - historyLimit);
+    s_pWidget->m_MaxGlobalTime = xiiMath::Max(s_pWidget->m_MaxGlobalTime, point.m_AtGlobalTime);
+    if (stat.m_pItem == nullptr)
+    {
+      stat.m_pItem = s_pWidget->CreateStat(it.Key().GetData(), false);
+      if (s_pWidget->m_Favorites.Contains(it.Key()))
+        stat.m_pItem->setCheckState(0, Qt::Checked);
+    }
+    const auto value = stat.m_Value.ConvertTo<xiiString>();
+    stat.m_pItem->setData(1, Qt::DisplayRole, value.GetData());
+    if (stat.m_pItemFavorite != nullptr)
+      stat.m_pItemFavorite->setData(1, Qt::DisplayRole, value.GetData());
+  }
 }
+
+
 
 void xiiQtMainWidget::on_ButtonConnect_clicked()
 {
   QSettings     Settings;
-  const QString sServer = Settings.value("LastConnection", QLatin1String("localhost:1040")).toString();
+  const QString sServer = Settings.value("LastConnection", QLatin1String("local:")).toString();
 
-  bool    bOk  = false;
-  QString sRes = QInputDialog::getText(this, "Host", "Host Name or IP Address:\nDefault is 'localhost:1040'", QLineEdit::Normal, sServer, &bOk);
-
+  xiiDynamicArray<xiiTelemetryInstance> instances;
+  xiiTelemetryDiscovery::Enumerate(instances).IgnoreResult();
+  QStringList choices;
+  for (const auto& instance : instances)
+    choices.push_back(QString("%1 (process %2) — local:%3").arg(QString::fromUtf8(instance.m_sApplication.GetData())).arg(instance.m_uiProcessId).arg(QString::fromUtf8(instance.m_sEndpoint.GetData())));
+  choices.push_back("Enter endpoint…");
+  bool       bOk      = false;
+  const auto selected = QInputDialog::getItem(this, "Diagnostics applications", "Available applications", choices, 0, false, &bOk);
   if (!bOk)
     return;
-
+  const auto index = choices.indexOf(selected);
+  if (index >= 0 && index < static_cast<int>(instances.GetCount()))
+  {
+    const auto&      instance = instances[index];
+    xiiStringBuilder address("local:", instance.m_sEndpoint);
+    if (xiiQtMainWindow::s_pWidget->ConnectDiagnostics(address, instance.m_Instance).Failed())
+      xiiLog::Error("Could not connect to the selected application.");
+    return;
+  }
+  const QString sRes = QInputDialog::getText(this, "Host", "Diagnostics endpoint (local:<name>, tls://IP:port, or quic://IP:port)", QLineEdit::Normal, sServer, &bOk);
+  if (!bOk)
+    return;
   Settings.setValue("LastConnection", sRes);
 
-  if (xiiTelemetry::ConnectToServer(sRes.toUtf8().data()) == XII_SUCCESS)
-  {
-  }
+  if (xiiQtMainWindow::s_pWidget->ConnectDiagnostics(sRes.toUtf8().constData()).Failed())
+    xiiLog::Error("Could not start the diagnostics connection.");
 }
 
 void xiiQtMainWidget::SaveFavorites()
@@ -202,30 +217,20 @@ void xiiQtMainWidget::ResetStats()
 
 void xiiQtMainWidget::UpdateStats()
 {
-  static bool bWasConnected = false;
-  const bool  bIsConnected  = xiiTelemetry::IsConnectedToServer();
-
-  if (bIsConnected)
-    LabelPing->setText(QString::fromUtf8("<p>Ping: %1ms</p>").arg((xiiUInt32)xiiTelemetry::GetPingToServer().GetMilliseconds()));
-
-  if (bWasConnected == bIsConnected)
+  const auto& client = xiiQtMainWindow::s_pWidget->GetDiagnosticsClient();
+  if (!client.IsReady())
+  {
+    LabelPing->setText("Ping: N/A");
+    LabelStatus->setText("Disconnected");
+    LabelServer->setText("Application: N/A");
     return;
-
-  bWasConnected = bIsConnected;
-
-  if (!bIsConnected)
-  {
-    LabelPing->setText("<p>Ping: N/A</p>");
-    LabelStatus->setText("<p><span style=\" font-weight:600;\">Status: </span><span style=\" font-weight:600; color:#ff0000;\">Not Connected</span></p>");
-    LabelServer->setText("<p>Server: N/A</p>");
   }
-  else
-  {
-    xiiStringBuilder tmp;
-
-    LabelStatus->setText("<p><span style=\" font-weight:600;\">Status: </span><span style=\" font-weight:600; color:#00aa00;\">Connected</span></p>");
-    LabelServer->setText(QString::fromUtf8("<p>Server: %1:%2</p>").arg(xiiTelemetry::GetServerIP().GetData(tmp)).arg(xiiTelemetry::s_uiPort));
-  }
+  xiiNetworkConnectionInfo connection;
+  if (client.GetConnectionInfo(connection).Succeeded())
+    LabelPing->setText(QString("Ping: %1 ms").arg(connection.m_Statistics.m_HeartbeatRoundTrip.GetMilliseconds(), 0, 'f', 2));
+  LabelStatus->setText("Connected");
+  const auto& info = client.GetServerInfo();
+  LabelServer->setText(QString("%1 (process %2)").arg(QString::fromUtf8(info.m_sApplication.GetData())).arg(info.m_uiProcessId).toHtmlEscaped());
 }
 
 

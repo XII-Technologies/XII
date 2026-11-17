@@ -18,7 +18,6 @@ public:
   xiiQtRenderGraphWidget(ads::CDockManager* manager);
   ~xiiQtRenderGraphWidget() override;
   static xiiQtRenderGraphWidget* s_pWidget;
-  static void                    ProcessTelemetry(void*);
   void                           LocatePass(const QString& graph, int pass);
   bool                           ApplyCapture(const QJsonObject& object) override;
 

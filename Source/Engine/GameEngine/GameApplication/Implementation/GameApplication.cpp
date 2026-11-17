@@ -7,8 +7,8 @@
 #include <Core/Interfaces/SoundInterface.h>
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Core/World/World.h>
-#include <Foundation/Communication/Telemetry.h>
 #include <Foundation/Configuration/Startup.h>
+#include <Foundation/Diagnostics/TelemetryService.h>
 #include <Foundation/Events/GlobalEvent.h>
 #include <Foundation/IO/FileSystem/FileReader.h>
 #include <Foundation/IO/FileSystem/FileSystem.h>
@@ -584,18 +584,6 @@ void xiiGameApplication::Init_FileSystem_ConfigureDataDirs()
   xiiLog::Info("Managed application '{}' uses private data '{}'.", m_sInstance, directory);
 }
 
-void xiiGameApplication::Init_ConfigureTelemetry()
-{
-  SUPER::Init_ConfigureTelemetry();
-#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT) && defined(BUILDSYSTEM_ENABLE_ENET_SUPPORT)
-  if (!m_sSession.IsEmpty() && xiiTelemetry::GetConnectionMode() != xiiTelemetry::Server)
-  {
-    ReportStatus("failed", "Cannot bind the assigned telemetry port. Select a different launch base port.");
-    SetReturnCode(6);
-    RequestQuit();
-  }
-#endif
-}
 
 xiiApplication::Execution xiiGameApplication::Run()
 {

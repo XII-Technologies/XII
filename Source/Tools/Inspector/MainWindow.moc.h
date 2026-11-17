@@ -3,6 +3,8 @@
 #pragma once
 
 #include <Foundation/Basics.h>
+#include <Foundation/Containers/Set.h>
+#include <Foundation/Diagnostics/TelemetryService.h>
 #include <Inspector/StatVisWidget.moc.h>
 #include <Inspector/ui_MainWindow.h>
 #include <QMainWindow>
@@ -26,7 +28,10 @@ public:
 
   static xiiQtMainWindow* s_pWidget;
 
-  static void ProcessTelemetry(void* pUnuseed);
+  static void ReceiveDiagnostics(const xiiTelemetrySample& sample);
+
+  xiiResult           ConnectDiagnostics(xiiStringView sAddress, xiiUuid expectedInstance = {});
+  xiiTelemetryClient& GetDiagnosticsClient() { return m_DiagnosticsClient; }
 
   virtual void closeEvent(QCloseEvent* pEvent);
 
@@ -52,10 +57,19 @@ private Q_SLOTS:
   void on_ActionNeverOnTop_triggered();
 
 private:
-  void SetAlwaysOnTop(OnTopMode Mode);
-  void UpdateAlwaysOnTop();
-  void SetupNetworkTimer();
-  void UpdateNetwork();
+  xiiTelemetryClient  m_DiagnosticsClient;
+  xiiUuid             m_LastInstance;
+  xiiUuid             m_ExpectedInstance;
+  xiiNetworkErrorCode m_LastDiagnosticsError = xiiNetworkErrorCode::Success;
+  bool                m_bDiagnosticsReady    = false;
+  xiiSet<xiiUInt64>   m_DiagnosticsSubscribed;
+  xiiUInt64           m_uiDiagnosticsRequest    = 0;
+  xiiUInt64           m_uiCatalogRevision       = 0;
+  xiiUInt64           m_uiDiagnosticsGeneration = 0;
+  void                SetAlwaysOnTop(OnTopMode Mode);
+  void                UpdateAlwaysOnTop();
+  void                SetupNetworkTimer();
+  void                UpdateNetwork();
 
 private:
   OnTopMode m_OnTopMode;

@@ -12,6 +12,7 @@
 #include <ads/DockManager.h>
 
 class QTreeWidgetItem;
+struct xiiTelemetrySample;
 
 class xiiQtMainWidget : public ads::CDockWidget, public Ui_MainWidget
 {
@@ -26,7 +27,7 @@ public:
   void         UpdateStats();
   virtual void closeEvent(QCloseEvent* pEvent) override;
 
-  static void ProcessTelemetry(void* pUnused);
+  static void ReceiveDiagnostics(const xiiTelemetrySample& sample);
 
 public Q_SLOTS:
   void ShowStatIn(bool);

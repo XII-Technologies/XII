@@ -8,6 +8,15 @@ xiiMutex                xiiStats::s_Mutex;
 xiiStats::MapType       xiiStats::s_Stats;
 xiiStats::xiiEventStats xiiStats::s_StatsEvents;
 
+xiiUInt32 xiiStats::Capture(MapType& out_stats, xiiUInt32 uiMaximumEntries)
+{
+  XII_LOCK(s_Mutex);
+  out_stats.Clear();
+  for (auto it = s_Stats.GetIterator(); it.IsValid() && out_stats.GetCount() < uiMaximumEntries; ++it)
+    out_stats.Insert(it.Key(), it.Value());
+  return s_Stats.GetCount() - out_stats.GetCount();
+}
+
 void xiiStats::RemoveStat(xiiStringView sStatName)
 {
   XII_LOCK(s_Mutex);

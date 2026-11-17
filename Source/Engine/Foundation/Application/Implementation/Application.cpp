@@ -3,6 +3,7 @@
 #include <Foundation/FoundationPCH.h>
 
 #include <Foundation/Application/Application.h>
+#include <Foundation/Diagnostics/TelemetryService.h>
 #include <Foundation/IO/FileSystem/FileSystem.h>
 #include <Foundation/Logging/Log.h>
 #include <Foundation/Reflection/Reflection.h>
@@ -16,6 +17,18 @@ xiiApplication::xiiApplication(xiiStringView sAppName) :
 }
 
 xiiApplication::~xiiApplication() = default;
+
+xiiTelemetryService& xiiApplication::CreateTelemetryService()
+{
+  if (!m_pTelemetryService)
+    m_pTelemetryService = XII_DEFAULT_NEW(xiiTelemetryService);
+  return *m_pTelemetryService;
+}
+
+void xiiApplication::DestroyTelemetryService()
+{
+  m_pTelemetryService.Clear();
+}
 
 void xiiApplication::SetApplicationName(xiiStringView sAppName)
 {

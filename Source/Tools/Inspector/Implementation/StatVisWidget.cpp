@@ -2,7 +2,6 @@
 
 #include <Inspector/InspectorPCH.h>
 
-#include <Foundation/Communication/Telemetry.h>
 #include <GuiFoundation/GuiFoundationDLL.h>
 #include <Inspector/MainWidget.moc.h>
 #include <Inspector/MainWindow.moc.h>

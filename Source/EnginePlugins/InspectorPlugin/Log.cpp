@@ -2,46 +2,58 @@
 
 #include <InspectorPlugin/InspectorPluginPCH.h>
 
-#include <Foundation/Communication/Telemetry.h>
+#include <Foundation/Application/Application.h>
+#include <Foundation/Diagnostics/TelemetryService.h>
 #include <Foundation/Logging/Log.h>
 
-namespace xiiLogWriter
+namespace
 {
-  /// This log-writer will broadcast all messages through xiiTelemetry, such that external applications can display the log messages.
-  class Telemetry
+  void CollectLog(const xiiLoggingEventData& event)
   {
-  public:
-    /// Register this at xiiLog to broadcast all log messages through xiiTelemetry.
-    static void LogMessageHandler(const xiiLoggingEventData& eventData)
+    const auto* application = xiiApplication::GetApplicationInstance();
+    auto*       service     = application != nullptr ? application->GetTelemetryService() : nullptr;
+    if (service == nullptr || !service->IsCollecting(xiiTelemetrySources::Logs))
+      return;
+
+    if (event.m_sText.GetElementCount() > 32768 || event.m_sTag.GetElementCount() > 1024)
     {
-      xiiTelemetryMessage msg;
-      msg.SetMessageID(' LOG', ' MSG');
-
-      msg.GetWriter() << (xiiInt8)eventData.m_EventType;
-      msg.GetWriter() << (xiiUInt8)eventData.m_uiIndentation;
-      msg.GetWriter() << eventData.m_sTag;
-      msg.GetWriter() << eventData.m_sText;
-
-      if (eventData.m_EventType == xiiLogMsgType::EndGroup)
-      {
-#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-        msg.GetWriter() << eventData.m_fSeconds;
-#else
-        msg.GetWriter() << 0.0f;
-#endif
-      }
-
-      xiiTelemetry::Broadcast(xiiTelemetry::Reliable, msg);
+      service->RecordDropped(xiiTelemetrySources::Logs);
+      return;
     }
-  };
-} // namespace xiiLogWriter
+
+    xiiTelemetrySample sample;
+    sample.m_uiSource               = xiiTelemetrySources::Logs;
+    sample.m_fTimestampMicroseconds = xiiTime::Now().GetMicroseconds();
+    sample.m_Fields.Insert("type", static_cast<xiiInt32>(event.m_EventType));
+    sample.m_Fields.Insert("indentation", static_cast<xiiUInt32>(event.m_uiIndentation));
+    sample.m_Fields.Insert("tag", xiiString(event.m_sTag));
+    sample.m_Fields.Insert("text", xiiString(event.m_sText));
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+    if (event.m_EventType == xiiLogMsgType::EndGroup)
+      sample.m_Fields.Insert("seconds", static_cast<double>(event.m_fSeconds));
+#endif
+    service->Publish(std::move(sample)).IgnoreResult();
+  }
+} // namespace
 
 void AddLogWriter()
 {
-  xiiGlobalLog::AddLogWriter(&xiiLogWriter::Telemetry::LogMessageHandler);
+  if (auto* application = xiiApplication::GetApplicationInstance())
+  {
+    xiiTelemetrySourceInfo source;
+    source.m_uiId                          = xiiTelemetrySources::Logs;
+    source.m_sName                         = "Application log";
+    source.m_sCategory                     = "Application";
+    source.m_uiMinimumIntervalMilliseconds = 1;
+    application->CreateTelemetryService().RegisterSource(source).AssertSuccess("Could not register the log source.");
+  }
+  xiiGlobalLog::AddLogWriter(CollectLog);
 }
 
 void RemoveLogWriter()
 {
-  xiiGlobalLog::RemoveLogWriter(&xiiLogWriter::Telemetry::LogMessageHandler);
+  xiiGlobalLog::RemoveLogWriter(CollectLog);
+  if (auto* application = xiiApplication::GetApplicationInstance())
+    if (auto* service = application->GetTelemetryService())
+      service->UnregisterSource(xiiTelemetrySources::Logs);
 }

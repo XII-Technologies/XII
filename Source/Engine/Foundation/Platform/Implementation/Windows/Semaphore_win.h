@@ -90,7 +90,8 @@ xiiResult xiiSemaphore::TryAcquireToken(xiiTime timeout)
 {
   XII_ASSERT_DEV(m_hSemaphore != nullptr, "Invalid semaphore.");
 
-  const xiiUInt32 uiResult = WaitForSingleObject(m_hSemaphore, xiiMath::FloatToInt(timeout.AsFloatInSeconds()));
+  const DWORD     uiMilliseconds = static_cast<DWORD>(xiiMath::Clamp(xiiMath::Ceil(timeout.GetMilliseconds()), 0.0, static_cast<double>(INFINITE - 1)));
+  const xiiUInt32 uiResult       = WaitForSingleObject(m_hSemaphore, uiMilliseconds);
 
   if (uiResult == WAIT_OBJECT_0)
   {

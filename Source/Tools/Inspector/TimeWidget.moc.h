@@ -2,6 +2,8 @@
 
 #pragma once
 
+struct xiiTelemetrySample;
+
 #include <Foundation/Basics.h>
 #include <Foundation/Containers/Deque.h>
 #include <Foundation/Containers/Map.h>
@@ -30,7 +32,7 @@ private Q_SLOTS:
   void on_ComboTimeframe_currentIndexChanged(int index);
 
 public:
-  static void ProcessTelemetry(void* pUnuseed);
+  static void ReceiveDiagnostics(const xiiTelemetrySample& sample);
 
   void ResetStats();
   void UpdateStats();

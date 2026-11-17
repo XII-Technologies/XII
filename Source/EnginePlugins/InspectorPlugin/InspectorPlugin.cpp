@@ -2,8 +2,8 @@
 
 #include <InspectorPlugin/InspectorPluginPCH.h>
 
-#include <Foundation/Communication/Telemetry.h>
 #include <Foundation/Configuration/Startup.h>
+#include <Foundation/Diagnostics/TelemetryService.h>
 
 void AddLogWriter();
 void RemoveLogWriter();
@@ -106,7 +106,6 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(InspectorPlugin, InspectorPluginMain)
     RemoveLogWriter();
     RemoveTelemetryAssertHandler();
 
-    xiiTelemetry::AcceptMessagesForSystem(' APP', false);
   }
 
 XII_END_SUBSYSTEM_DECLARATION;

@@ -7,8 +7,8 @@
 #include <Core/Input/InputManager.h>
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Core/System/Window.h>
-#include <Foundation/Communication/Telemetry.h>
 #include <Foundation/Configuration/Startup.h>
+#include <Foundation/Diagnostics/TelemetryService.h>
 #include <Foundation/IO/FileSystem/DataDirTypeFolder.h>
 #include <Foundation/IO/FileSystem/FileSystem.h>
 #include <Foundation/Logging/ConsoleWriter.h>
@@ -160,7 +160,8 @@ xiiApplication::Execution xiiSampleWindowApp::Run()
   }
 
   // Make sure telemetry is sent out regularly.
-  xiiTelemetry::PerFrameUpdate();
+  if (auto* diagnostics = GetTelemetryService())
+    diagnostics->Update();
 
   // Needs to be called once per frame
   xiiResourceManager::PerFrameUpdate();
@@ -188,10 +189,10 @@ void xiiSampleWindowApp::AfterCoreSystemsStartup()
   xiiGlobalLog::AddLogWriter(xiiLogWriter::VisualStudio::LogMessageHandler);
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-  xiiTelemetry::SetServerName("Sample Window");
 
-  // Activate xiiTelemetry such that the inspector plugin can use the network connection.
-  xiiTelemetry::CreateServer();
+  // Start the application-owned diagnostics service for Inspector subscriptions.
+  if (const auto error = CreateTelemetryService().StartFromCommandLine(GetApplicationName()); error.Failed())
+    xiiLog::Warning("Could not start diagnostics: {}", error.GetCodeName());
 
   // Load the inspector plugin.
   // The plugin contains automatic configuration code (through the xiiStartup system), so it will configure itself properly when the engine is initialized by calling xiiStartup::StartupCore().
@@ -296,7 +297,8 @@ void xiiSampleWindowApp::BeforeCoreSystemsShutdown()
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   // Shut down telemetry if it was set up.
-  xiiTelemetry::CloseConnection();
+  if (auto* diagnostics = GetTelemetryService())
+    diagnostics->Shutdown();
 #endif
 
   SUPER::BeforeCoreSystemsShutdown();

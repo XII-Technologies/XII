@@ -2,7 +2,7 @@
 
 #include <Inspector/InspectorPCH.h>
 
-#include <Foundation/Communication/Telemetry.h>
+#include <Foundation/Diagnostics/TelemetryService.h>
 #include <Inspector/MainWindow.moc.h>
 #include <Inspector/ReflectionWidget.moc.h>
 #include <qlistwidget.h>
@@ -39,76 +39,43 @@ void xiiQtReflectionWidget::ResetStats()
   }
 }
 
-void xiiQtReflectionWidget::ProcessTelemetry(void* pUnuseed)
+void xiiQtReflectionWidget::ReceiveDiagnostics(const xiiTelemetrySample& sample)
 {
   if (!s_pWidget)
     return;
-
-  xiiTelemetryMessage msg;
-
-  bool bUpdate = false;
-
-  while (xiiTelemetry::RetrieveMessage('RFLC', msg) == XII_SUCCESS)
+  s_pWidget->m_Types.Clear();
+  s_pWidget->TypeTree->clear();
+  for (const auto& row : sample.m_Records)
   {
-    if (msg.GetMessageID() == ' CLR')
+    xiiString name;
+    xiiUInt32 properties;
+    TypeData  data;
+    if (!row.Read("name", name) || !row.Read("parent", data.m_sParentType) || !row.Read("plugin", data.m_sPlugin) || !row.Read("size", data.m_uiSize) || !row.Read("properties", properties) || properties > 64)
+      continue;
+    for (xiiUInt32 i = 0; i < properties; ++i)
     {
-      s_pWidget->m_Types.Clear();
-      s_pWidget->TypeTree->clear();
+      PropertyData     property;
+      xiiStringBuilder key;
+      key.SetFormat("name{}", i);
+      if (!row.Read(key, property.m_sPropertyName))
+        continue;
+      key.SetFormat("category{}", i);
+      if (!row.Read(key, property.m_iCategory))
+        continue;
+      key.SetFormat("type{}", i);
+      if (!row.Read(key, property.m_sType))
+        continue;
+      data.m_Properties.PushBack(std::move(property));
     }
-
-    if (msg.GetMessageID() == 'DATA')
-    {
-      bUpdate = true;
-
-      xiiString sName;
-      msg.GetReader() >> sName;
-
-      TypeData& sd = s_pWidget->m_Types[sName];
-
-      msg.GetReader() >> sd.m_sParentType;
-      msg.GetReader() >> sd.m_uiSize;
-      msg.GetReader() >> sd.m_sPlugin;
-
-      {
-        xiiUInt32 num = 0;
-        msg.GetReader() >> num;
-
-        for (xiiUInt32 i = 0; i < num; ++i)
-        {
-          PropertyData pd;
-          msg.GetReader() >> pd.m_sPropertyName;
-          msg.GetReader() >> pd.m_iCategory;
-          msg.GetReader() >> pd.m_sType;
-
-          for (xiiUInt32 j = 0; j < sd.m_Properties.GetCount(); ++j)
-          {
-            if (sd.m_Properties[j].m_sPropertyName == pd.m_sPropertyName)
-              goto found;
-          }
-
-          sd.m_Properties.PushBack(pd);
-
-        found:
-          continue;
-        }
-      }
-
-      /// \todo should read the message handlers here
-    }
+    s_pWidget->m_Types.Insert(name, std::move(data));
   }
-
-  if (bUpdate)
+  while (s_pWidget->UpdateTree())
   {
-    while (s_pWidget->UpdateTree())
-    {
-    }
-
-    s_pWidget->TypeTree->resizeColumnToContents(3);
-    s_pWidget->TypeTree->resizeColumnToContents(2);
-    s_pWidget->TypeTree->resizeColumnToContents(1);
-    s_pWidget->TypeTree->resizeColumnToContents(0);
   }
+  for (int column = 0; column < 4; ++column)
+    s_pWidget->TypeTree->resizeColumnToContents(column);
 }
+
 
 bool xiiQtReflectionWidget::UpdateTree()
 {
@@ -118,13 +85,12 @@ bool xiiQtReflectionWidget::UpdateTree()
   {
     if (it.Value().m_pTreeItem == nullptr)
     {
-      bAddedAny = true;
 
-      // has parent type, but parent type has not been inserted into tree yet
-      if (!it.Value().m_sParentType.IsEmpty() && m_Types[it.Value().m_sParentType].m_pTreeItem == nullptr)
+      const auto parent = m_Types.Find(it.Value().m_sParentType);
+      if (parent.IsValid() && parent.Value().m_pTreeItem == nullptr)
         continue;
-
-      QTreeWidgetItem* pParent = (it.Value().m_sParentType.IsEmpty()) ? nullptr : m_Types[it.Value().m_sParentType].m_pTreeItem;
+      QTreeWidgetItem* pParent = parent.IsValid() ? parent.Value().m_pTreeItem : nullptr;
+      bAddedAny                = true;
 
       QTreeWidgetItem* pItem = new QTreeWidgetItem();
       it.Value().m_pTreeItem = pItem;

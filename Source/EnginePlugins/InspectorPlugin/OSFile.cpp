@@ -2,126 +2,87 @@
 
 #include <InspectorPlugin/InspectorPluginPCH.h>
 
-#include <Foundation/Communication/Telemetry.h>
+#include <Foundation/Application/Application.h>
+#include <Foundation/Diagnostics/TelemetryService.h>
 #include <Foundation/IO/OSFile.h>
 #include <Foundation/Threading/TaskSystem.h>
 #include <Foundation/Threading/ThreadUtils.h>
 
-static void OSFileEventHandler(const xiiOSFile::EventData& e)
+namespace
 {
-  if (!xiiTelemetry::IsConnectedToClient())
-    return;
-
-  xiiTelemetryMessage Msg;
-  Msg.GetWriter() << e.m_iFileID;
-
-  switch (e.m_EventType)
+  void FileActivity(const xiiOSFile::EventData& event)
   {
-    case xiiOSFile::EventType::FileOpen:
+    auto* service = xiiApplication::GetApplicationInstance()->GetTelemetryService();
+    if (!service || !service->IsCollecting(xiiTelemetrySources::Files))
+      return;
+    xiiTelemetryFileOperation operation;
+    switch (event.m_EventType)
     {
-      Msg.SetMessageID('FILE', 'OPEN');
-      Msg.GetWriter() << e.m_sFile;
-      Msg.GetWriter() << (xiiUInt8)e.m_FileMode;
-      Msg.GetWriter() << e.m_bSuccess;
+      case xiiOSFile::EventType::FileOpen:
+        operation = xiiTelemetryFileOperation::Open;
+        break;
+      case xiiOSFile::EventType::FileClose:
+        operation = xiiTelemetryFileOperation::Close;
+        break;
+      case xiiOSFile::EventType::FileRead:
+        operation = xiiTelemetryFileOperation::Read;
+        break;
+      case xiiOSFile::EventType::FileWrite:
+        operation = xiiTelemetryFileOperation::Write;
+        break;
+      case xiiOSFile::EventType::FileExists:
+      case xiiOSFile::EventType::DirectoryExists:
+        operation = xiiTelemetryFileOperation::Exists;
+        break;
+      case xiiOSFile::EventType::FileDelete:
+        operation = xiiTelemetryFileOperation::Delete;
+        break;
+      case xiiOSFile::EventType::MakeDir:
+        operation = xiiTelemetryFileOperation::CreateDirectory;
+        break;
+      case xiiOSFile::EventType::FileCopy:
+        operation = xiiTelemetryFileOperation::Copy;
+        break;
+      case xiiOSFile::EventType::FileStat:
+        operation = xiiTelemetryFileOperation::Stat;
+        break;
+      case xiiOSFile::EventType::FileCasing:
+        operation = xiiTelemetryFileOperation::Casing;
+        break;
+      default:
+        return;
     }
-    break;
-
-    case xiiOSFile::EventType::FileRead:
-    {
-      Msg.SetMessageID('FILE', 'READ');
-      Msg.GetWriter() << e.m_uiBytesAccessed;
-    }
-    break;
-
-    case xiiOSFile::EventType::FileWrite:
-    {
-      Msg.SetMessageID('FILE', 'WRIT');
-      Msg.GetWriter() << e.m_uiBytesAccessed;
-      Msg.GetWriter() << e.m_bSuccess;
-    }
-    break;
-
-    case xiiOSFile::EventType::FileClose:
-    {
-      Msg.SetMessageID('FILE', 'CLOS');
-    }
-    break;
-
-    case xiiOSFile::EventType::FileExists:
-    case xiiOSFile::EventType::DirectoryExists:
-    {
-      Msg.SetMessageID('FILE', 'EXST');
-      Msg.GetWriter() << e.m_sFile;
-      Msg.GetWriter() << e.m_bSuccess;
-    }
-    break;
-
-    case xiiOSFile::EventType::FileDelete:
-    {
-      Msg.SetMessageID('FILE', ' DEL');
-      Msg.GetWriter() << e.m_sFile;
-      Msg.GetWriter() << e.m_bSuccess;
-    }
-    break;
-
-    case xiiOSFile::EventType::MakeDir:
-    {
-      Msg.SetMessageID('FILE', 'CDIR');
-      Msg.GetWriter() << e.m_sFile;
-      Msg.GetWriter() << e.m_bSuccess;
-    }
-    break;
-
-    case xiiOSFile::EventType::FileCopy:
-    {
-      Msg.SetMessageID('FILE', 'COPY');
-      Msg.GetWriter() << e.m_sFile;
-      Msg.GetWriter() << e.m_sFile2;
-      Msg.GetWriter() << e.m_bSuccess;
-    }
-    break;
-
-    case xiiOSFile::EventType::FileStat:
-    {
-      Msg.SetMessageID('FILE', 'STAT');
-      Msg.GetWriter() << e.m_sFile;
-      Msg.GetWriter() << e.m_bSuccess;
-    }
-    break;
-
-    case xiiOSFile::EventType::FileCasing:
-    {
-      Msg.SetMessageID('FILE', 'CASE');
-      Msg.GetWriter() << e.m_sFile;
-      Msg.GetWriter() << e.m_bSuccess;
-    }
-    break;
-
-    case xiiOSFile::EventType::None:
-      break;
+    xiiTelemetrySample sample;
+    sample.m_uiSource               = xiiTelemetrySources::Files;
+    sample.m_fTimestampMicroseconds = xiiTime::Now().GetMicroseconds();
+    auto& fields                    = sample.m_Records.ExpandAndGetRef().m_Fields;
+    fields.Insert("operation", static_cast<xiiUInt8>(operation));
+    fields.Insert("id", event.m_iFileID);
+    fields.Insert("path", xiiString(event.m_sFile));
+    fields.Insert("destination", xiiString(event.m_sFile2));
+    fields.Insert("mode", static_cast<xiiUInt8>(event.m_FileMode));
+    fields.Insert("success", event.m_bSuccess);
+    fields.Insert("bytes", event.m_uiBytesAccessed);
+    fields.Insert("duration", event.m_Duration);
+    fields.Insert("threads", xiiUInt8(xiiThreadUtils::IsMainThread() ? 1 : xiiTaskSystem::GetCurrentThreadWorkerType() == xiiWorkerThreadType::FileAccess ? 2 :
+                                                                                                                                                            4));
+    service->Publish(std::move(sample)).IgnoreResult();
   }
-
-  xiiUInt8 uiThreadType = 0;
-
-  if (xiiThreadUtils::IsMainThread())
-    uiThreadType = 1 << 0;
-  else if (xiiTaskSystem::GetCurrentThreadWorkerType() == xiiWorkerThreadType::FileAccess)
-    uiThreadType = 1 << 1;
-  else
-    uiThreadType = 1 << 2;
-
-  Msg.GetWriter() << e.m_Duration.GetSeconds();
-  Msg.GetWriter() << uiThreadType;
-
-  xiiTelemetry::Broadcast(xiiTelemetry::Reliable, Msg);
-}
+} // namespace
 
 void AddOSFileEventHandler()
 {
-  xiiOSFile::AddEventHandler(OSFileEventHandler);
+  xiiTelemetrySourceInfo source;
+  source.m_uiId                          = xiiTelemetrySources::Files;
+  source.m_sName                         = "File activity";
+  source.m_sCategory                     = "IO";
+  source.m_uiMinimumIntervalMilliseconds = 33;
+  XII_VERIFY(xiiApplication::GetApplicationInstance()->CreateTelemetryService().RegisterSource(source).Succeeded(), "Duplicate file activity source.");
+  xiiOSFile::AddEventHandler(FileActivity);
 }
 
 void RemoveOSFileEventHandler()
 {
-  xiiOSFile::RemoveEventHandler(OSFileEventHandler);
+  xiiOSFile::RemoveEventHandler(FileActivity);
+  xiiApplication::GetApplicationInstance()->GetTelemetryService()->UnregisterSource(xiiTelemetrySources::Files);
 }

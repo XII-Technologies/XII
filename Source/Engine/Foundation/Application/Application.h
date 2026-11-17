@@ -7,9 +7,11 @@
 #include <Foundation/Basics.h>
 
 #include <Foundation/Application/Implementation/ApplicationEntryPoint.h>
+#include <Foundation/Types/UniquePtr.h>
 #include <Foundation/Utilities/CommandLineUtils.h>
 
 class xiiApplication;
+class xiiTelemetryService;
 
 /// Platform independent run function for main loop based systems (e.g. Win32, ..)
 ///
@@ -85,6 +87,11 @@ public:
 
   /// Returns the application name
   const xiiString& GetApplicationName() const { return m_sAppName; }
+
+  /// Application-owned diagnostics. Create on the application thread after core startup.
+  xiiTelemetryService& CreateTelemetryService();
+  xiiTelemetryService* GetTelemetryService() const { return m_pTelemetryService.Borrow(); }
+  void                 DestroyTelemetryService();
 
   /// This function is called before any kind of engine initialization is done.
   ///
@@ -192,7 +199,8 @@ protected:
   bool m_bWasQuitRequested = false;
 
 private:
-  xiiInt32 m_iReturnCode = 0;
+  xiiUniquePtr<xiiTelemetryService> m_pTelemetryService;
+  xiiInt32                          m_iReturnCode = 0;
 
   xiiUInt32 m_uiArgumentCount = 0;
 

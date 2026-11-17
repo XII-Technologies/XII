@@ -2,8 +2,9 @@
 
 #include <Inspector/InspectorPCH.h>
 
-#include <Foundation/Communication/Telemetry.h>
+#include <Foundation/Diagnostics/TelemetryService.h>
 #include <GuiFoundation/GuiFoundationDLL.h>
+#include <Inspector/MainWindow.moc.h>
 #include <Inspector/TimeWidget.moc.h>
 #include <QGraphicsPathItem>
 #include <QGraphicsView>
@@ -80,7 +81,7 @@ void xiiQtTimeWidget::UpdateStats()
   if (!isVisible())
     return;
 
-  if (!xiiTelemetry::IsConnectedToServer())
+  if (!xiiQtMainWindow::s_pWidget->GetDiagnosticsClient().IsReady())
   {
     ListClocks->setEnabled(false);
     return;
@@ -199,35 +200,25 @@ void xiiQtTimeWidget::UpdateStats()
   }
 }
 
-void xiiQtTimeWidget::ProcessTelemetry(void* pUnuseed)
+void xiiQtTimeWidget::ReceiveDiagnostics(const xiiTelemetrySample& sample)
 {
   if (s_pWidget == nullptr)
     return;
 
-  xiiTelemetryMessage Msg;
-
   xiiStringBuilder sTemp;
-
-  while (xiiTelemetry::RetrieveMessage('TIME', Msg) == XII_SUCCESS)
+  for (const auto& row : sample.m_Records)
   {
-    xiiString sClockName;
-    Msg.GetReader() >> sClockName;
-
-    sTemp.SetFormat("{0} [smoothed]", sClockName);
-
-    ClockData& ad  = s_pWidget->m_ClockData[sClockName];
-    ClockData& ads = s_pWidget->m_ClockData[sTemp.GetData()];
-
-    TimeSample Sample;
-    TimeSample SampleSmooth;
-
-    Msg.GetReader() >> Sample.m_AtGlobalTime;
-    Msg.GetReader() >> Sample.m_Timestep;
-
+    xiiString  sClockName;
+    TimeSample Sample, SampleSmooth;
+    if (!row.Read("name", sClockName) || !row.Read("at", Sample.m_AtGlobalTime) || !row.Read("raw", Sample.m_Timestep) || !row.Read("smoothed", SampleSmooth.m_Timestep))
+      continue;
+    if (!s_pWidget->m_ClockData.Contains(sClockName) && s_pWidget->m_ClockData.GetCount() >= 128)
+      continue;
+    sTemp.SetFormat("{} [smoothed]", sClockName);
+    ClockData& ad               = s_pWidget->m_ClockData[sClockName];
+    ClockData& ads              = s_pWidget->m_ClockData[sTemp];
     SampleSmooth.m_AtGlobalTime = Sample.m_AtGlobalTime;
-    Msg.GetReader() >> SampleSmooth.m_Timestep;
-
-    s_pWidget->m_MaxGlobalTime = xiiMath::Max(s_pWidget->m_MaxGlobalTime, Sample.m_AtGlobalTime);
+    s_pWidget->m_MaxGlobalTime  = xiiMath::Max(s_pWidget->m_MaxGlobalTime, Sample.m_AtGlobalTime);
 
     if (ad.m_TimeSamples.GetCount() > 1 && (xiiMath::IsEqual(ad.m_TimeSamples.PeekBack().m_Timestep, Sample.m_Timestep, xiiTime::MakeFromMicroseconds(100))))
       ad.m_TimeSamples.PeekBack() = Sample;
@@ -266,6 +257,7 @@ void xiiQtTimeWidget::ProcessTelemetry(void* pUnuseed)
       ads.m_TimeSamples.PopFront(ads.m_TimeSamples.GetCount() - s_pWidget->m_uiMaxSamples);
   }
 }
+
 
 void xiiQtTimeWidget::on_ListClocks_itemChanged(QListWidgetItem* item)
 {

@@ -58,12 +58,12 @@ xiiPlayer -project "D:/Projects/MyGame" -window-mode window -width 1280 -height 
 | `-render-scale <0.1..1>`, `-show-fps <bool>` | Main view/camera resolution scale and native-resolution FPS/frame-time overlay. |
 | `-volume <0..1>` | Master volume through the existing sound interface, when present. |
 | `-role`, `-connect`, `-port` | Application networking metadata. Player does not create a gameplay networking stack. |
-| `-TelemetryPort <port>` | Existing telemetry endpoint. Editor launch configuration assigns this per instance. |
+| `-DiagnosticsEndpoint <name>` | Optional named local diagnostics endpoint for a standalone Development Player. See [Telemetry and diagnostics](TelemetryDiagnostics.md). |
 | `-no-file-cvars` | Existing opt-out from saved CVar and presentation preference files. |
 
 Player-owned numeric/window inputs are validated before editor spawning and again at Player startup. Other arguments are passed as tokens directly to `xiiProcess`, without a shell. Per-instance command lines use the existing XII command-line splitter. Managed identity, project, IPC, temporary-directory, role and port arguments are reserved and cannot be replaced by additional arguments.
 
-`standalone`, `server`, `client` and `server-clients` are supported launch roles. In `server-clients`, instance zero is the server and the other instances connect using the configured host and base game port. For `N` instances, ordinary per-instance game ports are `base + index`, and telemetry ports are `base + N + index`. Automatic blocks are derived from the session identifier and probe subsequent blocks when leased. Exclusive leases coordinate cooperating editors; the operating system still decides whether an application can bind its actual gameplay sockets. Telemetry bind failures are reported rather than silently claiming a server exists. Standalone Player leases its telemetry port and chooses another endpoint if the default is occupied, unless explicitly overridden.
+`standalone`, `server`, `client` and `server-clients` are supported launch roles. In `server-clients`, instance zero is the server and the other instances connect using the configured host and base game port. Per-instance game ports are `base + index`. Automatic blocks are derived from the session identifier and probe subsequent blocks when leased. Exclusive leases coordinate cooperating editors, and the operating system decides whether an application can bind its gameplay sockets. Development Player instances advertise unique native local diagnostics endpoints by default. Inspector lists each instance separately.
 
 ## Settings precedence and runtime interaction
 

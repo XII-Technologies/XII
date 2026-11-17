@@ -1,6 +1,6 @@
 # Inspector performance analysis
 
-Connect `xiiInspector` to a standalone application or editor engine process running `xiiInspectorPlugin`. **Panels → Profiler**, **Rendering Profiler**, and **Render Graph** separate application performance, GPU execution, and structural diagnostics. The default workspace gives analysis the central area; other existing panels remain available through Panels and can be docked or floated normally.
+Connect `xiiInspector` to a standalone application or editor engine process running `xiiInspectorPlugin`. The instance picker lists same-user applications that advertise a local diagnostics endpoint. See [Telemetry and diagnostics](TelemetryDiagnostics.md) for remote connections and permissions. **Panels → Profiler**, **Rendering Profiler**, and **Render Graph** separate application performance, GPU execution, and structural diagnostics. The default workspace gives analysis the central area. Other panels remain available through Panels and can be docked or floated normally.
 
 ## Profiler
 
@@ -34,13 +34,11 @@ Explicit **Capture** retains the existing dependencies, execution order, culling
 
 Names and context lead the dependency, resource, barrier, version, and queue views. Resource dimensions and memory sizes use readable units. Opaque identifiers remain in tooltips, copied identifiers, hidden technical columns, or the selected node's technical details. The existing Resources panel also leads with descriptions and exposes identifiers through its context menu. A missing description uses a type-based unnamed-resource label.
 
-The Data Transfer dock, menu action, widget/UI files, and Inspector `TRAN` subscription are removed. Foundation `xiiDataTransfer`, its callers, and ordinary profiling captures remain intact.
-
 ## Streaming protocol and lifetime
 
-`InspectorPlugin/Profiling.cpp` handles version-1 binary `PSTR` telemetry. `SUBS` identifies a consumer session, `BTCH` carries an incremental batch, `ACKN` acknowledges it, and `STOP` unsubscribes. A three-second lease bounds abandoned subscriptions. CPU/GPU instrumentation remains opt-in to this side channel; ordinary capture buffers are never drained by live monitoring.
+`InspectorPlugin/Profiling.cpp` publishes version-1 binary profiling batches through the version-2 diagnostics protocol. Subscriptions belong to authenticated connections, and each subscriber has its own dictionary and sequence. The plugin drains a shared live capture buffer once per collection. Ordinary capture buffers remain available for retrospective and offline use.
 
-Batches are emitted at most every 33 ms from application telemetry updates. One acknowledged reliable batch is allowed in flight, bounding network backlog without stalling the engine. Producer retention is limited to 8,192 CPU scopes, 256 completed CPU frames, 2,048 timestamped GPU scopes, and 4,096 retired graph query measurements. CPU scope writers and GPU event callbacks use non-blocking queue acquisition; overflow/contention counters are transmitted. Thread metadata and the thread selector are capped at 1,024 entries. Live graph-name metadata is capped at 256 graphs and recording graph metadata at 4,096; metadata contributes to the decoded-data budget. A session string dictionary has 32,768 entries and names are bounded to 512 UTF-8 characters; empty or exhausted names use type-based fallbacks. Unchanged names and graph/view metadata are not repeated.
+Batches are collected at most every 33 ms. The service delivers ordered batches within a bounded queue and closes a session if its ordered backlog exhausts that queue. Producer retention is limited to 8,192 CPU scopes, 256 completed CPU frames, 2,048 timestamped GPU scopes, and 4,096 retired graph query measurements. CPU scope writers and GPU event callbacks use non-blocking queue acquisition and report losses. Producer thread metadata and the thread selector are capped at 1,024 entries. The producer caches 64 graph names per subscriber. Live Inspector graph-name metadata is capped at 256 graphs and recording graph metadata at 4,096. The per-subscriber string dictionary is limited to 32,768 entries and 4 MiB, with each name capped at 512 UTF-8 bytes. Empty or exhausted names use type-based fallbacks. Unchanged names and graph/view metadata are omitted from subsequent batches.
 
 Frame sequence numbers and original CPU timestamps survive batching. GPU samples retain recording-frame identities through delayed query retirement. The receiver validates counts, names, intervals, session/sequence, and packet footer before appending. Disconnection stops producer work; reconnection starts a fresh dictionary/session and rejects stale batches. Completed owned captures remain inspectable.
 
@@ -49,11 +47,10 @@ Telemetry callbacks append to the GUI-owned session. Plot painting runs on a sep
 ## Verification
 
 ```powershell
-cmake --build Workspace/vs2026x64 --config Debug --target Inspector InspectorPlugin InspectorTest FoundationTest GraphicsCoreTest -- /m:2
+cmake --build Workspace/vs2026x64 --config Debug --target Inspector InspectorPlugin InspectorTest FoundationTest -- /m:2
 $env:QT_QPA_PLATFORM = 'offscreen'
-Output/Bin/WinVs2026Debug64/InspectorTest.exe -nosave -nogui -all
-Output/Bin/WinVs2026Debug64/FoundationTest.exe -nosave -nogui -all -filter Profiling
-Output/Bin/WinVs2026Debug64/GraphicsCoreTest.exe -nosave -nogui -all
+Output/Bin/WinVs2026Debug64/InspectorTest.exe -nosave -nogui -run -close -filter InspectorDiagnostics
+Output/Bin/WinVs2026Debug64/FoundationTest.exe -nosave -nogui -run -close -filter Diagnostics
 ```
 
-Coverage includes bounded incremental producer queues, non-destructive ordinary captures, binary validation, 64-bit CPU/GPU frame attribution, late results, capture limits/history, file-format round trips, pause/resume, real separate-process plugin streaming and reconnection, native Qt controls/rendered previews, duplicate graph/pass names, and Vulkan query resolution. Runtime verification is Windows/MSVC Debug with Vulkan. D3D12 remains disabled; other operating systems, Shipping, mixed-DPI/multi-monitor use, and a full editor-host profiling session require separate acceptance.
+The diagnostics tests cover bounded incremental queues, binary validation, delayed GPU results, 64-bit frame attribution, capture limits, file-format round trips, Qt controls, and separate-process plugin streaming with independent clients, reconnection, and plugin unload. Hardware timestamp query execution has separate rendering tests.

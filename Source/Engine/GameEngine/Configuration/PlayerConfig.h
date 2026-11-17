@@ -19,7 +19,7 @@ struct XII_GAMEENGINE_DLL xiiPlayerLaunchConfig
   xiiString                  m_sRole           = "standalone"; ///< standalone, server, client, or server-clients (instance zero is server).
   xiiString                  m_sConnect        = "127.0.0.1";
   xiiUInt32                  m_uiInstances     = 1;
-  xiiUInt32                  m_uiBasePort      = 0; ///< Zero chooses a session-specific block; game ports precede telemetry ports.
+  xiiUInt32                  m_uiBasePort      = 0; ///< Zero chooses a session-specific block of game ports.
   bool                       m_bArrangeWindows = true;
   xiiDynamicArray<xiiString> m_Arguments;
   /// One command line per instance. Runtime/window overrides; managed identity and IPC arguments are reserved.

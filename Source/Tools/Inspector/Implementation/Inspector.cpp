@@ -3,7 +3,6 @@
 #include <Inspector/InspectorPCH.h>
 
 #include <Foundation/Application/Application.h>
-#include <Foundation/Communication/Telemetry.h>
 #include <GuiFoundation/Style/DarkEditorStyle.moc.h>
 #include <Inspector/CVarsWidget.moc.h>
 #include <Inspector/FileWidget.moc.h>
@@ -63,33 +62,20 @@ public:
 
     xiiQtMainWindow MainWindow;
 
-    xiiTelemetry::AcceptMessagesForSystem('CVAR', true, xiiQtCVarsWidget::ProcessTelemetry, nullptr);
-    xiiTelemetry::AcceptMessagesForSystem('CMD', true, xiiQtCVarsWidget::ProcessTelemetryConsole, nullptr);
-    xiiTelemetry::AcceptMessagesForSystem(' LOG', true, xiiQtLogDockWidget::ProcessTelemetry, nullptr);
-    xiiTelemetry::AcceptMessagesForSystem(' MEM', true, xiiQtMemoryWidget::ProcessTelemetry, nullptr);
-    xiiTelemetry::AcceptMessagesForSystem('TIME', true, xiiQtTimeWidget::ProcessTelemetry, nullptr);
-    xiiTelemetry::AcceptMessagesForSystem(' APP', true, xiiQtMainWindow::ProcessTelemetry, nullptr);
-    xiiTelemetry::AcceptMessagesForSystem('FILE', true, xiiQtFileWidget::ProcessTelemetry, nullptr);
-    xiiTelemetry::AcceptMessagesForSystem('INPT', true, xiiQtInputWidget::ProcessTelemetry, nullptr);
-    xiiTelemetry::AcceptMessagesForSystem('STRT', true, xiiQtSubsystemsWidget::ProcessTelemetry, nullptr);
-    xiiTelemetry::AcceptMessagesForSystem('STAT', true, xiiQtMainWidget::ProcessTelemetry, nullptr);
-    xiiTelemetry::AcceptMessagesForSystem('PLUG', true, xiiQtPluginsWidget::ProcessTelemetry, nullptr);
-    xiiTelemetry::AcceptMessagesForSystem('EVNT', true, xiiQtGlobalEventsWidget::ProcessTelemetry, nullptr);
-    xiiTelemetry::AcceptMessagesForSystem('RFLC', true, xiiQtReflectionWidget::ProcessTelemetry, nullptr);
-    xiiTelemetry::AcceptMessagesForSystem('RESM', true, xiiQtResourceWidget::ProcessTelemetry, nullptr);
-    xiiTelemetry::AcceptMessagesForSystem('RGRF', true, xiiQtRenderGraphWidget::ProcessTelemetry, nullptr);
-    xiiTelemetry::AcceptMessagesForSystem('PSTR', true, xiiQtProfilingWidget::ProcessTelemetry, nullptr);
-    xiiTelemetry::AcceptMessagesForSystem('PSNP', true, xiiQtProfilingWidget::ProcessTelemetry, nullptr);
 
     QSettings     Settings;
-    const QString sServer = Settings.value("LastConnection", QLatin1String("localhost:1040")).toString();
+    const QString sServer = Settings.value("LastConnection", QLatin1String("local:")).toString();
 
-    xiiTelemetry::ConnectToServer(sServer.toUtf8().data()).IgnoreResult();
+    const auto diagnostics = xiiCommandLineUtils::GetGlobalInstance()->GetStringOption("-DiagnosticsConnect");
+    if (!diagnostics.IsEmpty())
+      MainWindow.ConnectDiagnostics(diagnostics).IgnoreResult();
+    else if (sServer.startsWith("local:") || sServer.startsWith("tls://") || sServer.startsWith("quic://"))
+      MainWindow.ConnectDiagnostics(sServer.toUtf8().constData()).IgnoreResult();
+
 
     MainWindow.show();
     SetReturnCode(app.exec());
 
-    xiiTelemetry::CloseConnection();
 
     return xiiApplication::Execution::Quit;
   }
