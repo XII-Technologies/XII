@@ -2,7 +2,11 @@
 
 #pragma once
 
+#include <Foundation/Containers/HybridArray.h>
+#include <Foundation/Threading/Lock.h>
 #include <Foundation/Types/ScopeExit.h>
+
+#include <utility>
 
 template <typename EventData, typename MutexType, xiiEventType EventType>
 xiiEventBase<EventData, MutexType, EventType>::xiiEventBase(xiiAllocator* pAllocator) :
@@ -17,90 +21,193 @@ template <typename EventData, typename MutexType, xiiEventType EventType>
 xiiEventBase<EventData, MutexType, EventType>::~xiiEventBase()
 {
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-  XII_ASSERT_ALWAYS(m_pSelf == this, "The xiiEvent was relocated in memory. This is not allowed, as it breaks the Unsubscribers.");
+  XII_ASSERT_ALWAYS(m_pSelf == this, "An event cannot be relocated.");
 #endif
+  XII_ASSERT_DEV(m_uiRecursionDepth == 0, "An event cannot be destroyed during broadcast.");
+  Clear();
 }
 
-/// A callback can be registered multiple times with different pass-through data (or even with the same,
-/// though that is less useful).
 template <typename EventData, typename MutexType, xiiEventType EventType>
-xiiEventSubscriptionID xiiEventBase<EventData, MutexType, EventType>::AddEventHandler(Handler handler) const
+xiiEventBase<EventData, MutexType, EventType>::Unsubscriber::Unsubscriber(Unsubscriber&& other)
+{
+  if (const auto* pEvent = other.m_pEvent.load(std::memory_order_acquire))
+  {
+    pEvent->TransferSubscription(other, *this);
+  }
+}
+
+template <typename EventData, typename MutexType, xiiEventType EventType>
+void xiiEventBase<EventData, MutexType, EventType>::Unsubscriber::operator=(Unsubscriber&& other)
+{
+  if (this == &other)
+  {
+    return;
+  }
+
+  Unsubscribe();
+  if (const auto* pEvent = other.m_pEvent.load(std::memory_order_acquire))
+  {
+    pEvent->TransferSubscription(other, *this);
+  }
+}
+
+template <typename EventData, typename MutexType, xiiEventType EventType>
+void xiiEventBase<EventData, MutexType, EventType>::Unsubscriber::Unsubscribe()
+{
+  if (const auto* pEvent = m_pEvent.load(std::memory_order_acquire))
+  {
+    pEvent->RemoveSubscription(*this);
+  }
+}
+
+template <typename EventData, typename MutexType, xiiEventType EventType>
+void xiiEventBase<EventData, MutexType, EventType>::TransferSubscription(Unsubscriber& ref_source, Unsubscriber& ref_destination) const
 {
   XII_LOCK(m_Mutex);
 
-  if constexpr (std::is_same_v<MutexType, xiiNoMutex>)
+  for (auto& entry : m_EventHandlers)
   {
-    if constexpr (EventType == xiiEventType::Default)
+    if (entry.m_pUnsubscriber == &ref_source)
     {
-      XII_ASSERT_DEV(m_uiRecursionDepth == 0, "Can't add or remove event handlers while broadcasting (without a mutex). Either enable the use of a mutex on this event, or switch to xiiCopyOnBroadcastEvent if this should be allowed. Since this event does not have a mutex, this error can also happen due to multi-threaded access.");
+      entry.m_pUnsubscriber = &ref_destination;
+      ref_destination.m_pEvent.store(this, std::memory_order_release);
+      ref_source.m_pEvent.store(nullptr, std::memory_order_release);
+      return;
     }
   }
+}
 
-  XII_ASSERT_DEV(!handler.IsComparable() || !HasEventHandler(handler), "The same event handler cannot be added twice");
+template <typename EventData, typename MutexType, xiiEventType EventType>
+void xiiEventBase<EventData, MutexType, EventType>::RemoveSubscription(Unsubscriber& ref_unsubscriber) const
+{
+  XII_LOCK(m_Mutex);
 
-  auto& item            = m_EventHandlers.ExpandAndGetRef();
-  item.m_Handler        = std::move(handler);
-  item.m_SubscriptionID = ++m_NextSubscriptionID;
+  for (xiiUInt32 uiIndex = 0; uiIndex < m_EventHandlers.GetCount(); ++uiIndex)
+  {
+    if (m_EventHandlers[uiIndex].m_pUnsubscriber == &ref_unsubscriber)
+    {
+      RemoveHandlerAt(uiIndex);
+      return;
+    }
+  }
+}
 
-  return item.m_SubscriptionID;
+template <typename EventData, typename MutexType, xiiEventType EventType>
+xiiEventSubscriptionID xiiEventBase<EventData, MutexType, EventType>::AddEventHandler(Handler handler) const
+{
+  return AddEventHandler(std::move(handler), nullptr);
 }
 
 template <typename EventData, typename MutexType, xiiEventType EventType>
 void xiiEventBase<EventData, MutexType, EventType>::AddEventHandler(Handler handler, Unsubscriber& ref_unsubscriber) const
 {
+  // The previous subscription may use a different mutex.
+  ref_unsubscriber.Unsubscribe();
+  AddEventHandler(std::move(handler), &ref_unsubscriber);
+}
+
+template <typename EventData, typename MutexType, xiiEventType EventType>
+xiiEventSubscriptionID xiiEventBase<EventData, MutexType, EventType>::AddEventHandler(Handler&& handler, Unsubscriber* pUnsubscriber) const
+{
   XII_LOCK(m_Mutex);
 
-  if constexpr (std::is_same_v<MutexType, xiiNoMutex>)
+  if constexpr (EventType == xiiEventType::Default && std::is_same_v<MutexType, xiiNoMutex>)
   {
-    if constexpr (EventType == xiiEventType::Default)
+    if (m_uiRecursionDepth != 0)
     {
-      XII_ASSERT_DEV(m_uiRecursionDepth == 0, "Can't add or remove event handlers while broadcasting (without a mutex). Either enable the use of a mutex on this event, or switch to xiiCopyOnBroadcastEvent if this should be allowed. Since this event does not have a mutex, this error can also happen due to multi-threaded access.");
+      XII_ASSERT_DEV(false, "Register handlers outside a default event's broadcast or use xiiCopyOnBroadcastEvent.");
+      return 0;
     }
   }
 
-  ref_unsubscriber.Unsubscribe();
-  ref_unsubscriber.m_pEvent         = this;
-  ref_unsubscriber.m_SubscriptionID = AddEventHandler(std::move(handler));
+  if (!handler.IsValid())
+  {
+    XII_ASSERT_DEV(false, "An event handler must be bound before registration.");
+    return 0;
+  }
+
+  XII_ASSERT_DEV(!handler.IsComparable() || !HasEventHandler(handler), "The same event handler cannot be added twice.");
+
+  if (++m_uiNextSubscriptionID == 0)
+  {
+    ++m_uiNextSubscriptionID;
+  }
+
+  auto& entry              = m_EventHandlers.ExpandAndGetRef();
+  entry.m_Handler          = std::move(handler);
+  entry.m_uiSubscriptionID = m_uiNextSubscriptionID;
+  entry.m_pUnsubscriber    = pUnsubscriber;
+
+  if (pUnsubscriber != nullptr)
+  {
+    pUnsubscriber->m_pEvent.store(this, std::memory_order_release);
+  }
+
+  return entry.m_uiSubscriptionID;
 }
 
+template <typename EventData, typename MutexType, xiiEventType EventType>
+void xiiEventBase<EventData, MutexType, EventType>::RemoveHandlerAt(xiiUInt32 uiIndex) const
+{
+  auto& entry = m_EventHandlers[uiIndex];
+  if (entry.m_pUnsubscriber != nullptr)
+  {
+    entry.m_pUnsubscriber->m_pEvent.store(nullptr, std::memory_order_release);
+    entry.m_pUnsubscriber = nullptr;
+  }
 
-/// Use exactly the same combination of callback/pass-through-data to unregister an event handlers.
-/// Otherwise an error occurs.
+  if constexpr (EventType == xiiEventType::Default)
+  {
+    if (m_uiRecursionDepth != 0)
+    {
+      // Keep the callable alive while it may still be on the stack.
+      entry.m_uiSubscriptionID = 0;
+      m_bHasInactiveHandlers   = true;
+      return;
+    }
+  }
+
+  for (xiiUInt32 uiNext = uiIndex + 1; uiNext < m_EventHandlers.GetCount(); ++uiNext)
+  {
+    m_EventHandlers[uiNext - 1] = std::move(m_EventHandlers[uiNext]);
+  }
+
+  m_EventHandlers.PopBack();
+}
+
+template <typename EventData, typename MutexType, xiiEventType EventType>
+void xiiEventBase<EventData, MutexType, EventType>::RemoveInactiveHandlers()
+{
+  xiiUInt32 uiActiveCount = 0;
+  for (xiiUInt32 uiIndex = 0; uiIndex < m_EventHandlers.GetCount(); ++uiIndex)
+  {
+    if (m_EventHandlers[uiIndex].m_uiSubscriptionID != 0)
+    {
+      if (uiActiveCount != uiIndex)
+      {
+        m_EventHandlers[uiActiveCount] = std::move(m_EventHandlers[uiIndex]);
+      }
+
+      ++uiActiveCount;
+    }
+  }
+
+  m_EventHandlers.SetCount(uiActiveCount);
+  m_bHasInactiveHandlers = false;
+}
+
 template <typename EventData, typename MutexType, xiiEventType EventType>
 void xiiEventBase<EventData, MutexType, EventType>::RemoveEventHandler(const Handler& handler) const
 {
   XII_ASSERT_DEV(handler.IsComparable(), "Lambdas that capture data cannot be removed via function pointer. Use a xiiEventSubscriptionID instead.");
-
   XII_LOCK(m_Mutex);
 
-  if constexpr (EventType == xiiEventType::Default)
+  for (xiiUInt32 uiIndex = 0; uiIndex < m_EventHandlers.GetCount(); ++uiIndex)
   {
-    if constexpr (std::is_same_v<MutexType, xiiNoMutex>)
+    const auto& entry = m_EventHandlers[uiIndex];
+    if (entry.m_uiSubscriptionID != 0 && entry.m_Handler.IsEqualIfComparable(handler))
     {
-      XII_ASSERT_DEV(m_uiRecursionDepth == 0, "Can't add or remove event handlers while broadcasting (without a mutex). Either enable the use of a mutex on this event, or switch to xiiCopyOnBroadcastEvent if this should be allowed. Since this event does not have a mutex, this error can also happen due to multi-threaded access.");
-    }
-  }
-
-  for (xiiUInt32 idx = 0; idx < m_EventHandlers.GetCount(); ++idx)
-  {
-    if (m_EventHandlers[idx].m_Handler.IsEqualIfComparable(handler))
-    {
-      if constexpr (EventType == xiiEventType::Default)
-      {
-        // if this event does not copy the handlers, and we are currently broadcasting
-        // we can't shrink the size of the array, however, we can replace elements (the check above says that we have a mutex, so this is fine)
-
-        if (m_uiRecursionDepth > 0)
-        {
-          // we just write an invalid handler here, and let the broadcast function clean it up for us
-          m_EventHandlers[idx].m_Handler        = {};
-          m_EventHandlers[idx].m_SubscriptionID = {};
-          return;
-        }
-      }
-
-      // if we are not broadcasting, or the broadcast uses a copy anyway, we can just modify the handler array directly
-      m_EventHandlers.RemoveAtAndCopy(idx);
+      RemoveHandlerAt(uiIndex);
       return;
     }
   }
@@ -116,56 +223,31 @@ void xiiEventBase<EventData, MutexType, EventType>::RemoveEventHandler(xiiEventS
     return;
   }
 
-  const xiiEventSubscriptionID subId = ref_id;
-  ref_id                             = 0;
-
+  const xiiEventSubscriptionID uiSubscriptionID = ref_id;
+  ref_id                                        = 0;
   XII_LOCK(m_Mutex);
 
-  if constexpr (EventType == xiiEventType::Default)
+  for (xiiUInt32 uiIndex = 0; uiIndex < m_EventHandlers.GetCount(); ++uiIndex)
   {
-    if constexpr (std::is_same_v<MutexType, xiiNoMutex>)
+    if (m_EventHandlers[uiIndex].m_uiSubscriptionID == uiSubscriptionID)
     {
-      XII_ASSERT_DEV(m_uiRecursionDepth == 0, "Can't add or remove event handlers while broadcasting (without a mutex). Either enable the use of a mutex on this event, or switch to xiiCopyOnBroadcastEvent if this should be allowed. Since this event does not have a mutex, this error can also happen due to multi-threaded access.");
-    }
-  }
-
-  for (xiiUInt32 idx = 0; idx < m_EventHandlers.GetCount(); ++idx)
-  {
-    if (m_EventHandlers[idx].m_SubscriptionID == subId)
-    {
-      if constexpr (EventType == xiiEventType::Default)
-      {
-        // if this event does not copy the handlers, and we are currently broadcasting
-        // we can't shrink the size of the array, however, we can replace elements (the check above says that we have a mutex, so this is fine)
-
-        if (m_uiRecursionDepth > 0)
-        {
-          // we just write an invalid handler here, and let the broadcast function clean it up for us
-          m_EventHandlers[idx].m_Handler        = {};
-          m_EventHandlers[idx].m_SubscriptionID = {};
-          return;
-        }
-      }
-
-      // if we are not broadcasting, or the broadcast uses a copy anyway, we can just modify the handler array directly
-      m_EventHandlers.RemoveAtAndCopy(idx);
+      RemoveHandlerAt(uiIndex);
       return;
     }
   }
 
-  XII_ASSERT_DEV(false, "xiiEvent::RemoveEventHandler: Invalid subscription ID '{0}'.", (xiiInt32)subId);
+  XII_ASSERT_DEV(false, "xiiEvent::RemoveEventHandler: Invalid subscription ID '{0}'.", uiSubscriptionID);
 }
 
 template <typename EventData, typename MutexType, xiiEventType EventType>
 bool xiiEventBase<EventData, MutexType, EventType>::HasEventHandler(const Handler& handler) const
 {
-  XII_ASSERT_DEV(handler.IsComparable(), "Lambdas that capture data cannot be checked via function pointer. Use a xiiEventSubscriptionID instead.");
-
+  XII_ASSERT_DEV(handler.IsComparable(), "Lambdas that capture data cannot be checked via function pointer.");
   XII_LOCK(m_Mutex);
 
-  for (xiiUInt32 i = 0; i < m_EventHandlers.GetCount(); ++i)
+  for (const auto& entry : m_EventHandlers)
   {
-    if (m_EventHandlers[i].m_Handler.IsEqualIfComparable(handler))
+    if (entry.m_uiSubscriptionID != 0 && entry.m_Handler.IsEqualIfComparable(handler))
     {
       return true;
     }
@@ -179,6 +261,27 @@ void xiiEventBase<EventData, MutexType, EventType>::Clear()
 {
   XII_LOCK(m_Mutex);
 
+  if constexpr (EventType == xiiEventType::Default)
+  {
+    if (m_uiRecursionDepth != 0)
+    {
+      for (xiiUInt32 uiIndex = 0; uiIndex < m_EventHandlers.GetCount(); ++uiIndex)
+      {
+        RemoveHandlerAt(uiIndex);
+      }
+
+      return;
+    }
+  }
+
+  for (auto& entry : m_EventHandlers)
+  {
+    if (entry.m_pUnsubscriber != nullptr)
+    {
+      entry.m_pUnsubscriber->m_pEvent.store(nullptr, std::memory_order_release);
+    }
+  }
+
   m_EventHandlers.Clear();
 }
 
@@ -187,110 +290,101 @@ bool xiiEventBase<EventData, MutexType, EventType>::IsEmpty() const
 {
   XII_LOCK(m_Mutex);
 
+  if constexpr (EventType == xiiEventType::Default)
+  {
+    if (m_bHasInactiveHandlers)
+    {
+      for (const auto& entry : m_EventHandlers)
+      {
+        if (entry.m_uiSubscriptionID != 0)
+        {
+          return false;
+        }
+      }
+
+      return true;
+    }
+  }
+
   return m_EventHandlers.IsEmpty();
 }
 
-/// The notification is sent to all event handlers in the order that they were registered.
 template <typename EventData, typename MutexType, xiiEventType EventType>
 void xiiEventBase<EventData, MutexType, EventType>::Broadcast(EventData eventData, xiiUInt8 uiMaxRecursionDepth)
 {
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  XII_ASSERT_ALWAYS(m_pSelf == this, "The event must be initialized and remain at its original address.");
+#endif
+
   if constexpr (EventType == xiiEventType::Default)
   {
     XII_LOCK(m_Mutex);
 
     XII_ASSERT_DEV(m_uiRecursionDepth <= uiMaxRecursionDepth, "The event has been triggered recursively or from several threads simultaneously.");
-
     if (m_uiRecursionDepth > uiMaxRecursionDepth)
     {
       return;
     }
 
-#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-    XII_ASSERT_ALWAYS(m_pSelf != nullptr, "This xiiEvent is broadcasted before it was initialized.");
-    XII_ASSERT_ALWAYS(m_pSelf == this, "The xiiEvent was relocated in memory. This is not allowed, as it breaks the Unsubscribers.");
-#endif
-
     ++m_uiRecursionDepth;
-
-    // RAII to ensure correctness in case exceptions are used
-    auto scopeExit = xiiMakeScopeExit([&]() {
-      --m_uiRecursionDepth;
+    auto scopeExit = xiiMakeScopeExit([this]() {
+      if (--m_uiRecursionDepth == 0 && m_bHasInactiveHandlers)
+      {
+        RemoveInactiveHandlers();
+      }
     });
 
-    // don't execute handlers that are added while we are broadcasting
-    xiiUInt32 uiMaxHandlers = m_EventHandlers.GetCount();
-
-    for (xiiUInt32 ui = 0; ui < uiMaxHandlers;)
+    const xiiUInt32 uiHandlerCount = m_EventHandlers.GetCount();
+    for (xiiUInt32 uiIndex = 0; uiIndex < uiHandlerCount; ++uiIndex)
     {
-      if (m_EventHandlers[ui].m_Handler.IsValid())
+      const auto& entry = m_EventHandlers[uiIndex];
+      if (entry.m_uiSubscriptionID != 0)
       {
-        m_EventHandlers[ui].m_Handler(eventData);
-        ++ui;
-      }
-      else
-      {
-        m_EventHandlers.RemoveAtAndCopy(ui);
-        --uiMaxHandlers;
+        entry.m_Handler(eventData);
       }
     }
   }
   else
   {
-    xiiHybridArray<HandlerData, 16> eventHandlers;
+    xiiHybridArray<Handler, 16> handlers;
     {
       XII_LOCK(m_Mutex);
 
       if constexpr (RecursionDepthSupported)
       {
         XII_ASSERT_DEV(m_uiRecursionDepth <= uiMaxRecursionDepth, "The event has been triggered recursively or from several threads simultaneously.");
-
         if (m_uiRecursionDepth > uiMaxRecursionDepth)
         {
           return;
         }
 
-#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-        XII_ASSERT_ALWAYS(m_pSelf == this, "The xiiEvent was relocated in memory. This is not allowed, as it breaks the Unsubscribers.");
-#endif
-
         ++m_uiRecursionDepth;
       }
       else
       {
-        XII_ASSERT_DEV(uiMaxRecursionDepth == 255, "uiMaxRecursionDepth is not supported if xiiEventType::CopyOnBroadcast is used and the event needs to be threadsafe.");
+        XII_ASSERT_DEV(uiMaxRecursionDepth == MaxRecursionDepthDefault, "Recursion limits are unavailable for thread-safe snapshot events.");
       }
 
-#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-      XII_ASSERT_ALWAYS(m_pSelf == this, "The xiiEvent was relocated in memory. This is not allowed, as it breaks the Unsubscribers.");
-#endif
-
-      eventHandlers = m_EventHandlers;
+      handlers.Reserve(m_EventHandlers.GetCount());
+      for (const auto& entry : m_EventHandlers)
+      {
+        handlers.PushBack(entry.m_Handler);
+      }
     }
 
-    // RAII to ensure correctness in case exceptions are used
-    auto scopeExit = xiiMakeScopeExit([&]() {
-    // Bug in MSVC 2017. Can't use if constexpr.
-#if XII_ENABLED(XII_COMPILER_MSVC) && _MSC_VER < 1920
-      if (RecursionDepthSupported)
-      {
-        --m_uiRecursionDepth;
-      }
-#else
+    auto scopeExit = xiiMakeScopeExit([this]() {
       if constexpr (RecursionDepthSupported)
       {
         --m_uiRecursionDepth;
       }
-#endif
     });
 
-    const xiiUInt32 uiHandlerCount = eventHandlers.GetCount();
-    for (xiiUInt32 ui = 0; ui < uiHandlerCount; ++ui)
+    for (const Handler& handler : handlers)
     {
-      eventHandlers[ui].m_Handler(eventData);
+      handler(eventData);
     }
   }
 }
-
 
 template <typename EventData, typename MutexType, typename AllocatorWrapper, xiiEventType EventType>
 xiiEvent<EventData, MutexType, AllocatorWrapper, EventType>::xiiEvent() :

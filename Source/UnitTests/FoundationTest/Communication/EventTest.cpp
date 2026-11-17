@@ -141,6 +141,73 @@ XII_CREATE_SIMPLE_TEST(Communication, Event)
     }
   }
 
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Subscription invalidation")
+  {
+    using TestEvent = xiiEvent<xiiInt32*>;
+    Test                    test;
+    TestEvent::Unsubscriber subscription;
+    {
+      TestEvent                event;
+      const TestEvent::Handler handler(&Test::DoStuff, &test);
+
+      event.AddEventHandler(handler, subscription);
+      TestEvent::Unsubscriber moved(std::move(subscription));
+      XII_TEST_BOOL(!subscription.IsSubscribed());
+      XII_TEST_BOOL(moved.IsSubscribed());
+
+      event.RemoveEventHandler(handler);
+      XII_TEST_BOOL(!moved.IsSubscribed());
+
+      event.AddEventHandler(handler, moved);
+      subscription = std::move(moved);
+      XII_TEST_BOOL(!moved.IsSubscribed());
+      XII_TEST_BOOL(subscription.IsSubscribed());
+
+      event.Clear();
+      XII_TEST_BOOL(!subscription.IsSubscribed());
+      event.AddEventHandler(handler, subscription);
+    }
+
+    XII_TEST_BOOL(!subscription.IsSubscribed());
+    subscription.Unsubscribe();
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Reentrant default dispatch")
+  {
+    using TestEvent = xiiEvent<xiiUInt32, xiiMutex>;
+    struct DispatchState
+    {
+      TestEvent               m_Event;
+      TestEvent::Unsubscriber m_Subscription;
+      xiiUInt32               m_uiOriginalCalls = 0;
+      xiiUInt32               m_uiNewCalls      = 0;
+    };
+
+    DispatchState state;
+    state.m_Event.AddEventHandler(
+      [pState = &state](xiiUInt32 uiValue) {
+        pState->m_Subscription.Unsubscribe();
+        for (xiiUInt32 uiIndex = 0; uiIndex < 128; ++uiIndex)
+        {
+          pState->m_Event.AddEventHandler([pState](xiiUInt32 uiNestedValue) { pState->m_uiNewCalls += uiNestedValue; });
+        }
+
+        pState->m_uiOriginalCalls += uiValue;
+        pState->m_Event.Broadcast(2, 1);
+        pState->m_Event.Clear();
+        XII_TEST_BOOL(pState->m_Event.IsEmpty());
+        pState->m_uiOriginalCalls += uiValue;
+      },
+      state.m_Subscription);
+    state.m_Event.AddEventHandler([](xiiUInt32 uiValue) { XII_TEST_INT(uiValue, 2); });
+
+    state.m_Event.Broadcast(1);
+    XII_TEST_BOOL(!state.m_Subscription.IsSubscribed());
+    XII_TEST_INT(state.m_uiOriginalCalls, 2);
+    XII_TEST_INT(state.m_uiNewCalls, 256);
+    XII_TEST_BOOL(state.m_Event.IsEmpty());
+  }
+
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Remove while iterate")
   {
     using TestEvent = xiiEvent<int, xiiMutex, xiiDefaultAllocatorWrapper, xiiEventType::CopyOnBroadcast>;
