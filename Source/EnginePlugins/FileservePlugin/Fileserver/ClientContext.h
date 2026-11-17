@@ -31,7 +31,7 @@ public:
     xiiString m_sPathOnClient;
     xiiString m_sPathOnServer;
     xiiString m_sMountPoint;
-    bool      m_bMounted = false;
+    bool      m_bMounted  = false;
     bool      m_bWritable = false;
   };
 

@@ -345,7 +345,7 @@ void xiiFileserver::HandleFileRequest(xiiFileserveClientContext& client, xiiRemo
 
   auto&                                 reader  = msg.GetReader();
   xiiUInt8                              uiForce = 0;
-  xiiStringBuilder sRequestedFile;
+  xiiStringBuilder                      sRequestedFile;
   xiiUInt64                             uiIdLow  = 0;
   xiiUInt64                             uiIdHigh = 0;
   xiiFileserveClientContext::FileStatus status;
@@ -435,7 +435,7 @@ void xiiFileserver::HandleFileRequest(xiiFileserveClientContext& client, xiiRemo
 
 void xiiFileserver::HandleDeleteFileRequest(xiiFileserveClientContext& client, xiiRemoteMessage& msg)
 {
-  xiiUInt16 uiDataDirID = 0xffff;
+  xiiUInt16        uiDataDirID = 0xffff;
   xiiStringBuilder sFile;
   auto&            reader = msg.GetReader();
   if (reader.ReadWordValue(&uiDataDirID).Failed() || uiDataDirID >= client.m_MountedDataDirs.GetCount() ||
@@ -524,7 +524,7 @@ void xiiFileserver::HandleUploadFileTransfer(xiiFileserveClientContext& client, 
   if (request != upload.m_Id)
     return;
 
-  xiiUInt16 uiChunkSize = 0;
+  xiiUInt16           uiChunkSize = 0;
   constexpr xiiUInt32 uiHeader    = 16 + sizeof(uiChunkSize);
   if (reader.ReadWordValue(&uiChunkSize).Failed() || uiChunkSize == 0 ||
       bytes.GetCount() != uiHeader + uiChunkSize || uiChunkSize > upload.m_uiSize - upload.m_uiReceived ||

@@ -149,7 +149,7 @@ xiiFileserveFileState xiiFileserveClientContext::GetFileStatus(xiiUInt16& inout_
     const bool bSameHash      = inout_status.m_uiHash == uiHash && inout_uiDataDirID == uiDataDirID;
     const bool bSameTimestamp = inout_status.m_iTimestamp == iTimestamp;
     inout_status              = {iTimestamp, uiHash, uiFileSize};
-    inout_uiDataDirID = uiDataDirID;
+    inout_uiDataDirID         = uiDataDirID;
     if (bSameHash)
     {
       out_file.Close();

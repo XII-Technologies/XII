@@ -67,5 +67,4 @@ private:
   ShaderData            m_ShaderData;
 
   xiiSet<xiiString> m_IncludeFiles;
-
 };

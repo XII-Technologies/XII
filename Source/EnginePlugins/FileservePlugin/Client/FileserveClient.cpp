@@ -54,7 +54,6 @@ xiiFileserveClient::xiiFileserveClient() :
 
   if (xiiCommandLineUtils::GetGlobalInstance()->GetBoolOption("-fs_off"))
     s_bEnableFileserve = false;
-
 }
 
 xiiFileserveClient::~xiiFileserveClient()
@@ -580,8 +579,8 @@ void xiiFileserveClient::HandleFileTransferMsg(xiiRemoteMessage& msg)
   if (request != m_CurFileRequestGuid)
     return;
 
-  xiiUInt16 uiChunkSize = 0;
-  xiiUInt32 uiFileSize = 0;
+  xiiUInt16           uiChunkSize  = 0;
+  xiiUInt32           uiFileSize   = 0;
   constexpr xiiUInt32 uiHeaderSize = 16 + sizeof(uiChunkSize) + sizeof(uiFileSize);
   if (reader.ReadWordValue(&uiChunkSize).Failed() || reader.ReadDWordValue(&uiFileSize).Failed() ||
       msg.GetMessageData().GetCount() != uiHeaderSize + uiChunkSize ||
@@ -711,7 +710,7 @@ xiiResult xiiFileserveClient::WriteMetaFile(xiiStringView sCachedMetaFile, xiiIn
   xiiStringBuilder sId;
   xiiConversionUtils::ToString(xiiUuid::MakeUuid(), sId);
   const xiiStringBuilder sStagingPath(sCachedMetaFile, ".", sId, ".tmp");
-  xiiOSFile file;
+  xiiOSFile              file;
   XII_SUCCEED_OR_RETURN(file.Open(sStagingPath, xiiFileOpenMode::Write));
   XII_SCOPE_EXIT(file.Close(); xiiOSFile::DeleteFile(sStagingPath).IgnoreResult());
 
