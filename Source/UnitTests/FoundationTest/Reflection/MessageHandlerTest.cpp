@@ -136,6 +136,11 @@ XII_CREATE_SIMPLE_TEST(Reflection, MessageHandler)
     handled         = pRTTI->DispatchMessage(&test, subMsg); // should do nothing
     XII_TEST_BOOL(!handled);
 
+    GetMessage getMsg;
+    getMsg.m_iValue = 0;
+    XII_TEST_BOOL(pRTTI->DispatchMessage(&test, getMsg));
+    XII_TEST_INT(getMsg.m_iValue, 4);
+
     XII_TEST_INT(test.m_iValue, 4);
   }
 

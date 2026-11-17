@@ -14,10 +14,7 @@ xiiMessageQueueBase<MetaDataType>::xiiMessageQueueBase(const xiiMessageQueueBase
 }
 
 template <typename MetaDataType>
-xiiMessageQueueBase<MetaDataType>::~xiiMessageQueueBase()
-{
-  Clear();
-}
+xiiMessageQueueBase<MetaDataType>::~xiiMessageQueueBase() = default;
 
 template <typename MetaDataType>
 void xiiMessageQueueBase<MetaDataType>::operator=(const xiiMessageQueueBase& rhs)
@@ -70,15 +67,12 @@ XII_ALWAYS_INLINE void xiiMessageQueueBase<MetaDataType>::Compact()
 template <typename MetaDataType>
 void xiiMessageQueueBase<MetaDataType>::Enqueue(xiiMessage* pMessage, const MetaDataType& metaData)
 {
-  Entry entry;
-  entry.m_pMessage = pMessage;
-  entry.m_MetaData = metaData;
+  XII_LOCK(m_Mutex);
 
-  {
-    XII_LOCK(m_Mutex);
-
-    m_Queue.PushBack(entry);
-  }
+  Entry& entry          = m_Queue.ExpandAndGetRef();
+  entry.m_pMessage      = pMessage;
+  entry.m_MetaData      = metaData;
+  entry.m_uiMessageHash = 0;
 }
 
 template <typename MetaDataType>

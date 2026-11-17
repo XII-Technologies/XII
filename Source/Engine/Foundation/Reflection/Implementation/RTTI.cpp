@@ -2,12 +2,11 @@
 
 #include <Foundation/FoundationPCH.h>
 
-#include <Foundation/Reflection/Implementation/AbstractProperty.h>
-#include <Foundation/Reflection/Implementation/MessageHandler.h>
-
-#include <Foundation/Messaging/Message.h>
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Containers/HashTable.h>
+#include <Foundation/Messaging/Message.h>
+#include <Foundation/Messaging/MessageHandler.h>
+#include <Foundation/Reflection/Implementation/AbstractProperty.h>
 
 struct xiiTypeData
 {
