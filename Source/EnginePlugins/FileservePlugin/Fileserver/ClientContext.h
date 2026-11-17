@@ -9,6 +9,9 @@
 
 class xiiOSFile;
 
+/// ENet connection token for the FileServe wire format with correlated uploads and shader replies.
+inline constexpr xiiUInt32 XII_FILESERVE_TRANSFER_PROTOCOL = 0x58494632U; // XIF2
+
 enum class xiiFileserveFileState
 {
   None              = 0,

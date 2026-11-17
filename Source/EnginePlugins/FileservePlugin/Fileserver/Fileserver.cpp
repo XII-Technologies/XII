@@ -77,7 +77,7 @@ void xiiFileserver::StartServer()
   xiiStringBuilder tmp;
 
   m_pNetwork = xiiRemoteInterfaceEnet::Make();
-  if (m_pNetwork->StartServer('XIFS', xiiConversionUtils::ToString(m_uiPort, tmp), false).Failed())
+  if (m_pNetwork->StartServer(XII_FILESERVE_TRANSFER_PROTOCOL, xiiConversionUtils::ToString(m_uiPort, tmp), false).Failed())
   {
     m_pNetwork.Clear();
     xiiLog::Error("Could not listen on FileServe port {}.", m_uiPort);

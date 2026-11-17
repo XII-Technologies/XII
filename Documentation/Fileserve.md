@@ -16,7 +16,7 @@ Discovery protects the address advertisement. The subsequent file service connec
 - Relative paths stay under the mounted directory after canonicalization. File operations reject traversal, symlinks encountered in the requested path, and non-regular files. Mount paths are controlled by the server.
 - Downloads and uploads stream through staged files. The receiver checks the byte count and hash before atomic installation. Uploads have one active record per legacy client ID, with a global limit of 64 records. An upload acknowledgement identifies the request and indicates whether the server committed the file.
 - Cache data and metadata are keyed by server address and mount. The client checks cached content against its stored hash before reusing it after startup. Set `-fs_cache_dir <absolute-path>` to select a cache directory. Resource reload invalidates the cache check timestamps before notifying the resource manager.
-- File and shader operations use bounded synchronous waits through the legacy transport. Update both the server and client together to use the correlated upload and shader message formats.
+- File and shader operations use bounded synchronous waits through the legacy transport. The transfer connection token changed to `XIF2` to reject peers using the older upload and shader message formats. Update both the server and client together.
 
 ## Shader compilation
 
