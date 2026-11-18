@@ -247,6 +247,9 @@ namespace
 {
   bool Eligible(const xiiRTTI* pType)
   {
+    // Explicit identity also opts in to a schema for empty control messages.
+    if (pType->GetAttributeByType<xiiNetworkIdentityAttribute>() != nullptr)
+      return true;
     xiiHybridArray<const xiiAbstractProperty*, 32> properties;
     pType->GetAllProperties(properties);
     for (const auto* pProperty : properties)
@@ -535,7 +538,8 @@ xiiNetworkDataError xiiNetworkTypeRegistryState::BuildSchema(const xiiRTTI* pTyp
       fieldInfo.m_uiCodecVersion = field.m_Value.m_pCodec->GetVersion();
     }
     xiiDynamicArray<xiiUInt8> signature;
-    xiiNetworkBinaryWriter    signatureWriter(signature, 256);
+    // A field signature can contain the full validated 512-value enum table.
+    xiiNetworkBinaryWriter signatureWriter(signature, 512 * sizeof(xiiInt64) + 64);
     signatureWriter.U8(static_cast<xiiUInt8>(fieldInfo.m_Category));
     ValueDescriptor(field.m_Value, signatureWriter);
     signatureWriter.U8(fieldInfo.m_uiQuantizationBits);

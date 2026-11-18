@@ -4,10 +4,11 @@
 
 #include <FileservePlugin/FileservePluginDLL.h>
 
-#include <Foundation/Communication/RemoteInterface.h>
 #include <Foundation/Configuration/Singleton.h>
 #include <Foundation/IO/OSFile.h>
 #include <Foundation/Interfaces/RemoteToolingInterface.h>
+#include <Foundation/Network/NetworkHost.h>
+#include <Foundation/Types/Delegate.h>
 #include <Foundation/Types/UniquePtr.h>
 #include <Foundation/Types/Uuid.h>
 
@@ -15,6 +16,12 @@ namespace xiiDataDirectory
 {
   class FileserveType;
 }
+
+namespace xiiFileserveTransfer
+{
+  enum class Operation : xiiUInt8;
+  class Request;
+} // namespace xiiFileserveTransfer
 
 /// Singleton that represents the client side part of a fileserve connection
 ///
@@ -103,8 +110,8 @@ private:
 
   struct DataDir
   {
-    // xiiString m_sRootName;
-    // xiiString m_sPathOnClient;
+    xiiString m_sRootName;
+    xiiString m_sPathOnClient;
     xiiString m_sMountPoint;
     bool      m_bMounted = false;
 
@@ -117,9 +124,12 @@ private:
   static void      ComputeDataDirMountPoint(xiiStringView sDataDir, xiiStringBuilder& out_sMountPoint);
   void             BuildPathInCache(const char* szFile, const char* szMountPoint, xiiStringBuilder* out_pAbsPath, xiiStringBuilder* out_pFullPathMeta) const;
   void             GetFullDataDirCachePath(const char* szDataDir, xiiStringBuilder& out_sFullPath, xiiStringBuilder& out_sFullPathMeta) const;
-  void             NetworkMsgHandler(xiiRemoteMessage& msg);
-  void             HandleFileTransferMsg(xiiRemoteMessage& msg);
-  void             HandleFileTransferFinishedMsg(xiiRemoteMessage& msg);
+  void             ProcessNetworkEvents(xiiTime wait = {});
+  void             NetworkMsgHandler(xiiFileserveTransfer::Operation operation, xiiArrayPtr<const xiiUInt8> data);
+  void             HandleFileTransferMsg(xiiArrayPtr<const xiiUInt8> data);
+  void             HandleFileTransferFinishedMsg(xiiArrayPtr<const xiiUInt8> data);
+  xiiResult        SendRequest(const xiiFileserveTransfer::Request& request, xiiTime deadline);
+  xiiResult        SendMount(xiiUInt16 uiDataDir, const DataDir& dir);
   static xiiResult WriteMetaFile(xiiStringView sCachedMetaFile, xiiInt64 iFileTimeStamp, xiiUInt64 uiFileHash);
   xiiResult        CommitDownload(xiiStringView sCachedFile, xiiUInt64 uiHash);
   void             DiscardDownload();
@@ -134,29 +144,32 @@ private:
   void             ShutdownConnection();
   void             ClearState();
 
-  mutable xiiMutex                 m_Mutex;
-  mutable xiiString                m_sServerConnectionAddress;
-  xiiString                        m_sFileserveCacheFolder;
-  xiiString                        m_sFileserveCacheMetaFolder;
-  bool                             m_bDownloading              = false;
-  bool                             m_bFailedToConnect          = false;
-  bool                             m_bWaitingForUploadFinished = false;
-  bool                             m_bUploadSucceeded          = false;
-  xiiUuid                          m_UploadRequest;
-  xiiUuid                          m_CurFileRequestGuid;
-  xiiStringBuilder                 m_sCurFileRequest;
-  xiiUniquePtr<xiiRemoteInterface> m_pNetwork;
-  xiiOSFile                        m_DownloadFile;
-  xiiString                        m_sDownloadStagingPath;
-  xiiUInt32                        m_uiDownloadSize        = 0;
-  xiiUInt32                        m_uiDownloadReceived    = 0;
-  xiiUInt16                        m_uiDownloadDataDir     = 0xffff;
-  bool                             m_bDownloadSucceeded    = false;
-  bool                             m_bDownloadStaged       = false;
-  bool                             m_bShaderCompiling      = false;
-  bool                             m_bForceDownloadDataDir = false;
-  bool                             m_bReloadResources      = false;
-  xiiHybridArray<xiiString, 4>     m_TryServerAddresses;
+  mutable xiiMutex                               m_Mutex;
+  mutable xiiString                              m_sServerConnectionAddress;
+  xiiString                                      m_sFileserveCacheFolder;
+  xiiString                                      m_sFileserveCacheMetaFolder;
+  bool                                           m_bDownloading              = false;
+  bool                                           m_bFailedToConnect          = false;
+  bool                                           m_bWaitingForUploadFinished = false;
+  bool                                           m_bUploadSucceeded          = false;
+  xiiUuid                                        m_UploadRequest;
+  xiiUInt32                                      m_uiUploadAcknowledged = 0;
+  xiiUuid                                        m_CurFileRequestGuid;
+  xiiStringBuilder                               m_sCurFileRequest;
+  xiiUniquePtr<xiiNetworkHost>                   m_pNetwork;
+  xiiNetworkChannel                              m_Channel;
+  xiiDelegate<void(xiiArrayPtr<const xiiUInt8>)> m_ShaderResponse;
+  xiiOSFile                                      m_DownloadFile;
+  xiiString                                      m_sDownloadStagingPath;
+  xiiUInt32                                      m_uiDownloadSize        = 0;
+  xiiUInt32                                      m_uiDownloadReceived    = 0;
+  xiiUInt16                                      m_uiDownloadDataDir     = 0xffff;
+  bool                                           m_bDownloadSucceeded    = false;
+  bool                                           m_bDownloadStaged       = false;
+  bool                                           m_bShaderCompiling      = false;
+  bool                                           m_bForceDownloadDataDir = false;
+  bool                                           m_bReloadResources      = false;
+  xiiHybridArray<xiiString, 4>                   m_TryServerAddresses;
 
   xiiMap<xiiString, xiiUInt16> m_FileDataDir;
   xiiHybridArray<DataDir, 8>   m_MountedDataDirs;

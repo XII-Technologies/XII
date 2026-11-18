@@ -11,7 +11,6 @@ enum class xiiFileserveActivityType
   StartServer,
   StopServer,
   ClientConnect,
-  ClientReconnected,
   ClientDisconnect,
   Mount,
   MountFailed,

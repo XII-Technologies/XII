@@ -2,6 +2,8 @@
 
 #include <Foundation/FoundationPCH.h>
 
+#include <Foundation/Network/Reflection/NetworkAttributes.h>
+
 #include <Foundation/Application/Config/PluginConfig.h>
 #include <Foundation/Application/Config/ProjectManifest.h>
 #include <Foundation/IO/FileSystem/DeferredFileWriter.h>
@@ -17,7 +19,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiApplicationPluginConfig, xiiNoBase, 1, xiiRTT
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_ARRAY_MEMBER_PROPERTY("Plugins", m_Plugins),
+    XII_ARRAY_MEMBER_PROPERTY("Plugins", m_Plugins)->AddAttributes(new xiiNetworkAttribute(1)),
   }
   XII_END_PROPERTIES;
 }
@@ -27,9 +29,9 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiApplicationPluginConfig_PluginConfig, xiiNoBa
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_MEMBER_PROPERTY("RelativePath", m_sAppDirRelativePath),
-    XII_MEMBER_PROPERTY("LoadCopy", m_bLoadCopy),
-    XII_MEMBER_PROPERTY("PluginDirectory", m_sPluginDirectory),
+    XII_MEMBER_PROPERTY("RelativePath", m_sAppDirRelativePath)->AddAttributes(new xiiNetworkAttribute(1)),
+    XII_MEMBER_PROPERTY("LoadCopy", m_bLoadCopy)->AddAttributes(new xiiNetworkAttribute(2)),
+    XII_MEMBER_PROPERTY("PluginDirectory", m_sPluginDirectory)->AddAttributes(new xiiNetworkAttribute(3)),
   }
   XII_END_PROPERTIES;
 }

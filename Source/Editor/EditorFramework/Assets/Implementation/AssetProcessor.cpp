@@ -308,7 +308,7 @@ xiiResult xiiProcessTask::StartProcess()
   const char* EditorProcessorExecutable = "xiiEditorProcessor";
 #endif
 
-  if (m_pIPC->StartClientProcess(EditorProcessorExecutable, args, false, pFirstAllowedMessageType).Failed())
+  if (m_pIPC->StartClientProcess(EditorProcessorExecutable, args, xiiProcessMessageDomain::Asset, pFirstAllowedMessageType).Failed())
   {
     return XII_FAILURE;
   }
@@ -568,7 +568,8 @@ bool xiiProcessTask::Tick(bool bStartNewWork)
           }
           else
           {
-            m_State = State::WaitingForConnection;
+            m_State              = State::WaitingForConnection;
+            m_ConnectionDeadline = xiiTime::Now() + xiiTime::MakeFromSeconds(30);
             return true; // call again later
           }
         }
@@ -580,6 +581,7 @@ bool xiiProcessTask::Tick(bool bStartNewWork)
       break;
       case State::WaitingForConnection:
       {
+        m_pIPC->ProcessMessages();
         if (!m_pIPC->IsClientAlive())
         {
           m_State = State::ReportResult;
@@ -591,8 +593,14 @@ bool xiiProcessTask::Tick(bool bStartNewWork)
         {
           m_State = State::Ready;
         }
-        else
+        else if (xiiTime::Now() < m_ConnectionDeadline)
           return true;
+        else
+        {
+          ShutdownProcess();
+          m_State = State::ReportResult;
+          OnProcessCrashed("Asset processor communication handshake timed out");
+        }
       }
       break;
       case State::Ready:

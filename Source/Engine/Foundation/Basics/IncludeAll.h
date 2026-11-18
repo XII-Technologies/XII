@@ -21,7 +21,6 @@
 #include <Foundation/Types/VarianceTypes.h>
 #include <Foundation/Types/Variant.h>
 
-#include <Foundation/Communication/IpcProcessMessageProtocol.h>
 
 #include <Foundation/Events/Event.h>
 #include <Foundation/Events/GlobalEvent.h>

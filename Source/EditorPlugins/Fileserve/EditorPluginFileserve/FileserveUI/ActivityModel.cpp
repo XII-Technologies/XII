@@ -48,8 +48,6 @@ QVariant xiiQtFileserveActivityModel::data(const QModelIndex& index, int iRole /
           return "Server Stopped";
         case xiiFileserveActivityType::ClientConnect:
           return "Client Connected";
-        case xiiFileserveActivityType::ClientReconnected:
-          return "Client Re-connected";
         case xiiFileserveActivityType::ClientDisconnect:
           return "Client Disconnect";
         case xiiFileserveActivityType::Mount:
@@ -80,7 +78,6 @@ QVariant xiiQtFileserveActivityModel::data(const QModelIndex& index, int iRole /
           return QColor::fromRgb(200, 200, 0);
 
         case xiiFileserveActivityType::ClientConnect:
-        case xiiFileserveActivityType::ClientReconnected:
           return QColor::fromRgb(50, 200, 0);
         case xiiFileserveActivityType::ClientDisconnect:
           return QColor::fromRgb(250, 100, 0);

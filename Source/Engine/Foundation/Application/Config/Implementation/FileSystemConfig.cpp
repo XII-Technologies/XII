@@ -2,6 +2,8 @@
 
 #include <Foundation/FoundationPCH.h>
 
+#include <Foundation/Network/Reflection/NetworkAttributes.h>
+
 #include <Foundation/Application/Config/FileSystemConfig.h>
 #include <Foundation/Application/Config/ProjectManifest.h>
 #include <Foundation/Containers/Set.h>
@@ -18,7 +20,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiApplicationFileSystemConfig, xiiNoBase, 1, xi
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_ARRAY_MEMBER_PROPERTY("DataDirs", m_DataDirs),
+    XII_ARRAY_MEMBER_PROPERTY("DataDirs", m_DataDirs)->AddAttributes(new xiiNetworkAttribute(1)),
   }
   XII_END_PROPERTIES;
 }
@@ -28,9 +30,9 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiApplicationFileSystemConfig_DataDirConfig, xi
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_MEMBER_PROPERTY("RelativePath", m_sDataDirSpecialPath),
-    XII_MEMBER_PROPERTY("Writable", m_bWritable),
-    XII_MEMBER_PROPERTY("RootName", m_sRootName),
+    XII_MEMBER_PROPERTY("RelativePath", m_sDataDirSpecialPath)->AddAttributes(new xiiNetworkAttribute(1)),
+    XII_MEMBER_PROPERTY("Writable", m_bWritable)->AddAttributes(new xiiNetworkAttribute(2)),
+    XII_MEMBER_PROPERTY("RootName", m_sRootName)->AddAttributes(new xiiNetworkAttribute(3)),
   }
   XII_END_PROPERTIES;
 }

@@ -5,9 +5,9 @@
 #include <FileservePlugin/Client/FileserveClient.h>
 #include <FileservePlugin/Discovery/FileserveDiscovery.h>
 #include <FileservePlugin/Fileserver/ClientContext.h>
+#include <FileservePlugin/Implementation/FileserveTransfer.h>
 #include <Foundation/Algorithm/HashStream.h>
 #include <Foundation/Events/GlobalEvent.h>
-#include <Foundation/Communication/RemoteInterfaceEnet.h>
 #include <Foundation/IO/FileSystem/FileWriter.h>
 #include <Foundation/IO/FileSystem/Implementation/DataDirType.h>
 #include <Foundation/Logging/Log.h>
@@ -16,6 +16,9 @@
 #include <Foundation/Types/ScopeExit.h>
 #include <Foundation/Utilities/CommandLineUtils.h>
 #include <cstring>
+
+using xiiFileserveTransfer::Operation;
+using xiiFileserveTransfer::Request;
 
 XII_IMPLEMENT_SINGLETON(xiiFileserveClient);
 
@@ -68,7 +71,8 @@ void xiiFileserveClient::ShutdownConnection()
   {
     xiiLog::Dev("Shutting down fileserve client");
 
-    m_pNetwork->ShutdownConnection();
+    m_pNetwork->Shutdown();
+    m_Channel  = {};
     m_pNetwork = nullptr;
   }
 }
@@ -113,42 +117,97 @@ xiiResult xiiFileserveClient::EnsureConnected(xiiTime timeout)
       xiiLog::Error("Could not create fileserve cache folder '{0}'", m_sFileserveCacheMetaFolder);
       return XII_FAILURE;
     }
-    m_pNetwork = xiiRemoteInterfaceEnet::Make();
   }
 
-  if (!m_pNetwork->IsConnectedToServer())
+  if (m_Channel.IsValid())
+    return XII_SUCCESS;
+
+  ClearState();
+  m_bFailedToConnect = true;
+  if (timeout.GetSeconds() < 0)
+    timeout = xiiTime::MakeFromSeconds(xiiCommandLineUtils::GetGlobalInstance()->GetFloatOption("-fs_timeout", -timeout.GetSeconds()));
+  if (!timeout.IsPositive() || timeout > xiiTime::MakeFromSeconds(120))
+    timeout = xiiTime::MakeFromSeconds(120);
+
+  xiiUniquePtr<xiiNetworkHost> host = XII_DEFAULT_NEW(xiiNetworkHost);
+  XII_SUCCEED_OR_RETURN(xiiFileserveTransfer::Start(*host, false));
+  xiiNetworkConnection connection;
+  XII_SUCCEED_OR_RETURN(xiiFileserveTransfer::Connect(*host, m_sServerConnectionAddress, connection).GetResult());
+  const auto      deadline = xiiTime::Now() + timeout;
+  xiiNetworkEvent event;
+  while (xiiTime::Now() < deadline && host->WaitForEvent(event, deadline - xiiTime::Now()).Succeeded())
   {
-    ClearState();
-    m_bFailedToConnect = true;
-
-    if (m_pNetwork->ConnectToServer(XII_FILESERVE_TRANSFER_PROTOCOL, m_sServerConnectionAddress).Failed())
-      return XII_FAILURE;
-
-    if (timeout.GetSeconds() < 0)
+    if (event.m_Connection != connection)
+      continue;
+    if (event.m_Type == xiiNetworkEventType::Closed)
+      break;
+    if (event.m_Type == xiiNetworkEventType::Connected && event.m_pSessionInfo)
     {
-      timeout = xiiTime::MakeFromSeconds(xiiCommandLineUtils::GetGlobalInstance()->GetFloatOption("-fs_timeout", -timeout.GetSeconds()));
+      m_Channel  = event.m_pSessionInfo->m_DefaultChannel;
+      m_pNetwork = std::move(host);
+      for (xiiUInt16 i = 0; i < m_MountedDataDirs.GetCount(); ++i)
+      {
+        if (m_MountedDataDirs[i].m_bMounted && SendMount(i, m_MountedDataDirs[i]).Failed())
+        {
+          ShutdownConnection();
+          return XII_FAILURE;
+        }
+      }
+      InvalidateAllCache();
+      m_bFailedToConnect = false;
+      xiiLog::Success("Connected to FileServe '{}'.", m_sServerConnectionAddress);
+      return XII_SUCCESS;
     }
-    if (!timeout.IsPositive() || timeout > xiiTime::MakeFromSeconds(120))
-      timeout = xiiTime::MakeFromSeconds(120);
-
-    if (m_pNetwork->WaitForConnectionToServer(timeout).Failed())
-    {
-      m_pNetwork->ShutdownConnection();
-      xiiLog::Error("Connection to xiiFileserver timed out");
-      return XII_FAILURE;
-    }
-    else
-    {
-      xiiLog::Success("Connected to xiiFileserver '{0}", m_sServerConnectionAddress);
-      m_pNetwork->SetMessageHandler('FSRV', xiiMakeDelegate(&xiiFileserveClient::NetworkMsgHandler, this));
-
-      m_pNetwork->Send('FSRV', 'HELO'); // be friendly
-    }
-
-    m_bFailedToConnect = false;
   }
+  xiiLog::Error("FileServe connection to '{}' failed. {}", m_sServerConnectionAddress, event.m_Error.GetCodeName());
+  return XII_FAILURE;
+}
 
-  return XII_SUCCESS;
+void xiiFileserveClient::ProcessNetworkEvents(xiiTime wait)
+{
+  if (!m_pNetwork)
+    return;
+  xiiNetworkEvent event;
+  bool            bEvent = wait.IsPositive() ? m_pNetwork->WaitForEvent(event, wait).Succeeded() : m_pNetwork->TryGetEvent(event);
+  for (xiiUInt32 i = 0; bEvent && i < 128; ++i)
+  {
+    if (event.m_Connection == m_Channel.m_Connection)
+    {
+      if (event.m_Type == xiiNetworkEventType::Closed)
+      {
+        m_Channel = {};
+        ClearState();
+        return;
+      }
+      if (event.m_Type == xiiNetworkEventType::Message && event.m_Channel == m_Channel)
+      {
+        const auto               bytes = event.m_Payload.GetBytes();
+        xiiRawMemoryStreamReader reader(bytes.GetPtr(), bytes.GetCount());
+        Operation                operation;
+        if (xiiFileserveTransfer::ReadOperation(reader, operation).Succeeded())
+          NetworkMsgHandler(operation, bytes.GetSubArray(1));
+        else
+          m_pNetwork->Disconnect(m_Channel.m_Connection, false).IgnoreResult();
+      }
+    }
+    if (i + 1 < 128)
+      bEvent = m_pNetwork->TryGetEvent(event);
+  }
+}
+
+xiiResult xiiFileserveClient::SendRequest(const Request& request, xiiTime deadline)
+{
+  while (m_Channel.IsValid() && xiiTime::Now() < deadline)
+  {
+    const auto error = request.Send(*m_pNetwork, m_Channel);
+    if (error.Succeeded())
+      return XII_SUCCESS;
+    if (error.m_Code != xiiNetworkErrorCode::Backpressure && error.m_Code != xiiNetworkErrorCode::WouldBlock &&
+        error.m_Code != xiiNetworkErrorCode::ResourceExhausted)
+      return XII_FAILURE;
+    ProcessNetworkEvents(deadline - xiiTime::Now());
+  }
+  return XII_FAILURE;
 }
 
 void xiiFileserveClient::UpdateClient()
@@ -159,7 +218,8 @@ void xiiFileserveClient::UpdateClient()
     if (m_pNetwork == nullptr || m_bFailedToConnect || !s_bEnableFileserve)
       return;
 
-    if (!m_pNetwork->IsConnectedToServer())
+    ProcessNetworkEvents();
+    if (!m_Channel.IsValid())
     {
       if (EnsureConnected().Failed())
       {
@@ -168,8 +228,6 @@ void xiiFileserveClient::UpdateClient()
       }
       return;
     }
-
-    m_pNetwork->ExecuteAllMessageHandlers();
 
     if (m_bReloadResources && !m_bDownloading && !m_bWaitingForUploadFinished)
     {
@@ -200,14 +258,14 @@ void xiiFileserveClient::AddServerAddressToTry(xiiStringView sAddress)
 bool xiiFileserveClient::IsShaderCompilationAvailable() const
 {
   XII_LOCK(m_Mutex);
-  return m_pNetwork && m_pNetwork->IsConnectedToServer();
+  return m_pNetwork && m_Channel.IsValid();
 }
 
 xiiResult xiiFileserveClient::CompileShader(const xiiRemoteShaderCompileRequest& request, xiiStringBuilder& out_sLog)
 {
   XII_LOCK(m_Mutex);
   out_sLog = "Invalid or unavailable FileServe shader compilation request.";
-  if (!m_pNetwork || !m_pNetwork->IsConnectedToServer() || m_bShaderCompiling || m_bDownloading ||
+  if (!m_pNetwork || !m_Channel.IsValid() || m_bShaderCompiling || m_bDownloading ||
       m_bWaitingForUploadFinished || request.m_Permutations.GetCount() > 64 ||
       !xiiFileserveClientContext::IsValidRelativePath(request.m_sShader) || request.m_sPlatform.GetElementCount() > 96)
     return XII_FAILURE;
@@ -222,14 +280,13 @@ xiiResult xiiFileserveClient::CompileShader(const xiiRemoteShaderCompileRequest&
   m_bShaderCompiling  = true;
   bool      bComplete = false;
   xiiResult result    = XII_FAILURE;
-  m_pNetwork->SetMessageHandler('SHDR', [&](xiiRemoteMessage& message) {
+  m_ShaderResponse    = [&](xiiArrayPtr<const xiiUInt8> bytes) {
     constexpr xiiUInt32 uiHeaderSize = 16 + sizeof(xiiUInt8) + sizeof(xiiUInt32);
-    const auto          bytes        = message.GetMessageData();
-    if (bComplete || message.GetMessageID() != 'CRES' || bytes.GetCount() < uiHeaderSize)
+    if (bComplete || bytes.GetCount() < uiHeaderSize)
       return;
 
-    auto&   reader = message.GetReader();
-    xiiUuid responseId;
+    xiiRawMemoryStreamReader reader(bytes.GetPtr(), bytes.GetCount());
+    xiiUuid                  responseId;
     reader >> responseId;
     if (responseId != id)
       return;
@@ -247,10 +304,10 @@ xiiResult xiiFileserveClient::CompileShader(const xiiRemoteShaderCompileRequest&
       return;
     out_sLog = xiiStringView(pLog, pLog + uiLogBytes);
     result   = uiSucceeded == 1 ? XII_SUCCESS : XII_FAILURE;
-  });
-  XII_SCOPE_EXIT(m_pNetwork->SetMessageHandler('SHDR', {}); m_bShaderCompiling = false);
+  };
+  XII_SCOPE_EXIT(m_ShaderResponse = {}; m_bShaderCompiling = false);
 
-  xiiRemoteMessage msg('SHDR', 'CMPL');
+  Request msg(Operation::CompileShader);
   msg.GetWriter() << id;
   msg.GetWriter() << request.m_sShader;
   msg.GetWriter() << request.m_sPlatform;
@@ -260,14 +317,11 @@ xiiResult xiiFileserveClient::CompileShader(const xiiRemoteShaderCompileRequest&
     msg.GetWriter() << permutation.m_sName;
     msg.GetWriter() << permutation.m_sValue;
   }
-  m_pNetwork->Send(xiiRemoteTransmitMode::Reliable, msg);
-
   const auto deadline = xiiTime::Now() + xiiTime::MakeFromSeconds(120);
-  while (!bComplete && m_pNetwork->IsConnectedToServer() && xiiTime::Now() < deadline)
+  XII_SUCCEED_OR_RETURN(SendRequest(msg, deadline));
+  while (!bComplete && m_Channel.IsValid() && xiiTime::Now() < deadline)
   {
-    m_pNetwork->UpdateRemoteInterface();
-    if (m_pNetwork->ExecuteAllMessageHandlers() == 0)
-      xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(1));
+    ProcessNetworkEvents(deadline - xiiTime::Now());
   }
   if (!bComplete)
     out_sLog = "FileServe disconnected or the shader compilation deadline expired.";
@@ -279,7 +333,7 @@ xiiResult xiiFileserveClient::CompileShader(const xiiRemoteShaderCompileRequest&
 xiiResult xiiFileserveClient::UploadFile(xiiUInt16 uiDataDirID, xiiStringView sFile, xiiOSFile& ref_file)
 {
   XII_LOCK(m_Mutex);
-  if (!m_pNetwork || !m_pNetwork->IsConnectedToServer() || m_bDownloading || m_bWaitingForUploadFinished ||
+  if (!m_pNetwork || !m_Channel.IsValid() || m_bDownloading || m_bWaitingForUploadFinished ||
       uiDataDirID >= m_MountedDataDirs.GetCount() || !m_MountedDataDirs[uiDataDirID].m_bMounted ||
       !xiiFileserveClientContext::IsValidRelativePath(sFile))
     return XII_FAILURE;
@@ -298,59 +352,64 @@ xiiResult xiiFileserveClient::UploadFile(xiiUInt16 uiDataDirID, xiiStringView sF
     return XII_FAILURE;
 
   m_UploadRequest             = xiiUuid::MakeUuid();
+  m_uiUploadAcknowledged      = 0;
   m_bUploadSucceeded          = false;
   m_bWaitingForUploadFinished = true;
   XII_SCOPE_EXIT(m_bWaitingForUploadFinished = false; m_UploadRequest = {});
+  const auto deadline = xiiTime::Now() + xiiTime::MakeFromSeconds(120);
 
   {
-    xiiRemoteMessage msg('FSRV', 'UPLH');
+    Request msg(Operation::UploadBegin);
     msg.GetWriter() << m_UploadRequest;
     msg.GetWriter() << static_cast<xiiUInt32>(uiFileSize);
     msg.GetWriter() << uiDataDirID;
     msg.GetWriter() << sFile;
-    m_pNetwork->Send(xiiRemoteTransmitMode::Reliable, msg);
+    XII_SUCCEED_OR_RETURN(SendRequest(msg, deadline));
   }
 
   xiiHashStreamWriter64 hash(1);
   xiiUInt8              bytes[16 * 1024];
   xiiUInt64             uiRemaining = uiFileSize;
-  const auto            deadline    = xiiTime::Now() + xiiTime::MakeFromSeconds(120);
-  while (uiRemaining != 0 && m_bWaitingForUploadFinished && m_pNetwork->IsConnectedToServer() && xiiTime::Now() < deadline)
+  while (uiRemaining != 0 && m_bWaitingForUploadFinished && m_Channel.IsValid() && xiiTime::Now() < deadline)
   {
     const auto uiChunkSize = static_cast<xiiUInt16>(xiiMath::Min<xiiUInt64>(sizeof(bytes), uiRemaining));
     if (ref_file.Read(bytes, uiChunkSize) != uiChunkSize || hash.WriteBytes(bytes, uiChunkSize).Failed())
       return XII_FAILURE;
 
-    xiiRemoteMessage msg('FSRV', 'UPLD');
+    Request msg(Operation::UploadChunk);
     msg.GetWriter() << m_UploadRequest;
     msg.GetWriter() << uiChunkSize;
     XII_SUCCEED_OR_RETURN(msg.GetWriter().WriteBytes(bytes, uiChunkSize));
-    m_pNetwork->Send(xiiRemoteTransmitMode::Reliable, msg);
-    m_pNetwork->UpdateRemoteInterface();
-    m_pNetwork->ExecuteAllMessageHandlers();
-
+    XII_SUCCEED_OR_RETURN(SendRequest(msg, deadline));
+    ProcessNetworkEvents();
     uiRemaining -= uiChunkSize;
+    const auto uiSent = uiFileSize - uiRemaining;
+    if (uiRemaining != 0 && uiSent % xiiFileserveTransfer::TransferWindowBytes == 0)
+    {
+      while (m_uiUploadAcknowledged < uiSent && m_bWaitingForUploadFinished && m_Channel.IsValid() && xiiTime::Now() < deadline)
+        ProcessNetworkEvents(deadline - xiiTime::Now());
+      if (m_uiUploadAcknowledged != uiSent)
+        return XII_FAILURE;
+    }
   }
 
-  if (uiRemaining != 0 || !m_bWaitingForUploadFinished || !m_pNetwork->IsConnectedToServer())
+  if (uiRemaining != 0 || !m_bWaitingForUploadFinished || !m_Channel.IsValid())
     return XII_FAILURE;
 
   const xiiUInt64 uiHash = uiFileSize == 0 ? 1 : hash.GetHashValue();
   {
-    xiiRemoteMessage msg('FSRV', 'UPLF');
+    Request msg(Operation::UploadEnd);
     msg.GetWriter() << m_UploadRequest;
     msg.GetWriter() << uiDataDirID;
     msg.GetWriter() << sFile;
     msg.GetWriter() << uiHash;
 
-    m_pNetwork->Send(xiiRemoteTransmitMode::Reliable, msg);
+    XII_SUCCEED_OR_RETURN(SendRequest(msg, deadline));
   }
 
-  while (m_bWaitingForUploadFinished && m_pNetwork->IsConnectedToServer() && xiiTime::Now() < deadline)
+  while (m_bWaitingForUploadFinished && m_Channel.IsValid() && xiiTime::Now() < deadline)
   {
-    m_pNetwork->UpdateRemoteInterface();
-    if (m_pNetwork->ExecuteAllMessageHandlers() == 0)
-      xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(1));
+    ProcessNetworkEvents(deadline - xiiTime::Now());
   }
 
   if (!m_bUploadSucceeded)
@@ -447,51 +506,57 @@ void xiiFileserveClient::GetFullDataDirCachePath(const char* szDataDir, xiiStrin
   out_sFullPathMeta.AppendPath(sMountPoint);
 }
 
-void xiiFileserveClient::NetworkMsgHandler(xiiRemoteMessage& msg)
+void xiiFileserveClient::NetworkMsgHandler(Operation operation, xiiArrayPtr<const xiiUInt8> data)
 {
-  XII_LOCK(m_Mutex);
-  if (msg.GetMessageID() == 'DWNL')
+  switch (operation)
   {
-    HandleFileTransferMsg(msg);
-    return;
-  }
-
-  if (msg.GetMessageID() == 'DWNF')
-  {
-    HandleFileTransferFinishedMsg(msg);
-    return;
-  }
-
-  if (msg.GetMessageID() == 'RLDR')
-  {
-    InvalidateAllCache();
-    m_bReloadResources = true;
-    return;
-  }
-
-  if (msg.GetMessageID() == 'UACK')
-  {
-    if (m_bWaitingForUploadFinished && msg.GetMessageData().GetCount() == 16 + sizeof(xiiUInt8))
-    {
-      xiiUuid  request;
-      xiiUInt8 uiSuccess = 0;
-      msg.GetReader() >> request;
-      if (request == m_UploadRequest && msg.GetReader().ReadBytes(&uiSuccess, sizeof(uiSuccess)) == sizeof(uiSuccess))
+    case Operation::DownloadChunk:
+      HandleFileTransferMsg(data);
+      break;
+    case Operation::DownloadResult:
+      HandleFileTransferFinishedMsg(data);
+      break;
+    case Operation::Reload:
+      if (data.IsEmpty())
       {
-        m_bWaitingForUploadFinished = false;
-        m_bUploadSucceeded          = uiSuccess == 1;
+        InvalidateAllCache();
+        m_bReloadResources = true;
       }
-    }
-    return;
+      break;
+    case Operation::UploadResult:
+      if (m_bWaitingForUploadFinished && data.GetCount() == 16 + sizeof(xiiUInt8))
+      {
+        xiiRawMemoryStreamReader reader(data.GetPtr(), data.GetCount());
+        xiiUuid                  request;
+        reader >> request;
+        xiiUInt8 uiSuccess = 0;
+        if (request == m_UploadRequest && reader.ReadBytes(&uiSuccess, sizeof(uiSuccess)) == sizeof(uiSuccess))
+        {
+          m_bWaitingForUploadFinished = false;
+          m_bUploadSucceeded          = uiSuccess == 1;
+        }
+      }
+      break;
+    case Operation::UploadProgress:
+      if (m_bWaitingForUploadFinished && data.GetCount() == 16 + sizeof(xiiUInt32))
+      {
+        xiiRawMemoryStreamReader reader(data.GetPtr(), data.GetCount());
+        xiiUuid                  request;
+        xiiUInt32                uiReceived = 0;
+        reader >> request;
+        if (request == m_UploadRequest && reader.ReadDWordValue(&uiReceived).Succeeded() &&
+            uiReceived > m_uiUploadAcknowledged && uiReceived - m_uiUploadAcknowledged == xiiFileserveTransfer::TransferWindowBytes)
+          m_uiUploadAcknowledged = uiReceived;
+      }
+      break;
+    case Operation::ShaderResult:
+      if (m_ShaderResponse.IsValid())
+        m_ShaderResponse(data);
+      break;
+    default:
+      m_pNetwork->Disconnect(m_Channel.m_Connection, false).IgnoreResult();
+      break;
   }
-
-  if (msg.GetMessageID() == 'INVC')
-  {
-    InvalidateAllCache();
-    return;
-  }
-
-  xiiLog::Error("Unknown FSRV message: '{0}' - {1} bytes", msg.GetMessageID(), msg.GetMessageData().GetCount());
 }
 
 void xiiFileserveClient::InvalidateAllCache()
@@ -506,7 +571,7 @@ void xiiFileserveClient::InvalidateAllCache()
 xiiUInt16 xiiFileserveClient::MountDataDirectory(xiiStringView sDataDirectory, xiiStringView sRootName)
 {
   XII_LOCK(m_Mutex);
-  if (!m_pNetwork || !m_pNetwork->IsConnectedToServer() || m_MountedDataDirs.GetCount() >= 4096)
+  if (!m_pNetwork || !m_Channel.IsValid() || m_MountedDataDirs.GetCount() >= 4096)
     return 0xffff;
 
   xiiStringBuilder sRoot = sRootName;
@@ -517,23 +582,26 @@ xiiUInt16 xiiFileserveClient::MountDataDirectory(xiiStringView sDataDirectory, x
 
   const xiiUInt16 uiDataDirID = static_cast<xiiUInt16>(m_MountedDataDirs.GetCount());
 
-  xiiRemoteMessage msg('FSRV', ' MNT');
-  msg.GetWriter() << sDataDirectory;
-  msg.GetWriter() << sRoot;
-  msg.GetWriter() << sMountPoint;
-  msg.GetWriter() << uiDataDirID;
-
-  m_pNetwork->Send(xiiRemoteTransmitMode::Reliable, msg);
-
-  auto& dd = m_MountedDataDirs.ExpandAndGetRef();
-  // dd.m_sPathOnClient = sDataDirectory;
-  // dd.m_sRootName = sRoot;
-  dd.m_sMountPoint = sMountPoint;
-  dd.m_bMounted    = true;
-
+  DataDir dir;
+  dir.m_sPathOnClient = sDataDirectory;
+  dir.m_sRootName     = sRoot;
+  dir.m_sMountPoint   = sMountPoint;
+  dir.m_bMounted      = true;
+  if (SendMount(uiDataDirID, dir).Failed())
+    return 0xffff;
+  m_MountedDataDirs.PushBack(std::move(dir));
   return uiDataDirID;
 }
 
+xiiResult xiiFileserveClient::SendMount(xiiUInt16 uiDataDirID, const DataDir& dir)
+{
+  Request request(Operation::Mount);
+  request.GetWriter() << dir.m_sPathOnClient;
+  request.GetWriter() << dir.m_sRootName;
+  request.GetWriter() << dir.m_sMountPoint;
+  request.GetWriter() << uiDataDirID;
+  return SendRequest(request, xiiTime::Now() + xiiTime::MakeFromSeconds(3));
+}
 
 void xiiFileserveClient::UnmountDataDirectory(xiiUInt16 uiDataDir)
 {
@@ -541,11 +609,11 @@ void xiiFileserveClient::UnmountDataDirectory(xiiUInt16 uiDataDir)
   if (uiDataDir >= m_MountedDataDirs.GetCount() || !m_MountedDataDirs[uiDataDir].m_bMounted)
     return;
 
-  if (m_pNetwork && m_pNetwork->IsConnectedToServer())
+  if (m_pNetwork && m_Channel.IsValid())
   {
-    xiiRemoteMessage msg('FSRV', 'UMNT');
+    Request msg(Operation::Unmount);
     msg.GetWriter() << uiDataDir;
-    m_pNetwork->Send(xiiRemoteTransmitMode::Reliable, msg);
+    SendRequest(msg, xiiTime::Now() + xiiTime::MakeFromSeconds(3)).IgnoreResult();
   }
 
   auto& dd      = m_MountedDataDirs[uiDataDir];
@@ -555,26 +623,26 @@ void xiiFileserveClient::UnmountDataDirectory(xiiUInt16 uiDataDir)
 void xiiFileserveClient::DeleteFile(xiiUInt16 uiDataDir, xiiStringView sFile)
 {
   XII_LOCK(m_Mutex);
-  if (!m_pNetwork || !m_pNetwork->IsConnectedToServer() || uiDataDir >= m_MountedDataDirs.GetCount() ||
+  if (!m_pNetwork || !m_Channel.IsValid() || uiDataDir >= m_MountedDataDirs.GetCount() ||
       !m_MountedDataDirs[uiDataDir].m_bMounted || !xiiFileserveClientContext::IsValidRelativePath(sFile))
     return;
 
   InvalidateFileCache(uiDataDir, sFile, 0);
 
-  xiiRemoteMessage msg('FSRV', 'DELF');
+  Request msg(Operation::Delete);
   msg.GetWriter() << uiDataDir;
   msg.GetWriter() << sFile;
 
-  m_pNetwork->Send(xiiRemoteTransmitMode::Reliable, msg);
+  SendRequest(msg, xiiTime::Now() + xiiTime::MakeFromSeconds(3)).IgnoreResult();
 }
 
-void xiiFileserveClient::HandleFileTransferMsg(xiiRemoteMessage& msg)
+void xiiFileserveClient::HandleFileTransferMsg(xiiArrayPtr<const xiiUInt8> data)
 {
-  if (!m_bDownloading || msg.GetMessageData().GetCount() < sizeof(xiiUuid))
+  if (!m_bDownloading || data.GetCount() < sizeof(xiiUuid))
     return;
 
-  auto&   reader = msg.GetReader();
-  xiiUuid request;
+  xiiRawMemoryStreamReader reader(data.GetPtr(), data.GetCount());
+  xiiUuid                  request;
   reader >> request;
   if (request != m_CurFileRequestGuid)
     return;
@@ -583,7 +651,7 @@ void xiiFileserveClient::HandleFileTransferMsg(xiiRemoteMessage& msg)
   xiiUInt32           uiFileSize   = 0;
   constexpr xiiUInt32 uiHeaderSize = 16 + sizeof(uiChunkSize) + sizeof(uiFileSize);
   if (reader.ReadWordValue(&uiChunkSize).Failed() || reader.ReadDWordValue(&uiFileSize).Failed() ||
-      msg.GetMessageData().GetCount() != uiHeaderSize + uiChunkSize ||
+      data.GetCount() != uiHeaderSize + uiChunkSize ||
       (m_bDownloadStaged && uiFileSize != m_uiDownloadSize) || m_uiDownloadReceived > uiFileSize ||
       uiChunkSize > uiFileSize - m_uiDownloadReceived || (uiChunkSize == 0 && (uiFileSize != 0 || m_bDownloadStaged)))
   {
@@ -606,29 +674,40 @@ void xiiFileserveClient::HandleFileTransferMsg(xiiRemoteMessage& msg)
     m_bDownloadStaged      = true;
   }
 
-  if (m_DownloadFile.Write(msg.GetMessageData().GetPtr() + uiHeaderSize, uiChunkSize).Failed())
+  if (m_DownloadFile.Write(data.GetPtr() + uiHeaderSize, uiChunkSize).Failed())
   {
     m_bDownloading = false;
     return;
   }
 
   m_uiDownloadReceived += uiChunkSize;
+  if (m_uiDownloadReceived < uiFileSize && m_uiDownloadReceived % xiiFileserveTransfer::TransferWindowBytes == 0)
+  {
+    Request progress(Operation::DownloadProgress);
+    progress.GetWriter() << request;
+    progress.GetWriter() << m_uiDownloadReceived;
+    if (progress.Send(*m_pNetwork, m_Channel).Failed())
+    {
+      m_pNetwork->Disconnect(m_Channel.m_Connection, false).IgnoreResult();
+      m_bDownloading = false;
+    }
+  }
 }
 
-void xiiFileserveClient::HandleFileTransferFinishedMsg(xiiRemoteMessage& msg)
+void xiiFileserveClient::HandleFileTransferFinishedMsg(xiiArrayPtr<const xiiUInt8> data)
 {
-  if (!m_bDownloading || msg.GetMessageData().GetCount() < sizeof(xiiUuid))
+  if (!m_bDownloading || data.GetCount() < sizeof(xiiUuid))
     return;
 
-  auto&   reader = msg.GetReader();
-  xiiUuid request;
+  xiiRawMemoryStreamReader reader(data.GetPtr(), data.GetCount());
+  xiiUuid                  request;
   reader >> request;
   if (request != m_CurFileRequestGuid)
     return;
 
   XII_SCOPE_EXIT(m_bDownloading = false);
   constexpr xiiUInt32 uiResponseSize = 16 + sizeof(xiiInt8) + sizeof(xiiInt64) + sizeof(xiiUInt64) + sizeof(xiiUInt16);
-  if (msg.GetMessageData().GetCount() != uiResponseSize)
+  if (data.GetCount() != uiResponseSize)
     return;
 
   xiiInt8   iFileState = 0;
@@ -764,7 +843,7 @@ xiiResult xiiFileserveClient::DownloadFile(xiiUInt16 uiDataDirID, const char* sz
     return XII_FAILURE;
   }
 
-  if (!m_pNetwork || !m_pNetwork->IsConnectedToServer() || uiDataDirID >= m_MountedDataDirs.GetCount() ||
+  if (!m_pNetwork || !m_Channel.IsValid() || uiDataDirID >= m_MountedDataDirs.GetCount() ||
       !m_MountedDataDirs[uiDataDirID].m_bMounted || !xiiFileserveClientContext::IsValidRelativePath(szFile))
     return XII_FAILURE;
 
@@ -798,7 +877,7 @@ xiiResult xiiFileserveClient::DownloadFile(xiiUInt16 uiDataDirID, const char* sz
   m_bDownloading          = true;
   XII_SCOPE_EXIT(m_bDownloading = false; DiscardDownload());
 
-  xiiRemoteMessage msg('FSRV', 'READ');
+  Request msg(Operation::Read);
   msg.GetWriter() << uiUseDataDirCache;
   msg.GetWriter() << bForceThisDataDir;
   msg.GetWriter() << szFile;
@@ -806,14 +885,11 @@ xiiResult xiiFileserveClient::DownloadFile(xiiUInt16 uiDataDirID, const char* sz
   msg.GetWriter() << CacheStatus.m_TimeStamp;
   msg.GetWriter() << CacheStatus.m_FileHash;
 
-  m_pNetwork->Send(xiiRemoteTransmitMode::Reliable, msg);
-
   const auto deadline = xiiTime::Now() + xiiTime::MakeFromSeconds(120);
-  while (m_bDownloading && m_pNetwork->IsConnectedToServer() && xiiTime::Now() < deadline)
+  XII_SUCCEED_OR_RETURN(SendRequest(msg, deadline));
+  while (m_bDownloading && m_Channel.IsValid() && xiiTime::Now() < deadline)
   {
-    m_pNetwork->UpdateRemoteInterface();
-    if (m_pNetwork->ExecuteAllMessageHandlers() == 0)
-      xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(1));
+    ProcessNetworkEvents(deadline - xiiTime::Now());
   }
 
   if (!m_bDownloadSucceeded)
@@ -940,37 +1016,27 @@ xiiResult xiiFileserveClient::TryConnectWithFileserver(const char* szAddress, xi
 
   xiiLog::Info("File server address: '{0}' ({1} sec)", szAddress, timeout.GetSeconds());
 
-  xiiUniquePtr<xiiRemoteInterfaceEnet> network = xiiRemoteInterfaceEnet::Make(); /// \todo Abstract this somehow ?
-  if (network->ConnectToServer(XII_FILESERVE_TRANSFER_PROTOCOL, szAddress, false).Failed())
-    return XII_FAILURE;
+  xiiNetworkHost host;
+  XII_SUCCEED_OR_RETURN(xiiFileserveTransfer::Start(host, false));
+  xiiNetworkConnection connection;
+  XII_SUCCEED_OR_RETURN(xiiFileserveTransfer::Connect(host, szAddress, connection).GetResult());
 
-  bool bServerFound = false;
-  network->SetMessageHandler('FSRV', [&bServerFound](xiiRemoteMessage& ref_msg) {
-    switch (ref_msg.GetMessageID())
-    {
-      case ' YES':
-        bServerFound = true;
-        break;
-    } });
-
-  if (network->WaitForConnectionToServer(timeout).Succeeded())
+  const auto      deadline = xiiTime::Now() + timeout;
+  xiiNetworkEvent event;
+  bool            bConnected = false;
+  while (xiiTime::Now() < deadline && host.WaitForEvent(event, deadline - xiiTime::Now()).Succeeded())
   {
-    // wait for a proper response
-    xiiTime tStart = xiiTime::Now();
-    while (xiiTime::Now() - tStart < timeout && !bServerFound)
+    if (event.m_Connection != connection)
+      continue;
+    if (event.m_Type == xiiNetworkEventType::Closed)
+      break;
+    if (event.m_Type == xiiNetworkEventType::Connected)
     {
-      network->Send('FSRV', 'RUTR');
-
-      xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(100));
-
-      network->UpdateRemoteInterface();
-      network->ExecuteAllMessageHandlers();
+      bConnected = true;
+      break;
     }
   }
-
-  network->ShutdownConnection();
-
-  if (!bServerFound)
+  if (!bConnected)
     return XII_FAILURE;
 
   m_sServerConnectionAddress = szAddress;

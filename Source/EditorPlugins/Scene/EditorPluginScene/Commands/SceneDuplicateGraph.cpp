@@ -5,6 +5,7 @@
 #include <Core/World/GameObject.h>
 #include <EditorPluginScene/Commands/SceneCommands.h>
 #include <EditorPluginScene/Scene/SceneDocument.h>
+#include <Foundation/IO/MemoryStream.h>
 #include <Foundation/Serialization/DdlSerializer.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <Foundation/Utilities/ConversionUtils.h>

@@ -3,15 +3,18 @@
 #pragma once
 
 #include <FileservePlugin/Fileserver/ClientContext.h>
-#include <Foundation/Communication/RemoteInterface.h>
 #include <Foundation/Configuration/Singleton.h>
 #include <Foundation/Containers/HashTable.h>
 #include <Foundation/IO/OSFile.h>
 #include <Foundation/Interfaces/RemoteToolingInterface.h>
+#include <Foundation/Network/NetworkHost.h>
 #include <Foundation/Types/UniquePtr.h>
 #include <Foundation/Types/Uuid.h>
 
-class xiiRemoteMessage;
+namespace xiiFileserveTransfer
+{
+  class Request;
+}
 
 struct xiiFileserverEvent
 {
@@ -21,7 +24,6 @@ struct xiiFileserverEvent
     ServerStarted,
     ServerStopped,
     ClientConnected,
-    ClientReconnected, // connected again after a disconnect
     ClientDisconnected,
     MountDataDir,
     MountDataDirFailed,
@@ -33,7 +35,6 @@ struct xiiFileserverEvent
     FileUploadRequest,
     FileUploading,
     FileUploadFinished,
-    AreYouThereRequest,
     LogCustomActivity,
   };
 
@@ -65,6 +66,7 @@ class XII_FILESERVEPLUGIN_DLL xiiFileserver
 
 public:
   xiiFileserver();
+  ~xiiFileserver();
 
   /// Starts listening for client connections. Uses the configured port.
   void StartServer();
@@ -72,8 +74,8 @@ public:
   /// Disconnects all clients.
   void StopServer();
 
-  /// Has to be executed regularly to serve clients and keep the connection alive.
-  bool UpdateServer();
+  /// Services clients on the server owner thread. A positive timeout allows waiting for a host event.
+  bool UpdateServer(xiiTime wait = {});
 
   /// Whether the server was started.
   bool IsServerRunning() const;
@@ -98,6 +100,7 @@ public:
   void SetShaderCompileHandler(ShaderCompileHandler handler);
 
 private:
+  struct Download;
   struct Upload
   {
     ~Upload();
@@ -113,22 +116,25 @@ private:
     xiiUInt16 m_uiDataDir  = 0xffff;
   };
 
-  void                       NetworkEventHandler(const xiiRemoteEvent& e);
-  xiiFileserveClientContext& DetermineClient(xiiRemoteMessage& msg);
-  void                       NetworkMsgHandler(xiiRemoteMessage& msg);
-  void                       HandleShaderCompileRequest(xiiRemoteMessage& msg);
-  void                       HandleMountRequest(xiiFileserveClientContext& client, xiiRemoteMessage& msg);
-  void                       HandleUnmountRequest(xiiFileserveClientContext& client, xiiRemoteMessage& msg);
-  void                       HandleFileRequest(xiiFileserveClientContext& client, xiiRemoteMessage& msg);
-  void                       HandleDeleteFileRequest(xiiFileserveClientContext& client, xiiRemoteMessage& msg);
-  void                       HandleUploadFileHeader(xiiFileserveClientContext& client, xiiRemoteMessage& msg);
-  void                       HandleUploadFileTransfer(xiiFileserveClientContext& client, xiiRemoteMessage& msg);
-  void                       HandleUploadFileFinished(xiiFileserveClientContext& client, xiiRemoteMessage& msg);
-  void                       SendUploadResult(xiiUuid id, bool bSucceeded);
+  void NetworkMsgHandler(xiiFileserveClientContext& client, xiiArrayPtr<const xiiUInt8> data);
+  void HandleShaderCompileRequest(xiiFileserveClientContext& client, xiiArrayPtr<const xiiUInt8> data);
+  void HandleMountRequest(xiiFileserveClientContext& client, xiiArrayPtr<const xiiUInt8> data);
+  void HandleUnmountRequest(xiiFileserveClientContext& client, xiiArrayPtr<const xiiUInt8> data);
+  void HandleFileRequest(xiiFileserveClientContext& client, xiiArrayPtr<const xiiUInt8> data);
+  void HandleDownloadProgress(xiiFileserveClientContext& client, xiiArrayPtr<const xiiUInt8> data);
+  void HandleDeleteFileRequest(xiiFileserveClientContext& client, xiiArrayPtr<const xiiUInt8> data);
+  void HandleUploadFileHeader(xiiFileserveClientContext& client, xiiArrayPtr<const xiiUInt8> data);
+  void HandleUploadFileTransfer(xiiFileserveClientContext& client, xiiArrayPtr<const xiiUInt8> data);
+  void HandleUploadFileFinished(xiiFileserveClientContext& client, xiiArrayPtr<const xiiUInt8> data);
+  void SendUploadResult(xiiNetworkChannel channel, xiiUuid id, bool bSucceeded);
+  void SendResponse(xiiNetworkChannel channel, const xiiFileserveTransfer::Request& request);
+  bool PumpDownload(Download& download);
 
   xiiHashTable<xiiUInt32, xiiFileserveClientContext> m_Clients;
-  xiiUniquePtr<xiiRemoteInterface>                   m_pNetwork;
+  xiiUniquePtr<xiiNetworkHost>                       m_pNetwork;
   xiiHashTable<xiiUInt32, xiiUniquePtr<Upload>>      m_Uploads;
-  xiiUInt16                                          m_uiPort = 1042;
+  xiiHashTable<xiiUInt32, xiiUniquePtr<Download>>    m_Downloads;
+  xiiUInt32                                          m_uiNextClientId = 0;
+  xiiUInt16                                          m_uiPort         = 1042;
   ShaderCompileHandler                               m_ShaderCompileHandler;
 };

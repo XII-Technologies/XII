@@ -8,6 +8,7 @@
 
 #  include <EditorPluginFileserve/FileserveUI/FileserveWidget.moc.h>
 #  include <Fileserve/Gui.moc.h>
+#  include <FileservePlugin/Fileserver/Fileserver.h>
 #  include <Foundation/Application/Application.h>
 #  include <QTimer>
 
@@ -41,7 +42,8 @@ void xiiQtFileserveMainWnd::UpdateNetworkSlot()
 {
   if (m_pApp->Run() == xiiApplication::Execution::Continue)
   {
-    QTimer::singleShot(0, this, &xiiQtFileserveMainWnd::UpdateNetworkSlot);
+    const int iDelay = xiiFileserver::GetSingleton()->IsServerRunning() ? 0 : 10;
+    QTimer::singleShot(iDelay, this, &xiiQtFileserveMainWnd::UpdateNetworkSlot);
   }
   else
   {

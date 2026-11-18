@@ -60,10 +60,6 @@ if(CURRENT_OSX_VERSION)
   )
 endif()
 
-if(XII_3RDPARTY_ENET_SUPPORT)
-  target_link_libraries(${PROJECT_NAME} PUBLIC enet)
-endif()
-
 if(XII_3RDPARTY_ZSTD_SUPPORT)
   target_link_libraries(${PROJECT_NAME} PUBLIC zstd)
 endif()

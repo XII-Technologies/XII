@@ -1,6 +1,6 @@
 # Foundation Asynchronous Networking
 
-`xiiNetworkIOContext` runs native asynchronous TCP, UDP and hostname-resolution operations on the [native networking foundation](Networking.md). Applications own independent contexts, choose their limits and drain completion records on their own threads. There is no dependency on `Foundation/Communication`, no application callback on an I/O worker, and no session, message framing, security or reliability protocol.
+`xiiNetworkIOContext` runs native asynchronous TCP, UDP, Local and hostname-resolution operations on the [native networking foundation](Networking.md). Applications own independent contexts, choose their limits and drain completion records on their own threads. The context executes native I/O and publishes completions. Network hosts provide session negotiation, framing and delivery policy above it.
 
 ## Public contracts
 

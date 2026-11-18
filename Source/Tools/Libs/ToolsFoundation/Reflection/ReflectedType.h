@@ -35,6 +35,10 @@ struct XII_TOOLSFOUNDATION_DLL xiiAttributeHolder
 
   void operator=(const xiiAttributeHolder& rhs);
 
+  /// Passive authoring metadata is represented as bounded values on Editor process sessions.
+  xiiVariantArray GetNetworkAttributes() const;
+  void            SetNetworkAttributes(xiiVariantArray attributes);
+
   mutable xiiHybridArray<const xiiPropertyAttribute*, 2> m_Attributes;
   xiiArrayPtr<const xiiPropertyAttribute* const>         m_ReferenceAttributes;
 };

@@ -411,7 +411,7 @@ public:
     }
     else
     {
-      xiiResult res = m_IPC.ConnectToHostProcess();
+      xiiResult res = m_IPC.ConnectToHostProcess(xiiProcessMessageDomain::Asset);
       if (res.Succeeded())
       {
         m_IPC.m_Events.AddEventHandler(xiiMakeDelegate(&xiiEditorProcessorApplication::EventHandlerIPC, this));

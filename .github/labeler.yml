@@ -48,7 +48,6 @@
       - any-glob-to-any-file:
           - "Source/Engine/Foundation/IO/**"
           - "Source/Engine/Foundation/Serialization/**"
-          - "Source/Engine/Foundation/Communication/**"
           - "Source/EnginePlugins/FileservePlugin/**"
           - "Source/Tools/Fileserve/**"
           - "Source/EditorPlugins/Fileserve/**"

@@ -19,18 +19,24 @@ void xiiFileserverApp::AfterCoreSystemsStartup()
   // Add the empty data directory to access files via absolute paths
   xiiFileSystem::AddDataDirectory("", "App", ":", xiiDataDirUsage::AllowWrites).IgnoreResult();
 
-  XII_DEFAULT_NEW(xiiFileserver);
+  m_pServer = XII_DEFAULT_NEW(xiiFileserver);
 
-  xiiFileserver::GetSingleton()->m_Events.AddEventHandler(xiiMakeDelegate(&xiiFileserverApp::FileserverEventHandler, this));
+  m_pServer->m_Events.AddEventHandler(xiiMakeDelegate(&xiiFileserverApp::FileserverEventHandler, this));
 
 #ifndef XII_USE_QT
-  xiiFileserver::GetSingleton()->m_Events.AddEventHandler(xiiMakeDelegate(&xiiFileserverApp::FileserverEventHandlerConsole, this));
-  xiiFileserver::GetSingleton()->StartServer();
+  m_pServer->m_Events.AddEventHandler(xiiMakeDelegate(&xiiFileserverApp::FileserverEventHandlerConsole, this));
+  m_pServer->StartServer();
+  if (!m_pServer->IsServerRunning())
+  {
+    SetReturnCode(1);
+    RequestQuit();
+    return;
+  }
 #endif
 
   xiiPlugin::LoadPlugin("xiiShaderCompiler", xiiPluginLoadFlags::PluginIsOptional).IgnoreResult();
 
-  xiiFileserver::GetSingleton()->SetShaderCompileHandler(xiiMakeDelegate(&xiiFileserverApp::CompileShader, this));
+  m_pServer->SetShaderCompileHandler(xiiMakeDelegate(&xiiFileserverApp::CompileShader, this));
 
   // TODO: CommandLine Option
   m_CloseAppTimeout = xiiTime::MakeFromSeconds(xiiCommandLineUtils::GetGlobalInstance()->GetIntOption("-fs_close_timeout", 0));
@@ -44,13 +50,8 @@ void xiiFileserverApp::AfterCoreSystemsStartup()
 
 void xiiFileserverApp::BeforeCoreSystemsShutdown()
 {
-  xiiFileserver::GetSingleton()->StopServer();
-
-#ifndef XII_USE_QT
-  xiiFileserver::GetSingleton()->m_Events.RemoveEventHandler(xiiMakeDelegate(&xiiFileserverApp::FileserverEventHandlerConsole, this));
-#endif
-
-  xiiFileserver::GetSingleton()->m_Events.RemoveEventHandler(xiiMakeDelegate(&xiiFileserverApp::FileserverEventHandler, this));
+  m_pServer->StopServer();
+  m_pServer.Clear();
 
   xiiGlobalLog::RemoveLogWriter(xiiLogWriter::Console::LogMessageHandler);
   xiiGlobalLog::RemoveLogWriter(xiiLogWriter::VisualStudio::LogMessageHandler);
@@ -66,25 +67,7 @@ xiiApplication::Execution xiiFileserverApp::Run()
     return xiiApplication::Execution::Quit;
   }
 
-  if (xiiFileserver::GetSingleton()->UpdateServer() == false)
-  {
-    m_uiSleepCounter++;
-
-    if (m_uiSleepCounter > 1000)
-    {
-      // only sleep when no work had to be done in a while
-      xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(10));
-    }
-    else if (m_uiSleepCounter > 10)
-    {
-      // only sleep when no work had to be done in a while
-      xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(1));
-    }
-  }
-  else
-  {
-    m_uiSleepCounter = 0;
-  }
+  m_pServer->UpdateServer(xiiTime::MakeFromMilliseconds(10));
 
   return xiiApplication::Execution::Continue;
 }

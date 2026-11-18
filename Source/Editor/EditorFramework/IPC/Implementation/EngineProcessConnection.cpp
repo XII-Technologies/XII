@@ -180,7 +180,7 @@ void xiiEditorEngineProcessConnection::Initialize(const xiiRTTI* pFirstAllowedMe
 #endif
 
 
-  if (m_IPC.StartClientProcess(EditorEngineProcessExecutableName, args, false, pFirstAllowedMessageType).Failed())
+  if (m_IPC.StartClientProcess(EditorEngineProcessExecutableName, args, xiiProcessMessageDomain::Engine, pFirstAllowedMessageType).Failed())
   {
     m_bProcessCrashed = true;
     xiiLog::Error("EngineProcess crashed on startup.");
@@ -438,7 +438,7 @@ xiiResult xiiEditorEngineProcessConnection::RestartProcess()
   if ((bInteractiveStartup ? m_IPC.WaitForStartup(xiiGetStaticRTTI<xiiProjectReadyMsgToEditor>()) : WaitForMessage(xiiGetStaticRTTI<xiiProjectReadyMsgToEditor>(), xiiTime::MakeFromSeconds(60))).Failed())
   {
     if (!pEditor->WasStartupQuitRequested())
-      xiiLog::Error("Failed to restart the engine process. Engine Process Output:\n", m_IPC.GetStdoutContents());
+      xiiLog::Error("Failed to restart the engine process. Engine Process Output:\n{}", m_IPC.GetStdoutContents());
     ShutdownProcess();
     return XII_FAILURE;
   }

@@ -2,7 +2,6 @@
 
 # CPU test suites and their transitive dependencies; no Qt, SDL or graphics device.
 set_property(GLOBAL PROPERTY XII_BUILD_FILTER_HeadlessTests
-  enet
   zstd
   zlib
   Foundation

@@ -4,13 +4,11 @@
 
 #include <FileservePlugin/FileservePluginDLL.h>
 #include <Foundation/Containers/HybridArray.h>
+#include <Foundation/Network/NetworkChannel.h>
 #include <Foundation/Strings/String.h>
 #include <Foundation/Strings/StringBuilder.h>
 
 class xiiOSFile;
-
-/// ENet connection token for the FileServe wire format with correlated uploads and shader replies.
-inline constexpr xiiUInt32 XII_FILESERVE_TRANSFER_PROTOCOL = 0x58494632U; // XIF2
 
 enum class xiiFileserveFileState
 {
@@ -47,7 +45,7 @@ public:
   static xiiResult      HashFile(xiiOSFile& ref_file, xiiUInt64 uiSize, xiiUInt64& out_uiHash);
   xiiFileserveFileState GetFileStatus(xiiUInt16& inout_uiDataDirID, xiiStringView sRequestedFile, FileStatus& inout_status, xiiOSFile& out_file, bool bForceThisDataDir) const;
 
-  bool                       m_bLostConnection = false;
+  xiiNetworkChannel          m_Channel;
   xiiUInt32                  m_uiApplicationID = 0;
   xiiHybridArray<DataDir, 8> m_MountedDataDirs;
 };

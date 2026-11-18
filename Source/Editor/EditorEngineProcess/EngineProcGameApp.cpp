@@ -75,7 +75,7 @@ void xiiEngineProcessGameApplication::AfterCoreSystemsStartup()
   // skip project creation at this point
   // SUPER::AfterCoreSystemsStartup();
 
-#if XII_DISABLED(XII_PLATFORM_WINDOWS) && XII_DISABLED(XII_PLATFORM_LINUX)
+#if XII_DISABLED(XII_PLATFORM_WINDOWS) && XII_DISABLED(XII_PLATFORM_LINUX) && XII_DISABLED(XII_PLATFORM_OSX)
   {
     // on all 'mobile' platforms, we assume we are in remote mode
     xiiEditorEngineProcessApp::GetSingleton()->SetRemoteMode();
@@ -100,12 +100,14 @@ void xiiEngineProcessGameApplication::AfterCoreSystemsStartup()
 
 void xiiEngineProcessGameApplication::ConnectToHost()
 {
-  XII_VERIFY(m_IPC.ConnectToHostProcess().Succeeded(), "Failed to connect to host.");
-
   m_IPC.m_Events.AddEventHandler(xiiMakeDelegate(&xiiEngineProcessGameApplication::EventHandlerIPC, this));
-
-  // wait indefinitely (not necessary anymore, should work regardless)
-  // m_IPC.WaitForMessage(xiiGetStaticRTTI<xiiSetupProjectMsgToEngine>(), xiiTime());
+  if (m_IPC.ConnectToHostProcess().Failed())
+  {
+    xiiLog::Error("Failed to start EngineProcess communication.");
+    SetReturnCode(1);
+    RequestQuit();
+    return;
+  }
 }
 
 void xiiEngineProcessGameApplication::DisableErrorReport()
@@ -321,7 +323,7 @@ void xiiEngineProcessGameApplication::LogWriter(const xiiLoggingEventData& e)
   // Prevent infinite recursion by disabling logging until we are done sending the message
   XII_LOG_BLOCK_MUTE();
 
-  m_IPC.SendMessage(&msg);
+  m_IPC.SendBackgroundMessage(msg);
 }
 
 bool xiiEngineProcessGameApplication::ProcessIPCMessages(bool bPendingOpInProgress)
@@ -337,6 +339,7 @@ bool xiiEngineProcessGameApplication::ProcessIPCMessages(bool bPendingOpInProgre
   }
   else
   {
+    SendCVarList();
     // if an operation is still pending or this process is a remote process, we do NOT want to block
     // remote processes shall run as fast as they can
     if (bPendingOpInProgress || xiiEditorEngineProcessApp::GetSingleton()->IsRemoteMode())
@@ -397,8 +400,11 @@ void xiiEngineProcessGameApplication::EventHandlerIPC(const xiiEngineProcessComm
     XII_PROFILE_SCOPE(sRedrawScope.GetView());
 
     xiiSyncWithProcessMsgToEditor msg;
-    msg.m_uiRedrawCount     = pMsg->m_uiRedrawCount;
-    m_uiRedrawCountReceived = msg.m_uiRedrawCount;
+    msg.m_uiRedrawCount = pMsg->m_uiRedrawCount;
+    if (xiiGALDevice::HasDefaultDevice())
+    {
+      m_uiRedrawCountReceived = msg.m_uiRedrawCount;
+    }
 
     // Clear the main views after rendering to prevent duplicate rendering or premature update requests when the editor runs in lockstep with the engine.
     // If multiple xiiSyncWithProcessMsgToEngine messages are queued, exit the message processing loop to render the current frame immediately.
@@ -469,12 +475,18 @@ void xiiEngineProcessGameApplication::EventHandlerIPC(const xiiEngineProcessComm
 
     // After the xiiSetupProjectMsgToEngine was processed, all dynamic plugins should be loaded and we can finally send the reflection information over.
     SendReflectionInformation();
+    m_bSendCVarList = true;
+    SendCVarList();
 
     // Project setup, we are now ready to accept document messages.
     SendProjectReadyMessage();
     return;
   }
-  else if (const auto* pMsg1 = xiiDynamicCast<const xiiReloadResourceMsgToEngine*>(e.m_pMessage))
+
+  if (m_sProjectDirectory.IsEmpty() || !m_sInitializationFailure.IsEmpty())
+    return;
+
+  if (const auto* pMsg1 = xiiDynamicCast<const xiiReloadResourceMsgToEngine*>(e.m_pMessage))
   {
     XII_PROFILE_SCOPE("ReloadResource");
 
@@ -848,32 +860,32 @@ void xiiEngineProcessGameApplication::EventHandlerCVar(const xiiCVarEvent& e)
 {
   if (e.m_EventType == xiiCVarEvent::ValueChanged)
   {
-    TransmitCVar(e.m_pCVar);
+    TransmitCVar(e.m_pCVar, false);
   }
 
   if (e.m_EventType == xiiCVarEvent::ListOfVarsChanged)
   {
-    // currently no way to remove CVars from the editor UI
-
-    for (xiiCVar* pCVar = xiiCVar::GetFirstInstance(); pCVar != nullptr; pCVar = pCVar->GetNextInstance())
-    {
-      TransmitCVar(pCVar);
-    }
+    m_bSendCVarList = true;
   }
 }
 
 void xiiEngineProcessGameApplication::EventHandlerCVarPlugin(const xiiPluginEvent& e)
 {
-  if (e.m_EventType == xiiPluginEvent::Type::AfterLoadingBeforeInit)
-  {
-    for (xiiCVar* pCVar = xiiCVar::GetFirstInstance(); pCVar != nullptr; pCVar = pCVar->GetNextInstance())
-    {
-      TransmitCVar(pCVar);
-    }
-  }
+  if (e.m_EventType == xiiPluginEvent::Type::AfterPluginChanges)
+    m_bSendCVarList = true;
 }
 
-void xiiEngineProcessGameApplication::TransmitCVar(const xiiCVar* pCVar)
+void xiiEngineProcessGameApplication::SendCVarList()
+{
+  // Wait for the plugin callback to return and the network registry to publish stable RTTI.
+  if (!m_IPC.IsConnected() || !m_bSendCVarList.Set(false))
+    return;
+
+  for (const xiiCVar* pCVar = xiiCVar::GetFirstInstance(); pCVar != nullptr; pCVar = pCVar->GetNextInstance())
+    TransmitCVar(pCVar, true);
+}
+
+void xiiEngineProcessGameApplication::TransmitCVar(const xiiCVar* pCVar, bool bMayWait)
 {
   xiiCVarMsgToEditor msg;
   msg.m_sName        = pCVar->GetName();
@@ -901,7 +913,10 @@ void xiiEngineProcessGameApplication::TransmitCVar(const xiiCVar* pCVar)
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
 
-  m_IPC.SendMessage(&msg);
+  if (bMayWait)
+    m_IPC.SendMessage(&msg);
+  else
+    m_IPC.SendBackgroundMessage(msg);
 }
 
 void xiiEngineProcessGameApplication::HandleResourceUpdateMsg(const xiiResourceUpdateMsgToEngine& msg)

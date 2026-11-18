@@ -77,7 +77,7 @@ XII_CREATE_SIMPLE_TEST(ModelImportWorkflow, StaticModelDependencies)
 #else
     const char* executable = "xiiEditorProcessor";
 #endif
-    if (!XII_TEST_RESULT(worker.StartClientProcess(executable, arguments, false)) || !XII_TEST_RESULT(worker.WaitForConnection(xiiTime::MakeFromSeconds(30))))
+    if (!XII_TEST_RESULT(worker.StartClientProcess(executable, arguments, xiiProcessMessageDomain::Asset)) || !XII_TEST_RESULT(worker.WaitForConnection(xiiTime::MakeFromSeconds(30))))
       return;
     xiiProcessAssetMsg request;
     if (!XII_TEST_RESULT(xiiAssetProcessor::PrepareAssetRequest(document->GetGuid(), request)))

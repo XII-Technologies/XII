@@ -116,6 +116,7 @@ private:
   void OnProcessCrashed(xiiStringView message);
 
   State                                 m_State = State::LookingForWork;
+  xiiTime                               m_ConnectionDeadline;
   xiiUuid                               m_AssetGuid;
   xiiProcessAssetMsg                    m_Request;
   xiiDataDirPath                        m_AssetPath;

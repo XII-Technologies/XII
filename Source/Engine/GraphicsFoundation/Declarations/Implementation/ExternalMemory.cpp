@@ -2,6 +2,8 @@
 
 #include <GraphicsFoundation/GraphicsFoundationPCH.h>
 
+#include <Foundation/Network/Reflection/NetworkAttributes.h>
+
 #include <Foundation/System/Process.h>
 #include <GraphicsFoundation/Declarations/Descriptors.h>
 
@@ -18,15 +20,15 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGALExternalMemoryDescription, xiiNoBase, 2, x
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_BITFLAGS_MEMBER_PROPERTY("Type", xiiGALExternalMemoryKind, m_Type),
-    XII_BITFLAGS_MEMBER_PROPERTY("Flags", xiiGALExternalMemoryFlags, m_Flags),
-    XII_MEMBER_PROPERTY("MemoryHandle", m_uiNativeHandle),
-    XII_MEMBER_PROPERTY("SemaphoreHandle", m_uiNativeSemaphoreHandle),
-    XII_MEMBER_PROPERTY("Size", m_uiSize),
-    XII_MEMBER_PROPERTY("ProcessID", m_uiProcessId),
-    XII_MEMBER_PROPERTY("MemoryTypeIndex", m_uiMemoryTypeIndex),
-    XII_MEMBER_PROPERTY("DeviceUUID", m_DeviceUUID),
-    XII_MEMBER_PROPERTY("DriverUUID", m_DriverUUID),
+    XII_BITFLAGS_MEMBER_PROPERTY("Type", xiiGALExternalMemoryKind, m_Type)->AddAttributes(new xiiNetworkAttribute(1)),
+    XII_BITFLAGS_MEMBER_PROPERTY("Flags", xiiGALExternalMemoryFlags, m_Flags)->AddAttributes(new xiiNetworkAttribute(2)),
+    XII_MEMBER_PROPERTY("MemoryHandle", m_uiNativeHandle)->AddAttributes(new xiiNetworkAttribute(3)),
+    XII_MEMBER_PROPERTY("SemaphoreHandle", m_uiNativeSemaphoreHandle)->AddAttributes(new xiiNetworkAttribute(4)),
+    XII_MEMBER_PROPERTY("Size", m_uiSize)->AddAttributes(new xiiNetworkAttribute(5)),
+    XII_MEMBER_PROPERTY("ProcessID", m_uiProcessId)->AddAttributes(new xiiNetworkAttribute(6)),
+    XII_MEMBER_PROPERTY("MemoryTypeIndex", m_uiMemoryTypeIndex)->AddAttributes(new xiiNetworkAttribute(7)),
+    XII_MEMBER_PROPERTY("DeviceUUID", m_DeviceUUID)->AddAttributes(new xiiNetworkAttribute(8)),
+    XII_MEMBER_PROPERTY("DriverUUID", m_DriverUUID)->AddAttributes(new xiiNetworkAttribute(9)),
   }
   XII_END_PROPERTIES;
 }

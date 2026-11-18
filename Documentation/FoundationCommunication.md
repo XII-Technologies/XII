@@ -6,16 +6,11 @@
 
 `xiiGlobalEvent` remains under Events for existing startup, shutdown, plugin and application notifications. Inspector uses the names and registration counts of these events in its telemetry view. Replacing the named registry requires migrating both the lifecycle publishers and Inspector's diagnostics together.
 
-## Legacy Communication
+## Process and service boundaries
 
-| Component | Migration |
-| --- | --- |
-| `IpcChannel` and platform implementations, including ENet | Phases 2 and 3. Keep the current channels available while clients move. |
-| `IpcProcessMessageProtocol` | Phase 3. Replace the reflected process-message protocol with the Editor, EngineProcess and Player migration. |
-| `MessageLoop` | Retire after the legacy channels no longer need it. |
-| `RemoteInterface` and `RemoteMessage` | Retire after the services using the legacy remote protocol migrate. |
-| `RemoteInterfaceEnet` | Retire with ENet after the last dependent service moves. |
-| `Telemetry` and `TelemetryMessage` | Phase 5. Replace with the diagnostics transport used by Inspector and other telemetry consumers. |
-| `DataTransfer` | Phase 5. Move to diagnostics and tooling. |
+Foundation Network owns the native I/O workers, cancellation, framing, buffer leases, sessions, and channels. The Editor and AssetProcessor use the reflected endpoint for their process protocols. FileServe owns file authorization, transfer state, and shader request handling. Diagnostics owns subscriber demand, publication policy, and diagnostic commands. Applications pump these services on their owning threads and quiesce them before unloading dependent modules.
 
-Phase 2 can introduce the new transport while the current channel and protocol continue serving existing process connections. The transport can use the network layer's identity and serialization contracts. Local queue entries and message IDs stay process-local throughout that transition.
+- [Native networking and transport documentation](Networking.md)
+- [Editor process communication](EditorProcessCommunication.md)
+- [FileServe operations and security](Fileserve.md)
+- [Telemetry and diagnostics](TelemetryDiagnostics.md)
