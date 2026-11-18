@@ -148,10 +148,12 @@ private:
 
   [[nodiscard]] bool SupportsDurationQueries(const xiiGALCommandList& commandList) const;
   void               ReadbackFrame(FrameData& frameData);
+  [[nodiscard]] xiiSharedPtr<xiiGALQuery> AcquireDurationQuery();
 
 private:
   xiiSharedPtr<xiiGALDevice>           m_pDevice;
   FrameData                            m_FrameRing[s_uiRingFrameCount];
+  xiiDynamicArray<xiiSharedPtr<xiiGALQuery>> m_AvailableDurationQueries;
   xiiUInt32                            m_uiCurrentRingSlot = 0U;
   xiiHashTable<xiiHashedString, float> m_ResolvedDurationsMs;
   xiiHashTable<xiiUInt64, float>       m_ResolvedGraphDurationsMs;

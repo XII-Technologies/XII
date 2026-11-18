@@ -24,6 +24,7 @@
 #include <GraphicsCore/Pipeline/RenderGraph.h>
 #include <GraphicsCore/Pipeline/RenderGraphBlackboard.h>
 #include <GraphicsCore/Pipeline/RenderGraphManager.h>
+#include <GraphicsCore/Pipeline/RenderGraphProfiler.h>
 #include <GraphicsCore/Pipeline/RenderGraphResourceCache.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
@@ -922,7 +923,7 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
       continue;
 
     xiiRenderGraphCompileSettings compileSettings;
-    compileSettings.m_bEnableGPUProfiling = true;
+    compileSettings.m_bEnableGPUProfiling = viewDetail.m_pView->GetDynamicResolutionSettings().m_bEnabled || !xiiRenderGraphTimestampProfiler::s_TimingEvents.IsEmpty();
     compileSettings.m_bEnablePassCulling  = true;
     compileSettings.m_bEnableAsyncQueues  = true;
 

@@ -50,8 +50,9 @@ XII_ALWAYS_INLINE xiiHashedString xiiRenderGraphPassContext::GetPassName() const
 
 XII_ALWAYS_INLINE xiiGALTexture* xiiRenderGraphPassContext::GetTexture(xiiRenderGraphTextureHandle hTexture) const
 {
-  XII_ASSERT_DEV(m_pGraph != nullptr && m_pGraph->GetTextureDescription(hTexture) != nullptr, "Texture handle belongs to another graph setup or resource domain.");
-  if (m_pGraph == nullptr || m_pGraph->GetTextureDescription(hTexture) == nullptr)
+  const bool bValidHandle = m_pGraph != nullptr && m_pGraph->GetTextureDescription(hTexture) != nullptr;
+  XII_ASSERT_DEV(bValidHandle, "Texture handle belongs to another graph setup or resource domain.");
+  if (!bValidHandle)
   {
     return nullptr;
   }
@@ -66,8 +67,9 @@ XII_ALWAYS_INLINE xiiGALTexture* xiiRenderGraphPassContext::GetTexture(xiiRender
 
 XII_ALWAYS_INLINE xiiGALBuffer* xiiRenderGraphPassContext::GetBuffer(xiiRenderGraphBufferHandle hBuffer) const
 {
-  XII_ASSERT_DEV(m_pGraph != nullptr && m_pGraph->GetBufferDescription(hBuffer) != nullptr, "Buffer handle belongs to another graph setup or resource domain.");
-  if (m_pGraph == nullptr || m_pGraph->GetBufferDescription(hBuffer) == nullptr)
+  const bool bValidHandle = m_pGraph != nullptr && m_pGraph->GetBufferDescription(hBuffer) != nullptr;
+  XII_ASSERT_DEV(bValidHandle, "Buffer handle belongs to another graph setup or resource domain.");
+  if (!bValidHandle)
   {
     return nullptr;
   }

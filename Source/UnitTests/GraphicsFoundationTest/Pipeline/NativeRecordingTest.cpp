@@ -4,6 +4,8 @@
 
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Memory/FrameAllocator.h>
+#include <Foundation/Threading/AtomicInteger.h>
+#include <Foundation/Threading/TaskSystem.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <GraphicsCore/Pipeline/RenderGraphManager.h>
 #include <GraphicsFoundationTest/TestingEnvironment/RenderGraphTestContext.h>
@@ -79,6 +81,106 @@ XII_CREATE_SIMPLE_TEST(NativeRecording, FailureStopsDependentOutputAndRecovers)
       if (!xiiGpuTestReadback::ReadTexturePixel(*environment.GetDevice(), graph.GetExportedTexture(source.first->m_Color).Borrow(), 4, 4, pixel))
         return;
       XII_TEST_INT(pixel, 0xFF00FF00U);
+    }
+  }
+}
+
+XII_CREATE_SIMPLE_TEST(NativeRecording, MergeAndReuseRecording)
+{
+  xiiGPUTestingEnvironment environment;
+  if (!XII_TEST_RESULT(environment.Initialize(false, false)))
+  {
+    return;
+  }
+  xiiGALDevice* pDevice = environment.GetDevice();
+  xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
+  xiiStartup::StartupHighLevelSystems();
+  XII_SCOPE_EXIT(pDevice->WaitIdle(); xiiFrameAllocator::Reset(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
+
+  xiiRenderGraphTestContext context;
+  if (!XII_TEST_RESULT(context.Initialize("Merged and parallel recording")))
+  {
+    return;
+  }
+
+  auto&      graph     = context.GetGraph();
+  auto&      cache     = context.GetResourceCache();
+  const bool bParallel = pDevice->GetGraphicsDeviceType() == xiiGALGraphicsDeviceType::Vulkan &&
+    pDevice->GetFeatures().m_MultithreadedResourceCreation == xiiGALDeviceFeatureState::Enabled &&
+    xiiTaskSystem::GetWorkerThreadCount(xiiWorkerThreadType::ShortTasks) > 1U;
+  xiiAtomicInteger32          iRecordedItems;
+  xiiRenderGraphTextureHandle hOutput;
+  for (xiiUInt32 uiIteration = 0U; uiIteration < 6U; ++uiIteration)
+  {
+    xiiRenderGraphFrame frame;
+    if (!XII_TEST_RESULT(frame.Begin()))
+    {
+      return;
+    }
+    cache.BeginFrame(frame.GetFrameIndex(), frame.GetCompletedFrame());
+    XII_SCOPE_EXIT(cache.EndFrame(); frame.End());
+    iRecordedItems = 0;
+    if (uiIteration == 0U)
+    {
+      graph.BeginSetup(frame.GetFrameIndex());
+      const auto AddRasterPass = [&](xiiStringView sName, xiiColor color, xiiUInt32 uiItems, bool bAllowMerge) {
+        graph.AddPass<xiiRenderGraphTextureHandle>(sName, xiiGALCommandQueueFlags::Graphics, [&](xiiRenderGraphTextureHandle& ref_color, xiiRenderGraphBuilder& ref_builder) {
+          if (!hOutput.IsValid())
+          {
+            xiiGALTextureCreationDescription description;
+            description.m_Type = xiiGALResourceDimension::Texture2D;
+            description.m_Size = {8U, 8U};
+            description.m_Format = xiiGALResourceFormat::RGBA8UNormalized;
+            description.m_BindFlags = xiiGALBindFlags::RenderTarget;
+            hOutput = ref_builder.DeclareTexture("Color", description);
+          }
+          hOutput = ref_color = ref_builder.WriteTexture(hOutput, xiiGALResourceStateFlags::RenderTarget);
+          ref_builder.SetPassRenderPassManaged();
+          ref_builder.SetPassAllowMerge(bAllowMerge);
+          ref_builder.SetPassRecordingItemCount(uiItems);
+          if (!bAllowMerge)
+          {
+            ref_builder.ExportTexture(ref_color, xiiGALResourceStateFlags::CopySource);
+          } }, [&, color, uiItems](const xiiRenderGraphTextureHandle& hColor, xiiRenderGraphPassContext& ref_execute) {
+          if (uiItems > 1U)
+          {
+            iRecordedItems.Add(static_cast<xiiInt32>(ref_execute.GetRecordingEnd() - ref_execute.GetRecordingStart()));
+          }
+          ref_execute.GetCommandList().ClearRenderTargetView(ref_execute.GetTexture(hColor)->GetDefaultView(xiiGALTextureViewType::RenderTarget), color); }, true);
+      };
+      AddRasterPass("Red", xiiColor::Red, 1U, true);
+      AddRasterPass("Green", xiiColor::Green, 1U, true);
+      AddRasterPass("Blue", xiiColor::Blue, 64U, false);
+      graph.EndSetup();
+      if (!XII_TEST_RESULT(graph.Compile({}, nullptr, pDevice)))
+      {
+        return;
+      }
+      XII_TEST_INT(graph.GetMergeGroups().GetCount(), 2U);
+      XII_TEST_INT(graph.GetStatistics().m_uiMergedPasses, 1U);
+    }
+    else
+    {
+      graph.BeginExecutionFrame(frame.GetFrameIndex());
+    }
+
+    xiiStringBuilder sError;
+    if (!XII_TEST_RESULT_MSG(graph.Execute(pDevice, nullptr, &context.GetBlackboard(), &cache, nullptr, &sError), "%s", sError.GetData()))
+    {
+      return;
+    }
+    XII_TEST_INT(graph.GetPlanGeneration(), 1U);
+    XII_TEST_INT(graph.GetStatistics().m_uiSubmittedCount, 1U);
+    XII_TEST_INT(graph.GetStatistics().m_uiReusedPrimaryLists, uiIteration == 0U ? 0U : 1U);
+    XII_TEST_INT(graph.GetStatistics().m_uiSecondaryLists, bParallel ? 2U : 0U);
+    XII_TEST_INT(iRecordedItems, 64);
+    if (uiIteration == 5U)
+    {
+      xiiUInt32 uiPixel = 0U;
+      if (xiiGpuTestReadback::ReadTexturePixel(*pDevice, graph.GetExportedTexture(hOutput).Borrow(), 4U, 4U, uiPixel))
+      {
+        XII_TEST_INT(uiPixel, 0xFFFF0000U);
+      }
     }
   }
 }

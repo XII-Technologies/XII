@@ -230,6 +230,7 @@ struct XII_GRAPHICSCORE_DLL xiiRenderGraphCompiledPass
   xiiHashedString              m_sName;                                ///< Debug name for this pass, used in profiling and diagnostics.
   xiiUInt32                    m_uiPassIndex        = xiiInvalidIndex; ///< Index into the graph's pass table.
   xiiUInt32                    m_uiQueueIndex       = 0U;              ///< 0=Graphics, 1=AsyncCompute, 2=AsyncTransfer.
+  xiiUInt32                    m_uiSubmissionIndex  = xiiInvalidIndex;
   xiiUInt32                    m_uiMergeGroupIndex  = xiiInvalidIndex; ///< Index into the graph's merge group array, or xiiInvalidIndex if this pass is not merged with any others.
   bool                         m_bHasSideEffects    = false;           ///< Whether this pass has side effects (e.g. present, copy to readback, UAV write with unknown output, etc.) that must be preserved even if no other pass reads from it.
   bool                         m_bAllowMerge        = true;            ///< Whether this pass is allowed to be merged with adjacent passes on the same queue. This is a hint to the compiler, but not a guarantee.
@@ -263,9 +264,22 @@ struct XII_GRAPHICSCORE_DLL xiiRenderGraphStatistics
   xiiTime   m_CompilationTime;
   xiiTime   m_FramePreparationTime;
   xiiTime   m_ResourceResolutionTime;
+  xiiTime   m_ExecutionTime;
+  xiiTime   m_RecordingCriticalPath;
+  xiiTime   m_RecordingWorkTime;
+  xiiTime   m_SubmitTime;
   xiiUInt64 m_uiPlanGeneration         = 0U;
   xiiUInt64 m_uiStructuralBuildCount   = 0U;
   xiiUInt64 m_uiPlanReuseCount         = 0U;
+  xiiUInt32 m_uiSecondaryLists         = 0U;
+  xiiUInt32 m_uiParallelPasses         = 0U;
+  xiiUInt32 m_uiSerialPasses           = 0U;
+  xiiUInt32 m_uiRecordingThreads       = 0U;
+  xiiUInt32 m_uiCrossQueueWaits        = 0U;
+  xiiUInt32 m_uiCrossQueueSignals      = 0U;
+  xiiUInt32 m_uiMergedPasses           = 0U;
+  xiiUInt32 m_uiPrimaryLists           = 0U;
+  xiiUInt32 m_uiReusedPrimaryLists     = 0U;
   xiiUInt32 m_uiSubmittedCount         = 0U;
   xiiUInt32 m_uiCompiledResourceCount  = 0U;
   xiiUInt32 m_uiRegisteredPassCount    = 0U; ///< Passes registered with the graph before compilation.
@@ -739,7 +753,7 @@ private:
     xiiSharedPtr<xiiGALFramebuffer> m_pFramebuffer;
   };
 
-  xiiResult MaterializeRenderPassGroup(const xiiRenderGraphMergeGroup& group, RenderPassBinding& ref_binding, xiiGALDevice* pDevice, xiiArrayPtr<xiiSharedPtr<xiiGALTexture>> resolvedTextures, xiiStringBuilder* out_pError) const;
+  xiiResult MaterializeRenderPassGroup(const xiiRenderGraphMergeGroup& group, RenderPassBinding& ref_binding, xiiRenderGraphResourceCache& resourceCache, xiiArrayPtr<xiiSharedPtr<xiiGALTexture>> resolvedTextures, xiiStringBuilder* out_pError) const;
 
   void EmitBarrier(xiiUInt32 uiConsumerPassIdx, xiiUInt32 uiResourceIdx, bool bIsTexture, xiiBitflags<xiiGALResourceStateFlags> afterState, bool bSplitBarrier, xiiUInt32 uiFirstMip = 0U, xiiUInt32 uiMipCount = XII_GAL_REMAINING_MIP_LEVELS, xiiUInt32 uiFirstSlice = 0U, xiiUInt32 uiSliceCount = XII_GAL_REMAINING_ARRAY_SLICES);
 

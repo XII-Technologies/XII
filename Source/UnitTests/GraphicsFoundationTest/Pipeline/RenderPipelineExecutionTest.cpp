@@ -331,6 +331,7 @@ XII_CREATE_SIMPLE_TEST(PipelineScheduling, ReaderStateScheduling)
       XII_TEST_BOOL(transition->m_DependencyPassIndices.Contains(3));
       XII_TEST_BOOL(submissions[findSubmission(4)].m_WaitSubmissionIndices.Contains(findSubmission(2)));
       XII_TEST_BOOL(submissions[findSubmission(4)].m_WaitSubmissionIndices.Contains(findSubmission(3)));
+      XII_TEST_INT(submissions[findSubmission(4)].m_WaitSubmissionIndices.GetCount(), 2U);
     }
     xiiUInt32 transitionCount = 0;
     for (const auto& barrier : graph.GetBarriers())
@@ -342,6 +343,11 @@ XII_CREATE_SIMPLE_TEST(PipelineScheduling, ReaderStateScheduling)
       }
     }
     XII_TEST_INT(transitionCount, 1);
+
+    settings.m_bEnableAsyncQueues = false;
+    XII_TEST_RESULT(graph.Compile(settings));
+    XII_TEST_INT(graph.GetQueueSubmissions().GetCount(), 1U);
+    XII_TEST_BOOL(graph.GetQueueSubmissions()[0].m_WaitSubmissionIndices.IsEmpty());
   }
 }
 

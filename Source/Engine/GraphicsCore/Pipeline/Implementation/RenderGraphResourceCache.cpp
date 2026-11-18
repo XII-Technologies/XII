@@ -22,6 +22,7 @@ xiiRenderGraphResourceCache::~xiiRenderGraphResourceCache()
   m_RetiredBuffers.Clear();
   m_TexturePool.Clear();
   m_BufferPool.Clear();
+  m_Framebuffers.Clear();
 
   m_pDevice          = nullptr;
   m_uiCurrentFrame   = 0;
@@ -39,6 +40,60 @@ xiiRenderGraphResourceCache::QueueTimeline* xiiRenderGraphResourceCache::Acquire
     timeline.m_pFence  = m_pDevice->CreateFence(description);
   }
   return timeline.m_pFence != nullptr ? &timeline : nullptr;
+}
+
+xiiSharedPtr<xiiGALCommandList> xiiRenderGraphResourceCache::AcquirePrimary(xiiUInt32 uiQueueIndex, xiiBitflags<xiiGALCommandQueueFlags> queueFlags, bool& out_bReused)
+{
+  auto& queue = m_QueueTimelines[uiQueueIndex];
+  {
+    XII_LOCK(queue.m_Mutex);
+    if (queue.m_pIdlePrimary != nullptr)
+    {
+      out_bReused = true;
+      return std::move(queue.m_pIdlePrimary);
+    }
+  }
+  out_bReused = false;
+  xiiGALCommandListCreationDescription description;
+  description.m_QueueFlags = queueFlags;
+  return m_pDevice->CreateCommandList(description);
+}
+
+void xiiRenderGraphResourceCache::ReturnPrimary(xiiUInt32 uiQueueIndex, xiiSharedPtr<xiiGALCommandList> pList)
+{
+  // GAL detaches submitted backend recording state before resetting the logical list.
+  if (pList->GetRecordingState() == xiiGALCommandList::RecordingState::Reset)
+  {
+    auto& queue = m_QueueTimelines[uiQueueIndex];
+    XII_LOCK(queue.m_Mutex);
+    if (queue.m_pIdlePrimary == nullptr)
+    {
+      queue.m_pIdlePrimary = std::move(pList);
+    }
+  }
+}
+
+xiiSharedPtr<xiiGALFramebuffer> xiiRenderGraphResourceCache::AcquireFramebuffer(const xiiGALFramebufferCreationDescription& description)
+{
+  XII_LOCK(m_Mutex);
+  const xiiUInt32 uiHash = xiiGALDescriptorHash::Hash(description);
+  if (auto* pEntries = m_Framebuffers.GetValue(uiHash))
+  {
+    for (auto& entry : *pEntries)
+    {
+      if (entry.m_pFramebuffer->GetDescription() == description)
+      {
+        entry.m_uiLastUsedFrame = m_uiCurrentFrame;
+        return entry.m_pFramebuffer;
+      }
+    }
+  }
+  auto pFramebuffer = m_pDevice->CreateFramebuffer(description);
+  if (pFramebuffer != nullptr)
+  {
+    m_Framebuffers[uiHash].PushBack({pFramebuffer, m_uiCurrentFrame});
+  }
+  return pFramebuffer;
 }
 
 void xiiRenderGraphResourceCache::BeginFrame(xiiUInt64 uiFrameIndex)
@@ -212,6 +267,27 @@ void xiiRenderGraphResourceCache::ReleaseStaleResourcesLocked(xiiUInt32 uiMinAge
     return;
 
   const xiiUInt64 uiStaleThreshold = m_uiCurrentFrame - static_cast<xiiUInt64>(uiMinAgeFrames);
+
+  const xiiUInt64 uiFramebufferThreshold = xiiMath::Min(uiStaleThreshold, m_uiCompletedFrame);
+  for (auto it = m_Framebuffers.GetIterator(); it.IsValid();)
+  {
+    auto& ref_entries = it.Value();
+    for (xiiUInt32 uiIndex = ref_entries.GetCount(); uiIndex > 0U; --uiIndex)
+    {
+      if (ref_entries[uiIndex - 1U].m_uiLastUsedFrame <= uiFramebufferThreshold)
+      {
+        ref_entries.RemoveAtAndSwap(uiIndex - 1U);
+      }
+    }
+    if (ref_entries.IsEmpty())
+    {
+      it = m_Framebuffers.Remove(it);
+    }
+    else
+    {
+      ++it;
+    }
+  }
 
   for (auto it = m_TexturePool.GetIterator(); it.IsValid();)
   {

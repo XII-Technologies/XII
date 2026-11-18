@@ -288,6 +288,24 @@ void xiiQtRenderGraphWidget::Rebuild()
                           .arg(stats["submitted"].toInt())
                           .arg(stats["submissions"].toInt())
                           .arg(stats["externalFenceWaits"].toInt()));
+  m_pStatus->setToolTip(m_pStatus->toolTip() +
+                        QString("\nCPU execute: %1 ms | Recording wall: %2 ms | Recording work: %3 ms | Submit: %4 ms")
+                          .arg(stats["cpuExecutionMs"].toDouble(), 0, 'f', 3)
+                          .arg(stats["cpuRecordingWallMs"].toDouble(), 0, 'f', 3)
+                          .arg(stats["cpuRecordingWorkMs"].toDouble(), 0, 'f', 3)
+                          .arg(stats["cpuSubmitMs"].toDouble(), 0, 'f', 3) +
+                        QString("\nPrimary lists: %1 (%2 reused) | Secondary lists: %3 on %4 recording threads | Passes: %5 serial, %6 parallel, %7 merged")
+                          .arg(stats["primaryLists"].toInt())
+                          .arg(stats["reusedPrimaryLists"].toInt())
+                          .arg(stats["secondaryLists"].toInt())
+                          .arg(stats["recordingThreads"].toInt())
+                          .arg(stats["serialPasses"].toInt())
+                          .arg(stats["parallelPasses"].toInt())
+                          .arg(stats["mergedPasses"].toInt()) +
+                        QString("\nPhysical queue mapping: %1 | Internal waits: %2 | Internal signals: %3")
+                          .arg(Indices(graph["physicalQueues"].toArray()))
+                          .arg(stats["internalFenceWaits"].toInt())
+                          .arg(stats["internalFenceSignals"].toInt()));
   const QString              filter = m_pFilter->text();
   const auto                 passes = graph["passes"].toArray();
   QMap<int, QPointF>         positions;
