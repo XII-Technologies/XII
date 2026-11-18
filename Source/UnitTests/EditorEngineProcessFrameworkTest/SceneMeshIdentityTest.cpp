@@ -212,13 +212,13 @@ static void RunSceneMeshIdentity(bool denseMeshlet, bool skinned = false, bool m
         return;
       XII_TEST_INT(frame.GetFrameIndex(), 1);
       const auto completed = frame.GetCompletedFrame();
-      xiiGeometryResidencyManager::ProcessStreaming(1, completed, xiiMath::MaxValue<xiiUInt64>());
+      xiiGpuResidencyManager::ProcessStreaming(1, completed, xiiMath::MaxValue<xiiUInt64>());
       xiiUInt64 capacity = 0;
       capacity           = context.GetMaximumMeshletCount();
       XII_TEST_BOOL(capacity > 0);
       cache.BeginFrame(1, completed);
       graph.BeginSetup(1);
-      const auto uploadedGeometry = xiiGeometryResidencyManager::AddUploadPass(graph, 1);
+      const auto uploadedGeometry = xiiGpuResidencyManager::DeclareUploadPass(graph);
       const auto materials        = xiiMaterialManager::DeclareUploadPass(graph);
       xiiCamera  camera;
       camera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovY, 60, 0.1f, 100);
@@ -413,10 +413,10 @@ static void RunSceneMeshIdentity(bool denseMeshlet, bool skinned = false, bool m
           XII_TEST_RESULT(renderer->UpdateGpuInstances(extracted, poseFrame));
           XII_TEST_BOOL(context.GetDataRevision() != poseRevision);
           xiiMaterialManager::BeginFrame(poseFrame, poseFrame - 1);
-          xiiGeometryResidencyManager::ProcessStreaming(poseFrame, poseFrame - 1, xiiMath::MaxValue<xiiUInt64>());
+          xiiGpuResidencyManager::ProcessStreaming(poseFrame, poseFrame - 1, xiiMath::MaxValue<xiiUInt64>());
           cache.BeginFrame(poseFrame, poseFrame - 1);
           graph.BeginSetup(poseFrame);
-          const auto              poseGeometry  = xiiGeometryResidencyManager::AddUploadPass(graph, poseFrame);
+          const auto              poseGeometry  = xiiGpuResidencyManager::DeclareUploadPass(graph);
           const auto              poseMaterials = xiiMaterialManager::DeclareUploadPass(graph);
           xiiGpuVisibilityOutputs poseVisibility;
           if (!XII_TEST_RESULT(visibilityPipeline.Build(view, graph, graphContext.GetBlackboard(), viewProjection, camera.GetCenterPosition(), true, poseVisibility)))
@@ -528,13 +528,13 @@ static void RunSceneMeshIdentity(bool denseMeshlet, bool skinned = false, bool m
         if (!XII_TEST_RESULT(renderer->UpdateGpuInstances(extracted, frame)))
           return;
         xiiMaterialManager::PrepareGpuResources();
-        xiiGeometryResidencyManager::ProcessStreaming(frame, completed, xiiMath::MaxValue<xiiUInt64>());
+        xiiGpuResidencyManager::ProcessStreaming(frame, completed, xiiMath::MaxValue<xiiUInt64>());
         auto& graph = graphContext.GetGraph();
         auto& cache = graphContext.GetResourceCache();
         cache.BeginFrame(frame, completed);
         XII_SCOPE_EXIT(cache.EndFrame());
         graph.BeginSetup(frame);
-        const auto uploadedGeometry = xiiGeometryResidencyManager::AddUploadPass(graph, frame);
+        const auto uploadedGeometry = xiiGpuResidencyManager::DeclareUploadPass(graph);
         const auto materials        = xiiMaterialManager::DeclareUploadPass(graph);
         view->SetRenderEnabled(false);
         xiiGpuVisibilityOutputs visibility;

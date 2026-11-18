@@ -8,8 +8,8 @@
 #include <Foundation/Threading/Thread.h>
 #include <Foundation/Threading/ThreadSignal.h>
 #include <Foundation/Types/ScopeExit.h>
-#include <GraphicsCore/Geometry/GeometryResidency.h>
 #include <GraphicsCore/Meshes/MeshBufferResource.h>
+#include <GraphicsCore/Streaming/GpuResidencyManager.h>
 #include <GraphicsFoundation/Resources/BindlessResourceTable.h>
 #include <GraphicsFoundation/Resources/Buffer.h>
 #include <GraphicsFoundationTest/TestingEnvironment/BufferReadback.h>
@@ -42,14 +42,14 @@ namespace
       m_Start.WaitForSignal();
       for (xiiUInt32 iteration = 0; iteration < 32; ++iteration)
       {
-        if (xiiGeometryResidencyManager::EnsureInitialized().Failed())
+        if (xiiGpuResidencyManager::EnsureInitialized().Failed())
         {
           m_bSucceeded = false;
           break;
         }
-        auto metadata = xiiGeometryResidencyManager::GetMetadataBuffer();
-        auto meshlets = xiiGeometryResidencyManager::GetMeshletMetadataBuffer();
-        m_bSucceeded &= xiiGeometryResidencyManager::IsInitialized() && metadata && meshlets;
+        auto metadata = xiiGpuResidencyManager::GetMetadataBuffer();
+        auto meshlets = xiiGpuResidencyManager::GetMeshletMetadataBuffer();
+        m_bSucceeded &= xiiGpuResidencyManager::IsInitialized() && metadata && meshlets;
         if (iteration)
           m_bSucceeded &= metadata == m_Metadata && meshlets == m_Meshlets;
         m_Metadata = metadata;
@@ -69,11 +69,11 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, ConcurrentGeometryInitialization)
   xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
   xiiStartup::StartupHighLevelSystems();
   XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
-  XII_TEST_BOOL(!xiiGeometryResidencyManager::IsInitialized());
-  xiiGeometryResidencyDescription description;
+  XII_TEST_BOOL(!xiiGpuResidencyManager::IsInitialized());
+  xiiGpuResidencyDescription description;
   description.m_uiMaxGeometries = 64;
   description.m_uiMaxMeshlets   = 64;
-  XII_TEST_RESULT(xiiGeometryResidencyManager::Configure(description));
+  XII_TEST_RESULT(xiiGpuResidencyManager::Configure(description));
   xiiThreadSignal                   start(xiiThreadSignal::Mode::ManualReset);
   xiiUniquePtr<GeometryInitializer> initializers[4];
   for (auto& initializer : initializers)
@@ -93,7 +93,7 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, ConcurrentGeometryInitialization)
     XII_TEST_BOOL(initializer->m_Meshlets == initializers[0]->m_Meshlets);
     XII_TEST_INT(initializer->m_Metadata->GetDescription().m_uiSize, sizeof(xiiGpuGeometryRecord) * description.m_uiMaxGeometries * description.m_uiFramesInFlight);
   }
-  XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiGeometryCount, 0);
+  XII_TEST_INT(xiiGpuResidencyManager::GetStats().m_uiGeometryCount, 0);
 }
 
 XII_CREATE_SIMPLE_TEST(PipelineResources, OversizedGeometryResidency)
@@ -104,10 +104,10 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, OversizedGeometryResidency)
   xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
   xiiStartup::StartupHighLevelSystems();
   XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
-  xiiGeometryResidencyDescription configuration;
+  xiiGpuResidencyDescription configuration;
   configuration.m_uiMaxGeometries = 64;
   configuration.m_uiMaxMeshlets   = 64;
-  if (!XII_TEST_RESULT(xiiGeometryResidencyManager::Configure(configuration)) || !XII_TEST_RESULT(xiiGeometryResidencyManager::EnsureInitialized()))
+  if (!XII_TEST_RESULT(xiiGpuResidencyManager::Configure(configuration)) || !XII_TEST_RESULT(xiiGpuResidencyManager::EnsureInitialized()))
     return;
   xiiGeometry box;
   box.AddBox(xiiVec3(1), true);
@@ -123,36 +123,36 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, OversizedGeometryResidency)
   xiiGeometryHandle handles[3];
   for (auto& handle : handles)
   {
-    handle = xiiGeometryResidencyManager::RegisterGeometry(geometry);
+    handle = xiiGpuResidencyManager::RegisterGeometry(geometry);
     XII_TEST_BOOL(!handle.IsInvalidated());
-    xiiGeometryResidencyManager::RequestResidency(handle, 0, 0);
+    xiiGpuResidencyManager::RequestGeometry(handle, 0);
   }
-  XII_SCOPE_EXIT(for (const auto handle : handles) xiiGeometryResidencyManager::UnregisterGeometry(handle, 0));
+  XII_SCOPE_EXIT(for (const auto handle : handles) xiiGpuResidencyManager::UnregisterGeometry(handle, 0));
   // A zero budget pauses streaming. Positive budgets must eventually admit an
   // indivisible record even when it exceeds the whole frame allowance.
-  xiiGeometryResidencyManager::ProcessStreaming(0, 0, 0);
-  xiiGeometryResidencyManager::ProcessStreaming(0, 0, bytes * 10);
-  XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiResidentGeometryCount, 0);
+  xiiGpuResidencyManager::ProcessStreaming(0, 0, 0);
+  xiiGpuResidencyManager::ProcessStreaming(0, 0, bytes * 10);
+  XII_TEST_INT(xiiGpuResidencyManager::GetStats().m_uiResidentGeometryCount, 0);
   for (xiiUInt32 frame = 1; frame <= 3; ++frame)
   {
-    xiiGeometryResidencyManager::ProcessStreaming(frame, 0, 1);
-    XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiResidentGeometryCount, frame);
-    XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiResidentBytes, uiArenaBytes * frame);
-    const auto stats = xiiGeometryResidencyManager::GetStats();
+    xiiGpuResidencyManager::ProcessStreaming(frame, 0, 1);
+    XII_TEST_INT(xiiGpuResidencyManager::GetStats().m_uiResidentGeometryCount, frame);
+    XII_TEST_INT(xiiGpuResidencyManager::GetStats().m_uiResidentBytes, uiArenaBytes * frame);
+    const auto stats = xiiGpuResidencyManager::GetStats();
     XII_TEST_INT(stats.m_uiAdmittedBytes, bytes + (frame == 1U ? uiTopologyBytes : 0U));
     XII_TEST_INT(stats.m_uiResidentTopologyBytes, uiTopologyBytes);
     XII_TEST_INT(stats.m_uiRemainingUploadBytes, 0);
     // A second world/view in the same device frame cannot grant another allowance.
-    xiiGeometryResidencyManager::ProcessStreaming(frame, 0, bytes * 10);
-    XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiResidentGeometryCount, frame);
-    XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiPreparedMeshlets, stats.m_uiPreparedMeshlets);
+    xiiGpuResidencyManager::ProcessStreaming(frame, 0, bytes * 10);
+    XII_TEST_INT(xiiGpuResidencyManager::GetStats().m_uiResidentGeometryCount, frame);
+    XII_TEST_INT(xiiGpuResidencyManager::GetStats().m_uiPreparedMeshlets, stats.m_uiPreparedMeshlets);
   }
   for (const auto handle : handles)
   {
-    XII_TEST_INT(xiiGeometryResidencyManager::GetState(handle), xiiGeometryResidencyState::Resident);
-    const auto* record = xiiGeometryResidencyManager::GetGpuRecord(handle);
+    XII_TEST_INT(xiiGpuResidencyManager::GetState(handle), xiiGeometryResidencyState::Resident);
+    const auto* record = xiiGpuResidencyManager::GetGpuRecord(handle);
     if (XII_TEST_BOOL(record != nullptr))
-      XII_TEST_INT(record->m_uiResidentLodMask, 1);
+      XII_TEST_INT(record->m_uiAvailableLodMask, 1);
   }
 
   // An ordinary record consumes the allowance: another record must wait when
@@ -160,20 +160,20 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, OversizedGeometryResidency)
   xiiGeometryHandle ordinary[2];
   for (auto& handle : ordinary)
   {
-    handle = xiiGeometryResidencyManager::RegisterGeometry(geometry);
-    xiiGeometryResidencyManager::RequestResidency(handle, 0, 4);
+    handle = xiiGpuResidencyManager::RegisterGeometry(geometry);
+    xiiGpuResidencyManager::RequestGeometry(handle, 4);
   }
-  XII_SCOPE_EXIT(for (const auto handle : ordinary) xiiGeometryResidencyManager::UnregisterGeometry(handle, 0));
-  xiiGeometryResidencyManager::ProcessStreaming(4, 0, bytes + 1);
-  XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiResidentGeometryCount, 4);
-  XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiResidentBytes, uiArenaBytes * 4);
-  const auto prepared = xiiGeometryResidencyManager::GetStats().m_uiPreparedMeshlets;
-  xiiGeometryResidencyManager::ProcessStreaming(4, 0, bytes * 10);
-  XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiResidentGeometryCount, 4);
-  XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiPreparedMeshlets, prepared);
-  xiiGeometryResidencyManager::ProcessStreaming(5, 0, bytes);
-  XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiResidentGeometryCount, 5);
-  XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiResidentBytes, uiArenaBytes * 5);
+  XII_SCOPE_EXIT(for (const auto handle : ordinary) xiiGpuResidencyManager::UnregisterGeometry(handle, 0));
+  xiiGpuResidencyManager::ProcessStreaming(4, 0, bytes + 1);
+  XII_TEST_INT(xiiGpuResidencyManager::GetStats().m_uiResidentGeometryCount, 4);
+  XII_TEST_INT(xiiGpuResidencyManager::GetStats().m_uiResidentBytes, uiArenaBytes * 4);
+  const auto prepared = xiiGpuResidencyManager::GetStats().m_uiPreparedMeshlets;
+  xiiGpuResidencyManager::ProcessStreaming(4, 0, bytes * 10);
+  XII_TEST_INT(xiiGpuResidencyManager::GetStats().m_uiResidentGeometryCount, 4);
+  XII_TEST_INT(xiiGpuResidencyManager::GetStats().m_uiPreparedMeshlets, prepared);
+  xiiGpuResidencyManager::ProcessStreaming(5, 0, bytes);
+  XII_TEST_INT(xiiGpuResidencyManager::GetStats().m_uiResidentGeometryCount, 5);
+  XII_TEST_INT(xiiGpuResidencyManager::GetStats().m_uiResidentBytes, uiArenaBytes * 5);
 }
 
 XII_CREATE_SIMPLE_TEST(PipelineResources, SharedTopologyRetirement)
@@ -194,51 +194,51 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, SharedTopologyRetirement)
   descriptor.AllocateStreamsFromGeometry(box, xiiGALPrimitiveTopology::TriangleList, true);
   const xiiUInt64 uiTopologyBytes = descriptor.m_MeshletVertexRemap.GetCount() * sizeof(xiiUInt32) +
     xiiMath::RoundUp(descriptor.m_MeshletPrimitiveIndices.GetCount(), 4U);
-  xiiGeometryResidencyDescription configuration;
+  xiiGpuResidencyDescription configuration;
   configuration.m_uiMaxGeometries = 16U;
   configuration.m_uiMaxMeshlets   = 2U * descriptor.m_Meshlets.GetCount();
-  if (!XII_TEST_RESULT(xiiGeometryResidencyManager::Configure(configuration)) || !XII_TEST_RESULT(xiiGeometryResidencyManager::EnsureInitialized()))
+  if (!XII_TEST_RESULT(xiiGpuResidencyManager::Configure(configuration)) || !XII_TEST_RESULT(xiiGpuResidencyManager::EnsureInitialized()))
     return;
 
   const auto             hMesh = xiiResourceManager::CreateResource<xiiMeshBufferResource>("Shared topology cube", std::move(descriptor));
   xiiGeometryDescription geometry;
   geometry.m_Lods.ExpandAndGetRef().m_hMeshBuffer = hMesh;
-  const auto hFirst                               = xiiGeometryResidencyManager::RegisterGeometry(geometry);
-  const auto hSecond                              = xiiGeometryResidencyManager::RegisterGeometry(geometry);
-  xiiGeometryResidencyManager::RequestResidency(hFirst, 0U, 1U);
-  xiiGeometryResidencyManager::RequestResidency(hSecond, 0U, 1U);
-  xiiGeometryResidencyManager::ProcessStreaming(1U, 0U, configuration.m_uiUploadBudgetPerFrameBytes);
+  const auto hFirst                               = xiiGpuResidencyManager::RegisterGeometry(geometry);
+  const auto hSecond                              = xiiGpuResidencyManager::RegisterGeometry(geometry);
+  xiiGpuResidencyManager::RequestGeometry(hFirst, 1U);
+  xiiGpuResidencyManager::RequestGeometry(hSecond, 1U);
+  xiiGpuResidencyManager::ProcessStreaming(1U, 0U, configuration.m_uiUploadBudgetPerFrameBytes);
 
-  const auto* pFirst  = xiiGeometryResidencyManager::GetGpuRecord(hFirst);
-  const auto* pSecond = xiiGeometryResidencyManager::GetGpuRecord(hSecond);
+  const auto* pFirst  = xiiGpuResidencyManager::GetGpuRecord(hFirst);
+  const auto* pSecond = xiiGpuResidencyManager::GetGpuRecord(hSecond);
   if (!XII_TEST_BOOL(pFirst != nullptr && pSecond != nullptr))
     return;
-  XII_TEST_INT(pFirst->m_uiResidentLodMask, 1U);
-  XII_TEST_INT(pSecond->m_uiResidentLodMask, 1U);
+  XII_TEST_INT(pFirst->m_uiAvailableLodMask, 1U);
+  XII_TEST_INT(pSecond->m_uiAvailableLodMask, 1U);
   XII_TEST_BOOL(pFirst->m_Lods[0].m_uiMeshletTopologyBufferIndex != xiiInvalidIndex);
   XII_TEST_INT(pFirst->m_Lods[0].m_uiMeshletTopologyBufferIndex, pSecond->m_Lods[0].m_uiMeshletTopologyBufferIndex);
   XII_TEST_INT(pFirst->m_Lods[0].m_uiMeshletPrimitiveByteOffset, pSecond->m_Lods[0].m_uiMeshletPrimitiveByteOffset);
-  XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiTopologyUploadBytes, uiTopologyBytes);
-  XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiResidentTopologyBytes, uiTopologyBytes);
+  XII_TEST_INT(xiiGpuResidencyManager::GetStats().m_uiTopologyUploadBytes, uiTopologyBytes);
+  XII_TEST_INT(xiiGpuResidencyManager::GetStats().m_uiResidentTopologyBytes, uiTopologyBytes);
 
   pDevice->WaitIdle();
   const xiiUInt64 uiBefore = GetOccupiedGpuBytes(*pDevice);
 
-  xiiGeometryResidencyManager::UnregisterGeometry(hFirst, 1U);
-  xiiGeometryResidencyManager::ProcessStreaming(2U, 1U, configuration.m_uiUploadBudgetPerFrameBytes);
+  xiiGpuResidencyManager::UnregisterGeometry(hFirst, 1U);
+  xiiGpuResidencyManager::ProcessStreaming(2U, 1U, configuration.m_uiUploadBudgetPerFrameBytes);
   xiiGALBindlessResourceTable::Collect(1U);
-  XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiResidentTopologyBytes, uiTopologyBytes);
+  XII_TEST_INT(xiiGpuResidencyManager::GetStats().m_uiResidentTopologyBytes, uiTopologyBytes);
   XII_TEST_BOOL(GetOccupiedGpuBytes(*pDevice) == uiBefore);
 
-  xiiGeometryResidencyManager::Touch(hSecond, 2U);
-  xiiGeometryResidencyManager::UnregisterGeometry(hSecond, 2U);
-  xiiGeometryResidencyManager::ProcessStreaming(3U, 1U, configuration.m_uiUploadBudgetPerFrameBytes);
+  xiiGpuResidencyManager::Touch(hSecond, 2U);
+  xiiGpuResidencyManager::UnregisterGeometry(hSecond, 2U);
+  xiiGpuResidencyManager::ProcessStreaming(3U, 1U, configuration.m_uiUploadBudgetPerFrameBytes);
   xiiGALBindlessResourceTable::Collect(1U);
   XII_TEST_BOOL(GetOccupiedGpuBytes(*pDevice) == uiBefore);
 
-  xiiGeometryResidencyManager::ProcessStreaming(4U, 2U, configuration.m_uiUploadBudgetPerFrameBytes);
-  XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiResidentTopologyBytes, 0U);
-  XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiRetiredTopologyBytes, uiTopologyBytes);
+  xiiGpuResidencyManager::ProcessStreaming(4U, 2U, configuration.m_uiUploadBudgetPerFrameBytes);
+  XII_TEST_INT(xiiGpuResidencyManager::GetStats().m_uiResidentTopologyBytes, 0U);
+  XII_TEST_INT(xiiGpuResidencyManager::GetStats().m_uiRetiredTopologyBytes, uiTopologyBytes);
   XII_TEST_BOOL(GetOccupiedGpuBytes(*pDevice) == uiBefore);
   xiiGALBindlessResourceTable::Collect(2U);
   pDevice->WaitIdle();
@@ -248,11 +248,11 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, SharedTopologyRetirement)
 
   xiiResourceLock<xiiMeshBufferResource> mesh(hMesh, xiiResourceAcquireMode::PointerOnly);
   XII_TEST_BOOL(mesh->GetVertexBuffer() != nullptr && mesh->GetIndexBuffer() != nullptr);
-  const auto hReacquired = xiiGeometryResidencyManager::RegisterGeometry(geometry);
-  xiiGeometryResidencyManager::RequestResidency(hReacquired, 0U, 5U);
-  xiiGeometryResidencyManager::ProcessStreaming(5U, 2U, configuration.m_uiUploadBudgetPerFrameBytes);
-  XII_TEST_BOOL(!xiiGeometryResidencyManager::IsValid(hSecond));
-  XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiTopologyUploadBytes, uiTopologyBytes);
+  const auto hReacquired = xiiGpuResidencyManager::RegisterGeometry(geometry);
+  xiiGpuResidencyManager::RequestGeometry(hReacquired, 5U);
+  xiiGpuResidencyManager::ProcessStreaming(5U, 2U, configuration.m_uiUploadBudgetPerFrameBytes);
+  XII_TEST_BOOL(!xiiGpuResidencyManager::IsValid(hSecond));
+  XII_TEST_INT(xiiGpuResidencyManager::GetStats().m_uiTopologyUploadBytes, uiTopologyBytes);
 
   xiiGALBufferCreationDescription pressureDescription;
   pressureDescription.m_uiSize    = 2U * 1024U * 1024U;
@@ -269,17 +269,17 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, SharedTopologyRetirement)
   XII_SCOPE_EXIT(pDevice->EndFrame(); pDevice->SetStreamingMemorySettings(originalPolicy).IgnoreResult());
   XII_TEST_BOOL(pDevice->IsStreamingMemoryPressured());
 
-  xiiGeometryResidencyManager::ProcessStreaming(128U, 4U, configuration.m_uiUploadBudgetPerFrameBytes);
-  XII_TEST_INT(xiiGeometryResidencyManager::GetState(hReacquired), xiiGeometryResidencyState::Resident);
-  xiiGeometryResidencyManager::ProcessStreaming(136U, 5U, configuration.m_uiUploadBudgetPerFrameBytes);
-  XII_TEST_INT(xiiGeometryResidencyManager::GetState(hReacquired), xiiGeometryResidencyState::Unloaded);
-  XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiPressureEvictions, 1U);
-  XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiRetiredTopologyBytes, uiTopologyBytes);
+  xiiGpuResidencyManager::ProcessStreaming(128U, 4U, configuration.m_uiUploadBudgetPerFrameBytes);
+  XII_TEST_INT(xiiGpuResidencyManager::GetState(hReacquired), xiiGeometryResidencyState::Resident);
+  xiiGpuResidencyManager::ProcessStreaming(136U, 5U, configuration.m_uiUploadBudgetPerFrameBytes);
+  XII_TEST_INT(xiiGpuResidencyManager::GetState(hReacquired), xiiGeometryResidencyState::Unloaded);
+  XII_TEST_INT(xiiGpuResidencyManager::GetStats().m_uiPressureEvictions, 1U);
+  XII_TEST_INT(xiiGpuResidencyManager::GetStats().m_uiRetiredTopologyBytes, uiTopologyBytes);
 
-  xiiGeometryResidencyManager::RequestResidency(hReacquired, 0U, 137U);
-  xiiGeometryResidencyManager::ProcessStreaming(137U, 5U, configuration.m_uiUploadBudgetPerFrameBytes);
-  XII_TEST_INT(xiiGeometryResidencyManager::GetState(hReacquired), xiiGeometryResidencyState::Resident);
-  XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiTopologyUploadBytes, uiTopologyBytes);
+  xiiGpuResidencyManager::RequestGeometry(hReacquired, 137U);
+  xiiGpuResidencyManager::ProcessStreaming(137U, 5U, configuration.m_uiUploadBudgetPerFrameBytes);
+  XII_TEST_INT(xiiGpuResidencyManager::GetState(hReacquired), xiiGeometryResidencyState::Resident);
+  XII_TEST_INT(xiiGpuResidencyManager::GetStats().m_uiTopologyUploadBytes, uiTopologyBytes);
 }
 
 XII_CREATE_SIMPLE_TEST(PipelineResources, IndependentLodTopology)
@@ -320,40 +320,40 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, IndependentLodTopology)
   const xiiUInt64 uiCoarseBytes = coarse.m_uiVertexCount * sizeof(xiiUInt32) + xiiMath::RoundUp(xiiUInt32(coarse.m_uiPrimitiveCount) * 3U, 4U);
   const xiiUInt64 uiFineBytes   = coarse.m_uiVertexRemapOffset * sizeof(xiiUInt32) + xiiMath::RoundUp(coarse.m_uiPrimitiveIndexOffset, 4U);
 
-  xiiGeometryResidencyDescription configuration;
+  xiiGpuResidencyDescription configuration;
   configuration.m_uiMaxGeometries = 16U;
   configuration.m_uiMaxMeshlets   = 2U * descriptor.m_Meshlets.GetCount();
-  if (!XII_TEST_RESULT(xiiGeometryResidencyManager::Configure(configuration)) || !XII_TEST_RESULT(xiiGeometryResidencyManager::EnsureInitialized()))
+  if (!XII_TEST_RESULT(xiiGpuResidencyManager::Configure(configuration)) || !XII_TEST_RESULT(xiiGpuResidencyManager::EnsureInitialized()))
     return;
 
   const auto             hMesh = xiiResourceManager::CreateResource<xiiMeshBufferResource>("Independent topology LODs", std::move(descriptor));
   xiiGeometryDescription description;
   description.m_Lods.PushBack({.m_hMeshBuffer = hMesh, .m_uiMeshletCount = uiCoarseFirst});
   description.m_Lods.PushBack({.m_hMeshBuffer = hMesh, .m_uiFirstMeshlet = uiCoarseFirst, .m_uiMeshletCount = 1U});
-  const auto             hGeometry = xiiGeometryResidencyManager::RegisterGeometry(description);
+  const auto             hGeometry = xiiGpuResidencyManager::RegisterGeometry(description);
   xiiGeometryDescription peer;
   peer.m_bPinned = true;
   peer.m_Lods.PushBack({.m_hMeshBuffer = hMesh, .m_uiFirstMeshlet = uiCoarseFirst});
-  const auto hPeer = xiiGeometryResidencyManager::RegisterGeometry(peer);
-  xiiGeometryResidencyManager::RequestResidency(hGeometry, 1U, 1U);
-  xiiGeometryResidencyManager::RequestResidency(hPeer, 0U, 1U);
-  xiiGeometryResidencyManager::ProcessStreaming(1U, 0U, configuration.m_uiUploadBudgetPerFrameBytes);
-  const auto* pRecord = xiiGeometryResidencyManager::GetGpuRecord(hGeometry);
-  const auto* pPeer   = xiiGeometryResidencyManager::GetGpuRecord(hPeer);
+  const auto hPeer = xiiGpuResidencyManager::RegisterGeometry(peer);
+  xiiGpuResidencyManager::RequestGeometry(hGeometry, 1U);
+  xiiGpuResidencyManager::RequestGeometry(hPeer, 1U);
+  xiiGpuResidencyManager::ProcessStreaming(1U, 0U, configuration.m_uiUploadBudgetPerFrameBytes);
+  const auto* pRecord = xiiGpuResidencyManager::GetGpuRecord(hGeometry);
+  const auto* pPeer   = xiiGpuResidencyManager::GetGpuRecord(hPeer);
   if (!XII_TEST_BOOL(pRecord != nullptr && pPeer != nullptr))
     return;
-  XII_TEST_INT(pRecord->m_uiResidentLodMask, 2U);
-  XII_TEST_INT(pPeer->m_uiResidentLodMask, 1U);
+  XII_TEST_INT(pRecord->m_uiAvailableLodMask, 2U);
+  XII_TEST_INT(pPeer->m_uiAvailableLodMask, 1U);
   XII_TEST_INT(pRecord->m_Lods[1].m_uiMeshletTopologyBufferIndex, pPeer->m_Lods[0].m_uiMeshletTopologyBufferIndex);
   XII_TEST_INT(pRecord->m_Lods[1].m_uiMeshletPrimitiveByteOffset, coarse.m_uiVertexCount * sizeof(xiiUInt32));
-  XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiTopologyUploadBytes, uiCoarseBytes);
+  XII_TEST_INT(xiiGpuResidencyManager::GetStats().m_uiTopologyUploadBytes, uiCoarseBytes);
 
   xiiRenderGraphTestContext context;
   if (!XII_TEST_RESULT(context.Initialize("Rebased coarse meshlet")))
     return;
   context.GetResourceCache().BeginFrame(1U, 0U);
   context.GetGraph().BeginSetup(1U);
-  const auto upload = xiiGeometryResidencyManager::AddUploadPass(context.GetGraph(), 1U);
+  const auto upload = xiiGpuResidencyManager::DeclareUploadPass(context.GetGraph());
   XII_TEST_BOOL(!upload.m_hMeshletMetadata.IsInvalidated());
   context.GetGraph().EndSetup();
   if (!XII_TEST_RESULT(context.GetGraph().Compile()) ||
@@ -361,7 +361,7 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, IndependentLodTopology)
     return;
   context.GetResourceCache().EndFrame();
   xiiMeshlet uploaded;
-  if (XII_TEST_BOOL(xiiGpuTestReadback::ReadBufferRecord(*pDevice, xiiGeometryResidencyManager::GetMeshletMetadataBuffer().Borrow(),
+  if (XII_TEST_BOOL(xiiGpuTestReadback::ReadBufferRecord(*pDevice, xiiGpuResidencyManager::GetMeshletMetadataBuffer().Borrow(),
                                                          pRecord->m_Lods[1].m_uiMeshletMetadataOffset * sizeof(xiiMeshlet), uploaded)))
   {
     XII_TEST_INT(uploaded.m_uiVertexRemapOffset, 0U);
@@ -398,14 +398,14 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, IndependentLodTopology)
   auto pLateRequired               = pDevice->CreateBuffer(lateRequiredDescription);
   XII_TEST_BOOL(pLateRequired != nullptr);
   XII_TEST_BOOL(!pDevice->IsStreamingMemoryPressured());
-  const auto statsBefore = xiiGeometryResidencyManager::GetStats();
-  xiiGeometryResidencyManager::RequestResidency(hGeometry, 0U, 2U);
-  xiiGeometryResidencyManager::ProcessStreaming(2U, 1U, configuration.m_uiUploadBudgetPerFrameBytes);
-  XII_TEST_INT(pRecord->m_uiResidentLodMask, 2U);
-  XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiMemoryDeferred, 1U);
-  XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiResidentBytes, statsBefore.m_uiResidentBytes);
-  XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiTopologyUploadBytes, 0U);
-  XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiPreparedMeshlets, 0U);
+  const auto statsBefore = xiiGpuResidencyManager::GetStats();
+  xiiGpuResidencyManager::RequestGeometry(hGeometry, 2U);
+  xiiGpuResidencyManager::ProcessStreaming(2U, 1U, configuration.m_uiUploadBudgetPerFrameBytes);
+  XII_TEST_INT(pRecord->m_uiAvailableLodMask, 2U);
+  XII_TEST_INT(xiiGpuResidencyManager::GetStats().m_uiMemoryDeferred, 1U);
+  XII_TEST_INT(xiiGpuResidencyManager::GetStats().m_uiResidentBytes, statsBefore.m_uiResidentBytes);
+  XII_TEST_INT(xiiGpuResidencyManager::GetStats().m_uiTopologyUploadBytes, 0U);
+  XII_TEST_INT(xiiGpuResidencyManager::GetStats().m_uiPreparedMeshlets, 0U);
   pLateRequired.Clear();
   pDevice->EndFrame();
   pDevice->WaitIdle();
@@ -415,26 +415,26 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, IndependentLodTopology)
   XII_TEST_RESULT(pDevice->SetStreamingMemorySettings(policy));
   pDevice->BeginFrame();
   XII_TEST_BOOL(pDevice->IsStreamingMemoryPressured());
-  xiiGeometryResidencyManager::ProcessStreaming(3U, 2U, configuration.m_uiUploadBudgetPerFrameBytes);
-  XII_TEST_INT(pRecord->m_uiResidentLodMask, 2U);
-  XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiMemoryDeferred, 1U);
-  XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiTopologyUploadBytes, 0U);
+  xiiGpuResidencyManager::ProcessStreaming(3U, 2U, configuration.m_uiUploadBudgetPerFrameBytes);
+  XII_TEST_INT(pRecord->m_uiAvailableLodMask, 2U);
+  XII_TEST_INT(xiiGpuResidencyManager::GetStats().m_uiMemoryDeferred, 1U);
+  XII_TEST_INT(xiiGpuResidencyManager::GetStats().m_uiTopologyUploadBytes, 0U);
   pDevice->EndFrame();
 
   policy.m_bUseNativeBudget = true;
   XII_TEST_RESULT(pDevice->SetStreamingMemorySettings(policy));
   pDevice->BeginFrame();
-  xiiGeometryResidencyManager::ProcessStreaming(4U, 3U, configuration.m_uiUploadBudgetPerFrameBytes);
+  xiiGpuResidencyManager::ProcessStreaming(4U, 3U, configuration.m_uiUploadBudgetPerFrameBytes);
   pDevice->EndFrame();
-  XII_TEST_INT(pRecord->m_uiResidentLodMask, 3U);
+  XII_TEST_INT(pRecord->m_uiAvailableLodMask, 3U);
   XII_TEST_INT(pRecord->m_Lods[0].m_uiVertexBufferIndex, pRecord->m_Lods[1].m_uiVertexBufferIndex);
   XII_TEST_INT(pRecord->m_Lods[0].m_uiIndexBufferIndex, pRecord->m_Lods[1].m_uiIndexBufferIndex);
   XII_TEST_BOOL(pRecord->m_Lods[0].m_uiMeshletTopologyBufferIndex != pRecord->m_Lods[1].m_uiMeshletTopologyBufferIndex);
-  XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiTopologyUploadBytes, uiFineBytes);
+  XII_TEST_INT(xiiGpuResidencyManager::GetStats().m_uiTopologyUploadBytes, uiFineBytes);
 
   pDevice->WaitIdle();
   const xiiUInt64 uiBefore      = GetOccupiedGpuBytes(*pDevice);
-  const xiiUInt64 uiArenaBefore = xiiGeometryResidencyManager::GetStats().m_uiResidentBytes;
+  const xiiUInt64 uiArenaBefore = xiiGpuResidencyManager::GetStats().m_uiResidentBytes;
   const xiiUInt32 uiGeneration  = pRecord->m_uiGeneration;
   policy.m_bUseNativeBudget     = false;
   policy.m_uiBudgetMiB          = 1;
@@ -444,33 +444,33 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, IndependentLodTopology)
   XII_TEST_BOOL(pDevice->IsStreamingMemoryPressured());
 
   // Merge demand across views. A coarse view does not make a recent fine view cold.
-  XII_TEST_BOOL(xiiGeometryResidencyManager::ReportLodDemand(hGeometry, 0U, 119U, 3U));
-  XII_TEST_BOOL(xiiGeometryResidencyManager::ReportLodDemand(hGeometry, 1U, 127U, 1U));
-  xiiGeometryResidencyManager::ProcessStreaming(128U, 126U, configuration.m_uiUploadBudgetPerFrameBytes);
-  XII_TEST_INT(pRecord->m_uiResidentLodMask, 3U);
+  XII_TEST_BOOL(xiiGpuResidencyManager::ReportLodDemand(hGeometry, 0U, 119U, 3U));
+  XII_TEST_BOOL(xiiGpuResidencyManager::ReportLodDemand(hGeometry, 1U, 127U, 1U));
+  xiiGpuResidencyManager::ProcessStreaming(128U, 126U, configuration.m_uiUploadBudgetPerFrameBytes);
+  XII_TEST_INT(pRecord->m_uiAvailableLodMask, 3U);
 
-  XII_TEST_BOOL(xiiGeometryResidencyManager::ReportLodDemand(hGeometry, 1U, 247U, 1U));
-  xiiGeometryResidencyManager::NoteIncompleteLodFeedback(247U);
-  xiiGeometryResidencyManager::ProcessStreaming(248U, 246U, configuration.m_uiUploadBudgetPerFrameBytes);
-  XII_TEST_INT(pRecord->m_uiResidentLodMask, 3U);
+  XII_TEST_BOOL(xiiGpuResidencyManager::ReportLodDemand(hGeometry, 1U, 247U, 1U));
+  xiiGpuResidencyManager::NoteIncompleteLodFeedback(247U);
+  xiiGpuResidencyManager::ProcessStreaming(248U, 246U, configuration.m_uiUploadBudgetPerFrameBytes);
+  XII_TEST_INT(pRecord->m_uiAvailableLodMask, 3U);
 
-  XII_TEST_BOOL(xiiGeometryResidencyManager::ReportLodDemand(hGeometry, 1U, 367U, 1U));
-  xiiGeometryResidencyManager::RequestInstanceResidency(hGeometry, 0U, 367U, false);
-  xiiGeometryResidencyManager::ProcessStreaming(368U, 366U, configuration.m_uiUploadBudgetPerFrameBytes);
-  XII_TEST_INT(pRecord->m_uiResidentLodMask, 2U);
+  XII_TEST_BOOL(xiiGpuResidencyManager::ReportLodDemand(hGeometry, 1U, 367U, 1U));
+  xiiGpuResidencyManager::RequestInstanceResidency(hGeometry, 0U, 367U, false);
+  xiiGpuResidencyManager::ProcessStreaming(368U, 366U, configuration.m_uiUploadBudgetPerFrameBytes);
+  XII_TEST_INT(pRecord->m_uiAvailableLodMask, 2U);
   XII_TEST_INT(pRecord->m_uiGeneration, uiGeneration);
   XII_TEST_INT(pRecord->m_Lods[0].m_uiMeshletTopologyBufferIndex, xiiInvalidIndex);
-  XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiFineLodEvictions, 1U);
-  XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiResidentBytes, uiArenaBefore);
-  XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiResidentTopologyBytes, uiCoarseBytes + uiFineBytes);
-  XII_TEST_BOOL(!xiiGeometryResidencyManager::ReportLodDemand(hGeometry, 0U, 367U, 3U));
+  XII_TEST_INT(xiiGpuResidencyManager::GetStats().m_uiFineLodEvictions, 1U);
+  XII_TEST_INT(xiiGpuResidencyManager::GetStats().m_uiResidentBytes, uiArenaBefore);
+  XII_TEST_INT(xiiGpuResidencyManager::GetStats().m_uiResidentTopologyBytes, uiCoarseBytes + uiFineBytes);
+  XII_TEST_BOOL(!xiiGpuResidencyManager::ReportLodDemand(hGeometry, 0U, 367U, 3U));
 
-  xiiGeometryResidencyManager::ProcessStreaming(369U, 367U, configuration.m_uiUploadBudgetPerFrameBytes);
-  XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiRetiredTopologyBytes, uiFineBytes);
-  XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiResidentBytes, uiArenaBefore - uiCoarseFirst * sizeof(xiiMeshlet));
-  XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiResidentTopologyBytes, uiCoarseBytes);
-  XII_TEST_INT(pRecord->m_uiResidentLodMask, 2U);
-  XII_TEST_INT(pPeer->m_uiResidentLodMask, 1U);
+  xiiGpuResidencyManager::ProcessStreaming(369U, 367U, configuration.m_uiUploadBudgetPerFrameBytes);
+  XII_TEST_INT(xiiGpuResidencyManager::GetStats().m_uiRetiredTopologyBytes, uiFineBytes);
+  XII_TEST_INT(xiiGpuResidencyManager::GetStats().m_uiResidentBytes, uiArenaBefore - uiCoarseFirst * sizeof(xiiMeshlet));
+  XII_TEST_INT(xiiGpuResidencyManager::GetStats().m_uiResidentTopologyBytes, uiCoarseBytes);
+  XII_TEST_INT(pRecord->m_uiAvailableLodMask, 2U);
+  XII_TEST_INT(pPeer->m_uiAvailableLodMask, 1U);
   xiiGALBindlessResourceTable::Collect(367U);
   pDevice->WaitIdle();
   const xiiUInt64 uiAfter = GetOccupiedGpuBytes(*pDevice);
@@ -479,11 +479,11 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, IndependentLodTopology)
                              static_cast<unsigned long long>(uiCoarseBytes), static_cast<unsigned long long>(uiFineBytes), static_cast<unsigned long long>(uiBefore - uiAfter));
 
   // Ordinary renewed demand waits under pressure. An exact forced draw can restore its LOD.
-  XII_TEST_BOOL(xiiGeometryResidencyManager::ReportLodDemand(hGeometry, 0U, 369U, 3U));
-  xiiGeometryResidencyManager::ProcessStreaming(370U, 368U, configuration.m_uiUploadBudgetPerFrameBytes);
-  XII_TEST_INT(pRecord->m_uiResidentLodMask, 2U);
-  xiiGeometryResidencyManager::RequestInstanceResidency(hGeometry, 0U, 370U, true);
-  xiiGeometryResidencyManager::ProcessStreaming(370U, 368U, configuration.m_uiUploadBudgetPerFrameBytes);
-  XII_TEST_INT(pRecord->m_uiResidentLodMask, 3U);
-  XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiTopologyUploadBytes, uiFineBytes);
+  XII_TEST_BOOL(xiiGpuResidencyManager::ReportLodDemand(hGeometry, 0U, 369U, 3U));
+  xiiGpuResidencyManager::ProcessStreaming(370U, 368U, configuration.m_uiUploadBudgetPerFrameBytes);
+  XII_TEST_INT(pRecord->m_uiAvailableLodMask, 2U);
+  xiiGpuResidencyManager::RequestInstanceResidency(hGeometry, 0U, 370U, true);
+  xiiGpuResidencyManager::ProcessStreaming(370U, 368U, configuration.m_uiUploadBudgetPerFrameBytes);
+  XII_TEST_INT(pRecord->m_uiAvailableLodMask, 3U);
+  XII_TEST_INT(xiiGpuResidencyManager::GetStats().m_uiTopologyUploadBytes, uiFineBytes);
 }

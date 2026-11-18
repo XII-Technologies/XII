@@ -1,7 +1,6 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #pragma once
-#include <GraphicsCore/Geometry/GeometryResidency.h>
 #include <GraphicsCore/Material/MaterialGpuStorage.h>
 #include <GraphicsCore/Material/MaterialManager.h>
 #include <GraphicsCore/Pipeline/Passes/Geometry/DepthRasterPass.h>
@@ -11,6 +10,7 @@
 #include <GraphicsCore/Pipeline/Passes/Utility/DepthTargetPass.h>
 #include <GraphicsCore/Pipeline/Passes/Visualization/SurfaceQueryPass.h>
 #include <GraphicsCore/Pipeline/View.h>
+#include <GraphicsCore/Streaming/GpuResidencyManager.h>
 #include <GraphicsCore/Visibility/GpuVisibilityResources.h>
 #include <GraphicsFoundation/Tools/MapHelper.h>
 #include <Shaders/Pipeline/Passes/Geometry/GpuSceneGBufferConstants.h>
@@ -35,7 +35,7 @@ struct xiiTestMaterialTargets
 /// Test-only bindings for isolated geometry fixtures. Schemas come from native member RTTI.
 /// Application rendering uses authored assets; this fixture owns no shaders or raster backend.
 inline xiiResult xiiTestNativeSurfaceQuery(xiiRenderGraph& graph, xiiView* view, xiiStringView name,
-                                           const xiiGpuVisibilityOutputs& visibility, const xiiGeometryResidencyManager::UploadHandles& geometry,
+                                           const xiiGpuVisibilityOutputs& visibility, const xiiGpuResidencyManager::UploadHandles& geometry,
                                            const xiiMaterialGpuStorage::UploadHandles& materials, const xiiTestSurfaceLayout& raster,
                                            xiiRenderGraphTextureHandle& output, bool mesh = true, xiiGALFillMode::Enum fill = xiiGALFillMode::Solid,
                                            xiiRenderGraphBufferHandle* out_commands = nullptr, xiiRenderGraphBufferHandle* out_count = nullptr, bool depthOnly = false, xiiTestMaterialTargets* materialTargets = nullptr, xiiRenderGraphTextureHandle sceneDepth = {})
@@ -75,7 +75,7 @@ inline xiiResult xiiTestNativeSurfaceQuery(xiiRenderGraph& graph, xiiView* view,
       data.m_Snapshot.InvRenderSize = xiiVec2(1.0f / raster.m_uiWidth, 1.0f / raster.m_uiHeight);
       data.m_Snapshot.CurrentJitter = raster.m_vCurrentJitter;
       data.m_Snapshot.PreviousJitter = raster.m_vPreviousJitter;
-      data.m_Snapshot.GeometryBaseIndex = geometry.m_uiGeometryBaseIndex;
+      data.m_Snapshot.GeometryBaseIndex            = xiiGpuResidencyManager::GetMetadataBaseIndex(graph.GetFrameIndex());
       data.m_Snapshot.MaterialBaseIndex            = xiiMaterialManager::GetGpuStorage().GetSurfaceBaseIndex(graph.GetFrameIndex());
       data.m_Snapshot.VertexStride = raster.m_uiVertexStride;
       data.m_Snapshot.NormalOffset = raster.m_uiNormalOffset;
@@ -83,7 +83,7 @@ inline xiiResult xiiTestNativeSurfaceQuery(xiiRenderGraph& graph, xiiView* view,
       data.m_Snapshot.TexCoordOffset = raster.m_uiTexCoordOffset;
       data.m_Snapshot.MeshDispatchGroupCountX = raster.m_uiMeshDispatchGroupCountX;
       data.m_Snapshot.MeshDispatchGroupCountY = raster.m_uiMeshDispatchGroupCountY;
-      data.m_ViewSnapshot.m_uiGeometryBaseIndex = geometry.m_uiGeometryBaseIndex;
+      data.m_ViewSnapshot.m_uiGeometryBaseIndex    = xiiGpuResidencyManager::GetMetadataBaseIndex(graph.GetFrameIndex());
       xiiGALBufferCreationDescription description;
       description.m_uiSize = sizeof(data.m_ViewSnapshot);
       description.m_uiElementByteStride = sizeof(data.m_ViewSnapshot);

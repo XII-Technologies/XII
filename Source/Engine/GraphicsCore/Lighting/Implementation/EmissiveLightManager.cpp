@@ -334,7 +334,7 @@ xiiEmissiveLightManager::BuildOutputs xiiEmissiveLightManager::AddBuildPass(xiiR
         description.m_Geometry.m_hGeometryMetadata.IsValid() || description.m_Geometry.m_hMeshletMetadata.IsValid() || description.m_Materials.m_hSurfaceData.IsValid())
       return outputs;
   }
-  const bool bExtract = bRayScene || (description.m_Visibility.m_hSceneInstances.IsValid() && description.m_Visibility.m_hSkinningMatrices.IsValid() && description.m_Geometry.m_hGeometryMetadata.IsValid() && description.m_Geometry.m_hMeshletMetadata.IsValid() && description.m_Materials.m_hSurfaceData.IsValid() && description.m_uiInstanceCount > 0U && description.m_Geometry.m_uiMaximumResidentMeshletCount > 0U && description.m_uiVertexStride >= 12U);
+  const bool bExtract = bRayScene || (description.m_Visibility.m_hSceneInstances.IsValid() && description.m_Visibility.m_hSkinningMatrices.IsValid() && description.m_Geometry.m_hGeometryMetadata.IsValid() && description.m_Geometry.m_hMeshletMetadata.IsValid() && description.m_Materials.m_hSurfaceData.IsValid() && description.m_uiInstanceCount > 0U && description.m_uiVertexStride >= 12U);
 
   if (bExtract && !bRayScene && s_pState->m_pBuildPipeline == nullptr)
     s_pState->m_pBuildPipeline = LoadComputePipeline("Shaders/Pipeline/EmissiveTriangleBuild.xiiShader");
@@ -348,7 +348,7 @@ xiiEmissiveLightManager::BuildOutputs xiiEmissiveLightManager::AddBuildPass(xiiR
     return outputs;
 
   const auto& compute = xiiGALDevice::GetDefaultDevice()->GetGraphicsDeviceAdapterProperties().m_ComputeShaderProperties;
-  if (bExtract && (compute.m_uiMaxThreadGroupInvocations < 128U || compute.m_uiMaxThreadGroupSizeX < 128U || (!bRayScene && description.m_Geometry.m_uiMaximumResidentMeshletCount > compute.m_uiMaxThreadGroupCountX)))
+  if (bExtract && (compute.m_uiMaxThreadGroupInvocations < 128U || compute.m_uiMaxThreadGroupSizeX < 128U))
     return outputs;
   const xiiUInt32 uiMaxGroupCountY = xiiGALDevice::GetDefaultDevice()->GetGraphicsDeviceAdapterProperties().m_ComputeShaderProperties.m_uiMaxThreadGroupCountY;
   const xiiUInt32 uiDispatchY      = bExtract ? xiiMath::Min(description.m_uiInstanceCount, uiMaxGroupCountY) : 0U;
@@ -417,16 +417,24 @@ xiiEmissiveLightManager::BuildOutputs xiiEmissiveLightManager::AddBuildPass(xiiR
     cmd.TransitionResourceStates(xiiMakeArrayPtr(&headerTransition, 1));
     if (!data.m_bExtract)
       return;
+    const xiiUInt32 uiMeshletCount = data.m_bRayScene ? 1U : xiiGpuResidencyManager::GetMaximumResidentMeshletCount();
+    if (uiMeshletCount == 0U)
+      return;
+    if (uiMeshletCount > xiiGALDevice::GetDefaultDevice()->GetGraphicsDeviceAdapterProperties().m_ComputeShaderProperties.m_uiMaxThreadGroupCountX)
+    {
+      context.ReportFailure("The current emissive meshlet count exceeds the device dispatch limit.");
+      return;
+    }
 
     {
       xiiGALMapHelper<xiiEmissiveLightBuildConstants> constants(cmd, context.GetBuffer(data.m_hConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
-      constants->GeometryBaseIndex  = data.m_Description.m_Geometry.m_uiGeometryBaseIndex;
+      constants->GeometryBaseIndex  = xiiGpuResidencyManager::GetMetadataBaseIndex(context.GetFrameIndex());
       constants->MaterialBaseIndex  = data.m_bRayScene ? 0U : xiiMaterialManager::GetGpuStorage().GetSurfaceBaseIndex(context.GetFrameIndex());
       constants->InstanceCount      = data.m_Description.m_uiInstanceCount;
       constants->MaxTriangleCount   = data.m_uiTriangleCapacity;
       constants->VertexStride       = data.m_Description.m_uiVertexStride;
       constants->TexCoordOffset     = data.m_Description.m_uiTexCoordOffset;
-      constants->MaxMeshletCount    = data.m_Description.m_Geometry.m_uiMaximumResidentMeshletCount;
+      constants->MaxMeshletCount    = uiMeshletCount;
       constants->FrameIndex         = static_cast<xiiUInt32>(data.m_uiFrameIndex);
       constants->DispatchDimensions = xiiVec4U32(data.m_uiDispatchY, data.m_uiDispatchZ, 0, 0);
     }
@@ -462,7 +470,7 @@ xiiEmissiveLightManager::BuildOutputs xiiEmissiveLightManager::AddBuildPass(xiiR
       return;
     }
 
-    cmd.DispatchCompute({data.m_bRayScene ? 1U : data.m_Description.m_Geometry.m_uiMaximumResidentMeshletCount, data.m_uiDispatchY, data.m_uiDispatchZ});
+    cmd.DispatchCompute({uiMeshletCount, data.m_uiDispatchY, data.m_uiDispatchZ});
   };
   auto buildPass                        = graph.AddPass<EmissiveLightBuildPassData>("GPU Emissive Triangle Build", xiiGALCommandQueueFlags::Compute, buildPassSetup, buildPassRecord);
   buildPass.first->m_Description        = description;
@@ -622,7 +630,7 @@ xiiEmissiveLightManager::BuildOutputs xiiEmissiveLightManager::AddBuildPass(xiiR
 
   s_pState->m_Stats.m_uiTriangleCapacity             = uiTriangleCapacity;
   s_pState->m_Stats.m_uiScheduledInstanceCount       = bExtract ? description.m_uiInstanceCount : 0U;
-  s_pState->m_Stats.m_uiScheduledMeshletsPerInstance = bExtract ? description.m_Geometry.m_uiMaximumResidentMeshletCount : 0U;
+  s_pState->m_Stats.m_uiScheduledMeshletsPerInstance = bExtract && !bRayScene ? xiiGpuResidencyManager::GetMaximumResidentMeshletCount() : 0U;
   s_pState->m_Stats.m_uiLastScheduledFrame           = uiFrameIndex;
   return outputs;
 }

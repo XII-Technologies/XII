@@ -2,18 +2,94 @@
 
 #include <GraphicsFoundationTest/GraphicsFoundationTestPCH.h>
 
+#include <Core/Graphics/Geometry.h>
+#include <Core/ResourceManager/ResourceManager.h>
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Memory/FrameAllocator.h>
 #include <Foundation/Threading/AtomicInteger.h>
 #include <Foundation/Threading/TaskSystem.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <GraphicsCore/Material/MaterialGpuStorage.h>
+#include <GraphicsCore/Meshes/MeshBufferResource.h>
 #include <GraphicsCore/Pipeline/RenderGraphManager.h>
+#include <GraphicsCore/Streaming/GpuResidencyManager.h>
 #include <GraphicsFoundationTest/TestingEnvironment/BufferReadback.h>
 #include <GraphicsFoundationTest/TestingEnvironment/RenderGraphTestContext.h>
 #include <GraphicsFoundationTest/TestingEnvironment/TextureReadback.h>
 
 XII_CREATE_SIMPLE_TEST_GROUP(NativeRecording);
+
+XII_CREATE_SIMPLE_TEST(NativeRecording, RetainedGeometryUploads)
+{
+  xiiGPUTestingEnvironment environment;
+  if (!XII_TEST_RESULT(environment.Initialize(false, false)))
+    return;
+  xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
+  xiiStartup::StartupHighLevelSystems();
+  XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiFrameAllocator::Reset(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
+
+  xiiGeometry box;
+  box.AddBox(xiiVec3(1), true);
+  xiiMeshBufferResourceDescriptor descriptor;
+  descriptor.AllocateStreamsFromGeometry(box, xiiGALPrimitiveTopology::TriangleList, true);
+  const auto                mesh = xiiResourceManager::CreateResource<xiiMeshBufferResource>("Retained upload geometry", std::move(descriptor));
+  xiiRenderGraphTestContext context;
+  if (!XII_TEST_RESULT(context.Initialize("Retained geometry uploads")))
+    return;
+
+  auto&                      graph = context.GetGraph();
+  auto&                      cache = context.GetResourceCache();
+  xiiRenderGraphBufferHandle metadata;
+  xiiGeometryHandle          handles[2];
+  xiiUInt64                  uiLastFrame = 0U;
+  XII_SCOPE_EXIT(for (const auto handle : handles) if (!handle.IsInvalidated()) xiiGpuResidencyManager::UnregisterGeometry(handle, uiLastFrame));
+  for (xiiUInt32 i = 0U; i < 2U; ++i)
+  {
+    xiiRenderGraphFrame frame;
+    if (!XII_TEST_RESULT(frame.Begin()))
+      return;
+    uiLastFrame = frame.GetFrameIndex();
+    cache.BeginFrame(uiLastFrame, frame.GetCompletedFrame());
+    XII_SCOPE_EXIT(cache.EndFrame(); frame.End());
+
+    if (i == 0U)
+    {
+      graph.BeginSetup(uiLastFrame);
+      metadata = xiiGpuResidencyManager::DeclareUploadPass(graph).m_hGeometryMetadata;
+      if (!XII_TEST_BOOL(metadata.IsValid()))
+        return;
+      graph.EndSetup();
+      if (!XII_TEST_RESULT(graph.Compile({}, nullptr, environment.GetDevice())))
+        return;
+    }
+    else
+      graph.BeginExecutionFrame(uiLastFrame);
+
+    // Register a distinct record after declaration. Preparation must see the latest slots.
+    xiiGeometryDescription description;
+    auto&                  lod   = description.m_Lods.ExpandAndGetRef();
+    lod.m_hMeshBuffer            = mesh;
+    lod.m_fMinimumScreenCoverage = 0.25f * float(i + 1U);
+    handles[i]                   = xiiGpuResidencyManager::RegisterGeometry(description);
+    if (!XII_TEST_BOOL(!handles[i].IsInvalidated()))
+      return;
+    if (!XII_TEST_RESULT(graph.Execute(environment.GetDevice(), nullptr, &context.GetBlackboard(), &cache)))
+      return;
+    environment.GetDevice()->WaitIdle();
+
+    const auto* pRecord = xiiGpuResidencyManager::GetGpuRecord(handles[i]);
+    if (!XII_TEST_BOOL(pRecord && pRecord->m_uiLodCount == 1U))
+      return;
+    const xiiUInt32      uiIndex = xiiGpuResidencyManager::GetMetadataBaseIndex(uiLastFrame) + handles[i].GetInternalID().m_InstanceIndex;
+    xiiGpuGeometryRecord actual;
+    if (!xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), graph.GetExportedBuffer(metadata).Borrow(), xiiUInt64(uiIndex) * sizeof(actual), actual))
+      return;
+    XII_TEST_INT(actual.m_uiLodCount, 1U);
+    XII_TEST_INT(actual.m_uiGeneration, pRecord->m_uiGeneration);
+    XII_TEST_FLOAT(actual.m_Lods[0].m_fMinimumScreenCoverage, lod.m_fMinimumScreenCoverage, 0.0f);
+    XII_TEST_INT(graph.GetPlanGeneration(), 1U);
+  }
+}
 
 XII_CREATE_SIMPLE_TEST(NativeRecording, RetainedMaterialUploads)
 {

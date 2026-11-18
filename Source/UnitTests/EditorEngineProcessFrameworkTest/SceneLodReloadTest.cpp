@@ -10,7 +10,6 @@
 #include <Core/World/World.h>
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Memory/FrameAllocator.h>
-#include <GraphicsCore/Geometry/GeometryResidency.h>
 #include <GraphicsCore/Meshes/GpuInstanceData.h>
 #include <GraphicsCore/Meshes/MeshComponent.h>
 #include <GraphicsCore/Meshes/MeshResource.h>
@@ -21,6 +20,7 @@
 #include <GraphicsCore/Pipeline/RenderGraphResourceCache.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
+#include <GraphicsCore/Streaming/GpuResidencyManager.h>
 #include <GraphicsFoundationTest/TestingEnvironment/RenderGraphTestContext.h>
 #include <GraphicsFoundationTest/TestingEnvironment/TestingEnvironment.h>
 
@@ -139,10 +139,10 @@ static void RunSceneLodReload(bool skinned)
     XII_TEST_INT(instance.m_uiPrimitiveCount, 6);
     (source.m_uiSectionIndex == 0 ? retainedId : retiredId) = instance.m_uiObjectId;
   }
-  const auto oldGeometry = xiiGeometryResidencyManager::AcquireMeshGeometry(mesh);
-  XII_SCOPE_EXIT(xiiGeometryResidencyManager::ReleaseMeshGeometry(oldGeometry, 3));
-  xiiGeometryResidencyManager::ProcessStreaming(1, 0, xiiMath::MaxValue<xiiUInt64>());
-  const auto* oldRecord = xiiGeometryResidencyManager::GetGpuRecord(oldGeometry);
+  const auto oldGeometry = xiiGpuResidencyManager::AcquireMeshGeometry(mesh);
+  XII_SCOPE_EXIT(xiiGpuResidencyManager::ReleaseMeshGeometry(oldGeometry, 3));
+  xiiGpuResidencyManager::ProcessStreaming(1, 0, xiiMath::MaxValue<xiiUInt64>());
+  const auto* oldRecord = xiiGpuResidencyManager::GetGpuRecord(oldGeometry);
   if (!XII_TEST_BOOL(oldRecord != nullptr))
     return;
   XII_TEST_INT(oldRecord->m_Lods[0].m_uiMeshletCount, 0);
@@ -157,7 +157,7 @@ static void RunSceneLodReload(bool skinned)
   auto& cache = uploadContext.GetResourceCache();
   cache.BeginFrame(1, 0);
   graph.BeginSetup(1);
-  const auto                   uploaded = xiiGeometryResidencyManager::AddUploadPass(graph, 1);
+  const auto                   uploaded = xiiGpuResidencyManager::DeclareUploadPass(graph);
   xiiGpuFrameCompletionTracker completion;
   completion.Initialize(environment.GetDevice());
   struct Export
@@ -171,7 +171,7 @@ static void RunSceneLodReload(bool skinned)
   completion.CaptureSubmittedFrame(1);
   completion.WaitForFrame(1); // The upload can run on a transfer queue; wait for all submitted queues.
   xiiGpuGeometryRecord gpuRecord;
-  const auto           index = uploaded.m_uiGeometryBaseIndex + oldGeometry.GetInternalID().m_InstanceIndex;
+  const auto           index = xiiGpuResidencyManager::GetMetadataBaseIndex(graph.GetFrameIndex()) + oldGeometry.GetInternalID().m_InstanceIndex;
   if (xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), graph.GetExportedBuffer(uploaded.m_hGeometryMetadata).Borrow(), index * sizeof(gpuRecord), gpuRecord))
   {
     XII_TEST_INT(gpuRecord.m_Lods[0].m_uiMeshletCount, 0);
@@ -189,8 +189,8 @@ static void RunSceneLodReload(bool skinned)
   extract();
   XII_TEST_RESULT(primary.UpdateFromExtraction(extracted, 2));
   XII_TEST_INT(primary.GetInstanceCount(), 3);
-  const auto newGeometry = xiiGeometryResidencyManager::AcquireMeshGeometry(mesh);
-  XII_SCOPE_EXIT(xiiGeometryResidencyManager::ReleaseMeshGeometry(newGeometry, 3));
+  const auto newGeometry = xiiGpuResidencyManager::AcquireMeshGeometry(mesh);
+  XII_SCOPE_EXIT(xiiGpuResidencyManager::ReleaseMeshGeometry(newGeometry, 3));
   XII_TEST_BOOL(newGeometry != oldGeometry);
   xiiGpuInstanceSource source;
   XII_TEST_BOOL(primary.Resolve(retiredId, source).Failed());
