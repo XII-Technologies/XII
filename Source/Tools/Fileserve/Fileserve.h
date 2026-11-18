@@ -40,4 +40,7 @@ public:
   xiiUInt32 m_uiConnections = 0;
   xiiTime   m_CloseAppTimeout;
   xiiTime   m_TimeTillClosing;
+
+private:
+  xiiUniquePtr<xiiFileserver> m_pServer;
 };

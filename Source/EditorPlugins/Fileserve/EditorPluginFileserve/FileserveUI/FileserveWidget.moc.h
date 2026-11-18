@@ -5,6 +5,7 @@
 #include <EditorPluginFileserve/EditorPluginFileserveDLL.h>
 #include <EditorPluginFileserve/ui_FileserveWidget.h>
 #include <Foundation/Containers/HashTable.h>
+#include <Foundation/Events/Event.h>
 #include <Foundation/Time/Time.h>
 #include <QWidget>
 
@@ -39,6 +40,8 @@ public Q_SLOTS:
   void on_ConnectClient_clicked();
 
 private:
+  xiiEvent<const xiiFileserverEvent&>::Unsubscriber m_ServerEvents;
+
   void FileserverEventHandler(const xiiFileserverEvent& e);
   void LogActivity(const xiiFormatString& text, xiiFileserveActivityType type);
   void UpdateSpecialDirectoryUI();

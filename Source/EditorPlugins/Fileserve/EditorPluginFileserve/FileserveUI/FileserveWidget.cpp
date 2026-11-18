@@ -47,7 +47,7 @@ xiiQtFileserveWidget::xiiQtFileserveWidget(QWidget* pParent /*= nullptr*/)
 
   if (xiiFileserver::GetSingleton())
   {
-    xiiFileserver::GetSingleton()->m_Events.AddEventHandler(xiiMakeDelegate(&xiiQtFileserveWidget::FileserverEventHandler, this));
+    xiiFileserver::GetSingleton()->m_Events.AddEventHandler(xiiMakeDelegate(&xiiQtFileserveWidget::FileserverEventHandler, this), m_ServerEvents);
     const xiiUInt16 uiPort = xiiFileserver::GetSingleton()->GetPort();
 
     PortLineEdit->setText(QString::number(uiPort));
@@ -132,13 +132,7 @@ void xiiQtFileserveWidget::FindOwnIP(xiiStringBuilder& out_sDisplay, xiiHybridAr
   }
 }
 
-xiiQtFileserveWidget::~xiiQtFileserveWidget()
-{
-  if (xiiFileserver::GetSingleton())
-  {
-    xiiFileserver::GetSingleton()->m_Events.AddEventHandler(xiiMakeDelegate(&xiiQtFileserveWidget::FileserverEventHandler, this));
-  }
-}
+xiiQtFileserveWidget::~xiiQtFileserveWidget() = default;
 
 void xiiQtFileserveWidget::on_StartServerButton_clicked()
 {
