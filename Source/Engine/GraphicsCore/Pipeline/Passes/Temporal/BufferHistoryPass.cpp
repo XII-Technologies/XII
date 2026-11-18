@@ -62,59 +62,79 @@ xiiResult xiiBufferHistoryPass::Build(xiiRenderPipelinePassContext& context)
   const auto* description = context.m_Graph.GetBufferDescription(input);
   if (!description || description->m_uiSize == 0 || description->m_Mode != xiiGALBufferMode::Structured || description->m_uiElementByteStride == 0 || description->m_uiSize % description->m_uiElementByteStride != 0)
     return context.ReportFailure("Buffer history requires a nonempty structured shader-resource buffer.");
-  xiiUInt64 completed = 0;
-  if (xiiRenderGraphManager::GetFrameCompletion(context.m_Graph.GetFrameIndex(), completed).Failed())
-    return context.ReportFailure("Buffer history requires an active shared GPU frame.");
+  auto allocation             = *description;
+  allocation.m_BindFlags      = xiiGALBindFlags::ShaderResource;
+  allocation.m_Usage          = xiiGALResourceUsage::Mutable;
+  allocation.m_CPUAccessFlags = xiiGALCPUAccessFlag::None;
   if (!m_pState)
     m_pState = XII_DEFAULT_NEW(State);
-  auto&     state    = *m_pState;
-  xiiUInt32 selected = xiiInvalidIndex;
-  for (xiiUInt32 i = 0; i < state.m_Slots.GetCount(); ++i)
-    if (state.m_Slots[i].m_Buffer != state.m_Last.m_Buffer && state.m_Slots[i].m_uiLastUsedFrame <= completed)
-    {
-      selected = i;
-      break;
-    }
-  State::Slot next;
-  if (selected != xiiInvalidIndex)
-    next = state.m_Slots[selected];
-  if (!next.m_Buffer || next.m_Buffer->GetDescription().m_uiSize != description->m_uiSize || next.m_Buffer->GetDescription().m_uiElementByteStride != description->m_uiElementByteStride)
-  {
-    auto allocation             = *description;
-    allocation.m_BindFlags      = xiiGALBindFlags::ShaderResource;
-    allocation.m_Usage          = xiiGALResourceUsage::Mutable;
-    allocation.m_CPUAccessFlags = xiiGALCPUAccessFlag::None;
-    next.m_Buffer               = xiiGALDevice::GetDefaultDevice()->CreateBuffer(allocation);
-    if (!next.m_Buffer)
-      return context.ReportFailure("Could not allocate buffer history storage.");
-  }
-  if (!next.m_Fence)
-  {
-    xiiGALFenceCreationDescription fence;
-    fence.m_Type = xiiGALFenceType::General;
-    next.m_Fence = xiiGALDevice::GetDefaultDevice()->CreateFence(fence);
-    if (!next.m_Fence)
-      return context.ReportFailure("Could not allocate buffer history readiness.");
-  }
-  ++next.m_uiValue;
-  next.m_uiLastUsedFrame = context.m_Graph.GetFrameIndex();
-  if (selected == xiiInvalidIndex)
-    state.m_Slots.PushBack(next);
-  else
-    state.m_Slots[selected] = next;
   xiiRenderPassResourceScope scope(context);
   struct Data
   {
     xiiRenderGraphBufferHandle m_Input, m_Output;
     State::Slot                m_Next;
+    xiiUInt64                  m_uiRevision = 0U;
   };
   context.m_Graph.AddPass<Data>(context.m_sPassName, m_bAsyncCopy ? xiiGALCommandQueueFlags::Transfer : xiiGALCommandQueueFlags::Graphics, [&](Data& data, xiiRenderGraphBuilder& builder) {
       data.m_Input = builder.ReadBuffer(input, xiiGALResourceStateFlags::CopySource);
-      data.m_Output = builder.WriteBuffer(builder.ImportBuffer("Retained Frame", next.m_Buffer, next.m_Buffer->GetResourceState()), xiiGALResourceStateFlags::CopyDestination);
+      data.m_Output = builder.WriteBuffer(builder.DeclareImportedBuffer("Retained Frame", allocation), xiiGALResourceStateFlags::CopyDestination);
       builder.ExportBuffer(data.m_Output, xiiGALResourceStateFlags::ShaderResource);
-      data.m_Next = next;
-      builder.SetPassSubmissionCompletion([state = m_pState, &data, uiRevision = state.m_uiRevision] {
-        if (state->m_uiRevision == uiRevision && (!state->m_bValid || state->m_Last.m_uiLastUsedFrame < data.m_Next.m_uiLastUsedFrame))
+      builder.SetPassFramePreparation([state = m_pState, allocation, &data](xiiRenderGraph& graph, const xiiView*, xiiStringBuilder& out_sError) -> xiiResult {
+        const xiiUInt64 uiFrame     = graph.GetFrameIndex();
+        xiiUInt64       uiCompleted = 0;
+        if (xiiRenderGraphManager::GetFrameCompletion(uiFrame, uiCompleted).Failed())
+        {
+          out_sError = "Buffer history requires an active shared GPU frame.";
+          return XII_FAILURE;
+        }
+
+        State::Slot* pAvailable = nullptr;
+        for (auto& slot : state->m_Slots)
+          if (slot.m_Buffer != state->m_Last.m_Buffer && slot.m_uiLastUsedFrame <= uiCompleted)
+          {
+            pAvailable = &slot;
+            break;
+          }
+
+        State::Slot next = pAvailable ? *pAvailable : State::Slot{};
+        if (!next.m_Buffer || next.m_Buffer->GetDescription() != allocation)
+        {
+          next.m_Buffer = xiiGALDevice::GetDefaultDevice()->CreateBuffer(allocation);
+          if (!next.m_Buffer)
+          {
+            out_sError = "Could not allocate buffer history storage.";
+            return XII_FAILURE;
+          }
+        }
+        if (!next.m_Fence)
+        {
+          xiiGALFenceCreationDescription fence;
+          fence.m_Type = xiiGALFenceType::General;
+          next.m_Fence = xiiGALDevice::GetDefaultDevice()->CreateFence(fence);
+          if (!next.m_Fence)
+          {
+            out_sError = "Could not allocate buffer history readiness.";
+            return XII_FAILURE;
+          }
+        }
+        if (graph.BindImportedBuffer(data.m_Output, next.m_Buffer, next.m_Buffer->GetResourceState()).Failed())
+        {
+          out_sError = "Could not bind buffer history storage.";
+          return XII_FAILURE;
+        }
+
+        ++next.m_uiValue;
+        next.m_uiLastUsedFrame = uiFrame;
+        if (pAvailable)
+          *pAvailable = next;
+        else
+          state->m_Slots.PushBack(next);
+        data.m_Next       = std::move(next);
+        data.m_uiRevision = state->m_uiRevision;
+        return XII_SUCCESS;
+      });
+      builder.SetPassSubmissionCompletion([state = m_pState, &data] {
+        if (state->m_uiRevision == data.m_uiRevision && (!state->m_bValid || state->m_Last.m_uiLastUsedFrame < data.m_Next.m_uiLastUsedFrame))
         {
           state->m_Last = data.m_Next;
           state->m_bValid = true;
