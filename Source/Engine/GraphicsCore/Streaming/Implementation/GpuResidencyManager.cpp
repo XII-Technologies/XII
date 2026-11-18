@@ -301,7 +301,7 @@ public:
     m_bMaximumDirty                 = false;
     m_DeclaredUploads               = {};
     m_uiDeclarationGeneration       = 0U;
-    m_uiUploadFrame = xiiMath::MaxValue<xiiUInt64>();
+    m_uiUploadFrame                 = xiiMath::MaxValue<xiiUInt64>();
     m_pMetadataBuffer.Clear();
     m_pMeshletMetadataBuffer.Clear();
     m_bDirectArenaAllocated = false;
@@ -352,8 +352,8 @@ public:
   xiiUInt64                                               m_uiResidentBytes         = 0U;
   UploadHandles                                           m_DeclaredUploads;
   xiiUInt64                                               m_uiDeclarationGeneration = 0U;
-  xiiUInt64                                               m_uiUploadFrame       = xiiMath::MaxValue<xiiUInt64>();
-  xiiUInt64                                               m_uiLastUploadedBytes = 0U;
+  xiiUInt64                                               m_uiUploadFrame           = xiiMath::MaxValue<xiiUInt64>();
+  xiiUInt64                                               m_uiLastUploadedBytes     = 0U;
 
   xiiGpuResidencyDescription m_Configuration;
   xiiMutex                   m_InitializationMutex;
