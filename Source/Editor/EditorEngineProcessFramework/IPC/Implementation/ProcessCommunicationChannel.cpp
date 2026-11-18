@@ -115,7 +115,10 @@ namespace
 class xiiEditorProcessTransport
 {
 public:
-  xiiEditorProcessTransport() : m_Reflection(m_Host, m_Registry) {}
+  explicit xiiEditorProcessTransport(xiiMutex& ref_backgroundSendMutex) :
+    m_BackgroundSendMutex(ref_backgroundSendMutex), m_Reflection(m_Host, m_Registry)
+  {
+  }
   ~xiiEditorProcessTransport()
   {
     m_Reflection.Shutdown();
@@ -147,7 +150,7 @@ public:
   {
     m_Types.Clear();
     xiiRTTI::ForEachType([&](const xiiRTTI* pType) {
-      if (pType->IsDerivedFrom<xiiProcessMessage>() && IsContract(pType, m_Domain))
+      if (IsContract(pType, m_Domain) && pType->IsDerivedFrom<xiiProcessMessage>())
         m_Types.PushBack(pType);
     });
     if (m_Types.IsEmpty())
@@ -193,6 +196,13 @@ public:
   {
     if (m_uiRegistryGeneration == m_Registry.GetStatistics().m_uiGeneration)
       return true;
+    xiiSharedPtr<const xiiNetworkSchema> schema;
+    if (m_Registry.GetSchema(TypePrefix(m_Domain) | 1, schema).m_Code == xiiNetworkDataErrorCode::RegistryUnavailable)
+      return false;
+    if (m_Domain == xiiProcessMessageDomain::Engine &&
+        m_Registry.GetSchema(xiiGetStaticRTTI<xiiViewRedrawMsgToEngine>(), schema).m_Code == xiiNetworkDataErrorCode::CustomCodecFailure &&
+        RegisterEditorProcessCodecs(m_Registry).Failed())
+      return false;
     m_bReady = false;
     return RegisterContracts().Succeeded() && (!m_Channel.IsValid() || OfferContracts().Succeeded());
   }
@@ -222,7 +232,10 @@ public:
         m_Host.Disconnect(connection, false).IgnoreResult();
         return;
       }
-      m_Channel    = event.m_pSessionInfo->m_DefaultChannel;
+      {
+        XII_LOCK(m_BackgroundSendMutex);
+        m_Channel = event.m_pSessionInfo->m_DefaultChannel;
+      }
       m_Connection = connection;
       if (m_Reflection.ProcessEvent(std::move(event)).Failed() || OfferContracts().Failed())
         m_Host.Disconnect(connection, false).IgnoreResult();
@@ -233,7 +246,10 @@ public:
     if (event.m_Type == xiiNetworkEventType::Closed)
     {
       m_Reflection.ProcessEvent(std::move(event)).IgnoreResult();
-      m_Channel    = {};
+      {
+        XII_LOCK(m_BackgroundSendMutex);
+        m_Channel = {};
+      }
       m_Connection = {};
       m_bReady     = false;
     }
@@ -249,6 +265,7 @@ public:
     }
   }
 
+  xiiMutex&                          m_BackgroundSendMutex;
   xiiNetworkHost                     m_Host;
   xiiNetworkTypeRegistry             m_Registry;
   xiiNetworkReflectionEndpoint       m_Reflection;
@@ -265,15 +282,19 @@ public:
   bool                               m_bMayWaitToSend       = false;
 };
 
-xiiProcessCommunicationChannel::xiiProcessCommunicationChannel()  = default;
-xiiProcessCommunicationChannel::~xiiProcessCommunicationChannel() = default;
+xiiProcessCommunicationChannel::xiiProcessCommunicationChannel() = default;
+xiiProcessCommunicationChannel::~xiiProcessCommunicationChannel()
+{
+  CloseTransport();
+}
 
 xiiResult xiiProcessCommunicationChannel::StartLocalListener(const xiiNetworkLocalEndpoint& endpoint, xiiProcessMessageDomain domain)
 {
   CloseTransport();
-  xiiUniquePtr<xiiEditorProcessTransport> transport = XII_DEFAULT_NEW(xiiEditorProcessTransport);
+  xiiUniquePtr<xiiEditorProcessTransport> transport = XII_DEFAULT_NEW(xiiEditorProcessTransport, m_BackgroundSendMutex);
   XII_SUCCEED_OR_RETURN(transport->Start(domain, true));
   XII_SUCCEED_OR_RETURN(transport->m_Host.Listen(endpoint, transport->m_Listener).GetResult());
+  XII_LOCK(m_BackgroundSendMutex);
   m_pTransport = std::move(transport);
   return XII_SUCCESS;
 }
@@ -281,11 +302,12 @@ xiiResult xiiProcessCommunicationChannel::StartLocalListener(const xiiNetworkLoc
 xiiResult xiiProcessCommunicationChannel::ConnectLocal(const xiiNetworkLocalEndpoint& endpoint, xiiProcessMessageDomain domain, xiiUInt32 uiExpectedProcessId)
 {
   CloseTransport();
-  xiiUniquePtr<xiiEditorProcessTransport> transport = XII_DEFAULT_NEW(xiiEditorProcessTransport);
+  xiiUniquePtr<xiiEditorProcessTransport> transport = XII_DEFAULT_NEW(xiiEditorProcessTransport, m_BackgroundSendMutex);
   XII_SUCCEED_OR_RETURN(transport->Start(domain, true));
   transport->m_uiExpectedProcessId = uiExpectedProcessId;
   transport->m_bMayWaitToSend      = true;
   XII_SUCCEED_OR_RETURN(transport->m_Host.Connect(endpoint, {}, transport->m_Connection).GetResult());
+  XII_LOCK(m_BackgroundSendMutex);
   m_pTransport = std::move(transport);
   return XII_SUCCESS;
 }
@@ -295,10 +317,11 @@ xiiResult xiiProcessCommunicationChannel::StartRemoteListener(xiiStringView sAdd
   CloseTransport();
   xiiNetworkEndpoint endpoint;
   XII_SUCCEED_OR_RETURN(xiiNetworkEndpoint::Parse(sAddress, endpoint).GetResult());
-  xiiUniquePtr<xiiEditorProcessTransport> transport = XII_DEFAULT_NEW(xiiEditorProcessTransport);
+  xiiUniquePtr<xiiEditorProcessTransport> transport = XII_DEFAULT_NEW(xiiEditorProcessTransport, m_BackgroundSendMutex);
   XII_SUCCEED_OR_RETURN(transport->Start(xiiProcessMessageDomain::Engine, false));
   transport->m_bMayWaitToSend = true;
   XII_SUCCEED_OR_RETURN(transport->m_Host.Listen(endpoint, transport->m_Listener).GetResult());
+  XII_LOCK(m_BackgroundSendMutex);
   m_pTransport = std::move(transport);
   return XII_SUCCESS;
 }
@@ -320,13 +343,14 @@ xiiResult xiiProcessCommunicationChannel::ConnectRemote(xiiStringView sAddress)
     sHost = xiiStringView(sAddress.GetStartPointer(), pSeparator);
     sPort = xiiStringView(pSeparator + 1, sAddress.GetEndPointer());
   }
-  xiiUniquePtr<xiiEditorProcessTransport> transport = XII_DEFAULT_NEW(xiiEditorProcessTransport);
+  xiiUniquePtr<xiiEditorProcessTransport> transport = XII_DEFAULT_NEW(xiiEditorProcessTransport, m_BackgroundSendMutex);
   XII_SUCCEED_OR_RETURN(transport->Start(xiiProcessMessageDomain::Engine, false));
   xiiNetworkConnectOptions options;
   options.m_sServerName = xiiCommandLineUtils::GetGlobalInstance()->GetStringOption("-ipc_server_name", 0, sHost);
   const auto error      = endpoint.IsValid() ? transport->m_Host.Connect(endpoint, options, transport->m_Connection) :
                                                transport->m_Host.Connect(sHost, sPort, options, transport->m_Connection);
   XII_SUCCEED_OR_RETURN(error.GetResult());
+  XII_LOCK(m_BackgroundSendMutex);
   m_pTransport = std::move(transport);
   return XII_SUCCESS;
 }
@@ -338,13 +362,25 @@ void xiiProcessCommunicationChannel::SetExpectedProcessId(xiiUInt32 uiProcessId)
 
 void xiiProcessCommunicationChannel::CloseTransport()
 {
-  m_pTransport.Clear();
+  xiiUniquePtr<xiiEditorProcessTransport> transport;
+  {
+    XII_LOCK(m_BackgroundSendMutex);
+    transport = std::move(m_pTransport);
+  }
   m_pWaitForMessageType = nullptr;
 }
 
 bool xiiProcessCommunicationChannel::HasTransport() const { return m_pTransport != nullptr; }
 bool xiiProcessCommunicationChannel::HasPendingConnection() const { return m_pTransport && m_pTransport->m_Connection.IsValid(); }
 bool xiiProcessCommunicationChannel::IsConnected() const { return m_pTransport && m_pTransport->m_bReady; }
+
+bool xiiProcessCommunicationChannel::SendBackgroundMessage(const xiiProcessMessage& message)
+{
+  XII_LOCK(m_BackgroundSendMutex);
+  const auto* pType = message.GetDynamicRTTI();
+  return m_pTransport && m_pTransport->m_Channel.IsValid() && IsContract(pType, m_pTransport->m_Domain) &&
+    m_pTransport->m_Reflection.SendMessage(m_pTransport->m_Channel, pType, &message).Succeeded();
+}
 
 bool xiiProcessCommunicationChannel::SendMessage(xiiProcessMessage* pMessage)
 {

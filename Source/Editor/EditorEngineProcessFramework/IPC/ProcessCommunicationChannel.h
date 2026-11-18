@@ -7,6 +7,7 @@
 #include <Foundation/Events/Event.h>
 #include <Foundation/Network/NetworkConnection.h>
 #include <Foundation/Reflection/Reflection.h>
+#include <Foundation/Threading/Mutex.h>
 #include <Foundation/Time/Time.h>
 #include <Foundation/Types/Delegate.h>
 #include <Foundation/Types/UniquePtr.h>
@@ -32,6 +33,9 @@ public:
   ~xiiProcessCommunicationChannel();
 
   bool SendMessage(xiiProcessMessage* pMessage);
+
+  /// One submission from a worker. Requires an established schema and never pumps events or waits for capacity.
+  bool SendBackgroundMessage(const xiiProcessMessage& message);
 
   /// Callback for 'wait for...' functions. If true is returned, the message is accepted to match the wait criteria and the waiting ends. If false is returned the wait for the message continues.
   using WaitForMessageCallback = xiiDelegate<bool(xiiProcessMessage*)>;
@@ -70,6 +74,7 @@ private:
   bool Pump(xiiTime wait);
   void DispatchMessage(const xiiProcessMessage& message);
 
+  xiiMutex                                m_BackgroundSendMutex;
   xiiUniquePtr<xiiEditorProcessTransport> m_pTransport;
   WaitForMessageCallback                  m_WaitForMessageCallback;
   const xiiRTTI*                          m_pWaitForMessageType = nullptr;

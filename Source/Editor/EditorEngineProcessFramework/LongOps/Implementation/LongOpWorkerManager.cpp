@@ -120,7 +120,7 @@ void xiiLongOpWorkerManager::WorkerOperationFinished(xiiUuid operationGuid, xiiR
     msg.m_bSuccess      = result.Succeeded();
     msg.m_ResultData    = std::move(resultData);
 
-    m_pCommunicationChannel->SendMessage(&msg);
+    m_pCommunicationChannel->SendBackgroundMessage(msg);
   }
 
   RemoveOperation(operationGuid);
@@ -169,5 +169,5 @@ void xiiLongOpWorkerManager::SendProgress(WorkerOpInfo& opInfo)
   msg.m_OperationGuid = opInfo.m_OperationGuid;
   msg.m_fCompletion   = opInfo.m_Progress.GetCompletion();
 
-  m_pCommunicationChannel->SendMessage(&msg);
+  m_pCommunicationChannel->SendBackgroundMessage(msg);
 }

@@ -115,6 +115,35 @@ XII_CREATE_SIMPLE_TEST(EngineProcessLifecycle, ConnectedHostLoss)
   XII_TEST_INT(process.GetExitCode(), 0);
 }
 
+XII_CREATE_SIMPLE_TEST(EngineProcessLifecycle, IndependentChildren)
+{
+  Listener   listeners[2];
+  xiiProcess children[2];
+  const auto parent = xiiProcess::GetCurrentProcessID();
+  for (xiiUInt32 i = 0; i < 2; ++i)
+  {
+    const auto              name = MakeAddress();
+    xiiNetworkLocalEndpoint endpoint;
+    if (!XII_TEST_BOOL(xiiNetworkLocalEndpoint::Make(name, endpoint).Succeeded()) ||
+        !XII_TEST_RESULT(listeners[i].StartLocalListener(endpoint, xiiProcessMessageDomain::Engine)) ||
+        !XII_TEST_RESULT(children[i].Launch(MakeOptions(name, parent))))
+      return;
+    listeners[i].SetExpectedProcessId(static_cast<xiiUInt32>(children[i].GetProcessID()));
+  }
+  for (xiiUInt32 i = 0; i < 2; ++i)
+    if (!XII_TEST_RESULT(listeners[i].WaitForConnection(xiiTime::MakeFromSeconds(10))) || !XII_TEST_RESULT(Echo(listeners[i], 42 + i)))
+      return;
+
+  if (!XII_TEST_RESULT(children[0].Terminate()))
+    return;
+  XII_TEST_BOOL(listeners[0].WaitForMessage(xiiGetStaticRTTI<xiiSyncWithProcessMsgToEditor>(), xiiTime::MakeFromSeconds(5)).Failed());
+  XII_TEST_BOOL(!listeners[0].IsConnected());
+  XII_TEST_RESULT(Echo(listeners[1], 43));
+  listeners[1].CloseTransport();
+  if (XII_TEST_RESULT(children[1].WaitToFinish(xiiTime::MakeFromSeconds(10))))
+    XII_TEST_INT(children[1].GetExitCode(), 0);
+}
+
 XII_CREATE_SIMPLE_TEST(EngineProcessLifecycle, AuthenticatedRemoteEngineProcess)
 {
   auto*           command      = xiiCommandLineUtils::GetGlobalInstance();
@@ -199,7 +228,10 @@ XII_CREATE_SIMPLE_TEST(EngineProcessLifecycle, ReflectedContractsSurviveRegistry
     return;
 
   xiiPlugin::BeginPluginChanges();
+  xiiSyncWithProcessMsgToEngine pausedMessage;
+  const bool                    bAcceptedDuringPluginChange = client.SendMessage(&pausedMessage);
   xiiPlugin::EndPluginChanges();
+  XII_TEST_BOOL(!bAcceptedDuringPluginChange);
   if (!XII_TEST_BOOL(pumpUntil(connected)))
     return;
 

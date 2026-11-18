@@ -89,8 +89,11 @@ xiiResult xiiEditorProcessCommunicationChannel::StartClientProcess(const char* s
   arguments << "-IPC" << QLatin1String(sName.GetData());
   arguments << "-PID" << QString::number(QCoreApplication::applicationPid());
   arguments.append(args);
+  m_ProcessOutput.clear();
   m_pClientProcess = new QProcess();
-  m_pClientProcess->start(QString::fromUtf8(sPath.GetData()), arguments, QIODevice::NotOpen);
+  m_pClientProcess->setProcessChannelMode(QProcess::MergedChannels);
+  QObject::connect(m_pClientProcess, &QProcess::readyReadStandardOutput, m_pClientProcess, [this] { CaptureProcessOutput(); });
+  m_pClientProcess->start(QString::fromUtf8(sPath.GetData()), arguments, QIODevice::ReadOnly);
   if (!m_pClientProcess->waitForStarted(10000))
   {
     xiiLog::Error("Failed to start process '{}'.", sPath);
@@ -123,10 +126,18 @@ xiiString xiiEditorProcessCommunicationChannel::GetStdoutContents()
 {
   if (m_pClientProcess)
   {
-    const QByteArray output = m_pClientProcess->readAllStandardOutput();
-    return xiiString(xiiStringView(output.constData(), static_cast<xiiUInt32>(output.size())));
+    m_pClientProcess->waitForReadyRead(100);
+    CaptureProcessOutput();
   }
-  return {};
+  return xiiString(xiiStringView(m_ProcessOutput.constData(), static_cast<xiiUInt32>(m_ProcessOutput.size())));
+}
+
+void xiiEditorProcessCommunicationChannel::CaptureProcessOutput()
+{
+  constexpr qsizetype MaxOutputBytes = 64 * 1024;
+  m_ProcessOutput.append(m_pClientProcess->readAllStandardOutput().right(MaxOutputBytes));
+  if (m_ProcessOutput.size() > MaxOutputBytes)
+    m_ProcessOutput.remove(0, m_ProcessOutput.size() - MaxOutputBytes);
 }
 
 xiiResult xiiEditorProcessRemoteCommunicationChannel::ConnectToServer(const char* szAddress)

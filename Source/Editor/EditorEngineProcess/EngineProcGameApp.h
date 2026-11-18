@@ -7,6 +7,7 @@
 #include <Foundation/Application/Config/FileSystemConfig.h>
 #include <Foundation/Application/Config/PluginConfig.h>
 #include <Foundation/Logging/HTMLWriter.h>
+#include <Foundation/Threading/AtomicInteger.h>
 #include <Foundation/Types/UniquePtr.h>
 #include <GameEngine/GameApplication/GameApplication.h>
 
@@ -63,7 +64,8 @@ private:
   void EventHandlerIPC(const xiiEngineProcessCommunicationChannel::Event& e);
   void EventHandlerCVar(const xiiCVarEvent& e);
   void EventHandlerCVarPlugin(const xiiPluginEvent& e);
-  void TransmitCVar(const xiiCVar* pCVar);
+  void SendCVarList();
+  void TransmitCVar(const xiiCVar* pCVar, bool bMayWait);
 
   void HandleResourceUpdateMsg(const xiiResourceUpdateMsgToEngine& msg);
   void HandleResourceRestoreMsg(const xiiRestoreResourceMsgToEngine& msg);
@@ -85,6 +87,7 @@ private:
   xiiLongOpWorkerManager                  m_LongOpWorkerManager;
   xiiLogWriter::HTML                      m_LogHTML;
 
-  xiiUInt32 m_uiRedrawCountReceived = 0;
-  xiiUInt32 m_uiRedrawCountExecuted = 0;
+  xiiAtomicBool m_bSendCVarList         = false;
+  xiiUInt32     m_uiRedrawCountReceived = 0;
+  xiiUInt32     m_uiRedrawCountExecuted = 0;
 };

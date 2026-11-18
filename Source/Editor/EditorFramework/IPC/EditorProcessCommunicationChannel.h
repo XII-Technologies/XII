@@ -5,6 +5,7 @@
 #include <EditorFramework/EditorFrameworkDLL.h>
 
 #include <EditorEngineProcessFramework/IPC/ProcessCommunicationChannel.h>
+#include <QByteArray>
 
 template <typename T>
 class QList;
@@ -30,7 +31,10 @@ public:
   xiiString GetStdoutContents();
 
 private:
-  QProcess* m_pClientProcess = nullptr;
+  void CaptureProcessOutput();
+
+  QProcess*  m_pClientProcess = nullptr;
+  QByteArray m_ProcessOutput;
 };
 
 class XII_EDITORFRAMEWORK_DLL xiiEditorProcessRemoteCommunicationChannel : public xiiProcessCommunicationChannel
