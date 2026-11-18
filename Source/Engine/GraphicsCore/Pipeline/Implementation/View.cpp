@@ -62,6 +62,9 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 void xiiView::SetRenderTargetView(xiiGALTextureView* pRenderTargetView)
 {
+  if (m_pSwapChain != nullptr && (m_pRenderTargetView == nullptr) != (pRenderTargetView == nullptr))
+    InvalidateRenderGraph("View output kind changed");
+
   if (m_RenderGraphBuilder.IsValid() && m_pRenderTargetView != pRenderTargetView)
   {
     if (m_pRenderTargetView == nullptr || pRenderTargetView == nullptr ||

@@ -487,6 +487,10 @@ public:
   /// declared resources; must restore their declared states before returning.
   void SetPassPreparation(xiiDelegate<void(xiiRenderGraphPassContext&)> preparation);
 
+  /// Registers CPU preparation before imported resources and command lists are resolved.
+  /// Capture graph-owned pass data and use the supplied current view.
+  void SetPassFramePreparation(xiiDelegate<xiiResult(xiiRenderGraph&, const xiiView*, xiiStringBuilder&)> preparation);
+
 private:
   friend class xiiRenderGraph;
 
@@ -750,6 +754,7 @@ private:
     xiiDelegate<void(void*)>                      m_DestroyPassDataDelegate;
     xiiDelegate<void(xiiRenderGraphPassContext&)> m_ExecuteDelegate;
     xiiDelegate<void(xiiRenderGraphPassContext&)> m_PrepareDelegate;
+    xiiDelegate<xiiResult(xiiRenderGraph&, const xiiView*, xiiStringBuilder&)> m_FramePreparation;
   };
 
   void PhaseB_TopologicalSortAndCull(const xiiRenderGraphCompileSettings& settings, xiiDynamicArray<xiiUInt32>& out_sortedIndices);
@@ -793,6 +798,7 @@ private:
   {
     QueueMapping                                              m_QueueMapping;
     xiiUInt32                                                 m_uiSignaledQueueMask = 0U;
+    xiiDynamicArray<xiiUInt32>                                m_FramePreparations;
     xiiDynamicArray<xiiRenderGraphCompiledPass>               m_CompiledPasses;
     xiiDynamicArray<xiiRenderGraphBarrierDescription>         m_Barriers;
     xiiDynamicArray<xiiRenderGraphMergeGroup>                 m_MergeGroups;
