@@ -1,144 +1,278 @@
-#!/bin/bash
-set -euo pipefail
 
-echo "=== XII Linux Setup Script (Dependencies + Toolchains) ==="
+#!/usr/bin/env bash
 
-# ----------------------------------------
-# Detect distribution
-# ----------------------------------------
-if [[ ! -f /etc/os-release ]]; then
-  echo "Cannot detect distribution (missing /etc/os-release)"
+# Copyright (c) XII Technologies. All Rights Reserved.
+# XII Engine - Linux Development Environment Setup
+
+set -Eeuo pipefail
+
+readonly MIN_GCC_VERSION=12
+readonly MIN_CLANG_VERSION=15
+
+log()
+{
+  printf '[XII Setup] %s\n' "$*"
+}
+
+fail()
+{
+  printf '[XII Setup] ERROR: %s\n' "$*" >&2
   exit 1
-fi
+}
 
-. /etc/os-release
-DISTRO=$ID
-VER=$VERSION_ID
+# ---------------------------------------------------------------------------
+# Distribution Detection
+# ---------------------------------------------------------------------------
 
-echo "Detected: $DISTRO $VER"
+detect_distribution()
+{
+  [[ -r /etc/os-release ]] ||
+    fail "Cannot detect Linux distribution."
 
-# ----------------------------------------
-# Debian-based package lists
-# ----------------------------------------
-DEB_BASE_PKGS=(
-  cmake
-  ninja-build
-  git
-  uuid-dev
-  libfreetype-dev
-  libtinfo5
-  mold
+  # shellcheck disable=SC1091
+  source /etc/os-release
+
+  readonly DISTRO_ID="${ID:-unknown}"
+  readonly DISTRO_VERSION="${VERSION_ID:-unknown}"
+
+  case "$DISTRO_ID" in
+    fedora)
+      PACKAGE_FAMILY="fedora"
+      ;;
+    debian|ubuntu|linuxmint|kali|pop|elementary)
+      PACKAGE_FAMILY="debian"
+      ;;
+    *)
+      case " ${ID_LIKE:-} " in
+        *" fedora "*|*" rhel "*)
+          PACKAGE_FAMILY="fedora"
+          ;;
+        *" debian "*|*" ubuntu "*)
+          PACKAGE_FAMILY="debian"
+          ;;
+        *)
+          fail "Unsupported Linux distribution: $DISTRO_ID"
+          ;;
+      esac
+      ;;
+  esac
+
+  log "Distribution: ${PRETTY_NAME:-$DISTRO_ID}"
+  log "Package family: $PACKAGE_FAMILY"
+}
+
+# ---------------------------------------------------------------------------
+# Dependencies
+# ---------------------------------------------------------------------------
+
+DEBIAN_PACKAGES=(
+  # Build toolchain
+  build-essential
+  gcc
+  g++
   clang
   clang-tools
-  libstdc++-dev
-)
+  cmake
+  ninja-build
+  make
+  mold
+  git
+  pkg-config
 
-DEB_WAYLAND_PKGS=(
-  libwayland-dev
-  libwayland-egl1
-  libwayland-cursor0
-)
+  # Networking dependency builds (OpenSSL / MsQuic)
+  python3
+  perl
 
-DEB_QT_PKGS=(
+  # Foundation
+  uuid-dev
+  libfreetype-dev
+  libtinfo6
+
+  # Qt 6
   qt6-base-dev
   qt6-base-private-dev
   libqt6svg6-dev
   qt6-wayland
-)
 
-DEB_VULKAN_PKGS=(
+  # Wayland
+  libwayland-dev
+  libwayland-egl1
+  libwayland-cursor0
+
+  # Vulkan
   libvulkan-dev
   vulkan-tools
   vulkan-validationlayers-dev
 )
 
-# ----------------------------------------
-# Fedora package lists
-# ----------------------------------------
-FEDORA_BASE_PKGS=(
-  cmake
-  ninja-build
-  git
+FEDORA_PACKAGES=(
+  # Build toolchain
   gcc
   gcc-c++
   clang
   clang-tools-extra
+  cmake
+  ninja-build
+  make
+  mold
+  git
+  pkgconf-pkg-config
+
+  # Networking dependency builds (OpenSSL / MsQuic)
+  python3
+  perl
+
+  # Foundation
   libstdc++-devel
   libuuid-devel
   freetype-devel
   ncurses-compat-libs
-  mold
-)
 
-FEDORA_QT_PKGS=(
+  # Qt 6
   qt6-qtbase-devel
-  qt6-qtsvg-devel
   qt6-qtbase-private-devel
+  qt6-qtsvg-devel
   qt6-qtwayland-devel
-)
 
-FEDORA_WAYLAND_PKGS=(
+  # Wayland
+  wayland-devel
   egl-wayland
-)
 
-FEDORA_VULKAN_PKGS=(
+  # Vulkan
   vulkan-loader-devel
   vulkan-validation-layers
   vulkan-tools
 )
 
-# ----------------------------------------
-# Install dependencies
-# ----------------------------------------
-case "$DISTRO" in
-  ubuntu|linuxmint|kali)
-    echo "Installing Debian-based dependencies..."
-    sudo apt update
-    sudo apt install -y \
-      "${DEB_BASE_PKGS[@]}" \
-      "${DEB_WAYLAND_PKGS[@]}" \
-      "${DEB_QT_PKGS[@]}" \
-      "${DEB_VULKAN_PKGS[@]}"
+# ---------------------------------------------------------------------------
+# Dependency Installation
+# ---------------------------------------------------------------------------
 
-    echo "Installing Vulkan packages..."
-    sudo apt install -y libvulkan-dev vulkan-tools
-    ;;
-  fedora)
-    echo "Installing Fedora dependencies..."
-    sudo dnf install -y \
-      "${FEDORA_BASE_PKGS[@]}" \
-      "${FEDORA_WAYLAND_PKGS[@]}" \
-      "${FEDORA_QT_PKGS[@]}" \
-      "${FEDORA_VULKAN_PKGS[@]}"
+install_dependencies()
+{
+  local -a privilege=()
 
-    echo "Installing Vulkan packages..."
-    sudo dnf install -y vulkan-loader-devel vulkan-tools
-    ;;
-  *)
-    echo "Unsupported distribution: $DISTRO"
-    exit 1
-    ;;
-esac
+  if (( EUID != 0 )); then
+    command -v sudo >/dev/null 2>&1 ||
+      fail "sudo is required to install system packages."
 
-# ----------------------------------------
-# Compiler validation
-# ----------------------------------------
-echo "Checking compiler versions..."
+    privilege=(sudo)
+  fi
 
-GCC_VER=$(gcc -dumpversion | cut -d. -f1)
-CLANG_VER=$(clang --version 2>/dev/null | head -n1 | grep -o "[0-9]\+" | head -n1 || echo 0)
+  case "$PACKAGE_FAMILY" in
+    debian)
+      command -v apt-get >/dev/null 2>&1 ||
+        fail "APT is not available."
 
-echo "GCC version: $GCC_VER"
-echo "Clang version: $CLANG_VER"
+      log "Updating APT package metadata..."
+      "${privilege[@]}" apt-get update
 
-if [[ "$GCC_VER" -lt 12 ]]; then
-  echo "Warning: GCC >= 12 recommended."
-fi
+      log "Installing development dependencies..."
+      "${privilege[@]}" apt-get install -y \
+        "${DEBIAN_PACKAGES[@]}"
+      ;;
 
-if [[ "$CLANG_VER" -lt 15 ]]; then
-  echo "Warning: Clang >= 15 recommended."
-fi
+    fedora)
+      command -v dnf >/dev/null 2>&1 ||
+        fail "DNF is not available."
 
-echo ""
-echo "=== Setup complete ==="
-echo "You can now run your Linux generate script."
+      log "Installing development dependencies..."
+      "${privilege[@]}" dnf install -y \
+        "${FEDORA_PACKAGES[@]}"
+      ;;
+  esac
+}
+
+# ---------------------------------------------------------------------------
+# Environment Validation
+# ---------------------------------------------------------------------------
+
+check_command()
+{
+  local executable="$1"
+
+  command -v "$executable" >/dev/null 2>&1 ||
+    fail "Required executable not found: $executable"
+}
+
+check_compiler()
+{
+  local compiler="$1"
+  local minimum="$2"
+  local version=""
+  local major=""
+
+  check_command "$compiler"
+
+  if [[ "$compiler" == "gcc" ]]; then
+    version="$(gcc -dumpfullversion -dumpversion)"
+    major="${version%%.*}"
+  else
+    version="$(clang --version | head -n 1)"
+
+    if [[ "$version" =~ version[[:space:]]+([0-9]+) ]]; then
+      major="${BASH_REMATCH[1]}"
+    else
+      fail "Cannot determine Clang version: $version"
+    fi
+  fi
+
+  [[ "$major" =~ ^[0-9]+$ ]] ||
+    fail "Invalid $compiler version: $version"
+
+  log "$compiler: $version"
+
+  if (( 10#$major < minimum )); then
+    log "WARNING: $compiler $minimum or newer is recommended."
+  fi
+}
+
+validate_environment()
+{
+  log "Validating development environment..."
+
+  local executable
+  for executable in \
+    gcc g++ clang clang++ cmake ninja git python3 perl make
+  do
+    check_command "$executable"
+  done
+
+  check_compiler gcc "$MIN_GCC_VERSION"
+  check_compiler clang "$MIN_CLANG_VERSION"
+
+  # Required by OpenSSL's upstream Configure script.
+  if ! perl -MFindBin -MIPC::Cmd -e 'exit 0'; then
+    fail "Missing Perl modules required by OpenSSL (FindBin / IPC::Cmd)."
+  fi
+
+  log "OpenSSL Perl dependencies: OK"
+  log "CMake: $(cmake --version | head -n 1)"
+  log "Ninja: $(ninja --version)"
+  log "Python: $(python3 --version)"
+  log "Perl: $(perl -e 'printf "%vd", $^V')"
+
+  log "Environment validation passed."
+}
+
+# ---------------------------------------------------------------------------
+# Entry Point
+# ---------------------------------------------------------------------------
+
+main()
+{
+  log "========================================"
+  log "XII Engine - Linux Development Setup"
+  log "========================================"
+
+  detect_distribution
+  install_dependencies
+  validate_environment
+
+  log "========================================"
+  log "Setup completed successfully."
+  log "Run the XII Linux generation script next."
+  log "========================================"
+}
+
+main "$@"

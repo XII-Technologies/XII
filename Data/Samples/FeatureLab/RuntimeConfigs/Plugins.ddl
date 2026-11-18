@@ -2,7 +2,7 @@ Plugin
 {
 	string %Path{"FeatureLabPlugin"}
 	bool %LoadCopy{true}
-	string %PluginDirectory{">project/Output/Bin/Debug"}
+	string %PluginDirectory{">project/Output/Bin/Shipping"}
 }
 Plugin
 {
