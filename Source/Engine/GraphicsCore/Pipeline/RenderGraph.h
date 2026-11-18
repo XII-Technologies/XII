@@ -291,6 +291,7 @@ struct XII_GRAPHICSCORE_DLL xiiRenderGraphStatistics
   xiiUInt32 m_uiCrossQueueWaits        = 0U;
   xiiUInt32 m_uiCrossQueueSignals      = 0U;
   xiiUInt32 m_uiMergedPasses           = 0U;
+  xiiUInt32 m_uiScratchAllocations     = 0U; ///< Capacity growth of the reusable resource and binding arrays during execution.
   xiiUInt32 m_uiPrimaryLists           = 0U;
   xiiUInt32 m_uiReusedPrimaryLists     = 0U;
   xiiUInt32 m_uiSubmittedCount         = 0U;
@@ -810,6 +811,11 @@ private:
 
   struct ExecutionFrame
   {
+    xiiDynamicArray<RenderPassBinding>                    m_RenderPassBindings;
+    xiiDynamicArray<xiiSharedPtr<xiiGALTexture>>          m_ResolvedTextures;
+    xiiDynamicArray<xiiSharedPtr<xiiGALBuffer>>           m_ResolvedBuffers;
+    xiiDynamicArray<xiiSharedPtr<xiiGALTexture>>          m_AliasTextures;
+    xiiDynamicArray<xiiSharedPtr<xiiGALBuffer>>           m_AliasBuffers;
     xiiDynamicArray<xiiRenderGraphSubmissionFrameInfo>    m_SubmissionInfo;
     xiiHashTable<xiiUInt32, xiiHybridArray<FenceWait, 2>> m_FenceWaits;
     xiiHashTable<xiiUInt32, ImportedResource>             m_Imports;

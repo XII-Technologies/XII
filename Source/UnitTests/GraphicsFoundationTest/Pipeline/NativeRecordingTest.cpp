@@ -174,6 +174,10 @@ XII_CREATE_SIMPLE_TEST(NativeRecording, MergeAndReuseRecording)
     XII_TEST_INT(graph.GetStatistics().m_uiSubmittedCount, 1U);
     XII_TEST_INT(graph.GetStatistics().m_uiReusedPrimaryLists, uiIteration == 0U ? 0U : 1U);
     XII_TEST_INT(graph.GetStatistics().m_uiSecondaryLists, bParallel ? 2U : 0U);
+    if (uiIteration > 0U)
+    {
+      XII_TEST_INT(graph.GetStatistics().m_uiScratchAllocations, 0U);
+    }
     XII_TEST_INT(iRecordedItems, 64);
     if (uiIteration == 5U)
     {

@@ -294,6 +294,7 @@ void xiiQtRenderGraphWidget::Rebuild()
                           .arg(stats["cpuRecordingWallMs"].toDouble(), 0, 'f', 3)
                           .arg(stats["cpuRecordingWorkMs"].toDouble(), 0, 'f', 3)
                           .arg(stats["cpuSubmitMs"].toDouble(), 0, 'f', 3) +
+                        tr(" | Scratch allocations %1").arg(stats["scratchAllocations"].toInt()) +
                         QString("\nPrimary lists: %1 (%2 reused) | Secondary lists: %3 on %4 recording threads | Passes: %5 serial, %6 parallel, %7 merged")
                           .arg(stats["primaryLists"].toInt())
                           .arg(stats["reusedPrimaryLists"].toInt())

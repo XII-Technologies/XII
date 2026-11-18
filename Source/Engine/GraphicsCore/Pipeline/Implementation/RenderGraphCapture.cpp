@@ -93,6 +93,7 @@ xiiResult xiiRenderGraphDebug::WriteSnapshot(const ExecutionEvent& event, xiiStr
   writer.AddVariableDouble("cpuRecordingWallMs", stats.m_RecordingCriticalPath.GetMilliseconds());
   writer.AddVariableDouble("cpuRecordingWorkMs", stats.m_RecordingWorkTime.GetMilliseconds());
   writer.AddVariableDouble("cpuSubmitMs", stats.m_SubmitTime.GetMilliseconds());
+  writer.AddVariableUInt32("scratchAllocations", stats.m_uiScratchAllocations);
   writer.AddVariableUInt32("transientTextures", stats.m_uiTransientTextureCount);
   writer.AddVariableUInt32("transientBuffers", stats.m_uiTransientBufferCount);
   writer.AddVariableUInt32("aliasGroups", stats.m_uiAliasGroupCount);

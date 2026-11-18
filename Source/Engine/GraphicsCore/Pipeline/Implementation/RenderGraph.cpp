@@ -1848,19 +1848,32 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
       m_Frame.m_ExportedBuffers.Clear();
     } XII_PROFILE_SCOPE("Render Graph: Publish Execution Event");
     xiiRenderGraphDebug::s_ExecutionEvents.Broadcast({*this, m_LastCompileSettings.m_bEnableGPUProfiling ? pProfiler : nullptr, m_Frame.m_uiIndex, bExecutionSucceeded, out_pError ? out_pError->GetView() : xiiStringView{}, pView ? pView->GetName() : xiiStringView{}}));
-  xiiTemporaryArray<RenderPassBinding> renderPassBindings;
-  renderPassBindings.SetCount(m_Plan.m_MergeGroups.GetCount());
+  auto& renderPassBindings = m_Frame.m_RenderPassBindings;
+  auto& resolvedTextures   = m_Frame.m_ResolvedTextures;
+  auto& resolvedBuffers    = m_Frame.m_ResolvedBuffers;
+  auto& aliasTextures      = m_Frame.m_AliasTextures;
+  auto& aliasBuffers       = m_Frame.m_AliasBuffers;
+  XII_SCOPE_EXIT(
+    renderPassBindings.Clear();
+    resolvedTextures.Clear();
+    resolvedBuffers.Clear();
+    aliasTextures.Clear();
+    aliasBuffers.Clear());
 
-  // Resolve all transient and imported resources for this frame's execution.
-  const xiiUInt32                                uiResourceCount = m_Resources.GetCount();
-  xiiTemporaryArray<xiiSharedPtr<xiiGALTexture>> resolvedTextures;
-  xiiTemporaryArray<xiiSharedPtr<xiiGALBuffer>>  resolvedBuffers;
-  resolvedTextures.SetCount(uiResourceCount);
-  resolvedBuffers.SetCount(uiResourceCount);
-  xiiTemporaryArray<xiiSharedPtr<xiiGALTexture>> aliasTextures;
-  xiiTemporaryArray<xiiSharedPtr<xiiGALBuffer>>  aliasBuffers;
-  aliasTextures.SetCount(m_Statistics.m_uiAliasGroupCount);
-  aliasBuffers.SetCount(m_Statistics.m_uiAliasGroupCount);
+  m_Statistics.m_uiScratchAllocations = 0U;
+  const auto ResizeScratch            = [&](auto& ref_array, xiiUInt32 uiCount) {
+    if (uiCount > ref_array.GetCapacity())
+      ++m_Statistics.m_uiScratchAllocations;
+    ref_array.SetCount(uiCount);
+  };
+
+  // Resolve transient and imported resources for the current execution only.
+  const xiiUInt32 uiResourceCount = m_Resources.GetCount();
+  ResizeScratch(renderPassBindings, m_Plan.m_MergeGroups.GetCount());
+  ResizeScratch(resolvedTextures, uiResourceCount);
+  ResizeScratch(resolvedBuffers, uiResourceCount);
+  ResizeScratch(aliasTextures, m_Statistics.m_uiAliasGroupCount);
+  ResizeScratch(aliasBuffers, m_Statistics.m_uiAliasGroupCount);
 
   const xiiTime resolutionStart = xiiTime::Now();
   for (xiiUInt32 i = 0U; i < uiResourceCount; ++i)
