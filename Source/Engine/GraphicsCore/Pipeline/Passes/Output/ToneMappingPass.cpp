@@ -24,13 +24,15 @@ struct xiiToneMappingPass::Data
   xiiRenderGraphBufferHandle  m_hConstants;
   xiiSizeU32                  m_Size;
   xiiDisplayOutputSettings    m_DisplaySettings;
+  xiiDisplayOutputSettings    m_AuthoredDisplay;
+  bool                        m_bUseViewDefaults = false;
   bool                        m_bVisualizeCurve = false;
+  bool                        m_bHasBloomInput   = false;
 };
 struct xiiToneMappingPass::State
 {
   xiiSharedPtr<xiiGALComputePipelineState> m_Pipeline;
 
-  xiiRenderPassUtils::DisplayConfiguration m_Display;
 };
 
 xiiToneMappingPass::xiiToneMappingPass()
@@ -76,8 +78,6 @@ xiiResult xiiToneMappingPass::Configure(const xiiVariantDictionary& properties)
   settings.m_fMaximumDisplayNits = m_fMaximumDisplayNits;
   if (!xiiDisplayOutputManager::IsValid(settings))
     return XII_FAILURE;
-  if (m_pState)
-    m_pState->m_Display.m_bValid = false;
   return XII_SUCCESS;
 }
 xiiResult xiiToneMappingPass::Build(xiiRenderPipelinePassContext& context)
@@ -92,13 +92,12 @@ xiiResult xiiToneMappingPass::Build(xiiRenderPipelinePassContext& context)
   settings.m_fBloomStrength      = m_fBloomStrength;
   settings.m_fPaperWhiteNits     = m_fPaperWhiteNits;
   settings.m_fMaximumDisplayNits = m_fMaximumDisplayNits;
-  XII_SUCCEED_OR_RETURN(m_pState->m_Display.Resolve(context, settings, m_bUseViewDefaults));
   xiiSizeU32 size;
   XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::OutputSize(context, m_OutputDisplayLinearColor, context.GetInputTexture(m_InputUpscaledColor), size));
   if (!xiiScreenSpacePassUtils::Image(context, context.GetInputTexture(m_InputUpscaledColor), 4))
     return context.ReportFailure("Tone mapping requires readable single-sample floating-point RGBA input.");
   const auto bloom = context.GetInputTexture(m_InputBloomTexture);
-  if ((bloom.IsValid() && !xiiScreenSpacePassUtils::Image(context, bloom, 4)) || (!bloom.IsValid() && m_pState->m_Display.m_Settings.m_fBloomStrength > 0))
+  if ((bloom.IsValid() && !xiiScreenSpacePassUtils::Image(context, bloom, 4)) || (!bloom.IsValid() && !m_bUseViewDefaults && settings.m_fBloomStrength > 0))
     return context.ReportFailure("Active bloom requires a readable RGBA bloom image.");
   const auto* exposure = context.m_Graph.GetBufferDescription(context.GetInputBuffer(m_InputCurrentExposure));
   if (!exposure || exposure->m_Mode != xiiGALBufferMode::Structured || exposure->m_uiElementByteStride != sizeof(float) || exposure->m_uiSize < sizeof(float) || !exposure->m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource))
@@ -108,12 +107,28 @@ xiiResult xiiToneMappingPass::Build(xiiRenderPipelinePassContext& context)
     return context.ReportFailure("Tone mapping exceeds compute dispatch dimensions.");
   auto emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, xiiGALCommandQueueFlags::Compute, [&](Data& data, xiiRenderGraphBuilder& builder) {
     data.m_Size=size;
-    data.m_bVisualizeCurve = context.m_pView && context.m_pView->GetViewRenderMode() == xiiViewRenderMode::ToneMappingCurve;
-    data.m_DisplaySettings=m_pState->m_Display.m_Settings;
+    data.m_AuthoredDisplay = settings;
+    data.m_bUseViewDefaults = m_bUseViewDefaults;
+    data.m_bHasBloomInput = bloom.IsValid();
     data.m_hHDRInput=context.GetInputTexture(m_InputUpscaledColor);
     data.m_hBloom         = bloom.IsValid() ? bloom : data.m_hHDRInput;
     data.m_hExposure=context.GetInputBuffer(m_InputCurrentExposure);
-    Setup(data,builder); }, [](const Data& data, xiiRenderGraphPassContext& execute) { Execute(data, execute); });
+    Setup(data,builder);
+    builder.SetPassFramePreparation([&data](xiiRenderGraph&, const xiiView* pView, xiiStringBuilder& ref_error) {
+      data.m_DisplaySettings = pView != nullptr && data.m_bUseViewDefaults ? pView->GetDisplayOutputSettings() : data.m_AuthoredDisplay;
+      data.m_bVisualizeCurve = pView != nullptr && pView->GetViewRenderMode() == xiiViewRenderMode::ToneMappingCurve;
+      if (!xiiDisplayOutputManager::IsValid(data.m_DisplaySettings))
+      {
+        ref_error = "Invalid display and exposure settings.";
+        return XII_FAILURE;
+      }
+      if (!data.m_bHasBloomInput && data.m_DisplaySettings.m_fBloomStrength > 0.0f)
+      {
+        ref_error = "Active bloom requires a readable RGBA bloom image.";
+        return XII_FAILURE;
+      }
+      return XII_SUCCESS;
+    }); }, [](const Data& data, xiiRenderGraphPassContext& execute) { Execute(data, execute); });
   XII_SUCCEED_OR_RETURN(context.SetOutput(m_OutputDisplayLinearColor, emitted.first->m_hDisplayLinear));
   return XII_SUCCESS;
 }

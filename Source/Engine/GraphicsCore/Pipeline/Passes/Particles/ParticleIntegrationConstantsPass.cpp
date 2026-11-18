@@ -38,13 +38,8 @@ xiiResult xiiParticleIntegrationConstantsPass::Configure(const xiiVariantDiction
 }
 xiiResult xiiParticleIntegrationConstantsPass::Build(xiiRenderPipelinePassContext& context)
 {
-  float delta = m_fDeltaTimeS;
-  if (m_bUseWorldTime)
-  {
-    if (!context.m_pView || !context.m_pView->GetWorld())
-      return XII_FAILURE;
-    delta = xiiMath::Clamp(static_cast<float>(context.m_pView->GetWorld()->GetClock().GetTimeDiff().GetSeconds()), 0.0f, 1.0f / 15.0f);
-  }
+  if (m_bUseWorldTime && (context.m_pView == nullptr || context.m_pView->GetWorld() == nullptr))
+    return context.ReportFailure("Particle integration requires a world clock.");
   xiiRenderPassResourceScope scope(context);
   struct Data
   {
@@ -52,13 +47,25 @@ xiiResult xiiParticleIntegrationConstantsPass::Build(xiiRenderPipelinePassContex
     xiiParticleIntegrationConstants m_Constants;
   };
   const auto emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, xiiGALCommandQueueFlags::Transfer, [&](Data& data, xiiRenderGraphBuilder& builder) {
-    data.m_Constants.DeltaTimeS = delta;
+    data.m_Constants.DeltaTimeS = m_fDeltaTimeS;
     data.m_Constants.GravityScale = m_fGravityScale;
     data.m_Constants.DragCoefficient = m_fDragCoefficient;
     data.m_Constants.TurbulenceScale = m_fTurbulenceScale;
     data.m_Constants.WindVelocity = m_WindVelocity;
     data.m_Constants.ActiveCount = m_uiActiveCount;
-    data.m_Buffer = xiiRenderPassUtils::Constants(builder, "ParticleSimConstants", sizeof(data.m_Constants)); }, [](const Data& data, xiiRenderGraphPassContext& execute) {
+    data.m_Buffer = xiiRenderPassUtils::Constants(builder, "ParticleSimConstants", sizeof(data.m_Constants));
+    if (m_bUseWorldTime)
+    {
+      builder.SetPassFramePreparation([&data](xiiRenderGraph&, const xiiView* pView, xiiStringBuilder& ref_error) {
+        if (pView == nullptr || pView->GetWorld() == nullptr)
+        {
+          ref_error = "Particle integration requires a current world clock.";
+          return XII_FAILURE;
+        }
+        data.m_Constants.DeltaTimeS = xiiMath::Clamp(static_cast<float>(pView->GetWorld()->GetClock().GetTimeDiff().GetSeconds()), 0.0f, 1.0f / 15.0f);
+        return XII_SUCCESS;
+      });
+    } }, [](const Data& data, xiiRenderGraphPassContext& execute) {
     auto& commands = execute.GetCommandList();
     {
       xiiGALMapHelper<xiiParticleIntegrationConstants> mapped(commands, execute.GetBuffer(data.m_Buffer), xiiGALMapType::Write, xiiGALMapFlags::Discard);
