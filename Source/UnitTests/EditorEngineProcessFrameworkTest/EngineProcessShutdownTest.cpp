@@ -235,7 +235,8 @@ XII_CREATE_SIMPLE_TEST(EngineProcessLifecycle, ReflectedContractsSurviveRegistry
   if (!XII_TEST_BOOL(pumpUntil(connected)))
     return;
 
-  bool                                                                 bReceived = false;
+  bool                                                                 bReceived       = false;
+  bool                                                                 bReceivedChange = false;
   xiiEvent<const xiiProcessCommunicationChannel::Event&>::Unsubscriber subscription;
   server.m_Events.AddEventHandler([&](const xiiProcessCommunicationChannel::Event& event) {
     if (const auto* message = xiiDynamicCast<const xiiUpdateReflectionTypeMsgToEditor*>(event.m_pMessage))
@@ -250,6 +251,15 @@ XII_CREATE_SIMPLE_TEST(EngineProcessLifecycle, ReflectedContractsSurviveRegistry
           XII_TEST_BOOL(property.GetValue(0)->GetDynamicRTTI() == xiiGetStaticRTTI<xiiReadOnlyAttribute>());
       }
     }
+    if (const auto* message = xiiDynamicCast<const xiiEntityMsgToEngine*>(event.m_pMessage))
+    {
+      bReceivedChange = true;
+      XII_TEST_BOOL(bReceived);
+      XII_TEST_STRING(message->m_Change.m_Change.m_sProperty, "Name");
+      XII_TEST_BOOL(message->m_Change.m_Change.m_Value == xiiVariant("Synchronized"));
+      if (XII_TEST_INT(message->m_Change.m_Steps.GetCount(), 1))
+        XII_TEST_STRING(message->m_Change.m_Steps[0].m_sProperty, "Children");
+    }
   },
                                   subscription);
   xiiUpdateReflectionTypeMsgToEditor descriptor;
@@ -261,7 +271,12 @@ XII_CREATE_SIMPLE_TEST(EngineProcessLifecycle, ReflectedContractsSurviveRegistry
   property.m_Flags                = xiiPropertyFlags::StandardType;
   xiiReadOnlyAttribute* attribute = xiiGetStaticRTTI<xiiReadOnlyAttribute>()->GetAllocator()->Allocate<xiiReadOnlyAttribute>();
   property.Insert(0, attribute);
-  if (XII_TEST_BOOL(client.SendMessage(&descriptor)))
-    XII_TEST_BOOL(pumpUntil([&] { return bReceived; }));
+  xiiEntityMsgToEngine change;
+  change.m_Change.m_Change.m_Operation = xiiObjectChangeType::PropertySet;
+  change.m_Change.m_Change.m_sProperty = "Name";
+  change.m_Change.m_Change.m_Value     = "Synchronized";
+  change.m_Change.m_Steps.PushBack({"Children", xiiInt32(0)});
+  if (XII_TEST_BOOL(client.SendMessage(&descriptor)) && XII_TEST_BOOL(client.SendMessage(&change)))
+    XII_TEST_BOOL(pumpUntil([&] { return bReceivedChange; }));
 }
 #endif

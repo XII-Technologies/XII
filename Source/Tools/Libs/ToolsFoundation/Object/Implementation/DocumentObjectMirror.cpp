@@ -25,10 +25,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiObjectChange, xiiNoBase, 1, xiiRTTIDefaultAll
 XII_END_STATIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiObjectChange::xiiObjectChange(const xiiObjectChange&)
-{
-  XII_REPORT_FAILURE("Not supported!");
-}
+xiiObjectChange::xiiObjectChange(const xiiObjectChange&) = default;
 
 void xiiObjectChange::GetGraph(xiiAbstractObjectGraph& ref_graph) const
 {
@@ -63,10 +60,7 @@ void xiiObjectChange::operator=(xiiObjectChange&& rhs)
   m_GraphData = std::move(rhs.m_GraphData);
 }
 
-void xiiObjectChange::operator=(xiiObjectChange& rhs)
-{
-  XII_REPORT_FAILURE("Not supported!");
-}
+xiiObjectChange& xiiObjectChange::operator=(const xiiObjectChange&) = default;
 
 
 xiiDocumentObjectMirror::xiiDocumentObjectMirror()

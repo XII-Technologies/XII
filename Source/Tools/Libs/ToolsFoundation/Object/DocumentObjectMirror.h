@@ -19,10 +19,10 @@ public:
   xiiObjectChange() = default;
   xiiObjectChange(const xiiObjectChange&);
   xiiObjectChange(xiiObjectChange&& rhs);
-  void operator=(xiiObjectChange&& rhs);
-  void operator=(xiiObjectChange& rhs);
-  void GetGraph(xiiAbstractObjectGraph& ref_graph) const;
-  void SetGraph(xiiAbstractObjectGraph& ref_graph);
+  void             operator=(xiiObjectChange&& rhs);
+  xiiObjectChange& operator=(const xiiObjectChange& rhs);
+  void             GetGraph(xiiAbstractObjectGraph& ref_graph) const;
+  void             SetGraph(xiiAbstractObjectGraph& ref_graph);
 
   xiiUuid                                m_Root;      //< The object that is the parent of the op, namely the parent heap object we can store a pointer to.
   xiiHybridArray<xiiPropertyPathStep, 2> m_Steps;     //< Path from root to target of change.
