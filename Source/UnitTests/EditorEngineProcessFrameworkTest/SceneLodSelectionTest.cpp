@@ -136,7 +136,7 @@ XII_CREATE_SIMPLE_TEST(NativeSceneLod, Selection)
     cache.BeginFrame(frame, completed);
     graph.BeginSetup(frame);
     const auto                  uploaded  = xiiGeometryResidencyManager::AddUploadPass(graph, frame);
-    const auto                  materials = xiiMaterialManager::AddUploadPasses(graph);
+    const auto                  materials = xiiMaterialManager::DeclareUploadPass(graph);
     xiiRenderGraphTextureHandle hiZ;
     if (useHiZ)
     {

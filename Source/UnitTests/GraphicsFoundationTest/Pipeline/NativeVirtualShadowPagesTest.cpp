@@ -133,7 +133,7 @@ XII_CREATE_SIMPLE_TEST(NativeVirtualShadowPages, ResourceRasterAndRevisionSafeCo
     graph.BeginSetup(frame.GetFrameIndex());
     xiiGeometryResidencyManager::ProcessStreaming(frame.GetFrameIndex(), frame.GetCompletedFrame(), xiiMath::MaxValue<xiiUInt64>());
     const auto geometry  = xiiGeometryResidencyManager::AddUploadPass(graph, frame.GetFrameIndex());
-    const auto materials = xiiMaterialManager::AddUploadPasses(graph);
+    const auto materials = xiiMaterialManager::DeclareUploadPass(graph);
     if (!XII_TEST_RESULT(tables.Build(nullptr, graph, context.GetBlackboard())))
       return;
     const auto residency = tables.GetInterfaceBinding(tables.GetPipeline()->FindInterface("Residency", false))->m_pFrameData.Downcast<const xiiVirtualShadowResidencySnapshot>();

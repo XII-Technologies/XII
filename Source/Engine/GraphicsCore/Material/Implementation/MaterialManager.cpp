@@ -414,7 +414,7 @@ void xiiMaterialManager::ReleaseMaterialResource(const xiiMaterialResourceHandle
   s_pState->m_ResourceMaterials.Remove(hMaterial);
 }
 
-xiiRenderGraphBufferHandle xiiMaterialManager::AddUploadPass(xiiRenderGraph& graph)
+xiiMaterialGpuStorage::UploadHandles xiiMaterialManager::DeclareUploadPass(xiiRenderGraph& graph)
 {
   if (EnsureInitialized().Failed())
     return {};
@@ -422,18 +422,7 @@ xiiRenderGraphBufferHandle xiiMaterialManager::AddUploadPass(xiiRenderGraph& gra
   if (!IsInitialized())
     return {};
   XII_LOCK(s_pState->m_Mutex);
-  return s_pState->m_pSystem->AddUploadPass(graph);
-}
-
-xiiMaterialGpuStorage::UploadHandles xiiMaterialManager::AddUploadPasses(xiiRenderGraph& graph)
-{
-  if (EnsureInitialized().Failed())
-    return {};
-  XII_ASSERT_DEV(IsInitialized(), "Material manager must be initialized before adding upload passes.");
-  if (!IsInitialized())
-    return {};
-  XII_LOCK(s_pState->m_Mutex);
-  return s_pState->m_pSystem->AddUploadPasses(graph);
+  return s_pState->m_pSystem->DeclareUploadPass(graph);
 }
 
 xiiResult xiiMaterialManager::ExtractRenderData(xiiMaterialGpuHandle handle, xiiMaterialRenderData& out_renderData)

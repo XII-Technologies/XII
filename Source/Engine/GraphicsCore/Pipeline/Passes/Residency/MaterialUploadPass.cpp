@@ -19,7 +19,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMaterialUploadPass, 1, xiiRTTIDefaultAllocat
 xiiResult xiiMaterialUploadPass::Build(xiiRenderPipelinePassContext& context)
 {
   xiiRenderPassResourceScope scope(context);
-  const auto                 uploaded = xiiMaterialManager::AddUploadPasses(context.m_Graph);
+  const auto                 uploaded = xiiMaterialManager::DeclareUploadPass(context.m_Graph);
   if (!uploaded.m_hSurfaceData.IsValid())
     return context.ReportFailure("Could not publish device material residency.");
   return context.SetOutput(m_Materials, uploaded.m_hSurfaceData);

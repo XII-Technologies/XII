@@ -7,11 +7,87 @@
 #include <Foundation/Threading/AtomicInteger.h>
 #include <Foundation/Threading/TaskSystem.h>
 #include <Foundation/Types/ScopeExit.h>
+#include <GraphicsCore/Material/MaterialGpuStorage.h>
 #include <GraphicsCore/Pipeline/RenderGraphManager.h>
+#include <GraphicsFoundationTest/TestingEnvironment/BufferReadback.h>
 #include <GraphicsFoundationTest/TestingEnvironment/RenderGraphTestContext.h>
 #include <GraphicsFoundationTest/TestingEnvironment/TextureReadback.h>
 
 XII_CREATE_SIMPLE_TEST_GROUP(NativeRecording);
+
+XII_CREATE_SIMPLE_TEST(NativeRecording, RetainedMaterialUploads)
+{
+  xiiGPUTestingEnvironment environment;
+  if (!XII_TEST_RESULT(environment.Initialize(false, false)))
+    return;
+  xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
+  xiiStartup::StartupHighLevelSystems();
+  XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiFrameAllocator::Reset(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
+
+  xiiMaterialGpuStorage     storage;
+  xiiRenderGraphTestContext context;
+  if (!XII_TEST_RESULT(storage.Initialize(environment.GetDevice(), {.m_uiMaxMaterials = 4U})) ||
+      !XII_TEST_RESULT(context.Initialize("Retained material uploads")))
+    return;
+
+  xiiMaterialSchemaDescription description;
+  description.m_sName = "Retained Material Upload";
+  description.AddParameter("BaseColor", xiiMaterialParameterType::Color, xiiColor(1, 0, 0));
+  xiiSharedPtr<xiiMaterialSchema>   pSchema   = XII_DEFAULT_NEW(xiiMaterialSchema);
+  xiiSharedPtr<xiiMaterialInstance> pMaterial = XII_DEFAULT_NEW(xiiMaterialInstance);
+  if (!XII_TEST_RESULT(pSchema->Build(description)) || !XII_TEST_RESULT(pMaterial->Initialize(pSchema, {})))
+    return;
+  const auto material = storage.RegisterMaterial(pMaterial);
+  if (!XII_TEST_BOOL(!material.IsInvalidated()))
+    return;
+
+  auto&                      graph = context.GetGraph();
+  auto&                      cache = context.GetResourceCache();
+  xiiRenderGraphBufferHandle surface;
+  for (xiiUInt32 i = 0; i < 3; ++i)
+  {
+    xiiRenderGraphFrame frame;
+    if (!XII_TEST_RESULT(frame.Begin()))
+      return;
+    cache.BeginFrame(frame.GetFrameIndex(), frame.GetCompletedFrame());
+    XII_SCOPE_EXIT(cache.EndFrame(); frame.End());
+
+    const xiiColor color(1.0f - i * 0.5f, 0.0f, i * 0.5f);
+    XII_TEST_RESULT(pMaterial->SetParameter("BaseColor", color));
+    if (i == 0)
+    {
+      graph.BeginSetup(frame.GetFrameIndex());
+      surface = storage.DeclareUploadPass(graph).m_hSurfaceData;
+      XII_TEST_BOOL(surface == storage.DeclareUploadPass(graph).m_hSurfaceData);
+      graph.EndSetup();
+      if (!XII_TEST_RESULT(graph.Compile({}, nullptr, environment.GetDevice())))
+        return;
+    }
+    else
+      graph.BeginExecutionFrame(frame.GetFrameIndex());
+
+    if (!XII_TEST_RESULT(graph.Execute(environment.GetDevice(), nullptr, &context.GetBlackboard(), &cache)))
+      return;
+    const auto            pSurface  = graph.GetExportedBuffer(surface);
+    const xiiUInt32       uiElement = storage.GetSurfaceBaseIndex(frame.GetFrameIndex()) + material.GetInternalID().m_InstanceIndex;
+    xiiGpuSurfaceMaterial record;
+    if (!xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), pSurface.Borrow(), xiiUInt64(uiElement) * sizeof(record), record))
+      return;
+    XII_TEST_BOOL(record.BaseColorOpacity == xiiVec4(color.r, color.g, color.b, color.a));
+    XII_TEST_INT(graph.GetPlanGeneration(), 1U);
+  }
+
+  storage.Shutdown();
+  xiiRenderGraphFrame frame;
+  if (!XII_TEST_RESULT(frame.Begin()))
+    return;
+  cache.BeginFrame(frame.GetFrameIndex(), frame.GetCompletedFrame());
+  XII_SCOPE_EXIT(cache.EndFrame(); frame.End());
+  graph.BeginExecutionFrame(frame.GetFrameIndex());
+  xiiStringBuilder error;
+  XII_TEST_BOOL(graph.Execute(environment.GetDevice(), nullptr, &context.GetBlackboard(), &cache, nullptr, &error).Failed());
+  XII_TEST_BOOL(error.FindSubString("material storage that declared this graph has retired") != nullptr);
+}
 XII_CREATE_SIMPLE_TEST(NativeRecording, FailureStopsDependentOutputAndRecovers)
 {
   xiiGPUTestingEnvironment environment;

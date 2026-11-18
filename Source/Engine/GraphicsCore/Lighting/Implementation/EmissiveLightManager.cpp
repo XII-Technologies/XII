@@ -6,6 +6,7 @@
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Threading/Mutex.h>
 #include <GraphicsCore/Lighting/EmissiveLightManager.h>
+#include <GraphicsCore/Material/MaterialManager.h>
 #include <GraphicsCore/Pipeline/PipelineStateCache.h>
 #include <GraphicsCore/Shader/ShaderPermutationResource.h>
 #include <GraphicsCore/Shader/ShaderPermutationUtilities.h>
@@ -420,7 +421,7 @@ xiiEmissiveLightManager::BuildOutputs xiiEmissiveLightManager::AddBuildPass(xiiR
     {
       xiiGALMapHelper<xiiEmissiveLightBuildConstants> constants(cmd, context.GetBuffer(data.m_hConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
       constants->GeometryBaseIndex  = data.m_Description.m_Geometry.m_uiGeometryBaseIndex;
-      constants->MaterialBaseIndex  = data.m_Description.m_Materials.m_uiSurfaceBaseIndex;
+      constants->MaterialBaseIndex  = data.m_bRayScene ? 0U : xiiMaterialManager::GetGpuStorage().GetSurfaceBaseIndex(context.GetFrameIndex());
       constants->InstanceCount      = data.m_Description.m_uiInstanceCount;
       constants->MaxTriangleCount   = data.m_uiTriangleCapacity;
       constants->VertexStride       = data.m_Description.m_uiVertexStride;

@@ -23,7 +23,7 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiMaterialRenderData);
 /// Typical frame flow:
 /// 1. BeginFrame() retires slots whose last GPU frame completed.
 /// 2. Simulation threads mutate xiiMaterialInstance objects by stable parameter ID.
-/// 3. AddUploadPass() captures revisions and declares transfer-to-shader synchronization.
+/// 3. DeclareUploadPass() declares transfer-to-shader synchronization for current-frame uploads.
 /// 4. ExtractRenderData() produces compact draw/dispatch records for render extraction.
 class XII_GRAPHICSCORE_DLL xiiMaterialSystem
 {
@@ -48,8 +48,7 @@ private:
   [[nodiscard]] bool                 ReplaceMaterial(xiiMaterialGpuHandle handle, xiiSharedPtr<xiiMaterialInstance> pInstance);
   void                               UnregisterMaterial(xiiMaterialGpuHandle handle);
 
-  [[nodiscard]] xiiMaterialGpuStorage::UploadHandles AddUploadPasses(xiiRenderGraph& graph);
-  [[nodiscard]] xiiRenderGraphBufferHandle           AddUploadPass(xiiRenderGraph& graph);
+  [[nodiscard]] xiiMaterialGpuStorage::UploadHandles DeclareUploadPass(xiiRenderGraph& graph);
   xiiResult                                          ExtractRenderData(xiiMaterialGpuHandle handle, xiiMaterialRenderData& out_renderData) const;
 
   [[nodiscard]] xiiMaterialGpuStorage&       GetGpuStorage() { return m_GpuStorage; }

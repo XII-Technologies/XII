@@ -225,7 +225,7 @@ static void TestLodSections(bool enableMeshShaders)
     cache.BeginFrame(frame, completed);
     graph.BeginSetup(frame);
     const auto                  geometryUpload = xiiGeometryResidencyManager::AddUploadPass(graph, frame);
-    const auto                  materialUpload = xiiMaterialManager::AddUploadPasses(graph);
+    const auto                  materialUpload = xiiMaterialManager::DeclareUploadPass(graph);
     xiiRenderGraphTextureHandle hiZ;
     if (expectedCandidates == 0)
     {

@@ -3,6 +3,7 @@
 #pragma once
 #include <GraphicsCore/Geometry/GeometryResidency.h>
 #include <GraphicsCore/Material/MaterialGpuStorage.h>
+#include <GraphicsCore/Material/MaterialManager.h>
 #include <GraphicsCore/Pipeline/Passes/Geometry/DepthRasterPass.h>
 #include <GraphicsCore/Pipeline/Passes/Geometry/GBufferRasterPass.h>
 #include <GraphicsCore/Pipeline/Passes/Geometry/SurfaceRasterConstantsPass.h>
@@ -75,7 +76,7 @@ inline xiiResult xiiTestNativeSurfaceQuery(xiiRenderGraph& graph, xiiView* view,
       data.m_Snapshot.CurrentJitter = raster.m_vCurrentJitter;
       data.m_Snapshot.PreviousJitter = raster.m_vPreviousJitter;
       data.m_Snapshot.GeometryBaseIndex = geometry.m_uiGeometryBaseIndex;
-      data.m_Snapshot.MaterialBaseIndex = materials.m_uiSurfaceBaseIndex;
+      data.m_Snapshot.MaterialBaseIndex            = xiiMaterialManager::GetGpuStorage().GetSurfaceBaseIndex(graph.GetFrameIndex());
       data.m_Snapshot.VertexStride = raster.m_uiVertexStride;
       data.m_Snapshot.NormalOffset = raster.m_uiNormalOffset;
       data.m_Snapshot.TangentOffset = raster.m_uiTangentOffset;

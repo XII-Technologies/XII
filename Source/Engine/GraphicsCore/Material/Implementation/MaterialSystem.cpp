@@ -59,16 +59,10 @@ void xiiMaterialSystem::UnregisterMaterial(xiiMaterialGpuHandle handle)
   m_GpuStorage.UnregisterMaterial(handle, m_uiFrameIndex);
 }
 
-xiiRenderGraphBufferHandle xiiMaterialSystem::AddUploadPass(xiiRenderGraph& graph)
+xiiMaterialGpuStorage::UploadHandles xiiMaterialSystem::DeclareUploadPass(xiiRenderGraph& graph)
 {
   XII_ASSERT_DEV(m_bInitialized, "Material system must be initialized before adding graph passes.");
-  return m_GpuStorage.AddUploadPass(graph, m_uiFrameIndex);
-}
-
-xiiMaterialGpuStorage::UploadHandles xiiMaterialSystem::AddUploadPasses(xiiRenderGraph& graph)
-{
-  XII_ASSERT_DEV(m_bInitialized, "Material system must be initialized before adding graph passes.");
-  return m_GpuStorage.AddUploadPasses(graph, m_uiFrameIndex);
+  return m_GpuStorage.DeclareUploadPass(graph);
 }
 
 xiiResult xiiMaterialSystem::ExtractRenderData(xiiMaterialGpuHandle handle, xiiMaterialRenderData& out_renderData) const
