@@ -125,13 +125,13 @@ xiiGALCommandBufferPoolVulkan::ThreadPool& xiiGALCommandBufferPoolVulkan::GetOrC
       vkCommandBufferAllocationInfo.commandPool = threadPool.m_vkSecondaryPool;
       vkCommandBufferAllocationInfo.level       = vk::CommandBufferLevel::eSecondary;
 
+      VK_ASSERT_DEV(vkLogicalDevice.allocateCommandBuffers(&vkCommandBufferAllocationInfo, tmp.GetData(), m_pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+
       {
         XII_LOCK(threadPool.m_Mutex);
 
         threadPool.m_SecondaryFreeCommandBuffers.PushBackRange(tmp);
       }
-
-      VK_ASSERT_DEV(vkLogicalDevice.allocateCommandBuffers(&vkCommandBufferAllocationInfo, tmp.GetData(), m_pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
     }
   }
 
