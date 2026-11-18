@@ -31,7 +31,7 @@ public:
     XII_ALWAYS_INLINE ThreadPool() = default;
 
     XII_ALWAYS_INLINE ThreadPool(ThreadPool&& other) noexcept :
-      m_vkPrimaryPool(std::exchange(other.m_vkPrimaryPool, VK_NULL_HANDLE)), m_vkSecondaryPool(std::exchange(other.m_vkSecondaryPool, VK_NULL_HANDLE)), m_PrimaryFreeCommandBuffers(std::move(other.m_PrimaryFreeCommandBuffers)), m_SecondaryFreeCommandBuffers(std::move(other.m_SecondaryFreeCommandBuffers)), m_InFlightCommandBuffers(std::move(other.m_InFlightCommandBuffers))
+      m_vkPrimaryPool(std::exchange(other.m_vkPrimaryPool, VK_NULL_HANDLE)), m_vkSecondaryPool(std::exchange(other.m_vkSecondaryPool, VK_NULL_HANDLE)), m_PrimaryFreeCommandBuffers(std::move(other.m_PrimaryFreeCommandBuffers)), m_SecondaryFreeCommandBuffers(std::move(other.m_SecondaryFreeCommandBuffers)), m_InFlightCommandBuffers(std::move(other.m_InFlightCommandBuffers)), m_pIdleDescriptorPool(std::move(other.m_pIdleDescriptorPool))
     {
       // m_Mutex is default-initialized
     }
@@ -50,6 +50,7 @@ public:
         m_PrimaryFreeCommandBuffers   = std::move(other.m_PrimaryFreeCommandBuffers);
         m_SecondaryFreeCommandBuffers = std::move(other.m_SecondaryFreeCommandBuffers);
         m_InFlightCommandBuffers      = std::move(other.m_InFlightCommandBuffers);
+        m_pIdleDescriptorPool         = std::move(other.m_pIdleDescriptorPool);
 
         // m_Mutex remains default-constructed.
       }
@@ -61,6 +62,7 @@ public:
     xiiDynamicArray<vk::CommandBuffer>     m_PrimaryFreeCommandBuffers;
     xiiDynamicArray<vk::CommandBuffer>     m_SecondaryFreeCommandBuffers;
     xiiDynamicArray<InFlightCommandBuffer> m_InFlightCommandBuffers;
+    xiiUniquePtr<xiiGALDescriptorSetPoolVulkan> m_pIdleDescriptorPool;
     xiiMutex                               m_Mutex;
 
     /// Push a command buffer back into this thread's free list. Immediate return to free-list
@@ -120,6 +122,7 @@ public:
     XII_ALWAYS_INLINE operator vk::CommandBuffer() const { return m_vkCommandBuffer; }
 
     XII_ALWAYS_INLINE vk::CommandBuffer Get() const { return m_vkCommandBuffer; }
+    xiiUniquePtr<xiiGALDescriptorSetPoolVulkan> AcquireDescriptorPool();
 
   private:
     friend class xiiGALCommandBufferPoolVulkan;
@@ -141,11 +144,6 @@ public:
   /// Poll fences and reclaim any completed buffers.
   /// Call at the start of each frame or from a dedicated thread.
   xiiUInt32 ReclaimCompleted();
-
-  /// Resets *all* underlying VkCommandPools, invalidating prerecorded buffers.
-  /// Freelist is cleared; next allocate will re‐create new buffers.
-  /// Hard reset all pools (invalidates *all* buffers, in-flight or free).
-  void ResetPools();
 
 private:
   /// Constructs a multithreaded command‐buffer pool.
@@ -169,8 +167,8 @@ private:
   xiiGALCommandQueueVulkan*  m_pCommandQueueVulkan;
   vk::CommandPoolCreateFlags m_vkCommandPoolCreateFlags;
   xiiUInt32                  m_uiInitialReserveCount;
+  xiiUInt64                  m_uiPoolGeneration = 0U;
 
   xiiMutex                                                m_PoolMutex;
   xiiMap<xiiThreadID, ThreadPool>                         m_CommandBufferPoolsPerThread;
-  xiiMap<xiiThreadID, xiiDynamicArray<vk::CommandBuffer>> m_FreeCommandBuffersPerThread;
 };
