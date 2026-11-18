@@ -165,8 +165,8 @@ XII_CREATE_SIMPLE_TEST(RenderGraphResources, HandleRetirementDuringFrame)
   xiiStartup::StartupHighLevelSystems();
   XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
 
-  bool                                       destroyed = false;
-  const xiiRenderGraphManager::BuildDelegate build     = [&](xiiRenderGraph& graph, xiiRenderGraphBlackboard&, const xiiView*) -> xiiResult {
+  bool                                             destroyed = false;
+  const xiiRenderGraphManager::DeclarationDelegate build     = [&](xiiRenderGraph& graph, xiiRenderGraphBlackboard&, const xiiView*) -> xiiResult {
     struct Data
     {
       bool* m_pDestroyed = nullptr;
@@ -197,6 +197,10 @@ XII_CREATE_SIMPLE_TEST(RenderGraphResources, HandleRetirementDuringFrame)
   XII_TEST_BOOL(xiiRenderGraphManager::DestroyGraph(original).Failed());
   XII_TEST_RESULT(xiiRenderGraphManager::ExecuteGraph(frame, replacement, nullptr));
   frame.End();
+  if (!XII_TEST_RESULT(frame.Begin(1U)))
+  {
+    return;
+  }
   XII_TEST_BOOL(destroyed);
   XII_TEST_BOOL(xiiRenderGraphManager::GetGraph(replacement) != nullptr);
 }

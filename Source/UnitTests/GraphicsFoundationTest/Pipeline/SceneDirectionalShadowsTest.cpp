@@ -513,7 +513,7 @@ XII_CREATE_SIMPLE_TEST(SceneDirectionalShadows, DeviceAtlasLimitAndAbsentWorkloa
       xiiStaticArray<xiiShadowCascadeDescription, 4> cascades;
       cascades.SetCount(4);
       const auto limit     = environment.GetDevice()->GetGraphicsDeviceAdapterProperties().m_TextureProperties.m_uiMaxTexture2DDimension;
-      binding.m_pFrameData = XII_DEFAULT_NEW(xiiShadowCascadeSnapshot, graph.GetSetupSerial(), cascades, limit, xiiRenderGraphBufferHandle());
+      binding.m_pFrameData = XII_DEFAULT_NEW(xiiShadowCascadeSnapshot, graph.GetFrameGeneration(), cascades, limit, xiiRenderGraphBufferHandle());
     }
     const xiiRenderPipelineInputBinding supplied(graph, instance.GetPipeline()->FindInterface("Cascades", true), binding);
     const auto                          built = instance.Build(nullptr, graph, context.GetBlackboard(), {}, xiiMakeArrayPtr(&supplied, 1));

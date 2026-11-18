@@ -50,6 +50,7 @@ XII_CREATE_SIMPLE_TEST(EditorViews, WorldRenderFrames)
   xiiCamera camera;
   camera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovY, 60, 0.1f, 100);
   xiiUniquePtr<xiiWorld> worlds[2];
+  xiiView*               views[2]      = {};
   xiiUInt64              frames[2]     = {};
   xiiUInt32              executions[2] = {};
   for (xiiUInt32 i = 0; i < 2; ++i)
@@ -60,6 +61,7 @@ XII_CREATE_SIMPLE_TEST(EditorViews, WorldRenderFrames)
     worlds[i]->SetWorldSimulationEnabled(false);
     xiiView* view = nullptr;
     worlds[i]->GetOrCreateModule<xiiRenderWorldModule>()->CreateView("Concurrent view", view);
+    views[i] = view;
     xiiGALTextureCreationDescription target;
     target.m_Type      = xiiGALResourceDimension::Texture2D;
     target.m_Size      = {8, 8};
@@ -79,65 +81,91 @@ XII_CREATE_SIMPLE_TEST(EditorViews, WorldRenderFrames)
           ++executions[i]; }, true);
     });
   }
-  xiiUInt64  registeredFrame = 0;
-  const auto registered      = xiiRenderGraphManager::CreateGraph("Interleaved registered frame", [&](xiiRenderGraph& graph, xiiRenderGraphBlackboard&, const xiiView*) -> xiiResult {
+  xiiGALBufferCreationDescription stampDescription;
+  stampDescription.m_uiSize              = sizeof(xiiUInt64);
+  stampDescription.m_BindFlags           = xiiGALBindFlags::ShaderResource;
+  stampDescription.m_Mode                = xiiGALBufferMode::Structured;
+  stampDescription.m_uiElementByteStride = sizeof(xiiUInt64);
+  const auto pFirstStamp                 = environment.GetDevice()->CreateBuffer(stampDescription);
+  const auto pSecondStamp                = environment.GetDevice()->CreateBuffer(stampDescription);
+  if (!XII_TEST_BOOL(pFirstStamp != nullptr && pSecondStamp != nullptr))
+  {
+    return;
+  }
+  xiiSharedPtr<xiiGALBuffer> pCurrentStamp;
+  xiiUInt32                  uiStampSequence = 0U;
+  xiiUInt64                  registeredFrame = 0;
+  const auto                 registered      = xiiRenderGraphManager::CreateGraph("Interleaved registered frame", [&](xiiRenderGraph& graph, xiiRenderGraphBlackboard&, const xiiView*) -> xiiResult {
     struct Stamp
     {
       xiiRenderGraphBufferHandle m_Buffer;
-      xiiUInt64                  m_uiFrame = 0;
     };
     graph.AddPass<Stamp>("GPU frame stamp", xiiGALCommandQueueFlags::Graphics, [&](Stamp& data, xiiRenderGraphBuilder& builder) {
-      xiiGALBufferCreationDescription buffer;
-      buffer.m_uiSize = sizeof(xiiUInt64);
-      buffer.m_BindFlags = xiiGALBindFlags::ShaderResource;
-      buffer.m_Mode = xiiGALBufferMode::Structured;
-      buffer.m_uiElementByteStride = sizeof(xiiUInt64);
-      data.m_Buffer = builder.WriteBuffer("Frame stamp", buffer, xiiGALResourceStateFlags::CopyDestination);
-      builder.ExportBuffer(data.m_Buffer, xiiGALResourceStateFlags::CopySource);
-      data.m_uiFrame = graph.GetFrameIndex(); }, [&](const Stamp& data, xiiRenderGraphPassContext& context) {
+      data.m_Buffer = builder.WriteBuffer(builder.DeclareImportedBuffer("Frame stamp", stampDescription), xiiGALResourceStateFlags::CopyDestination);
+      builder.ExportBuffer(data.m_Buffer, xiiGALResourceStateFlags::CopySource); }, [&](const Stamp& data, xiiRenderGraphPassContext& context) {
       registeredFrame = context.GetFrameIndex();
-      context.GetCommandList().UpdateBuffer(context.GetBuffer(data.m_Buffer), 0, xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(&data.m_uiFrame), sizeof(data.m_uiFrame))); });
-    return XII_SUCCESS;
-  });
+      context.GetCommandList().UpdateBuffer(context.GetBuffer(data.m_Buffer), 0, xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(&registeredFrame), sizeof(registeredFrame))); });
+    return XII_SUCCESS; }, [&](xiiRenderGraph& graph, xiiRenderGraphBlackboard&, const xiiView*) {
+    pCurrentStamp = uiStampSequence++ % 2U == 0U ? pFirstStamp : pSecondStamp;
+    return graph.BindImportedBuffer(graph.FindBuffer("Frame stamp"), pCurrentStamp); });
   XII_SCOPE_EXIT(xiiRenderGraphManager::DestroyGraph(registered).AssertSuccess());
   xiiRenderGraphFrame inactive;
   XII_TEST_BOOL(inactive.Begin(0).Failed());
   XII_TEST_BOOL(xiiRenderGraphManager::ExecuteGraph(inactive, registered, nullptr).Failed());
-  xiiUInt64 previousFrame = 0;
-  for (xiiUInt32 iteration = 0; iteration < 8; ++iteration)
+  constexpr xiiUInt32 uiFrameCount    = 1000U;
+  xiiUInt64           uiPreviousFrame = 0;
+  for (xiiUInt32 iteration = 0; iteration < uiFrameCount; ++iteration)
   {
+    if (iteration == 4U)
+    {
+      XII_LOCK(worlds[0]->GetWriteMarker());
+      views[0]->SetViewport({0, 0, 4, 4});
+    }
+    camera.LookAt(xiiVec3(0.0F, float(iteration), 0.0F), xiiVec3(1.0F, float(iteration), 0.0F), xiiVec3(0.0F, 0.0F, 1.0F));
     const auto group = xiiTaskSystem::CreateTaskGroup(xiiTaskPriority::EarlyThisFrame);
     for (auto& world : worlds)
       xiiTaskSystem::AddTaskToGroup(group, world->GetUpdateTask());
     xiiTaskSystem::StartTaskGroup(group);
     xiiTaskSystem::WaitForGroup(group);
-    XII_TEST_BOOL(frames[0] > previousFrame && frames[1] > previousFrame);
+    XII_TEST_BOOL(frames[0] > uiPreviousFrame && frames[1] > uiPreviousFrame);
     XII_TEST_BOOL(frames[0] != frames[1]);
     XII_TEST_INT(executions[0], iteration + 1);
     XII_TEST_INT(executions[1], iteration + 1);
-    previousFrame = xiiMath::Max(frames[0], frames[1]);
+    XII_TEST_INT(views[0]->GetRenderGraph()->GetPlanGeneration(), iteration < 4U ? 1U : 2U);
+    XII_TEST_INT(views[1]->GetRenderGraph()->GetPlanGeneration(), 1U);
+    uiPreviousFrame = xiiMath::Max(frames[0], frames[1]);
     {
       xiiRenderGraphFrame frame;
       if (!XII_TEST_RESULT(frame.Begin(2)))
         return;
-      XII_TEST_INT(frame.GetFrameIndex(), previousFrame + 1);
+      XII_TEST_INT(frame.GetFrameIndex(), uiPreviousFrame + 1);
       XII_TEST_BOOL(frame.GetCompletedFrame() >= frame.GetFrameIndex() - 2);
       xiiRenderGraphFrame nested;
       XII_TEST_BOOL(nested.Begin().Failed());
       XII_TEST_BOOL(frame.Begin().Failed());
       XII_TEST_RESULT(xiiRenderGraphManager::ExecuteGraph(frame, registered, nullptr));
-      XII_TEST_INT(registeredFrame, previousFrame + 1);
+      XII_TEST_INT(registeredFrame, uiPreviousFrame + 1);
     }
-    auto*     graph         = xiiRenderGraphManager::GetGraph(registered);
-    xiiUInt64 uploadedFrame = 0;
-    if (xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), graph->GetExportedBuffer(graph->FindBuffer("Frame stamp")).Borrow(), 0, uploadedFrame))
-      XII_TEST_INT(uploadedFrame, registeredFrame);
-    previousFrame = registeredFrame;
+    auto* graph = xiiRenderGraphManager::GetGraph(registered);
+    XII_TEST_INT(graph->GetPlanGeneration(), 1U);
+    XII_TEST_INT(graph->GetStatistics().m_uiPlanReuseCount, iteration);
+    XII_TEST_INT(graph->GetStatistics().m_uiStructuralBuildCount, 1U);
+    xiiUInt64  uploadedFrame = 0;
+    const auto pResult       = graph->GetExportedBuffer(graph->FindBuffer("Frame stamp"));
+    XII_TEST_BOOL(pResult == pCurrentStamp);
+    if (iteration < 8U || iteration == uiFrameCount - 1U)
+    {
+      if (xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), pResult.Borrow(), 0, uploadedFrame))
+      {
+        XII_TEST_INT(uploadedFrame, registeredFrame);
+      }
+    }
+    uiPreviousFrame = registeredFrame;
     // Empty and early-return scopes still capture the queue timeline, keeping ring waits valid.
     {
       xiiRenderGraphFrame empty;
       XII_TEST_RESULT(empty.Begin(1));
-      XII_TEST_INT(empty.GetFrameIndex(), ++previousFrame);
+      XII_TEST_INT(empty.GetFrameIndex(), ++uiPreviousFrame);
       empty.End();
       empty.End();
       XII_TEST_BOOL(!empty.IsActive());
@@ -168,26 +196,28 @@ XII_CREATE_SIMPLE_TEST(EditorViews, WorldRenderFrames)
     xiiRenderGraphFrame failed;
     if (!XII_TEST_RESULT(failed.Begin(1)))
       return;
+    XII_TEST_RESULT(xiiRenderGraphManager::InvalidateGraph(registered, "Frame stamp contract changed"));
     XII_TEST_RESULT(xiiRenderGraphManager::ExecuteGraph(failed, registered, nullptr));
+    XII_TEST_INT(xiiRenderGraphManager::GetGraph(registered)->GetPlanGeneration(), 2U);
     XII_TEST_BOOL(xiiRenderGraphManager::ExecuteGraph(failed, cyclic, nullptr, {}, &error).Failed());
   }
   XII_TEST_BOOL(error.FindSubString("dependency cycle") != nullptr);
-  XII_TEST_INT(registeredFrame, ++previousFrame);
+  XII_TEST_INT(registeredFrame, ++uiPreviousFrame);
   XII_TEST_RESULT(xiiRenderGraphManager::DestroyGraph(cyclic));
   {
     xiiRenderGraphFrame recovery;
     XII_TEST_RESULT(recovery.Begin(1));
-    XII_TEST_INT(recovery.GetFrameIndex(), previousFrame + 1);
-    XII_TEST_BOOL(recovery.GetCompletedFrame() >= previousFrame);
+    XII_TEST_INT(recovery.GetFrameIndex(), uiPreviousFrame + 1);
+    XII_TEST_BOOL(recovery.GetCompletedFrame() >= uiPreviousFrame);
     XII_TEST_RESULT(xiiRenderGraphManager::ExecuteGraph(recovery, registered, nullptr));
-    previousFrame = registeredFrame;
+    uiPreviousFrame = registeredFrame;
   }
   worlds[0].Clear();
   {
     XII_LOCK(worlds[1]->GetWriteMarker());
     worlds[1]->Update();
   }
-  XII_TEST_BOOL(frames[1] > previousFrame);
+  XII_TEST_BOOL(frames[1] > uiPreviousFrame);
 }
 
 XII_CREATE_SIMPLE_TEST(EditorViews, DisabledViewsDoNotRecordFrames)
@@ -433,13 +463,11 @@ XII_CREATE_SIMPLE_TEST(EditorViews, ViewLifecycle)
       };
       xiiUInt32 firstExecutions = 0, secondExecutions = 0;
       auto      configure = [&](xiiView& view, xiiUInt32& executions) {
-        view.SetRenderGraphBuilder([&texture, &executions](xiiView&, xiiRenderGraph& graph, xiiRenderGraphBlackboard&) {
-          graph.AddPass<ClearPassData>("Editor output test", xiiGALCommandQueueFlags::Graphics, [&texture](ClearPassData& data, xiiRenderGraphBuilder& builder) {
-              auto imported = builder.ImportTexture("Editor output", texture, texture->GetResourceState());
+        view.SetRenderGraphBuilder([&texture, &executions](xiiView&, xiiRenderGraph& graph, xiiRenderGraphBlackboard&) { graph.AddPass<ClearPassData>("Editor output test", xiiGALCommandQueueFlags::Graphics, [&texture](ClearPassData& data, xiiRenderGraphBuilder& builder) {
+              auto imported = builder.DeclareImportedTexture("Editor output", texture->GetDescription());
               data.m_Target = builder.WriteTexture(imported, xiiGALResourceStateFlags::RenderTarget); }, [&executions](const ClearPassData& data, xiiRenderGraphPassContext& context) {
               ++executions;
-              context.GetCommandList().ClearRenderTargetView(context.GetTexture(data.m_Target)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::Blue); }, true);
-        });
+              context.GetCommandList().ClearRenderTargetView(context.GetTexture(data.m_Target)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::Blue); }, true); }, [&texture](xiiView&, xiiRenderGraph& graph, xiiRenderGraphBlackboard&) { return graph.BindImportedTexture(graph.FindTexture("Editor output"), texture); });
       };
       configure(*firstView, firstExecutions);
       configure(*secondView, secondExecutions);

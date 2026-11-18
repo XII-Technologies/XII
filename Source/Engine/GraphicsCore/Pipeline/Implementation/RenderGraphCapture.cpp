@@ -56,12 +56,23 @@ xiiResult xiiRenderGraphDebug::WriteSnapshot(const ExecutionEvent& event, xiiStr
   writer.AddVariableUInt32("splitBarriers", stats.m_uiSplitBarrierCount);
   writer.AddVariableUInt32("mergeGroups", stats.m_uiMergeGroupCount);
   writer.AddVariableUInt32("submissions", stats.m_uiQueueSubmissionCount);
+  writer.AddVariableUInt32("submitted", stats.m_uiSubmittedCount);
+  writer.AddVariableUInt32("externalFenceWaits", stats.m_uiExternalFenceWaitCount);
   writer.AddVariableUInt32("transientTextures", stats.m_uiTransientTextureCount);
   writer.AddVariableUInt32("transientBuffers", stats.m_uiTransientBufferCount);
   writer.AddVariableUInt32("aliasGroups", stats.m_uiAliasGroupCount);
   writer.AddVariableUInt32("aliasedResources", stats.m_uiAliasedResourceCount);
-  writer.AddVariableBool("cached", stats.m_bUsedCachedCompile);
-  WriteId(writer, "signature", stats.m_uiGraphSignature);
+  WriteId(writer, "structuralGeneration", graph.GetStructuralGeneration());
+  WriteId(writer, "frameGeneration", graph.GetFrameGeneration());
+  WriteId(writer, "planGeneration", stats.m_uiPlanGeneration);
+  WriteId(writer, "structuralBuilds", stats.m_uiStructuralBuildCount);
+  WriteId(writer, "planReuses", stats.m_uiPlanReuseCount);
+  writer.AddVariableUInt32("compiledResources", stats.m_uiCompiledResourceCount);
+  writer.AddVariableString("invalidationReason", graph.GetInvalidationReason());
+  writer.AddVariableDouble("structuralBuildMs", stats.m_StructuralBuildTime.GetMilliseconds());
+  writer.AddVariableDouble("compilationMs", stats.m_CompilationTime.GetMilliseconds());
+  writer.AddVariableDouble("preparationMs", stats.m_FramePreparationTime.GetMilliseconds());
+  writer.AddVariableDouble("resourceResolutionMs", stats.m_ResourceResolutionTime.GetMilliseconds());
   writer.EndObject();
 
   writer.BeginArray("passes");
@@ -173,22 +184,27 @@ xiiResult xiiRenderGraphDebug::WriteSnapshot(const ExecutionEvent& event, xiiStr
   writer.EndArray();
 
   writer.BeginArray("submissions");
-  for (const auto& submission : graph.GetQueueSubmissions())
+  const auto submissions = graph.GetQueueSubmissions();
+  for (xiiUInt32 uiIndex = 0U; uiIndex < submissions.GetCount(); ++uiIndex)
   {
+    const auto& submission = submissions[uiIndex];
     writer.BeginObject();
     writer.AddVariableUInt32("queue", submission.m_uiQueueIndex);
     writer.AddVariableUInt32("flags", submission.m_QueueFlags.GetValue());
-    WriteId(writer, "signal", submission.m_uiSignalValue);
     WriteIndices(writer, "passes", submission.m_PassOrder);
     WriteIndices(writer, "waits", submission.m_WaitSubmissionIndices);
-    writer.BeginArray("waitValues");
-    for (auto value : submission.m_WaitValues)
+    if (const auto* pInfo = graph.GetSubmissionFrameInfo(uiIndex))
     {
-      xiiStringBuilder text;
-      text.SetFormat("{}", value);
-      writer.WriteString(text);
+      WriteId(writer, "signal", pInfo->m_uiSignalValue);
+      writer.BeginArray("waitValues");
+      for (xiiUInt64 uiValue : pInfo->m_ExternalWaitValues)
+      {
+        xiiStringBuilder sValue;
+        sValue.SetFormat("{}", uiValue);
+        writer.WriteString(sValue);
+      }
+      writer.EndArray();
     }
-    writer.EndArray();
     writer.EndObject();
   }
   writer.EndArray();

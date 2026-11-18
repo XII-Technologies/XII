@@ -46,6 +46,6 @@ xiiResult xiiVirtualShadowRasterWorkPass::Build(xiiRenderPipelinePassContext& co
   }
   xiiDynamicArray<xiiVirtualShadowRasterPage> pages;
   xiiVirtualShadowMapManager::GatherRasterPages(projections, light, pages, maxPages);
-  return context.SetOutput(m_Pages, XII_DEFAULT_NEW(xiiVirtualShadowRasterBatch, context.m_Graph.GetSetupSerial(), residency, std::move(pages)));
+  return context.SetOutput(m_Pages, XII_DEFAULT_NEW(xiiVirtualShadowRasterBatch, context.m_Graph.GetFrameGeneration(), residency, std::move(pages)));
 }
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Passes_Shadows_VirtualShadowRasterWorkPass);

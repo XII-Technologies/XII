@@ -220,8 +220,11 @@ public:
   /// An invalid handle restores ordinary camera selection by usage hint.
   void SetRenderConfigurationCamera(const xiiComponentHandle& hCamera) { m_hRenderConfigurationCamera = hCamera; }
 
-  using RenderGraphBuilder = xiiDelegate<void(xiiView&, xiiRenderGraph&, xiiRenderGraphBlackboard&)>;
-  void                      SetRenderGraphBuilder(RenderGraphBuilder builder);
+  using RenderGraphBuilder     = xiiDelegate<void(xiiView&, xiiRenderGraph&, xiiRenderGraphBlackboard&)>;
+  using RenderGraphPreparation = xiiDelegate<xiiResult(xiiView&, xiiRenderGraph&, xiiRenderGraphBlackboard&)>;
+  /// Declares the custom graph once. Refresh imported resources and other dynamic inputs in prepare.
+  void                      SetRenderGraphBuilder(RenderGraphBuilder builder, RenderGraphPreparation prepare = {});
+  void                      InvalidateRenderGraph(xiiStringView sReason);
   const RenderGraphBuilder& GetRenderGraphBuilder() const;
   xiiUInt32                 GetRenderGraphBuilderVersion() const;
 
@@ -267,7 +270,8 @@ private:
   /// Instantiates the selected resource and emits its frame-specific render graph.
   ///        Called by xiiRenderWorldModule::ExecuteRenderGraphs each frame.
   xiiResult BuildRenderPipeline(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
-  xiiResult BuildRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard, const xiiView* pView);
+  xiiResult DeclareRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard, const xiiView* pView);
+  xiiResult PrepareRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard, const xiiView* pView);
 
   // CPU PID dynamic resolution (runs before BeginSetup)
   void RunDynamicResolutionPID();
@@ -281,12 +285,13 @@ private:
 
   xiiHashedString m_sName;
 
-  xiiUInt32          m_uiRenderGraphBuilderVersion = 0;
-  bool               m_bRenderEnabled              = true;
-  xiiCamera*         m_pCamera                     = nullptr;
-  const xiiCamera*   m_pCullingCamera              = nullptr;
-  const xiiCamera*   m_pLodCamera                  = nullptr;
-  RenderGraphBuilder m_RenderGraphBuilder;
+  xiiUInt32              m_uiRenderGraphBuilderVersion = 0;
+  bool                   m_bRenderEnabled              = true;
+  xiiCamera*             m_pCamera                     = nullptr;
+  const xiiCamera*       m_pCullingCamera              = nullptr;
+  const xiiCamera*       m_pLodCamera                  = nullptr;
+  RenderGraphBuilder     m_RenderGraphBuilder;
+  RenderGraphPreparation m_RenderGraphPreparation;
 
   mutable xiiUInt32 m_uiLastCameraSettingsModification    = 0;
   mutable xiiUInt32 m_uiLastCameraOrientationModification = 0;

@@ -38,7 +38,7 @@ public:
   bool                           m_WrongType = false, m_Stale = false, m_BypassSetter = false;
   xiiResult                      Build(xiiRenderPipelinePassContext& context) override
   {
-    const auto                                     serial = context.m_Graph.GetSetupSerial() - (m_Stale ? 1U : 0U);
+    const auto                                     serial = context.m_Graph.GetFrameGeneration() - (m_Stale ? 1U : 0U);
     xiiSharedPtr<const xiiRenderPipelineFrameData> value;
     if (m_WrongType)
       value = XII_DEFAULT_NEW(xiiTestPipelineOtherValue, serial);
@@ -187,7 +187,7 @@ XII_CREATE_SIMPLE_TEST(Pipeline, FrameDataContractsAndSetupLifetime)
   xiiRenderGraphBlackboard blackboard;
   graph.BeginSetup(1);
   xiiRenderPipelineBinding binding;
-  binding.m_pFrameData = XII_DEFAULT_NEW(xiiTestPipelineFrameValue, graph.GetSetupSerial(), 3);
+  binding.m_pFrameData = XII_DEFAULT_NEW(xiiTestPipelineFrameValue, graph.GetFrameGeneration(), 3);
   const xiiRenderPipelineInputBinding input(graph, compiled->FindInterface("Snapshot", true), binding);
   XII_TEST_RESULT(instance.Build(nullptr, graph, blackboard, {}, xiiMakeArrayPtr(&input, 1)));
   graph.EndSetup();

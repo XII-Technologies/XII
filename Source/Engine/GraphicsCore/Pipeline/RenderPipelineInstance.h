@@ -12,14 +12,14 @@
 struct xiiRenderPipelineInputBinding
 {
   xiiRenderPipelineInputBinding(const xiiRenderGraph& graph, xiiUInt32 interfaceIndex, xiiRenderGraphTextureHandle texture) :
-    m_uiInterface(interfaceIndex), m_uiSetupSerial(graph.GetSetupSerial()) { m_Binding.m_hTexture = texture; }
+    m_uiInterface(interfaceIndex), m_uiFrameGeneration(graph.GetFrameGeneration()) { m_Binding.m_hTexture = texture; }
   xiiRenderPipelineInputBinding(const xiiRenderGraph& graph, xiiUInt32 interfaceIndex, xiiRenderGraphBufferHandle buffer) :
-    m_uiInterface(interfaceIndex), m_uiSetupSerial(graph.GetSetupSerial()) { m_Binding.m_hBuffer = buffer; }
+    m_uiInterface(interfaceIndex), m_uiFrameGeneration(graph.GetFrameGeneration()) { m_Binding.m_hBuffer = buffer; }
   xiiRenderPipelineInputBinding(const xiiRenderGraph& graph, xiiUInt32 interfaceIndex, const xiiRenderPipelineBinding& binding) :
-    m_uiInterface(interfaceIndex), m_Binding(binding), m_uiSetupSerial(graph.GetSetupSerial()) {}
+    m_uiInterface(interfaceIndex), m_Binding(binding), m_uiFrameGeneration(graph.GetFrameGeneration()) {}
   xiiUInt32                m_uiInterface;
   xiiRenderPipelineBinding m_Binding;
-  xiiUInt64                m_uiSetupSerial;
+  xiiUInt64                m_uiFrameGeneration;
 };
 
 /// View-local pass objects and bindings. Synchronize only at a frame boundary, after previous CPU
@@ -59,7 +59,7 @@ private:
   xiiUInt64                                                       m_uiInstanceScope       = 0; // Runtime namespace only, never a serialized graph/document identity.
   xiiString                                                       m_sScopeParent;
   xiiDynamicArray<xiiString>                                      m_ExecutionScopes;
-  xiiUInt64                                                       m_uiPreparedSetup = 0, m_uiBuiltSetup = 0;
+  xiiUInt64                                                       m_uiPreparedFrame = 0, m_uiBuiltFrame = 0;
   const xiiView*                                                  m_pPreparedView       = nullptr; // Borrowed view identity for frame preparation and history invalidation, never dereferenced.
   const xiiRenderGraphBlackboard*                                 m_pPreparedBlackboard = nullptr;
   xiiVec4U32                                                      m_vResolution         = xiiVec4U32::MakeZero(); ///< Viewport and internal extents of the last prepared frame.

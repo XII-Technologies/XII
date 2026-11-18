@@ -36,7 +36,7 @@ xiiResult xiiWorldReflectionProbesPass::Build(xiiRenderPipelinePassContext& cont
   if (!m_bEnabled)
   {
     m_AtmosphereEnvironment.Clear();
-    return context.SetOutput(m_Probes, XII_DEFAULT_NEW(xiiReflectionProbeFrameData, context.m_Graph.GetSetupSerial(), xiiRenderGraphBufferHandle(), xiiRenderGraphBufferHandle(), xiiReflectionProbeFrameData::Textures()));
+    return context.SetOutput(m_Probes, XII_DEFAULT_NEW(xiiReflectionProbeFrameData, context.m_Graph.GetFrameGeneration(), xiiRenderGraphBufferHandle(), xiiRenderGraphBufferHandle(), xiiReflectionProbeFrameData::Textures()));
   }
   if (!context.m_pView || !context.m_pView->GetWorld() || !context.m_pView->GetExtractedRenderData())
     return context.ReportFailure("Reflection probes require an extracted authoritative view.");
@@ -182,7 +182,7 @@ xiiResult xiiWorldReflectionProbesPass::Build(xiiRenderPipelinePassContext& cont
     constants           = uploaded.first->m_Constants;
     skyConstants        = uploaded.first->m_SkyConstants;
   }
-  return context.SetOutput(m_Probes, XII_DEFAULT_NEW(xiiReflectionProbeFrameData, context.m_Graph.GetSetupSerial(), recordBuffer, constants, std::move(textures), std::move(environments), std::move(skyEnvironment), skyConstants));
+  return context.SetOutput(m_Probes, XII_DEFAULT_NEW(xiiReflectionProbeFrameData, context.m_Graph.GetFrameGeneration(), recordBuffer, constants, std::move(textures), std::move(environments), std::move(skyEnvironment), skyConstants));
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Passes_Lighting_Implementation_WorldReflectionProbesPass);

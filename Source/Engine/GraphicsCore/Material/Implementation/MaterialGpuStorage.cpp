@@ -427,7 +427,7 @@ xiiMaterialGpuStorage::UploadHandles xiiMaterialGpuStorage::AddUploadPasses(xiiR
     m_uiUploadFrame = uiFrameIndex;
   }
   UploadHandles existing;
-  if (m_SetupUploads.TryGetValue(graph.GetSetupSerial(), existing))
+  if (m_SetupUploads.TryGetValue(graph.GetFrameGeneration(), existing))
     return existing;
   xiiMaterialGpuUploadBatch batch;
   GatherUploads(uiFrameIndex, batch);
@@ -457,7 +457,7 @@ xiiMaterialGpuStorage::UploadHandles xiiMaterialGpuStorage::AddUploadPasses(xiiR
   result.m_hParameterData     = pass.first->m_hBuffer;
   result.m_hSurfaceData       = pass.first->m_hSurfaceBuffer;
   result.m_uiSurfaceBaseIndex = GetSurfaceBaseIndex(uiFrameIndex);
-  m_SetupUploads.Insert(graph.GetSetupSerial(), result);
+  m_SetupUploads.Insert(graph.GetFrameGeneration(), result);
   return result;
 }
 

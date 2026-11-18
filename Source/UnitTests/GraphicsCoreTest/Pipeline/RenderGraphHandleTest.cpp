@@ -42,7 +42,11 @@ XII_CREATE_SIMPLE_TEST(Pipeline, RenderGraphHandleIdentity)
   XII_TEST_BOOL(first.GetTextureDescription(foreign.m_hTexture) == nullptr);
   XII_TEST_BOOL(first.GetBufferDescription(foreign.m_hBuffer) == nullptr);
 
-  // A new setup must invalidate old handles even when names, slots and frame indices match.
+  first.BeginExecutionFrame(2U);
+  XII_TEST_BOOL(first.GetTextureDescription(original.m_hTexture) != nullptr);
+  XII_TEST_BOOL(first.GetBufferDescription(original.m_hBuffer) != nullptr);
+
+  // Replacing declarations invalidates handles even when names, slots and frame indices match.
   first.BeginSetup(1);
   const auto replacement = first.AddPass<Data>("Same pass name", xiiGALCommandQueueFlags::Graphics, setup, execute);
   const Data current     = *replacement.first;
@@ -59,15 +63,6 @@ XII_CREATE_SIMPLE_TEST(Pipeline, RenderGraphHandleIdentity)
   XII_TEST_BOOL(first.GetTextureDescription(current.m_hTexture) != nullptr);
   XII_TEST_BOOL(first.GetBufferDescription(current.m_hBuffer) != nullptr);
 
-  struct TextureHandleHasher
-  {
-    static xiiUInt32 Hash(const xiiRenderGraphTextureHandle& handle) { return handle.CalculateHash(); }
-    static bool      Equal(const xiiRenderGraphTextureHandle& first, const xiiRenderGraphTextureHandle& second) { return first == second; }
-  };
-  xiiHashTable<xiiRenderGraphTextureHandle, xiiUInt32, TextureHandleHasher> textures;
-  textures.Insert(original.m_hTexture, 1);
-  textures.Insert(current.m_hTexture, 2);
-  XII_TEST_INT(textures.GetCount(), 2);
   auto invalid = current.m_hTexture;
   invalid.Invalidate();
   XII_TEST_BOOL(invalid.IsInvalidated());

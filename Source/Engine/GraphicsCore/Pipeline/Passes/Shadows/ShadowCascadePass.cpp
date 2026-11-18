@@ -105,6 +105,6 @@ xiiResult xiiShadowCascadePass::Build(xiiRenderPipelinePassContext& context)
     xiiGALMapHelper<xiiShadowCascadeConstants> mapped(execute.GetCommandList(), execute.GetBuffer(data.m_Buffer), xiiGALMapType::Write, xiiGALMapFlags::Discard);
     *mapped = data.m_Snapshot; });
   XII_SUCCEED_OR_RETURN(context.SetOutput(m_Constants, emitted.first->m_Buffer));
-  return context.SetOutput(m_Snapshot, XII_DEFAULT_NEW(xiiShadowCascadeSnapshot, context.m_Graph.GetSetupSerial(), cascades, m_Settings.m_uiShadowMapResolution, emitted.first->m_Buffer));
+  return context.SetOutput(m_Snapshot, XII_DEFAULT_NEW(xiiShadowCascadeSnapshot, context.m_Graph.GetFrameGeneration(), cascades, m_Settings.m_uiShadowMapResolution, emitted.first->m_Buffer));
 }
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Passes_Shadows_ShadowCascadePass);

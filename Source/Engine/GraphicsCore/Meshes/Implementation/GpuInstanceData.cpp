@@ -591,7 +591,7 @@ xiiGpuInstanceData::UploadHandles xiiGpuInstanceData::AddUploadPass(xiiRenderGra
   const auto upload = state.m_Upload;
   XII_LOCK(upload->m_Mutex);
   UploadHandles cached;
-  if (state.m_SetupUploads.TryGetValue(graph.GetSetupSerial(), cached))
+  if (state.m_SetupUploads.TryGetValue(graph.GetFrameGeneration(), cached))
     return cached;
   if (!xiiGALDevice::HasDefaultDevice())
     return {};
@@ -700,6 +700,6 @@ xiiGpuInstanceData::UploadHandles xiiGpuInstanceData::AddUploadPass(xiiRenderGra
         upload->m_Stats.m_uiUploadRanges += data.m_Ranges.GetCount();
         upload->m_Stats.m_uiBytesUploaded += data.m_Records.GetCount() * sizeof(xiiGpuSceneInstance) + data.m_Poses.GetCount() * sizeof(xiiMat4);
       } });
-  state.m_SetupUploads.Insert(graph.GetSetupSerial(), pass.first->m_Handles);
+  state.m_SetupUploads.Insert(graph.GetFrameGeneration(), pass.first->m_Handles);
   return pass.first->m_Handles;
 }

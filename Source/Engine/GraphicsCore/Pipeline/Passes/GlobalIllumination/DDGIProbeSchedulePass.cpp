@@ -157,7 +157,7 @@ xiiResult xiiDDGIProbeSchedulePass::Build(xiiRenderPipelinePassContext& context)
   if (m_State->m_Context.BeginFrame(camera, context.m_Graph.GetFrameIndex()).Failed())
     return context.ReportFailure("DDGI camera/frame exceeds the CPU scheduling domain or repeats a frame.");
   m_State->m_Frame                                = context.m_Graph.GetFrameIndex();
-  xiiSharedPtr<xiiDDGIProbeFrameData> snapshot    = XII_NEW(xiiFoundation::GetAlignedAllocator(), xiiDDGIProbeFrameData, context.m_Graph.GetSetupSerial(), m_State->m_Frame, m_State);
+  xiiSharedPtr<xiiDDGIProbeFrameData> snapshot    = XII_NEW(xiiFoundation::GetAlignedAllocator(), xiiDDGIProbeFrameData, context.m_Graph.GetFrameGeneration(), m_State->m_Frame, m_State);
   snapshot->m_AtlasSize                           = size;
   snapshot->m_bDirectional                        = m_bDirectional;
   snapshot->m_bHistoryValid                       = history;

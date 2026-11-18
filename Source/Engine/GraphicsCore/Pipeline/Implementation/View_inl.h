@@ -122,16 +122,22 @@ XII_ALWAYS_INLINE void xiiView::SetViewport(const xiiRectFloat& viewport)
   if (m_Data.m_ViewPortRect != viewport)
   {
     InvalidateTemporalHistory();
+    if (m_RenderGraphBuilder.IsValid() && (m_Data.m_ViewPortRect.width != viewport.width || m_Data.m_ViewPortRect.height != viewport.height))
+    {
+      InvalidateRenderGraph("Viewport extent changed");
+    }
   }
 
   m_Data.m_ViewPortRect = viewport;
   UpdateRenderResolutionState();
 }
 
-XII_ALWAYS_INLINE void xiiView::SetRenderGraphBuilder(RenderGraphBuilder builder)
+XII_ALWAYS_INLINE void xiiView::SetRenderGraphBuilder(RenderGraphBuilder builder, RenderGraphPreparation prepare)
 {
-  m_RenderGraphBuilder = std::move(builder);
+  m_RenderGraphBuilder     = std::move(builder);
+  m_RenderGraphPreparation = std::move(prepare);
   ++m_uiRenderGraphBuilderVersion;
+  InvalidateRenderGraph("View graph builder replaced");
 }
 
 XII_ALWAYS_INLINE const xiiView::RenderGraphBuilder& xiiView::GetRenderGraphBuilder() const

@@ -762,7 +762,7 @@ XII_CREATE_SIMPLE_TEST(SceneSpotShadows, PerspectiveCasterAtlasAffectsIndividual
   descriptions.SetCount(2);
   const auto               limit = environment.GetDevice()->GetGraphicsDeviceAdapterProperties().m_TextureProperties.m_uiMaxTexture2DDimension;
   xiiRenderPipelineBinding binding;
-  binding.m_pFrameData = XII_DEFAULT_NEW(xiiSpotShadowSnapshot, graph.GetSetupSerial(), descriptions, limit, xiiRenderGraphBufferHandle(), xiiRenderGraphBufferHandle());
+  binding.m_pFrameData = XII_DEFAULT_NEW(xiiSpotShadowSnapshot, graph.GetFrameGeneration(), descriptions, limit, xiiRenderGraphBufferHandle(), xiiRenderGraphBufferHandle());
   const xiiRenderPipelineInputBinding supplied(graph, atlasInstance.GetPipeline()->FindInterface("Spots", true), binding);
   XII_TEST_BOOL(atlasInstance.Build(nullptr, graph, context.GetBlackboard(), {}, xiiMakeArrayPtr(&supplied, 1)).Failed());
   XII_TEST_BOOL(atlasInstance.GetLastBuildError().FindSubString("2D image limit") != nullptr);

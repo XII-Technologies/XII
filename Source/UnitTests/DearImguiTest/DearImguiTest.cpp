@@ -306,7 +306,7 @@ XII_CREATE_SIMPLE_TEST(DearImgui, ReflectedPinsAndSharedViewBindings)
         desc.m_BindFlags = xiiGALBindFlags::RenderTarget;
         target = data = builder.WriteTexture("Target", desc, xiiGALResourceStateFlags::RenderTarget); }, [](const auto&, xiiRenderGraphPassContext&) {});
     xiiRenderPipelineBinding data;
-    data.m_pFrameData                      = XII_DEFAULT_NEW(xiiImguiFrameData, graph.GetSetupSerial(), frame);
+    data.m_pFrameData                      = XII_DEFAULT_NEW(xiiImguiFrameData, graph.GetFrameGeneration(), frame);
     xiiRenderPipelineInputBinding inputs[] = {
       {graph, pipeline->FindInterface("Color", true), target},
       {graph, pipeline->FindInterface("UI", true), data}};

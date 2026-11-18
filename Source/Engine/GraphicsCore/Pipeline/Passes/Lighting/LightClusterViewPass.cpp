@@ -110,6 +110,6 @@ xiiResult xiiLightClusterViewPass::Build(xiiRenderPipelinePassContext& context)
   constants.CameraPosition        = xiiVec4(position, 1);
   constants.CameraForward         = xiiVec4(forward, 0);
   constants.Work                  = xiiVec4U32(0, xiiUInt32(indices), 0, 0);
-  return context.SetOutput(m_Layout, XII_NEW(xiiFoundation::GetAlignedAllocator(), xiiLightClusterFrameData, context.m_Graph.GetSetupSerial(), constants));
+  return context.SetOutput(m_Layout, XII_NEW(xiiFoundation::GetAlignedAllocator(), xiiLightClusterFrameData, context.m_Graph.GetFrameGeneration(), constants));
 }
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Passes_Lighting_LightClusterViewPass);

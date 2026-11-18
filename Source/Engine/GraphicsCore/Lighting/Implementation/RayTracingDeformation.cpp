@@ -24,7 +24,7 @@ xiiResult xiiAddRayTracingDeformation(xiiRenderGraph& graph, xiiUInt64 frame, xi
   auto& cache = *capture;
   dispatched  = false;
   // Extraction is immutable throughout a graph setup, including repeated sections/views.
-  if (cache.m_SetupSerial == graph.GetSetupSerial())
+  if (cache.m_SetupSerial == graph.GetFrameGeneration())
     return XII_SUCCESS;
   xiiResourceLock<xiiMeshBufferResource> source(instances.GetMeshBufferResource(drawIndex), xiiResourceAcquireMode::PointerOnly);
   if (source.GetAcquireResult() != xiiResourceAcquireResult::Final || !source->GetVertexBuffer())
@@ -168,7 +168,7 @@ xiiResult xiiAddRayTracingDeformation(xiiRenderGraph& graph, xiiUInt64 frame, xi
     commands.DispatchCompute({(data.m_Settings.VertexLayout.x + 63) / 64, 1, 1});
     target->m_ReadyRevision = data.m_Revision; });
   cache.m_Handle      = pass.first->m_Output;
-  cache.m_SetupSerial = graph.GetSetupSerial();
+  cache.m_SetupSerial = graph.GetFrameGeneration();
   dispatched          = needsDispatch;
   return XII_SUCCESS;
 }

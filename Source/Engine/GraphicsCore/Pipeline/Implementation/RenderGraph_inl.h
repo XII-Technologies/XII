@@ -90,7 +90,7 @@ std::pair<TPassData*, xiiRenderGraphPassHandle> xiiRenderGraph::AddPass(xiiStrin
   const xiiUInt32 uiPassIndex = m_Passes.GetCount();
 
   PassEntry& passEntry        = m_Passes.ExpandAndGetRef();
-  passEntry.m_Id              = xiiRenderGraphId(uiPassIndex, m_uiSetupSerial);
+  passEntry.m_Id              = xiiRenderGraphId(uiPassIndex, m_uiStructuralGeneration);
   passEntry.m_QueueFlags      = queueFlags;
   passEntry.m_bHasSideEffects = bHasSideEffects;
   passEntry.m_bAllowMerge     = true;
@@ -125,22 +125,22 @@ XII_ALWAYS_INLINE const xiiRenderGraphStatistics& xiiRenderGraph::GetStatistics(
 
 XII_ALWAYS_INLINE xiiArrayPtr<const xiiRenderGraphCompiledPass> xiiRenderGraph::GetCompiledPasses() const
 {
-  return m_CompiledPasses;
+  return m_Plan.m_CompiledPasses;
 }
 
 XII_ALWAYS_INLINE xiiArrayPtr<const xiiRenderGraphBarrierDescription> xiiRenderGraph::GetBarriers() const
 {
-  return m_Barriers;
+  return m_Plan.m_Barriers;
 }
 
 XII_ALWAYS_INLINE xiiArrayPtr<const xiiRenderGraphMergeGroup> xiiRenderGraph::GetMergeGroups() const
 {
-  return m_MergeGroups;
+  return m_Plan.m_MergeGroups;
 }
 
 XII_ALWAYS_INLINE xiiArrayPtr<const xiiRenderGraphQueueSubmission> xiiRenderGraph::GetQueueSubmissions() const
 {
-  return m_QueueSubmissions;
+  return m_Plan.m_QueueSubmissions;
 }
 
 XII_ALWAYS_INLINE bool xiiRenderGraph::IsCompiled() const
@@ -160,12 +160,12 @@ XII_ALWAYS_INLINE xiiStringView xiiRenderGraph::GetName() const
 
 XII_ALWAYS_INLINE xiiArrayPtr<const xiiRenderGraphResourceDescription> xiiRenderGraph::GetResourceDescriptions() const
 {
-  return m_ResourceDescriptions;
+  return m_Plan.m_ResourceDescriptions;
 }
 
 XII_ALWAYS_INLINE xiiArrayPtr<const xiiRenderGraphResourceVersionDescription> xiiRenderGraph::GetResourceVersions() const
 {
-  return m_ResourceVersions;
+  return m_Plan.m_ResourceVersions;
 }
 
 XII_ALWAYS_INLINE xiiSharedPtr<xiiGALTexture> xiiRenderGraph::GetExportedTexture(xiiRenderGraphTextureHandle hTexture) const
@@ -175,7 +175,7 @@ XII_ALWAYS_INLINE xiiSharedPtr<xiiGALTexture> xiiRenderGraph::GetExportedTexture
     return {};
   }
   xiiSharedPtr<xiiGALTexture> pTexture;
-  m_ExportedTextures.TryGetValue(hTexture.GetResourceId().m_Data, pTexture);
+  m_Frame.m_ExportedTextures.TryGetValue(hTexture.GetResourceId().m_Data, pTexture);
   return pTexture;
 }
 
@@ -186,6 +186,6 @@ XII_ALWAYS_INLINE xiiSharedPtr<xiiGALBuffer> xiiRenderGraph::GetExportedBuffer(x
     return {};
   }
   xiiSharedPtr<xiiGALBuffer> pBuffer;
-  m_ExportedBuffers.TryGetValue(hBuffer.GetResourceId().m_Data, pBuffer);
+  m_Frame.m_ExportedBuffers.TryGetValue(hBuffer.GetResourceId().m_Data, pBuffer);
   return pBuffer;
 }

@@ -102,7 +102,7 @@ XII_CREATE_SIMPLE_TEST(NativeShadowTables, FrozenViewsIncrementalUploadsAndRetir
       graph.BeginSetup(frame.GetFrameIndex());
       const auto* producer   = static_cast<const xiiVirtualShadowTablesPass*>(pipelines[v].GetPass(0));
       const auto* oldBinding = pipelines[v].GetOutputBinding(0, "Residency");
-      XII_TEST_BOOL(!oldBinding->m_pFrameData || oldBinding->m_pFrameData->GetSetupSerial() != graph.GetSetupSerial());
+      XII_TEST_BOOL(!oldBinding->m_pFrameData || oldBinding->m_pFrameData->GetFrameGeneration() != graph.GetFrameGeneration());
       if (!XII_TEST_RESULT(pipelines[v].Build(nullptr, graph, contexts[v].GetBlackboard())))
         return;
       const auto  residency = pipelines[v].GetOutputBinding(0, "Residency")->m_pFrameData.Downcast<const xiiVirtualShadowResidencySnapshot>();

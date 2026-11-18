@@ -181,11 +181,9 @@ public:
           xiiStringBuilder              sError;
           xiiRenderGraphCompileSettings settings;
           settings.m_bEnablePassCulling  = true;
-          settings.m_bEnableCompileCache = true;
           settings.m_bEnableAsyncQueues  = true;
           settings.m_bEnableGPUProfiling = true;
 
-          // The manager invokes BuildRenderGraph(), compiles, and executes the graph.
           if (xiiRenderGraphManager::ExecuteGraph(frame, m_hRenderGraph, /*pView=*/nullptr, settings, &sError).Failed())
           {
             xiiLog::Error("RenderGraph execution failed: {0}", sError);
@@ -383,7 +381,7 @@ public:
     // Now that we have a window and device, tell the engine to initialize the rendering infrastructure
     xiiStartup::StartupHighLevelSystems();
 
-    m_hRenderGraph = xiiRenderGraphManager::CreateGraph("Procedural Triangle", xiiMakeDelegate(&xiiProceduralTriangleApp::BuildRenderGraph, this));
+    m_hRenderGraph = xiiRenderGraphManager::CreateGraph("Procedural Triangle", xiiMakeDelegate(&xiiProceduralTriangleApp::DeclareRenderGraph, this), xiiMakeDelegate(&xiiProceduralTriangleApp::PrepareRenderGraph, this));
     XII_ASSERT_DEV(!m_hRenderGraph.IsInvalidated(), "Failed to create procedural triangle render graph.");
   }
 
@@ -451,13 +449,22 @@ public:
 
       if (m_pSwapChain->GetCurrentSize() != currentSize)
       {
-        m_pSwapChain->Resize(currentSize).IgnoreResult();
+        if (m_pSwapChain->Resize(currentSize).Succeeded() && !m_hRenderGraph.IsInvalidated())
+        {
+          xiiRenderGraphManager::InvalidateGraph(m_hRenderGraph, "Swap chain extent changed").AssertSuccess();
+        }
       }
     }
   }
 
 private:
-  xiiResult BuildRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlackboard&, const xiiView*)
+  xiiResult PrepareRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlackboard&, const xiiView*)
+  {
+    const auto pBackBuffer = m_pSwapChain->GetBackBufferTexture();
+    return graph.BindImportedTexture(graph.FindTexture("BackBuffer"), pBackBuffer);
+  }
+
+  xiiResult DeclareRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlackboard&, const xiiView*)
   {
     graph.AddPass<OffscreenPassData>("PRISMATIC.Clear", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiProceduralTriangleApp::SetupOffscreenPass, this), xiiMakeDelegate(&xiiProceduralTriangleApp::ExecuteOffscreenPass, this));
     graph.AddPass<ProceduralTrianglePassData>("PRISMATIC.Crystal", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiProceduralTriangleApp::SetupProceduralTrianglePass, this), xiiMakeDelegate(&xiiProceduralTriangleApp::ExecuteProceduralTrianglePass, this));
@@ -628,7 +635,7 @@ private:
     data.m_hOffScreenTexture = builder.ReadTexture("OffScreenTexture", xiiGALResourceStateFlags::CopySource);
 
     // We also need to get the back buffer texture from the swap chain as a render target.
-    data.m_hBackBufferTexture = builder.ImportTexture("BackBuffer", m_pSwapChain->GetBackBufferTexture(), xiiGALResourceStateFlags::CopyDestination);
+    data.m_hBackBufferTexture = builder.WriteTexture(builder.DeclareImportedTexture("BackBuffer", m_pSwapChain->GetBackBufferTexture()->GetDescription()), xiiGALResourceStateFlags::CopyDestination);
 
     // This pass writes to the back buffer, so we need to declare that it has side effects to prevent it from being culled.
     builder.SetPassSideEffects(true);

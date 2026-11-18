@@ -212,52 +212,57 @@ XII_CREATE_SIMPLE_TEST(Pipeline, TemporalDependencyPolicy)
   XII_TEST_BOOL(error.FindSubString("intra-frame") != nullptr);
 }
 
-XII_CREATE_SIMPLE_TEST(Pipeline, IncrementalRenderGraphCompilation)
+XII_CREATE_SIMPLE_TEST(Pipeline, PersistentRenderGraphCompilation)
 {
-  struct Data
+  struct PassData
   {
-    xiiUInt32                  m_uiFrame;
-    xiiRenderGraphBufferHandle m_Buffer;
+    xiiRenderGraphBufferHandle m_hBuffer;
   };
+
   xiiRenderGraph graph;
-  const auto     setup = [&](xiiUInt32 frame, xiiUInt32 size, xiiStringView name, bool sideEffects) {
-    graph.BeginSetup(frame);
-    const auto pass = graph.AddPass<Data>(name, xiiGALCommandQueueFlags::Transfer, [=](Data& data, xiiRenderGraphBuilder& builder) {
-      data.m_uiFrame = frame;
+  const auto     declare = [&](xiiUInt32 uiFrame, xiiUInt32 uiSize) {
+    graph.BeginSetup(uiFrame);
+    const auto pass = graph.AddPass<PassData>("Write buffer", xiiGALCommandQueueFlags::Transfer, [uiSize](PassData& ref_data, xiiRenderGraphBuilder& ref_builder) {
       xiiGALBufferCreationDescription description;
-      description.m_uiSize = size;
+      description.m_uiSize = uiSize;
       description.m_BindFlags = xiiGALBindFlags::VertexBuffer;
-      data.m_Buffer = builder.WriteBuffer("Data", description, xiiGALResourceStateFlags::CopyDestination); }, [](const Data&, xiiRenderGraphPassContext&) {}, sideEffects);
+      ref_data.m_hBuffer = ref_builder.WriteBuffer("Data", description, xiiGALResourceStateFlags::CopyDestination); }, [](const PassData&, xiiRenderGraphPassContext&) {}, true);
     graph.EndSetup();
-    return pass.first->m_Buffer;
+    return pass.first->m_hBuffer;
   };
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Topology reuse keeps current callbacks and resource descriptions")
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Retain the plan until declarations or scheduling settings change")
   {
-    setup(1, 16, "First label", true);
+    const auto hInitialBuffer = declare(1U, 16U);
     XII_TEST_RESULT(graph.Compile());
-    XII_TEST_BOOL(!graph.GetStatistics().m_bUsedCachedCompile);
-    const auto buffer = setup(2, 32, "Presentation changed", true);
-    XII_TEST_RESULT(graph.Compile());
-    XII_TEST_BOOL(graph.GetStatistics().m_bUsedCachedCompile);
-    XII_TEST_INT(graph.GetBufferDescription(buffer)->m_uiSize, 32);
-    XII_TEST_INT(static_cast<Data*>(graph.GetCompiledPasses()[0].m_pPassData)->m_uiFrame, 2);
-    setup(3, 32, "Presentation changed", false);
-    XII_TEST_RESULT(graph.Compile());
-    XII_TEST_BOOL(!graph.GetStatistics().m_bUsedCachedCompile);
-    XII_TEST_INT(graph.GetStatistics().m_uiCompiledPassCount, 0);
-    setup(4, 32, "Presentation changed", false);
+    const auto uiStructuralGeneration = graph.GetStructuralGeneration();
+    for (xiiUInt32 uiFrame = 2U; uiFrame <= 1000U; ++uiFrame)
+    {
+      const auto uiPreviousFrameGeneration = graph.GetFrameGeneration();
+      graph.BeginExecutionFrame(uiFrame);
+      XII_TEST_RESULT(graph.Compile());
+      XII_TEST_BOOL(graph.GetFrameGeneration() != uiPreviousFrameGeneration);
+      XII_TEST_BOOL(graph.GetStructuralGeneration() == uiStructuralGeneration);
+      XII_TEST_INT(graph.GetPlanGeneration(), 1U);
+      XII_TEST_BOOL(graph.GetBufferDescription(hInitialBuffer) != nullptr);
+    }
+    XII_TEST_INT(graph.GetStatistics().m_uiStructuralBuildCount, 1U);
+
     xiiRenderGraphCompileSettings settings;
-    settings.m_bEnablePassCulling = false;
+    settings.m_bEnableGPUProfiling = true;
     XII_TEST_RESULT(graph.Compile(settings));
-    XII_TEST_BOOL(!graph.GetStatistics().m_bUsedCachedCompile);
-    XII_TEST_INT(graph.GetStatistics().m_uiCompiledPassCount, 1);
-    setup(5, 32, "Presentation changed", false);
+    XII_TEST_INT(graph.GetPlanGeneration(), 1U);
+    settings.m_bEnableAsyncQueues = false;
     XII_TEST_RESULT(graph.Compile(settings));
-    XII_TEST_BOOL(graph.GetStatistics().m_bUsedCachedCompile);
-    settings.m_uiCacheSalt = 7;
-    setup(6, 32, "Presentation changed", false);
+    XII_TEST_INT(graph.GetPlanGeneration(), 2U);
+    XII_TEST_BOOL(graph.GetStructuralGeneration() == uiStructuralGeneration);
+
+    const auto hReplacement = declare(1001U, 32U);
     XII_TEST_RESULT(graph.Compile(settings));
-    XII_TEST_BOOL(!graph.GetStatistics().m_bUsedCachedCompile);
+    XII_TEST_INT(graph.GetPlanGeneration(), 3U);
+    XII_TEST_BOOL(graph.GetStructuralGeneration() != uiStructuralGeneration);
+    XII_TEST_BOOL(graph.GetBufferDescription(hInitialBuffer) == nullptr);
+    XII_TEST_INT(graph.GetBufferDescription(hReplacement)->m_uiSize, 32U);
   }
 }
 

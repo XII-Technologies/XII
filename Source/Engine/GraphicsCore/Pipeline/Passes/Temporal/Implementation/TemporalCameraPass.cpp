@@ -97,6 +97,6 @@ xiiResult xiiTemporalCameraPass::Build(xiiRenderPipelinePassContext& context)
         state->m_Last = data;
         state->m_bValid = true;
       } }, true);
-  return context.SetOutput(m_Camera, XII_DEFAULT_NEW(xiiTemporalCameraSnapshot, context.m_Graph.GetSetupSerial(), sample));
+  return context.SetOutput(m_Camera, XII_DEFAULT_NEW(xiiTemporalCameraSnapshot, context.m_Graph.GetFrameGeneration(), sample));
 }
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Passes_Temporal_Implementation_TemporalCameraPass);

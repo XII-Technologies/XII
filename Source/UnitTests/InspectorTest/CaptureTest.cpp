@@ -68,6 +68,11 @@ XII_CREATE_SIMPLE_TEST(Inspector, GraphCaptureAndOfflineUi)
   XII_TEST_STRING(capture["frame"].toString().toUtf8().constData(), "9007199254740993");
   XII_TEST_INT(capture["passes"].toArray().size(), 2);
   XII_TEST_INT(capture["resources"].toArray().size(), 1);
+  const auto stats = capture["statistics"].toObject();
+  XII_TEST_STRING(stats["planGeneration"].toString().toUtf8().constData(), "1");
+  XII_TEST_INT(stats["compiledResources"].toInt(), 1);
+  XII_TEST_INT(stats["submissions"].toInt(), 2);
+  XII_TEST_INT(stats["submitted"].toInt(), 0);
   XII_TEST_BOOL(capture["versions"].toArray()[0].toObject()["requiredStateName"].isString());
   XII_TEST_BOOL(!capture["passes"].toArray()[0].toObject()["timingAvailable"].toBool());
   XII_TEST_BOOL(capture["passes"].toArray()[1].toObject()["dependencies"].toArray().contains(0));

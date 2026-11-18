@@ -307,14 +307,14 @@ xiiSharedPtr<const xiiRenderPipelineFrameData> xiiRenderPipelinePassContext::Get
   if (i >= m_Pins.GetCount() || i >= m_Bindings.GetCount() || !m_Pins[i].m_bInput || m_Pins[i].m_Type != xiiRenderPipelinePin::FrameData)
     return nullptr;
   const auto& value = m_Bindings[i].m_pFrameData;
-  return value && value->GetSetupSerial() && !m_Bindings[i].m_hTexture.IsValid() && !m_Bindings[i].m_hBuffer.IsValid() && m_Bindings[i].m_AccelerationStructure.IsEmpty() && m_Pins[i].m_pDataType && value->GetSetupSerial() == m_Graph.GetSetupSerial() && value->GetDynamicRTTI()->IsDerivedFrom(m_Pins[i].m_pDataType) ? value : xiiSharedPtr<const xiiRenderPipelineFrameData>();
+  return value && value->GetFrameGeneration() && !m_Bindings[i].m_hTexture.IsValid() && !m_Bindings[i].m_hBuffer.IsValid() && m_Bindings[i].m_AccelerationStructure.IsEmpty() && m_Pins[i].m_pDataType && value->GetFrameGeneration() == m_Graph.GetFrameGeneration() && value->GetDynamicRTTI()->IsDerivedFrom(m_Pins[i].m_pDataType) ? value : xiiSharedPtr<const xiiRenderPipelineFrameData>();
 }
 xiiResult xiiRenderPipelinePassContext::SetOutput(const xiiRenderPipelineDataOutputPin& pin, xiiSharedPtr<const xiiRenderPipelineFrameData> data)
 {
   const auto i = pin.GetBindingIndex();
   if (i >= m_Pins.GetCount() || i >= m_Bindings.GetCount() || m_Pins[i].m_bInput || m_Pins[i].m_Type != xiiRenderPipelinePin::FrameData || m_bTemporalHistoryPhase)
     return ReportFailure("Cannot publish frame data through this pin or temporal phase.");
-  if (!data || !data->GetSetupSerial() || !m_Pins[i].m_pDataType || data->GetSetupSerial() != m_Graph.GetSetupSerial() || !data->GetDynamicRTTI()->IsDerivedFrom(m_Pins[i].m_pDataType))
+  if (!data || !data->GetFrameGeneration() || !m_Pins[i].m_pDataType || data->GetFrameGeneration() != m_Graph.GetFrameGeneration() || !data->GetDynamicRTTI()->IsDerivedFrom(m_Pins[i].m_pDataType))
     return ReportFailure("Frame data is missing, belongs to another setup or violates the native RTTI contract.");
   m_Bindings[i]              = {};
   m_Bindings[i].m_pFrameData = std::move(data);

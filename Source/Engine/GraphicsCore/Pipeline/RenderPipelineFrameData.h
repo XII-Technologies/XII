@@ -13,11 +13,11 @@ class XII_GRAPHICSCORE_DLL xiiRenderPipelineFrameData : public xiiReflectedClass
   XII_ADD_DYNAMIC_REFLECTION(xiiRenderPipelineFrameData, xiiReflectedClass);
 
 public:
-  xiiUInt64 GetSetupSerial() const { return m_uiSetupSerial; }
+  xiiUInt64 GetFrameGeneration() const { return m_uiFrameGeneration; }
 
 protected:
-  explicit xiiRenderPipelineFrameData(xiiUInt64 setupSerial) : m_uiSetupSerial(setupSerial) {}
+  explicit xiiRenderPipelineFrameData(xiiUInt64 uiFrameGeneration) : m_uiFrameGeneration(uiFrameGeneration) {}
 
 private:
-  const xiiUInt64 m_uiSetupSerial;
+  const xiiUInt64 m_uiFrameGeneration;
 };
