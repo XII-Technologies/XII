@@ -308,31 +308,30 @@ namespace
 
   class xiiQtRenderScalePropertyWidget final : public xiiQtStandardPropertyWidget
   {
-  public:
-    xiiQtRenderScalePropertyWidget()
+  private:
+    void OnInit() override
     {
       auto* pLayout = new QHBoxLayout(this);
       pLayout->setContentsMargins(0, 0, 0, 0);
       m_pSlider = AddRenderScaleSlider(*pLayout);
       connect(m_pSlider, &QSlider::valueChanged, this, [this](int iPercent) {
-        if (!m_ValueConnectionGuard)
+        if (!m_bUpdatingValue)
         {
           BroadcastValueChanged(static_cast<float>(iPercent) / 100.0F);
         }
       });
     }
 
-  private:
     void InternalSetValue(const xiiVariant& value) override
     {
       // Updating the display must not create an edit transaction.
-      m_ValueConnectionGuard = true;
+      m_bUpdatingValue = true;
       m_pSlider->setValue(static_cast<int>(xiiMath::Round(value.ConvertTo<float>() * 100.0F)));
-      m_ValueConnectionGuard = false;
+      m_bUpdatingValue = false;
     }
 
-    QSlider* m_pSlider              = nullptr;
-    bool     m_ValueConnectionGuard = false;
+    QSlider* m_pSlider        = nullptr;
+    bool     m_bUpdatingValue = false;
   };
 
   bool EditRenderSettings(QWidget& parent, const QString& title, xiiRenderConfiguration& configuration,
