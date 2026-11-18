@@ -329,6 +329,7 @@ void xiiQtRenderGraphWidget::Rebuild()
     auto* item       = Row(m_pPasses, {QString::number(order), pass["name"].toString(), QueueName(queue), pass["timingAvailable"].toBool() ? QString::number(pass["gpuMs"].toDouble(), 'f', 3) : "Unavailable", pass["timingFrame"].toString(), Index(pass["mergeGroup"]), pass["sideEffects"].toBool() ? "Yes" : "", pass["managed"].toBool() ? "Yes" : ""}, filter);
     item->setData(0, Qt::UserRole, index);
     item->setText(8, pass["culled"].toBool() ? "Yes" : "");
+    item->setToolTip(5, pass["mergeBlocker"].toString());
   }
   // Size queue lanes from their busiest dependency column so wide graphs never overlap lanes.
   double queueY[3] = {40, 40, 40};

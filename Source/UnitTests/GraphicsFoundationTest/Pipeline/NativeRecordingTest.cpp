@@ -158,6 +158,7 @@ XII_CREATE_SIMPLE_TEST(NativeRecording, MergeAndReuseRecording)
       }
       XII_TEST_INT(graph.GetMergeGroups().GetCount(), 2U);
       XII_TEST_INT(graph.GetStatistics().m_uiMergedPasses, 1U);
+      XII_TEST_BOOL(graph.GetCompiledPasses()[2].m_MergeBlocker == xiiRenderGraphMergeBlocker::MergeDisabled);
     }
     else
     {

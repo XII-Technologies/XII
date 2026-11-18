@@ -1637,11 +1637,30 @@ void xiiRenderGraph::PhaseF_RenderPassMerging()
 
     // The existing native scopes always load and store their attachments. Identical attachment
     // identities and states can share one inline scope when nothing must run between the passes.
-    if (uiPrevious != xiiInvalidIndex && compiledPass.m_bAllowMerge && compiledPass.m_PreBarrierIndices.IsEmpty() && !passEntry.m_PrepareDelegate.IsValid())
+    if (uiPrevious != xiiInvalidIndex)
     {
       const auto& previous = m_Plan.m_CompiledPasses[uiPrevious];
-      if (previous.m_uiMergeGroupIndex != xiiInvalidIndex && previous.m_uiSubmissionIndex == compiledPass.m_uiSubmissionIndex && previous.m_bAllowMerge &&
-          previous.m_PostBarrierIndices.IsEmpty() && previous.m_PostBarrierBeginIndices.IsEmpty())
+      if (previous.m_uiMergeGroupIndex == xiiInvalidIndex)
+      {
+        compiledPass.m_MergeBlocker = xiiRenderGraphMergeBlocker::PreviousPass;
+      }
+      else if (previous.m_uiSubmissionIndex != compiledPass.m_uiSubmissionIndex)
+      {
+        compiledPass.m_MergeBlocker = xiiRenderGraphMergeBlocker::SeparateSubmission;
+      }
+      else if (!compiledPass.m_bAllowMerge || !previous.m_bAllowMerge)
+      {
+        compiledPass.m_MergeBlocker = xiiRenderGraphMergeBlocker::MergeDisabled;
+      }
+      else if (passEntry.m_PrepareDelegate.IsValid())
+      {
+        compiledPass.m_MergeBlocker = xiiRenderGraphMergeBlocker::PreRecording;
+      }
+      else if (!compiledPass.m_PreBarrierIndices.IsEmpty() || !previous.m_PostBarrierIndices.IsEmpty() || !previous.m_PostBarrierBeginIndices.IsEmpty())
+      {
+        compiledPass.m_MergeBlocker = xiiRenderGraphMergeBlocker::ResourceTransitions;
+      }
+      else
       {
         auto& ref_group = m_Plan.m_MergeGroups[previous.m_uiMergeGroupIndex];
         if (ref_group.m_AttachmentResourceIndices == group.m_AttachmentResourceIndices && ref_group.m_AttachmentStates == group.m_AttachmentStates)
@@ -1651,6 +1670,7 @@ void xiiRenderGraph::PhaseF_RenderPassMerging()
           ++m_Statistics.m_uiMergedPasses;
           continue;
         }
+        compiledPass.m_MergeBlocker = xiiRenderGraphMergeBlocker::AttachmentMismatch;
       }
     }
 

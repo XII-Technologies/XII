@@ -18,6 +18,28 @@ namespace
     writer.AddVariableString(name, text);
   }
 
+  xiiStringView GetMergeBlocker(xiiRenderGraphMergeBlocker blocker)
+  {
+    switch (blocker)
+    {
+      case xiiRenderGraphMergeBlocker::None:
+        return {};
+      case xiiRenderGraphMergeBlocker::PreviousPass:
+        return "Previous pass does not have a managed render pass";
+      case xiiRenderGraphMergeBlocker::SeparateSubmission:
+        return "Separate queue submission";
+      case xiiRenderGraphMergeBlocker::MergeDisabled:
+        return "Merging disabled by a pass";
+      case xiiRenderGraphMergeBlocker::PreRecording:
+        return "Pre-recording callback requires a separate scope";
+      case xiiRenderGraphMergeBlocker::ResourceTransitions:
+        return "Resource transitions between passes";
+      case xiiRenderGraphMergeBlocker::AttachmentMismatch:
+        return "Different attachments or attachment states";
+    }
+    return {};
+  }
+
   template <typename T>
   void WriteIndices(xiiJSONWriter& writer, xiiStringView name, const T& values)
   {
@@ -101,6 +123,7 @@ xiiResult xiiRenderGraphDebug::WriteSnapshot(const ExecutionEvent& event, xiiStr
     writer.AddVariableBool("sideEffects", pass.m_bHasSideEffects);
     writer.AddVariableBool("managed", pass.m_bManagedRenderPass);
     writer.AddVariableBool("allowMerge", pass.m_bAllowMerge);
+    writer.AddVariableString("mergeBlocker", GetMergeBlocker(pass.m_MergeBlocker));
     WriteIndices(writer, "dependencies", pass.m_DependencyPassIndices);
     WriteIndices(writer, "preBarriers", pass.m_PreBarrierIndices);
     WriteIndices(writer, "splitBegins", pass.m_PostBarrierBeginIndices);

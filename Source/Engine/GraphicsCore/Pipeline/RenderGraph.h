@@ -223,6 +223,18 @@ struct XII_GRAPHICSCORE_DLL xiiRenderGraphSubmissionFrameInfo
   xiiHybridArray<xiiUInt64, 2> m_ExternalWaitValues;
 };
 
+/// Boundary that prevented a managed render pass from sharing its predecessor's native scope.
+enum class xiiRenderGraphMergeBlocker : xiiUInt8
+{
+  None,
+  PreviousPass,
+  SeparateSubmission,
+  MergeDisabled,
+  PreRecording,
+  ResourceTransitions,
+  AttachmentMismatch,
+};
+
 /// A fully compiled render pass ready for execution.
 struct XII_GRAPHICSCORE_DLL xiiRenderGraphCompiledPass
 {
@@ -232,6 +244,7 @@ struct XII_GRAPHICSCORE_DLL xiiRenderGraphCompiledPass
   xiiUInt32                    m_uiQueueIndex       = 0U;              ///< 0=Graphics, 1=AsyncCompute, 2=AsyncTransfer.
   xiiUInt32                    m_uiSubmissionIndex  = xiiInvalidIndex;
   xiiUInt32                    m_uiMergeGroupIndex  = xiiInvalidIndex; ///< Index into the graph's merge group array, or xiiInvalidIndex if this pass is not merged with any others.
+  xiiRenderGraphMergeBlocker   m_MergeBlocker       = xiiRenderGraphMergeBlocker::None;
   bool                         m_bHasSideEffects    = false;           ///< Whether this pass has side effects (e.g. present, copy to readback, UAV write with unknown output, etc.) that must be preserved even if no other pass reads from it.
   bool                         m_bAllowMerge        = true;            ///< Whether this pass is allowed to be merged with adjacent passes on the same queue. This is a hint to the compiler, but not a guarantee.
   bool                         m_bManagedRenderPass = false;           ///< Whether the graph owns the native render-pass scope for this pass. Legacy passes may continue to open their own scopes.
