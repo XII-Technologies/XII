@@ -17,6 +17,13 @@ namespace
   class QuicTestPacketRelay
   {
   public:
+    enum class Phase : xiiUInt8
+    {
+      Forwarding,
+      InjectingFaults,
+      Closing
+    };
+
     QuicTestPacketRelay() : m_Thread(Entry, this, "QUIC test relay", 512 * 1024) {}
     ~QuicTestPacketRelay() { Stop(); }
 
@@ -49,11 +56,13 @@ namespace
       }
     }
 
-    std::atomic<bool> m_bApplyFaults{false};
-    xiiUInt32         m_uiDropped     = 0;
-    xiiUInt32         m_uiReordered   = 0;
-    xiiUInt32         m_uiDuplicated  = 0;
-    xiiUInt32         m_uiRelayErrors = 0;
+    std::atomic<Phase> m_Phase{Phase::Forwarding};
+    xiiUInt32          m_uiDropped     = 0;
+    xiiUInt32          m_uiReordered   = 0;
+    xiiUInt32          m_uiDuplicated  = 0;
+    xiiUInt32          m_uiRelayErrors = 0;
+    xiiNetworkError    m_LastError;
+    const char*        m_szLastOperation = "none";
 
   private:
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
@@ -66,12 +75,24 @@ namespace
       return {};
     }
 
+    bool IsClosingPeerReset(const xiiNetworkError& error) const
+    {
+      // Winsock can report a previous UDP send to a retired peer as ConnectionReset.
+      return error.m_Code == xiiNetworkErrorCode::ConnectionReset && m_Phase.load() == Phase::Closing;
+    }
+
     void Forward(const xiiNetworkEndpoint& endpoint, xiiArrayPtr<const xiiUInt8> packet)
     {
       const auto result = m_Socket.SendTo(endpoint, packet);
+      if (IsClosingPeerReset(result.m_Error))
+      {
+        return;
+      }
       if (result.Failed() || result.m_uiBytesTransferred != packet.GetCount())
       {
         ++m_uiRelayErrors;
+        m_LastError       = result.m_Error;
+        m_szLastOperation = "send";
       }
     }
 
@@ -97,9 +118,15 @@ namespace
           m_Socket.Wait(xiiNetworkSocketEvent::Readable, xiiTime::MakeFromMilliseconds(2)).IgnoreResult();
           continue;
         }
+        if (IsClosingPeerReset(result.m_Error))
+        {
+          continue;
+        }
         if (result.Failed())
         {
           ++m_uiRelayErrors;
+          m_LastError       = result.m_Error;
+          m_szLastOperation = "receive";
           break;
         }
         const xiiArrayPtr<const xiiUInt8> packet(uiBytes, result.m_uiBytesTransferred);
@@ -116,7 +143,7 @@ namespace
           continue;
         }
         client = sender;
-        if (!m_bApplyFaults.load())
+        if (m_Phase.load() != Phase::InjectingFaults)
         {
           Forward(m_Server, packet);
           continue;
@@ -221,7 +248,7 @@ XII_CREATE_SIMPLE_TEST(NetworkTransport, HostQuicSurvivesPacketFaults)
   {
     payload.GetBytes()[uiIndex] = static_cast<xiiUInt8>(uiIndex * 31);
   }
-  relay.m_bApplyFaults.store(true);
+  relay.m_Phase.store(QuicTestPacketRelay::Phase::InjectingFaults);
   xiiNetworkMessage message;
   if (!XII_TEST_BOOL(client.Send(channel, std::move(payload), message).Succeeded()) ||
       !HostTestEvent(server, xiiNetworkEventType::Message, event) ||
@@ -242,7 +269,7 @@ XII_CREATE_SIMPLE_TEST(NetworkTransport, HostQuicSurvivesPacketFaults)
     return;
   }
   XII_TEST_BOOL(event.m_Message == message);
-  relay.m_bApplyFaults.store(false);
+  relay.m_Phase.store(QuicTestPacketRelay::Phase::Closing);
   if (!XII_TEST_BOOL(client.Disconnect(connection).Succeeded()) ||
       !HostTestEvent(client, xiiNetworkEventType::Closed, event) ||
       !HostTestEvent(server, xiiNetworkEventType::Closed, event))
@@ -253,7 +280,8 @@ XII_CREATE_SIMPLE_TEST(NetworkTransport, HostQuicSurvivesPacketFaults)
   XII_TEST_BOOL(relay.m_uiDropped > 0);
   XII_TEST_BOOL(relay.m_uiReordered > 0);
   XII_TEST_BOOL(relay.m_uiDuplicated > 0);
-  XII_TEST_INT(relay.m_uiRelayErrors, 0);
+  XII_TEST_BOOL_MSG(relay.m_uiRelayErrors == 0, "Relay %s failed with %s (%d).", relay.m_szLastOperation,
+                    relay.m_LastError.GetCodeName(), relay.m_LastError.m_iNativeCode);
   xiiNetworkConnectionInfo info;
   if (!XII_TEST_BOOL(client.GetConnectionInfo(connection, info).Succeeded()))
   {
