@@ -4,6 +4,7 @@
 
 #include <Core/Graphics/Geometry.h>
 #include <Core/ResourceManager/ResourceManager.h>
+#include <Core/World/World.h>
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Memory/FrameAllocator.h>
 #include <Foundation/Threading/AtomicInteger.h>
@@ -11,13 +12,119 @@
 #include <Foundation/Types/ScopeExit.h>
 #include <GraphicsCore/Material/MaterialGpuStorage.h>
 #include <GraphicsCore/Meshes/MeshBufferResource.h>
+#include <GraphicsCore/Pipeline/Passes/Exposure/AutoExposurePass.h>
+#include <GraphicsCore/Pipeline/Passes/Exposure/LuminanceHistogramPass.h>
 #include <GraphicsCore/Pipeline/RenderGraphManager.h>
+#include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
+#include <GraphicsCore/Pipeline/RenderWorldModule.h>
+#include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/Streaming/GpuResidencyManager.h>
 #include <GraphicsFoundationTest/TestingEnvironment/BufferReadback.h>
 #include <GraphicsFoundationTest/TestingEnvironment/RenderGraphTestContext.h>
 #include <GraphicsFoundationTest/TestingEnvironment/TextureReadback.h>
 
 XII_CREATE_SIMPLE_TEST_GROUP(NativeRecording);
+
+XII_CREATE_SIMPLE_TEST(NativeRecording, RetainedExposureModes)
+{
+  xiiGPUTestingEnvironment environment;
+  if (!XII_TEST_RESULT(environment.Initialize(false, false)))
+    return;
+  xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
+  xiiStartup::StartupHighLevelSystems();
+  XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiFrameAllocator::Reset(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
+
+  xiiAutoExposurePass pass;
+  pass.m_bUseViewDefaults = true;
+  xiiVariantDictionary properties;
+  XII_TEST_RESULT(pass.GetProperties(properties));
+  xiiRenderPipelineResourceDescriptor descriptor;
+  const auto                          uiPass = descriptor.AddPass("Adapt exposure", xiiGetStaticRTTI<xiiAutoExposurePass>(), properties);
+  xiiLuminanceHistogramPass           histogramPass;
+  histogramPass.m_bUseViewDefaults = true;
+  XII_TEST_RESULT(histogramPass.GetProperties(properties));
+  const auto uiHistogram = descriptor.AddPass("Meter luminance", xiiGetStaticRTTI<xiiLuminanceHistogramPass>(), properties);
+  XII_TEST_RESULT(descriptor.Connect(uiHistogram, "LuminanceHistogram", uiPass, "LuminanceHistogram"));
+  descriptor.m_Interface.PushBack({"HDR", true, descriptor.m_Passes[uiHistogram].m_Id, "HDRSceneColor"});
+  const auto asset = xiiResourceManager::CreateResource<xiiRenderPipelineResource>("Retained Exposure Pipeline", std::move(descriptor));
+
+  xiiWorldDescription worldDescription("Retained exposure modes");
+  xiiWorld            world(worldDescription);
+  XII_LOCK(world.GetWriteMarker());
+  xiiView* pView     = nullptr;
+  auto*    pRenderer = world.GetOrCreateModule<xiiRenderWorldModule>();
+  if (!XII_TEST_BOOL(!pRenderer->CreateView("Exposure settings", pView).IsInvalidated()))
+    return;
+  xiiRenderPipelineInstance instance;
+  xiiRenderGraphTestContext context;
+  if (!XII_TEST_RESULT(instance.Synchronize(asset)) || !XII_TEST_RESULT(context.Initialize("Retained exposure modes")))
+    return;
+
+  auto&                      graph = context.GetGraph();
+  auto&                      cache = context.GetResourceCache();
+  xiiRenderGraphBufferHandle exposure;
+  for (xiiUInt32 i = 0U; i < 3U; ++i)
+  {
+    auto settings                               = pView->GetDisplayOutputSettings();
+    settings.m_Exposure.m_Mode                  = i == 1U ? xiiExposureMode::Automatic : xiiExposureMode::Manual;
+    settings.m_Exposure.m_fExposureCompensation = float(i);
+    XII_TEST_RESULT(pView->SetDisplayOutputSettings(settings));
+    xiiRenderGraphFrame frame;
+    if (!XII_TEST_RESULT(frame.Begin()))
+      return;
+    cache.BeginFrame(frame.GetFrameIndex(), frame.GetCompletedFrame());
+    XII_SCOPE_EXIT(cache.EndFrame(); frame.End());
+
+    if (i == 0U)
+    {
+      graph.BeginSetup(frame.GetFrameIndex());
+      const auto color = graph.AddPass<xiiRenderGraphTextureHandle>("Test exposure source", xiiGALCommandQueueFlags::Graphics, [](auto& handle, xiiRenderGraphBuilder& builder) {
+        xiiGALTextureCreationDescription image;
+        image.m_Type = xiiGALResourceDimension::Texture2D;
+        image.m_Size = {8U, 8U};
+        image.m_Format = xiiGALResourceFormat::RGBA16Float;
+        image.m_BindFlags = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::ShaderResource;
+        handle = builder.WriteTexture("HDR source", image, xiiGALResourceStateFlags::RenderTarget); }, [](const auto& handle, xiiRenderGraphPassContext& execute) {
+        auto& commands = execute.GetCommandList();
+        auto* pTexture = execute.GetTexture(handle);
+        commands.ClearRenderTargetView(pTexture->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor(0.4f, 0.8f, 0.2f));
+        xiiGALStateTransitionDescription transition;
+        transition.m_pResource = pTexture;
+        transition.m_NewState = xiiGALResourceStateFlags::RenderTarget;
+        transition.m_TransitionFlags = xiiGALStateTransitionFlags::UpdateState;
+        commands.TransitionResourceStates(xiiMakeArrayPtr(&transition, 1U)); });
+      const auto input = xiiRenderPipelineInputBinding(graph, instance.GetPipeline()->FindInterface("HDR", true), *color.first);
+      if (!XII_TEST_RESULT(instance.Build(pView, graph, context.GetBlackboard(), {}, xiiMakeArrayPtr(&input, 1U))))
+        return;
+      exposure = instance.GetOutputBinding(uiPass, "CurrentExposure")->m_hBuffer;
+      graph.AddPass<xiiRenderGraphBufferHandle>("Export test exposure", xiiGALCommandQueueFlags::Graphics, [&](auto& handle, xiiRenderGraphBuilder& builder) {
+        handle = builder.ReadBuffer(exposure, xiiGALResourceStateFlags::ShaderResource);
+        builder.ExportBuffer(handle, xiiGALResourceStateFlags::ShaderResource); }, [](const auto&, xiiRenderGraphPassContext&) {}, true);
+      graph.EndSetup();
+      if (!XII_TEST_RESULT(graph.Compile({}, nullptr, environment.GetDevice())))
+        return;
+    }
+    else
+      graph.BeginExecutionFrame(frame.GetFrameIndex());
+
+    if (!XII_TEST_RESULT(graph.Execute(environment.GetDevice(), pView, &context.GetBlackboard(), &cache)))
+      return;
+    environment.GetDevice()->WaitIdle();
+    xiiVec2 value;
+    if (!xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), graph.GetExportedBuffer(exposure).Borrow(), 0U, value))
+      return;
+    if (i == 1U)
+    {
+      XII_TEST_BOOL(value.IsValid() && value.x > 0.0f && value.y > 0.0f);
+    }
+    else
+    {
+      XII_TEST_FLOAT(value.x, i == 0U ? 1.0f : 4.0f, 0.00001f);
+      XII_TEST_FLOAT(value.y, 0.0f, 0.00001f);
+    }
+    XII_TEST_INT(graph.GetPlanGeneration(), 1U);
+  }
+}
 
 XII_CREATE_SIMPLE_TEST(NativeRecording, RetainedGeometryUploads)
 {

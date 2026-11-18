@@ -90,13 +90,14 @@ xiiResult xiiTemporalCameraPass::Build(xiiRenderPipelinePassContext& context)
   sample.m_PreviousJitter         = sample.m_bHistoryValid ? last.m_Jitter : sample.m_Jitter;
   sample.m_uiPreviousFrame        = sample.m_bHistoryValid ? last.m_uiFrame : sample.m_uiFrame;
   // A recording owns its sample and state. Old recordings cannot resurrect a cut or reload.
-  context.m_Graph.AddPass<xiiTemporalCameraSnapshot::Sample>(context.m_sPassName, xiiGALCommandQueueFlags::Graphics, [&](auto& data, xiiRenderGraphBuilder&) { data = sample; }, [state = m_pState, revision](const auto& data, xiiRenderGraphPassContext&) {
-      XII_LOCK(state->m_Mutex);
-      if (state->m_uiRevision == revision && (!state->m_bValid || state->m_Last.m_uiFrame < data.m_uiFrame))
-      {
-        state->m_Last = data;
-        state->m_bValid = true;
-      } }, true);
+  context.m_Graph.AddPass<xiiUInt8>(context.m_sPassName, xiiGALCommandQueueFlags::Graphics, [&](auto&, xiiRenderGraphBuilder& builder) { builder.SetPassSubmissionCompletion([state = m_pState, revision, sample] {
+                                                                                                                                           XII_LOCK(state->m_Mutex);
+                                                                                                                                           if (state->m_uiRevision == revision && (!state->m_bValid || state->m_Last.m_uiFrame < sample.m_uiFrame))
+                                                                                                                                           {
+                                                                                                                                             state->m_Last   = sample;
+                                                                                                                                             state->m_bValid = true;
+                                                                                                                                           }
+                                                                                                                                         }); }, [](const auto&, xiiRenderGraphPassContext&) {}, true);
   return context.SetOutput(m_Camera, XII_DEFAULT_NEW(xiiTemporalCameraSnapshot, context.m_Graph.GetFrameGeneration(), sample));
 }
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Passes_Temporal_Implementation_TemporalCameraPass);

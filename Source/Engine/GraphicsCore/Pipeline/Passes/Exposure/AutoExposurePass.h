@@ -29,7 +29,6 @@ public:
 private:
   struct Data;
   struct State;
-  void                Setup(Data& data, xiiRenderGraphBuilder& builder);
   static void         Execute(const Data& data, xiiRenderGraphPassContext& context);
   xiiSharedPtr<State> m_pState;
 };

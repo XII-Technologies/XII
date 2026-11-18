@@ -25,7 +25,7 @@ struct xiiAutoExposurePass::Data
   xiiRenderGraphBufferHandle m_hExposure;  ///< UnorderedAccess in/out (persistent exposure value).
   xiiRenderGraphBufferHandle m_hConstants;
   bool                       m_bHistoryValid = false;
-  xiiDisplayOutputSettings   m_DisplaySettings;
+  xiiExposureSettings        m_Settings;
   float                      m_fDeltaTime      = 0.0f;
   float                      m_fManualExposure = 1.0f;
 };
@@ -37,7 +37,7 @@ struct xiiAutoExposurePass::State : public xiiRefCounted
   xiiSharedPtr<xiiGALBuffer>               m_Exposure;
   bool                                     m_bHistoryValid     = false;
   xiiUInt64                                m_uiHistoryRevision = 0;
-  DisplayConfiguration                     m_Display;
+  xiiExposureSettings                      m_LastSettings;
 };
 
 xiiAutoExposurePass::xiiAutoExposurePass()  = default;
@@ -76,8 +76,6 @@ xiiResult xiiAutoExposurePass::Configure(const xiiVariantDictionary& properties)
   XII_SUCCEED_OR_RETURN(xiiRenderPipelinePass::Configure(properties));
   if (!xiiDisplayOutputManager::IsValid(m_Settings))
     return XII_FAILURE;
-  if (m_pState)
-    m_pState->m_Display.m_bValid = false;
   InvalidateTemporalHistory();
   return XII_SUCCESS;
 }
@@ -87,20 +85,28 @@ xiiResult xiiAutoExposurePass::Build(xiiRenderPipelinePassContext& context)
   xiiRenderPassResourceScope scope(context);
   if (!m_pState)
     m_pState = XII_DEFAULT_NEW(State);
-  xiiDisplayOutputSettings authored;
-  authored.m_Exposure         = m_Settings;
-  const auto previousSettings = m_pState->m_Display.m_Settings.m_Exposure;
-  const bool wasValid         = m_pState->m_Display.m_bValid;
-  XII_SUCCEED_OR_RETURN(m_pState->m_Display.Resolve(context, authored, m_bUseViewDefaults));
-  if (!wasValid || previousSettings != m_pState->m_Display.m_Settings.m_Exposure)
-    InvalidateTemporalHistory();
-  const auto& settings = m_pState->m_Display.m_Settings.m_Exposure;
-  if (settings.m_Mode == xiiExposureMode::Manual)
+  const auto getSettings = [authored = m_Settings, bUseViewDefaults = m_bUseViewDefaults](const xiiView* pView) {
+    return bUseViewDefaults && pView ? pView->GetDisplayOutputSettings().m_Exposure : authored;
+  };
+  const auto getManualExposure = [](const xiiView* pView) {
+    return pView && pView->GetCamera() ? pView->GetCamera()->GetExposure() : 1.0f;
+  };
+
+  const auto  hHistogram = context.GetInputBuffer(m_InputLuminanceHistogram);
+  const auto* pHistogram = context.m_Graph.GetBufferDescription(hHistogram);
+  const bool  bCanMeter  = pHistogram && pHistogram->m_Mode == xiiGALBufferMode::Structured && pHistogram->m_uiSize == 256 * sizeof(xiiUInt32) &&
+    pHistogram->m_uiElementByteStride == sizeof(xiiUInt32) && pHistogram->m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource);
+
+  xiiGALBufferCreationDescription exposureDescription;
+  exposureDescription.m_uiElementByteStride = sizeof(float);
+  exposureDescription.m_uiSize              = sizeof(xiiVec2);
+  exposureDescription.m_BindFlags           = xiiGALBindFlags::ShaderResource;
+  exposureDescription.m_Mode                = xiiGALBufferMode::Structured;
+
+  if (!bCanMeter)
   {
-    const float   cameraExposure = context.m_pView && context.m_pView->GetCamera() ? context.m_pView->GetCamera()->GetExposure() : 1.0f;
-    const xiiVec2 value(cameraExposure * xiiMath::Pow(2.0f, settings.m_fExposureCompensation), 0);
-    if (!value.IsValid() || value.x <= 0)
-      return context.ReportFailure("Manual exposure requires a finite positive compensated camera exposure.");
+    if (getSettings(context.m_pView).m_Mode != xiiExposureMode::Manual)
+      return context.ReportFailure("Auto exposure requires a readable structured histogram of 256 uint counters.");
     InvalidateTemporalHistory();
     m_pState->m_Exposure.Clear();
     struct Manual
@@ -109,61 +115,71 @@ xiiResult xiiAutoExposurePass::Build(xiiRenderPipelinePassContext& context)
       xiiVec2                    m_Value;
     };
     const auto emitted = context.m_Graph.AddPass<Manual>(context.m_sPassName, xiiGALCommandQueueFlags::Transfer, [&](Manual& data, xiiRenderGraphBuilder& builder) {
-      data.m_Value = value;
-      xiiGALBufferCreationDescription description;
-      description.m_uiElementByteStride = sizeof(float);
-      description.m_uiSize = sizeof(xiiVec2);
-      description.m_BindFlags = xiiGALBindFlags::ShaderResource;
-      description.m_Mode = xiiGALBufferMode::Structured;
-      data.m_Output = builder.WriteBuffer("Manual Exposure", description, xiiGALResourceStateFlags::CopyDestination); }, [](const Manual& data, xiiRenderGraphPassContext& execute) { execute.GetCommandList().UpdateBuffer(execute.GetBuffer(data.m_Output), 0, xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(&data.m_Value), sizeof(data.m_Value))); });
+      data.m_Output = builder.WriteBuffer("Manual Exposure", exposureDescription, xiiGALResourceStateFlags::CopyDestination);
+      builder.SetPassFramePreparation([getSettings, getManualExposure, &data](xiiRenderGraph&, const xiiView* pView, xiiStringBuilder& out_sError) -> xiiResult {
+        const auto settings = getSettings(pView);
+        if (settings.m_Mode != xiiExposureMode::Manual)
+        {
+          out_sError = "Automatic exposure requires a connected luminance histogram.";
+          return XII_FAILURE;
+        }
+        const float fExposure = getManualExposure(pView) * xiiMath::Pow(2.0f, settings.m_fExposureCompensation);
+        if (!xiiMath::IsFinite(fExposure) || fExposure <= 0.0f)
+        {
+          out_sError = "Manual exposure requires a finite positive compensated camera exposure.";
+          return XII_FAILURE;
+        }
+        data.m_Value.Set(fExposure, 0.0f);
+        return XII_SUCCESS;
+      }); }, [](const Manual& data, xiiRenderGraphPassContext& execute) { execute.GetCommandList().UpdateBuffer(execute.GetBuffer(data.m_Output), 0U, xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(&data.m_Value), sizeof(data.m_Value))); });
     return context.SetOutput(m_OutputCurrentExposure, emitted.first->m_Output);
   }
-  const auto* histogram = context.m_Graph.GetBufferDescription(context.GetInputBuffer(m_InputLuminanceHistogram));
-  if (!histogram || histogram->m_Mode != xiiGALBufferMode::Structured || histogram->m_uiSize != 256 * sizeof(xiiUInt32) || histogram->m_uiElementByteStride != sizeof(xiiUInt32) || !histogram->m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource))
-    return context.ReportFailure("Auto exposure requires a readable structured histogram of 256 uint counters.");
+
   XII_SUCCEED_OR_RETURN(LoadComputePipeline(m_pState->m_Pipeline, "Shaders/Pipeline/ExposureAdaptation.xiiShader"));
-  if (!m_pState->m_Exposure)
-  {
-    xiiGALBufferCreationDescription description;
-    description.m_uiElementByteStride = sizeof(float);
-    description.m_uiSize              = sizeof(float) * 2;
-    description.m_BindFlags           = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
-    description.m_Mode                = xiiGALBufferMode::Structured;
-    m_pState->m_Exposure              = xiiGALDevice::GetDefaultDevice()->CreateBuffer(description);
-    if (!m_pState->m_Exposure)
-      return XII_FAILURE;
-  }
+  exposureDescription.m_BindFlags.Add(xiiGALBindFlags::UnorderedAccess);
   const auto emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, xiiGALCommandQueueFlags::Compute, [&](Data& data, xiiRenderGraphBuilder& builder) {
-    data.m_hHistogram = context.GetInputBuffer(m_InputLuminanceHistogram);
-    data.m_DisplaySettings = m_pState->m_Display.m_Settings;
-    data.m_fDeltaTime = xiiMath::Clamp(static_cast<float>(xiiClock::GetGlobalClock()->GetTimeDiff().GetSeconds()), 0.0f, 0.25f);
-    data.m_fManualExposure = context.m_pView && context.m_pView->GetCamera() ? context.m_pView->GetCamera()->GetExposure() : 1.0f;
-    Setup(data, builder); }, [](const Data& data, xiiRenderGraphPassContext& execute) { Execute(data, execute); });
-  XII_SUCCEED_OR_RETURN(context.SetOutput(m_OutputCurrentExposure, emitted.first->m_hExposure));
-  return XII_SUCCESS;
-}
-
-void xiiAutoExposurePass::Setup(Data& data, xiiRenderGraphBuilder& builder)
-{
-  data.m_State    = m_pState;
-  data.m_Pipeline = m_pState->m_Pipeline;
-  {
-    XII_LOCK(m_pState->m_Mutex);
-    data.m_uiHistoryRevision = m_pState->m_uiHistoryRevision;
-    data.m_bHistoryValid     = m_pState->m_bHistoryValid;
-  }
-  data.m_hHistogram = builder.ReadBuffer(data.m_hHistogram, xiiGALResourceStateFlags::ShaderResource);
-
-  data.m_hExposure = builder.ImportBuffer("CurrentExposure", m_pState->m_Exposure, m_pState->m_Exposure->GetResourceState());
-  data.m_hExposure = data.m_bHistoryValid ? builder.ReadWriteBuffer(data.m_hExposure, xiiGALResourceStateFlags::UnorderedAccess) : builder.WriteBuffer(data.m_hExposure, xiiGALResourceStateFlags::UnorderedAccess);
-
-
-  xiiGALBufferCreationDescription constantsDescription;
-  constantsDescription.m_uiSize         = sizeof(xiiExposureAdaptationConstants);
-  constantsDescription.m_BindFlags      = xiiGALBindFlags::UniformBuffer;
-  constantsDescription.m_Usage          = xiiGALResourceUsage::Dynamic;
-  constantsDescription.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
-  data.m_hConstants                     = builder.WriteBuffer("Exposure Adaptation Constants", constantsDescription, xiiGALResourceStateFlags::ConstantBuffer);
+    data.m_State = m_pState;
+    data.m_Pipeline = m_pState->m_Pipeline;
+    data.m_hHistogram = builder.ReadBuffer(hHistogram, xiiGALResourceStateFlags::ShaderResource);
+    data.m_hExposure = builder.ReadWriteBuffer(builder.DeclareImportedBuffer("CurrentExposure", exposureDescription), xiiGALResourceStateFlags::UnorderedAccess);
+    data.m_hConstants = Constants(builder, "Exposure Adaptation Constants", sizeof(xiiExposureAdaptationConstants));
+    builder.SetPassFramePreparation([getSettings, getManualExposure, exposureDescription, &data](xiiRenderGraph& ref_graph, const xiiView* pView, xiiStringBuilder& out_sError) -> xiiResult {
+      data.m_Settings = getSettings(pView);
+      data.m_fManualExposure = getManualExposure(pView);
+      const float fCompensated = data.m_fManualExposure * xiiMath::Pow(2.0f, data.m_Settings.m_fExposureCompensation);
+      if (!xiiDisplayOutputManager::IsValid(data.m_Settings) ||
+          (data.m_Settings.m_Mode == xiiExposureMode::Manual && (!xiiMath::IsFinite(fCompensated) || fCompensated <= 0.0f)))
+      {
+        out_sError = "Invalid exposure settings or compensated camera exposure.";
+        return XII_FAILURE;
+      }
+      data.m_fDeltaTime = xiiMath::Clamp(static_cast<float>(xiiClock::GetGlobalClock()->GetTimeDiff().GetSeconds()), 0.0f, 0.25f);
+      auto& state = *data.m_State;
+      XII_LOCK(state.m_Mutex);
+      if (!state.m_Exposure)
+      {
+        state.m_Exposure = xiiGALDevice::GetDefaultDevice()->CreateBuffer(exposureDescription);
+        state.m_bHistoryValid = false;
+      }
+      if (!state.m_Exposure || ref_graph.BindImportedBuffer(data.m_hExposure, state.m_Exposure, state.m_Exposure->GetResourceState()).Failed())
+      {
+        out_sError = "Could not allocate or bind the declared exposure history buffer.";
+        return XII_FAILURE;
+      }
+      data.m_uiHistoryRevision = state.m_uiHistoryRevision;
+      data.m_bHistoryValid = state.m_bHistoryValid && state.m_LastSettings == data.m_Settings;
+      return XII_SUCCESS;
+    });
+    builder.SetPassSubmissionCompletion([&data] {
+      auto& state = *data.m_State;
+      XII_LOCK(state.m_Mutex);
+      if (state.m_uiHistoryRevision == data.m_uiHistoryRevision)
+      {
+        state.m_LastSettings = data.m_Settings;
+        state.m_bHistoryValid = data.m_Settings.m_Mode == xiiExposureMode::Automatic;
+      }
+    }); }, [](const Data& data, xiiRenderGraphPassContext& execute) { Execute(data, execute); });
+  return context.SetOutput(m_OutputCurrentExposure, emitted.first->m_hExposure);
 }
 
 void xiiAutoExposurePass::Execute(const Data& data, xiiRenderGraphPassContext& context)
@@ -172,7 +188,7 @@ void xiiAutoExposurePass::Execute(const Data& data, xiiRenderGraphPassContext& c
 
   cmd.BeginDebugGroup("AutoExposure");
   {
-    const xiiExposureSettings& settings = data.m_DisplaySettings.m_Exposure;
+    const xiiExposureSettings& settings = data.m_Settings;
     const float                fRange   = settings.m_fMaximumLogLuminance - settings.m_fMinimumLogLuminance;
     {
       xiiGALMapHelper<xiiExposureAdaptationConstants> pConstants(cmd, context.GetBuffer(data.m_hConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
@@ -197,11 +213,6 @@ void xiiAutoExposurePass::Execute(const Data& data, xiiRenderGraphPassContext& c
       return;
     }
     cmd.DispatchCompute({1U, 1U, 1U});
-    {
-      XII_LOCK(data.m_State->m_Mutex);
-      if (data.m_uiHistoryRevision == data.m_State->m_uiHistoryRevision)
-        data.m_State->m_bHistoryValid = true;
-    }
   }
   cmd.EndDebugGroup();
 }
