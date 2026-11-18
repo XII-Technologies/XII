@@ -215,6 +215,13 @@ struct XII_GRAPHICSCORE_DLL xiiRenderGraphQueueSubmission
   xiiHybridArray<xiiUInt32, 2>                 m_WaitSubmissionIndices; ///< Producer submissions that must complete before this submission starts.
 };
 
+/// Fence operations associated with a submission in the current execution frame.
+struct XII_GRAPHICSCORE_DLL xiiRenderGraphSubmissionFrameInfo
+{
+  xiiUInt64                    m_uiSignalValue = 0U;
+  xiiHybridArray<xiiUInt64, 2> m_ExternalWaitValues;
+};
+
 /// A fully compiled render pass ready for execution.
 struct XII_GRAPHICSCORE_DLL xiiRenderGraphCompiledPass
 {
@@ -258,6 +265,7 @@ struct XII_GRAPHICSCORE_DLL xiiRenderGraphStatistics
   xiiUInt64 m_uiPlanGeneration         = 0U;
   xiiUInt64 m_uiStructuralBuildCount   = 0U;
   xiiUInt64 m_uiPlanReuseCount         = 0U;
+  xiiUInt32 m_uiSubmittedCount         = 0U;
   xiiUInt32 m_uiCompiledResourceCount  = 0U;
   xiiUInt32 m_uiRegisteredPassCount   = 0U;    ///< Passes registered with the graph before compilation.
   xiiUInt32 m_uiCompiledPassCount     = 0U;    ///< Passes that survived culling and were included in the final execution plan.
@@ -615,6 +623,9 @@ public:
   /// Returns the list of queue submissions synthesized by the compiler, in execution order.
   [[nodiscard]] xiiArrayPtr<const xiiRenderGraphQueueSubmission> GetQueueSubmissions() const;
 
+  /// Returns frame-specific sync details for a submission recorded this execution.
+  [[nodiscard]] const xiiRenderGraphSubmissionFrameInfo* GetSubmissionFrameInfo(xiiUInt32 uiSubmissionIndex) const;
+
   /// Process-local ID and name of this graph instance.
   [[nodiscard]] xiiRenderGraphId GetId() const;
   /// Process-local identity, unique even when several views use the same stable graph name.
@@ -760,6 +771,7 @@ private:
 
   struct ExecutionFrame
   {
+    xiiDynamicArray<xiiRenderGraphSubmissionFrameInfo>    m_SubmissionInfo;
     xiiHashTable<xiiUInt32, xiiHybridArray<FenceWait, 2>> m_FenceWaits;
     xiiHashTable<xiiUInt32, ImportedResource>             m_Imports;
     xiiHashTable<const xiiGALResource*, xiiUInt32>        m_ImportIndices;

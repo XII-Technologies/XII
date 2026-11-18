@@ -56,6 +56,7 @@ xiiResult xiiRenderGraphDebug::WriteSnapshot(const ExecutionEvent& event, xiiStr
   writer.AddVariableUInt32("splitBarriers", stats.m_uiSplitBarrierCount);
   writer.AddVariableUInt32("mergeGroups", stats.m_uiMergeGroupCount);
   writer.AddVariableUInt32("submissions", stats.m_uiQueueSubmissionCount);
+  writer.AddVariableUInt32("submitted", stats.m_uiSubmittedCount);
   writer.AddVariableUInt32("externalFenceWaits", stats.m_uiExternalFenceWaitCount);
   writer.AddVariableUInt32("transientTextures", stats.m_uiTransientTextureCount);
   writer.AddVariableUInt32("transientBuffers", stats.m_uiTransientBufferCount);
@@ -183,13 +184,27 @@ xiiResult xiiRenderGraphDebug::WriteSnapshot(const ExecutionEvent& event, xiiStr
   writer.EndArray();
 
   writer.BeginArray("submissions");
-  for (const auto& submission : graph.GetQueueSubmissions())
+  const auto submissions = graph.GetQueueSubmissions();
+  for (xiiUInt32 uiIndex = 0U; uiIndex < submissions.GetCount(); ++uiIndex)
   {
+    const auto& submission = submissions[uiIndex];
     writer.BeginObject();
     writer.AddVariableUInt32("queue", submission.m_uiQueueIndex);
     writer.AddVariableUInt32("flags", submission.m_QueueFlags.GetValue());
     WriteIndices(writer, "passes", submission.m_PassOrder);
     WriteIndices(writer, "waits", submission.m_WaitSubmissionIndices);
+    if (const auto* pInfo = graph.GetSubmissionFrameInfo(uiIndex))
+    {
+      WriteId(writer, "signal", pInfo->m_uiSignalValue);
+      writer.BeginArray("waitValues");
+      for (xiiUInt64 uiValue : pInfo->m_ExternalWaitValues)
+      {
+        xiiStringBuilder sValue;
+        sValue.SetFormat("{}", uiValue);
+        writer.WriteString(sValue);
+      }
+      writer.EndArray();
+    }
     writer.EndObject();
   }
   writer.EndArray();

@@ -589,6 +589,8 @@ void xiiRenderGraph::BeginExecutionFrame(xiiUInt64 uiFrameIndex)
   m_Statistics.m_FramePreparationTime     = {};
   m_Statistics.m_ResourceResolutionTime   = {};
   m_Statistics.m_uiExternalFenceWaitCount = 0U;
+  m_Statistics.m_uiSubmittedCount         = 0U;
+  m_Frame.m_SubmissionInfo.Clear();
   m_Frame.m_FenceWaits.Clear();
   m_Frame.m_Imports.Clear();
   m_Frame.m_ImportIndices.Clear();
@@ -1731,6 +1733,10 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
     return XII_FAILURE;
   }
 
+  m_Frame.m_SubmissionInfo.Clear();
+  m_Statistics.m_uiExternalFenceWaitCount = 0U;
+  m_Statistics.m_uiSubmittedCount         = 0U;
+
   bool bExecutionSucceeded = false;
   XII_SCOPE_EXIT(
     if (!bExecutionSucceeded) {
@@ -1743,12 +1749,12 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
 
   // Resolve all transient and imported resources for this frame's execution.
   const xiiUInt32                              uiResourceCount = m_Resources.GetCount();
-  xiiDynamicArray<xiiSharedPtr<xiiGALTexture>> resolvedTextures;
-  xiiDynamicArray<xiiSharedPtr<xiiGALBuffer>>  resolvedBuffers;
+  xiiTemporaryArray<xiiSharedPtr<xiiGALTexture>> resolvedTextures;
+  xiiTemporaryArray<xiiSharedPtr<xiiGALBuffer>>  resolvedBuffers;
   resolvedTextures.SetCount(uiResourceCount);
   resolvedBuffers.SetCount(uiResourceCount);
-  xiiDynamicArray<xiiSharedPtr<xiiGALTexture>> aliasTextures;
-  xiiDynamicArray<xiiSharedPtr<xiiGALBuffer>>  aliasBuffers;
+  xiiTemporaryArray<xiiSharedPtr<xiiGALTexture>> aliasTextures;
+  xiiTemporaryArray<xiiSharedPtr<xiiGALBuffer>>  aliasBuffers;
   aliasTextures.SetCount(m_Statistics.m_uiAliasGroupCount);
   aliasBuffers.SetCount(m_Statistics.m_uiAliasGroupCount);
 
@@ -2046,7 +2052,7 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
 
   // One general fence per producer submission that has cross-queue consumers. Fences are created
   // per Execute call so frame overlap cannot accidentally reuse an in-flight timeline value.
-  xiiDynamicArray<xiiSharedPtr<xiiGALFence>> submissionFences;
+  xiiTemporaryArray<xiiSharedPtr<xiiGALFence>> submissionFences;
   submissionFences.SetCount(m_Plan.m_QueueSubmissions.GetCount());
   xiiGALFenceCreationDescription fenceDescription;
   fenceDescription.m_Type = xiiGALFenceType::General;
@@ -2058,6 +2064,18 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
       {
         XII_PROFILE_SCOPE("Render Graph: Create Submission Fence");
         submissionFences[uiProducerSubmission] = pDevice->CreateFence(fenceDescription);
+        if (submissionFences[uiProducerSubmission] == nullptr)
+        {
+          if (out_pError != nullptr)
+          {
+            *out_pError = "Failed to allocate a render graph submission fence.";
+          }
+          if (bEnableGpuProfiling)
+          {
+            pProfiler->OnFrameAbort();
+          }
+          return XII_FAILURE;
+        }
       }
     }
   }
@@ -2107,7 +2125,7 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
     {
       XII_PROFILE_SCOPE("Render Graph: Enqueue GPU Fence Waits");
       xiiHybridArray<xiiGALFence*, 2> waitFences;
-      xiiHybridArray<xiiUInt64, 2> waitValues;
+      auto&                           waitValues = m_Frame.m_SubmissionInfo.ExpandAndGetRef().m_ExternalWaitValues;
       if (!m_Frame.m_FenceWaits.IsEmpty())
       {
         for (xiiUInt32 uiCompiledPassIndex : submission.m_PassOrder)
@@ -2161,6 +2179,7 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
       {
         XII_PROFILE_SCOPE("Render Graph: Submit Commands");
         pQueue->Submit(pCommandList);
+        ++m_Statistics.m_uiSubmittedCount;
       }
       if (bEnableGpuProfiling)
         pProfiler->OnFrameAbort();
@@ -2420,6 +2439,7 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
     if (submissionFences[uiSubmissionIndex] != nullptr)
     {
       pCommandList->EnqueueSignal(submissionFences[uiSubmissionIndex].Borrow(), 1ULL);
+      m_Frame.m_SubmissionInfo[uiSubmissionIndex].m_uiSignalValue = 1ULL;
     }
 
     if (bEnableGpuProfiling)
@@ -2434,6 +2454,7 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
     {
       XII_PROFILE_SCOPE("Render Graph: Submit Commands");
       pQueue->Submit(pCommandList);
+      ++m_Statistics.m_uiSubmittedCount;
     }
   } // per-submission loop
 
@@ -2450,6 +2471,15 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
   m_uiLastExecutedPlan = GetPlanGeneration();
   bExecutionSucceeded = true;
   return XII_SUCCESS;
+}
+
+const xiiRenderGraphSubmissionFrameInfo* xiiRenderGraph::GetSubmissionFrameInfo(xiiUInt32 uiSubmissionIndex) const
+{
+  if (uiSubmissionIndex >= m_Frame.m_SubmissionInfo.GetCount())
+  {
+    return nullptr;
+  }
+  return &m_Frame.m_SubmissionInfo[uiSubmissionIndex];
 }
 
 xiiResult xiiRenderGraph::DumpToDot(xiiStringBuilder& out_sDot) const

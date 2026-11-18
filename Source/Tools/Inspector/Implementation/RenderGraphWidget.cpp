@@ -76,7 +76,7 @@ xiiQtRenderGraphWidget::xiiQtRenderGraphWidget(ads::CDockManager* manager) : xii
     });
   }
   tabs->addTab(m_pVersions, "Versions");
-  m_pSubmissions = Table({"Submission", "Queue", "Compiled pass order", "Wait submissions"}, "Queue submissions");
+  m_pSubmissions = Table({"Submission", "Queue", "Compiled pass order", "Wait submissions", "Signal value", "Wait values"}, "Queue submissions");
   tabs->addTab(m_pSubmissions, "Queue schedule");
   connect(m_pGraphs, &QComboBox::currentIndexChanged, this, [this] { Rebuild(); });
   connect(fit, &QPushButton::clicked, this, [this, lifetimeView] {
@@ -276,7 +276,7 @@ void xiiQtRenderGraphWidget::Rebuild()
                        .arg(stats["aliasedResources"].toInt())
                        .arg(stats["planGeneration"].toString())
                        .arg(graph["succeeded"].toBool() ? (graph["gpuProfiling"].toBool() ? "GPU timings are delayed; see timing frame." : "GPU profiling disabled in application.") : "Execution failed: " + graph["error"].toString()));
-  m_pStatus->setToolTip(QString("Plan reuses: %1 | Structural builds: %2 | Invalidation: %3\nStructure: %4 ms | Compile: %5 ms | Prepare: %6 ms | Resolve resources: %7 ms\nResources: %8 | Queue submissions: %9 | External waits: %10")
+  m_pStatus->setToolTip(QString("Plan reuses: %1 | Structural builds: %2 | Invalidation: %3\nStructure: %4 ms | Compile: %5 ms | Prepare: %6 ms | Resolve resources: %7 ms\nResources: %8 | Queue submissions: %9/%10 | External waits: %11")
                           .arg(stats["planReuses"].toString())
                           .arg(stats["structuralBuilds"].toString())
                           .arg(stats["invalidationReason"].toString())
@@ -285,6 +285,7 @@ void xiiQtRenderGraphWidget::Rebuild()
                           .arg(stats["preparationMs"].toDouble(), 0, 'f', 3)
                           .arg(stats["resourceResolutionMs"].toDouble(), 0, 'f', 3)
                           .arg(stats["compiledResources"].toInt())
+                          .arg(stats["submitted"].toInt())
                           .arg(stats["submissions"].toInt())
                           .arg(stats["externalFenceWaits"].toInt()));
   const QString              filter = m_pFilter->text();
@@ -445,7 +446,12 @@ void xiiQtRenderGraphWidget::Rebuild()
   for (int index = 0; index < submissions.size(); ++index)
   {
     const auto submission = submissions[index].toObject();
-    Row(m_pSubmissions, {QString::number(index), QueueName(submission["queue"].toInt()), Indices(submission["passes"].toArray()), Indices(submission["waits"].toArray())}, filter);
+    QStringList waits;
+    for (const auto& wait : submission["waitValues"].toArray())
+    {
+      waits << wait.toString();
+    }
+    Row(m_pSubmissions, {QString::number(index), QueueName(submission["queue"].toInt()), Indices(submission["passes"].toArray()), Indices(submission["waits"].toArray()), submission["signal"].toString(), waits.join(", ")}, filter);
   }
   for (auto* table : {m_pPasses, m_pResources, m_pBarriers, m_pVersions, m_pSubmissions})
   {
