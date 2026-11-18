@@ -656,7 +656,8 @@ xiiResult xiiRenderGraph::Compile(const xiiRenderGraphCompileSettings& settings,
   // transfers and the scheduler can pair them with fence waits.
   PhaseD_BarrierSynthesis(sortedIndices, settings);
 
-  // Phase F rebuilds managed render-pass groups during Execute, where the device and attachments are available.
+  // The attachment layout is static. Resolve framebuffer bindings during execution.
+  PhaseF_RenderPassMerging();
 
   m_bIsCompiled                         = true;
   m_Statistics.m_uiCompiledPassCount    = m_CompiledPasses.GetCount() - m_Statistics.m_uiCulledPassCount;
@@ -854,9 +855,6 @@ void xiiRenderGraph::PhaseB_TopologicalSortAndCull(const xiiRenderGraphCompileSe
       compiledPass.m_bAllowMerge               = m_Passes[uiIndex].m_bAllowMerge;
       compiledPass.m_bManagedRenderPass        = m_Passes[uiIndex].m_bManagedRenderPass;
       compiledPass.m_bIsCulled                 = false;
-      compiledPass.m_pPassData                 = m_Passes[uiIndex].m_pPassData;
-      compiledPass.m_ExecuteDelegate           = m_Passes[uiIndex].m_ExecuteDelegate;
-      compiledPass.m_PrepareDelegate           = m_Passes[uiIndex].m_PrepareDelegate;
     }
 
     m_Statistics.m_uiCulledPassCount = 0U;
@@ -933,9 +931,6 @@ void xiiRenderGraph::PhaseB_TopologicalSortAndCull(const xiiRenderGraphCompileSe
     compiledPass.m_bAllowMerge               = m_Passes[uiIndex].m_bAllowMerge;
     compiledPass.m_bManagedRenderPass        = m_Passes[uiIndex].m_bManagedRenderPass;
     compiledPass.m_bIsCulled                 = !isLive[uiIndex];
-    compiledPass.m_pPassData                 = m_Passes[uiIndex].m_pPassData;
-    compiledPass.m_ExecuteDelegate           = m_Passes[uiIndex].m_ExecuteDelegate;
-    compiledPass.m_PrepareDelegate           = m_Passes[uiIndex].m_PrepareDelegate;
 
     if (compiledPass.m_bIsCulled)
     {
@@ -1395,19 +1390,6 @@ void xiiRenderGraph::PhaseE_MultiQueueScheduling(const xiiDynamicArray<xiiUInt32
         m_QueueSubmissions[uiConsumerSubmission].m_WaitSubmissionIndices.PushBack(uiProducerSubmission);
     };
 
-    // Waits are frame-specific execution data, not part of the cached topology.
-    auto& submission = m_QueueSubmissions[compiledToSubmissionIndex[uiConsumerCompiledIndex]];
-    for (xiiUInt32 i = 0; i < pass.m_WaitFences.GetCount(); ++i)
-    {
-      xiiUInt32 existing = submission.m_WaitFences.IndexOf(pass.m_WaitFences[i]);
-      if (existing == xiiInvalidIndex)
-      {
-        submission.m_WaitFences.PushBack(pass.m_WaitFences[i]);
-        submission.m_WaitValues.PushBack(pass.m_WaitValues[i]);
-      }
-      else
-        submission.m_WaitValues[existing] = xiiMath::Max(submission.m_WaitValues[existing], pass.m_WaitValues[i]);
-    }
     for (const ResourceUsage& read : pass.m_Reads)
       AddProducer(m_Resources[read.m_uiResourceIndex].m_Versions[read.m_uiVersion].m_uiProducerPassIdx);
 
@@ -1427,12 +1409,9 @@ void xiiRenderGraph::PhaseE_MultiQueueScheduling(const xiiDynamicArray<xiiUInt32
   m_Statistics.m_uiQueueSubmissionCount = m_QueueSubmissions.GetCount();
 }
 
-void xiiRenderGraph::PhaseF_RenderPassMerging(xiiGALDevice* pDevice)
+void xiiRenderGraph::PhaseF_RenderPassMerging()
 {
   XII_PROFILE_SCOPE("Render Graph: Build Render Pass Groups");
-
-  XII_ASSERT_DEV(pDevice != nullptr, "Device must not be null for render pass merging.");
-  XII_IGNORE_UNUSED(pDevice);
 
   m_MergeGroups.Clear();
 
@@ -1505,15 +1484,13 @@ void xiiRenderGraph::PhaseF_RenderPassMerging(xiiGALDevice* pDevice)
   m_Statistics.m_uiMergeGroupCount = m_MergeGroups.GetCount();
 }
 
-xiiResult xiiRenderGraph::MaterializeRenderPassGroup(xiiUInt32 uiGroupIndex, xiiGALDevice* pDevice, xiiArrayPtr<xiiSharedPtr<xiiGALTexture>> resolvedTextures, xiiStringBuilder* out_pError)
+xiiResult xiiRenderGraph::MaterializeRenderPassGroup(const xiiRenderGraphMergeGroup& group, RenderPassBinding& ref_binding, xiiGALDevice* pDevice, xiiArrayPtr<xiiSharedPtr<xiiGALTexture>> resolvedTextures, xiiStringBuilder* out_pError) const
 {
   XII_PROFILE_SCOPE("Render Graph: Materialize Pass Group");
 
-  XII_ASSERT_DEV(uiGroupIndex < m_MergeGroups.GetCount(), "Render pass group index is out of range.");
   XII_ASSERT_DEV(pDevice != nullptr, "Device must not be null when materializing a render pass.");
 
-  xiiRenderGraphMergeGroup& group = m_MergeGroups[uiGroupIndex];
-  if (group.m_pNativeRenderPass != nullptr && group.m_pFramebuffer != nullptr)
+  if (ref_binding.m_pRenderPass != nullptr && ref_binding.m_pFramebuffer != nullptr)
     return XII_SUCCESS;
 
   xiiGALRenderPassCreationDescription renderPassDescription;
@@ -1584,27 +1561,27 @@ xiiResult xiiRenderGraph::MaterializeRenderPassGroup(xiiUInt32 uiGroupIndex, xii
 
   {
     XII_PROFILE_SCOPE("Render Graph: Get Cached Render Pass");
-    group.m_pNativeRenderPass = xiiGALRenderPassCache::GetRenderPass(renderPassDescription);
+    ref_binding.m_pRenderPass = xiiGALRenderPassCache::GetRenderPass(renderPassDescription);
   }
-  if (group.m_pNativeRenderPass == nullptr)
+  if (ref_binding.m_pRenderPass == nullptr)
   {
     if (out_pError != nullptr)
       *out_pError = "Failed to create the graph-managed render pass.";
     return XII_FAILURE;
   }
 
-  framebufferDescription.m_pRenderPass       = group.m_pNativeRenderPass;
+  framebufferDescription.m_pRenderPass       = ref_binding.m_pRenderPass;
   framebufferDescription.m_FramebufferSize   = framebufferSize;
   framebufferDescription.m_uiArraySliceCount = uiArraySliceCount;
   {
     XII_PROFILE_SCOPE("Render Graph: Create Framebuffer");
-    group.m_pFramebuffer = pDevice->CreateFramebuffer(framebufferDescription);
+    ref_binding.m_pFramebuffer = pDevice->CreateFramebuffer(framebufferDescription);
   }
-  if (group.m_pFramebuffer == nullptr)
+  if (ref_binding.m_pFramebuffer == nullptr)
   {
     if (out_pError != nullptr)
       *out_pError = "Failed to create the graph-managed framebuffer.";
-    group.m_pNativeRenderPass = nullptr;
+    ref_binding.m_pRenderPass = nullptr;
     return XII_FAILURE;
   }
 
@@ -1675,12 +1652,12 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
     return XII_FAILURE;
   }
 
-  // Run render-pass merging now that we have a live device.
   bool bExecutionSucceeded = false;
   XII_SCOPE_EXIT(
     XII_PROFILE_SCOPE("Render Graph: Publish Execution Event");
     xiiRenderGraphDebug::s_ExecutionEvents.Broadcast({*this, m_LastCompileSettings.m_bEnableGPUProfiling ? pProfiler : nullptr, m_uiFrameIndex, bExecutionSucceeded, out_pError ? out_pError->GetView() : xiiStringView{}, pView ? pView->GetName() : xiiStringView{}}));
-  PhaseF_RenderPassMerging(pDevice);
+  xiiTemporaryArray<RenderPassBinding> renderPassBindings;
+  renderPassBindings.SetCount(m_MergeGroups.GetCount());
 
   // Resolve all transient and imported resources for this frame's execution.
   const xiiUInt32                              uiResourceCount = m_Resources.GetCount();
@@ -1818,7 +1795,7 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
     xiiRenderGraphPassContext context;
     context.m_pCommandList = pList;
     if (pass.m_uiMergeGroupIndex != xiiInvalidIndex)
-      context.m_pRenderPass = m_MergeGroups[pass.m_uiMergeGroupIndex].m_pNativeRenderPass;
+      context.m_pRenderPass = renderPassBindings[pass.m_uiMergeGroupIndex].m_pRenderPass;
     if (!pList->GetDescription().m_Flags.IsSet(xiiGALCommandListFlags::Secondary))
     {
       auto* pPassBlackboard    = m_Passes[pass.m_uiPassIndex].m_pBlackboard;
@@ -1834,7 +1811,7 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
     context.m_ResolvedTextures = resolvedTextures;
     context.m_ResolvedBuffers  = resolvedBuffers;
     context.m_pExecutionError  = &ref_error;
-    pass.m_ExecuteDelegate(context);
+    m_Passes[pass.m_uiPassIndex].m_ExecuteDelegate(context);
   };
 
   struct RasterJob
@@ -1861,7 +1838,7 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
     {
       const auto&     pass    = m_CompiledPasses[uiPass];
       const xiiUInt32 uiItems = m_Passes[pass.m_uiPassIndex].m_uiRecordingItemCount;
-      if (uiItems == 0U || pass.m_bIsCulled || pass.m_PrepareDelegate.IsValid() || pass.m_uiMergeGroupIndex == xiiInvalidIndex)
+      if (uiItems == 0U || pass.m_bIsCulled || m_Passes[pass.m_uiPassIndex].m_PrepareDelegate.IsValid() || pass.m_uiMergeGroupIndex == xiiInvalidIndex)
         continue;
       if (m_MergeGroups[pass.m_uiMergeGroupIndex].m_PassIndices.GetCount() != 1U)
         continue;
@@ -1913,7 +1890,7 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
         }
       }
 
-      XII_SUCCEED_OR_RETURN(MaterializeRenderPassGroup(compiled.m_uiMergeGroupIndex, pDevice, resolvedTextures, out_pError));
+      XII_SUCCEED_OR_RETURN(MaterializeRenderPassGroup(m_MergeGroups[compiled.m_uiMergeGroupIndex], renderPassBindings[compiled.m_uiMergeGroupIndex], pDevice, resolvedTextures, out_pError));
     }
 
     const auto           graphicsQueueFlags = pDevice->GetCommandQueue(xiiGALCommandQueueFlags::Graphics)->GetDescription().m_QueueFlags;
@@ -1921,14 +1898,14 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
     params.m_NestingMode = xiiTaskNesting::Maybe;
     xiiTaskSystem::ParallelForSingle(rasterJobs.GetArrayPtr(), [&](RasterJob& ref_job) {
       const auto& pass = m_CompiledPasses[ref_job.m_uiPass];
-      const auto& group = m_MergeGroups[pass.m_uiMergeGroupIndex];
+      const auto& binding = renderPassBindings[pass.m_uiMergeGroupIndex];
       XII_PROFILE_SCOPE(pass.m_sName.GetView().GetFileNameAndExtension());
 
       xiiGALCommandListCreationDescription description;
       description.m_QueueFlags = graphicsQueueFlags;
       description.m_Flags = xiiGALCommandListFlags::Secondary;
-      description.m_pRenderPass = group.m_pNativeRenderPass.Borrow();
-      description.m_pFramebuffer = group.m_pFramebuffer.Borrow();
+      description.m_pRenderPass = binding.m_pRenderPass.Borrow();
+      description.m_pFramebuffer = binding.m_pFramebuffer.Borrow();
       ref_job.m_pList = pDevice->CreateCommandList(description);
       if (!ref_job.m_pList)
       {
@@ -1987,12 +1964,12 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
     }
   }
 
+  m_Statistics.m_uiExternalFenceWaitCount = 0U;
+
   // Execute per queue submission.
   for (xiiUInt32 uiSubmissionIndex = 0U; uiSubmissionIndex < m_QueueSubmissions.GetCount(); ++uiSubmissionIndex)
   {
-    xiiRenderGraphQueueSubmission& submission = m_QueueSubmissions[uiSubmissionIndex];
-    submission.m_pSignalFence                 = submissionFences[uiSubmissionIndex];
-    submission.m_uiSignalValue                = submission.m_pSignalFence != nullptr ? 1ULL : 0ULL;
+    const xiiRenderGraphQueueSubmission& submission = m_QueueSubmissions[uiSubmissionIndex];
 
     xiiGALCommandQueue* pQueue = pDevice->GetCommandQueue(submission.m_QueueFlags);
     XII_ASSERT_DEV(pQueue != nullptr, "Could not obtain a command queue.");
@@ -2033,9 +2010,30 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
     // Encode GPU queue dependencies. The frame-begin scope measures the CPU's GPU frame wait.
     {
       XII_PROFILE_SCOPE("Render Graph: Enqueue GPU Fence Waits");
-      for (xiiUInt32 uiWaitIndex = 0U; uiWaitIndex < submission.m_WaitFences.GetCount(); ++uiWaitIndex)
+      xiiHybridArray<xiiGALFence*, 2> waitFences;
+      xiiHybridArray<xiiUInt64, 2> waitValues;
+      for (xiiUInt32 uiCompiledPassIndex : submission.m_PassOrder)
       {
-        pCommandList->DeviceWaitForFence(submission.m_WaitFences[uiWaitIndex].Borrow(), submission.m_WaitValues[uiWaitIndex]);
+        const PassEntry& pass = m_Passes[m_CompiledPasses[uiCompiledPassIndex].m_uiPassIndex];
+        for (xiiUInt32 uiWaitIndex = 0U; uiWaitIndex < pass.m_WaitFences.GetCount(); ++uiWaitIndex)
+        {
+          xiiGALFence* pFence = pass.m_WaitFences[uiWaitIndex].Borrow();
+          const xiiUInt32 uiExisting = waitFences.IndexOf(pFence);
+          if (uiExisting == xiiInvalidIndex)
+          {
+            waitFences.PushBack(pFence);
+            waitValues.PushBack(pass.m_WaitValues[uiWaitIndex]);
+          }
+          else
+          {
+            waitValues[uiExisting] = xiiMath::Max(waitValues[uiExisting], pass.m_WaitValues[uiWaitIndex]);
+          }
+        }
+      }
+      m_Statistics.m_uiExternalFenceWaitCount += waitFences.GetCount();
+      for (xiiUInt32 uiWaitIndex = 0U; uiWaitIndex < waitFences.GetCount(); ++uiWaitIndex)
+      {
+        pCommandList->DeviceWaitForFence(waitFences[uiWaitIndex], waitValues[uiWaitIndex]);
       }
       for (xiiUInt32 uiProducerSubmission : submission.m_WaitSubmissionIndices)
       {
@@ -2119,7 +2117,7 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
       const bool       bParallelRecording = !passJobs.IsEmpty() && passJobs[uiSortedIndex].m_uiCount > 0U;
       // Preparation is deliberately outside the native render-pass scope: Vulkan buffer
       // uploads and their transfer barriers cannot be recorded inside a render pass.
-      if (compiledPass.m_PrepareDelegate.IsValid())
+      if (passEntry.m_PrepareDelegate.IsValid())
       {
         xiiRenderGraphPassContext preparationContext;
         preparationContext.m_pCommandList     = pCommandList.Borrow();
@@ -2134,7 +2132,7 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
         preparationContext.m_pExecutionError  = &executionError;
         {
           XII_PROFILE_SCOPE("Render Graph: Prepare Pass");
-          compiledPass.m_PrepareDelegate(preparationContext);
+          passEntry.m_PrepareDelegate(preparationContext);
         }
         if (!executionError.IsEmpty())
         {
@@ -2147,18 +2145,18 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
       // Handle merge group open.
       if (compiledPass.m_uiMergeGroupIndex != xiiInvalidIndex && compiledPass.m_uiMergeGroupIndex != uiCurrentMergeGroup)
       {
-        xiiRenderGraphMergeGroup& mergeGroup = m_MergeGroups[compiledPass.m_uiMergeGroupIndex];
+        RenderPassBinding& binding = renderPassBindings[compiledPass.m_uiMergeGroupIndex];
 
-        if (MaterializeRenderPassGroup(compiledPass.m_uiMergeGroupIndex, pDevice, resolvedTextures, out_pError).Failed())
+        if (MaterializeRenderPassGroup(m_MergeGroups[compiledPass.m_uiMergeGroupIndex], binding, pDevice, resolvedTextures, out_pError).Failed())
         {
           return abortSubmission();
         }
 
-        if (mergeGroup.m_pNativeRenderPass != nullptr && mergeGroup.m_pFramebuffer != nullptr)
+        if (binding.m_pRenderPass != nullptr && binding.m_pFramebuffer != nullptr)
         {
           xiiGALBeginRenderPassDescription renderPassDescription;
-          renderPassDescription.m_pRenderPass  = mergeGroup.m_pNativeRenderPass;
-          renderPassDescription.m_pFramebuffer = mergeGroup.m_pFramebuffer;
+          renderPassDescription.m_pRenderPass  = binding.m_pRenderPass;
+          renderPassDescription.m_pFramebuffer = binding.m_pFramebuffer;
           if (bParallelRecording && bEnableGpuProfiling)
             pProfiler->OnPassBegin(*pCommandList, compiledPass.m_sName, compiledPass.m_uiPassIndex);
           if (bParallelRecording)
@@ -2308,9 +2306,9 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
     }
 
     // Emit cross-queue signal.
-    if (submission.m_pSignalFence != nullptr)
+    if (submissionFences[uiSubmissionIndex] != nullptr)
     {
-      pCommandList->EnqueueSignal(submission.m_pSignalFence.Borrow(), submission.m_uiSignalValue);
+      pCommandList->EnqueueSignal(submissionFences[uiSubmissionIndex].Borrow(), 1ULL);
     }
 
     if (bEnableGpuProfiling)

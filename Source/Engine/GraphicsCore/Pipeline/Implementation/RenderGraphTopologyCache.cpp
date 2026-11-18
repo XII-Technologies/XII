@@ -60,9 +60,6 @@ bool xiiRenderGraph::RestoreTopologyCache(const xiiRenderGraphCompileSettings& s
     compiled.m_bAllowMerge        = pass.m_bAllowMerge;
     compiled.m_bManagedRenderPass = pass.m_bManagedRenderPass;
     compiled.m_bIsCulled          = m_CachedTopologyCulled[i] != 0;
-    compiled.m_pPassData          = pass.m_pPassData;
-    compiled.m_ExecuteDelegate    = pass.m_ExecuteDelegate;
-    compiled.m_PrepareDelegate    = pass.m_PrepareDelegate;
     m_Statistics.m_uiCulledPassCount += compiled.m_bIsCulled ? 1 : 0;
   }
   m_Statistics.m_bUsedCachedCompile = true;

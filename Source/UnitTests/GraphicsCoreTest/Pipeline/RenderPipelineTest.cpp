@@ -229,7 +229,7 @@ XII_CREATE_SIMPLE_TEST(Pipeline, IncrementalRenderGraphCompilation)
       description.m_BindFlags = xiiGALBindFlags::VertexBuffer;
       data.m_Buffer = builder.WriteBuffer("Data", description, xiiGALResourceStateFlags::CopyDestination); }, [](const Data&, xiiRenderGraphPassContext&) {}, sideEffects);
     graph.EndSetup();
-    return pass.first->m_Buffer;
+    return pass.first;
   };
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Topology reuse keeps current callbacks and resource descriptions")
   {
@@ -239,8 +239,8 @@ XII_CREATE_SIMPLE_TEST(Pipeline, IncrementalRenderGraphCompilation)
     const auto buffer = setup(2, 32, "Presentation changed", true);
     XII_TEST_RESULT(graph.Compile());
     XII_TEST_BOOL(graph.GetStatistics().m_bUsedCachedCompile);
-    XII_TEST_INT(graph.GetBufferDescription(buffer)->m_uiSize, 32);
-    XII_TEST_INT(static_cast<Data*>(graph.GetCompiledPasses()[0].m_pPassData)->m_uiFrame, 2);
+    XII_TEST_INT(graph.GetBufferDescription(buffer->m_Buffer)->m_uiSize, 32);
+    XII_TEST_INT(buffer->m_uiFrame, 2);
     setup(3, 32, "Presentation changed", false);
     XII_TEST_RESULT(graph.Compile());
     XII_TEST_BOOL(!graph.GetStatistics().m_bUsedCachedCompile);

@@ -200,8 +200,6 @@ struct XII_GRAPHICSCORE_DLL xiiRenderGraphMergeGroup
   xiiHybridArray<xiiUInt32, 8>                             m_PassIndices;               ///< Ordered compiled-pass indices belonging to this native render-pass scope.
   xiiHybridArray<xiiUInt32, 8>                             m_AttachmentResourceIndices; ///< Graph resource indices in native framebuffer attachment order.
   xiiHybridArray<xiiBitflags<xiiGALResourceStateFlags>, 8> m_AttachmentStates;          ///< Attachment state used by each framebuffer entry.
-  xiiSharedPtr<xiiGALRenderPass>                           m_pNativeRenderPass;
-  xiiSharedPtr<xiiGALFramebuffer>                          m_pFramebuffer;
 };
 
 /// A batch of passes submitted together to a single command queue.
@@ -213,10 +211,6 @@ struct XII_GRAPHICSCORE_DLL xiiRenderGraphQueueSubmission
   xiiUInt32                                    m_uiQueueIndex = 0U;     ///< 0=Graphics, 1=AsyncCompute, 2=AsyncTransfer.
   xiiBitflags<xiiGALCommandQueueFlags>         m_QueueFlags;            ///< Redundant with the queue index, but useful to have directly available during command list creation.
   xiiDynamicArray<xiiUInt32>                   m_PassOrder;             ///< Ordered pass indices to execute.
-  xiiSharedPtr<xiiGALFence>                    m_pSignalFence;          ///< Fence this submission signals after all its work (for downstream queues to DeviceWaitForFence).
-  xiiUInt64                                    m_uiSignalValue = 0ULL;  ///< Fence value to signal on m_pSignalFence.
-  xiiHybridArray<xiiSharedPtr<xiiGALFence>, 2> m_WaitFences;            ///< Fences this submission must DeviceWaitForFence on before recording any commands.
-  xiiHybridArray<xiiUInt64, 2>                 m_WaitValues;            ///< Fence values to wait for on m_WaitFences, indexed parallel to m_WaitFences.
   xiiHybridArray<xiiUInt32, 2>                 m_WaitSubmissionIndices; ///< Producer submissions that must complete before this submission starts.
 };
 
@@ -238,9 +232,6 @@ struct XII_GRAPHICSCORE_DLL xiiRenderGraphCompiledPass
   xiiHybridArray<xiiUInt32, 4>                        m_AcquireResourceIndices;               ///< Indices into the graph's resource table for transient resources whose lifetime starts at this pass. The executor will acquire these resources from the cache before executing the pass and return them to the cache after executing the pass.
   xiiHybridArray<xiiUInt32, 4>                        m_ReleaseResourceIndices;               ///< Indices into the graph's resource table for transient resources whose lifetime ends at this pass. The executor will acquire these resources from the cache before executing the pass and return them to the cache after executing the pass.
   xiiHybridArray<xiiUInt32, 4>                        m_DependencyPassIndices;                ///< Indices of passes that this pass depends on (i.e. there is a path of resource reads/writes from those passes to this pass). This is used for diagnostics and profiling, but not for execution order, which is determined by the queue submission order.
-  void*                                               m_pPassData = nullptr;                  ///< The pass data struct is defined by the user in the setup callback and contains all information needed to execute the pass. The execute callback will cast this pointer back to the correct type.
-  xiiDelegate<void(class xiiRenderGraphPassContext&)> m_ExecuteDelegate;
-  xiiDelegate<void(xiiRenderGraphPassContext&)>       m_PrepareDelegate; ///< The execute callback records GPU commands for this pass into the command list provided by the context, using the resolved resources and blackboard data. The callback must not modify the graph or its resources, as it may be executed multiple times during the frame (e.g. for multi-GPU or split-frame rendering).
 };
 
 /// Controls optional features of the render graph compiler.
@@ -267,6 +258,7 @@ struct XII_GRAPHICSCORE_DLL xiiRenderGraphStatistics
   xiiUInt32 m_uiTotalBarrierCount     = 0U;    ///< Total resource state barriers synthesized by the compiler.
   xiiUInt32 m_uiSplitBarrierCount     = 0U;    ///< Barriers that were split into Begin/End pairs to overlap with GPU execution.
   xiiUInt32 m_uiMergeGroupCount       = 0U;    ///< Groups of passes merged into a single native render pass.
+  xiiUInt32 m_uiExternalFenceWaitCount = 0U;    ///< External fence waits in the last execution.
   xiiUInt32 m_uiQueueSubmissionCount  = 0U;    ///< Command list batches scheduled on separate queues.
   xiiUInt32 m_uiTransientTextureCount = 0U;    ///< Transient textures that were automatically created and managed by the graph.
   xiiUInt32 m_uiTransientBufferCount  = 0U;    ///< Transient buffers that were automatically created and managed by the graph.
@@ -705,8 +697,14 @@ private:
   void      PhaseC_LifetimeAnalysis(const xiiDynamicArray<xiiUInt32>& sortedIndices);
   void      PhaseD_BarrierSynthesis(const xiiDynamicArray<xiiUInt32>& sortedIndices, const xiiRenderGraphCompileSettings& settings);
   void      PhaseE_MultiQueueScheduling(const xiiDynamicArray<xiiUInt32>& sortedIndices, xiiGALDevice* pDevice, const xiiRenderGraphCompileSettings& settings);
-  void      PhaseF_RenderPassMerging(xiiGALDevice* pDevice);
-  xiiResult MaterializeRenderPassGroup(xiiUInt32 uiGroupIndex, xiiGALDevice* pDevice, xiiArrayPtr<xiiSharedPtr<xiiGALTexture>> resolvedTextures, xiiStringBuilder* out_pError);
+  void      PhaseF_RenderPassMerging();
+  struct RenderPassBinding
+  {
+    xiiSharedPtr<xiiGALRenderPass>  m_pRenderPass;
+    xiiSharedPtr<xiiGALFramebuffer> m_pFramebuffer;
+  };
+
+  xiiResult MaterializeRenderPassGroup(const xiiRenderGraphMergeGroup& group, RenderPassBinding& ref_binding, xiiGALDevice* pDevice, xiiArrayPtr<xiiSharedPtr<xiiGALTexture>> resolvedTextures, xiiStringBuilder* out_pError) const;
   void      PhaseG_SignatureAndCache(const xiiRenderGraphCompileSettings& settings);
   void      BuildTopologyCacheKey(const xiiRenderGraphCompileSettings& settings, xiiDynamicArray<xiiUInt32>& key) const;
   bool      RestoreTopologyCache(const xiiRenderGraphCompileSettings& settings, xiiDynamicArray<xiiUInt32>& out_order);

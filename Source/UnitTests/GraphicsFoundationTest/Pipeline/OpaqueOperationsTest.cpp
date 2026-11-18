@@ -455,9 +455,7 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, IndependentAmbientOcclusionHistory)
         return;
       XII_TEST_BOOL(compiled->GetExtractionRequirements().IsNoFlagSet() && compiled->GetRuntimeFeatures().IsNoFlagSet());
       XII_TEST_BOOL(!xiiGeometryResidencyManager::IsInitialized() && !xiiMaterialManager::IsInitialized());
-      bool waitsForHistory = false;
-      for (const auto& submission : views[view]->GetRenderGraph()->GetQueueSubmissions())
-        waitsForHistory |= !submission.m_WaitFences.IsEmpty();
+      const bool waitsForHistory = views[view]->GetRenderGraph()->GetStatistics().m_uiExternalFenceWaitCount != 0U;
       XII_TEST_BOOL(waitsForHistory == (frame != 0 && !(view == 0 && frame == 2)));
       xiiSharedPtr<xiiGALTexture> next[2];
       for (xiiUInt32 i = 0; i < compiled->GetDescriptor().m_Passes.GetCount(); ++i)

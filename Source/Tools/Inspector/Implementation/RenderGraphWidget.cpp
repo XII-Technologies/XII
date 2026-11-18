@@ -76,7 +76,7 @@ xiiQtRenderGraphWidget::xiiQtRenderGraphWidget(ads::CDockManager* manager) : xii
     });
   }
   tabs->addTab(m_pVersions, "Versions");
-  m_pSubmissions = Table({"Submission", "Queue", "Compiled pass order", "Wait submissions", "Signal value", "Wait values"}, "Queue submissions");
+  m_pSubmissions = Table({"Submission", "Queue", "Compiled pass order", "Wait submissions"}, "Queue submissions");
   tabs->addTab(m_pSubmissions, "Queue schedule");
   connect(m_pGraphs, &QComboBox::currentIndexChanged, this, [this] { Rebuild(); });
   connect(fit, &QPushButton::clicked, this, [this, lifetimeView] {
@@ -433,13 +433,8 @@ void xiiQtRenderGraphWidget::Rebuild()
   const auto submissions = graph["submissions"].toArray();
   for (int index = 0; index < submissions.size(); ++index)
   {
-    const auto  submission = submissions[index].toObject();
-    QStringList waits;
-    for (const auto& wait : submission["waitValues"].toArray())
-    {
-      waits << wait.toString();
-    }
-    Row(m_pSubmissions, {QString::number(index), QueueName(submission["queue"].toInt()), Indices(submission["passes"].toArray()), Indices(submission["waits"].toArray()), submission["signal"].toString(), waits.join(", ")}, filter);
+    const auto submission = submissions[index].toObject();
+    Row(m_pSubmissions, {QString::number(index), QueueName(submission["queue"].toInt()), Indices(submission["passes"].toArray()), Indices(submission["waits"].toArray())}, filter);
   }
   for (auto* table : {m_pPasses, m_pResources, m_pBarriers, m_pVersions, m_pSubmissions})
   {
