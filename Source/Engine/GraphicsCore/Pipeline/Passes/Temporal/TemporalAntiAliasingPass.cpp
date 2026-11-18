@@ -279,7 +279,15 @@ xiiResult xiiTemporalAntiAliasingPass::Build(xiiRenderPipelinePassContext& conte
     data.m_Parameters.PreviousViewProjection = camera ? camera->m_Sample.m_PreviousViewProjection : xiiMat4::MakeIdentity();
     data.m_Parameters.CameraPosition = camera ? camera->m_Sample.m_Camera.m_CameraPositionAndNearPlane : xiiVec4::MakeZero();
     data.m_Parameters.JitterDelta = camera ? camera->m_Sample.m_PreviousJitter - camera->m_Sample.m_Jitter : xiiVec2::MakeZero();
-    data.m_Constants = xiiRenderPassUtils::Constants(builder, "TAA Constants", sizeof(data.m_Parameters)); }, [](const Data& data, xiiRenderGraphPassContext& execute) {
+    data.m_Constants = xiiRenderPassUtils::Constants(builder, "TAA Constants", sizeof(data.m_Parameters));
+    builder.SetPassSubmissionCompletion([&data] {
+      XII_LOCK(data.m_State->m_Mutex);
+      if (data.m_State->m_uiRevision == data.m_uiRevision && (!data.m_State->m_bValid || data.m_State->m_Last->m_uiFrame < data.m_uiFrame))
+      {
+        data.m_State->m_Last = data.m_Next;
+        data.m_State->m_bValid = true;
+      }
+    }); }, [](const Data& data, xiiRenderGraphPassContext& execute) {
     auto& commands = execute.GetCommandList();
     {
       xiiGALMapHelper<xiiTAAConstants> mapped(commands, execute.GetBuffer(data.m_Constants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
@@ -313,13 +321,7 @@ xiiResult xiiTemporalAntiAliasingPass::Build(xiiRenderPipelinePassContext& conte
       return;
     }
     commands.DispatchCompute({(data.m_Size.width + 7U) / 8U, (data.m_Size.height + 7U) / 8U, 1U});
-    commands.EnqueueSignal(data.m_Next->m_Ready.Borrow(), data.m_uiReadyValue);
-    XII_LOCK(data.m_State->m_Mutex);
-    if (data.m_State->m_uiRevision == data.m_uiRevision && (!data.m_State->m_bValid || data.m_State->m_Last->m_uiFrame < data.m_uiFrame))
-    {
-      data.m_State->m_Last = data.m_Next;
-      data.m_State->m_bValid = true;
-    } });
+    commands.EnqueueSignal(data.m_Next->m_Ready.Borrow(), data.m_uiReadyValue); });
   return context.SetOutput(m_OutputTAAResolved, emitted.first->m_Output);
 }
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Passes_Temporal_TemporalAntiAliasingPass);

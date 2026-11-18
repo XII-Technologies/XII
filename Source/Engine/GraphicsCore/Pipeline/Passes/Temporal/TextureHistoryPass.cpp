@@ -18,6 +18,7 @@ struct xiiTextureHistoryPass::State : public xiiRefCounted
   };
   xiiDynamicArray<Slot> m_Slots;
   Slot                  m_Last;
+  xiiUInt64             m_uiRevision = 0U;
   bool                  m_bValid = false;
 };
 xiiTextureHistoryPass::xiiTextureHistoryPass()  = default;
@@ -38,7 +39,10 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTextureHistoryPass, 1, xiiRTTIDefaultAllocat
 void xiiTextureHistoryPass::InvalidateTemporalHistory()
 {
   if (m_pState)
+  {
+    ++m_pState->m_uiRevision;
     m_pState->m_bValid = false;
+  }
 }
 xiiResult xiiTextureHistoryPass::BuildTemporalHistory(xiiRenderPipelinePassContext& context)
 {
@@ -126,7 +130,14 @@ xiiResult xiiTextureHistoryPass::Build(xiiRenderPipelinePassContext& context)
       data.m_Input = builder.ReadTexture(input, xiiGALResourceStateFlags::CopySource);
       data.m_Output = builder.WriteTexture(builder.ImportTexture("Retained Frame", next.m_Texture, next.m_Texture->GetResourceState()), xiiGALResourceStateFlags::CopyDestination);
       builder.ExportTexture(data.m_Output, xiiGALResourceStateFlags::ShaderResource);
-      data.m_Next = next; }, [state = m_pState](const Data& data, xiiRenderGraphPassContext& execute) {
+      data.m_Next = next;
+      builder.SetPassSubmissionCompletion([state = m_pState, &data, uiRevision = state.m_uiRevision] {
+        if (state->m_uiRevision == uiRevision && (!state->m_bValid || state->m_Last.m_uiLastUsedFrame < data.m_Next.m_uiLastUsedFrame))
+        {
+          state->m_Last = data.m_Next;
+          state->m_bValid = true;
+        }
+      }); }, [](const Data& data, xiiRenderGraphPassContext& execute) {
       auto& commands = execute.GetCommandList();
       auto* source = execute.GetTexture(data.m_Input);
       auto* destination = execute.GetTexture(data.m_Output);
@@ -142,9 +153,7 @@ xiiResult xiiTextureHistoryPass::Build(xiiRenderPipelinePassContext& context)
           const auto box = xiiBoundingBoxU32::MakeFromMinMax(xiiVec3U32::MakeZero(), {size.m_LogicalSize.width, xiiMath::Max(size.m_LogicalSize.height, 1U), xiiMath::Max(size.m_uiDepth, 1U)});
           commands.CopyTextureRegion(source, subresource, box, destination, subresource, xiiVec3U32::MakeZero());
         }
-      commands.EnqueueSignal(data.m_Next.m_Fence.Borrow(), data.m_Next.m_uiValue);
-      state->m_Last = data.m_Next;
-      state->m_bValid = true; }, true);
+      commands.EnqueueSignal(data.m_Next.m_Fence.Borrow(), data.m_Next.m_uiValue); }, true);
   return XII_SUCCESS;
 }
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Passes_Temporal_TextureHistoryPass);

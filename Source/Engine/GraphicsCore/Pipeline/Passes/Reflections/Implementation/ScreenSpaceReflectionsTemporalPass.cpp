@@ -221,7 +221,15 @@ xiiResult xiiScreenSpaceReflectionsTemporalPass::Build(xiiRenderPipelinePassCont
     data.m_Parameters.JitterDelta = camera->m_Sample.m_PreviousJitter - camera->m_Sample.m_Jitter;
     data.m_Parameters.InverseViewProjection = camera->m_Sample.m_Camera.m_InverseViewProjectionMatrix;
     data.m_Parameters.PreviousViewProjection = camera->m_Sample.m_PreviousViewProjection;
-    data.m_Constants = xiiRenderPassUtils::Constants(builder, "SSR Temporal Constants", sizeof(data.m_Parameters)); }, [](const Data& data, xiiRenderGraphPassContext& execute) {
+    data.m_Constants = xiiRenderPassUtils::Constants(builder, "SSR Temporal Constants", sizeof(data.m_Parameters));
+    builder.SetPassSubmissionCompletion([&data] {
+      XII_LOCK(data.m_State->m_Mutex);
+      if (data.m_State->m_uiRevision == data.m_uiRevision && (!data.m_State->m_bValid || data.m_State->m_Last->m_uiFrame < data.m_uiFrame))
+      {
+        data.m_State->m_Last = data.m_Next;
+        data.m_State->m_bValid = true;
+      }
+    }); }, [](const Data& data, xiiRenderGraphPassContext& execute) {
     auto& commands = execute.GetCommandList();
     { xiiGALMapHelper<xiiSSRTemporalConstants> mapped(commands, execute.GetBuffer(data.m_Constants), xiiGALMapType::Write, xiiGALMapFlags::Discard); *mapped = data.m_Parameters; }
     commands.SetPipelineState(data.m_Pipeline.Borrow());
@@ -234,10 +242,7 @@ xiiResult xiiScreenSpaceReflectionsTemporalPass::Build(xiiRenderPipelinePassCont
     write("g_ResolvedReflection", data.m_Output); write("g_CurrentSurface", data.m_Surface); write("g_CurrentIdentitySignature", data.m_Identity);
     if (commands.CommitShaderResources(xiiGALStateTransitionMode::Transition).Failed()) { execute.ReportFailure("Could not bind temporal SSR reconstruction resources."); return; }
     commands.DispatchCompute({(data.m_Size.width + 7U) / 8U, (data.m_Size.height + 7U) / 8U, 1U});
-    commands.EnqueueSignal(data.m_Next->m_Ready.Borrow(), data.m_uiReadyValue);
-    XII_LOCK(data.m_State->m_Mutex);
-    if (data.m_State->m_uiRevision == data.m_uiRevision && (!data.m_State->m_bValid || data.m_State->m_Last->m_uiFrame < data.m_uiFrame))
-    { data.m_State->m_Last = data.m_Next; data.m_State->m_bValid = true; } });
+    commands.EnqueueSignal(data.m_Next->m_Ready.Borrow(), data.m_uiReadyValue); });
   XII_SUCCEED_OR_RETURN(context.SetOutput(m_OutputSSRTerm, emitted.first->m_Output));
   XII_SUCCEED_OR_RETURN(context.SetOutput(m_OutputIdentity, emitted.first->m_Identity));
   return context.SetOutput(m_OutputConstants, emitted.first->m_Constants);

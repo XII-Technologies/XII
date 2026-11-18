@@ -17,6 +17,7 @@ struct xiiBufferHistoryPass::State : public xiiRefCounted
   };
   xiiDynamicArray<Slot> m_Slots;
   Slot                  m_Last;
+  xiiUInt64             m_uiRevision = 0U;
   bool                  m_bValid = false;
 };
 xiiBufferHistoryPass::xiiBufferHistoryPass()  = default;
@@ -36,7 +37,10 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiBufferHistoryPass, 1, xiiRTTIDefaultAllocato
 void xiiBufferHistoryPass::InvalidateTemporalHistory()
 {
   if (m_pState)
+  {
+    ++m_pState->m_uiRevision;
     m_pState->m_bValid = false;
+  }
 }
 xiiResult xiiBufferHistoryPass::BuildTemporalHistory(xiiRenderPipelinePassContext& context)
 {
@@ -108,12 +112,17 @@ xiiResult xiiBufferHistoryPass::Build(xiiRenderPipelinePassContext& context)
       data.m_Input = builder.ReadBuffer(input, xiiGALResourceStateFlags::CopySource);
       data.m_Output = builder.WriteBuffer(builder.ImportBuffer("Retained Frame", next.m_Buffer, next.m_Buffer->GetResourceState()), xiiGALResourceStateFlags::CopyDestination);
       builder.ExportBuffer(data.m_Output, xiiGALResourceStateFlags::ShaderResource);
-      data.m_Next = next; }, [state = m_pState](const Data& data, xiiRenderGraphPassContext& execute) {
+      data.m_Next = next;
+      builder.SetPassSubmissionCompletion([state = m_pState, &data, uiRevision = state.m_uiRevision] {
+        if (state->m_uiRevision == uiRevision && (!state->m_bValid || state->m_Last.m_uiLastUsedFrame < data.m_Next.m_uiLastUsedFrame))
+        {
+          state->m_Last = data.m_Next;
+          state->m_bValid = true;
+        }
+      }); }, [](const Data& data, xiiRenderGraphPassContext& execute) {
       auto& commands = execute.GetCommandList();
       commands.CopyBuffer(execute.GetBuffer(data.m_Input), execute.GetBuffer(data.m_Output));
-      commands.EnqueueSignal(data.m_Next.m_Fence.Borrow(), data.m_Next.m_uiValue);
-      state->m_Last = data.m_Next;
-      state->m_bValid = true; }, true);
+      commands.EnqueueSignal(data.m_Next.m_Fence.Borrow(), data.m_Next.m_uiValue); }, true);
   return XII_SUCCESS;
 }
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Passes_Temporal_BufferHistoryPass);

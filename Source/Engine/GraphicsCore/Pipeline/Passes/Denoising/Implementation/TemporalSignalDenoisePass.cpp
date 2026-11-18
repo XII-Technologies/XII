@@ -299,6 +299,17 @@ xiiResult xiiTemporalSignalDenoisePass::Build(xiiRenderPipelinePassContext& cont
     data.m_Parameters.HistoryValid    = historyValid ? 1U : 0U;
     data.m_Parameters.SignalMode      = occlusion ? 0U : 1U;
     data.m_Parameters._Padding        = xiiVec2::MakeZero();
+    if (useHistory)
+    {
+      builder.SetPassSubmissionCompletion([&data] {
+        XII_LOCK(data.m_State->m_Mutex);
+        if (data.m_uiHistoryRevision == data.m_State->m_uiHistoryRevision && (!data.m_State->m_bHistoryValid || data.m_State->m_Last->m_uiFrame < data.m_Next->m_uiFrame))
+        {
+          data.m_State->m_Last          = data.m_Next;
+          data.m_State->m_bHistoryValid = true;
+        }
+      });
+    }
   };
   const auto record = [](const Data& data, xiiRenderGraphPassContext& execute) {
     auto& commands = execute.GetCommandList();
@@ -345,15 +356,7 @@ xiiResult xiiTemporalSignalDenoisePass::Build(xiiRenderPipelinePassContext& cont
     }
     commands.DispatchCompute({(data.m_Size.width + 7U) / 8U, (data.m_Size.height + 7U) / 8U, 1});
     if (data.m_ReadyFence)
-    {
       commands.EnqueueSignal(data.m_ReadyFence.Borrow(), data.m_uiReadyValue);
-      XII_LOCK(data.m_State->m_Mutex);
-      if (data.m_uiHistoryRevision == data.m_State->m_uiHistoryRevision && (!data.m_State->m_bHistoryValid || data.m_State->m_Last->m_uiFrame < data.m_Next->m_uiFrame))
-      {
-        data.m_State->m_Last          = data.m_Next;
-        data.m_State->m_bHistoryValid = true;
-      }
-    }
   };
   const auto emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, xiiGALCommandQueueFlags::Compute, setup, record);
   if (emitted.first->m_Surface.IsValid())
