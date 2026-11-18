@@ -25,7 +25,7 @@ void xiiRenderPipelineInstance::Clear()
 {
   m_ResourceAcquireResult = xiiResourceAcquireResult::None;
   m_sBuildError.Clear();
-  m_uiPreparedFrame = m_uiBuiltFrame = 0;
+  m_uiPreparedFrame = m_uiDeclaredGeneration = 0;
   m_pPreparedView                    = nullptr;
   m_pPreparedBlackboard              = nullptr;
   m_vResolution                      = xiiVec4U32::MakeZero();
@@ -282,6 +282,11 @@ xiiResult xiiRenderPipelineInstance::BeginFrame(xiiView* view, xiiRenderGraph& g
 {
   if (!m_pPipeline)
     return XII_FAILURE;
+  if (!graph.IsDeclaringStructure())
+  {
+    m_sBuildError = "Pipeline history declarations require an open render graph setup.";
+    return XII_FAILURE;
+  }
   xiiVec4U32 resolution = xiiVec4U32::MakeZero();
   if (view)
   {
@@ -329,11 +334,6 @@ xiiResult xiiRenderPipelineInstance::BeginFrame(xiiView* view, xiiRenderGraph& g
     xiiConversionUtils::ToString(m_pPipeline->m_Descriptor.m_Id, identity);
     xiiLog::Error("Render pipeline '{}' configuration: {}", identity, error);
     m_sBuildError = error;
-    return XII_FAILURE;
-  }
-  if (graph.GetFrameGeneration() == 0)
-  {
-    m_sBuildError = "A pipeline frame requires an active render graph setup.";
     return XII_FAILURE;
   }
   if (m_ExecutionScopes.IsEmpty() || m_sScopeParent != graph.GetResourceNamespace())
@@ -413,19 +413,19 @@ xiiResult xiiRenderPipelineInstance::BeginFrame(xiiView* view, xiiRenderGraph& g
 xiiResult xiiRenderPipelineInstance::Build(xiiView* view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard, const xiiVariantDictionary& overrides, xiiArrayPtr<const xiiRenderPipelineInputBinding> inputs)
 {
   XII_SUCCEED_OR_RETURN(BeginFrame(view, graph, blackboard, overrides));
-  if (m_uiBuiltFrame == graph.GetFrameGeneration())
+  if (m_uiDeclaredGeneration == graph.GetStructuralGeneration())
   {
     m_sBuildError = "A pipeline instance can build only once per graph setup; start a new setup after a failed or completed build.";
     return XII_FAILURE;
   }
-  m_uiBuiltFrame = graph.GetFrameGeneration();
+  m_uiDeclaredGeneration = graph.GetStructuralGeneration();
   xiiHybridArray<xiiUInt8, 32> supplied;
   supplied.SetCount(m_pPipeline->m_Interface.GetCount(), 0);
   for (const auto& input : inputs)
   {
-    if (input.m_uiFrameGeneration != graph.GetFrameGeneration() || input.m_uiInterface >= supplied.GetCount() || supplied[input.m_uiInterface] || !m_pPipeline->m_Interface[input.m_uiInterface].m_Pin.m_bInput)
+    if (input.m_uiStructuralGeneration != graph.GetStructuralGeneration() || input.m_uiInterface >= supplied.GetCount() || supplied[input.m_uiInterface] || !m_pPipeline->m_Interface[input.m_uiInterface].m_Pin.m_bInput)
     {
-      m_sBuildError = "An external pipeline input belongs to another setup, is unknown, duplicated or refers to an output interface.";
+      m_sBuildError = "An external pipeline input belongs to another structural generation, is unknown, duplicated or refers to an output interface.";
       return XII_FAILURE;
     }
     supplied[input.m_uiInterface] = 1;

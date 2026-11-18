@@ -8,18 +8,19 @@
 #include <GraphicsCore/Pipeline/RenderPipelineResource.h>
 
 /// An explicitly supplied root resource input. Resolve its interface index again after a compilation changes.
-/// Graph handles are frame-local values and are never serialized identities.
+/// Graph resource handles belong to a structural generation. A frame-data binding additionally
+/// carries its own frame generation. Neither generation is a serialized identity.
 struct xiiRenderPipelineInputBinding
 {
   xiiRenderPipelineInputBinding(const xiiRenderGraph& graph, xiiUInt32 interfaceIndex, xiiRenderGraphTextureHandle texture) :
-    m_uiInterface(interfaceIndex), m_uiFrameGeneration(graph.GetFrameGeneration()) { m_Binding.m_hTexture = texture; }
+    m_uiInterface(interfaceIndex), m_uiStructuralGeneration(graph.GetStructuralGeneration()) { m_Binding.m_hTexture = texture; }
   xiiRenderPipelineInputBinding(const xiiRenderGraph& graph, xiiUInt32 interfaceIndex, xiiRenderGraphBufferHandle buffer) :
-    m_uiInterface(interfaceIndex), m_uiFrameGeneration(graph.GetFrameGeneration()) { m_Binding.m_hBuffer = buffer; }
+    m_uiInterface(interfaceIndex), m_uiStructuralGeneration(graph.GetStructuralGeneration()) { m_Binding.m_hBuffer = buffer; }
   xiiRenderPipelineInputBinding(const xiiRenderGraph& graph, xiiUInt32 interfaceIndex, const xiiRenderPipelineBinding& binding) :
-    m_uiInterface(interfaceIndex), m_Binding(binding), m_uiFrameGeneration(graph.GetFrameGeneration()) {}
+    m_uiInterface(interfaceIndex), m_Binding(binding), m_uiStructuralGeneration(graph.GetStructuralGeneration()) {}
   xiiUInt32                m_uiInterface;
   xiiRenderPipelineBinding m_Binding;
-  xiiUInt64                m_uiFrameGeneration;
+  xiiUInt64                m_uiStructuralGeneration;
 };
 
 /// View-local pass objects and bindings. Synchronize only at a frame boundary, after previous CPU
@@ -59,7 +60,7 @@ private:
   xiiUInt64                                                       m_uiInstanceScope       = 0; // Runtime namespace only, never a serialized graph/document identity.
   xiiString                                                       m_sScopeParent;
   xiiDynamicArray<xiiString>                                      m_ExecutionScopes;
-  xiiUInt64                                                       m_uiPreparedFrame = 0, m_uiBuiltFrame = 0;
+  xiiUInt64                                                       m_uiPreparedFrame = 0, m_uiDeclaredGeneration = 0;
   const xiiView*                                                  m_pPreparedView       = nullptr; // Borrowed view identity for frame preparation and history invalidation, never dereferenced.
   const xiiRenderGraphBlackboard*                                 m_pPreparedBlackboard = nullptr;
   xiiVec4U32                                                      m_vResolution         = xiiVec4U32::MakeZero(); ///< Viewport and internal extents of the last prepared frame.

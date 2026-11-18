@@ -560,6 +560,7 @@ public:
   /// execution. Use this for frame-scoped subsystem state instead of truncated blackboard values.
   [[nodiscard]] xiiUInt64 GetFrameIndex() const { return m_Frame.m_uiIndex; }
   [[nodiscard]] xiiUInt64 GetFrameGeneration() const { return m_Frame.m_uiGeneration; }
+  [[nodiscard]] bool      IsDeclaringStructure() const { return m_bIsSetupOpen; }
   [[nodiscard]] xiiUInt64 GetStructuralGeneration() const { return m_uiStructuralGeneration; }
   [[nodiscard]] xiiUInt64 GetPlanGeneration() const { return m_Statistics.m_uiPlanGeneration; }
 

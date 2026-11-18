@@ -392,6 +392,10 @@ XII_CREATE_SIMPLE_TEST(Pipeline, HierarchicalRenderPipeline)
     XII_TEST_INT(graph.GetResourceDescriptions().GetCount(), 2);
     XII_TEST_INT(graph.GetBufferDescription(graph.FindBuffer(graph.GetResourceDescriptions()[0].m_sName))->m_uiSize, 64);
     XII_TEST_INT(graph.GetBufferDescription(graph.FindBuffer(graph.GetResourceDescriptions()[1].m_sName))->m_uiSize, 144);
+    graph.BeginExecutionFrame(2U);
+    XII_TEST_BOOL(a.Build(nullptr, graph, blackboard).Failed());
+    XII_TEST_BOOL(graph.IsCompiled());
+    XII_TEST_INT(graph.GetPlanGeneration(), 1U);
     xiiDefaultMemoryStreamStorage storage;
     xiiMemoryStreamWriter         writer(&storage);
     XII_TEST_RESULT(root.Serialize(writer));
