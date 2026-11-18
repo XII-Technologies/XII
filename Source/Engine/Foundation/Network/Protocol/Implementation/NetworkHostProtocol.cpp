@@ -330,6 +330,7 @@ void xiiNetworkHostRuntime::Activate(Peer& peer)
   channel.m_State                                 = ChannelState::Open;
   channel.m_Configuration.m_uiMaximumQueuedBytes  = m_Configuration.m_uiMaximumPeerSendBytes;
   peer.m_LastActivity                             = xiiTime::Now();
+  peer.m_NextHeartbeat                            = peer.m_LastActivity + m_Configuration.m_HeartbeatInterval;
   peer.m_Info.m_EstablishmentTime                 = peer.m_LastActivity - peer.m_AttemptStartedAt;
   xiiSharedPtr<xiiNetworkSessionInfo> sessionInfo = XII_DEFAULT_NEW(xiiNetworkSessionInfo);
   sessionInfo->m_Connection                       = peer.m_Handle;

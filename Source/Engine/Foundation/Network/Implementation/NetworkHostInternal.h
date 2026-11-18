@@ -155,6 +155,7 @@ namespace xiiNetworkHostInternal
     std::atomic<xiiUInt64>                    m_uiReceiveBytes{0};
     xiiUInt64                                 m_uiPingSequence = 0;
     xiiTime                                   m_PingSent;
+    xiiTime                                   m_NextHeartbeat;
     xiiTime                                   m_LastActivity;
     xiiTime                                   m_AttemptStartedAt;
     xiiTime                                   m_Deadline;
