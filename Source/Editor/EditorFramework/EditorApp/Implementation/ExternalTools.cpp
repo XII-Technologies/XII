@@ -228,15 +228,3 @@ void xiiQtEditorApp::RunInspector()
 
   QProcess::startDetached(sToolPath.GetData(), args);
 }
-
-void xiiQtEditorApp::RunTracy()
-{
-#if BUILDSYSTEM_ENABLE_TRACY_SUPPORT == 0
-  xiiQtUiServices::MessageBoxInformation("<html>This build of XII was compiled without support for Tracy profiling.<br><br>See <a href='https://xiiengine.net/pages/docs/debugging/tracy.html'>the documentation</a> for how to enable it.</html>");
-#else
-  const xiiStringBuilder sToolPath = xiiQtEditorApp::GetSingleton()->FindToolApplication("tracy-profiler");
-  QStringList            args;
-
-  QProcess::startDetached(sToolPath.GetData(), args);
-#endif
-}
