@@ -1791,6 +1791,13 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
     return XII_FAILURE;
   }
 
+  if (pDevice->IsDeviceLost())
+  {
+    if (out_pError != nullptr)
+      *out_pError = "Cannot execute a render graph on a lost device.";
+    return XII_FAILURE;
+  }
+
   if (m_Plan.m_QueueMapping != ResolveQueueMapping(pDevice, m_LastCompileSettings.m_bEnableAsyncQueues))
   {
     XII_SUCCEED_OR_RETURN(Compile(m_LastCompileSettings, out_pError, pDevice));
@@ -2489,7 +2496,7 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
       pProfiler->OnGraphEnd(*pCommandList, m_Id.m_Data, uiSubmissionIndex, uiActualQueueIndex);
     }
 
-    const auto Submit = [&]() {
+    const auto Submit = [&]() -> xiiResult {
       {
         XII_PROFILE_SCOPE("Render Graph: End Command List");
         pCommandList->End();
@@ -2499,8 +2506,17 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
         const xiiTime submitStart = xiiTime::Now();
         pQueue->Submit(pCommandList);
         m_Statistics.m_SubmitTime += xiiTime::Now() - submitStart;
-        ++m_Statistics.m_uiSubmittedCount;
       }
+      if (pDevice->IsDeviceLost())
+      {
+        if (out_pError != nullptr)
+          *out_pError = "The device was lost during render graph submission.";
+        if (bEnableGpuProfiling)
+          pProfiler->OnFrameAbort();
+        return XII_FAILURE;
+      }
+      ++m_Statistics.m_uiSubmittedCount;
+      return XII_SUCCESS;
     };
     if (submission.m_bSignalsConsumers)
     {
@@ -2509,13 +2525,13 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
       XII_LOCK(timeline.m_Mutex);
       const xiiUInt64 uiSignalValue = ++timeline.m_uiValue;
       pCommandList->EnqueueSignal(timeline.m_pFence.Borrow(), uiSignalValue);
-      Submit();
+      XII_SUCCEED_OR_RETURN(Submit());
       m_Frame.m_SubmissionInfo[uiSubmissionIndex].m_uiSignalValue = uiSignalValue;
       ++m_Statistics.m_uiCrossQueueSignals;
     }
     else
     {
-      Submit();
+      XII_SUCCEED_OR_RETURN(Submit());
     }
   } // per-submission loop
 
