@@ -23,7 +23,7 @@ xiiResult xiiWorldInstancesUploadPass::Build(xiiRenderPipelinePassContext& conte
     return context.ReportFailure("World-derived GPU instances are unavailable.");
   // AddUploadPass deduplicates by world/frame/graph identity. Keep its canonical names
   // outside the occurrence scope so two instances do not duplicate world uploads.
-  const auto uploaded = context.m_pView->GetGpuInstanceData()->AddUploadPass(context.m_Graph, context.m_Graph.GetFrameIndex());
+  const auto uploaded = context.m_pView->GetGpuInstanceData()->DeclareUploadPass(context.m_Graph);
   if (!uploaded.m_Instances.IsValid() || !uploaded.m_Skinning.IsValid())
     return context.ReportFailure("Could not upload the world GPU instance snapshot.");
   XII_SUCCEED_OR_RETURN(context.SetOutput(m_Instances, uploaded.m_Instances));

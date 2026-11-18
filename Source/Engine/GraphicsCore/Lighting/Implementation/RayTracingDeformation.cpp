@@ -111,7 +111,7 @@ xiiResult xiiAddRayTracingDeformation(xiiRenderGraph& graph, xiiUInt64 frame, xi
     if (!pipeline)
       return XII_FAILURE;
   }
-  const auto skinning = needsDispatch ? instances.AddUploadPass(graph, frame).m_Skinning : xiiRenderGraphBufferHandle{};
+  const auto skinning = needsDispatch ? instances.DeclareUploadPass(graph).m_Skinning : xiiRenderGraphBufferHandle{};
   struct Pass
   {
     xiiRenderGraphBufferHandle               m_Output, m_Source, m_Skinning, m_Morphs, m_Constants;

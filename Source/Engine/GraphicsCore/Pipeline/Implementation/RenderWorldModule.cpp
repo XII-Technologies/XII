@@ -235,7 +235,18 @@ xiiResult xiiRenderWorldModule::UpdateGpuInstances(xiiArrayPtr<xiiRenderData* co
 {
   if (!m_pGpuInstances)
     m_pGpuInstances = XII_DEFAULT_NEW(xiiGpuInstanceData, *GetWorld());
-  return m_pGpuInstances->UpdateFromExtraction(packets, frame, out_error);
+  const xiiUInt64 uiPreviousRevision = m_pGpuInstances->GetUploadContractRevision();
+  XII_SUCCEED_OR_RETURN(m_pGpuInstances->UpdateFromExtraction(packets, frame, out_error));
+  if (m_pGpuInstances->GetUploadContractRevision() != uiPreviousRevision)
+  {
+    for (auto it = m_ViewIdTable.GetIterator(); it.IsValid(); ++it)
+    {
+      auto& view = *it.Value().m_pView;
+      if (view.GetRuntimeFeatures().IsAnySet(xiiRenderPipelineFeature::GpuScene | xiiRenderPipelineFeature::RayTracing))
+        view.InvalidateRenderGraph("GPU instance upload capacity grew");
+    }
+  }
+  return XII_SUCCESS;
 }
 
 xiiViewHandle xiiRenderWorldModule::CreateView(xiiStringView sName, xiiView*& out_pView)

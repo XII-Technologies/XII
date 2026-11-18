@@ -38,10 +38,10 @@ public:
 
   xiiResult                                    UpdateFromExtraction(xiiArrayPtr<xiiRenderData* const> packets, xiiUInt64 frame, xiiStringBuilder* out_error = nullptr);
   xiiResult                                    UpdateFromExtraction(const xiiExtractedRenderData& packets, xiiUInt64 frame, xiiStringBuilder* out_error = nullptr);
-  xiiArrayPtr<const xiiGpuSceneInstance>       GetInstances() const { return m_Instances; }
-  xiiArrayPtr<const xiiMat4>                   GetSkinningMatrices() const { return m_SkinningMatrices; }
+  xiiArrayPtr<const xiiGpuSceneInstance>       GetInstances() const;
+  xiiArrayPtr<const xiiMat4>                   GetSkinningMatrices() const;
   xiiArrayPtr<const xiiGpuInstanceUploadRange> GetUploadRanges() const { return m_UploadRanges; }
-  xiiUInt32                                    GetInstanceCount() const { return m_Instances.GetCount(); }
+  xiiUInt32                                    GetInstanceCount() const { return GetInstances().GetCount(); }
   /// Changes when packed records, membership or pose bytes change; never a serialized identity.
   xiiUInt64                             GetDataRevision() const { return m_uiDataRevision; }
   xiiUInt64                             GetMaximumMeshletCount(bool bRootsOnly = false) const;
@@ -62,13 +62,12 @@ public:
   };
   /// Shared world allocations, imported by explicit graph handles. Dirty bytes are copied into
   /// graph-owned upload data; later cameras/occurrences reuse the same frame's physical buffers.
-  UploadHandles                  AddUploadPass(xiiRenderGraph& graph, xiiUInt64 frame) const;
+  [[nodiscard]] xiiUInt64        GetUploadContractRevision() const;
+  UploadHandles                  DeclareUploadPass(xiiRenderGraph& graph) const;
   xiiGpuInstanceUploadStatistics GetUploadStatistics() const;
 
 private:
   xiiUInt64                                  m_uiDataRevision = 0;
   xiiUniquePtr<xiiGpuInstanceDataState>      m_pState;
-  xiiDynamicArray<xiiGpuSceneInstance>       m_Instances;
-  xiiDynamicArray<xiiMat4>                   m_SkinningMatrices;
   xiiDynamicArray<xiiGpuInstanceUploadRange> m_UploadRanges;
 };
