@@ -600,8 +600,8 @@ class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiGameModeMsgToEngine : public xiiEd
 public:
   bool    m_bEnablePTG        = false;
   bool    m_bUseStartPosition = false;
-  xiiVec3 m_vStartPosition;
-  xiiVec3 m_vStartDirection;
+  xiiVec3 m_vStartPosition = xiiVec3::MakeZero();
+  xiiVec3 m_vStartDirection = xiiVec3::MakeZero();
 };
 
 class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiGameModeMsgToEditor : public xiiEditorEngineDocumentMsg
