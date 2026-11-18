@@ -70,6 +70,7 @@ xiiResult xiiRenderGraphDebug::WriteSnapshot(const ExecutionEvent& event, xiiStr
   writer.AddVariableString("invalidationReason", graph.GetInvalidationReason());
   writer.AddVariableDouble("structuralBuildMs", stats.m_StructuralBuildTime.GetMilliseconds());
   writer.AddVariableDouble("compilationMs", stats.m_CompilationTime.GetMilliseconds());
+  writer.AddVariableDouble("preparationMs", stats.m_FramePreparationTime.GetMilliseconds());
   writer.AddVariableDouble("resourceResolutionMs", stats.m_ResourceResolutionTime.GetMilliseconds());
   writer.EndObject();
 

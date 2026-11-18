@@ -12,6 +12,7 @@
 #include <GraphicsCore/Lighting/VirtualShadowMap.h>
 #include <GraphicsCore/Material/MaterialManager.h>
 #include <GraphicsCore/Pipeline/GpuFrameCompletionTracker.h>
+#include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
 #include <GraphicsCore/Pipeline/RenderGraphManager.h>
 #include <GraphicsCore/Pipeline/RenderGraphProfiler.h>
 #include <GraphicsCore/Pipeline/RenderGraphResourceCache.h>
@@ -29,7 +30,10 @@ public:
   {
     xiiUniquePtr<xiiRenderGraph>         m_pGraph;
     xiiRenderGraphBlackboard             m_Blackboard;
-    xiiRenderGraphManager::BuildDelegate m_BuildDelegate;
+    xiiRenderGraphManager::DeclarationDelegate m_DeclarationDelegate;
+    xiiRenderGraphManager::FrameDelegate       m_PrepareDelegate;
+    xiiHashedString                            m_sPendingInvalidation = xiiMakeHashedString("Initial declaration");
+    xiiUInt64                                  m_uiLastExecutionFrame = 0U;
   };
 
   using GraphTable = xiiIdTable<xiiRenderGraphHandle::IdType, xiiUniquePtr<Entry>>;
@@ -47,6 +51,17 @@ public:
     xiiUniquePtr<Entry>* pEntry = nullptr;
     return m_GraphTable.TryGetValue(hGraph.GetInternalID(), pEntry) ? pEntry->Borrow() : nullptr;
   }
+  void CollectRetiredEntries(xiiUInt64 uiCompletedFrame)
+  {
+    for (xiiUInt32 uiIndex = m_RetiredEntries.GetCount(); uiIndex > 0U; --uiIndex)
+    {
+      if (m_RetiredEntries[uiIndex - 1U]->m_uiLastExecutionFrame <= uiCompletedFrame)
+      {
+        m_RetiredEntries.RemoveAtAndSwap(uiIndex - 1U);
+      }
+    }
+  }
+
   /// Returns the allocator used by the render graph manager state.
   XII_ALWAYS_INLINE xiiAllocator* GetAllocator() { return &m_Allocator; }
 
@@ -58,7 +73,7 @@ public:
 
   GraphTable m_GraphTable;
 
-  // Removed handles cannot be resolved, but their resources may still be referenced by the active frame.
+  // Removed handles cannot be resolved. Retain their entries while a submitted frame uses them.
   xiiDynamicArray<xiiUniquePtr<Entry>> m_RetiredEntries;
 
   xiiUniquePtr<xiiRenderGraphResourceCache>     m_pResourceCache;
@@ -133,9 +148,9 @@ void xiiRenderGraphFrame::End()
 
 //////////////////////////////////////////////////////////////////////////
 
-xiiRenderGraphHandle xiiRenderGraphManager::CreateGraph(xiiStringView sName, BuildDelegate buildDelegate)
+xiiRenderGraphHandle xiiRenderGraphManager::CreateGraph(xiiStringView sName, DeclarationDelegate declarationDelegate, FrameDelegate prepareDelegate)
 {
-  if (s_pState == nullptr || !buildDelegate.IsValid())
+  if (s_pState == nullptr || !declarationDelegate.IsValid())
     return {};
 
   XII_LOCK(s_pState->m_FrameMutex);
@@ -145,9 +160,28 @@ xiiRenderGraphHandle xiiRenderGraphManager::CreateGraph(xiiStringView sName, Bui
 
   xiiUniquePtr<xiiRenderGraphManagerState::Entry> pEntry = XII_NEW(s_pState->GetAllocator(), xiiRenderGraphManagerState::Entry);
   pEntry->m_pGraph                                       = XII_NEW(s_pState->GetAllocator(), xiiRenderGraph, sName);
-  pEntry->m_BuildDelegate                                = buildDelegate;
+  pEntry->m_DeclarationDelegate                          = std::move(declarationDelegate);
+  pEntry->m_PrepareDelegate                              = std::move(prepareDelegate);
 
   return xiiRenderGraphHandle(s_pState->m_GraphTable.Insert(std::move(pEntry)));
+}
+
+xiiResult xiiRenderGraphManager::InvalidateGraph(xiiRenderGraphHandle hGraph, xiiStringView sReason)
+{
+  if (s_pState == nullptr || hGraph.IsInvalidated() || sReason.IsEmpty())
+  {
+    return XII_FAILURE;
+  }
+
+  XII_LOCK(s_pState->m_FrameMutex);
+  auto* pEntry = s_pState->FindEntry(hGraph);
+  if (pEntry == nullptr)
+  {
+    return XII_FAILURE;
+  }
+
+  pEntry->m_sPendingInvalidation.Assign(sReason);
+  return XII_SUCCESS;
 }
 
 xiiResult xiiRenderGraphManager::DestroyGraph(xiiRenderGraphHandle hGraph)
@@ -160,13 +194,14 @@ xiiResult xiiRenderGraphManager::DestroyGraph(xiiRenderGraphHandle hGraph)
   if (!s_pState->m_GraphTable.Contains(hGraph))
     return XII_FAILURE;
 
-  if (!s_pState->m_bFrameActive && s_pState->m_uiFrameIndex != 0U)
-    s_pState->m_FrameCompletionTracker.WaitForFrame(s_pState->m_uiFrameIndex);
-
   xiiUniquePtr<xiiRenderGraphManagerState::Entry> pEntry;
   XII_VERIFY(s_pState->m_GraphTable.Remove(hGraph, &pEntry), "Failed to remove a managed render graph.");
-  if (s_pState->m_bFrameActive)
+
+  const xiiUInt64 uiCompletedFrame = s_pState->m_FrameCompletionTracker.GetLastCompletedFrame();
+  if (pEntry->m_uiLastExecutionFrame > uiCompletedFrame)
+  {
     s_pState->m_RetiredEntries.PushBack(std::move(pEntry));
+  }
   return XII_SUCCESS;
 }
 
@@ -190,32 +225,59 @@ xiiResult xiiRenderGraphManager::ExecuteGraph(const xiiRenderGraphFrame& frame, 
   if (pDevice == nullptr || s_pState->m_pResourceCache == nullptr)
     return XII_FAILURE;
 
-  {
-    XII_PROFILE_SCOPE("Render Graph: Build");
+  // Keep the entry alive through declaration, preparation and any submitted recording prefix.
+  pEntry->m_uiLastExecutionFrame = frame.GetFrameIndex();
+  auto& graph                    = *pEntry->m_pGraph;
+  auto& blackboard               = pEntry->m_Blackboard;
+  blackboard.ClearFrame();
+  blackboard.Set(xiiRGBlackboardKeys::k_FrameIndex, static_cast<xiiUInt32>(frame.GetFrameIndex()));
 
+  if (!pEntry->m_sPendingInvalidation.IsEmpty())
+  {
+    XII_PROFILE_SCOPE("Render Graph: Declare Structure");
+    const xiiHashedString sReason = pEntry->m_sPendingInvalidation;
+    pEntry->m_sPendingInvalidation.Clear();
+    graph.BeginSetup(frame.GetFrameIndex(), sReason.GetView());
+    graph.SetSetupBlackboard(&blackboard);
+    const xiiResult declarationResult = pEntry->m_DeclarationDelegate(graph, blackboard, pView);
+    graph.EndSetup();
+    if (declarationResult.Failed())
     {
-      XII_PROFILE_SCOPE("Render Graph: Reset Build State");
-      pEntry->m_Blackboard.ClearFrame();
-      pEntry->m_pGraph->BeginSetup(frame.GetFrameIndex());
+      if (pEntry->m_sPendingInvalidation.IsEmpty())
+      {
+        pEntry->m_sPendingInvalidation = sReason;
+      }
+      if (out_pError != nullptr)
+      {
+        *out_pError = "Render graph declaration failed. See the preceding diagnostics.";
+      }
+      return XII_FAILURE;
     }
-    pEntry->m_pGraph->SetSetupBlackboard(&pEntry->m_Blackboard);
-    const xiiResult buildResult = pEntry->m_BuildDelegate(*pEntry->m_pGraph, pEntry->m_Blackboard, pView);
-    pEntry->m_pGraph->EndSetup();
-    if (buildResult.Failed())
+  }
+  else
+  {
+    graph.BeginExecutionFrame(frame.GetFrameIndex());
+  }
+
+  XII_SUCCEED_OR_RETURN(graph.Compile(settings, out_pError));
+
+  if (pEntry->m_PrepareDelegate.IsValid())
+  {
+    XII_PROFILE_SCOPE("Render Graph: Prepare Frame");
+    const xiiTime   preparationStart          = xiiTime::Now();
+    const xiiResult preparationResult         = pEntry->m_PrepareDelegate(graph, blackboard, pView);
+    graph.m_Statistics.m_FramePreparationTime = xiiTime::Now() - preparationStart;
+    if (preparationResult.Failed())
     {
-      if (out_pError)
-        *out_pError = "The graph build delegate failed; see the preceding operation diagnostics.";
+      if (out_pError != nullptr)
+      {
+        *out_pError = "Render graph frame preparation failed. Check the current resource bindings.";
+      }
       return XII_FAILURE;
     }
   }
 
-  if (pEntry->m_pGraph->Compile(settings, out_pError).Failed())
-    return XII_FAILURE;
-
-  if (pEntry->m_pGraph->Execute(pDevice.Borrow(), pView, &pEntry->m_Blackboard, s_pState->m_pResourceCache.Borrow(), s_pState->m_pProfiler.Borrow(), out_pError).Failed())
-    return XII_FAILURE;
-
-  return XII_SUCCESS;
+  return graph.Execute(pDevice.Borrow(), pView, &blackboard, s_pState->m_pResourceCache.Borrow(), s_pState->m_pProfiler.Borrow(), out_pError);
 }
 
 xiiRenderGraph* xiiRenderGraphManager::GetGraph(xiiRenderGraphHandle hGraph)
@@ -324,6 +386,7 @@ xiiResult xiiRenderGraphManager::BeginFrame(xiiRenderGraphFrame& frame, xiiUInt3
   {
     XII_PROFILE_SCOPE("Render Graph: Poll GPU Frame Completion");
     uiCompletedFrame = s_pState->m_FrameCompletionTracker.PollCompletedFrames();
+    s_pState->CollectRetiredEntries(uiCompletedFrame);
   }
   if (xiiGALBindlessResourceTable::IsInitialized())
   {
@@ -370,8 +433,7 @@ void xiiRenderGraphManager::EndFrame(xiiRenderGraphFrame& frame)
 
   if (!s_pState->m_RetiredEntries.IsEmpty())
   {
-    s_pState->m_FrameCompletionTracker.WaitForFrame(frame.m_uiFrameIndex);
-    s_pState->m_RetiredEntries.Clear();
+    s_pState->CollectRetiredEntries(s_pState->m_FrameCompletionTracker.PollCompletedFrames());
   }
 
   const bool bTrimUnusedGpuResources = frame.m_uiFrameIndex % 8U == 0U && xiiGALDevice::HasDefaultDevice() && xiiGALDevice::GetDefaultDevice()->IsStreamingMemoryPressured();

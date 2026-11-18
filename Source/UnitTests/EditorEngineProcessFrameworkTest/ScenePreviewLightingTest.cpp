@@ -179,9 +179,7 @@ XII_CREATE_SIMPLE_TEST(EditorViews, ScenePreviewLighting)
       view->SetRenderTargetView(target->GetDefaultView(xiiGALTextureViewType::RenderTarget));
       view->SetRenderEnabled(true);
       // Exercise world extraction and graph execution independently of scene shading.
-      view->SetRenderGraphBuilder([&target](xiiView&, xiiRenderGraph& graph, xiiRenderGraphBlackboard&) {
-        graph.AddPass<ClearPassData>("Preview lighting test output", xiiGALCommandQueueFlags::Graphics, [&target](ClearPassData& data, xiiRenderGraphBuilder& builder) { data.m_Target = builder.WriteTexture(builder.ImportTexture("Preview lighting target", target, target->GetResourceState()), xiiGALResourceStateFlags::RenderTarget); }, [](const ClearPassData& data, xiiRenderGraphPassContext& context) { context.GetCommandList().ClearRenderTargetView(context.GetTexture(data.m_Target)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::Black); }, true);
-      });
+      view->SetRenderGraphBuilder([&target](xiiView&, xiiRenderGraph& graph, xiiRenderGraphBlackboard&) { graph.AddPass<ClearPassData>("Preview lighting test output", xiiGALCommandQueueFlags::Graphics, [&target](ClearPassData& data, xiiRenderGraphBuilder& builder) { data.m_Target = builder.WriteTexture(builder.DeclareImportedTexture("Preview lighting target", target->GetDescription()), xiiGALResourceStateFlags::RenderTarget); }, [](const ClearPassData& data, xiiRenderGraphPassContext& context) { context.GetCommandList().ClearRenderTargetView(context.GetTexture(data.m_Target)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::Black); }, true); }, [&target](xiiView&, xiiRenderGraph& graph, xiiRenderGraphBlackboard&) { return graph.BindImportedTexture(graph.FindTexture("Preview lighting target"), target); });
     }
     gameView->m_ExcludeTags.Set(editorTag);
     world.Update();

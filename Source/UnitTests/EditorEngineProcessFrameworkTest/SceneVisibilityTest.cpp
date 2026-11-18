@@ -127,11 +127,9 @@ XII_CREATE_SIMPLE_TEST(EditorViews, SceneVisibility)
     view->SetRenderTargetView(texture->GetDefaultView(xiiGALTextureViewType::RenderTarget));
     view->SetRenderEnabled(true);
     // Exercise normal world extraction and execution without making this visibility test depend on scene shading.
-    view->SetRenderGraphBuilder([&texture](xiiView&, xiiRenderGraph& graph, xiiRenderGraphBlackboard&) {
-      graph.AddPass<ClearPassData>("Visibility test output", xiiGALCommandQueueFlags::Graphics, [&texture](ClearPassData& data, xiiRenderGraphBuilder& builder) {
-          auto target = builder.ImportTexture("Visibility test target", texture, texture->GetResourceState());
-          data.m_Target = builder.WriteTexture(target, xiiGALResourceStateFlags::RenderTarget); }, [](const ClearPassData& data, xiiRenderGraphPassContext& context) { context.GetCommandList().ClearRenderTargetView(context.GetTexture(data.m_Target)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::Black); }, true);
-    });
+    view->SetRenderGraphBuilder([&texture](xiiView&, xiiRenderGraph& graph, xiiRenderGraphBlackboard&) { graph.AddPass<ClearPassData>("Visibility test output", xiiGALCommandQueueFlags::Graphics, [&texture](ClearPassData& data, xiiRenderGraphBuilder& builder) {
+          auto target = builder.DeclareImportedTexture("Visibility test target", texture->GetDescription());
+          data.m_Target = builder.WriteTexture(target, xiiGALResourceStateFlags::RenderTarget); }, [](const ClearPassData& data, xiiRenderGraphPassContext& context) { context.GetCommandList().ClearRenderTargetView(context.GetTexture(data.m_Target)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::Black); }, true); }, [&texture](xiiView&, xiiRenderGraph& graph, xiiRenderGraphBlackboard&) { return graph.BindImportedTexture(graph.FindTexture("Visibility test target"), texture); });
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Independent views, include OR and exclusion precedence")

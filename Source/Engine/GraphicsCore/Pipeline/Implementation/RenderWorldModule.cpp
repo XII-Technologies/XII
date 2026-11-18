@@ -926,6 +926,12 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
     compileSettings.m_bEnablePassCulling  = true;
     compileSettings.m_bEnableAsyncQueues  = true;
 
+    if (!viewDetail.m_pView->GetRenderGraphBuilder().IsValid())
+    {
+      // Authored passes still request frame-dependent declarations for work and resource pins.
+      xiiRenderGraphManager::InvalidateGraph(viewDetail.m_pView->m_hRenderGraph, "Frame-dependent authored pass declarations").AssertSuccess();
+    }
+
     xiiStringBuilder graphError;
     viewDetail.m_pView->m_LastRenderResult = xiiRenderGraphManager::ExecuteGraph(frame, viewDetail.m_pView->m_hRenderGraph, viewDetail.m_pView.Borrow(), compileSettings, &graphError);
     if (viewDetail.m_pView->m_LastRenderResult.Failed())

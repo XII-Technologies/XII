@@ -69,14 +69,19 @@ class XII_GRAPHICSCORE_DLL xiiRenderGraphManager
   XII_DISALLOW_COPY_AND_ASSIGN(xiiRenderGraphManager);
 
 public:
-  using BuildDelegate = xiiDelegate<xiiResult(xiiRenderGraph&, xiiRenderGraphBlackboard&, const xiiView*)>;
+  using DeclarationDelegate = xiiDelegate<xiiResult(xiiRenderGraph&, xiiRenderGraphBlackboard&, const xiiView*)>;
 
-  /// Creates a manager-owned render graph. The delegate is invoked whenever ExecuteGraph() is called.
+  using FrameDelegate = xiiDelegate<xiiResult(xiiRenderGraph&, xiiRenderGraphBlackboard&, const xiiView*)>;
+
+  /// Creates a manager-owned render graph. Declaration runs on first use and after invalidation.
+  /// Prepare is called on every execution to bind current resources and update frame data.
   /// A separate graph instance should be created for each view that requires independent graph or temporal state.
-  [[nodiscard]] static xiiRenderGraphHandle CreateGraph(xiiStringView sName, BuildDelegate buildDelegate);
+  [[nodiscard]] static xiiRenderGraphHandle CreateGraph(xiiStringView sName, DeclarationDelegate declarationDelegate, FrameDelegate prepareDelegate = {});
 
-  /// Invalidates the handle immediately. During a GPU frame, graph-owned resources are retained
-  /// until End() waits for that frame to complete; otherwise waits for prior submissions before release.
+  /// Schedules a structural rebuild at the next execution of hGraph.
+  [[nodiscard]] static xiiResult InvalidateGraph(xiiRenderGraphHandle hGraph, xiiStringView sReason);
+
+  /// Invalidates the handle immediately and retires the entry once its last GPU frame completes.
   [[nodiscard]] static xiiResult DestroyGraph(xiiRenderGraphHandle hGraph);
 
   /// Borrowed graph and blackboard access. Returns null for stale handles.
@@ -84,7 +89,7 @@ public:
   [[nodiscard]] static xiiRenderGraph*           GetGraph(xiiRenderGraphHandle hGraph);
   [[nodiscard]] static xiiRenderGraphBlackboard* GetBlackboard(xiiRenderGraphHandle hGraph);
 
-  /// Builds, compiles, and executes exactly one graph for the supplied view within an active shared GPU frame.
+  /// Prepares and executes the graph for the supplied view within an active shared GPU frame.
   /// Calls must be made on the thread that began the frame. Graphs are executed in caller-specified order.
   [[nodiscard]] static xiiResult ExecuteGraph(const xiiRenderGraphFrame& frame, xiiRenderGraphHandle hGraph, const xiiView* pView, const xiiRenderGraphCompileSettings& settings = {}, xiiStringBuilder* out_pError = nullptr);
 

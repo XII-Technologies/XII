@@ -253,6 +253,7 @@ struct XII_GRAPHICSCORE_DLL xiiRenderGraphStatistics
 
   xiiTime   m_StructuralBuildTime;
   xiiTime   m_CompilationTime;
+  xiiTime   m_FramePreparationTime;
   xiiTime   m_ResourceResolutionTime;
   xiiUInt64 m_uiPlanGeneration         = 0U;
   xiiUInt64 m_uiStructuralBuildCount   = 0U;
@@ -357,6 +358,9 @@ public:
   /// Declares a texture with explicit lifetime flags. Exactly one of Transient or Persistent must be set.
   [[nodiscard]] xiiRenderGraphTextureHandle DeclareTexture(xiiStringView sName, const xiiGALTextureCreationDescription& description, xiiBitflags<xiiRenderGraphResourceFlags> flags);
 
+  /// Declares a frame-bound external texture with a stable resource contract.
+  [[nodiscard]] xiiRenderGraphTextureHandle DeclareImportedTexture(xiiStringView sName, const xiiGALTextureCreationDescription& description);
+
   /// Imports an externally-owned texture as a read-only graph resource.
   [[nodiscard]] xiiRenderGraphTextureHandle ImportTexture(xiiStringView sName, xiiSharedPtr<xiiGALTexture> pTexture, xiiBitflags<xiiGALResourceStateFlags> currentState);
 
@@ -388,6 +392,9 @@ public:
 
   /// Declares a buffer with explicit lifetime flags. Exactly one of Transient or Persistent must be set.
   [[nodiscard]] xiiRenderGraphBufferHandle DeclareBuffer(xiiStringView sName, const xiiGALBufferCreationDescription& description, xiiBitflags<xiiRenderGraphResourceFlags> flags);
+
+  /// Declares a frame-bound external buffer with a stable resource contract.
+  [[nodiscard]] xiiRenderGraphBufferHandle DeclareImportedBuffer(xiiStringView sName, const xiiGALBufferCreationDescription& description);
 
   /// Imports an externally-owned buffer as a read-only graph resource.
   [[nodiscard]] xiiRenderGraphBufferHandle ImportBuffer(xiiStringView sName, xiiSharedPtr<xiiGALBuffer> pBuffer, xiiBitflags<xiiGALResourceStateFlags> currentState);
@@ -630,6 +637,7 @@ public:
 
 private:
   friend class xiiRenderGraphBuilder;
+  friend class xiiRenderGraphManager;
   xiiStringBuilder QualifyResourceName(xiiStringView name) const;
   xiiString        m_sResourceNamespace;
 

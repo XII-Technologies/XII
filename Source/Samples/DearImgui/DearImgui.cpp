@@ -203,6 +203,7 @@ public:
         if (tool.m_pWindow && tool.m_pWindow->IsVisible() && tool.m_pSwapChain->GetCurrentSize().HasNonZeroArea())
         {
           xiiStringBuilder error;
+          xiiRenderGraphManager::InvalidateGraph(tool.m_hGraph, "Frame-dependent UI declarations").AssertSuccess();
           if (xiiRenderGraphManager::ExecuteGraph(frame, tool.m_hGraph, tool.m_pView, {}, &error).Failed())
           {
             xiiLog::Error("Dear ImGui tool rendering failed: {0}", error);
@@ -215,6 +216,7 @@ public:
       if (m_Tools[0].m_pFrame)
       {
         xiiStringBuilder error;
+        xiiRenderGraphManager::InvalidateGraph(m_hMirrorGraph, "Frame-dependent UI declarations").AssertSuccess();
         if (xiiRenderGraphManager::ExecuteGraph(frame, m_hMirrorGraph, m_pMirrorView, {}, &error).Failed())
         {
           xiiLog::Error("Dear ImGui offscreen rendering failed: {0}", error);

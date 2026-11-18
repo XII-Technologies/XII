@@ -131,6 +131,7 @@ XII_CREATE_SIMPLE_TEST(DearImguiGraphics, NativeCompositionAndDeferredLifetime)
       xiiRenderGraphFrame gpuFrame;
       XII_TEST_RESULT(gpuFrame.Begin(3));
       xiiStringBuilder error;
+      XII_TEST_RESULT(xiiRenderGraphManager::InvalidateGraph(graphHandle, "Frame-dependent UI declarations"));
       XII_TEST_RESULT_MSG(xiiRenderGraphManager::ExecuteGraph(gpuFrame, graphHandle, view, {}, &error), "%s", error.GetData());
     }
     device->EndFrame();

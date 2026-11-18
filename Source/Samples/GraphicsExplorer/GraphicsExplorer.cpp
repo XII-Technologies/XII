@@ -376,7 +376,7 @@ public:
     // Now that we have a window and device, tell the engine to initialize the rendering infrastructure
     xiiStartup::StartupHighLevelSystems();
 
-    m_hRenderGraph = xiiRenderGraphManager::CreateGraph("Graphics Explorer", xiiMakeDelegate(&xiiGraphicsExplorerApp::BuildRenderGraph, this));
+    m_hRenderGraph = xiiRenderGraphManager::CreateGraph("Graphics Explorer", xiiMakeDelegate(&xiiGraphicsExplorerApp::DeclareRenderGraph, this), xiiMakeDelegate(&xiiGraphicsExplorerApp::PrepareRenderGraph, this));
     XII_ASSERT_DEV(!m_hRenderGraph.IsInvalidated(), "Failed to create the graphics explorer render graph.");
   }
 
@@ -438,13 +438,22 @@ public:
 
       if (m_pSwapChain->GetCurrentSize() != currentSize)
       {
-        m_pSwapChain->Resize(currentSize).IgnoreResult();
+        if (m_pSwapChain->Resize(currentSize).Succeeded() && !m_hRenderGraph.IsInvalidated())
+        {
+          xiiRenderGraphManager::InvalidateGraph(m_hRenderGraph, "Swap chain extent changed").AssertSuccess();
+        }
       }
     }
   }
 
 private:
-  xiiResult BuildRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlackboard&, const xiiView*)
+  xiiResult PrepareRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlackboard&, const xiiView*)
+  {
+    const auto pBackBuffer = m_pSwapChain->GetBackBufferTexture();
+    return graph.BindImportedTexture(graph.FindTexture("BackBuffer"), pBackBuffer);
+  }
+
+  xiiResult DeclareRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlackboard&, const xiiView*)
   {
     graph.AddPass<OffscreenPassData>("OffscreenPass", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiGraphicsExplorerApp::SetupOffscreenPass, this), xiiMakeDelegate(&xiiGraphicsExplorerApp::ExecuteOffscreenPass, this));
     graph.AddPass<ProceduralTrianglePassData>("ProceduralTrianglePass", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiGraphicsExplorerApp::SetupProceduralTrianglePass, this), xiiMakeDelegate(&xiiGraphicsExplorerApp::ExecuteProceduralTrianglePass, this));
@@ -455,7 +464,6 @@ private:
   {
     xiiRenderGraphTextureHandle m_hOffScreenTexture;
     xiiRenderGraphTextureHandle m_hDepthTexture;
-    float                       m_fGlobalTime = 0.0F;
   };
 
   void SetupOffscreenPass(OffscreenPassData& data, xiiRenderGraphBuilder& builder)
@@ -475,7 +483,6 @@ private:
 
     data.m_hDepthTexture = builder.WriteTexture("DepthStencil", textureDescription, xiiGALResourceStateFlags::DepthWrite);
 
-    data.m_fGlobalTime = (float)xiiMath::Mod(xiiClock::GetGlobalClock()->GetAccumulatedTime().GetSeconds(), 360.0);
   }
 
   void ExecuteOffscreenPass(const OffscreenPassData& data, xiiRenderGraphPassContext& context)
@@ -485,7 +492,6 @@ private:
     cmd.BeginDebugGroup("Offscreen Clear");
     {
       cmd.ClearDepthStencilView(context.GetTexture(data.m_hDepthTexture)->GetDefaultView(xiiGALTextureViewType::DepthStencil), true, true, 1.0F, 0U);
-      // cmd.ClearRenderTargetView(context.GetTexture(data.m_hOffScreenTexture)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::MakeHSV(data.m_fGlobalTime, 1.0f, 0.5f + 0.5f * sinf(data.m_fGlobalTime * 0.5f)));
       cmd.ClearRenderTargetView(context.GetTexture(data.m_hOffScreenTexture)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::Black);
     }
     cmd.EndDebugGroup();
@@ -600,7 +606,7 @@ private:
     data.m_hDepthTexture     = builder.ReadTexture("DepthStencil", xiiGALResourceStateFlags::DepthRead);
 
     // We also need to get the back buffer texture from the swap chain as a render target.
-    data.m_hBackBufferTexture = builder.ImportTexture("BackBuffer", m_pSwapChain->GetBackBufferTexture(), xiiGALResourceStateFlags::CopyDestination);
+    data.m_hBackBufferTexture = builder.WriteTexture(builder.DeclareImportedTexture("BackBuffer", m_pSwapChain->GetBackBufferTexture()->GetDescription()), xiiGALResourceStateFlags::CopyDestination);
 
     // This pass writes to the back buffer, so we need to declare that it has side effects to prevent it from being culled.
     builder.SetPassSideEffects(true);

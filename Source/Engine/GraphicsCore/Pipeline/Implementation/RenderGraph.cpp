@@ -128,22 +128,28 @@ xiiRenderGraphTextureHandle xiiRenderGraphBuilder::DeclareTexture(xiiStringView 
   return xiiRenderGraphTextureHandle(xiiRenderGraphResourceHandleId(uiTextureResourceIndex, 0U), entry.m_Id);
 }
 
-xiiRenderGraphTextureHandle xiiRenderGraphBuilder::ImportTexture(xiiStringView sName, xiiSharedPtr<xiiGALTexture> pTexture, xiiBitflags<xiiGALResourceStateFlags> currentState)
+namespace
 {
-  const auto qualified = m_Graph.QualifyResourceName(sName);
-  sName                = qualified;
-  XII_ASSERT_DEV(pTexture != nullptr, "Cannot import a null texture.");
-  xiiUInt32 physicalIndex;
-  if (m_Graph.m_Frame.m_ImportIndices.TryGetValue(pTexture.Borrow(), physicalIndex))
+  xiiGALTextureCreationDescription GetImportContract(xiiGALTextureCreationDescription description)
   {
-    xiiUInt32 namedIndex;
-    if (m_Graph.m_ResourceNameIndex.TryGetValue(xiiTempHashedString(sName), namedIndex) && namedIndex != physicalIndex)
-      return {};
-    m_Graph.m_ResourceNameIndex.Insert(xiiMakeHashedString(sName), physicalIndex);
-    const auto& existing = m_Graph.m_Resources[physicalIndex];
-    return {xiiRenderGraphResourceHandleId(physicalIndex, existing.m_uiCurrentVersion), existing.m_Id};
+    // The native image and external handles identify a frame binding, including swap-chain images.
+    description.m_pExistingNativeObject = nullptr;
+    description.m_ExternalMemory        = {};
+    return description;
   }
 
+  xiiGALBufferCreationDescription GetImportContract(xiiGALBufferCreationDescription description)
+  {
+    description.m_ExternalMemory = {};
+    return description;
+  }
+} // namespace
+
+xiiRenderGraphTextureHandle xiiRenderGraphBuilder::DeclareImportedTexture(xiiStringView sName, const xiiGALTextureCreationDescription& description)
+{
+  const auto qualified              = m_Graph.QualifyResourceName(sName);
+  sName                             = qualified;
+  const auto contract               = GetImportContract(description);
   xiiUInt32 uiTextureResourceIndex = xiiInvalidIndex;
   if (!m_Graph.m_ResourceNameIndex.TryGetValue(xiiTempHashedString(sName), uiTextureResourceIndex))
   {
@@ -153,7 +159,7 @@ xiiRenderGraphTextureHandle xiiRenderGraphBuilder::ImportTexture(xiiStringView s
     entry.m_bIsImported                  = true;
     entry.m_bIsTransient                 = false;
     entry.m_Flags                        = xiiRenderGraphResourceFlags::External;
-    entry.m_TextureDescription           = pTexture->GetDescription();
+    entry.m_TextureDescription           = contract;
 
     entry.m_sName.Assign(sName);
     entry.m_Id                                   = xiiRenderGraphId(uiTextureResourceIndex, m_Graph.m_uiStructuralGeneration);
@@ -162,7 +168,33 @@ xiiRenderGraphTextureHandle xiiRenderGraphBuilder::ImportTexture(xiiStringView s
     m_Graph.m_ResourceNameIndex.Insert(entry.m_sName, uiTextureResourceIndex);
   }
 
-  const xiiRenderGraphTextureHandle handle(xiiRenderGraphResourceHandleId(uiTextureResourceIndex, m_Graph.m_Resources[uiTextureResourceIndex].m_uiCurrentVersion), m_Graph.m_Resources[uiTextureResourceIndex].m_Id);
+  const auto& entry = m_Graph.m_Resources[uiTextureResourceIndex];
+  if (!entry.m_bIsImported || !entry.m_bIsTexture || entry.m_TextureDescription != contract)
+  {
+    return {};
+  }
+  return {xiiRenderGraphResourceHandleId(uiTextureResourceIndex, entry.m_uiCurrentVersion), entry.m_Id};
+}
+
+xiiRenderGraphTextureHandle xiiRenderGraphBuilder::ImportTexture(xiiStringView sName, xiiSharedPtr<xiiGALTexture> pTexture, xiiBitflags<xiiGALResourceStateFlags> currentState)
+{
+  const auto qualified = m_Graph.QualifyResourceName(sName);
+  if (pTexture == nullptr)
+  {
+    return {};
+  }
+  xiiUInt32 physicalIndex;
+  if (m_Graph.m_Frame.m_ImportIndices.TryGetValue(pTexture.Borrow(), physicalIndex))
+  {
+    xiiUInt32 namedIndex;
+    if (m_Graph.m_ResourceNameIndex.TryGetValue(xiiTempHashedString(qualified), namedIndex) && namedIndex != physicalIndex)
+      return {};
+    m_Graph.m_ResourceNameIndex.Insert(xiiMakeHashedString(qualified), physicalIndex);
+    const auto& existing = m_Graph.m_Resources[physicalIndex];
+    return {xiiRenderGraphResourceHandleId(physicalIndex, existing.m_uiCurrentVersion), existing.m_Id};
+  }
+
+  const auto handle = DeclareImportedTexture(sName, pTexture->GetDescription());
   if (m_Graph.BindImportedTexture(handle, std::move(pTexture), currentState).Failed())
   {
     return {};
@@ -320,22 +352,11 @@ xiiRenderGraphBufferHandle xiiRenderGraphBuilder::DeclareBuffer(xiiStringView sN
   return xiiRenderGraphBufferHandle(xiiRenderGraphResourceHandleId(uiBufferResourceIndex, 0U), entry.m_Id);
 }
 
-xiiRenderGraphBufferHandle xiiRenderGraphBuilder::ImportBuffer(xiiStringView sName, xiiSharedPtr<xiiGALBuffer> pBuffer, xiiBitflags<xiiGALResourceStateFlags> currentState)
+xiiRenderGraphBufferHandle xiiRenderGraphBuilder::DeclareImportedBuffer(xiiStringView sName, const xiiGALBufferCreationDescription& description)
 {
   const auto qualified = m_Graph.QualifyResourceName(sName);
-  sName                = qualified;
-  XII_ASSERT_DEV(pBuffer != nullptr, "Cannot import a null buffer.");
-  xiiUInt32 physicalIndex;
-  if (m_Graph.m_Frame.m_ImportIndices.TryGetValue(pBuffer.Borrow(), physicalIndex))
-  {
-    xiiUInt32 namedIndex;
-    if (m_Graph.m_ResourceNameIndex.TryGetValue(xiiTempHashedString(sName), namedIndex) && namedIndex != physicalIndex)
-      return {};
-    m_Graph.m_ResourceNameIndex.Insert(xiiMakeHashedString(sName), physicalIndex);
-    const auto& existing = m_Graph.m_Resources[physicalIndex];
-    return {xiiRenderGraphResourceHandleId(physicalIndex, existing.m_uiCurrentVersion), existing.m_Id};
-  }
-
+  sName                            = qualified;
+  const auto contract              = GetImportContract(description);
   xiiUInt32 uiBufferResourceIndex = xiiInvalidIndex;
   if (!m_Graph.m_ResourceNameIndex.TryGetValue(xiiTempHashedString(sName), uiBufferResourceIndex))
   {
@@ -345,7 +366,7 @@ xiiRenderGraphBufferHandle xiiRenderGraphBuilder::ImportBuffer(xiiStringView sNa
     entry.m_bIsImported                  = true;
     entry.m_bIsTransient                 = false;
     entry.m_Flags                        = xiiRenderGraphResourceFlags::External;
-    entry.m_BufferDescription            = pBuffer->GetDescription();
+    entry.m_BufferDescription            = contract;
 
     entry.m_sName.Assign(sName);
     entry.m_Id                                   = xiiRenderGraphId(uiBufferResourceIndex, m_Graph.m_uiStructuralGeneration);
@@ -354,7 +375,33 @@ xiiRenderGraphBufferHandle xiiRenderGraphBuilder::ImportBuffer(xiiStringView sNa
     m_Graph.m_ResourceNameIndex.Insert(entry.m_sName, uiBufferResourceIndex);
   }
 
-  const xiiRenderGraphBufferHandle handle(xiiRenderGraphResourceHandleId(uiBufferResourceIndex, m_Graph.m_Resources[uiBufferResourceIndex].m_uiCurrentVersion), m_Graph.m_Resources[uiBufferResourceIndex].m_Id);
+  const auto& entry = m_Graph.m_Resources[uiBufferResourceIndex];
+  if (!entry.m_bIsImported || entry.m_bIsTexture || entry.m_BufferDescription != contract)
+  {
+    return {};
+  }
+  return {xiiRenderGraphResourceHandleId(uiBufferResourceIndex, entry.m_uiCurrentVersion), entry.m_Id};
+}
+
+xiiRenderGraphBufferHandle xiiRenderGraphBuilder::ImportBuffer(xiiStringView sName, xiiSharedPtr<xiiGALBuffer> pBuffer, xiiBitflags<xiiGALResourceStateFlags> currentState)
+{
+  const auto qualified = m_Graph.QualifyResourceName(sName);
+  if (pBuffer == nullptr)
+  {
+    return {};
+  }
+  xiiUInt32 physicalIndex;
+  if (m_Graph.m_Frame.m_ImportIndices.TryGetValue(pBuffer.Borrow(), physicalIndex))
+  {
+    xiiUInt32 namedIndex;
+    if (m_Graph.m_ResourceNameIndex.TryGetValue(xiiTempHashedString(qualified), namedIndex) && namedIndex != physicalIndex)
+      return {};
+    m_Graph.m_ResourceNameIndex.Insert(xiiMakeHashedString(qualified), physicalIndex);
+    const auto& existing = m_Graph.m_Resources[physicalIndex];
+    return {xiiRenderGraphResourceHandleId(physicalIndex, existing.m_uiCurrentVersion), existing.m_Id};
+  }
+
+  const auto handle = DeclareImportedBuffer(sName, pBuffer->GetDescription());
   if (m_Graph.BindImportedBuffer(handle, std::move(pBuffer), currentState).Failed())
   {
     return {};
@@ -539,6 +586,7 @@ void xiiRenderGraph::BeginExecutionFrame(xiiUInt64 uiFrameIndex)
   m_Frame.m_uiIndex                       = uiFrameIndex;
   m_Statistics.m_StructuralBuildTime      = {};
   m_Statistics.m_CompilationTime          = {};
+  m_Statistics.m_FramePreparationTime     = {};
   m_Statistics.m_ResourceResolutionTime   = {};
   m_Statistics.m_uiExternalFenceWaitCount = 0U;
   m_Frame.m_FenceWaits.Clear();
@@ -589,7 +637,7 @@ void xiiRenderGraph::BeginSetup(xiiUInt64 uiFrameIndex, xiiStringView sReason)
 xiiResult xiiRenderGraph::BindImportedTexture(xiiRenderGraphTextureHandle hTexture, xiiSharedPtr<xiiGALTexture> pTexture, xiiBitflags<xiiGALResourceStateFlags> state)
 {
   const auto* pDescription = GetTextureDescription(hTexture);
-  if (pDescription == nullptr || pTexture == nullptr || *pDescription != pTexture->GetDescription())
+  if (pDescription == nullptr || pTexture == nullptr || *pDescription != GetImportContract(pTexture->GetDescription()))
   {
     return XII_FAILURE;
   }
@@ -600,7 +648,7 @@ xiiResult xiiRenderGraph::BindImportedTexture(xiiRenderGraphTextureHandle hTextu
 xiiResult xiiRenderGraph::BindImportedBuffer(xiiRenderGraphBufferHandle hBuffer, xiiSharedPtr<xiiGALBuffer> pBuffer, xiiBitflags<xiiGALResourceStateFlags> state)
 {
   const auto* pDescription = GetBufferDescription(hBuffer);
-  if (pDescription == nullptr || pBuffer == nullptr || *pDescription != pBuffer->GetDescription())
+  if (pDescription == nullptr || pBuffer == nullptr || *pDescription != GetImportContract(pBuffer->GetDescription()))
   {
     return XII_FAILURE;
   }

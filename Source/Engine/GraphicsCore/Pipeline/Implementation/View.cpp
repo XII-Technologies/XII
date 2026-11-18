@@ -62,8 +62,23 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 void xiiView::SetRenderTargetView(xiiGALTextureView* pRenderTargetView)
 {
+  if (m_RenderGraphBuilder.IsValid() && m_pRenderTargetView != pRenderTargetView)
+  {
+    if (m_pRenderTargetView == nullptr || pRenderTargetView == nullptr ||
+        m_pRenderTargetView->GetDescription() != pRenderTargetView->GetDescription() ||
+        m_pRenderTargetView->GetTexture()->GetDescription() != pRenderTargetView->GetTexture()->GetDescription())
+    {
+      InvalidateRenderGraph("View output contract changed");
+    }
+  }
+
   m_pRenderTargetView = pRenderTargetView == nullptr ? xiiSharedPtr<xiiGALTextureView>() :
                                                        xiiSharedPtr<xiiGALTextureView>(pRenderTargetView, pRenderTargetView->GetDevice()->GetAllocator());
+}
+
+void xiiView::InvalidateRenderGraph(xiiStringView sReason)
+{
+  xiiRenderGraphManager::InvalidateGraph(m_hRenderGraph, sReason).AssertSuccess();
 }
 
 xiiRenderPipelineInstance* xiiView::GetPipelineInstance() const
@@ -88,17 +103,16 @@ xiiView::xiiView(xiiWorld* pWorld) :
 
   m_hPipelineRuntime = xiiViewRenderResourceManager::CreateContext();
   XII_ASSERT_DEV(!m_hPipelineRuntime.IsInvalidated(), "Failed to create the view render-resource context.");
-  m_hRenderGraph = xiiRenderGraphManager::CreateGraph("View Render Graph", xiiMakeDelegate(&xiiView::BuildRenderGraph, this));
+  m_hRenderGraph = xiiRenderGraphManager::CreateGraph("View Render Graph", xiiMakeDelegate(&xiiView::DeclareRenderGraph, this), xiiMakeDelegate(&xiiView::PrepareRenderGraph, this));
   XII_ASSERT_DEV(!m_hRenderGraph.IsInvalidated(), "Failed to create the view render graph.");
 
   UpdateRenderResolutionState();
 }
 
-xiiResult xiiView::BuildRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard, const xiiView* pView)
+xiiResult xiiView::DeclareRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard, const xiiView* pView)
 {
   XII_ASSERT_DEV(pView == this, "A view must execute its own render graph.");
   XII_IGNORE_UNUSED(pView);
-  blackboard.Set(xiiRGBlackboardKeys::k_FrameIndex, static_cast<xiiUInt32>(graph.GetFrameIndex()));
 
   if (m_RenderGraphBuilder.IsValid())
   {
@@ -108,6 +122,17 @@ xiiResult xiiView::BuildRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlackbo
   {
     xiiLog::Error("Failed to build render pipeline for view '{}': {}", GetName(), GetRenderPipelineInstance().GetLastBuildError());
     return XII_FAILURE;
+  }
+  return XII_SUCCESS;
+}
+
+xiiResult xiiView::PrepareRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard, const xiiView* pView)
+{
+  XII_ASSERT_DEV(pView == this, "A view must execute its own render graph.");
+  XII_IGNORE_UNUSED(pView);
+  if (m_RenderGraphPreparation.IsValid())
+  {
+    return m_RenderGraphPreparation(*this, graph, blackboard);
   }
   return XII_SUCCESS;
 }

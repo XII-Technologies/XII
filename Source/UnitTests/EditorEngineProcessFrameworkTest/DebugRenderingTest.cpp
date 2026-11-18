@@ -71,8 +71,8 @@ XII_CREATE_SIMPLE_TEST(EditorViews, DebugRendering)
     view->SetRenderTargetView(color->GetDefaultView(xiiGALTextureViewType::RenderTarget));
     view->SetRenderGraphBuilder([&](xiiView&, xiiRenderGraph& graph, xiiRenderGraphBlackboard&) {
       graph.AddPass<ClearData>("Debug test clear", xiiGALCommandQueueFlags::Graphics, [&](ClearData& data, xiiRenderGraphBuilder& builder) {
-          data.m_Color = builder.WriteTexture(builder.ImportTexture(xiiRGBlackboardKeys::k_DisplayLinearColor, color, color->GetResourceState()), xiiGALResourceStateFlags::RenderTarget);
-          data.m_Depth = builder.WriteTexture(builder.ImportTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, depth, depth->GetResourceState()), xiiGALResourceStateFlags::DepthWrite); }, [&](const ClearData& data, xiiRenderGraphPassContext& context) {
+          data.m_Color = builder.WriteTexture(builder.DeclareImportedTexture(xiiRGBlackboardKeys::k_DisplayLinearColor, color->GetDescription()), xiiGALResourceStateFlags::RenderTarget);
+          data.m_Depth = builder.WriteTexture(builder.DeclareImportedTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, depth->GetDescription()), xiiGALResourceStateFlags::DepthWrite); }, [&](const ClearData& data, xiiRenderGraphPassContext& context) {
           auto& commandList = context.GetCommandList();
           commandList.ClearRenderTargetView(context.GetTexture(data.m_Color)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::Black);
           commandList.ClearDepthStencilView(context.GetTexture(data.m_Depth)->GetDefaultView(xiiGALTextureViewType::DepthStencil), true, false, clearDepth, 0);
@@ -90,9 +90,11 @@ XII_CREATE_SIMPLE_TEST(EditorViews, DebugRendering)
       XII_TEST_RESULT(xiiDebugRenderer::AddRenderGraphPasses(graph, debugColor, debugDepth));
       graph.AddPass<ClearData>("Debug test capture", xiiGALCommandQueueFlags::Graphics, [&](ClearData& data, xiiRenderGraphBuilder& builder) {
           data.m_Color = builder.ReadTexture(xiiRGBlackboardKeys::k_DisplayLinearColor, xiiGALResourceStateFlags::CopySource);
-          data.m_Depth = builder.WriteTexture(builder.ImportTexture("Captured debug output", capturedColor, capturedColor->GetResourceState()), xiiGALResourceStateFlags::CopyDestination);
-          builder.ExportTexture(data.m_Depth, xiiGALResourceStateFlags::CopySource); }, [](const ClearData& data, xiiRenderGraphPassContext& context) { context.GetCommandList().CopyTexture(context.GetTexture(data.m_Color), context.GetTexture(data.m_Depth)); });
-    });
+          data.m_Depth = builder.WriteTexture(builder.DeclareImportedTexture("Captured debug output", capturedColor->GetDescription()), xiiGALResourceStateFlags::CopyDestination);
+          builder.ExportTexture(data.m_Depth, xiiGALResourceStateFlags::CopySource); }, [](const ClearData& data, xiiRenderGraphPassContext& context) { context.GetCommandList().CopyTexture(context.GetTexture(data.m_Color), context.GetTexture(data.m_Depth)); }); }, [&color, &depth, &capturedColor](xiiView&, xiiRenderGraph& graph, xiiRenderGraphBlackboard&) {
+      XII_SUCCEED_OR_RETURN(graph.BindImportedTexture(graph.FindTexture(xiiRGBlackboardKeys::k_DisplayLinearColor), color));
+      XII_SUCCEED_OR_RETURN(graph.BindImportedTexture(graph.FindTexture(xiiRGBlackboardKeys::k_SceneDepthTexture), depth));
+      return graph.BindImportedTexture(graph.FindTexture("Captured debug output"), capturedColor); });
     return view;
   };
   auto* first  = configure(world);
