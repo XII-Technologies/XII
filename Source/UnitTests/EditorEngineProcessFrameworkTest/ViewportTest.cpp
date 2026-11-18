@@ -305,6 +305,7 @@ namespace
     const auto clear   = descriptor.AddPass("Clear", xiiGetStaticRTTI<xiiClearTexturePass>(), properties);
     const auto present = descriptor.AddPass("Present", xiiGetStaticRTTI<xiiPresentPass>());
     descriptor.Connect(clear, "Texture", present, "GradedColor").AssertSuccess();
+    descriptor.m_Interface.PushBack({"ViewTarget", true, descriptor.m_Passes[present].m_Id, "Target"});
     return descriptor;
   }
 
@@ -585,13 +586,18 @@ XII_CREATE_SIMPLE_TEST(EditorViews, SwapChainViewportExtent)
   view->GetCamera()->SetCameraMode(xiiCameraMode::PerspectiveFixedFovY, 60, 0.1f, 100);
   view->SetRenderPipelineResource(xiiResourceManager::CreateResource<xiiRenderPipelineResource>("ViewportExtent/Clear", ClearPresentation(xiiColor::Blue)));
   const auto checkAndRender = [&]() {
-    const auto actual = output.m_pSwapChain->GetBackBufferTexture()->GetDescription().m_Size;
+    const auto pBackBuffer = output.m_pSwapChain->GetBackBufferTexture();
+    const auto actual      = pBackBuffer->GetDescription().m_Size;
     XII_TEST_FLOAT(view->GetViewport().width, static_cast<float>(actual.width), 0);
     XII_TEST_FLOAT(view->GetViewport().height, static_cast<float>(actual.height), 0);
     context.Redraw(false);
     world.Update();
     device->WaitIdle();
-    XII_TEST_RESULT(view->GetLastRenderResult());
+    if (XII_TEST_RESULT(view->GetLastRenderResult()))
+    {
+      const auto* pBinding = view->GetRenderPipelineInstance().GetOutputBinding(1U, "ViewOutput");
+      XII_TEST_BOOL(pBinding != nullptr && view->GetRenderGraph()->GetExportedTexture(pBinding->m_hTexture) == pBackBuffer);
+    }
   };
   checkAndRender();
   output.Resize({512, 384});

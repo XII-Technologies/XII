@@ -922,6 +922,8 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
     if (!viewDetail.m_bPrepared || !viewDetail.m_pView->IsRenderEnabled() || !viewDetail.m_pView->IsValid())
       continue;
 
+    viewDetail.m_pView->UpdateRenderGraphContracts();
+
     xiiRenderGraphCompileSettings compileSettings;
     compileSettings.m_bEnableGPUProfiling = viewDetail.m_pView->GetDynamicResolutionSettings().m_bEnabled || !xiiRenderGraphTimestampProfiler::s_TimingEvents.IsEmpty();
     compileSettings.m_bEnablePassCulling  = true;

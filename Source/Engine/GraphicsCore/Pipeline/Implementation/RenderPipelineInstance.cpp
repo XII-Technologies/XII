@@ -275,7 +275,7 @@ xiiResult xiiRenderPipelineInstance::Synchronize(const xiiRenderPipelineResource
   if (status.Succeeded())
     recordRequest();
   if (out_changed)
-    *out_changed = pPrevious != m_pPipeline.Borrow();
+    *out_changed = status.Succeeded() || pPrevious != m_pPipeline.Borrow();
   return status;
 }
 xiiResult xiiRenderPipelineInstance::BeginFrame(xiiView* view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard, const xiiVariantDictionary& overrides)

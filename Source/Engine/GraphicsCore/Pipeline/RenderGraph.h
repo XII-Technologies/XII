@@ -545,6 +545,9 @@ public:
   /// Refresh dynamic imports and pass data before executing the retained plan.
   void BeginExecutionFrame(xiiUInt64 uiFrameIndex);
 
+  /// Compares a physical texture description to the declared import contract.
+  [[nodiscard]] bool MatchesImportedTexture(xiiRenderGraphTextureHandle hTexture, const xiiGALTextureCreationDescription& description) const;
+
   /// Binds an external resource for the current execution. The declaration must have the same
   /// description, and one physical resource may only occupy one logical slot in a frame.
   [[nodiscard]] xiiResult BindImportedTexture(xiiRenderGraphTextureHandle hTexture, xiiSharedPtr<xiiGALTexture> pTexture, xiiBitflags<xiiGALResourceStateFlags> state = xiiGALResourceStateFlags::Unknown);

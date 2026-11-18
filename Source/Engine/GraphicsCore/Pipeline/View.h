@@ -267,8 +267,8 @@ private:
   const xiiRenderConfiguration&             ResolveRenderConfiguration();
   void                                      ApplyRenderScale(float fRenderScale);
 
-  /// Instantiates the selected resource and emits its frame-specific render graph.
-  ///        Called by xiiRenderWorldModule::ExecuteRenderGraphs each frame.
+  xiiSharedPtr<xiiGALTexture> ResolveViewTarget() const;
+  void                        UpdateRenderGraphContracts();
   xiiResult BuildRenderPipeline(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
   xiiResult DeclareRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard, const xiiView* pView);
   xiiResult PrepareRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard, const xiiView* pView);
@@ -315,7 +315,10 @@ private:
     float m_fRenderScale   = 1.0F;
   } m_DynamicResolution;
 
-  xiiRenderGraphHandle       m_hRenderGraph;
+  xiiRenderGraphHandle        m_hRenderGraph;
+  xiiRenderGraphTextureHandle m_hGraphViewTarget;
+  xiiSizeU32                  m_DeclaredRenderResolution = xiiSizeU32::MakeZero();
+  bool                        m_bHasViewTargetInterface  = false;
   xiiDynamicArray<xiiUInt32> m_GpuInstanceSelection;
 
   /// Non-owning pointer. The extracted data lifetime is managed by xiiRenderWorldModule.

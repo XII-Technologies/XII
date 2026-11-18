@@ -643,10 +643,15 @@ void xiiRenderGraph::BeginSetup(xiiUInt64 uiFrameIndex, xiiStringView sReason)
   m_bIsCompiled  = false;
 }
 
-xiiResult xiiRenderGraph::BindImportedTexture(xiiRenderGraphTextureHandle hTexture, xiiSharedPtr<xiiGALTexture> pTexture, xiiBitflags<xiiGALResourceStateFlags> state)
+bool xiiRenderGraph::MatchesImportedTexture(xiiRenderGraphTextureHandle hTexture, const xiiGALTextureCreationDescription& description) const
 {
   const auto* pDescription = GetTextureDescription(hTexture);
-  if (pDescription == nullptr || pTexture == nullptr || *pDescription != GetImportContract(pTexture->GetDescription()))
+  return pDescription != nullptr && m_Resources[hTexture.GetInternalID().m_InstanceIndex].m_bIsImported && *pDescription == GetImportContract(description);
+}
+
+xiiResult xiiRenderGraph::BindImportedTexture(xiiRenderGraphTextureHandle hTexture, xiiSharedPtr<xiiGALTexture> pTexture, xiiBitflags<xiiGALResourceStateFlags> state)
+{
+  if (pTexture == nullptr || !MatchesImportedTexture(hTexture, pTexture->GetDescription()))
   {
     return XII_FAILURE;
   }

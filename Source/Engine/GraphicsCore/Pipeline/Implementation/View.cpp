@@ -114,6 +114,8 @@ xiiResult xiiView::DeclareRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
   XII_ASSERT_DEV(pView == this, "A view must execute its own render graph.");
   XII_IGNORE_UNUSED(pView);
 
+  m_hGraphViewTarget        = {};
+  m_bHasViewTargetInterface = false;
   if (m_RenderGraphBuilder.IsValid())
   {
     m_RenderGraphBuilder(*this, graph, blackboard);
@@ -130,6 +132,14 @@ xiiResult xiiView::PrepareRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
 {
   XII_ASSERT_DEV(pView == this, "A view must execute its own render graph.");
   XII_IGNORE_UNUSED(pView);
+  if (!m_RenderGraphBuilder.IsValid() && m_hGraphViewTarget.IsValid())
+  {
+    auto pTarget = ResolveViewTarget();
+    if (pTarget == nullptr)
+      return XII_FAILURE;
+    const auto state = pTarget->GetResourceState();
+    XII_SUCCEED_OR_RETURN(graph.BindImportedTexture(m_hGraphViewTarget, std::move(pTarget), state));
+  }
   if (m_RenderGraphPreparation.IsValid())
   {
     return m_RenderGraphPreparation(*this, graph, blackboard);
@@ -466,6 +476,8 @@ void xiiView::SetRenderPipelineResource(const xiiRenderPipelineResourceHandle& p
     return;
   m_hRenderPipeline                = pipeline;
   m_bPipelineSynchronizationFailed = false;
+  if (!m_RenderGraphBuilder.IsValid())
+    InvalidateRenderGraph("Render pipeline resource changed");
   InvalidateTemporalHistory();
 }
 
@@ -511,6 +523,7 @@ xiiResult xiiView::SynchronizeRenderPipeline()
     }
   if (changed)
   {
+    InvalidateRenderGraph("Render pipeline instance replaced");
     InvalidateTemporalHistory();
   }
   if (const auto* debug = runtime->GetRenderConfiguration().FindSubsystem<xiiDebugRenderSettings>())
@@ -613,24 +626,55 @@ const xiiRenderConfiguration& xiiView::ResolveRenderConfiguration()
   return m_ResolvedRenderConfiguration;
 }
 
+xiiSharedPtr<xiiGALTexture> xiiView::ResolveViewTarget() const
+{
+  if (m_pRenderTargetView != nullptr)
+    return m_pRenderTargetView->GetTexture();
+  if (m_pSwapChain != nullptr)
+    return m_pSwapChain->GetBackBufferTexture();
+  return {};
+}
+
+void xiiView::UpdateRenderGraphContracts()
+{
+  if (m_RenderGraphBuilder.IsValid())
+    return;
+
+  RunDynamicResolutionPID();
+  const xiiSizeU32 renderResolution = {GetRenderResolutionWidth(), GetRenderResolutionHeight()};
+  const auto*      pGraph           = GetRenderGraph();
+  if (pGraph == nullptr || pGraph->GetStructuralGeneration() == 0U)
+    return;
+
+  if (m_DeclaredRenderResolution != renderResolution)
+    InvalidateRenderGraph("Internal render resolution changed");
+
+  if (m_bHasViewTargetInterface)
+  {
+    const auto pTarget = ResolveViewTarget();
+    if (pTarget != nullptr ? !pGraph->MatchesImportedTexture(m_hGraphViewTarget, pTarget->GetDescription()) : m_hGraphViewTarget.IsValid())
+      InvalidateRenderGraph("View output contract changed");
+  }
+}
+
 xiiResult xiiView::BuildRenderPipeline(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
 {
   auto* runtime = GetPipelineInstance();
-  RunDynamicResolutionPID();
+  m_DeclaredRenderResolution = {GetRenderResolutionWidth(), GetRenderResolutionHeight()};
   xiiHybridArray<xiiRenderPipelineInputBinding, 1> inputs;
   if (const auto* pipeline = runtime->GetPipeline())
   {
     // Only this explicit root interface has view-owned semantics. Other root inputs
     // remain available to callers of the ordinary pipeline instance API.
     const auto targetInterface = pipeline->FindInterface("ViewTarget", true);
-    if (targetInterface != xiiInvalidIndex)
+    m_bHasViewTargetInterface  = targetInterface != xiiInvalidIndex;
+    if (m_bHasViewTargetInterface)
     {
-      const auto target = m_pRenderTargetView ? m_pRenderTargetView->GetTexture() : m_pSwapChain ? m_pSwapChain->GetBackBufferTexture() :
-                                                                                                   xiiSharedPtr<xiiGALTexture>();
-      if (target)
+      if (const auto pTarget = ResolveViewTarget())
       {
-        const auto imported = graph.AddPass<xiiRenderGraphTextureHandle>("View target interface", xiiGALCommandQueueFlags::Graphics, [&](xiiRenderGraphTextureHandle& handle, xiiRenderGraphBuilder& builder) { handle = builder.ImportTexture("ViewTarget", target, target->GetResourceState()); }, [](const xiiRenderGraphTextureHandle&, xiiRenderGraphPassContext&) {});
-        inputs.PushBack(xiiRenderPipelineInputBinding(graph, targetInterface, *imported.first));
+        const auto imported = graph.AddPass<xiiRenderGraphTextureHandle>("View target interface", xiiGALCommandQueueFlags::Graphics, [&](xiiRenderGraphTextureHandle& ref_handle, xiiRenderGraphBuilder& ref_builder) { ref_handle = ref_builder.DeclareImportedTexture("ViewTarget", pTarget->GetDescription()); }, [](const xiiRenderGraphTextureHandle&, xiiRenderGraphPassContext&) {});
+        m_hGraphViewTarget  = *imported.first;
+        inputs.PushBack(xiiRenderPipelineInputBinding(graph, targetInterface, m_hGraphViewTarget));
       }
     }
   }
