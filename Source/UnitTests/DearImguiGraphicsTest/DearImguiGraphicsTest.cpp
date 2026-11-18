@@ -105,7 +105,7 @@ XII_CREATE_SIMPLE_TEST(DearImguiGraphics, NativeCompositionAndDeferredLifetime)
       color = data = builder.WriteTexture(builder.ImportTexture("Color", target, target->GetResourceState()), xiiGALResourceStateFlags::RenderTarget);
       builder.SetPassRenderPassManaged(); }, [](const auto& data, xiiRenderGraphPassContext& execution) { execution.GetCommandList().ClearRenderTargetView(execution.GetTexture(data)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor(0.25F, 0.25F, 0.25F, 1)); });
     xiiRenderPipelineBinding binding;
-    binding.m_pFrameData                         = XII_DEFAULT_NEW(xiiImguiFrameData, graph.GetSetupSerial(), snapshot);
+    binding.m_pFrameData                         = XII_DEFAULT_NEW(xiiImguiFrameData, graph.GetFrameGeneration(), snapshot);
     const xiiRenderPipelineInputBinding inputs[] = {
       {graph, pipeline->FindInterface("Color", true), color},
       {graph, pipeline->FindInterface("UI", true), binding}};

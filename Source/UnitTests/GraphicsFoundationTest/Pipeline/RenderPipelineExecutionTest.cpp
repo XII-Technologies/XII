@@ -247,8 +247,6 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, HierarchicalExecution)
           mapping->End();
         }
       }
-      if (frame > 1)
-        XII_TEST_BOOL(views[0]->GetRenderGraph()->GetStatistics().m_bUsedCachedCompile);
     }
     const auto* firstA = static_cast<const xiiPipelineGPUReadback*>(views[0]->GetRenderPipelineInstance().GetPass(0));
     const auto* firstB = static_cast<const xiiPipelineGPUReadback*>(views[1]->GetRenderPipelineInstance().GetPass(0));

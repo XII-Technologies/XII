@@ -98,7 +98,7 @@ xiiResult xiiAtmosphereConstantsPass::Build(xiiRenderPipelinePassContext& contex
       transition.m_TransitionFlags = xiiGALStateTransitionFlags::UpdateState;
       commands.TransitionResourceStates(xiiMakeArrayPtr(&transition, 1)); });
   if (m_bCacheLookups)
-    XII_SUCCEED_OR_RETURN(context.SetOutput(m_LookupData, XII_DEFAULT_NEW(xiiAtmosphereFrameData, context.m_Graph.GetSetupSerial(), m_Lookup, emitted.first->m_Buffer)));
+    XII_SUCCEED_OR_RETURN(context.SetOutput(m_LookupData, XII_DEFAULT_NEW(xiiAtmosphereFrameData, context.m_Graph.GetFrameGeneration(), m_Lookup, emitted.first->m_Buffer)));
   return context.SetOutput(m_OutputAtmosphereConstants, emitted.first->m_Buffer);
 }
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Passes_Atmosphere_AtmosphereConstantsPass);

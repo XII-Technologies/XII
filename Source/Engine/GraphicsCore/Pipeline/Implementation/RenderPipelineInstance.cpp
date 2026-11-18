@@ -25,7 +25,7 @@ void xiiRenderPipelineInstance::Clear()
 {
   m_ResourceAcquireResult = xiiResourceAcquireResult::None;
   m_sBuildError.Clear();
-  m_uiPreparedSetup = m_uiBuiltSetup = 0;
+  m_uiPreparedFrame = m_uiBuiltFrame = 0;
   m_pPreparedView                    = nullptr;
   m_pPreparedBlackboard              = nullptr;
   m_vResolution                      = xiiVec4U32::MakeZero();
@@ -291,7 +291,7 @@ xiiResult xiiRenderPipelineInstance::BeginFrame(xiiView* view, xiiRenderGraph& g
     if (xiiMath::IsFinite(viewport.width) && xiiMath::IsFinite(viewport.height) && viewport.width >= 1 && viewport.height >= 1 && viewport.width <= 65536 && viewport.height <= 65536)
       resolution = xiiVec4U32(static_cast<xiiUInt32>(viewport.width), static_cast<xiiUInt32>(viewport.height), view->GetRenderResolutionWidth(), view->GetRenderResolutionHeight());
   }
-  if (m_uiPreparedSetup != 0 && m_uiPreparedSetup == graph.GetSetupSerial())
+  if (m_uiPreparedFrame != 0 && m_uiPreparedFrame == graph.GetFrameGeneration())
   {
     if (m_pPreparedView != view || m_pPreparedBlackboard != &blackboard || m_Overrides != overrides || m_vResolution != resolution)
     {
@@ -300,7 +300,7 @@ xiiResult xiiRenderPipelineInstance::BeginFrame(xiiView* view, xiiRenderGraph& g
     }
     return XII_SUCCESS;
   }
-  m_uiPreparedSetup = 0;
+  m_uiPreparedFrame = 0;
   if (m_vResolution != resolution || m_pPreparedView != view)
     InvalidateTemporalHistory();
   m_vResolution = resolution;
@@ -331,7 +331,7 @@ xiiResult xiiRenderPipelineInstance::BeginFrame(xiiView* view, xiiRenderGraph& g
     m_sBuildError = error;
     return XII_FAILURE;
   }
-  if (graph.GetSetupSerial() == 0)
+  if (graph.GetFrameGeneration() == 0)
   {
     m_sBuildError = "A pipeline frame requires an active render graph setup.";
     return XII_FAILURE;
@@ -404,7 +404,7 @@ xiiResult xiiRenderPipelineInstance::BeginFrame(xiiView* view, xiiRenderGraph& g
       m_HistoryBindings[pass.m_uiBindingOffset + i] = binding;
     }
   }
-  m_uiPreparedSetup     = graph.GetSetupSerial();
+  m_uiPreparedFrame     = graph.GetFrameGeneration();
   m_pPreparedView       = view;
   m_pPreparedBlackboard = &blackboard;
   return XII_SUCCESS;
@@ -413,17 +413,17 @@ xiiResult xiiRenderPipelineInstance::BeginFrame(xiiView* view, xiiRenderGraph& g
 xiiResult xiiRenderPipelineInstance::Build(xiiView* view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard, const xiiVariantDictionary& overrides, xiiArrayPtr<const xiiRenderPipelineInputBinding> inputs)
 {
   XII_SUCCEED_OR_RETURN(BeginFrame(view, graph, blackboard, overrides));
-  if (m_uiBuiltSetup == graph.GetSetupSerial())
+  if (m_uiBuiltFrame == graph.GetFrameGeneration())
   {
     m_sBuildError = "A pipeline instance can build only once per graph setup; start a new setup after a failed or completed build.";
     return XII_FAILURE;
   }
-  m_uiBuiltSetup = graph.GetSetupSerial();
+  m_uiBuiltFrame = graph.GetFrameGeneration();
   xiiHybridArray<xiiUInt8, 32> supplied;
   supplied.SetCount(m_pPipeline->m_Interface.GetCount(), 0);
   for (const auto& input : inputs)
   {
-    if (input.m_uiSetupSerial != graph.GetSetupSerial() || input.m_uiInterface >= supplied.GetCount() || supplied[input.m_uiInterface] || !m_pPipeline->m_Interface[input.m_uiInterface].m_Pin.m_bInput)
+    if (input.m_uiFrameGeneration != graph.GetFrameGeneration() || input.m_uiInterface >= supplied.GetCount() || supplied[input.m_uiInterface] || !m_pPipeline->m_Interface[input.m_uiInterface].m_Pin.m_bInput)
     {
       m_sBuildError = "An external pipeline input belongs to another setup, is unknown, duplicated or refers to an output interface.";
       return XII_FAILURE;
@@ -450,7 +450,7 @@ xiiResult xiiRenderPipelineInstance::Build(xiiView* view, xiiRenderGraph& graph,
         break;
       case xiiRenderPipelinePin::FrameData:
         valid = !binding.m_hTexture.IsValid() && !binding.m_hBuffer.IsValid() && binding.m_AccelerationStructure.IsEmpty() &&
-          (binding.m_pFrameData ? external.m_Pin.m_pDataType && binding.m_pFrameData->GetSetupSerial() == graph.GetSetupSerial() && binding.m_pFrameData->GetDynamicRTTI()->IsDerivedFrom(external.m_Pin.m_pDataType) : external.m_Pin.m_bOptional);
+          (binding.m_pFrameData ? external.m_Pin.m_pDataType && binding.m_pFrameData->GetFrameGeneration() == graph.GetFrameGeneration() && binding.m_pFrameData->GetDynamicRTTI()->IsDerivedFrom(external.m_Pin.m_pDataType) : external.m_Pin.m_bOptional);
         break;
     }
     if (!valid)
@@ -523,7 +523,7 @@ xiiResult xiiRenderPipelineInstance::Build(xiiView* view, xiiRenderGraph& graph,
         }
         else if (pin.m_Type == xiiRenderPipelinePin::FrameData)
         {
-          if (binding.m_hTexture.IsValid() || binding.m_hBuffer.IsValid() || !binding.m_AccelerationStructure.IsEmpty() || (binding.m_pFrameData ? !pin.m_pDataType || binding.m_pFrameData->GetSetupSerial() != graph.GetSetupSerial() || !binding.m_pFrameData->GetDynamicRTTI()->IsDerivedFrom(pin.m_pDataType) : !pin.m_bOptional))
+          if (binding.m_hTexture.IsValid() || binding.m_hBuffer.IsValid() || !binding.m_AccelerationStructure.IsEmpty() || (binding.m_pFrameData ? !pin.m_pDataType || binding.m_pFrameData->GetFrameGeneration() != graph.GetFrameGeneration() || !binding.m_pFrameData->GetDynamicRTTI()->IsDerivedFrom(pin.m_pDataType) : !pin.m_bOptional))
           {
             error.SetFormat("Pass '{}' (type '{}', instance '{}'), {} frame-data pin '{}': snapshot is missing, stale or violates its native RTTI contract.", context.m_sPassName, pass.m_pType->GetTypeName(), context.m_sInstanceScope, inputs ? "input" : "output", pin.m_sName);
             m_sBuildError = error;
@@ -572,7 +572,7 @@ void xiiRenderPipelineInstance::InvalidateTemporalHistory()
 {
   for (auto* pass : m_Passes)
     pass->InvalidateTemporalHistory();
-  m_uiPreparedSetup = 0;
+  m_uiPreparedFrame = 0;
 }
 
 const xiiRenderPipelineBinding* xiiRenderPipelineInstance::GetOutputBinding(xiiUInt32 passIndex, xiiStringView name) const
@@ -588,7 +588,7 @@ const xiiRenderPipelineBinding* xiiRenderPipelineInstance::GetOutputBinding(xiiU
 
 const xiiRenderPipelineBinding* xiiRenderPipelineInstance::GetInterfaceBinding(xiiUInt32 index) const
 {
-  if (!m_pPipeline || !m_uiPreparedSetup || index >= m_pPipeline->m_Interface.GetCount() || m_pPipeline->m_Interface[index].m_Bindings.IsEmpty())
+  if (!m_pPipeline || !m_uiPreparedFrame || index >= m_pPipeline->m_Interface.GetCount() || m_pPipeline->m_Interface[index].m_Bindings.IsEmpty())
     return nullptr;
   return &m_Bindings[m_pPipeline->m_Interface[index].m_Bindings[0]];
 }

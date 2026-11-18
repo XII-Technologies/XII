@@ -3089,7 +3089,7 @@ xiiGpuResidencyManager::UploadHandles xiiGpuResidencyManager::AddUploadPass(xiiR
     pState->m_uiLastUploadedBytes = 0U;
   }
   UploadHandles existing;
-  if (pState->m_SetupUploads.TryGetValue(graph.GetSetupSerial(), existing))
+  if (pState->m_SetupUploads.TryGetValue(graph.GetFrameGeneration(), existing))
     return existing;
   UploadPassData                snapshot;
   const xiiUInt32               slice = static_cast<xiiUInt32>(uiFrameIndex % pState->m_uiFramesInFlight);
@@ -3210,7 +3210,7 @@ xiiGpuResidencyManager::UploadHandles xiiGpuResidencyManager::AddUploadPass(xiiR
   result.m_hMeshletMetadata              = pass.first->m_hMeshletBuffer;
   result.m_uiGeometryBaseIndex           = GetMetadataBaseIndex(uiFrameIndex);
   result.m_uiMaximumResidentMeshletCount = pState->m_uiMaximumResidentMeshletCount;
-  pState->m_SetupUploads.Insert(graph.GetSetupSerial(), result);
+  pState->m_SetupUploads.Insert(graph.GetFrameGeneration(), result);
   return result;
 }
 

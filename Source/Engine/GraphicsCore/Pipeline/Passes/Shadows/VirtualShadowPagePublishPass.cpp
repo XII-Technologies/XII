@@ -29,7 +29,7 @@ xiiResult xiiVirtualShadowPagePublishPass::Build(xiiRenderPipelinePassContext& c
   if (xiiRenderGraphManager::GetFrameCompletion(context.m_Graph.GetFrameIndex(), completed).Failed())
     return context.ReportFailure("Page publication requires an active shared GPU frame.");
   const auto batch = context.GetInputData(m_Pages).Downcast<const xiiVirtualShadowRasterBatch>();
-  if (!batch || !batch->m_Residency || batch->m_Residency->GetSetupSerial() != context.m_Graph.GetSetupSerial())
+  if (!batch || !batch->m_Residency || batch->m_Residency->GetFrameGeneration() != context.m_Graph.GetFrameGeneration())
     return context.ReportFailure("Page publication requires an immutable batch from this graph setup.");
   auto        atlas    = context.GetInputTexture(m_Atlas);
   auto        physical = context.GetInputBuffer(m_Physical), table = context.GetInputBuffer(m_Virtual);

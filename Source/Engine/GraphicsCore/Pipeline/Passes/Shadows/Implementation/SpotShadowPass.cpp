@@ -153,7 +153,7 @@ xiiResult xiiSpotShadowPass::Build(xiiRenderPipelinePassContext& context)
     xiiGALMapHelper<xiiSpotShadowConstants> mapped(commands, execute.GetBuffer(data.m_Uniform), xiiGALMapType::Write, xiiGALMapFlags::Discard);
     *mapped = data.m_Constants;
     commands.UpdateBuffer(execute.GetBuffer(data.m_Receivers), 0, xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(data.m_Flags.GetData()), data.m_Flags.GetCount() * sizeof(xiiVec2U32))); });
-  return context.SetOutput(m_Shadows, XII_DEFAULT_NEW(xiiSpotShadowSnapshot, context.m_Graph.GetSetupSerial(), views, m_uiResolution, emitted.first->m_Uniform, emitted.first->m_Receivers));
+  return context.SetOutput(m_Shadows, XII_DEFAULT_NEW(xiiSpotShadowSnapshot, context.m_Graph.GetFrameGeneration(), views, m_uiResolution, emitted.first->m_Uniform, emitted.first->m_Receivers));
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Passes_Shadows_Implementation_SpotShadowPass);

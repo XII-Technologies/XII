@@ -34,7 +34,7 @@ Expose the pass's `UI` input as an authored pipeline root interface. The host su
 
 ```cpp
 xiiRenderPipelineBinding ui;
-ui.m_pFrameData = XII_DEFAULT_NEW(xiiImguiFrameData, graph.GetSetupSerial(), snapshot);
+ui.m_pFrameData = XII_DEFAULT_NEW(xiiImguiFrameData, graph.GetFrameGeneration(), snapshot);
 const xiiRenderPipelineInputBinding inputs[] = {
   {graph, pipeline->FindInterface("Color", true), color},
   {graph, pipeline->FindInterface("UI", true), ui}

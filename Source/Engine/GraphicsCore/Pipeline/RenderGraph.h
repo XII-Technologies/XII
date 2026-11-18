@@ -10,6 +10,7 @@
 #include <Foundation/Strings/HashedString.h>
 #include <Foundation/Strings/String.h>
 #include <Foundation/Strings/StringBuilder.h>
+#include <Foundation/Time/Time.h>
 #include <Foundation/Types/Delegate.h>
 #include <Foundation/Types/Id.h>
 #include <Foundation/Types/SharedPtr.h>
@@ -33,7 +34,7 @@ struct xiiViewData;
 class xiiRenderGraph;
 
 /// Indexed render graph identifier. Managers validate generations through xiiIdTable.
-/// Graph-local records are scoped to one setup and are not persistent asset identifiers.
+/// Graph-local records are scoped to one structural generation and are not persistent asset identifiers.
 using xiiRenderGraphId = xiiGenericId<32, 31>;
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderGraphId);
@@ -217,7 +218,7 @@ struct XII_GRAPHICSCORE_DLL xiiRenderGraphQueueSubmission
 /// A fully compiled render pass ready for execution.
 struct XII_GRAPHICSCORE_DLL xiiRenderGraphCompiledPass
 {
-  xiiRenderGraphId                                    m_Id;                                   ///< Setup-local pass ID for tools and profiling.
+  xiiRenderGraphId                                    m_Id;                                   ///< Structural pass ID for tools and profiling.
   xiiHashedString                                     m_sName;                                ///< Debug name for this pass, used in profiling and diagnostics.
   xiiUInt32                                           m_uiPassIndex        = xiiInvalidIndex; ///< Index into the graph's pass table.
   xiiUInt32                                           m_uiQueueIndex       = 0U;              ///< 0=Graphics, 1=AsyncCompute, 2=AsyncTransfer.
@@ -240,11 +241,9 @@ struct XII_GRAPHICSCORE_DLL xiiRenderGraphCompileSettings
   XII_DECLARE_POD_TYPE();
 
   bool      m_bEnablePassCulling   = true;  ///< Remove passes not reachable from any side-effect pass.
-  bool      m_bEnableCompileCache  = true;  ///< Reuse topology/culling analysis; frame bindings, barriers and allocations remain current.
   bool      m_bEnableSplitBarriers = false; ///< Use Begin/End split barriers to overlap transitions.
   bool      m_bEnableAsyncQueues   = true;  ///< Schedule async-compute/transfer passes on separate queues.
   bool      m_bEnableGPUProfiling  = false; ///< Emit Duration queries around each pass via the profiler.
-  xiiUInt32 m_uiCacheSalt          = 0U;    ///< Invalidate the compile cache without changing the graph.
 };
 
 /// Per-compile statistics for diagnostics and HUD display.
@@ -252,6 +251,13 @@ struct XII_GRAPHICSCORE_DLL xiiRenderGraphStatistics
 {
   XII_DECLARE_POD_TYPE();
 
+  xiiTime   m_StructuralBuildTime;
+  xiiTime   m_CompilationTime;
+  xiiTime   m_ResourceResolutionTime;
+  xiiUInt64 m_uiPlanGeneration         = 0U;
+  xiiUInt64 m_uiStructuralBuildCount   = 0U;
+  xiiUInt64 m_uiPlanReuseCount         = 0U;
+  xiiUInt32 m_uiCompiledResourceCount  = 0U;
   xiiUInt32 m_uiRegisteredPassCount   = 0U;    ///< Passes registered with the graph before compilation.
   xiiUInt32 m_uiCompiledPassCount     = 0U;    ///< Passes that survived culling and were included in the final execution plan.
   xiiUInt32 m_uiCulledPassCount       = 0U;    ///< Passes that were culled because they are not reachable from any side-effect pass.
@@ -264,8 +270,6 @@ struct XII_GRAPHICSCORE_DLL xiiRenderGraphStatistics
   xiiUInt32 m_uiTransientBufferCount  = 0U;    ///< Transient buffers that were automatically created and managed by the graph.
   xiiUInt32 m_uiAliasGroupCount       = 0U;    ///< Number of compatible physical allocation groups used by transient resources.
   xiiUInt32 m_uiAliasedResourceCount  = 0U;    ///< Number of logical resources sharing an allocation group with another resource.
-  xiiUInt64 m_uiGraphSignature        = 0ULL;  ///< Hash of the graph structure and compile settings, used for caching compiled results.
-  bool      m_bUsedCachedCompile      = false; ///< Whether the compiler was able to skip work by reusing a cached execution plan from a previous compile with the same graph signature.
 };
 
 /// Execution context passed to every pass's execute callback.
@@ -489,26 +493,40 @@ public:
   explicit xiiRenderGraph(xiiStringView sName = "RenderGraph");
   ~xiiRenderGraph();
 
-  /// Begins graph setup for the given frame index.
-  ///        Clears all pass registrations and resource declarations from the previous frame.
-  void BeginSetup(xiiUInt64 uiFrameIndex);
+  /// Replaces this graph's structural declarations and begins an execution frame.
+  void                        BeginSetup(xiiUInt64 uiFrameIndex, xiiStringView sReason = "Declarations replaced");
+  [[nodiscard]] xiiStringView GetInvalidationReason() const { return m_sInvalidationReason.GetView(); }
+
+  /// Starts a new execution of the current declarations. Exported results expire here.
+  /// Refresh dynamic imports and pass data before executing the retained plan.
+  void BeginExecutionFrame(xiiUInt64 uiFrameIndex);
+
+  /// Binds an external resource for the current execution. The declaration must have the same
+  /// description, and one physical resource may only occupy one logical slot in a frame.
+  [[nodiscard]] xiiResult BindImportedTexture(xiiRenderGraphTextureHandle hTexture, xiiSharedPtr<xiiGALTexture> pTexture, xiiBitflags<xiiGALResourceStateFlags> state = xiiGALResourceStateFlags::Unknown);
+  [[nodiscard]] xiiResult BindImportedBuffer(xiiRenderGraphBufferHandle hBuffer, xiiSharedPtr<xiiGALBuffer> pBuffer, xiiBitflags<xiiGALResourceStateFlags> state = xiiGALResourceStateFlags::Unknown);
+
+  /// Adds a frame-scoped fence wait to the submission containing this pass.
+  [[nodiscard]] xiiResult WaitForFence(xiiRenderGraphPassHandle hPass, xiiSharedPtr<xiiGALFence> pFence, xiiUInt64 uiValue);
 
   /// Full frame identity supplied to BeginSetup, available during pass construction as well as
   /// execution. Use this for frame-scoped subsystem state instead of truncated blackboard values.
-  [[nodiscard]] xiiUInt64 GetFrameIndex() const { return m_uiFrameIndex; }
-  xiiUInt64               GetSetupSerial() const { return m_uiSetupSerial; }
+  [[nodiscard]] xiiUInt64 GetFrameIndex() const { return m_Frame.m_uiIndex; }
+  [[nodiscard]] xiiUInt64 GetFrameGeneration() const { return m_Frame.m_uiGeneration; }
+  [[nodiscard]] xiiUInt64 GetStructuralGeneration() const { return m_uiStructuralGeneration; }
+  [[nodiscard]] xiiUInt64 GetPlanGeneration() const { return m_Statistics.m_uiPlanGeneration; }
 
   /// Registers a typed pass and immediately invokes its setup callback.
   ///
-  /// \tparam TPassData - Plain data struct holding per-frame data and resource handles. Must be default-constructible. Lifetime is managed by the graph.
+  /// \tparam TPassData - Data struct holding resource handles and optional execution inputs. Must be default-constructible. Lifetime is managed by the graph.
   ///
-  /// \param sName           - Unique name used for debugging, profiling, and the compile cache.
+  /// \param sName           - Unique name used for debugging and profiling.
   /// \param queueFlags      - Target queue (Graphics / Compute / Transfer).
   /// \param setupFunc       - Called immediately to declare resource usage via xiiRenderGraphBuilder.
   /// \param executeFunc     - Called during Execute() to record GPU commands.
   /// \param bHasSideEffects - If true, this pass is never culled even if no pass reads its outputs.
   ///
-  /// \returns A pair of (raw pointer to TPassData, pass handle). The pointer is stable for the lifetime of this frame's graph.
+  /// \returns A pair of (raw pointer to TPassData, pass handle). The pointer remains valid until the declarations are replaced. Refresh frame-dependent fields before execution.
   template <typename TPassData>
   std::pair<TPassData*, xiiRenderGraphPassHandle> AddPass(xiiStringView sName, xiiBitflags<xiiGALCommandQueueFlags> queueFlags, xiiDelegate<void(TPassData&, xiiRenderGraphBuilder&)> setupDelegate, xiiDelegate<void(const TPassData&, xiiRenderGraphPassContext&)> executeDelegate, bool bHasSideEffects = false);
 
@@ -535,14 +553,7 @@ public:
 
   /// Compiles the render graph.
   ///
-  /// Runs all 7 compiler phases:
-  ///   A. Resource versioning (already completed during AddPass setup callbacks).
-  ///   B. Topological sort + live-pass culling.
-  ///   C. Transient resource lifetime analysis.
-  ///   D. Advanced barrier synthesis (sub-resource, UAV, split barriers).
-  ///   E. Multi-queue scheduling -> xiiRenderGraphQueueSubmission list with fence handshakes.
-  ///   F. Render pass group merging -> xiiRenderGraphMergeGroup list.
-  ///   G. Signature hash + compile cache (skip if graph is unchanged).
+  /// Reuses the current plan if the declarations and structural settings are unchanged.
   ///
   /// \param settings   - Optional compile configuration.
   /// \param out_pError - Optional diagnostics string populated on XII_FAILURE.
@@ -646,9 +657,6 @@ private:
     bool                                     m_bIsTransient = true;
     xiiGALTextureCreationDescription         m_TextureDescription;
     xiiGALBufferCreationDescription          m_BufferDescription;
-    xiiSharedPtr<xiiGALTexture>              m_pImportedTexture;
-    xiiSharedPtr<xiiGALBuffer>               m_pImportedBuffer;
-    xiiBitflags<xiiGALResourceStateFlags>    m_ImportedInitialState     = xiiGALResourceStateFlags::Unknown;
     xiiBitflags<xiiGALResourceStateFlags>    m_CurrentState             = xiiGALResourceStateFlags::Unknown;
     xiiBitflags<xiiGALResourceStateFlags>    m_ExportFinalState         = xiiGALResourceStateFlags::Unknown;
     xiiUInt16                                m_uiCurrentVersion         = 0U;
@@ -685,8 +693,6 @@ private:
     xiiHybridArray<ResourceUsage, 8U>    m_Reads;
     xiiHybridArray<ResourceUsage, 8U>    m_Writes;
 
-    xiiHybridArray<xiiSharedPtr<xiiGALFence>, 2>  m_WaitFences;
-    xiiHybridArray<xiiUInt64, 2>                  m_WaitValues;
     void*                                         m_pPassData = nullptr;
     xiiDelegate<void(void*)>                      m_DestroyPassDataDelegate;
     xiiDelegate<void(xiiRenderGraphPassContext&)> m_ExecuteDelegate;
@@ -705,21 +711,14 @@ private:
   };
 
   xiiResult MaterializeRenderPassGroup(const xiiRenderGraphMergeGroup& group, RenderPassBinding& ref_binding, xiiGALDevice* pDevice, xiiArrayPtr<xiiSharedPtr<xiiGALTexture>> resolvedTextures, xiiStringBuilder* out_pError) const;
-  void      PhaseG_SignatureAndCache(const xiiRenderGraphCompileSettings& settings);
-  void      BuildTopologyCacheKey(const xiiRenderGraphCompileSettings& settings, xiiDynamicArray<xiiUInt32>& key) const;
-  bool      RestoreTopologyCache(const xiiRenderGraphCompileSettings& settings, xiiDynamicArray<xiiUInt32>& out_order);
-  void      StoreTopologyCache(const xiiRenderGraphCompileSettings& settings, xiiArrayPtr<const xiiUInt32> order);
 
   void EmitBarrier(xiiUInt32 uiConsumerPassIdx, xiiUInt32 uiResourceIdx, bool bIsTexture, xiiBitflags<xiiGALResourceStateFlags> afterState, bool bSplitBarrier, xiiUInt32 uiFirstMip = 0U, xiiUInt32 uiMipCount = XII_GAL_REMAINING_MIP_LEVELS, xiiUInt32 uiFirstSlice = 0U, xiiUInt32 uiSliceCount = XII_GAL_REMAINING_ARRAY_SLICES);
 
-  [[nodiscard]] static xiiUInt64 ComputeSignature(const xiiDynamicArray<PassEntry>& passes);
 
 private:
   xiiDynamicArray<PassEntry>                                 m_Passes;
   xiiDynamicArray<ResourceEntry>                             m_Resources;
   xiiHashTable<xiiHashedString, xiiUInt32>                   m_ResourceNameIndex;
-  xiiHashTable<const xiiGALTexture*, xiiUInt32>              m_ImportedTextureIndices;
-  xiiHashTable<const xiiGALBuffer*, xiiUInt32>               m_ImportedBufferIndices;
   xiiHashTable<xiiHashedString, xiiRenderGraphTextureHandle> m_SetupTextureBindings;
   xiiHashTable<xiiHashedString, xiiRenderGraphBufferHandle>  m_SetupBufferBindings;
   xiiHashedString                                            m_sName;
@@ -728,27 +727,51 @@ private:
 
   xiiHashTable<xiiHashedString, xiiSharedPtr<xiiGALTexture>> m_PersistentTextures;
   xiiHashTable<xiiHashedString, xiiSharedPtr<xiiGALBuffer>>  m_PersistentBuffers;
-  xiiHashTable<xiiUInt64, xiiSharedPtr<xiiGALTexture>>       m_ExportedTextures;
-  xiiHashTable<xiiUInt64, xiiSharedPtr<xiiGALBuffer>>        m_ExportedBuffers;
 
-  // Compiled outputs.
-  xiiDynamicArray<xiiRenderGraphCompiledPass>               m_CompiledPasses;
-  xiiDynamicArray<xiiRenderGraphBarrierDescription>         m_Barriers;
-  xiiDynamicArray<xiiRenderGraphMergeGroup>                 m_MergeGroups;
-  xiiDynamicArray<xiiRenderGraphQueueSubmission>            m_QueueSubmissions;
-  xiiDynamicArray<xiiRenderGraphResourceDescription>        m_ResourceDescriptions;
-  xiiDynamicArray<xiiRenderGraphResourceVersionDescription> m_ResourceVersions;
+  struct CompiledPlan
+  {
+    xiiDynamicArray<xiiRenderGraphCompiledPass>               m_CompiledPasses;
+    xiiDynamicArray<xiiRenderGraphBarrierDescription>         m_Barriers;
+    xiiDynamicArray<xiiRenderGraphMergeGroup>                 m_MergeGroups;
+    xiiDynamicArray<xiiRenderGraphQueueSubmission>            m_QueueSubmissions;
+    xiiDynamicArray<xiiRenderGraphResourceDescription>        m_ResourceDescriptions;
+    xiiDynamicArray<xiiRenderGraphResourceVersionDescription> m_ResourceVersions;
+  };
 
+  struct ImportedResource
+  {
+    xiiSharedPtr<xiiGALResource>          m_pResource;
+    xiiBitflags<xiiGALResourceStateFlags> m_State;
+  };
+
+  struct FenceWait
+  {
+    xiiSharedPtr<xiiGALFence> m_pFence;
+    xiiUInt64                 m_uiValue;
+  };
+
+  struct ExecutionFrame
+  {
+    xiiHashTable<xiiUInt32, xiiHybridArray<FenceWait, 2>> m_FenceWaits;
+    xiiHashTable<xiiUInt32, ImportedResource>             m_Imports;
+    xiiHashTable<const xiiGALResource*, xiiUInt32>        m_ImportIndices;
+    xiiHashTable<xiiUInt64, xiiSharedPtr<xiiGALTexture>>  m_ExportedTextures;
+    xiiHashTable<xiiUInt64, xiiSharedPtr<xiiGALBuffer>>   m_ExportedBuffers;
+    xiiUInt64                                             m_uiIndex      = 0U;
+    xiiUInt64                                             m_uiGeneration = 0U;
+  };
+
+  xiiResult BindImport(xiiUInt32 uiResourceIndex, xiiSharedPtr<xiiGALResource> pResource, xiiBitflags<xiiGALResourceStateFlags> state);
+
+  CompiledPlan                  m_Plan;
+  ExecutionFrame                m_Frame;
   xiiRenderGraphStatistics      m_Statistics;
   xiiRenderGraphCompileSettings m_LastCompileSettings;
-  xiiUInt64                     m_uiLastSignature = 0ULL;
-  xiiDynamicArray<xiiUInt32>    m_CachedTopologyKey;
-  xiiDynamicArray<xiiUInt32>    m_CachedTopologyOrder;
-  xiiDynamicArray<xiiUInt8>     m_CachedTopologyCulled;
-  bool                          m_bTopologyCacheValid = false;
   xiiRenderGraphBlackboard*     m_pSetupBlackboard    = nullptr;
-  xiiUInt64                     m_uiFrameIndex        = 0ULL;
-  xiiUInt64                     m_uiSetupSerial       = 0;
+  xiiHashedString               m_sInvalidationReason;
+  xiiTime                       m_DeclarationStart;
+  xiiUInt64                     m_uiStructuralGeneration = 0U;
+  xiiUInt64                     m_uiLastExecutedPlan     = 0U;
   bool                          m_bIsSetupOpen        = false;
   bool                          m_bIsCompiled         = false;
 };

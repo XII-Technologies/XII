@@ -925,7 +925,6 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
     compileSettings.m_bEnableGPUProfiling = true;
     compileSettings.m_bEnablePassCulling  = true;
     compileSettings.m_bEnableAsyncQueues  = true;
-    compileSettings.m_bEnableCompileCache = true;
 
     xiiStringBuilder graphError;
     viewDetail.m_pView->m_LastRenderResult = xiiRenderGraphManager::ExecuteGraph(frame, viewDetail.m_pView->m_hRenderGraph, viewDetail.m_pView.Borrow(), compileSettings, &graphError);

@@ -893,13 +893,13 @@ xiiRayTracingResources::BuildHandles xiiRayTracingResources::AddBuildPass(xiiRen
     GeometrySlot& geometry = s_pState->m_Geometries[uiGeometryIndex];
     if (!geometry.m_bAllocated || !reachable.Contains(uiGeometryIndex) || !PrepareGeometry(uiGeometryIndex) || !geometry.m_bBLASDirty || !staticGeometry.Contains(uiGeometryIndex))
       continue;
-    if (geometry.m_SetupSerial == graph.GetSetupSerial())
+    if (geometry.m_SetupSerial == graph.GetFrameGeneration())
     {
       if (geometry.m_BuildDependency.IsValid())
         blasDependencies.PushBack(geometry.m_BuildDependency);
       continue;
     }
-    geometry.m_SetupSerial = graph.GetSetupSerial();
+    geometry.m_SetupSerial = graph.GetFrameGeneration();
 
     RayTracingBLASBuild& build   = pendingBLASBuilds.ExpandAndGetRef();
     build.m_uiGeometryIndex      = uiGeometryIndex;
@@ -970,7 +970,7 @@ xiiRayTracingResources::BuildHandles xiiRayTracingResources::AddBuildPass(xiiRen
           return {};
       }
       blas                 = dynamic->m_Blas;
-      const bool scheduled = dynamic->m_SetupSerial == graph.GetSetupSerial() && dynamic->m_ScheduledRevision == deformed->m_Revision;
+      const bool scheduled = dynamic->m_SetupSerial == graph.GetFrameGeneration() && dynamic->m_ScheduledRevision == deformed->m_Revision;
       if (dynamic->m_ReadyRevision != deformed->m_Revision && !scheduled)
       {
         auto& build                  = pendingBLASBuilds.ExpandAndGetRef();
@@ -989,7 +989,7 @@ xiiRayTracingResources::BuildHandles xiiRayTracingResources::AddBuildPass(xiiRen
         build.m_Dynamic              = dynamic;
         build.m_DeformationRevision  = deformed->m_Revision;
         build.m_Update               = dynamic->m_ReadyRevision != 0;
-        dynamic->m_SetupSerial       = graph.GetSetupSerial();
+        dynamic->m_SetupSerial       = graph.GetFrameGeneration();
         dynamic->m_ScheduledRevision = deformed->m_Revision;
         ++result.m_uiDynamicBLASBuildCount;
       }

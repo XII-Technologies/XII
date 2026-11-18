@@ -304,7 +304,7 @@ private:
         color = data = builder.WriteTexture(builder.ImportTexture("UI target", texture, texture->GetResourceState()), xiiGALResourceStateFlags::RenderTarget);
         builder.SetPassRenderPassManaged(); }, [](const auto& data, xiiRenderGraphPassContext& execution) { execution.GetCommandList().ClearRenderTargetView(execution.GetTexture(data)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor(0.025F, 0.04F, 0.065F)); });
     xiiRenderPipelineBinding binding;
-    binding.m_pFrameData                         = XII_DEFAULT_NEW(xiiImguiFrameData, graph.GetSetupSerial(), std::move(frame));
+    binding.m_pFrameData                         = XII_DEFAULT_NEW(xiiImguiFrameData, graph.GetFrameGeneration(), std::move(frame));
     const xiiRenderPipelineInputBinding inputs[] = {
       {graph, m_pPipeline->FindInterface("Color", true), color},
       {graph, m_pPipeline->FindInterface("UI", true), binding}};

@@ -93,7 +93,7 @@ xiiResult xiiSparseVoxelSchedulePass::Build(xiiRenderPipelinePassContext& contex
   if (m_State->m_Context.BeginFrame(camera, context.m_Graph.GetFrameIndex()).Failed())
     return context.ReportFailure("Sparse voxel camera/frame exceeds its clipmap coordinate domain or repeats a frame.");
   m_State->m_Frame                               = context.m_Graph.GetFrameIndex();
-  xiiSharedPtr<xiiSparseVoxelFrameData> snapshot = XII_NEW(xiiFoundation::GetAlignedAllocator(), xiiSparseVoxelFrameData, context.m_Graph.GetSetupSerial(), m_State->m_Frame, m_State);
+  xiiSharedPtr<xiiSparseVoxelFrameData> snapshot = XII_NEW(xiiFoundation::GetAlignedAllocator(), xiiSparseVoxelFrameData, context.m_Graph.GetFrameGeneration(), m_State->m_Frame, m_State);
   snapshot->m_PoolCount                          = count;
   snapshot->m_bHistoryValid                      = history;
   snapshot->m_Constants.ClipmapAndUpdateCounts   = xiiVec4U32(m_Levels, m_Grid, m_Voxels, m_State->m_Context.GetScheduledUpdates().GetCount());

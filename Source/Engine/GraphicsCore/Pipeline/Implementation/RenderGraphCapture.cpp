@@ -61,8 +61,16 @@ xiiResult xiiRenderGraphDebug::WriteSnapshot(const ExecutionEvent& event, xiiStr
   writer.AddVariableUInt32("transientBuffers", stats.m_uiTransientBufferCount);
   writer.AddVariableUInt32("aliasGroups", stats.m_uiAliasGroupCount);
   writer.AddVariableUInt32("aliasedResources", stats.m_uiAliasedResourceCount);
-  writer.AddVariableBool("cached", stats.m_bUsedCachedCompile);
-  WriteId(writer, "signature", stats.m_uiGraphSignature);
+  WriteId(writer, "structuralGeneration", graph.GetStructuralGeneration());
+  WriteId(writer, "frameGeneration", graph.GetFrameGeneration());
+  WriteId(writer, "planGeneration", stats.m_uiPlanGeneration);
+  WriteId(writer, "structuralBuilds", stats.m_uiStructuralBuildCount);
+  WriteId(writer, "planReuses", stats.m_uiPlanReuseCount);
+  writer.AddVariableUInt32("compiledResources", stats.m_uiCompiledResourceCount);
+  writer.AddVariableString("invalidationReason", graph.GetInvalidationReason());
+  writer.AddVariableDouble("structuralBuildMs", stats.m_StructuralBuildTime.GetMilliseconds());
+  writer.AddVariableDouble("compilationMs", stats.m_CompilationTime.GetMilliseconds());
+  writer.AddVariableDouble("resourceResolutionMs", stats.m_ResourceResolutionTime.GetMilliseconds());
   writer.EndObject();
 
   writer.BeginArray("passes");

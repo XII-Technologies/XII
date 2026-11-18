@@ -89,7 +89,7 @@ XII_CREATE_SIMPLE_TEST(NativeShadowCascades, SharedDefinitionPrivateCameraSnapsh
       XII_SCOPE_EXIT(cache.EndFrame());
       graph.BeginSetup(frame.GetFrameIndex());
       const auto* oldSnapshot = pipelines[v].GetOutputBinding(0, "CascadeSnapshot");
-      XII_TEST_BOOL(!oldSnapshot->m_pFrameData || oldSnapshot->m_pFrameData->GetSetupSerial() != graph.GetSetupSerial());
+      XII_TEST_BOOL(!oldSnapshot->m_pFrameData || oldSnapshot->m_pFrameData->GetFrameGeneration() != graph.GetFrameGeneration());
       cameras[v].LookAt(xiiVec3(float(phase * 2), float(v * 3), 4), xiiVec3(4, 0, 0), xiiVec3(0, 0, 1));
       xiiVariantDictionary parameters;
       if (phase == 2)
@@ -102,7 +102,7 @@ XII_CREATE_SIMPLE_TEST(NativeShadowCascades, SharedDefinitionPrivateCameraSnapsh
       {
         const auto* pass      = static_cast<const xiiShadowCascadePass*>(pipelines[v].GetPass(i));
         const auto  frameData = pipelines[v].GetOutputBinding(i, "CascadeSnapshot")->m_pFrameData.Downcast<const xiiShadowCascadeSnapshot>();
-        if (!XII_TEST_BOOL(frameData && frameData->GetSetupSerial() == graph.GetSetupSerial()))
+        if (!XII_TEST_BOOL(frameData && frameData->GetFrameGeneration() == graph.GetFrameGeneration()))
           return;
         const auto snapshot = frameData->m_Cascades.GetArrayPtr();
         XII_TEST_INT(snapshot.GetCount(), i ? 3 : 1);

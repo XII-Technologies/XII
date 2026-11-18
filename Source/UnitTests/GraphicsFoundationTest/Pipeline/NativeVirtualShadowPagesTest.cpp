@@ -149,7 +149,7 @@ XII_CREATE_SIMPLE_TEST(NativeVirtualShadowPages, ResourceRasterAndRevisionSafeCo
       xiiStaticArray<xiiShadowCascadeDescription, 4> cascades;
       cascades.ExpandAndGetRef().m_mViewProjection = projection;
       xiiRenderPipelineBinding projectionInput, residencyInput;
-      projectionInput.m_pFrameData                   = XII_DEFAULT_NEW(xiiShadowCascadeSnapshot, graph.GetSetupSerial(), cascades, 16U, xiiRenderGraphBufferHandle());
+      projectionInput.m_pFrameData                   = XII_DEFAULT_NEW(xiiShadowCascadeSnapshot, graph.GetFrameGeneration(), cascades, 16U, xiiRenderGraphBufferHandle());
       residencyInput.m_pFrameData                    = residency;
       const auto*                         definition = workPipelines[i].GetPipeline();
       const xiiRenderPipelineInputBinding inputs[]   = {{graph, definition->FindInterface("Cascades", true), projectionInput}, {graph, definition->FindInterface("Residency", true), residencyInput}};
@@ -238,7 +238,7 @@ XII_CREATE_SIMPLE_TEST(NativeVirtualShadowPages, ResourceRasterAndRevisionSafeCo
     auto                     published   = upload;
     const auto*              publication = publisher.GetPipeline();
     xiiRenderPipelineBinding batchInput;
-    batchInput.m_pFrameData                                 = XII_DEFAULT_NEW(xiiVirtualShadowRasterBatch, graph.GetSetupSerial(), residency, xiiDynamicArray<xiiVirtualShadowRasterPage>(pages));
+    batchInput.m_pFrameData                                 = XII_DEFAULT_NEW(xiiVirtualShadowRasterBatch, graph.GetFrameGeneration(), residency, xiiDynamicArray<xiiVirtualShadowRasterPage>(pages));
     const xiiRenderPipelineInputBinding publicationInputs[] = {
       {graph, publication->FindInterface("RasterPages", true), batchInput},
       {graph, publication->FindInterface("RasterAtlas", true), upload.m_hPhysicalAtlas},
@@ -257,7 +257,7 @@ XII_CREATE_SIMPLE_TEST(NativeVirtualShadowPages, ResourceRasterAndRevisionSafeCo
       invalidInputs[2] = publicationInputs[2];
       auto duplicate   = pages;
       duplicate.PushBack(pages[0]);
-      invalidInputs[0].m_Binding.m_pFrameData = XII_DEFAULT_NEW(xiiVirtualShadowRasterBatch, graph.GetSetupSerial(), residency, std::move(duplicate));
+      invalidInputs[0].m_Binding.m_pFrameData = XII_DEFAULT_NEW(xiiVirtualShadowRasterBatch, graph.GetFrameGeneration(), residency, std::move(duplicate));
       XII_TEST_RESULT(invalid.Synchronize(xiiCreateVirtualShadowPagePublishTestResource()));
       XII_TEST_BOOL(invalid.Build(nullptr, graph, context.GetBlackboard(), {}, invalidInputs).Failed());
       XII_TEST_BOOL(invalid.GetLastBuildError().FindSubString("stale, duplicate") != nullptr);

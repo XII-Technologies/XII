@@ -89,6 +89,6 @@ xiiResult xiiVirtualShadowTablesPass::Build(xiiRenderPipelinePassContext& contex
   XII_SUCCEED_OR_RETURN(context.SetOutput(m_Physical, snapshot.m_hPhysicalPageTable));
   XII_SUCCEED_OR_RETURN(context.SetOutput(m_Virtual, snapshot.m_hVirtualPageTable));
   XII_SUCCEED_OR_RETURN(context.SetOutput(m_Atlas, snapshot.m_hPhysicalAtlas));
-  return context.SetOutput(m_Residency, XII_DEFAULT_NEW(xiiVirtualShadowResidencySnapshot, context.m_Graph.GetSetupSerial(), snapshot, capture));
+  return context.SetOutput(m_Residency, XII_DEFAULT_NEW(xiiVirtualShadowResidencySnapshot, context.m_Graph.GetFrameGeneration(), snapshot, capture));
 }
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Passes_Shadows_VirtualShadowTablesPass);

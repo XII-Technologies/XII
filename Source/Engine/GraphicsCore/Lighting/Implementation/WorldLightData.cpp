@@ -387,7 +387,7 @@ xiiResult xiiWorldLightData::UpdateFromExtraction(xiiArrayPtr<xiiRenderData* con
 xiiWorldLightData::UploadHandles xiiWorldLightData::AddUploadPass(xiiRenderGraph& graph) const
 {
   auto state = m_State;
-  if (state->m_UploadSetup == graph.GetSetupSerial())
+  if (state->m_UploadSetup == graph.GetFrameGeneration())
     return state->m_Upload;
   xiiUInt64 completed = 0;
   if (!xiiGALDevice::HasDefaultDevice() || xiiRenderGraphManager::GetFrameCompletion(graph.GetFrameIndex(), completed).Failed())
@@ -472,7 +472,7 @@ xiiWorldLightData::UploadHandles xiiWorldLightData::AddUploadPass(xiiRenderGraph
     if(data.m_UpdateCounts) { commands.UpdateBuffer(execute.GetBuffer(data.m_Handles.m_Counts),0,xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(&data.m_Snapshot->m_Counts),sizeof(data.m_Snapshot->m_Counts))); state->m_Stats.m_uiBytesUploaded+=sizeof(data.m_Snapshot->m_Counts); ++state->m_Stats.m_uiRanges; }
     if(!data.m_Ranges.IsEmpty() || data.m_UpdateProfiles || data.m_UpdateCounts) ++state->m_Stats.m_uiUploadPasses;
     data.m_Slot->m_Uploaded=data.m_Snapshot; data.m_Slot->m_Initialized=true; });
-  state->m_UploadSetup = graph.GetSetupSerial();
+  state->m_UploadSetup = graph.GetFrameGeneration();
   state->m_Upload      = pass.first->m_Handles;
   return state->m_Upload;
 }

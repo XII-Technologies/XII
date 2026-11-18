@@ -267,15 +267,25 @@ void xiiQtRenderGraphWidget::Rebuild()
     return;
   }
   const auto stats = graph["statistics"].toObject();
-  m_pStatus->setText(QString("Frame %1 • %2 passes (%3 culled) • %4 barriers • %5 merge groups • %6 aliased resources • Compile cache: %7 • %8")
+  m_pStatus->setText(QString("Frame %1 • %2 passes (%3 culled) • %4 barriers • %5 merge groups • %6 aliased resources • Plan %7 • %8")
                        .arg(graph["frame"].toString())
                        .arg(stats["compiled"].toInt())
                        .arg(stats["culled"].toInt())
                        .arg(stats["barriers"].toInt())
                        .arg(stats["mergeGroups"].toInt())
                        .arg(stats["aliasedResources"].toInt())
-                       .arg(stats["cached"].toBool() ? "hit" : "miss")
+                       .arg(stats["planGeneration"].toString())
                        .arg(graph["succeeded"].toBool() ? (graph["gpuProfiling"].toBool() ? "GPU timings are delayed; see timing frame." : "GPU profiling disabled in application.") : "Execution failed: " + graph["error"].toString()));
+  m_pStatus->setToolTip(QString("Plan reuses: %1 | Structural builds: %2 | Invalidation: %3\nStructure: %4 ms | Compile: %5 ms | Resolve resources: %6 ms\nResources: %7 | Queue submissions: %8 | External waits: %9")
+                          .arg(stats["planReuses"].toString())
+                          .arg(stats["structuralBuilds"].toString())
+                          .arg(stats["invalidationReason"].toString())
+                          .arg(stats["structuralBuildMs"].toDouble(), 0, 'f', 3)
+                          .arg(stats["compilationMs"].toDouble(), 0, 'f', 3)
+                          .arg(stats["resourceResolutionMs"].toDouble(), 0, 'f', 3)
+                          .arg(stats["compiledResources"].toInt())
+                          .arg(stats["submissions"].toInt())
+                          .arg(stats["externalFenceWaits"].toInt()));
   const QString              filter = m_pFilter->text();
   const auto                 passes = graph["passes"].toArray();
   QMap<int, QPointF>         positions;
