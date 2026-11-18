@@ -119,7 +119,6 @@ public:
   void RunInspector();
 
   /// Launches Tracy.
-  void RunTracy();
 
   //
   //

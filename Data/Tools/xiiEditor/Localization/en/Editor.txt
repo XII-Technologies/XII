@@ -5,7 +5,6 @@ Project.Open;Open Project...
 Project.Create;Create Project...
 Editor.LaunchFileserve;Launch Fileserve...;Launches the xiiFileServe application.
 Editor.LaunchInspector;Launch Inspector...;Launches the xiiInspector application.
-Editor.LaunchTracy;Launch Tracy...;Launches the Tracy profiler application.
 Editor.Plugins;Editor Pl&ugins...;Opens the editor plugins dialog
 Editor.Shortcuts;Shortcuts...;Opens the shortcut configuration dialog
 Editor.Preferences;Editor Preferences;Opens user-specific editor preferences

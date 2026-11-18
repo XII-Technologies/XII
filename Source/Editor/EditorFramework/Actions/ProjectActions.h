@@ -60,7 +60,6 @@ public:
   static xiiActionDescriptorHandle s_hLaunchFileserve;
   static xiiActionDescriptorHandle s_hLaunchInspector;
   static xiiActionDescriptorHandle s_hPlayerSessions;
-  static xiiActionDescriptorHandle s_hLaunchTracy;
   static xiiActionDescriptorHandle s_hSaveProfiling;
   static xiiActionDescriptorHandle s_hOpenVsCode;
   static xiiActionDescriptorHandle s_hImportAsset;
@@ -120,7 +119,6 @@ public:
     ReloadEngine,
     LaunchFileserve,
     LaunchInspector,
-    LaunchTracy,
     SaveProfiling,
     OpenVsCode,
     Shortcuts,
