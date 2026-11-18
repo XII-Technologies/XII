@@ -94,8 +94,8 @@ XII_CREATE_SIMPLE_TEST(NativeShadowFeedback, ReusableViewsOverflowAndReconfigura
     if (!XII_TEST_RESULT(pipelines[i].Initialize(compiled)) || !XII_TEST_RESULT(contexts[i].Initialize("Shadow demand view")))
       return;
   XII_TEST_BOOL(pipelines[0].GetPipeline() == pipelines[1].GetPipeline());
-  xiiUInt64              previousFrame = 0;
-  xiiVirtualShadowPageId firstPages[2][2];
+  xiiUInt64                  previousFrame = 0;
+  xiiVirtualShadowPageId     firstPages[2][2];
   xiiRenderGraphBufferHandle streams[2][2];
   for (xiiUInt32 phase = 0; phase < 6; ++phase)
   {
