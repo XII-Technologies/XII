@@ -74,8 +74,8 @@ public:
   /// Disconnects all clients.
   void StopServer();
 
-  /// Has to be executed regularly to serve clients and keep the connection alive.
-  bool UpdateServer();
+  /// Services clients on the server owner thread. A positive timeout allows waiting for a host event.
+  bool UpdateServer(xiiTime wait = {});
 
   /// Whether the server was started.
   bool IsServerRunning() const;

@@ -37,8 +37,7 @@ public:
 
   void SetStyleSheet();
 
-  xiiUInt32 m_uiSleepCounter = 0;
-  xiiUInt32 m_uiConnections  = 0;
+  xiiUInt32 m_uiConnections = 0;
   xiiTime   m_CloseAppTimeout;
   xiiTime   m_TimeTillClosing;
 };

@@ -131,15 +131,18 @@ void xiiFileserver::StopServer()
   m_Events.Broadcast(e);
 }
 
-bool xiiFileserver::UpdateServer()
+bool xiiFileserver::UpdateServer(xiiTime wait)
 {
   if (!m_pNetwork)
     return false;
 
   bool            bProcessed = false;
   xiiNetworkEvent event;
-  for (xiiUInt32 i = 0; i < 256 && m_pNetwork->TryGetEvent(event); ++i)
+  for (xiiUInt32 i = 0; i < 256; ++i)
   {
+    const bool bEvent = i == 0 && wait.IsPositive() ? m_pNetwork->WaitForEvent(event, wait).Succeeded() : m_pNetwork->TryGetEvent(event);
+    if (!bEvent)
+      break;
     bProcessed        = true;
     const auto uiSlot = event.m_Connection.m_uiSlot;
     if (event.m_Type == xiiNetworkEventType::Connected && event.m_pSessionInfo)

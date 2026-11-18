@@ -9,7 +9,6 @@
 #include <Foundation/Logging/ConsoleWriter.h>
 #include <Foundation/Logging/Log.h>
 #include <Foundation/Logging/VisualStudioWriter.h>
-#include <Foundation/Threading/ThreadUtils.h>
 #include <Foundation/Utilities/CommandLineUtils.h>
 
 void xiiFileserverApp::AfterCoreSystemsStartup()
@@ -67,25 +66,7 @@ xiiApplication::Execution xiiFileserverApp::Run()
     return xiiApplication::Execution::Quit;
   }
 
-  if (xiiFileserver::GetSingleton()->UpdateServer() == false)
-  {
-    m_uiSleepCounter++;
-
-    if (m_uiSleepCounter > 1000)
-    {
-      // only sleep when no work had to be done in a while
-      xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(10));
-    }
-    else if (m_uiSleepCounter > 10)
-    {
-      // only sleep when no work had to be done in a while
-      xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(1));
-    }
-  }
-  else
-  {
-    m_uiSleepCounter = 0;
-  }
+  xiiFileserver::GetSingleton()->UpdateServer(xiiTime::MakeFromMilliseconds(10));
 
   return xiiApplication::Execution::Continue;
 }

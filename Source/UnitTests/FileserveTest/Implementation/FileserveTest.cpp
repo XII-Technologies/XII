@@ -10,7 +10,6 @@
 #include <Foundation/IO/FileSystem/FileWriter.h>
 #include <Foundation/System/Process.h>
 #include <Foundation/Threading/Semaphore.h>
-#include <Foundation/Threading/ThreadUtils.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <Foundation/Utilities/CommandLineUtils.h>
 #include <TestFramework/Utilities/TestSetup.h>
@@ -249,7 +248,7 @@ XII_CREATE_SIMPLE_TEST(Fileserve, NativeDiscoveryAndVfs)
   child.AddArgument(xiiStringBuilder(sOutput, "/Client"));
   child.AddArgument("-fs_no_save");
 
-  const bool       bConcurrent = sCertificateDirectory.IsEmpty() && !bMeasure;
+  const bool       bConcurrent = sCertificateDirectory.IsEmpty() && (!bMeasure || pCommand->HasOption("-fs_measure_concurrent"));
   xiiStringBuilder readyName, startName;
   xiiSemaphore     ready, start;
   if (bConcurrent)
@@ -284,6 +283,8 @@ XII_CREATE_SIMPLE_TEST(Fileserve, NativeDiscoveryAndVfs)
     other.AddArgument("-fs_test_start");
     other.AddArgument(startName);
     other.AddArgument("-fs_no_save");
+    if (bMeasure)
+      other.AddArgument("-fs_measure");
     if (!XII_TEST_RESULT(secondary.Launch(other)))
       return;
   }
@@ -314,17 +315,22 @@ XII_CREATE_SIMPLE_TEST(Fileserve, NativeDiscoveryAndVfs)
     start.ReturnToken();
     start.ReturnToken();
   }
-  const auto transferDeadline = xiiTime::Now() + xiiTime::MakeFromSeconds(bMeasure ? 120 : 15);
+  const auto transferStart    = xiiTime::Now();
+  const auto transferDeadline = transferStart + xiiTime::MakeFromSeconds(bMeasure ? 120 : 15);
   while ((process.GetState() == xiiProcessState::Running || secondary.GetState() == xiiProcessState::Running) && xiiTime::Now() < transferDeadline)
   {
-    if (!server.UpdateServer())
-      xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(1));
+    server.UpdateServer(xiiTime::MakeFromMilliseconds(10));
   }
   if (!XII_TEST_BOOL(process.GetState() == xiiProcessState::Finished) || !XII_TEST_INT(process.GetExitCode(), 0))
     return;
   if (bConcurrent && (!XII_TEST_BOOL(secondary.GetState() == xiiProcessState::Finished) || !XII_TEST_INT(secondary.GetExitCode(), 0)))
     return;
   XII_TEST_INT(uiShaderRequests, bConcurrent ? 2 : 1);
+  if (bMeasure && bConcurrent)
+  {
+    const double mib = 2.0 * (uiDownloadBlocks + uiUploadBlocks) * sizeof(data) / (1024.0 * 1024.0);
+    xiiTestFramework::Output(xiiTestOutput::Details, "Two clients: %.1f MiB/s aggregate through upload commit.", mib / (xiiTime::Now() - transferStart).GetSeconds());
+  }
   if (bConcurrent)
   {
     if (!XII_TEST_RESULT(file.Open(xiiStringBuilder(sRoot, "/upload-second.dat"), xiiFileOpenMode::Read)))
