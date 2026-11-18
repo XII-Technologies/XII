@@ -1840,7 +1840,7 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
   m_Statistics.m_uiSecondaryLists      = 0U;
   m_Statistics.m_uiParallelPasses      = 0U;
   const xiiTime executionStart         = xiiTime::Now();
-  bool bExecutionSucceeded = false;
+  bool          bExecutionSucceeded    = false;
   XII_SCOPE_EXIT(
     m_Statistics.m_ExecutionTime = xiiTime::Now() - executionStart;
     if (!bExecutionSucceeded) {
@@ -2054,7 +2054,7 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
   xiiTemporaryArray<PassJobs>  passJobs;
   constexpr xiiUInt32          uiMinItemsPerRange = 32U;
 
-  const bool bSupportsParallelRecording = pDevice->GetGraphicsDeviceType() == xiiGALGraphicsDeviceType::Vulkan && pDevice->GetFeatures().m_MultithreadedResourceCreation == xiiGALDeviceFeatureState::Enabled;
+  const bool      bSupportsParallelRecording = pDevice->GetGraphicsDeviceType() == xiiGALGraphicsDeviceType::Vulkan && pDevice->GetFeatures().m_MultithreadedResourceCreation == xiiGALDeviceFeatureState::Enabled;
   const xiiUInt32 uiWorkerCount              = xiiTaskSystem::GetWorkerThreadCount(xiiWorkerThreadType::ShortTasks);
   if (bSupportsParallelRecording && uiWorkerCount > 1U)
   {
@@ -2119,7 +2119,7 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
 
     const auto           graphicsQueueFlags = pDevice->GetCommandQueue(xiiGALCommandQueueFlags::Graphics)->GetDescription().m_QueueFlags;
     xiiParallelForParams params;
-    params.m_NestingMode = xiiTaskNesting::Maybe;
+    params.m_NestingMode        = xiiTaskNesting::Maybe;
     const xiiTime dispatchStart = xiiTime::Now();
     xiiTaskSystem::ParallelForSingle(rasterJobs.GetArrayPtr(), [&](RasterJob& ref_job) {
       const auto& pass = m_Plan.m_CompiledPasses[ref_job.m_uiPass];

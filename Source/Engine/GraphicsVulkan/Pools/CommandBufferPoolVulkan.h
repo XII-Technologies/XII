@@ -57,13 +57,13 @@ public:
       return *this;
     }
 
-    vk::CommandPool                        m_vkPrimaryPool   = VK_NULL_HANDLE;
-    vk::CommandPool                        m_vkSecondaryPool = VK_NULL_HANDLE;
-    xiiDynamicArray<vk::CommandBuffer>     m_PrimaryFreeCommandBuffers;
-    xiiDynamicArray<vk::CommandBuffer>     m_SecondaryFreeCommandBuffers;
-    xiiDynamicArray<InFlightCommandBuffer> m_InFlightCommandBuffers;
+    vk::CommandPool                             m_vkPrimaryPool   = VK_NULL_HANDLE;
+    vk::CommandPool                             m_vkSecondaryPool = VK_NULL_HANDLE;
+    xiiDynamicArray<vk::CommandBuffer>          m_PrimaryFreeCommandBuffers;
+    xiiDynamicArray<vk::CommandBuffer>          m_SecondaryFreeCommandBuffers;
+    xiiDynamicArray<InFlightCommandBuffer>      m_InFlightCommandBuffers;
     xiiUniquePtr<xiiGALDescriptorSetPoolVulkan> m_pIdleDescriptorPool;
-    xiiMutex                               m_Mutex;
+    xiiMutex                                    m_Mutex;
 
     /// Push a command buffer back into this thread's free list. Immediate return to free-list
     void Push(vk::CommandBuffer vkCommandBuffer, bool bIsSecondary);
@@ -121,7 +121,7 @@ public:
     /// Implicit conversion so you can pass it directly to vk calls.
     XII_ALWAYS_INLINE operator vk::CommandBuffer() const { return m_vkCommandBuffer; }
 
-    XII_ALWAYS_INLINE vk::CommandBuffer Get() const { return m_vkCommandBuffer; }
+    XII_ALWAYS_INLINE vk::CommandBuffer         Get() const { return m_vkCommandBuffer; }
     xiiUniquePtr<xiiGALDescriptorSetPoolVulkan> AcquireDescriptorPool();
 
   private:
@@ -169,6 +169,6 @@ private:
   xiiUInt32                  m_uiInitialReserveCount;
   xiiUInt64                  m_uiPoolGeneration = 0U;
 
-  xiiMutex                                                m_PoolMutex;
-  xiiMap<xiiThreadID, ThreadPool>                         m_CommandBufferPoolsPerThread;
+  xiiMutex                        m_PoolMutex;
+  xiiMap<xiiThreadID, ThreadPool> m_CommandBufferPoolsPerThread;
 };

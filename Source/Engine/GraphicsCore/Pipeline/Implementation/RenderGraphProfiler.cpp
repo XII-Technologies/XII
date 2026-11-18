@@ -295,12 +295,12 @@ void xiiRenderGraphTimestampProfiler::ReadbackFrame(FrameData& frameData)
       m_AvailableDurationQueries.PushBack(std::move(pSubmissionQuery));
       if (submissionDurationData.m_uiFrequency > 0ULL)
       {
-        sample.m_bAvailable  = true;
-        sample.m_fDurationMs = static_cast<double>(submissionDurationData.m_uiDuration) / static_cast<double>(submissionDurationData.m_uiFrequency) * 1000.0;
+        sample.m_bAvailable       = true;
+        sample.m_fDurationMs      = static_cast<double>(submissionDurationData.m_uiDuration) / static_cast<double>(submissionDurationData.m_uiFrequency) * 1000.0;
         const float fSubmissionMs = static_cast<float>(sample.m_fDurationMs);
         fFrameDurationMs += fSubmissionMs;
-        const xiiUInt64 uiGraphId     = frameData.m_SubmissionGraphIds[uiSubmissionIndex];
-        const xiiUInt64 uiQueueKey    = uiGraphId ^ (0x9E3779B97F4A7C15ULL + static_cast<xiiUInt64>(frameData.m_SubmissionQueueIndices[uiSubmissionIndex]));
+        const xiiUInt64 uiGraphId  = frameData.m_SubmissionGraphIds[uiSubmissionIndex];
+        const xiiUInt64 uiQueueKey = uiGraphId ^ (0x9E3779B97F4A7C15ULL + static_cast<xiiUInt64>(frameData.m_SubmissionQueueIndices[uiSubmissionIndex]));
 
         float fGraphMs = 0.0f;
         frameGraphDurations.TryGetValue(uiGraphId, fGraphMs);

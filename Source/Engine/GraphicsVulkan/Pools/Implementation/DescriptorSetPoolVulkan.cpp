@@ -136,7 +136,7 @@ vk::DescriptorPool xiiGALDescriptorSetPoolVulkan::CreateVulkanDescriptorPool(con
     oversized |= it.Value() > static_cast<xiiUInt32>(GetDescriptorTypeWeight(it.Key()) * m_uiBaseSize);
   m_bHasOversizedPool |= oversized;
   m_Remaining.Clear();
-  m_uiRemainingSets = m_uiMaxSets;
+  m_uiRemainingSets                    = m_uiMaxSets;
   vk::DescriptorType descriptorTypes[] = {vk::DescriptorType::eSampler, vk::DescriptorType::eCombinedImageSampler, vk::DescriptorType::eSampledImage, vk::DescriptorType::eStorageImage, vk::DescriptorType::eUniformTexelBuffer, vk::DescriptorType::eStorageTexelBuffer, vk::DescriptorType::eUniformBuffer,
                                           vk::DescriptorType::eStorageBuffer, vk::DescriptorType::eUniformBufferDynamic, vk::DescriptorType::eStorageBufferDynamic, vk::DescriptorType::eInputAttachment, vk::DescriptorType::eInlineUniformBlock, vk::DescriptorType::eAccelerationStructureKHR};
 

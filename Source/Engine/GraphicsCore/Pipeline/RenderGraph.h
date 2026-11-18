@@ -209,9 +209,9 @@ struct XII_GRAPHICSCORE_DLL xiiRenderGraphMergeGroup
 /// Cross-queue dependencies are expressed via xiiGALFence signals and device-side waits inlined into the command list before the first consuming pass.
 struct XII_GRAPHICSCORE_DLL xiiRenderGraphQueueSubmission
 {
-  xiiUInt32                            m_uiQueueIndex = 0U;     ///< 0=Graphics, 1=AsyncCompute, 2=AsyncTransfer.
-  xiiBitflags<xiiGALCommandQueueFlags> m_QueueFlags;            ///< Redundant with the queue index, but useful to have directly available during command list creation.
-  xiiDynamicArray<xiiUInt32>           m_PassOrder;             ///< Ordered pass indices to execute.
+  xiiUInt32                            m_uiQueueIndex = 0U; ///< 0=Graphics, 1=AsyncCompute, 2=AsyncTransfer.
+  xiiBitflags<xiiGALCommandQueueFlags> m_QueueFlags;        ///< Redundant with the queue index, but useful to have directly available during command list creation.
+  xiiDynamicArray<xiiUInt32>           m_PassOrder;         ///< Ordered pass indices to execute.
   bool                                 m_bSignalsConsumers = false;
   xiiHybridArray<xiiUInt32, 2>         m_WaitSubmissionIndices; ///< Producer submissions that must complete before this submission starts.
 };
@@ -245,16 +245,16 @@ struct XII_GRAPHICSCORE_DLL xiiRenderGraphCompiledPass
   xiiUInt32                    m_uiSubmissionIndex  = xiiInvalidIndex;
   xiiUInt32                    m_uiMergeGroupIndex  = xiiInvalidIndex; ///< Index into the graph's merge group array, or xiiInvalidIndex if this pass is not merged with any others.
   xiiRenderGraphMergeBlocker   m_MergeBlocker       = xiiRenderGraphMergeBlocker::None;
-  bool                         m_bHasSideEffects    = false;           ///< Whether this pass has side effects (e.g. present, copy to readback, UAV write with unknown output, etc.) that must be preserved even if no other pass reads from it.
-  bool                         m_bAllowMerge        = true;            ///< Whether this pass is allowed to be merged with adjacent passes on the same queue. This is a hint to the compiler, but not a guarantee.
-  bool                         m_bManagedRenderPass = false;           ///< Whether the graph owns the native render-pass scope for this pass. Legacy passes may continue to open their own scopes.
-  bool                         m_bIsCulled          = false;           ///< Whether this pass was culled during compilation. Culled passes are not executed, but may still have side effects if they are reachable from a side-effect pass.
-  xiiHybridArray<xiiUInt32, 4> m_PreBarrierIndices;                    ///< For split barriers, the end barrier is emitted before the pass and the begin barrier is emitted after the pass, so the compiler can overlap the transition with GPU execution of this pass and future consumers.
-  xiiHybridArray<xiiUInt32, 4> m_PostBarrierBeginIndices;              ///< For split barriers, the begin barrier is emitted after the pass and the end barrier is emitted before the next producer, so the compiler can overlap the transition with GPU execution of this pass and past producers.
-  xiiHybridArray<xiiUInt32, 4> m_PostBarrierIndices;                   ///< Immediate export/ownership transitions emitted after the pass.
-  xiiHybridArray<xiiUInt32, 4> m_AcquireResourceIndices;               ///< Indices into the graph's resource table for transient resources whose lifetime starts at this pass. The executor will acquire these resources from the cache before executing the pass and return them to the cache after executing the pass.
-  xiiHybridArray<xiiUInt32, 4> m_ReleaseResourceIndices;               ///< Indices into the graph's resource table for transient resources whose lifetime ends at this pass. The executor will acquire these resources from the cache before executing the pass and return them to the cache after executing the pass.
-  xiiHybridArray<xiiUInt32, 4> m_DependencyPassIndices;                ///< Indices of passes that this pass depends on (i.e. there is a path of resource reads/writes from those passes to this pass). This is used for diagnostics and profiling, but not for execution order, which is determined by the queue submission order.
+  bool                         m_bHasSideEffects    = false; ///< Whether this pass has side effects (e.g. present, copy to readback, UAV write with unknown output, etc.) that must be preserved even if no other pass reads from it.
+  bool                         m_bAllowMerge        = true;  ///< Whether this pass is allowed to be merged with adjacent passes on the same queue. This is a hint to the compiler, but not a guarantee.
+  bool                         m_bManagedRenderPass = false; ///< Whether the graph owns the native render-pass scope for this pass. Legacy passes may continue to open their own scopes.
+  bool                         m_bIsCulled          = false; ///< Whether this pass was culled during compilation. Culled passes are not executed, but may still have side effects if they are reachable from a side-effect pass.
+  xiiHybridArray<xiiUInt32, 4> m_PreBarrierIndices;          ///< For split barriers, the end barrier is emitted before the pass and the begin barrier is emitted after the pass, so the compiler can overlap the transition with GPU execution of this pass and future consumers.
+  xiiHybridArray<xiiUInt32, 4> m_PostBarrierBeginIndices;    ///< For split barriers, the begin barrier is emitted after the pass and the end barrier is emitted before the next producer, so the compiler can overlap the transition with GPU execution of this pass and past producers.
+  xiiHybridArray<xiiUInt32, 4> m_PostBarrierIndices;         ///< Immediate export/ownership transitions emitted after the pass.
+  xiiHybridArray<xiiUInt32, 4> m_AcquireResourceIndices;     ///< Indices into the graph's resource table for transient resources whose lifetime starts at this pass. The executor will acquire these resources from the cache before executing the pass and return them to the cache after executing the pass.
+  xiiHybridArray<xiiUInt32, 4> m_ReleaseResourceIndices;     ///< Indices into the graph's resource table for transient resources whose lifetime ends at this pass. The executor will acquire these resources from the cache before executing the pass and return them to the cache after executing the pass.
+  xiiHybridArray<xiiUInt32, 4> m_DependencyPassIndices;      ///< Indices of passes that this pass depends on (i.e. there is a path of resource reads/writes from those passes to this pass). This is used for diagnostics and profiling, but not for execution order, which is determined by the queue submission order.
 };
 
 /// Controls optional features of the render graph compiler.
@@ -760,7 +760,7 @@ private:
   [[nodiscard]] static QueueMapping ResolveQueueMapping(xiiGALDevice* pDevice, bool bAsyncQueues);
   void                              AssignQueuesAndDependencies(const QueueMapping& mapping);
   void                              BuildSubmissionBatches();
-  void PhaseF_RenderPassMerging();
+  void                              PhaseF_RenderPassMerging();
   struct RenderPassBinding
   {
     xiiSharedPtr<xiiGALRenderPass>  m_pRenderPass;

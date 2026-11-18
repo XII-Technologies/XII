@@ -89,17 +89,17 @@ private:
 
   struct QueueTimeline
   {
-    xiiMutex                  m_Mutex;
-    xiiSharedPtr<xiiGALFence> m_pFence;
+    xiiMutex                        m_Mutex;
+    xiiSharedPtr<xiiGALFence>       m_pFence;
     xiiSharedPtr<xiiGALCommandList> m_pIdlePrimary;
-    xiiUInt64                 m_uiValue = 0U;
+    xiiUInt64                       m_uiValue = 0U;
   };
 
-  [[nodiscard]] QueueTimeline* AcquireQueueTimeline(xiiUInt32 uiPhysicalQueueIndex);
+  [[nodiscard]] QueueTimeline*                  AcquireQueueTimeline(xiiUInt32 uiPhysicalQueueIndex);
   [[nodiscard]] xiiSharedPtr<xiiGALCommandList> AcquirePrimary(xiiUInt32 uiQueueIndex, xiiBitflags<xiiGALCommandQueueFlags> queueFlags, bool& out_bReused);
   void                                          ReturnPrimary(xiiUInt32 uiQueueIndex, xiiSharedPtr<xiiGALCommandList> pList);
   [[nodiscard]] xiiSharedPtr<xiiGALFramebuffer> AcquireFramebuffer(const xiiGALFramebufferCreationDescription& description);
-  void ReleaseStaleResourcesLocked(xiiUInt32 uiMinAgeFrames);
+  void                                          ReleaseStaleResourcesLocked(xiiUInt32 uiMinAgeFrames);
 
   struct PooledTexture
   {
@@ -120,11 +120,11 @@ private:
   };
 
 private:
-  xiiSharedPtr<xiiGALDevice> m_pDevice;
-  QueueTimeline              m_QueueTimelines[3];
+  xiiSharedPtr<xiiGALDevice>                                    m_pDevice;
+  QueueTimeline                                                 m_QueueTimelines[3];
   xiiHashTable<xiiUInt32, xiiHybridArray<CachedFramebuffer, 1>> m_Framebuffers;
-  xiiUInt64                  m_uiCurrentFrame   = 0ULL;
-  xiiUInt64                  m_uiCompletedFrame = 0ULL;
+  xiiUInt64                                                     m_uiCurrentFrame   = 0ULL;
+  xiiUInt64                                                     m_uiCompletedFrame = 0ULL;
 
   /// Idle textures keyed by creation-description hash.
   xiiHashTable<xiiUInt32, xiiDynamicArray<PooledTexture>> m_TexturePool;
