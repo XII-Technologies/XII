@@ -67,7 +67,7 @@ Successful submission reserves exactly one terminal completion. Rejection preser
 
 ## Benchmarks
 
-Run the `NetworkTransport / HostTransportBenchmark` subtest with `-networkLocalBenchmark -networkBenchmarkConnections 1` or `32`. It compares Local with TCP loopback using 16 KiB messages, 128 samples of 64-byte echo RTT, sequential connection establishment, and one-channel and distributed workloads. The one-client workload also measures the legacy native pipe on Windows and Linux. The legacy path uses its own framing and callbacks, with no host session negotiation or buffer-pool accounting.
+Run the `NetworkTransport / HostTransportBenchmark` subtest with `-networkLocalBenchmark -networkBenchmarkConnections 1` or `32`. It compares Local with TCP loopback using 16 KiB messages, 128 samples of 64-byte echo RTT, sequential connection establishment, and one-channel and distributed workloads.
 
 Windows x64 MSVC Debug results from one run per workload. Each throughput column uses 64 MiB. The distributed workload uses four channels at one client and the default channel of each peer at 32 clients.
 
@@ -75,8 +75,9 @@ Windows x64 MSVC Debug results from one run per workload. Each throughput column
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | TCP loopback | 1 | 3,084 | 80 / 131 | 451 / 453 | 0.250 / 0.297 | 9 / 20,938 |
 | Local named pipe | 1 | 923 | 90 / 121 | 592 / 614 | 0.203 / 0.226 | 8 / 17,608 |
-| Legacy named pipe | 1 | 46 | 16 / 33 | 1,166 / — | — | — |
+| TCP loopback | 4 | 916 | 138 / 241 | 163 / 306 | 0.719 / 0.624 | 17 / 23,992 |
+| Local named pipe | 4 | 624 | 129 / 234 | 431 / 919 | 0.234 / 0.239 | 18 / 19,458 |
 | TCP loopback | 32 | 657 | 114 / 187 | 372 / 618 | 0.375 / 0.315 | 66 / 23,234 |
 | Local named pipe | 32 | 412 | 139 / 218 | 470 / 905 | 0.156 / 0.240 | 76 / 21,842 |
 
-Both host transports recorded zero buffer-pool backpressure. Worker CPU time sums the native I/O threads and excludes the host protocol driver and benchmark caller. These runs include first-connection warm-up and Windows scheduler granularity. The legacy results measure a smaller protocol and ownership contract. Linux and macOS benchmark numbers are pending.
+Both host transports recorded zero buffer-pool backpressure. Worker CPU time sums the native I/O threads and excludes the host protocol driver and benchmark caller. These runs include first-connection warm-up and Windows scheduler granularity.

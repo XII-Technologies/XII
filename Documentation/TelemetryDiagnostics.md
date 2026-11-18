@@ -56,7 +56,7 @@ Inspector subscribes according to visible panels, with counters retained for plo
 
 `Capture(sourceId, callback)` invokes a registered collector on the owner thread and borrows each generated sample during the callback. It can run before a network host is started. Existing live deliveries remain queued. Ordinary Chrome profiling exports still work offline, and Inspector can open completed profiler files without a connection. Live CPU and GPU batches are collected separately from historical capture buffers. See [Inspector performance analysis](InspectorRendering.md) for profiler recording limits, history capture, and render graph behavior.
 
-Each service selects one transport. Local advertisements are per user and machine. Remote endpoints are configured explicitly. Inspector presents one active session per window. An engine can serve multiple independent Inspector sessions. Legacy telemetry wire clients require migration to diagnostics protocol version 2. Legacy IPC and ENet still serve other Foundation communication users pending their removal.
+Each service selects one transport. Local advertisements are per user and machine. Remote endpoints are configured explicitly. Inspector presents one active session per window. An engine can serve multiple independent Inspector sessions.
 
 ## Windows performance measurements
 
@@ -81,7 +81,7 @@ The Inspector benchmark runs 30 frames per configuration with 512 CPU scope addi
 
 The Debug run reported no publication drops. These are absolute timings from successive runs in one process, with startup and warmup effects. The GUI passes reached about 194 ms as the live history grew, so heavy Debug captures can visibly delay updates. Physical GPU query costs and full Editor workflows were outside this benchmark.
 
-The existing one-client transport benchmark measured 84.7/124.8 µs p50/p99 and 649 MiB/s on native Local, 76.7/184.2 µs and 506 MiB/s on loopback TCP, and 17.0/18.6 µs and 1,568 MiB/s on the legacy pipe. Those are transport-level echo and throughput workloads. A comparable legacy telemetry/Inspector workload was unavailable, so the measurements establish a baseline for the new implementation.
+The one-client transport benchmark measured 84.7/124.8 µs p50/p99 and 649 MiB/s on native Local, with 76.7/184.2 µs and 506 MiB/s on loopback TCP. Those are transport-level echo and throughput workloads. The diagnostics results above include schema negotiation, collection and publication.
 
 Run the opt-in benchmarks from the checkout root. Use the corresponding output directory to benchmark a Shipping build.
 

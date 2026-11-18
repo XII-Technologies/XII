@@ -1,6 +1,6 @@
 # Foundation Native Networking
 
-Foundation's `Network/` API provides native IPv4/IPv6 addressing, OS name resolution, TCP streams and listeners, and UDP datagrams. It has no dependency on `Foundation/Communication`, ENet or higher engine modules. Include the individual public headers needed by the caller; they expose no OS socket types. Foundation defines its export macros in `Basics.h` and has no separate `DLL.h`.
+Foundation's `Network/` API provides native IPv4/IPv6 addressing, OS name resolution, TCP streams and listeners, and UDP datagrams. Its host also provides native Local, TLS, and QUIC sessions. The API lives in Foundation and exposes transport-neutral handles. Include the individual public headers needed by the caller.
 
 For operation-oriented native I/O, bounded workers, buffer ownership and completion delivery, see [Asynchronous Networking](AsyncNetworking.md).
 
