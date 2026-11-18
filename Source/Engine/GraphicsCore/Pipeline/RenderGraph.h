@@ -209,9 +209,10 @@ struct XII_GRAPHICSCORE_DLL xiiRenderGraphMergeGroup
 /// Cross-queue dependencies are expressed via xiiGALFence signals and device-side waits inlined into the command list before the first consuming pass.
 struct XII_GRAPHICSCORE_DLL xiiRenderGraphQueueSubmission
 {
-  xiiUInt32                            m_uiQueueIndex = 0U;     ///< 0=Graphics, 1=AsyncCompute, 2=AsyncTransfer.
-  xiiBitflags<xiiGALCommandQueueFlags> m_QueueFlags;            ///< Redundant with the queue index, but useful to have directly available during command list creation.
-  xiiDynamicArray<xiiUInt32>           m_PassOrder;             ///< Ordered pass indices to execute.
+  xiiUInt32                            m_uiQueueIndex = 0U; ///< 0=Graphics, 1=AsyncCompute, 2=AsyncTransfer.
+  xiiBitflags<xiiGALCommandQueueFlags> m_QueueFlags;        ///< Redundant with the queue index, but useful to have directly available during command list creation.
+  xiiDynamicArray<xiiUInt32>           m_PassOrder;         ///< Ordered pass indices to execute.
+  bool                                 m_bSignalsConsumers = false;
   xiiHybridArray<xiiUInt32, 2>         m_WaitSubmissionIndices; ///< Producer submissions that must complete before this submission starts.
 };
 
@@ -222,6 +223,18 @@ struct XII_GRAPHICSCORE_DLL xiiRenderGraphSubmissionFrameInfo
   xiiHybridArray<xiiUInt64, 2> m_ExternalWaitValues;
 };
 
+/// Boundary that prevented a managed render pass from sharing its predecessor's native scope.
+enum class xiiRenderGraphMergeBlocker : xiiUInt8
+{
+  None,
+  PreviousPass,
+  SeparateSubmission,
+  MergeDisabled,
+  PreRecording,
+  ResourceTransitions,
+  AttachmentMismatch,
+};
+
 /// A fully compiled render pass ready for execution.
 struct XII_GRAPHICSCORE_DLL xiiRenderGraphCompiledPass
 {
@@ -229,17 +242,19 @@ struct XII_GRAPHICSCORE_DLL xiiRenderGraphCompiledPass
   xiiHashedString              m_sName;                                ///< Debug name for this pass, used in profiling and diagnostics.
   xiiUInt32                    m_uiPassIndex        = xiiInvalidIndex; ///< Index into the graph's pass table.
   xiiUInt32                    m_uiQueueIndex       = 0U;              ///< 0=Graphics, 1=AsyncCompute, 2=AsyncTransfer.
+  xiiUInt32                    m_uiSubmissionIndex  = xiiInvalidIndex;
   xiiUInt32                    m_uiMergeGroupIndex  = xiiInvalidIndex; ///< Index into the graph's merge group array, or xiiInvalidIndex if this pass is not merged with any others.
-  bool                         m_bHasSideEffects    = false;           ///< Whether this pass has side effects (e.g. present, copy to readback, UAV write with unknown output, etc.) that must be preserved even if no other pass reads from it.
-  bool                         m_bAllowMerge        = true;            ///< Whether this pass is allowed to be merged with adjacent passes on the same queue. This is a hint to the compiler, but not a guarantee.
-  bool                         m_bManagedRenderPass = false;           ///< Whether the graph owns the native render-pass scope for this pass. Legacy passes may continue to open their own scopes.
-  bool                         m_bIsCulled          = false;           ///< Whether this pass was culled during compilation. Culled passes are not executed, but may still have side effects if they are reachable from a side-effect pass.
-  xiiHybridArray<xiiUInt32, 4> m_PreBarrierIndices;                    ///< For split barriers, the end barrier is emitted before the pass and the begin barrier is emitted after the pass, so the compiler can overlap the transition with GPU execution of this pass and future consumers.
-  xiiHybridArray<xiiUInt32, 4> m_PostBarrierBeginIndices;              ///< For split barriers, the begin barrier is emitted after the pass and the end barrier is emitted before the next producer, so the compiler can overlap the transition with GPU execution of this pass and past producers.
-  xiiHybridArray<xiiUInt32, 4> m_PostBarrierIndices;                   ///< Immediate export/ownership transitions emitted after the pass.
-  xiiHybridArray<xiiUInt32, 4> m_AcquireResourceIndices;               ///< Indices into the graph's resource table for transient resources whose lifetime starts at this pass. The executor will acquire these resources from the cache before executing the pass and return them to the cache after executing the pass.
-  xiiHybridArray<xiiUInt32, 4> m_ReleaseResourceIndices;               ///< Indices into the graph's resource table for transient resources whose lifetime ends at this pass. The executor will acquire these resources from the cache before executing the pass and return them to the cache after executing the pass.
-  xiiHybridArray<xiiUInt32, 4> m_DependencyPassIndices;                ///< Indices of passes that this pass depends on (i.e. there is a path of resource reads/writes from those passes to this pass). This is used for diagnostics and profiling, but not for execution order, which is determined by the queue submission order.
+  xiiRenderGraphMergeBlocker   m_MergeBlocker       = xiiRenderGraphMergeBlocker::None;
+  bool                         m_bHasSideEffects    = false; ///< Whether this pass has side effects (e.g. present, copy to readback, UAV write with unknown output, etc.) that must be preserved even if no other pass reads from it.
+  bool                         m_bAllowMerge        = true;  ///< Whether this pass is allowed to be merged with adjacent passes on the same queue. This is a hint to the compiler, but not a guarantee.
+  bool                         m_bManagedRenderPass = false; ///< Whether the graph owns the native render-pass scope for this pass. Legacy passes may continue to open their own scopes.
+  bool                         m_bIsCulled          = false; ///< Whether this pass was culled during compilation. Culled passes are not executed, but may still have side effects if they are reachable from a side-effect pass.
+  xiiHybridArray<xiiUInt32, 4> m_PreBarrierIndices;          ///< For split barriers, the end barrier is emitted before the pass and the begin barrier is emitted after the pass, so the compiler can overlap the transition with GPU execution of this pass and future consumers.
+  xiiHybridArray<xiiUInt32, 4> m_PostBarrierBeginIndices;    ///< For split barriers, the begin barrier is emitted after the pass and the end barrier is emitted before the next producer, so the compiler can overlap the transition with GPU execution of this pass and past producers.
+  xiiHybridArray<xiiUInt32, 4> m_PostBarrierIndices;         ///< Immediate export/ownership transitions emitted after the pass.
+  xiiHybridArray<xiiUInt32, 4> m_AcquireResourceIndices;     ///< Indices into the graph's resource table for transient resources whose lifetime starts at this pass. The executor will acquire these resources from the cache before executing the pass and return them to the cache after executing the pass.
+  xiiHybridArray<xiiUInt32, 4> m_ReleaseResourceIndices;     ///< Indices into the graph's resource table for transient resources whose lifetime ends at this pass. The executor will acquire these resources from the cache before executing the pass and return them to the cache after executing the pass.
+  xiiHybridArray<xiiUInt32, 4> m_DependencyPassIndices;      ///< Indices of passes that this pass depends on (i.e. there is a path of resource reads/writes from those passes to this pass). This is used for diagnostics and profiling, but not for execution order, which is determined by the queue submission order.
 };
 
 /// Controls optional features of the render graph compiler.
@@ -262,9 +277,23 @@ struct XII_GRAPHICSCORE_DLL xiiRenderGraphStatistics
   xiiTime   m_CompilationTime;
   xiiTime   m_FramePreparationTime;
   xiiTime   m_ResourceResolutionTime;
+  xiiTime   m_ExecutionTime;
+  xiiTime   m_RecordingCriticalPath;
+  xiiTime   m_RecordingWorkTime;
+  xiiTime   m_SubmitTime;
   xiiUInt64 m_uiPlanGeneration         = 0U;
   xiiUInt64 m_uiStructuralBuildCount   = 0U;
   xiiUInt64 m_uiPlanReuseCount         = 0U;
+  xiiUInt32 m_uiSecondaryLists         = 0U;
+  xiiUInt32 m_uiParallelPasses         = 0U;
+  xiiUInt32 m_uiSerialPasses           = 0U;
+  xiiUInt32 m_uiRecordingThreads       = 0U;
+  xiiUInt32 m_uiCrossQueueWaits        = 0U;
+  xiiUInt32 m_uiCrossQueueSignals      = 0U;
+  xiiUInt32 m_uiMergedPasses           = 0U;
+  xiiUInt32 m_uiScratchAllocations     = 0U; ///< Capacity growth of the reusable resource and binding arrays during execution.
+  xiiUInt32 m_uiPrimaryLists           = 0U;
+  xiiUInt32 m_uiReusedPrimaryLists     = 0U;
   xiiUInt32 m_uiSubmittedCount         = 0U;
   xiiUInt32 m_uiCompiledResourceCount  = 0U;
   xiiUInt32 m_uiRegisteredPassCount    = 0U; ///< Passes registered with the graph before compilation.
@@ -574,7 +603,7 @@ public:
   /// \param out_pError - Optional diagnostics string populated on XII_FAILURE.
   ///
   /// \returns XII_SUCCESS on success, XII_FAILURE if a cycle or invalid state is detected.
-  xiiResult Compile(const xiiRenderGraphCompileSettings& settings = {}, xiiStringBuilder* out_pError = nullptr);
+  xiiResult Compile(const xiiRenderGraphCompileSettings& settings = {}, xiiStringBuilder* out_pError = nullptr, xiiGALDevice* pDevice = nullptr);
 
 
   /// Executes the compiled render graph.
@@ -622,6 +651,7 @@ public:
 
   /// Returns the list of queue submissions synthesized by the compiler, in execution order.
   [[nodiscard]] xiiArrayPtr<const xiiRenderGraphQueueSubmission> GetQueueSubmissions() const;
+  [[nodiscard]] xiiArrayPtr<const xiiUInt32>                     GetPhysicalQueueMapping() const { return xiiMakeArrayPtr(m_Plan.m_QueueMapping.m_PhysicalQueueIndices); }
 
   /// Returns frame-specific sync details for a submission recorded this execution.
   [[nodiscard]] const xiiRenderGraphSubmissionFrameInfo* GetSubmissionFrameInfo(xiiUInt32 uiSubmissionIndex) const;
@@ -721,15 +751,23 @@ private:
   void PhaseB_TopologicalSortAndCull(const xiiRenderGraphCompileSettings& settings, xiiDynamicArray<xiiUInt32>& out_sortedIndices);
   void PhaseC_LifetimeAnalysis(const xiiDynamicArray<xiiUInt32>& sortedIndices);
   void PhaseD_BarrierSynthesis(const xiiDynamicArray<xiiUInt32>& sortedIndices, const xiiRenderGraphCompileSettings& settings);
-  void PhaseE_MultiQueueScheduling(const xiiDynamicArray<xiiUInt32>& sortedIndices, xiiGALDevice* pDevice, const xiiRenderGraphCompileSettings& settings);
-  void PhaseF_RenderPassMerging();
+  struct QueueMapping
+  {
+    xiiUInt32 m_PhysicalQueueIndices[3]             = {0U, 1U, 2U};
+    bool      operator==(const QueueMapping&) const = default;
+  };
+
+  [[nodiscard]] static QueueMapping ResolveQueueMapping(xiiGALDevice* pDevice, bool bAsyncQueues);
+  void                              AssignQueuesAndDependencies(const QueueMapping& mapping);
+  void                              BuildSubmissionBatches();
+  void                              PhaseF_RenderPassMerging();
   struct RenderPassBinding
   {
     xiiSharedPtr<xiiGALRenderPass>  m_pRenderPass;
     xiiSharedPtr<xiiGALFramebuffer> m_pFramebuffer;
   };
 
-  xiiResult MaterializeRenderPassGroup(const xiiRenderGraphMergeGroup& group, RenderPassBinding& ref_binding, xiiGALDevice* pDevice, xiiArrayPtr<xiiSharedPtr<xiiGALTexture>> resolvedTextures, xiiStringBuilder* out_pError) const;
+  xiiResult MaterializeRenderPassGroup(const xiiRenderGraphMergeGroup& group, RenderPassBinding& ref_binding, xiiRenderGraphResourceCache& resourceCache, xiiArrayPtr<xiiSharedPtr<xiiGALTexture>> resolvedTextures, xiiStringBuilder* out_pError) const;
 
   void EmitBarrier(xiiUInt32 uiConsumerPassIdx, xiiUInt32 uiResourceIdx, bool bIsTexture, xiiBitflags<xiiGALResourceStateFlags> afterState, bool bSplitBarrier, xiiUInt32 uiFirstMip = 0U, xiiUInt32 uiMipCount = XII_GAL_REMAINING_MIP_LEVELS, xiiUInt32 uiFirstSlice = 0U, xiiUInt32 uiSliceCount = XII_GAL_REMAINING_ARRAY_SLICES);
 
@@ -749,6 +787,8 @@ private:
 
   struct CompiledPlan
   {
+    QueueMapping                                              m_QueueMapping;
+    xiiUInt32                                                 m_uiSignaledQueueMask = 0U;
     xiiDynamicArray<xiiRenderGraphCompiledPass>               m_CompiledPasses;
     xiiDynamicArray<xiiRenderGraphBarrierDescription>         m_Barriers;
     xiiDynamicArray<xiiRenderGraphMergeGroup>                 m_MergeGroups;
@@ -771,6 +811,11 @@ private:
 
   struct ExecutionFrame
   {
+    xiiDynamicArray<RenderPassBinding>                    m_RenderPassBindings;
+    xiiDynamicArray<xiiSharedPtr<xiiGALTexture>>          m_ResolvedTextures;
+    xiiDynamicArray<xiiSharedPtr<xiiGALBuffer>>           m_ResolvedBuffers;
+    xiiDynamicArray<xiiSharedPtr<xiiGALTexture>>          m_AliasTextures;
+    xiiDynamicArray<xiiSharedPtr<xiiGALBuffer>>           m_AliasBuffers;
     xiiDynamicArray<xiiRenderGraphSubmissionFrameInfo>    m_SubmissionInfo;
     xiiHashTable<xiiUInt32, xiiHybridArray<FenceWait, 2>> m_FenceWaits;
     xiiHashTable<xiiUInt32, ImportedResource>             m_Imports;

@@ -32,6 +32,9 @@ public:
 
   void ReclaimDescriptorPool(vk::DescriptorPool&& vkDescriptorPool);
 
+  /// Reuse one standard native pool after the owning command buffer has retired.
+  [[nodiscard]] bool ResetForReuse();
+
 private:
   friend class xiiMemoryUtils;
   friend class xiiGALDeviceVulkan;
@@ -51,4 +54,5 @@ private:
   xiiUInt32                                   m_uiBaseSize      = 0U;
   xiiUInt32                                   m_uiMaxSets       = 0U;
   vk::DescriptorPool                          m_vkCurrentDescriptorPool;
+  bool                                        m_bHasOversizedPool = false;
 };

@@ -112,6 +112,19 @@ void xiiGALDescriptorSetPoolVulkan::ReclaimDescriptorPool(vk::DescriptorPool&& v
   m_QueuedDescriptorPools.PushBack(vkDescriptorPool);
 }
 
+bool xiiGALDescriptorSetPoolVulkan::ResetForReuse()
+{
+  if (m_bHasOversizedPool || m_DescriptorPools.GetCount() != 1U || !m_QueuedDescriptorPools.IsEmpty())
+  {
+    return false;
+  }
+
+  ReclaimDescriptorPool(vk::DescriptorPool(m_DescriptorPools[0]));
+  m_vkCurrentDescriptorPool = VK_NULL_HANDLE;
+  m_uiRemainingSets         = 0U;
+  return true;
+}
+
 vk::DescriptorPool xiiGALDescriptorSetPoolVulkan::CreateVulkanDescriptorPool(const xiiHashTable<vk::DescriptorType, xiiUInt32>& required)
 {
   vk::DescriptorPool vkDescriptorPool = VK_NULL_HANDLE;
@@ -121,16 +134,18 @@ vk::DescriptorPool xiiGALDescriptorSetPoolVulkan::CreateVulkanDescriptorPool(con
   bool oversized = false;
   for (auto it = required.GetIterator(); it.IsValid(); ++it)
     oversized |= it.Value() > static_cast<xiiUInt32>(GetDescriptorTypeWeight(it.Key()) * m_uiBaseSize);
+  m_bHasOversizedPool |= oversized;
   m_Remaining.Clear();
-  m_uiRemainingSets = m_uiMaxSets;
+  m_uiRemainingSets                    = m_uiMaxSets;
+  vk::DescriptorType descriptorTypes[] = {vk::DescriptorType::eSampler, vk::DescriptorType::eCombinedImageSampler, vk::DescriptorType::eSampledImage, vk::DescriptorType::eStorageImage, vk::DescriptorType::eUniformTexelBuffer, vk::DescriptorType::eStorageTexelBuffer, vk::DescriptorType::eUniformBuffer,
+                                          vk::DescriptorType::eStorageBuffer, vk::DescriptorType::eUniformBufferDynamic, vk::DescriptorType::eStorageBufferDynamic, vk::DescriptorType::eInputAttachment, vk::DescriptorType::eInlineUniformBlock, vk::DescriptorType::eAccelerationStructureKHR};
+
   if (m_QueuedDescriptorPools.IsEmpty() || oversized)
   {
     vk::Device  vkLogicalDevice   = m_pDeviceVulkan->GetVulkanLogicalDevice();
     const auto& extensionFeatures = m_pDeviceVulkan->GetVulkanLogicalDeviceExtensionFeatures();
 
     xiiTemporaryHybridArray<vk::DescriptorPoolSize, 16U> descriptorPoolSizes;
-    vk::DescriptorType                                   descriptorTypes[] = {vk::DescriptorType::eSampler, vk::DescriptorType::eCombinedImageSampler, vk::DescriptorType::eSampledImage, vk::DescriptorType::eStorageImage, vk::DescriptorType::eUniformTexelBuffer, vk::DescriptorType::eStorageTexelBuffer, vk::DescriptorType::eUniformBuffer,
-                                                                              vk::DescriptorType::eStorageBuffer, vk::DescriptorType::eUniformBufferDynamic, vk::DescriptorType::eStorageBufferDynamic, vk::DescriptorType::eInputAttachment, vk::DescriptorType::eInlineUniformBlock, vk::DescriptorType::eAccelerationStructureKHR};
 
     for (const vk::DescriptorType& vkDescriptorType : descriptorTypes)
     {
@@ -167,8 +182,10 @@ vk::DescriptorPool xiiGALDescriptorSetPoolVulkan::CreateVulkanDescriptorPool(con
     vkDescriptorPool = m_QueuedDescriptorPools.PeekFront();
 
     m_QueuedDescriptorPools.PopFront();
-    for (auto it = required.GetIterator(); it.IsValid(); ++it)
-      m_Remaining.Insert(it.Key(), static_cast<xiiUInt32>(GetDescriptorTypeWeight(it.Key()) * m_uiBaseSize));
+    for (vk::DescriptorType type : descriptorTypes)
+    {
+      m_Remaining.Insert(type, static_cast<xiiUInt32>(GetDescriptorTypeWeight(type) * m_uiBaseSize));
+    }
   }
 
   XII_ASSERT_DEBUG(vkDescriptorPool != VK_NULL_HANDLE, "Invalid descriptor pool.");

@@ -146,17 +146,19 @@ private:
     xiiUInt64                                  m_uiFrameIndex = xiiInvalidIndex;
   };
 
-  [[nodiscard]] bool SupportsDurationQueries(const xiiGALCommandList& commandList) const;
-  void               ReadbackFrame(FrameData& frameData);
+  [[nodiscard]] bool                      SupportsDurationQueries(const xiiGALCommandList& commandList) const;
+  void                                    ReadbackFrame(FrameData& frameData);
+  [[nodiscard]] xiiSharedPtr<xiiGALQuery> AcquireDurationQuery();
 
 private:
-  xiiSharedPtr<xiiGALDevice>           m_pDevice;
-  FrameData                            m_FrameRing[s_uiRingFrameCount];
-  xiiUInt32                            m_uiCurrentRingSlot = 0U;
-  xiiHashTable<xiiHashedString, float> m_ResolvedDurationsMs;
-  xiiHashTable<xiiUInt64, float>       m_ResolvedGraphDurationsMs;
-  xiiHashTable<xiiUInt64, float>       m_ResolvedQueueDurationsMs;
-  mutable xiiMutex                     m_ResultMutex;
+  xiiSharedPtr<xiiGALDevice>                 m_pDevice;
+  FrameData                                  m_FrameRing[s_uiRingFrameCount];
+  xiiDynamicArray<xiiSharedPtr<xiiGALQuery>> m_AvailableDurationQueries;
+  xiiUInt32                                  m_uiCurrentRingSlot = 0U;
+  xiiHashTable<xiiHashedString, float>       m_ResolvedDurationsMs;
+  xiiHashTable<xiiUInt64, float>             m_ResolvedGraphDurationsMs;
+  xiiHashTable<xiiUInt64, float>             m_ResolvedQueueDurationsMs;
+  mutable xiiMutex                           m_ResultMutex;
   struct Timing
   {
     float           m_fDurationMs  = 0;

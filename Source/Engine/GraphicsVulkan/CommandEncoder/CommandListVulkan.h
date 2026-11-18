@@ -69,7 +69,7 @@ public:
   void AddWaitSemaphore(vk::Semaphore vkSemaphore, vk::PipelineStageFlags pipelineFlags, xiiUInt64 uiValue = 0ULL);
   void AddSignalSemaphore(vk::Semaphore vkSemaphore, xiiUInt64 uiValue = 0ULL);
 
-  XII_ALWAYS_INLINE xiiGALStagingBufferPoolVulkan* GetVulkanUploadStagingBufferPool() const { return m_CommandListData.m_pUploadStagingBufferPool.Borrow(); }
+  xiiGALStagingBufferPoolVulkan* GetVulkanUploadStagingBufferPool();
 
   struct CommandListState
   {
@@ -227,6 +227,9 @@ protected:
   virtual void SetDebugNamePlatform(xiiStringView sName) const override final;
 
 private:
+  xiiGALDynamicBufferPoolVulkan* GetDynamicBufferPool();
+  xiiGALDescriptorSetPoolVulkan* GetDescriptorSetPool();
+
   void PrepareForDraw();
   void PrepareForIndexedDraw(xiiEnum<xiiGALValueType> indexType);
   void PrepareForDispatchCompute();

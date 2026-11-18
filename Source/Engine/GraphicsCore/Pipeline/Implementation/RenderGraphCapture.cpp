@@ -18,6 +18,28 @@ namespace
     writer.AddVariableString(name, text);
   }
 
+  xiiStringView GetMergeBlocker(xiiRenderGraphMergeBlocker blocker)
+  {
+    switch (blocker)
+    {
+      case xiiRenderGraphMergeBlocker::None:
+        return {};
+      case xiiRenderGraphMergeBlocker::PreviousPass:
+        return "Previous pass does not have a managed render pass";
+      case xiiRenderGraphMergeBlocker::SeparateSubmission:
+        return "Separate queue submission";
+      case xiiRenderGraphMergeBlocker::MergeDisabled:
+        return "Merging disabled by a pass";
+      case xiiRenderGraphMergeBlocker::PreRecording:
+        return "Pre-recording callback requires a separate scope";
+      case xiiRenderGraphMergeBlocker::ResourceTransitions:
+        return "Resource transitions between passes";
+      case xiiRenderGraphMergeBlocker::AttachmentMismatch:
+        return "Different attachments or attachment states";
+    }
+    return {};
+  }
+
   template <typename T>
   void WriteIndices(xiiJSONWriter& writer, xiiStringView name, const T& values)
   {
@@ -58,6 +80,20 @@ xiiResult xiiRenderGraphDebug::WriteSnapshot(const ExecutionEvent& event, xiiStr
   writer.AddVariableUInt32("submissions", stats.m_uiQueueSubmissionCount);
   writer.AddVariableUInt32("submitted", stats.m_uiSubmittedCount);
   writer.AddVariableUInt32("externalFenceWaits", stats.m_uiExternalFenceWaitCount);
+  writer.AddVariableUInt32("internalFenceWaits", stats.m_uiCrossQueueWaits);
+  writer.AddVariableUInt32("internalFenceSignals", stats.m_uiCrossQueueSignals);
+  writer.AddVariableUInt32("primaryLists", stats.m_uiPrimaryLists);
+  writer.AddVariableUInt32("reusedPrimaryLists", stats.m_uiReusedPrimaryLists);
+  writer.AddVariableUInt32("secondaryLists", stats.m_uiSecondaryLists);
+  writer.AddVariableUInt32("recordingThreads", stats.m_uiRecordingThreads);
+  writer.AddVariableUInt32("serialPasses", stats.m_uiSerialPasses);
+  writer.AddVariableUInt32("parallelPasses", stats.m_uiParallelPasses);
+  writer.AddVariableUInt32("mergedPasses", stats.m_uiMergedPasses);
+  writer.AddVariableDouble("cpuExecutionMs", stats.m_ExecutionTime.GetMilliseconds());
+  writer.AddVariableDouble("cpuRecordingWallMs", stats.m_RecordingCriticalPath.GetMilliseconds());
+  writer.AddVariableDouble("cpuRecordingWorkMs", stats.m_RecordingWorkTime.GetMilliseconds());
+  writer.AddVariableDouble("cpuSubmitMs", stats.m_SubmitTime.GetMilliseconds());
+  writer.AddVariableUInt32("scratchAllocations", stats.m_uiScratchAllocations);
   writer.AddVariableUInt32("transientTextures", stats.m_uiTransientTextureCount);
   writer.AddVariableUInt32("transientBuffers", stats.m_uiTransientBufferCount);
   writer.AddVariableUInt32("aliasGroups", stats.m_uiAliasGroupCount);
@@ -88,6 +124,7 @@ xiiResult xiiRenderGraphDebug::WriteSnapshot(const ExecutionEvent& event, xiiStr
     writer.AddVariableBool("sideEffects", pass.m_bHasSideEffects);
     writer.AddVariableBool("managed", pass.m_bManagedRenderPass);
     writer.AddVariableBool("allowMerge", pass.m_bAllowMerge);
+    writer.AddVariableString("mergeBlocker", GetMergeBlocker(pass.m_MergeBlocker));
     WriteIndices(writer, "dependencies", pass.m_DependencyPassIndices);
     WriteIndices(writer, "preBarriers", pass.m_PreBarrierIndices);
     WriteIndices(writer, "splitBegins", pass.m_PostBarrierBeginIndices);
@@ -182,6 +219,8 @@ xiiResult xiiRenderGraphDebug::WriteSnapshot(const ExecutionEvent& event, xiiStr
     writer.EndObject();
   }
   writer.EndArray();
+
+  WriteIndices(writer, "physicalQueues", graph.GetPhysicalQueueMapping());
 
   writer.BeginArray("submissions");
   const auto submissions = graph.GetQueueSubmissions();
