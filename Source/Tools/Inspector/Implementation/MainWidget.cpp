@@ -226,8 +226,14 @@ void xiiQtMainWidget::UpdateStats()
     return;
   }
   xiiNetworkConnectionInfo connection;
-  if (client.GetConnectionInfo(connection).Succeeded())
+  if (client.GetConnectionInfo(connection).Succeeded() && connection.m_Statistics.m_HeartbeatRoundTrip.IsPositive())
+  {
     LabelPing->setText(QString("Ping: %1 ms").arg(connection.m_Statistics.m_HeartbeatRoundTrip.GetMilliseconds(), 0, 'f', 2));
+  }
+  else
+  {
+    LabelPing->setText("Ping: N/A");
+  }
   LabelStatus->setText("Connected");
   const auto& info = client.GetServerInfo();
   LabelServer->setText(QString("%1 (process %2)").arg(QString::fromUtf8(info.m_sApplication.GetData())).arg(info.m_uiProcessId).toHtmlEscaped());

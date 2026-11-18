@@ -663,17 +663,20 @@ void xiiNetworkHostRuntime::DrivePeer(Peer& peer, xiiTime now, xiiTime& ref_next
       m_WorkSignal.RaiseSignal();
       return;
     }
-    ref_nextWake      = xiiMath::Min(ref_nextWake, peer.m_LastActivity + m_Configuration.m_IdleTimeout);
-    const auto pingAt = peer.m_LastActivity + m_Configuration.m_HeartbeatInterval;
-    if (now >= pingAt && peer.m_PingSent.IsZero())
+    ref_nextWake = xiiMath::Min(ref_nextWake, peer.m_LastActivity + m_Configuration.m_IdleTimeout);
+    if (peer.m_Info.m_State == xiiNetworkConnectionState::Connected && peer.m_PingSent.IsZero())
     {
-      peer.m_PingSent = now;
-      ++peer.m_uiPingSequence;
-      Queue(peer, xiiNetworkFrameType::Ping, {}, 0, peer.m_uiPingSequence);
-    }
-    if (peer.m_PingSent.IsZero())
-    {
-      ref_nextWake = xiiMath::Min(ref_nextWake, pingAt);
+      if (now >= peer.m_NextHeartbeat)
+      {
+        peer.m_PingSent      = now;
+        peer.m_NextHeartbeat = now + m_Configuration.m_HeartbeatInterval;
+        ++peer.m_uiPingSequence;
+        Queue(peer, xiiNetworkFrameType::Ping, {}, 0, peer.m_uiPingSequence);
+      }
+      else
+      {
+        ref_nextWake = xiiMath::Min(ref_nextWake, peer.m_NextHeartbeat);
+      }
     }
     for (const auto& channel : peer.m_Channels)
     {
