@@ -32,6 +32,8 @@ XII_ALWAYS_INLINE const xiiGALSwapChain* xiiView::GetSwapChain() const
 
 XII_ALWAYS_INLINE void xiiView::SetSwapChain(const xiiGALSwapChain* pSwapChain)
 {
+  if (m_pRenderTargetView == nullptr && (m_pSwapChain == nullptr) != (pSwapChain == nullptr))
+    InvalidateRenderGraph("View output kind changed");
   m_pSwapChain = pSwapChain;
 }
 

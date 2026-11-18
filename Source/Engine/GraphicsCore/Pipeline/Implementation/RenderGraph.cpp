@@ -554,6 +554,16 @@ void xiiRenderGraphBuilder::SetPassPreparation(xiiDelegate<void(xiiRenderGraphPa
   m_Graph.m_Passes[m_uiPassIndex].m_PrepareDelegate = std::move(preparation);
 }
 
+void xiiRenderGraphBuilder::SetPassFramePreparation(xiiDelegate<xiiResult(xiiRenderGraph&, const xiiView*, xiiStringBuilder&)> preparation)
+{
+  m_Graph.m_Passes[m_uiPassIndex].m_FramePreparation = std::move(preparation);
+}
+
+void xiiRenderGraphBuilder::SetPassSubmissionCompletion(xiiDelegate<void()> completion)
+{
+  m_Graph.m_Passes[m_uiPassIndex].m_SubmissionCompletion = std::move(completion);
+}
+
 //////////////////////////////////////////////////////////////////////////
 
 xiiRenderGraph::xiiRenderGraph(xiiStringView sName)
@@ -625,6 +635,8 @@ void xiiRenderGraph::BeginSetup(xiiUInt64 uiFrameIndex, xiiStringView sReason)
   m_Passes.Clear();
   m_Resources.Clear();
   m_Plan.m_CompiledPasses.Clear();
+  m_Plan.m_FramePreparations.Clear();
+  m_Plan.m_SubmissionCompletions.Clear();
   m_Plan.m_Barriers.Clear();
   m_Plan.m_MergeGroups.Clear();
   m_Plan.m_QueueSubmissions.Clear();
@@ -643,10 +655,15 @@ void xiiRenderGraph::BeginSetup(xiiUInt64 uiFrameIndex, xiiStringView sReason)
   m_bIsCompiled  = false;
 }
 
-xiiResult xiiRenderGraph::BindImportedTexture(xiiRenderGraphTextureHandle hTexture, xiiSharedPtr<xiiGALTexture> pTexture, xiiBitflags<xiiGALResourceStateFlags> state)
+bool xiiRenderGraph::MatchesImportedTexture(xiiRenderGraphTextureHandle hTexture, const xiiGALTextureCreationDescription& description) const
 {
   const auto* pDescription = GetTextureDescription(hTexture);
-  if (pDescription == nullptr || pTexture == nullptr || *pDescription != GetImportContract(pTexture->GetDescription()))
+  return pDescription != nullptr && m_Resources[hTexture.GetInternalID().m_InstanceIndex].m_bIsImported && *pDescription == GetImportContract(description);
+}
+
+xiiResult xiiRenderGraph::BindImportedTexture(xiiRenderGraphTextureHandle hTexture, xiiSharedPtr<xiiGALTexture> pTexture, xiiBitflags<xiiGALResourceStateFlags> state)
+{
+  if (pTexture == nullptr || !MatchesImportedTexture(hTexture, pTexture->GetDescription()))
   {
     return XII_FAILURE;
   }
@@ -746,6 +763,8 @@ xiiResult xiiRenderGraph::Compile(const xiiRenderGraphCompileSettings& settings,
   XII_SCOPE_EXIT(m_Statistics.m_CompilationTime = xiiTime::Now() - compilationStart; if (!m_bIsCompiled) xiiRenderGraphDebug::s_ExecutionEvents.Broadcast({*this, nullptr, m_Frame.m_uiIndex, false, out_pError ? out_pError->GetView() : xiiStringView{}}));
 
   m_Plan.m_CompiledPasses.Clear();
+  m_Plan.m_FramePreparations.Clear();
+  m_Plan.m_SubmissionCompletions.Clear();
   m_Plan.m_Barriers.Clear();
   m_Plan.m_MergeGroups.Clear();
   m_Plan.m_QueueSubmissions.Clear();
@@ -795,6 +814,17 @@ xiiResult xiiRenderGraph::Compile(const xiiRenderGraphCompileSettings& settings,
 
   // The attachment layout is static. Resolve framebuffer bindings during execution.
   PhaseF_RenderPassMerging();
+  for (const auto& pass : m_Plan.m_CompiledPasses)
+  {
+    if (pass.m_bIsCulled)
+      continue;
+
+    const auto& entry = m_Passes[pass.m_uiPassIndex];
+    if (entry.m_FramePreparation.IsValid())
+      m_Plan.m_FramePreparations.PushBack(pass.m_uiPassIndex);
+    if (entry.m_SubmissionCompletion.IsValid())
+      m_Plan.m_SubmissionCompletions.PushBack(pass.m_uiPassIndex);
+  }
 
   m_bIsCompiled = true;
   ++m_Statistics.m_uiPlanGeneration;
@@ -1839,8 +1869,26 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
   m_Statistics.m_SubmitTime            = {};
   m_Statistics.m_uiSecondaryLists      = 0U;
   m_Statistics.m_uiParallelPasses      = 0U;
-  const xiiTime executionStart         = xiiTime::Now();
-  bool          bExecutionSucceeded    = false;
+  if (!m_Plan.m_FramePreparations.IsEmpty())
+  {
+    XII_PROFILE_SCOPE("Render Graph: Prepare Pass Frame Data");
+    const xiiTime preparationStart = xiiTime::Now();
+    XII_SCOPE_EXIT(m_Statistics.m_FramePreparationTime += xiiTime::Now() - preparationStart);
+    xiiStringBuilder error;
+    for (xiiUInt32 uiPassIndex : m_Plan.m_FramePreparations)
+    {
+      const auto& pass = m_Passes[uiPassIndex];
+      if (pass.m_FramePreparation(*this, pView, error).Failed())
+      {
+        if (out_pError != nullptr)
+          out_pError->SetFormat("Frame preparation for pass '{}' failed. {}", pass.m_sName, error);
+        return XII_FAILURE;
+      }
+    }
+  }
+
+  const xiiTime executionStart      = xiiTime::Now();
+  bool          bExecutionSucceeded = false;
   XII_SCOPE_EXIT(
     m_Statistics.m_ExecutionTime = xiiTime::Now() - executionStart;
     if (!bExecutionSucceeded) {
@@ -2573,6 +2621,9 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
   {
     pProfiler->OnFrameEnd(m_Frame.m_uiIndex);
   }
+
+  for (xiiUInt32 uiPassIndex : m_Plan.m_SubmissionCompletions)
+    m_Passes[uiPassIndex].m_SubmissionCompletion();
 
   if (m_uiLastExecutedPlan == GetPlanGeneration())
   {

@@ -20,14 +20,14 @@ struct xiiColorGradingPass::Data
   xiiRenderGraphBufferHandle  m_hConstants;
   xiiSizeU32                  m_Size;
   xiiDisplayOutputSettings    m_DisplaySettings;
+  xiiDisplayOutputSettings    m_AuthoredDisplay;
+  bool                        m_bUseViewDefaults = false;
   bool                        m_bDefaultViewMode = true;
   bool                        m_bVisualizeLUT    = false;
 };
 struct xiiColorGradingPass::State
 {
   xiiSharedPtr<xiiGALComputePipelineState> m_Pipeline;
-
-  xiiRenderPassUtils::DisplayConfiguration m_Display;
 };
 
 xiiColorGradingPass::xiiColorGradingPass()
@@ -65,8 +65,6 @@ xiiResult xiiColorGradingPass::Configure(const xiiVariantDictionary& properties)
   settings.m_ColorGrading = m_Settings;
   if (!xiiDisplayOutputManager::IsValid(settings))
     return XII_FAILURE;
-  if (m_pState)
-    m_pState->m_Display.m_bValid = false;
   return XII_SUCCESS;
 }
 xiiResult xiiColorGradingPass::Build(xiiRenderPipelinePassContext& context)
@@ -77,7 +75,6 @@ xiiResult xiiColorGradingPass::Build(xiiRenderPipelinePassContext& context)
   XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::LoadComputePipeline(m_pState->m_Pipeline, "Shaders/Pipeline/ColorGrading.xiiShader"));
   xiiDisplayOutputSettings settings;
   settings.m_ColorGrading = m_Settings;
-  XII_SUCCEED_OR_RETURN(m_pState->m_Display.Resolve(context, settings, m_bUseViewDefaults));
   xiiSizeU32 size;
   XII_SUCCEED_OR_RETURN(xiiRenderPassUtils::OutputSize(context, m_OutputGradedColor, context.GetInputTexture(m_InputDisplayLinearColor), size));
   const auto* sizingInput = context.m_Graph.GetTextureDescription(context.GetInputTexture(m_InputDisplayLinearColor));
@@ -85,11 +82,22 @@ xiiResult xiiColorGradingPass::Build(xiiRenderPipelinePassContext& context)
     return context.ReportFailure("This operation requires input-sized output; resample its inputs before processing at another resolution.");
   auto emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, xiiGALCommandQueueFlags::Compute, [&](Data& data, xiiRenderGraphBuilder& builder) {
     data.m_Size=size;
-    data.m_DisplaySettings=m_pState->m_Display.m_Settings;
-    data.m_bDefaultViewMode=!context.m_pView || context.m_pView->GetViewRenderMode()==xiiViewRenderMode::Default;
-    data.m_bVisualizeLUT   = context.m_pView && context.m_pView->GetViewRenderMode() == xiiViewRenderMode::ColorGradingLUT;
+    data.m_AuthoredDisplay = settings;
+    data.m_bUseViewDefaults = m_bUseViewDefaults;
     data.m_hDisplayLinear=context.GetInputTexture(m_InputDisplayLinearColor);
-    Setup(data,builder); }, [](const Data& data, xiiRenderGraphPassContext& execute) { Execute(data, execute); });
+    Setup(data,builder);
+    builder.SetPassFramePreparation([&data](xiiRenderGraph&, const xiiView* pView, xiiStringBuilder& ref_error) {
+      data.m_DisplaySettings = pView != nullptr && data.m_bUseViewDefaults ? pView->GetDisplayOutputSettings() : data.m_AuthoredDisplay;
+      const auto viewMode = pView != nullptr ? pView->GetViewRenderMode().GetValue() : xiiViewRenderMode::Default;
+      data.m_bDefaultViewMode = viewMode == xiiViewRenderMode::Default;
+      data.m_bVisualizeLUT = viewMode == xiiViewRenderMode::ColorGradingLUT;
+      if (!xiiDisplayOutputManager::IsValid(data.m_DisplaySettings))
+      {
+        ref_error = "Invalid display and exposure settings.";
+        return XII_FAILURE;
+      }
+      return XII_SUCCESS;
+    }); }, [](const Data& data, xiiRenderGraphPassContext& execute) { Execute(data, execute); });
   XII_SUCCEED_OR_RETURN(context.SetOutput(m_OutputGradedColor, emitted.first->m_hGraded));
   XII_SUCCEED_OR_RETURN(context.SetOutput(m_OutputColorGradingConstants, emitted.first->m_hConstants));
   XII_SUCCEED_OR_RETURN(context.SetOutput(m_OutputDisplayLinearColor, emitted.first->m_hDisplayLinear));

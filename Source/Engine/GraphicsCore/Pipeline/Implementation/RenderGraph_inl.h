@@ -85,7 +85,7 @@ XII_ALWAYS_INLINE xiiGALBuffer* xiiRenderGraphPassContext::GetBuffer(xiiRenderGr
 template <typename TPassData>
 std::pair<TPassData*, xiiRenderGraphPassHandle> xiiRenderGraph::AddPass(xiiStringView sName, xiiBitflags<xiiGALCommandQueueFlags> queueFlags, xiiDelegate<void(TPassData&, xiiRenderGraphBuilder&)> setupDelegate, xiiDelegate<void(const TPassData&, xiiRenderGraphPassContext&)> executeDelegate, bool bHasSideEffects)
 {
-  XII_ASSERT_DEV(m_bIsSetupOpen, "AddPass must be called between BeginSetup() and EndSetup().");
+  XII_ASSERT_RELEASE(m_bIsSetupOpen, "AddPass must be called between BeginSetup() and EndSetup().");
   XII_ASSERT_DEV(setupDelegate.IsValid(), "Setup function must be valid.");
   XII_ASSERT_DEV(executeDelegate.IsValid(), "Execute function must be valid.");
 

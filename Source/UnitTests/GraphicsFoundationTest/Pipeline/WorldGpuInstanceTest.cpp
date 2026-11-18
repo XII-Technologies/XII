@@ -21,7 +21,6 @@
 #include <Foundation/Memory/FrameAllocator.h>
 #include <Foundation/Threading/ThreadSignal.h>
 #include <Foundation/Types/ScopeExit.h>
-#include <GraphicsCore/Geometry/GeometryResidency.h>
 #include <GraphicsCore/Meshes/GpuInstanceData.h>
 #include <GraphicsCore/Meshes/MeshComponent.h>
 #include <GraphicsCore/Meshes/MeshResource.h>
@@ -31,6 +30,7 @@
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
+#include <GraphicsCore/Streaming/GpuResidencyManager.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 #include <GraphicsFoundationTest/TestingEnvironment/BufferReadback.h>
@@ -68,7 +68,8 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, WorldGpuInstances)
   {
     xiiUniquePtr<xiiResourceLoaderFromMemory> loader = XII_DEFAULT_NEW(xiiResourceLoaderFromMemory);
     xiiMemoryStreamWriter                     stream(&loader->m_CustomData);
-    descriptor.Save(stream);
+    if (!XII_TEST_RESULT(descriptor.Save(stream)))
+      return;
     xiiResourceManager::UpdateResourceWithCustomLoader(mesh, std::move(loader));
     xiiResourceLock<xiiMeshResource> loaded(mesh, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
     if (!XII_TEST_BOOL(loaded.GetAcquireResult() == xiiResourceAcquireResult::Final))
@@ -110,9 +111,9 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, WorldGpuInstances)
   {
     const auto* packet = xiiDynamicCast<const xiiMeshRenderData*>(extracted.GetAllRenderData()[0]);
     XII_TEST_BOOL(packet != nullptr && packet->m_hMesh == mesh && packet->m_hOwnerObject == childHandle);
-    const auto geometry = xiiGeometryResidencyManager::AcquireMeshGeometry(mesh);
+    const auto geometry = xiiGpuResidencyManager::AcquireMeshGeometry(mesh);
     XII_TEST_BOOL(!geometry.IsInvalidated());
-    xiiGeometryResidencyManager::ReleaseMeshGeometry(geometry, frame);
+    xiiGpuResidencyManager::ReleaseMeshGeometry(geometry, frame);
   }
   const auto* instances = module->GetGpuInstanceData();
   if (!XII_TEST_INT(instances->GetInstanceCount(), 1))
@@ -300,7 +301,7 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, WorldGpuInstances)
       XII_TEST_FLOAT(record.m_GlobalTransform.GetTranslationVector().x, instances->GetInstances()[0].m_GlobalTransform.GetTranslationVector().x, 0);
       return result;
     };
-    for (xiiUInt32 i = 0; i < xiiGeometryResidencyManager::GetConfiguration().m_uiFramesInFlight + 1; ++i)
+    for (xiiUInt32 i = 0; i < xiiGpuResidencyManager::GetConfiguration().m_uiFramesInFlight + 1; ++i)
     {
       xiiRenderGraphFrame gpuFrame;
       XII_TEST_RESULT(gpuFrame.Begin());
@@ -309,7 +310,7 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, WorldGpuInstances)
       const auto first = render(0, gpuFrame), second = render(1, gpuFrame);
       XII_TEST_BOOL(first != nullptr && first == second);
       const auto& stats = instances->GetUploadStatistics();
-      const bool  warm  = i < xiiGeometryResidencyManager::GetConfiguration().m_uiFramesInFlight;
+      const bool  warm  = i < xiiGpuResidencyManager::GetConfiguration().m_uiFramesInFlight;
       XII_TEST_INT(stats.m_uiUploadPasses, warm ? 1 : 0);
       XII_TEST_INT(stats.m_uiBytesUploaded, warm ? sizeof(xiiGpuSceneInstance) + sizeof(xiiMat4) : 0);
       gpuFrame.End();
@@ -336,6 +337,70 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, WorldGpuInstances)
     gpuFrame.End();
     environment.GetDevice()->WaitIdle();
     xiiTestFramework::Output(xiiTestOutput::Details, "Two-camera upload: one changed instance = %u bytes once; warmed static frame = 0 bytes.", xiiUInt32(sizeof(xiiGpuSceneInstance)));
+
+    bool                      bFailRecording = false;
+    xiiRenderGraphTestContext retained;
+    if (!XII_TEST_RESULT(retained.Initialize("Retained GPU instance upload")))
+      return;
+    auto&      graph            = retained.GetGraph();
+    auto&      cache            = retained.GetResourceCache();
+    const auto originalPosition = parent->GetLocalPosition();
+    XII_SCOPE_EXIT(parent->SetLocalPosition(originalPosition));
+    xiiRenderGraphBufferHandle hRecords;
+    const xiiUInt64            uiCapacityRevision = instances->GetUploadContractRevision();
+
+    for (xiiUInt32 uiIteration = 0U; uiIteration < 3U; ++uiIteration)
+    {
+      parent->SetLocalPosition(originalPosition + xiiVec3(float(uiIteration), 0.0f, 0.0f));
+      world.Update();
+      if (!XII_TEST_RESULT(extract()))
+        return;
+
+      xiiRenderGraphFrame executionFrame;
+      if (!XII_TEST_RESULT(executionFrame.Begin()))
+        return;
+      cache.BeginFrame(executionFrame.GetFrameIndex(), executionFrame.GetCompletedFrame());
+      XII_SCOPE_EXIT(cache.EndFrame(); executionFrame.End());
+      if (!XII_TEST_RESULT(module->UpdateGpuInstances(extracted, executionFrame.GetFrameIndex())))
+        return;
+      if (uiIteration == 0U)
+      {
+        graph.BeginSetup(executionFrame.GetFrameIndex());
+        hRecords = instances->DeclareUploadPass(graph).m_Instances;
+        graph.AddPass<xiiRenderGraphBufferHandle>("Export retained GPU instances", xiiGALCommandQueueFlags::Graphics, [&](auto& ref_handle, xiiRenderGraphBuilder& ref_builder) {
+          ref_handle = ref_builder.ReadBuffer(hRecords, xiiGALResourceStateFlags::ShaderResource);
+          ref_builder.ExportBuffer(ref_handle, xiiGALResourceStateFlags::ShaderResource); }, [&bFailRecording](const auto&, xiiRenderGraphPassContext& execute) {
+          if (bFailRecording)
+            execute.ReportFailure("Injected failure after recording the instance upload."); }, true);
+        graph.EndSetup();
+        if (!XII_TEST_RESULT(graph.Compile({.m_bEnableAsyncQueues = false}, nullptr, environment.GetDevice())))
+          return;
+      }
+      else
+      {
+        graph.BeginExecutionFrame(executionFrame.GetFrameIndex());
+      }
+      if (uiIteration == 1U)
+      {
+        bFailRecording = true;
+        xiiStringBuilder error;
+        XII_TEST_BOOL(graph.Execute(environment.GetDevice(), nullptr, &retained.GetBlackboard(), &cache, nullptr, &error).Failed());
+        XII_TEST_BOOL(error.FindSubString("Injected failure after recording the instance upload") != nullptr);
+        XII_TEST_INT(instances->GetUploadStatistics().m_uiBytesUploaded, 0U);
+        bFailRecording = false;
+        graph.BeginExecutionFrame(executionFrame.GetFrameIndex());
+      }
+      if (!XII_TEST_RESULT(graph.Execute(environment.GetDevice(), nullptr, &retained.GetBlackboard(), &cache)))
+        return;
+      const auto          pBuffer = graph.GetExportedBuffer(hRecords);
+      xiiGpuSceneInstance record;
+      if (!xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), pBuffer.Borrow(), 0U, record))
+        return;
+      XII_TEST_BOOL(record.m_GlobalTransform == instances->GetInstances()[0].m_GlobalTransform);
+      XII_TEST_INT(graph.GetPlanGeneration(), 1U);
+      XII_TEST_INT(graph.GetStatistics().m_uiStructuralBuildCount, 1U);
+      XII_TEST_INT(instances->GetUploadContractRevision(), uiCapacityRevision);
+    }
   }
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Foreign worlds, deactivation and recycled component storage cannot resolve stale GPU IDs")
   {
@@ -407,7 +472,8 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, WorldGpuInstances)
     xiiUniquePtr<WorldReloadLoader> loader = XII_DEFAULT_NEW(WorldReloadLoader);
     loader->m_Closed                       = closed;
     xiiMemoryStreamWriter stream(&loader->m_CustomData);
-    reloaded.Save(stream);
+    if (!XII_TEST_RESULT(reloaded.Save(stream)))
+      return;
     xiiResourceManager::UpdateResourceWithCustomLoader(mesh, std::move(loader));
     XII_TEST_BOOL(closed->m_Content.WaitForSignal(xiiTime::MakeFromSeconds(10)) == xiiThreadSignal::WaitResult::Signaled);
     {
@@ -581,7 +647,7 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, WorldGpuInstances)
       if (!XII_TEST_RESULT(renderer->UpdateGpuInstances(packets, gpuFrame.GetFrameIndex())) || !XII_TEST_INT(renderer->GetGpuInstanceData()->GetInstanceCount(), 1))
         return;
       retainedIdentity = renderer->GetGpuInstanceData()->GetInstances()[0].m_uiObjectId;
-      uploaded         = renderer->GetGpuInstanceData()->AddUploadPass(graph, gpuFrame.GetFrameIndex());
+      uploaded         = renderer->GetGpuInstanceData()->DeclareUploadPass(graph);
     }
     struct Export
     {
@@ -613,7 +679,7 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, WorldGpuInstances)
     xiiStartup::ShutdownHighLevelSystems();
     XII_TEST_BOOL(module->GetGpuInstanceData() == nullptr);
     xiiStartup::StartupHighLevelSystems();
-    XII_TEST_BOOL(!xiiGeometryResidencyManager::IsInitialized());
+    XII_TEST_BOOL(!xiiGpuResidencyManager::IsInitialized());
     xiiGameObject*           object = nullptr;
     xiiGameObjectDescription authored;
     authored.m_bDynamic = true;
@@ -639,7 +705,7 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, WorldGpuInstances)
     auto& cache = context.GetResourceCache();
     cache.BeginFrame(gpuFrame.GetFrameIndex(), gpuFrame.GetCompletedFrame());
     graph.BeginSetup(gpuFrame.GetFrameIndex());
-    const auto uploaded = module->GetGpuInstanceData()->AddUploadPass(graph, gpuFrame.GetFrameIndex());
+    const auto uploaded = module->GetGpuInstanceData()->DeclareUploadPass(graph);
     XII_TEST_BOOL(uploaded.m_Instances.IsValid() && uploaded.m_Skinning.IsValid());
     graph.EndSetup();
     if (XII_TEST_RESULT(graph.Compile()))

@@ -39,12 +39,14 @@ XII_CREATE_SIMPLE_TEST(NativeRecording, FailureStopsDependentOutputAndRecovers)
       xiiUInt32                   m_uiPhase;
     };
     bool       dependentRecorded = false;
+    xiiUInt32  uiPublications    = 0U;
     const auto source            = graph.AddPass<Data>("Native raster", xiiGALCommandQueueFlags::Graphics, [&](Data& data, xiiRenderGraphBuilder& builder) {
       data.m_uiPhase=phase;
       xiiGALTextureCreationDescription description; description.m_Type=xiiGALResourceDimension::Texture2D; description.m_Size={8,8};
       description.m_Format=xiiGALResourceFormat::RGBA8UNormalized; description.m_BindFlags=xiiGALBindFlags::RenderTarget|xiiGALBindFlags::ShaderResource;
       data.m_Color=builder.WriteTexture("Native output",description,xiiGALResourceStateFlags::RenderTarget);
       builder.SetPassRenderPassManaged();
+      builder.SetPassSubmissionCompletion([&uiPublications] { ++uiPublications; });
       builder.SetPassPreparation([&data](xiiRenderGraphPassContext& execute) {
         if(data.m_uiPhase==0) execute.ReportFailure("Injected preparation failure.");
       }); }, [](const Data& data, xiiRenderGraphPassContext& execute) {
@@ -68,6 +70,7 @@ XII_CREATE_SIMPLE_TEST(NativeRecording, FailureStopsDependentOutputAndRecovers)
       return;
     const auto executed = graph.Execute(environment.GetDevice(), nullptr, &context.GetBlackboard(), &cache, nullptr, &error);
     environment.GetDevice()->WaitIdle();
+    XII_TEST_INT(uiPublications, phase == 2U ? 1U : 0U);
     if (phase < 2)
     {
       XII_TEST_BOOL(executed.Failed() && !dependentRecorded);

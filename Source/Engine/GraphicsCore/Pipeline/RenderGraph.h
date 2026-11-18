@@ -487,6 +487,13 @@ public:
   /// declared resources; must restore their declared states before returning.
   void SetPassPreparation(xiiDelegate<void(xiiRenderGraphPassContext&)> preparation);
 
+  /// Registers CPU preparation before imported resources and command lists are resolved.
+  /// Capture graph-owned pass data and use the supplied current view.
+  void SetPassFramePreparation(xiiDelegate<xiiResult(xiiRenderGraph&, const xiiView*, xiiStringBuilder&)> preparation);
+
+  /// Publishes pass results after the entire graph is successfully submitted. GPU use still requires the recorded fence.
+  void SetPassSubmissionCompletion(xiiDelegate<void()> completion);
+
 private:
   friend class xiiRenderGraph;
 
@@ -545,6 +552,9 @@ public:
   /// Refresh dynamic imports and pass data before executing the retained plan.
   void BeginExecutionFrame(xiiUInt64 uiFrameIndex);
 
+  /// Compares a physical texture description to the declared import contract.
+  [[nodiscard]] bool MatchesImportedTexture(xiiRenderGraphTextureHandle hTexture, const xiiGALTextureCreationDescription& description) const;
+
   /// Binds an external resource for the current execution. The declaration must have the same
   /// description, and one physical resource may only occupy one logical slot in a frame.
   [[nodiscard]] xiiResult BindImportedTexture(xiiRenderGraphTextureHandle hTexture, xiiSharedPtr<xiiGALTexture> pTexture, xiiBitflags<xiiGALResourceStateFlags> state = xiiGALResourceStateFlags::Unknown);
@@ -557,6 +567,7 @@ public:
   /// execution. Use this for frame-scoped subsystem state instead of truncated blackboard values.
   [[nodiscard]] xiiUInt64 GetFrameIndex() const { return m_Frame.m_uiIndex; }
   [[nodiscard]] xiiUInt64 GetFrameGeneration() const { return m_Frame.m_uiGeneration; }
+  [[nodiscard]] bool      IsDeclaringStructure() const { return m_bIsSetupOpen; }
   [[nodiscard]] xiiUInt64 GetStructuralGeneration() const { return m_uiStructuralGeneration; }
   [[nodiscard]] xiiUInt64 GetPlanGeneration() const { return m_Statistics.m_uiPlanGeneration; }
 
@@ -742,10 +753,12 @@ private:
     xiiHybridArray<ResourceUsage, 8U>    m_Reads;
     xiiHybridArray<ResourceUsage, 8U>    m_Writes;
 
-    void*                                         m_pPassData = nullptr;
-    xiiDelegate<void(void*)>                      m_DestroyPassDataDelegate;
-    xiiDelegate<void(xiiRenderGraphPassContext&)> m_ExecuteDelegate;
-    xiiDelegate<void(xiiRenderGraphPassContext&)> m_PrepareDelegate;
+    void*                                                                      m_pPassData = nullptr;
+    xiiDelegate<void(void*)>                                                   m_DestroyPassDataDelegate;
+    xiiDelegate<void(xiiRenderGraphPassContext&)>                              m_ExecuteDelegate;
+    xiiDelegate<void(xiiRenderGraphPassContext&)>                              m_PrepareDelegate;
+    xiiDelegate<xiiResult(xiiRenderGraph&, const xiiView*, xiiStringBuilder&)> m_FramePreparation;
+    xiiDelegate<void()>                                                        m_SubmissionCompletion;
   };
 
   void PhaseB_TopologicalSortAndCull(const xiiRenderGraphCompileSettings& settings, xiiDynamicArray<xiiUInt32>& out_sortedIndices);
@@ -789,6 +802,8 @@ private:
   {
     QueueMapping                                              m_QueueMapping;
     xiiUInt32                                                 m_uiSignaledQueueMask = 0U;
+    xiiDynamicArray<xiiUInt32>                                m_FramePreparations;
+    xiiDynamicArray<xiiUInt32>                                m_SubmissionCompletions;
     xiiDynamicArray<xiiRenderGraphCompiledPass>               m_CompiledPasses;
     xiiDynamicArray<xiiRenderGraphBarrierDescription>         m_Barriers;
     xiiDynamicArray<xiiRenderGraphMergeGroup>                 m_MergeGroups;

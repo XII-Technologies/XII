@@ -31,8 +31,9 @@ public:
   {
     xiiRenderGraphBufferHandle m_Lights, m_Profiles, m_Counts;
   };
-  /// Retains upload bytes/state. Repeated views share completed allocations and one upload per setup.
-  UploadHandles AddUploadPass(xiiRenderGraph& graph) const;
+  /// Shared upload storage grows only when the existing light or IES buffer contract is exceeded.
+  [[nodiscard]] xiiUInt64 GetUploadContractRevision() const;
+  UploadHandles           DeclareUploadPass(xiiRenderGraph& graph) const;
 
 private:
   xiiSharedPtr<xiiWorldLightDataState> m_State;

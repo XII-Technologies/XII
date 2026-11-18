@@ -20,22 +20,17 @@ using namespace xiiRenderPassUtils;
 struct xiiPresentPass::Data
 {
   xiiRenderGraphTextureHandle                    m_hDisplayLinear, m_hBackbuffer;
+  xiiRenderGraphTextureHandle                    m_hTargetToBind;
   xiiRenderGraphBufferHandle                     m_hConstants;
   xiiFinalBlitConstants                          m_Constants;
+  xiiDisplayOutputSettings                       m_AuthoredDisplay;
+  bool                                           m_bUseViewDefaults = false;
   xiiGALGraphicsPipelineStateCreationDescription m_Pipeline;
   xiiSharedPtr<xiiGALSampler>                    m_Sampler;
   xiiSizeU32                                     m_Size;
   xiiVec2U32                                     m_vOffset;
 };
 
-struct xiiPresentPass::State
-{
-  xiiSharedPtr<xiiGALSampler> m_PointSampler;
-  DisplayConfiguration        m_Display;
-};
-
-xiiPresentPass::xiiPresentPass()  = default;
-xiiPresentPass::~xiiPresentPass() = default;
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiPresentPass, 1, xiiRTTIDefaultAllocator<xiiPresentPass>)
 {
@@ -71,8 +66,6 @@ xiiResult xiiPresentPass::Configure(const xiiVariantDictionary& properties)
   authored.m_fMaximumDisplayNits = m_fMaximumDisplayNits;
   if (!xiiDisplayOutputManager::IsValid(authored))
     return XII_FAILURE;
-  if (m_pState)
-    m_pState->m_Display.m_bValid = false;
   return XII_SUCCESS;
 }
 
@@ -81,16 +74,8 @@ xiiResult xiiPresentPass::Build(xiiRenderPipelinePassContext& context)
   if (!m_bEnabled)
     return context.SetOutput(m_OutputGradedColor, context.GetInputTexture(m_InputGradedColor));
   xiiRenderPassResourceScope scope(context);
-  if (!m_pState)
-    m_pState = XII_DEFAULT_NEW(State);
   if (!context.m_pView)
     return context.ReportFailure("Presentation requires a view with an explicit output target.");
-  XII_SUCCEED_OR_RETURN(PointClampSampler(m_pState->m_PointSampler));
-  xiiDisplayOutputSettings authored;
-  authored.m_OutputMode          = m_OutputMode;
-  authored.m_fPaperWhiteNits     = m_fPaperWhiteNits;
-  authored.m_fMaximumDisplayNits = m_fMaximumDisplayNits;
-  XII_SUCCEED_OR_RETURN(m_pState->m_Display.Resolve(context, authored, m_bUseViewDefaults));
   const auto  input  = context.GetInputTexture(m_InputGradedColor);
   const auto* source = context.m_Graph.GetTextureDescription(input);
   if (!source || source->m_Type != xiiGALResourceDimension::Texture2D || source->m_uiArraySizeOrDepth != 1 || source->m_uiSampleCount != 1 || !source->m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource) || xiiGALResourceFormat::IsDepthFormat(source->m_Format))
@@ -106,39 +91,32 @@ xiiResult xiiPresentPass::Build(xiiRenderPipelinePassContext& context)
   if (!targetDescription)
     return context.ReportFailure("Presentation received an invalid target binding.");
   const auto& description = *targetDescription;
-  if (description.m_Type != xiiGALResourceDimension::Texture2D || description.m_uiArraySizeOrDepth != 1 || description.m_uiSampleCount != 1 || !description.m_Size.width || !description.m_Size.height || !description.m_BindFlags.IsSet(xiiGALBindFlags::RenderTarget) || (target && (target->GetDescription().m_ViewType != xiiGALTextureViewType::RenderTarget || target->GetDescription().m_Format != description.m_Format || target->GetDescription().m_uiMostDetailedMip || target->GetDescription().m_uiFirstArrayOrDepthSlice || target->GetDescription().m_uiArrayOrDepthSlicesCount != 1)))
+  if (description.m_Type != xiiGALResourceDimension::Texture2D || description.m_uiArraySizeOrDepth != 1U ||
+      description.m_uiSampleCount != 1U || !description.m_Size.HasNonZeroArea() || !description.m_BindFlags.IsSet(xiiGALBindFlags::RenderTarget))
     return context.ReportFailure("Presentation requires a full single-sample 2D render target.");
-  const auto& viewport = context.m_pView->GetViewport();
-  if (!xiiMath::IsFinite(viewport.x) || !xiiMath::IsFinite(viewport.y) || !xiiMath::IsFinite(viewport.width) || !xiiMath::IsFinite(viewport.height) ||
-      viewport.x < 0 || viewport.y < 0 || viewport.width < 1 || viewport.height < 1 ||
-      static_cast<double>(viewport.x) + viewport.width > description.m_Size.width || static_cast<double>(viewport.y) + viewport.height > description.m_Size.height)
-    return context.ReportFailure("The presentation viewport must fit inside its output target.");
-  const auto                                    handle = xiiShaderPermutationUtilities::PreloadSinglePermutation(xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/FinalBlit.xiiShader"), {}, false);
-  xiiResourceLock<xiiShaderPermutationResource> shader(handle, xiiResourceAcquireMode::BlockTillLoaded);
-  if (!shader.IsValid() || !shader->IsShaderValid())
-    return context.ReportFailure("The presentation shader is unavailable.");
+  xiiSharedPtr<xiiGALSampler> pSampler;
+  XII_SUCCEED_OR_RETURN(PointClampSampler(pSampler));
+
   const auto emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, xiiGALCommandQueueFlags::Graphics, [&](Data& data, xiiRenderGraphBuilder& builder) {
     data.m_hDisplayLinear = builder.ReadTexture(input, xiiGALResourceStateFlags::ShaderResource);
-    const auto imported   = boundTarget.IsValid() ? boundTarget : builder.ImportTexture(swapchain ? "Backbuffer" : "ViewOutput", texture, texture->GetResourceState());
-    const bool partial    = viewport.x != 0 || viewport.y != 0 || viewport.width != description.m_Size.width || viewport.height != description.m_Size.height;
-    data.m_hBackbuffer    = partial ? builder.ReadWriteTexture(imported, xiiGALResourceStateFlags::RenderTarget) : builder.WriteTexture(imported, xiiGALResourceStateFlags::RenderTarget);
+    auto imported         = boundTarget;
+    if (!imported.IsValid())
+    {
+      data.m_hTargetToBind = builder.DeclareImportedTexture(swapchain ? "Backbuffer" : "ViewOutput", description);
+      imported             = data.m_hTargetToBind;
+    }
+    // The viewport can cover only part of the image. Keep the output contents outside it.
+    data.m_hBackbuffer = builder.ReadWriteTexture(imported, xiiGALResourceStateFlags::RenderTarget);
     builder.ExportTexture(data.m_hBackbuffer, swapchain ? xiiGALResourceStateFlags::Present : description.m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource) ? xiiGALResourceStateFlags::ShaderResource : xiiGALResourceStateFlags::RenderTarget);
     data.m_hConstants = Constants(builder, "Final Blit Constants", sizeof(data.m_Constants));
-    const auto& display = m_pState->m_Display.m_Settings;
-    data.m_Constants.OutputMode = display.m_OutputMode.GetValue();
-    data.m_Constants.ApplySRGBTransfer = xiiGALResourceFormat::IsSrgb(description.m_Format) ? 0U : 1U;
-    data.m_Constants.PaperWhiteNits = display.m_fPaperWhiteNits;
-    data.m_Constants.MaximumDisplayNits = display.m_fMaximumDisplayNits;
-    data.m_Size                                             = {static_cast<xiiUInt32>(viewport.width), static_cast<xiiUInt32>(viewport.height)};
-    data.m_vOffset                                          = {static_cast<xiiUInt32>(viewport.x), static_cast<xiiUInt32>(viewport.y)};
-    data.m_Sampler = m_pState->m_PointSampler;
-    data.m_Pipeline.m_pPipelineResourceSignature = shader->GetPipelineResourceSignature();
-    data.m_Pipeline.m_pVertexShader = shader->GetGALShader(xiiGALShaderType::Vertex);
-    data.m_Pipeline.m_pPixelShader = shader->GetGALShader(xiiGALShaderType::Pixel);
-    data.m_Pipeline.m_GraphicsPipeline.m_pBlendState = shader->GetBlendState();
-    data.m_Pipeline.m_GraphicsPipeline.m_pRasterizerState = shader->GetRasterizerState();
-    data.m_Pipeline.m_GraphicsPipeline.m_pDepthStencilState = shader->GetDepthStencilState();
-    data.m_Pipeline.m_GraphicsPipeline.m_PrimitiveTopology = xiiGALPrimitiveTopology::TriangleList;
+    data.m_AuthoredDisplay.m_OutputMode          = m_OutputMode;
+    data.m_AuthoredDisplay.m_fPaperWhiteNits     = m_fPaperWhiteNits;
+    data.m_AuthoredDisplay.m_fMaximumDisplayNits = m_fMaximumDisplayNits;
+    data.m_bUseViewDefaults                      = m_bUseViewDefaults;
+    data.m_Sampler                               = pSampler;
+    builder.SetPassFramePreparation([&data](xiiRenderGraph& graph, const xiiView* pView, xiiStringBuilder& ref_error) {
+      return PrepareFrame(data, graph, pView, ref_error);
+    });
     builder.SetPassAllowMerge(false);
     builder.SetPassRenderPassManaged();
     builder.SetPassPreparation([&data](xiiRenderGraphPassContext& execute) {
@@ -156,6 +134,74 @@ xiiResult xiiPresentPass::Build(xiiRenderPipelinePassContext& context)
   XII_SUCCEED_OR_RETURN(context.SetOutput(m_OutputFinalBlitConstants, emitted.first->m_hConstants));
   XII_SUCCEED_OR_RETURN(context.SetOutput(m_OutputGradedColor, input));
   return context.SetOutput(m_OutputViewOutput, emitted.first->m_hBackbuffer);
+}
+
+xiiResult xiiPresentPass::PrepareFrame(Data& ref_data, xiiRenderGraph& graph, const xiiView* pView, xiiStringBuilder& ref_error)
+{
+  if (pView == nullptr)
+  {
+    ref_error = "Presentation requires a current view.";
+    return XII_FAILURE;
+  }
+  const auto* pTargetDescription = graph.GetTextureDescription(ref_data.m_hBackbuffer);
+  const auto* pTargetView        = pView->GetRenderTargetView();
+  if (pTargetDescription == nullptr ||
+      (pTargetView != nullptr && (pTargetView->GetDescription().m_ViewType != xiiGALTextureViewType::RenderTarget || pTargetView->GetDescription().m_Format != pTargetDescription->m_Format || pTargetView->GetDescription().m_uiMostDetailedMip != 0U || pTargetView->GetDescription().m_uiFirstArrayOrDepthSlice != 0U || pTargetView->GetDescription().m_uiArrayOrDepthSlicesCount != 1U)))
+  {
+    ref_error = "Presentation requires a full render target view of the declared format.";
+    return XII_FAILURE;
+  }
+
+  const auto& viewport = pView->GetViewport();
+  if (!xiiMath::IsFinite(viewport.x) || !xiiMath::IsFinite(viewport.y) || !xiiMath::IsFinite(viewport.width) || !xiiMath::IsFinite(viewport.height) ||
+      viewport.x < 0 || viewport.y < 0 || viewport.width < 1 || viewport.height < 1 ||
+      static_cast<double>(viewport.x) + viewport.width > pTargetDescription->m_Size.width ||
+      static_cast<double>(viewport.y) + viewport.height > pTargetDescription->m_Size.height)
+  {
+    ref_error = "The presentation viewport must fit inside its output target.";
+    return XII_FAILURE;
+  }
+
+  if (ref_data.m_hTargetToBind.IsValid())
+  {
+    const auto* pSwapChain = pView->GetSwapChain();
+    auto        pTexture   = pTargetView ? pTargetView->GetTexture() : pSwapChain ? pSwapChain->GetBackBufferTexture() :
+                                                                                    xiiSharedPtr<xiiGALTexture>();
+    if (pTexture == nullptr || graph.BindImportedTexture(ref_data.m_hTargetToBind, pTexture, pTexture->GetResourceState()).Failed())
+    {
+      ref_error = "The current view target does not match the presentation import contract.";
+      return XII_FAILURE;
+    }
+  }
+
+  const auto& display = ref_data.m_bUseViewDefaults ? pView->GetDisplayOutputSettings() : ref_data.m_AuthoredDisplay;
+  if (!xiiDisplayOutputManager::IsValid(display))
+  {
+    ref_error = "Invalid display and exposure settings.";
+    return XII_FAILURE;
+  }
+  const auto                                    hShader = xiiShaderPermutationUtilities::PreloadSinglePermutation(xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/FinalBlit.xiiShader"), {}, false);
+  xiiResourceLock<xiiShaderPermutationResource> shader(hShader, xiiResourceAcquireMode::BlockTillLoaded);
+  if (!shader.IsValid() || !shader->IsShaderValid())
+  {
+    ref_error = "The presentation shader is unavailable.";
+    return XII_FAILURE;
+  }
+
+  ref_data.m_Constants.OutputMode                             = display.m_OutputMode.GetValue();
+  ref_data.m_Constants.ApplySRGBTransfer                      = xiiGALResourceFormat::IsSrgb(pTargetDescription->m_Format) ? 0U : 1U;
+  ref_data.m_Constants.PaperWhiteNits                         = display.m_fPaperWhiteNits;
+  ref_data.m_Constants.MaximumDisplayNits                     = display.m_fMaximumDisplayNits;
+  ref_data.m_Size                                             = {static_cast<xiiUInt32>(viewport.width), static_cast<xiiUInt32>(viewport.height)};
+  ref_data.m_vOffset                                          = {static_cast<xiiUInt32>(viewport.x), static_cast<xiiUInt32>(viewport.y)};
+  ref_data.m_Pipeline.m_pPipelineResourceSignature            = shader->GetPipelineResourceSignature();
+  ref_data.m_Pipeline.m_pVertexShader                         = shader->GetGALShader(xiiGALShaderType::Vertex);
+  ref_data.m_Pipeline.m_pPixelShader                          = shader->GetGALShader(xiiGALShaderType::Pixel);
+  ref_data.m_Pipeline.m_GraphicsPipeline.m_pBlendState        = shader->GetBlendState();
+  ref_data.m_Pipeline.m_GraphicsPipeline.m_pRasterizerState   = shader->GetRasterizerState();
+  ref_data.m_Pipeline.m_GraphicsPipeline.m_pDepthStencilState = shader->GetDepthStencilState();
+  ref_data.m_Pipeline.m_GraphicsPipeline.m_PrimitiveTopology  = xiiGALPrimitiveTopology::TriangleList;
+  return XII_SUCCESS;
 }
 
 void xiiPresentPass::Execute(const Data& data, xiiRenderGraphPassContext& context)

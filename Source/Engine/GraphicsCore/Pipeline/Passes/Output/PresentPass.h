@@ -17,8 +17,6 @@ public:
   xiiRenderPipelineTextureOutputPin m_OutputGradedColor{xiiGALResourceFormat::Unknown, true, {}, xiiGALResourceDimension::Texture2D, 1};
   xiiRenderPipelineTextureOutputPin m_OutputViewOutput{xiiGALResourceFormat::Unknown, true, {}, xiiGALResourceDimension::Texture2D, 1};
 
-  xiiPresentPass();
-  ~xiiPresentPass();
   /// A containing pipeline can compose overlays before performing its own presentation.
   bool                          m_bEnabled         = true;
   bool                          m_bUseViewDefaults = false;
@@ -31,7 +29,6 @@ public:
 
 private:
   struct Data;
-  struct State;
-  static void         Execute(const Data& data, xiiRenderGraphPassContext& context);
-  xiiUniquePtr<State> m_pState;
+  static xiiResult PrepareFrame(Data& ref_data, xiiRenderGraph& graph, const xiiView* pView, xiiStringBuilder& ref_error);
+  static void      Execute(const Data& data, xiiRenderGraphPassContext& context);
 };

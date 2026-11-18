@@ -203,7 +203,18 @@ xiiResult xiiRenderWorldModule::UpdateWorldLights(xiiArrayPtr<xiiRenderData* con
 {
   if (!m_pWorldLights)
     m_pWorldLights = XII_DEFAULT_NEW(xiiWorldLightData, *GetWorld());
-  return m_pWorldLights->UpdateFromExtraction(packets);
+  const xiiUInt64 uiPreviousRevision = m_pWorldLights->GetUploadContractRevision();
+  XII_SUCCEED_OR_RETURN(m_pWorldLights->UpdateFromExtraction(packets));
+  if (m_pWorldLights->GetUploadContractRevision() != uiPreviousRevision)
+  {
+    for (auto it = m_ViewIdTable.GetIterator(); it.IsValid(); ++it)
+    {
+      auto& view = *it.Value().m_pView;
+      if (view.GetRuntimeFeatures().IsSet(xiiRenderPipelineFeature::Lighting))
+        view.InvalidateRenderGraph("World light upload capacity grew");
+    }
+  }
+  return XII_SUCCESS;
 }
 
 xiiResult xiiRenderWorldModule::UpdateGpuInstances(const xiiExtractedRenderData& packets, xiiUInt64 frame, xiiStringBuilder* out_error)
@@ -224,7 +235,18 @@ xiiResult xiiRenderWorldModule::UpdateGpuInstances(xiiArrayPtr<xiiRenderData* co
 {
   if (!m_pGpuInstances)
     m_pGpuInstances = XII_DEFAULT_NEW(xiiGpuInstanceData, *GetWorld());
-  return m_pGpuInstances->UpdateFromExtraction(packets, frame, out_error);
+  const xiiUInt64 uiPreviousRevision = m_pGpuInstances->GetUploadContractRevision();
+  XII_SUCCEED_OR_RETURN(m_pGpuInstances->UpdateFromExtraction(packets, frame, out_error));
+  if (m_pGpuInstances->GetUploadContractRevision() != uiPreviousRevision)
+  {
+    for (auto it = m_ViewIdTable.GetIterator(); it.IsValid(); ++it)
+    {
+      auto& view = *it.Value().m_pView;
+      if (view.GetRuntimeFeatures().IsAnySet(xiiRenderPipelineFeature::GpuScene | xiiRenderPipelineFeature::RayTracing))
+        view.InvalidateRenderGraph("GPU instance upload capacity grew");
+    }
+  }
+  return XII_SUCCESS;
 }
 
 xiiViewHandle xiiRenderWorldModule::CreateView(xiiStringView sName, xiiView*& out_pView)
@@ -921,6 +943,8 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
 
     if (!viewDetail.m_bPrepared || !viewDetail.m_pView->IsRenderEnabled() || !viewDetail.m_pView->IsValid())
       continue;
+
+    viewDetail.m_pView->UpdateRenderGraphContracts();
 
     xiiRenderGraphCompileSettings compileSettings;
     compileSettings.m_bEnableGPUProfiling = viewDetail.m_pView->GetDynamicResolutionSettings().m_bEnabled || !xiiRenderGraphTimestampProfiler::s_TimingEvents.IsEmpty();

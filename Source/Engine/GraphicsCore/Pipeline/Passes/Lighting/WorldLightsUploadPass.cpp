@@ -31,7 +31,7 @@ xiiResult xiiWorldLightsUploadPass::Build(xiiRenderPipelinePassContext& context)
   const auto* lights = module ? module->GetWorldLightData() : nullptr;
   if (!lights)
     return context.ReportFailure("World light extraction has not prepared this frame.");
-  const auto uploaded = lights->AddUploadPass(context.m_Graph);
+  const auto uploaded = lights->DeclareUploadPass(context.m_Graph);
   if (!uploaded.m_Lights.IsValid() || !uploaded.m_Profiles.IsValid() || !uploaded.m_Counts.IsValid())
     return context.ReportFailure("Could not upload the world light snapshot.");
   XII_SUCCEED_OR_RETURN(context.SetOutput(m_Lights, uploaded.m_Lights));

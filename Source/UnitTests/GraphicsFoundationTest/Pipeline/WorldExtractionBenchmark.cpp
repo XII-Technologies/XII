@@ -8,7 +8,6 @@
 #include <Foundation/Memory/FrameAllocator.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <Foundation/Utilities/CommandLineUtils.h>
-#include <GraphicsCore/Geometry/GeometryResidency.h>
 #include <GraphicsCore/Meshes/GpuInstanceData.h>
 #include <GraphicsCore/Meshes/MeshComponent.h>
 #include <GraphicsCore/Meshes/MeshResource.h>
@@ -17,6 +16,7 @@
 #include <GraphicsCore/Pipeline/RenderGraphProfiler.h>
 #include <GraphicsCore/Pipeline/RenderGraphResourceCache.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
+#include <GraphicsCore/Streaming/GpuResidencyManager.h>
 #include <GraphicsFoundationTest/TestingEnvironment/RenderGraphTestContext.h>
 
 XII_CREATE_SIMPLE_TEST_GROUP(RenderingBenchmarks);
@@ -111,7 +111,7 @@ XII_CREATE_SIMPLE_TEST(RenderingBenchmarks, WorldExtraction)
     cache.BeginFrame(frame.GetFrameIndex(), frame.GetCompletedFrame());
     XII_SCOPE_EXIT(cache.EndFrame());
     graph.BeginSetup(frame.GetFrameIndex());
-    const auto uploaded = module->GetGpuInstanceData()->AddUploadPass(graph, frame.GetFrameIndex());
+    const auto uploaded = module->GetGpuInstanceData()->DeclareUploadPass(graph);
     struct Consumer
     {
       XII_DECLARE_POD_TYPE();
@@ -126,7 +126,7 @@ XII_CREATE_SIMPLE_TEST(RenderingBenchmarks, WorldExtraction)
       return;
     XII_TEST_RESULT(graph.Execute(environment.GetDevice(), nullptr, &context.GetBlackboard(), &cache, camera == 0 ? &profiler : nullptr));
   };
-  const auto framesInFlight = xiiGeometryResidencyManager::GetConfiguration().m_uiFramesInFlight;
+  const auto framesInFlight = xiiGpuResidencyManager::GetConfiguration().m_uiFramesInFlight;
   for (xiiUInt32 i = 0; i < framesInFlight + 1; ++i)
   {
     xiiRenderGraphFrame frame;

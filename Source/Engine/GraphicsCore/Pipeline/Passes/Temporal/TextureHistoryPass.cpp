@@ -18,7 +18,8 @@ struct xiiTextureHistoryPass::State : public xiiRefCounted
   };
   xiiDynamicArray<Slot> m_Slots;
   Slot                  m_Last;
-  bool                  m_bValid = false;
+  xiiUInt64             m_uiRevision = 0U;
+  bool                  m_bValid     = false;
 };
 xiiTextureHistoryPass::xiiTextureHistoryPass()  = default;
 xiiTextureHistoryPass::~xiiTextureHistoryPass() = default;
@@ -38,7 +39,10 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTextureHistoryPass, 1, xiiRTTIDefaultAllocat
 void xiiTextureHistoryPass::InvalidateTemporalHistory()
 {
   if (m_pState)
+  {
+    ++m_pState->m_uiRevision;
     m_pState->m_bValid = false;
+  }
 }
 xiiResult xiiTextureHistoryPass::BuildTemporalHistory(xiiRenderPipelinePassContext& context)
 {
@@ -80,53 +84,80 @@ xiiResult xiiTextureHistoryPass::Build(xiiRenderPipelinePassContext& context)
   allocation.m_Usage          = xiiGALResourceUsage::Default;
   allocation.m_CPUAccessFlags = xiiGALCPUAccessFlag::None;
   allocation.m_MiscFlags      = {};
-  xiiUInt64 completed         = 0;
-  if (xiiRenderGraphManager::GetFrameCompletion(context.m_Graph.GetFrameIndex(), completed).Failed())
-    return context.ReportFailure("Texture history requires an active shared GPU frame.");
   if (!m_pState)
     m_pState = XII_DEFAULT_NEW(State);
-  auto&     state    = *m_pState;
-  xiiUInt32 selected = xiiInvalidIndex;
-  for (xiiUInt32 i = 0; i < state.m_Slots.GetCount(); ++i)
-    if (state.m_Slots[i].m_Texture != state.m_Last.m_Texture && state.m_Slots[i].m_uiLastUsedFrame <= completed)
-    {
-      selected = i;
-      break;
-    }
-  State::Slot next;
-  if (selected != xiiInvalidIndex)
-    next = state.m_Slots[selected];
-  if (!next.m_Texture || next.m_Texture->GetDescription() != allocation)
-  {
-    next.m_Texture = xiiGALDevice::GetDefaultDevice()->CreateTexture(allocation);
-    if (!next.m_Texture)
-      return context.ReportFailure("Could not allocate texture history storage.");
-  }
-  if (!next.m_Fence)
-  {
-    xiiGALFenceCreationDescription fence;
-    fence.m_Type = xiiGALFenceType::General;
-    next.m_Fence = xiiGALDevice::GetDefaultDevice()->CreateFence(fence);
-    if (!next.m_Fence)
-      return context.ReportFailure("Could not allocate texture history readiness.");
-  }
-  ++next.m_uiValue;
-  next.m_uiLastUsedFrame = context.m_Graph.GetFrameIndex();
-  if (selected == xiiInvalidIndex)
-    state.m_Slots.PushBack(next);
-  else
-    state.m_Slots[selected] = next;
   xiiRenderPassResourceScope scope(context);
   struct Data
   {
     xiiRenderGraphTextureHandle m_Input, m_Output;
     State::Slot                 m_Next;
+    xiiUInt64                   m_uiRevision = 0U;
   };
   context.m_Graph.AddPass<Data>(context.m_sPassName, m_bAsyncCopy ? xiiGALCommandQueueFlags::Transfer : xiiGALCommandQueueFlags::Graphics, [&](Data& data, xiiRenderGraphBuilder& builder) {
       data.m_Input = builder.ReadTexture(input, xiiGALResourceStateFlags::CopySource);
-      data.m_Output = builder.WriteTexture(builder.ImportTexture("Retained Frame", next.m_Texture, next.m_Texture->GetResourceState()), xiiGALResourceStateFlags::CopyDestination);
+      data.m_Output = builder.WriteTexture(builder.DeclareImportedTexture("Retained Frame", allocation), xiiGALResourceStateFlags::CopyDestination);
       builder.ExportTexture(data.m_Output, xiiGALResourceStateFlags::ShaderResource);
-      data.m_Next = next; }, [state = m_pState](const Data& data, xiiRenderGraphPassContext& execute) {
+      builder.SetPassFramePreparation([state = m_pState, allocation, &data](xiiRenderGraph& graph, const xiiView*, xiiStringBuilder& out_sError) -> xiiResult {
+        const xiiUInt64 uiFrame     = graph.GetFrameIndex();
+        xiiUInt64       uiCompleted = 0;
+        if (xiiRenderGraphManager::GetFrameCompletion(uiFrame, uiCompleted).Failed())
+        {
+          out_sError = "Texture history requires an active shared GPU frame.";
+          return XII_FAILURE;
+        }
+
+        State::Slot* pAvailable = nullptr;
+        for (auto& slot : state->m_Slots)
+          if (slot.m_Texture != state->m_Last.m_Texture && slot.m_uiLastUsedFrame <= uiCompleted)
+          {
+            pAvailable = &slot;
+            break;
+          }
+
+        State::Slot next = pAvailable ? *pAvailable : State::Slot{};
+        if (!next.m_Texture || next.m_Texture->GetDescription() != allocation)
+        {
+          next.m_Texture = xiiGALDevice::GetDefaultDevice()->CreateTexture(allocation);
+          if (!next.m_Texture)
+          {
+            out_sError = "Could not allocate texture history storage.";
+            return XII_FAILURE;
+          }
+        }
+        if (!next.m_Fence)
+        {
+          xiiGALFenceCreationDescription fence;
+          fence.m_Type = xiiGALFenceType::General;
+          next.m_Fence = xiiGALDevice::GetDefaultDevice()->CreateFence(fence);
+          if (!next.m_Fence)
+          {
+            out_sError = "Could not allocate texture history readiness.";
+            return XII_FAILURE;
+          }
+        }
+        if (graph.BindImportedTexture(data.m_Output, next.m_Texture, next.m_Texture->GetResourceState()).Failed())
+        {
+          out_sError = "Could not bind texture history storage.";
+          return XII_FAILURE;
+        }
+
+        ++next.m_uiValue;
+        next.m_uiLastUsedFrame = uiFrame;
+        if (pAvailable)
+          *pAvailable = next;
+        else
+          state->m_Slots.PushBack(next);
+        data.m_Next       = std::move(next);
+        data.m_uiRevision = state->m_uiRevision;
+        return XII_SUCCESS;
+      });
+      builder.SetPassSubmissionCompletion([state = m_pState, &data] {
+        if (state->m_uiRevision == data.m_uiRevision && (!state->m_bValid || state->m_Last.m_uiLastUsedFrame < data.m_Next.m_uiLastUsedFrame))
+        {
+          state->m_Last = data.m_Next;
+          state->m_bValid = true;
+        }
+      }); }, [](const Data& data, xiiRenderGraphPassContext& execute) {
       auto& commands = execute.GetCommandList();
       auto* source = execute.GetTexture(data.m_Input);
       auto* destination = execute.GetTexture(data.m_Output);
@@ -142,9 +173,7 @@ xiiResult xiiTextureHistoryPass::Build(xiiRenderPipelinePassContext& context)
           const auto box = xiiBoundingBoxU32::MakeFromMinMax(xiiVec3U32::MakeZero(), {size.m_LogicalSize.width, xiiMath::Max(size.m_LogicalSize.height, 1U), xiiMath::Max(size.m_uiDepth, 1U)});
           commands.CopyTextureRegion(source, subresource, box, destination, subresource, xiiVec3U32::MakeZero());
         }
-      commands.EnqueueSignal(data.m_Next.m_Fence.Borrow(), data.m_Next.m_uiValue);
-      state->m_Last = data.m_Next;
-      state->m_bValid = true; }, true);
+      commands.EnqueueSignal(data.m_Next.m_Fence.Borrow(), data.m_Next.m_uiValue); }, true);
   return XII_SUCCESS;
 }
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Passes_Temporal_TextureHistoryPass);

@@ -10,6 +10,7 @@
 #include <GraphicsCore/Pipeline/Passes/Output/PresentPass.h>
 #include <GraphicsCore/Pipeline/Passes/Utility/ClearColorPass.h>
 #include <GraphicsCore/Pipeline/Passes/Utility/ClearTexturePass.h>
+#include <GraphicsCore/Pipeline/RenderGraphManager.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Pipeline/RenderPipelineResource.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
@@ -18,6 +19,7 @@
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 #include <GraphicsFoundation/Resources/Texture.h>
 #include <GraphicsFoundation/Tools/TextureReadback.h>
+#include <GraphicsFoundationTest/TestingEnvironment/TextureReadback.h>
 #include <TestFramework/Utilities/TestLogInterface.h>
 
 XII_CREATE_SIMPLE_TEST(PipelineScheduling, ClearColorFallback)
@@ -189,6 +191,62 @@ XII_CREATE_SIMPLE_TEST(PipelineScheduling, ClearColorFallback)
     }
     pCommands->End();
     readback.RecycleStagingTexture(capture.m_pStagingTexture);
+    pView->SetRenderTargetView(nullptr);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Authored presentation refreshes a retained declaration")
+  {
+    auto*                            pDevice = environment.GetDevice();
+    xiiGALTextureCreationDescription description;
+    description.m_Type                    = xiiGALResourceDimension::Texture2D;
+    description.m_Size                    = {8U, 8U};
+    description.m_Format                  = xiiGALResourceFormat::RGBA8UNormalized;
+    description.m_BindFlags               = xiiGALBindFlags::RenderTarget;
+    xiiSharedPtr<xiiGALTexture> targets[] = {pDevice->CreateTexture(description), pDevice->CreateTexture(description)};
+    if (!XII_TEST_BOOL(targets[0] != nullptr && targets[1] != nullptr))
+      return;
+
+    xiiRenderPipelineInstance instance;
+    if (!XII_TEST_RESULT(instance.Synchronize(hFixed)))
+      return;
+
+    const xiiUInt32             targetInterface = instance.GetPipeline()->FindInterface("ViewTarget", true);
+    xiiRenderGraphTextureHandle hTarget;
+    const auto                  hGraph = xiiRenderGraphManager::CreateGraph("Authored presentation", [&](xiiRenderGraph& ref_graph, xiiRenderGraphBlackboard& ref_blackboard, const xiiView* pExecutionView) {
+      ref_graph.AddPass<xiiRenderGraphTextureHandle>("ViewTarget", xiiGALCommandQueueFlags::Graphics, [&](auto& ref_handle, xiiRenderGraphBuilder& ref_builder) {
+        hTarget = ref_handle = ref_builder.DeclareImportedTexture("ViewTarget", description); }, [](const auto&, xiiRenderGraphPassContext&) {});
+      const xiiRenderPipelineInputBinding input(ref_graph, targetInterface, hTarget);
+      XII_TEST_BOOL(pExecutionView == pView);
+      return instance.Build(pView, ref_graph, ref_blackboard, {}, xiiMakeArrayPtr(&input, 1U)); }, [&](xiiRenderGraph& ref_graph, xiiRenderGraphBlackboard&, const xiiView* pExecutionView) {
+      auto pTexture = pExecutionView->GetRenderTargetView()->GetTexture();
+      return ref_graph.BindImportedTexture(hTarget, pTexture, pTexture->GetResourceState()); });
+    XII_SCOPE_EXIT(xiiRenderGraphManager::DestroyGraph(hGraph).AssertSuccess());
+    constexpr xiiUInt32 uiExecutions = 1000U;
+    for (xiiUInt32 uiFrameIndex = 0U; uiFrameIndex < uiExecutions; ++uiFrameIndex)
+    {
+      const auto& pTarget = targets[uiFrameIndex % XII_ARRAY_SIZE(targets)];
+      pView->SetRenderTargetView(pTarget->GetDefaultView(xiiGALTextureViewType::RenderTarget).Borrow());
+      const float fOffset = uiFrameIndex < uiExecutions / 2U ? 0.0f : 4.0f;
+      pView->SetViewport({fOffset, fOffset, 4.0f, 4.0f});
+      pDevice->BeginFrame();
+      XII_SCOPE_EXIT(pDevice->EndFrame());
+      xiiRenderGraphFrame frame;
+      if (!XII_TEST_RESULT(frame.Begin()))
+        return;
+
+      xiiStringBuilder error;
+      if (!XII_TEST_RESULT_MSG(xiiRenderGraphManager::ExecuteGraph(frame, hGraph, pView, {}, &error), "%s", error.GetData()))
+        return;
+      const auto* pGraph  = xiiRenderGraphManager::GetGraph(hGraph);
+      const auto* pOutput = instance.GetOutputBinding(uiPresent, "ViewOutput");
+      XII_TEST_BOOL(pOutput != nullptr && pGraph->GetExportedTexture(pOutput->m_hTexture) == pTarget);
+      XII_TEST_INT(pGraph->GetPlanGeneration(), 1U);
+      XII_TEST_INT(pGraph->GetStatistics().m_uiStructuralBuildCount, 1U);
+      XII_TEST_INT(pGraph->GetStatistics().m_uiPlanReuseCount, uiFrameIndex);
+    }
+    xiiUInt32 uiPixel = 0U;
+    if (xiiGpuTestReadback::ReadTexturePixel(*pDevice, targets[1].Borrow(), 6U, 6U, uiPixel))
+      XII_TEST_INT(uiPixel, 0xFF0000FFU);
     pView->SetRenderTargetView(nullptr);
   }
 }
