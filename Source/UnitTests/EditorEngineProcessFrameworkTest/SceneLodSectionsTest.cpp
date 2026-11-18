@@ -109,25 +109,25 @@ static void TestLodSections(bool enableMeshShaders)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Primitive-range capacity includes unloaded LODs without counting unrelated sections")
   {
-    const auto geometryHandle = xiiGeometryResidencyManager::AcquireMeshGeometry(mesh);
-    XII_SCOPE_EXIT(xiiGeometryResidencyManager::ReleaseMeshGeometry(geometryHandle, 0));
+    const auto geometryHandle = xiiGpuResidencyManager::AcquireMeshGeometry(mesh);
+    XII_SCOPE_EXIT(xiiGpuResidencyManager::ReleaseMeshGeometry(geometryHandle, 0));
     xiiUInt32 counts[xiiGpuGeometryRecord::s_uiMaxLods] = {};
-    XII_TEST_RESULT(xiiGeometryResidencyManager::GetPrimitiveRangeMeshletCounts(geometryHandle, 0, 0, xiiMakeArrayPtr(counts)));
+    XII_TEST_RESULT(xiiGpuResidencyManager::GetPrimitiveRangeMeshletCounts(geometryHandle, 0, 0, xiiMakeArrayPtr(counts)));
     XII_TEST_INT(counts[0], 2);
     XII_TEST_INT(counts[1], 3);
     XII_TEST_INT(counts[2], 1);
-    XII_TEST_RESULT(xiiGeometryResidencyManager::GetPrimitiveRangeMeshletCounts(geometryHandle, 12, 1, xiiMakeArrayPtr(counts)));
+    XII_TEST_RESULT(xiiGpuResidencyManager::GetPrimitiveRangeMeshletCounts(geometryHandle, 12, 1, xiiMakeArrayPtr(counts)));
     XII_TEST_INT(counts[0], 1);
     XII_TEST_INT(counts[1], 0);
     XII_TEST_INT(counts[2], 0);
     // A custom range may cross a meshlet boundary or overlap reused geometry in another LOD.
-    XII_TEST_RESULT(xiiGeometryResidencyManager::GetPrimitiveRangeMeshletCounts(geometryHandle, 11, 2, xiiMakeArrayPtr(counts)));
+    XII_TEST_RESULT(xiiGpuResidencyManager::GetPrimitiveRangeMeshletCounts(geometryHandle, 11, 2, xiiMakeArrayPtr(counts)));
     XII_TEST_INT(counts[0], 2);
     XII_TEST_INT(counts[2], 1);
-    XII_TEST_BOOL(xiiGeometryResidencyManager::GetPrimitiveRangeMeshletCounts({}, 0, 0, xiiMakeArrayPtr(counts)).Failed());
+    XII_TEST_BOOL(xiiGpuResidencyManager::GetPrimitiveRangeMeshletCounts({}, 0, 0, xiiMakeArrayPtr(counts)).Failed());
     for (const auto count : counts)
       XII_TEST_INT(count, 0);
-    XII_TEST_BOOL(xiiGeometryResidencyManager::GetPrimitiveRangeMeshletCounts(geometryHandle, xiiMath::MaxValue<xiiUInt32>(), 1, xiiMakeArrayPtr(counts)).Failed());
+    XII_TEST_BOOL(xiiGpuResidencyManager::GetPrimitiveRangeMeshletCounts(geometryHandle, xiiMath::MaxValue<xiiUInt32>(), 1, xiiMakeArrayPtr(counts)).Failed());
   }
 
   xiiWorldDescription worldDescription("LOD section ownership");
@@ -217,15 +217,15 @@ static void TestLodSections(bool enableMeshShaders)
       }
     }
     const auto completed = gpuFrame.GetCompletedFrame();
-    xiiGeometryResidencyManager::ProcessStreaming(frame, completed, xiiMath::MaxValue<xiiUInt64>());
+    xiiGpuResidencyManager::ProcessStreaming(frame, completed, xiiMath::MaxValue<xiiUInt64>());
     meshletCapacity = scene.GetMaximumMeshletCount();
     XII_TEST_INT(meshletCapacity, expectedCandidates);
     auto& graph = graphContext.GetGraph();
     auto& cache = graphContext.GetResourceCache();
     cache.BeginFrame(frame, completed);
     graph.BeginSetup(frame);
-    const auto                  geometryUpload = xiiGeometryResidencyManager::AddUploadPass(graph, frame);
-    const auto                  materialUpload = xiiMaterialManager::AddUploadPasses(graph);
+    const auto                  geometryUpload = xiiGpuResidencyManager::DeclareUploadPass(graph);
+    const auto                  materialUpload = xiiMaterialManager::DeclareUploadPass(graph);
     xiiRenderGraphTextureHandle hiZ;
     if (expectedCandidates == 0)
     {

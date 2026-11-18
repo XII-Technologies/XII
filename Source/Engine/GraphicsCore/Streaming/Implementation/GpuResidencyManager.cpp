@@ -299,8 +299,9 @@ public:
     m_StreamingStats                = {};
     m_uiMaximumResidentMeshletCount = 0U;
     m_bMaximumDirty                 = false;
-    m_SetupUploads.Clear();
-    m_uiUploadFrame = xiiMath::MaxValue<xiiUInt64>();
+    m_DeclaredUploads               = {};
+    m_uiDeclarationGeneration       = 0U;
+    m_uiUploadFrame                 = xiiMath::MaxValue<xiiUInt64>();
     m_pMetadataBuffer.Clear();
     m_pMeshletMetadataBuffer.Clear();
     m_bDirectArenaAllocated = false;
@@ -349,9 +350,10 @@ public:
   xiiUInt64                                               m_uiAllFrameMask          = 0U;
   xiiUInt64                                               m_uiBudgetBytes           = 0U;
   xiiUInt64                                               m_uiResidentBytes         = 0U;
-  xiiHashTable<xiiUInt64, UploadHandles>                  m_SetupUploads;
-  xiiUInt64                                               m_uiUploadFrame       = xiiMath::MaxValue<xiiUInt64>();
-  xiiUInt64                                               m_uiLastUploadedBytes = 0U;
+  UploadHandles                                           m_DeclaredUploads;
+  xiiUInt64                                               m_uiDeclarationGeneration = 0U;
+  xiiUInt64                                               m_uiUploadFrame           = xiiMath::MaxValue<xiiUInt64>();
+  xiiUInt64                                               m_uiLastUploadedBytes     = 0U;
 
   xiiGpuResidencyDescription m_Configuration;
   xiiMutex                   m_InitializationMutex;
@@ -3076,118 +3078,126 @@ xiiGpuResidencyStats xiiGpuResidencyManager::GetStats()
   return stats;
 }
 
-xiiGpuResidencyManager::UploadHandles xiiGpuResidencyManager::AddUploadPass(xiiRenderGraph& graph, xiiUInt64 uiFrameIndex)
+xiiUInt32 xiiGpuResidencyManager::GetMaximumResidentMeshletCount()
 {
-  if (EnsureInitialized().Failed())
+  if (s_pState == nullptr)
+    return 0U;
+
+  auto& state = *s_pState;
+  if (state.m_bMaximumDirty)
+  {
+    state.m_uiMaximumResidentMeshletCount = 0U;
+    for (const auto uiSlot : state.m_ActiveSlots)
+    {
+      const auto& slot = state.m_Slots[uiSlot];
+      for (xiiUInt32 lod = 0U; lod < slot.m_Description.m_Lods.GetCount(); ++lod)
+        if (slot.m_GpuRecord.m_uiHierarchyReady != 0U || (slot.m_GpuRecord.m_uiAvailableLodMask & XII_BIT(lod)) != 0U)
+          state.m_uiMaximumResidentMeshletCount = xiiMath::Max(state.m_uiMaximumResidentMeshletCount, slot.m_GpuRecord.m_Lods[lod].m_uiMeshletCount);
+    }
+    state.m_bMaximumDirty = false;
+  }
+  return state.m_uiMaximumResidentMeshletCount;
+}
+
+xiiGpuResidencyManager::UploadHandles xiiGpuResidencyManager::DeclareUploadPass(xiiRenderGraph& graph)
+{
+  if (!graph.IsDeclaringStructure() || EnsureInitialized().Failed())
     return {};
 
-  State* pState = s_pState.Borrow();
-  if (pState->m_uiUploadFrame != uiFrameIndex)
-  {
-    pState->m_SetupUploads.Clear();
-    pState->m_uiUploadFrame       = uiFrameIndex;
-    pState->m_uiLastUploadedBytes = 0U;
-  }
-  UploadHandles existing;
-  if (pState->m_SetupUploads.TryGetValue(graph.GetFrameGeneration(), existing))
-    return existing;
-  UploadPassData                snapshot;
-  const xiiUInt32               slice = static_cast<xiiUInt32>(uiFrameIndex % pState->m_uiFramesInFlight);
-  const xiiUInt64               bit   = xiiUInt64(1) << slice;
-  xiiHybridArray<xiiUInt32, 64> dirty;
-  if (pState->m_bMaximumDirty)
-    pState->m_uiMaximumResidentMeshletCount = 0U;
-  for (const auto i : pState->m_ActiveSlots)
-  {
-    const auto& slot = pState->m_Slots[i];
-    if (pState->m_bMaximumDirty)
-      for (xiiUInt32 lod = 0; lod < slot.m_Description.m_Lods.GetCount(); ++lod)
-        if (slot.m_GpuRecord.m_uiHierarchyReady != 0U || (slot.m_GpuRecord.m_uiAvailableLodMask & XII_BIT(lod)) != 0U)
-          pState->m_uiMaximumResidentMeshletCount = xiiMath::Max(pState->m_uiMaximumResidentMeshletCount, slot.m_GpuRecord.m_Lods[lod].m_uiMeshletCount);
-    if (slot.m_uiDirtyFrameMask & bit)
-      dirty.PushBack(i);
-  }
-  pState->m_bMaximumDirty = false;
-  dirty.Sort();
-  for (const auto i : dirty)
-  {
-    auto& upload         = snapshot.m_Uploads.ExpandAndGetRef();
-    upload.m_uiOffset    = (slice * pState->m_Slots.GetCount() + i) * sizeof(xiiGpuGeometryRecord);
-    upload.m_uiSlotIndex = i;
-    upload.m_uiFrameBit  = bit;
-    snapshot.m_Records.PushBack(pState->m_Slots[i].m_GpuRecord);
-  }
-  for (const auto& upload : pState->m_PendingMeshletUploads)
-    if (!upload->m_bRecorded && !upload->m_bCanceled)
-      snapshot.m_MeshletUploads.PushBack(upload);
-  // New metadata can expose topology copied on the graphics queue. Forward its
-  // signal through the metadata dependency to every queue consuming this graph.
-  const xiiUInt64 uiTopologyWait = pState->m_uiTopologyUploadValue != 0U &&
-      (!snapshot.m_Uploads.IsEmpty() || pState->m_pTopologyUploadFence->GetCompletedValue() < pState->m_uiTopologyUploadValue) ?
-    pState->m_uiTopologyUploadValue :
-    0U;
-  const auto      epoch          = pState->m_uiEpoch;
-  const auto      retainedState  = s_pState;
-  auto            pass           = graph.AddPass<UploadPassData>("Geometry Metadata Upload", xiiGALCommandQueueFlags::Transfer, [pState, &snapshot, uiTopologyWait](UploadPassData& data, xiiRenderGraphBuilder& builder) {
-      data.m_Uploads = std::move(snapshot.m_Uploads);
-      data.m_Records = std::move(snapshot.m_Records);
-      data.m_MeshletUploads = std::move(snapshot.m_MeshletUploads);
-      data.m_hGeometryBuffer = builder.ImportBuffer("GPU Geometry Metadata", pState->m_pMetadataBuffer, xiiGALResourceStateFlags::ShaderResource);
-      if (uiTopologyWait != 0U)
-        XII_VERIFY(builder.WaitForFence(pState->m_pTopologyUploadFence, uiTopologyWait).Succeeded(), "Topology uploads use a valid GPU fence.");
-      if (!data.m_Uploads.IsEmpty() || uiTopologyWait != 0U) data.m_hGeometryBuffer = builder.WriteBuffer(data.m_hGeometryBuffer, xiiGALResourceStateFlags::CopyDestination);
-      builder.ExportBuffer(data.m_hGeometryBuffer, xiiGALResourceStateFlags::ShaderResource);
-      data.m_hMeshletBuffer = builder.ImportBuffer("GPU Meshlet Metadata", pState->m_pMeshletMetadataBuffer, xiiGALResourceStateFlags::ShaderResource);
-      if (!data.m_MeshletUploads.IsEmpty()) data.m_hMeshletBuffer = builder.WriteBuffer(data.m_hMeshletBuffer, xiiGALResourceStateFlags::CopyDestination);
-      builder.ExportBuffer(data.m_hMeshletBuffer, xiiGALResourceStateFlags::ShaderResource);
-      builder.SetPassSideEffects(!data.m_Uploads.IsEmpty() || !data.m_MeshletUploads.IsEmpty() || uiTopologyWait != 0U);
-      builder.SetPassAllowMerge(false); }, [retainedState, epoch, uiFrameIndex](const UploadPassData& data, xiiRenderGraphPassContext& context) {
-      State* pState = retainedState.Borrow();
-      if (pState->m_uiEpoch != epoch)
-        return;
-      xiiUInt64 recordedBytes = 0;
-      const auto needsUpload = [&](xiiUInt32 i) {
-        const auto& upload = data.m_Uploads[i];
-        const auto& slot = pState->m_Slots[upload.m_uiSlotIndex];
-        return slot.m_bAllocated && (slot.m_uiDirtyFrameMask & upload.m_uiFrameBit) != 0 &&
-          xiiMemoryUtils::RawByteCompare(&slot.m_GpuRecord, &data.m_Records[i], sizeof(xiiGpuGeometryRecord)) == 0;
-      };
-      for (xiiUInt32 i = 0; i < data.m_Uploads.GetCount();)
+  const auto pState = s_pState;
+  if (pState->m_uiDeclarationGeneration == graph.GetStructuralGeneration())
+    return pState->m_DeclaredUploads;
+
+  const auto uiEpoch = pState->m_uiEpoch;
+  const auto pass    = graph.AddPass<UploadPassData>("Geometry Metadata Upload", xiiGALCommandQueueFlags::Transfer, [&](UploadPassData& data, xiiRenderGraphBuilder& builder) {
+    data.m_hGeometryBuffer = builder.WriteBuffer(builder.DeclareImportedBuffer("GPU Geometry Metadata", pState->m_pMetadataBuffer->GetDescription()), xiiGALResourceStateFlags::CopyDestination);
+    data.m_hMeshletBuffer = builder.WriteBuffer(builder.DeclareImportedBuffer("GPU Meshlet Metadata", pState->m_pMeshletMetadataBuffer->GetDescription()), xiiGALResourceStateFlags::CopyDestination);
+    builder.ExportBuffer(data.m_hGeometryBuffer, xiiGALResourceStateFlags::ShaderResource);
+    builder.ExportBuffer(data.m_hMeshletBuffer, xiiGALResourceStateFlags::ShaderResource);
+    builder.SetPassAllowMerge(false);
+
+    builder.SetPassFramePreparation([pState, uiEpoch, &data](xiiRenderGraph& ref_graph, const xiiView*, xiiStringBuilder& out_sError) -> xiiResult {
+      if (pState->m_uiEpoch != uiEpoch)
       {
-        if (!needsUpload(i)) { ++i; continue; }
-        const auto first = i++;
-        while (i < data.m_Uploads.GetCount() && needsUpload(i) && data.m_Uploads[i].m_uiOffset == data.m_Uploads[i-1].m_uiOffset + sizeof(xiiGpuGeometryRecord)) ++i;
-        const xiiUInt32 bytes = (i - first) * static_cast<xiiUInt32>(sizeof(xiiGpuGeometryRecord));
-        context.GetCommandList().UpdateBuffer(context.GetBuffer(data.m_hGeometryBuffer), data.m_Uploads[first].m_uiOffset, xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(data.m_Records.GetData() + first), bytes));
-        recordedBytes += bytes;
+        out_sError = "The geometry storage that declared this graph has retired.";
+        return XII_FAILURE;
       }
+      const auto& pGeometry = pState->m_pMetadataBuffer;
+      const auto& pMeshlets = pState->m_pMeshletMetadataBuffer;
+      if (ref_graph.BindImportedBuffer(data.m_hGeometryBuffer, pGeometry, pGeometry->GetResourceState()).Failed() ||
+          ref_graph.BindImportedBuffer(data.m_hMeshletBuffer, pMeshlets, pMeshlets->GetResourceState()).Failed())
+      {
+        out_sError = "Could not bind the declared geometry metadata buffers.";
+        return XII_FAILURE;
+      }
+
+      const xiiUInt64 uiFrame = ref_graph.GetFrameIndex();
+      if (pState->m_uiUploadFrame != uiFrame)
+      {
+        pState->m_uiUploadFrame = uiFrame;
+        pState->m_uiLastUploadedBytes = 0U;
+      }
+      data.m_Uploads.Clear();
+      data.m_Records.Clear();
+      data.m_MeshletUploads.Clear();
+      const xiiUInt32 slice = static_cast<xiiUInt32>(uiFrame % pState->m_uiFramesInFlight);
+      const xiiUInt64 bit = xiiUInt64(1) << slice;
+      xiiHybridArray<xiiUInt32, 64> dirty;
+      for (const auto uiSlot : pState->m_ActiveSlots)
+        if (pState->m_Slots[uiSlot].m_uiDirtyFrameMask & bit)
+          dirty.PushBack(uiSlot);
+      dirty.Sort();
+      for (const auto i : dirty)
+      {
+        auto& upload         = data.m_Uploads.ExpandAndGetRef();
+        upload.m_uiOffset    = (slice * pState->m_Slots.GetCount() + i) * sizeof(xiiGpuGeometryRecord);
+        upload.m_uiSlotIndex = i;
+        upload.m_uiFrameBit  = bit;
+        data.m_Records.PushBack(pState->m_Slots[i].m_GpuRecord);
+      }
+      for (const auto& upload : pState->m_PendingMeshletUploads)
+        if (!upload->m_bRecorded && !upload->m_bCanceled)
+          data.m_MeshletUploads.PushBack(upload);
+      // New metadata can expose topology copied on the graphics queue. Forward its
+      // signal through the metadata dependency to every queue consuming this graph.
+      const xiiUInt64 uiTopologyWait = pState->m_uiTopologyUploadValue != 0U &&
+          (!data.m_Uploads.IsEmpty() || pState->m_pTopologyUploadFence->GetCompletedValue() < pState->m_uiTopologyUploadValue) ?
+        pState->m_uiTopologyUploadValue :
+        0U;
+      if (uiTopologyWait != 0U && ref_graph.WaitForFence(data.m_hPass, pState->m_pTopologyUploadFence, uiTopologyWait).Failed())
+      {
+        out_sError = "Could not wait for the geometry topology upload.";
+        return XII_FAILURE;
+      }
+      return XII_SUCCESS;
+    });
+    builder.SetPassSubmissionCompletion([pState, uiEpoch, &data] {
+      if (pState->m_uiEpoch != uiEpoch)
+        return;
+      xiiUInt64 recordedBytes = 0U;
       for (const auto& upload : data.m_MeshletUploads)
       {
         if (upload->m_bRecorded || upload->m_bCanceled)
           continue;
-        const xiiUInt32 bytes = upload->m_Meshlets.GetCount() * static_cast<xiiUInt32>(sizeof(xiiMeshlet));
-        context.GetCommandList().UpdateBuffer(context.GetBuffer(data.m_hMeshletBuffer), upload->m_uiOffset, xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(upload->m_Meshlets.GetData()), bytes));
         upload->m_bRecorded = true;
         auto& pending = pState->m_Slots[upload->m_uiSlotIndex].m_PendingUploads[upload->m_uiLod];
         if (pending == upload) pending.Clear();
+        recordedBytes += upload->m_Meshlets.GetCount() * sizeof(xiiMeshlet);
         upload->m_Meshlets.Clear();
         upload->m_Meshlets.Compact();
-        recordedBytes += bytes;
       }
-      if (pState->m_uiUploadFrame == uiFrameIndex)
-        pState->m_uiLastUploadedBytes += recordedBytes;
-#if XII_ENABLED(XII_USE_PROFILING)
-      xiiStats::SetStat("Renderer/Geometry/Metadata upload bytes", pState->m_uiLastUploadedBytes);
-#endif
-
       // Retire only snapshots that were actually recorded. If a newer CPU revision appeared
-      // after graph setup, its byte comparison fails and the frame slice remains dirty.
+      // after frame preparation, its byte comparison fails and the frame slice remains dirty.
       for (xiiUInt32 i = 0; i < data.m_Uploads.GetCount(); ++i)
       {
         const auto& upload = data.m_Uploads[i];
         Slot& slot = pState->m_Slots[upload.m_uiSlotIndex];
-        if (slot.m_bAllocated && xiiMemoryUtils::RawByteCompare(&slot.m_GpuRecord, &data.m_Records[i], sizeof(xiiGpuGeometryRecord)) == 0)
+        if (slot.m_bAllocated && (slot.m_uiDirtyFrameMask & upload.m_uiFrameBit) != 0U &&
+            xiiMemoryUtils::RawByteCompare(&slot.m_GpuRecord, &data.m_Records[i], sizeof(xiiGpuGeometryRecord)) == 0)
+        {
           slot.m_uiDirtyFrameMask &= ~upload.m_uiFrameBit;
+          recordedBytes += sizeof(xiiGpuGeometryRecord);
+        }
       }
 
       // Linear compaction retires only recorded/canceled payloads. Retained graphs
@@ -3202,16 +3212,44 @@ xiiGpuResidencyManager::UploadHandles xiiGpuResidencyManager::AddUploadPass(xiiR
           ++keep;
         }
       }
-      pState->m_PendingMeshletUploads.SetCount(keep); }, true);
+      pState->m_PendingMeshletUploads.SetCount(keep);
+      data.m_MeshletUploads.Clear();
+      pState->m_uiLastUploadedBytes += recordedBytes;
+#if XII_ENABLED(XII_USE_PROFILING)
+      xiiStats::SetStat("Renderer/Geometry/Metadata upload bytes", pState->m_uiLastUploadedBytes);
+#endif
+    }); }, [pState, uiEpoch](const UploadPassData& data, xiiRenderGraphPassContext& context) {
+      if (pState->m_uiEpoch != uiEpoch)
+      {
+        context.ReportFailure("Geometry storage retired during graph execution.");
+        return;
+      }
+      const auto needsUpload = [&](xiiUInt32 i) {
+        const auto& upload = data.m_Uploads[i];
+        const auto& slot = pState->m_Slots[upload.m_uiSlotIndex];
+        return slot.m_bAllocated && (slot.m_uiDirtyFrameMask & upload.m_uiFrameBit) != 0 &&
+          xiiMemoryUtils::RawByteCompare(&slot.m_GpuRecord, &data.m_Records[i], sizeof(xiiGpuGeometryRecord)) == 0;
+      };
+      for (xiiUInt32 i = 0; i < data.m_Uploads.GetCount();)
+      {
+        if (!needsUpload(i)) { ++i; continue; }
+        const auto first = i++;
+        while (i < data.m_Uploads.GetCount() && needsUpload(i) && data.m_Uploads[i].m_uiOffset == data.m_Uploads[i-1].m_uiOffset + sizeof(xiiGpuGeometryRecord)) ++i;
+        const xiiUInt32 bytes = (i - first) * static_cast<xiiUInt32>(sizeof(xiiGpuGeometryRecord));
+        context.GetCommandList().UpdateBuffer(context.GetBuffer(data.m_hGeometryBuffer), data.m_Uploads[first].m_uiOffset, xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(data.m_Records.GetData() + first), bytes));
+      }
+      for (const auto& upload : data.m_MeshletUploads)
+      {
+        if (upload->m_bRecorded || upload->m_bCanceled)
+          continue;
+        const xiiUInt32 bytes = upload->m_Meshlets.GetCount() * static_cast<xiiUInt32>(sizeof(xiiMeshlet));
+        context.GetCommandList().UpdateBuffer(context.GetBuffer(data.m_hMeshletBuffer), upload->m_uiOffset, xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(upload->m_Meshlets.GetData()), bytes));
+      } }, true);
 
-
-  UploadHandles result;
-  result.m_hGeometryMetadata             = pass.first->m_hGeometryBuffer;
-  result.m_hMeshletMetadata              = pass.first->m_hMeshletBuffer;
-  result.m_uiGeometryBaseIndex           = GetMetadataBaseIndex(uiFrameIndex);
-  result.m_uiMaximumResidentMeshletCount = pState->m_uiMaximumResidentMeshletCount;
-  pState->m_SetupUploads.Insert(graph.GetFrameGeneration(), result);
-  return result;
+  pass.first->m_hPass               = pass.second;
+  pState->m_DeclaredUploads         = {pass.first->m_hGeometryBuffer, pass.first->m_hMeshletBuffer};
+  pState->m_uiDeclarationGeneration = graph.GetStructuralGeneration();
+  return pState->m_DeclaredUploads;
 }
 
 bool xiiGpuResidencyManager::AllocateMeshlets(xiiUInt32 uiCount, xiiUInt32& out_uiOffset)

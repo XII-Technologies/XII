@@ -22,13 +22,12 @@ struct xiiLuminanceHistogramPass::Data
   xiiRenderGraphBufferHandle  m_hHistogram; ///< UnorderedAccess out (256-bin luminance histogram).
   xiiRenderGraphBufferHandle  m_hConstants;
   xiiSizeU32                  m_Size;
-  xiiDisplayOutputSettings    m_DisplaySettings;
+  xiiExposureSettings         m_Settings;
 };
 
 struct xiiLuminanceHistogramPass::State
 {
   xiiSharedPtr<xiiGALComputePipelineState> m_Pipeline;
-  DisplayConfiguration                     m_Display;
 };
 
 xiiLuminanceHistogramPass::xiiLuminanceHistogramPass()  = default;
@@ -59,8 +58,6 @@ xiiResult xiiLuminanceHistogramPass::Configure(const xiiVariantDictionary& prope
   XII_SUCCEED_OR_RETURN(xiiRenderPipelinePass::Configure(properties));
   if (!xiiMath::IsFinite(m_fMinimumLogLuminance) || !xiiMath::IsFinite(m_fMaximumLogLuminance) || m_fMinimumLogLuminance >= m_fMaximumLogLuminance)
     return XII_FAILURE;
-  if (m_pState)
-    m_pState->m_Display.m_bValid = false;
   return XII_SUCCESS;
 }
 
@@ -72,9 +69,6 @@ xiiResult xiiLuminanceHistogramPass::Build(xiiRenderPipelinePassContext& context
   xiiDisplayOutputSettings authored;
   authored.m_Exposure.m_fMinimumLogLuminance = m_fMinimumLogLuminance;
   authored.m_Exposure.m_fMaximumLogLuminance = m_fMaximumLogLuminance;
-  XII_SUCCEED_OR_RETURN(m_pState->m_Display.Resolve(context, authored, m_bUseViewDefaults));
-  if (m_pState->m_Display.m_Settings.m_Exposure.m_Mode == xiiExposureMode::Manual)
-    return XII_SUCCESS;
   XII_SUCCEED_OR_RETURN(LoadComputePipeline(m_pState->m_Pipeline, "Shaders/Pipeline/ExposureHistogram.xiiShader"));
   xiiSizeU32 size;
   XII_SUCCEED_OR_RETURN(OutputSize(context, context.GetInputTexture(m_InputHDRSceneColor), size));
@@ -85,9 +79,17 @@ xiiResult xiiLuminanceHistogramPass::Build(xiiRenderPipelinePassContext& context
     return context.ReportFailure("Luminance histogram exceeds counter or compute dispatch dimensions.");
   const auto emitted = context.m_Graph.AddPass<Data>(context.m_sPassName, xiiGALCommandQueueFlags::Compute, [&](Data& data, xiiRenderGraphBuilder& builder) {
     data.m_Size = size;
-    data.m_DisplaySettings = m_pState->m_Display.m_Settings;
     data.m_hHDRIn = context.GetInputTexture(m_InputHDRSceneColor);
-    Setup(data, builder); }, [](const Data& data, xiiRenderGraphPassContext& execute) { Execute(data, execute); });
+    Setup(data, builder);
+    builder.SetPassFramePreparation([settings = authored.m_Exposure, bUseViewDefaults = m_bUseViewDefaults, &data](xiiRenderGraph&, const xiiView* pView, xiiStringBuilder& out_sError) -> xiiResult {
+      data.m_Settings = bUseViewDefaults && pView ? pView->GetDisplayOutputSettings().m_Exposure : settings;
+      if (!xiiDisplayOutputManager::IsValid(data.m_Settings))
+      {
+        out_sError = "Invalid histogram luminance and exposure settings.";
+        return XII_FAILURE;
+      }
+      return XII_SUCCESS;
+    }); }, [](const Data& data, xiiRenderGraphPassContext& execute) { Execute(data, execute); });
   XII_SUCCEED_OR_RETURN(context.SetOutput(m_OutputLuminanceHistogram, emitted.first->m_hHistogram));
   return XII_SUCCESS;
 }
@@ -119,9 +121,14 @@ void xiiLuminanceHistogramPass::Execute(const Data& data, xiiRenderGraphPassCont
   const xiiUInt32    uiRenderWidth  = data.m_Size.width;
   const xiiUInt32    uiRenderHeight = data.m_Size.height;
 
+  const xiiUInt32 zeroHistogram[256] = {};
+  UpdateBufferPreservingState(cmd, context.GetBuffer(data.m_hHistogram), 0U, xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(zeroHistogram), sizeof(zeroHistogram)));
+  if (data.m_Settings.m_Mode == xiiExposureMode::Manual)
+    return;
+
   cmd.BeginDebugGroup("LuminanceHistogram");
   {
-    const xiiExposureSettings& settings = data.m_DisplaySettings.m_Exposure;
+    const xiiExposureSettings& settings = data.m_Settings;
     const float                fRange   = settings.m_fMaximumLogLuminance - settings.m_fMinimumLogLuminance;
     {
       xiiGALMapHelper<xiiExposureHistogramConstants> pConstants(cmd, context.GetBuffer(data.m_hConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
@@ -130,8 +137,6 @@ void xiiLuminanceHistogramPass::Execute(const Data& data, xiiRenderGraphPassCont
       pConstants->_Padding          = xiiVec2::MakeZero();
     }
 
-    xiiUInt32 zeroHistogram[256] = {};
-    UpdateBufferPreservingState(cmd, context.GetBuffer(data.m_hHistogram), 0U, xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(zeroHistogram), sizeof(zeroHistogram)));
     cmd.SetPipelineState(data.m_Pipeline.Borrow());
     cmd.ResolveAndSetConstantBuffer("xiiExposureHistogramConstants", context.GetBuffer(data.m_hConstants), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_HDRInput", context.GetTexture(data.m_hHDRIn)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);

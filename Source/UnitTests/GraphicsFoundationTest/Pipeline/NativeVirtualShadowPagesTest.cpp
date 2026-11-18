@@ -7,13 +7,13 @@
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Memory/FrameAllocator.h>
 #include <Foundation/Types/ScopeExit.h>
-#include <GraphicsCore/Geometry/GeometryResidency.h>
 #include <GraphicsCore/Lighting/VirtualShadowMap.h>
 #include <GraphicsCore/Material/MaterialManager.h>
 #include <GraphicsCore/Pipeline/Passes/Geometry/MeshDrawCommandsPass.h>
 #include <GraphicsCore/Pipeline/Passes/Shadows/VirtualShadowTablesPass.h>
 #include <GraphicsCore/Pipeline/RenderGraphManager.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
+#include <GraphicsCore/Streaming/GpuResidencyManager.h>
 #include <GraphicsCore/Visibility/GpuVisibilityTypes.h>
 #include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
 #include <GraphicsFoundationTest/TestingEnvironment/BufferReadback.h>
@@ -60,7 +60,7 @@ XII_CREATE_SIMPLE_TEST(NativeVirtualShadowPages, ResourceRasterAndRevisionSafeCo
   settings.m_uiPhysicalPageCount                         = 2;
   settings.m_uiMaxPageAllocations = settings.m_uiMaxPageRasterizations = 2;
   settings.m_uiMaxFeedbackRequests                                     = 8;
-  if (!XII_TEST_RESULT(xiiVirtualShadowMapManager::Configure(settings)) || !XII_TEST_RESULT(xiiGeometryResidencyManager::EnsureInitialized()) || !XII_TEST_RESULT(xiiMaterialManager::EnsureInitialized()))
+  if (!XII_TEST_RESULT(xiiVirtualShadowMapManager::Configure(settings)) || !XII_TEST_RESULT(xiiGpuResidencyManager::EnsureInitialized()) || !XII_TEST_RESULT(xiiMaterialManager::EnsureInitialized()))
     return;
   xiiGeometry box;
   box.AddBox(xiiVec3(0.4f), true);
@@ -69,9 +69,9 @@ XII_CREATE_SIMPLE_TEST(NativeVirtualShadowPages, ResourceRasterAndRevisionSafeCo
   const auto             buffer = xiiResourceManager::CreateResource<xiiMeshBufferResource>("Virtual page cube", std::move(mesh));
   xiiGeometryDescription geometryDefinition;
   geometryDefinition.m_Lods.ExpandAndGetRef().m_hMeshBuffer = buffer;
-  const auto geometryHandle                                 = xiiGeometryResidencyManager::RegisterGeometry(geometryDefinition);
-  XII_SCOPE_EXIT(xiiGeometryResidencyManager::UnregisterGeometry(geometryHandle, 0));
-  xiiGeometryResidencyManager::RequestResidency(geometryHandle, 0, 0);
+  const auto geometryHandle                                 = xiiGpuResidencyManager::RegisterGeometry(geometryDefinition);
+  XII_SCOPE_EXIT(xiiGpuResidencyManager::UnregisterGeometry(geometryHandle, 0));
+  xiiGpuResidencyManager::RequestGeometry(geometryHandle, 0);
   const auto                resource = xiiCreateShadowMeshDepthTestResource();
   xiiRenderPipelineInstance pipelines[2];
   xiiUInt64                 revisions[2] = {};
@@ -131,9 +131,9 @@ XII_CREATE_SIMPLE_TEST(NativeVirtualShadowPages, ResourceRasterAndRevisionSafeCo
     cache.BeginFrame(frame.GetFrameIndex(), frame.GetCompletedFrame());
     XII_SCOPE_EXIT(cache.EndFrame());
     graph.BeginSetup(frame.GetFrameIndex());
-    xiiGeometryResidencyManager::ProcessStreaming(frame.GetFrameIndex(), frame.GetCompletedFrame(), xiiMath::MaxValue<xiiUInt64>());
-    const auto geometry  = xiiGeometryResidencyManager::AddUploadPass(graph, frame.GetFrameIndex());
-    const auto materials = xiiMaterialManager::AddUploadPasses(graph);
+    xiiGpuResidencyManager::ProcessStreaming(frame.GetFrameIndex(), frame.GetCompletedFrame(), xiiMath::MaxValue<xiiUInt64>());
+    const auto geometry  = xiiGpuResidencyManager::DeclareUploadPass(graph);
+    const auto materials = xiiMaterialManager::DeclareUploadPass(graph);
     if (!XII_TEST_RESULT(tables.Build(nullptr, graph, context.GetBlackboard())))
       return;
     const auto residency = tables.GetInterfaceBinding(tables.GetPipeline()->FindInterface("Residency", false))->m_pFrameData.Downcast<const xiiVirtualShadowResidencySnapshot>();
@@ -177,8 +177,8 @@ XII_CREATE_SIMPLE_TEST(NativeVirtualShadowPages, ResourceRasterAndRevisionSafeCo
         data.m_Image = builder.ReadWriteTexture(upload.m_hPhysicalAtlas, xiiGALResourceStateFlags::DepthWrite);
         builder.SetPassRenderPassManaged(); }, [](const Initial& data, xiiRenderGraphPassContext& execute) { execute.GetCommandList().ClearDepthStencilView(execute.GetTexture(data.m_Image)->GetDefaultView(xiiGALTextureViewType::DepthStencil), true, false, 0.9f, 0); }).first->m_Image;
     }
-    const auto* record = xiiGeometryResidencyManager::GetGpuRecord(geometryHandle);
-    if (!XII_TEST_BOOL(record && record->m_uiResidentLodMask == 1))
+    const auto* record = xiiGpuResidencyManager::GetGpuRecord(geometryHandle);
+    if (!XII_TEST_BOOL(record && record->m_uiAvailableLodMask == 1))
       return;
     xiiGpuSceneInstance scene;
     scene.m_uiGeometryIndex          = geometryHandle.GetInternalID().m_InstanceIndex;

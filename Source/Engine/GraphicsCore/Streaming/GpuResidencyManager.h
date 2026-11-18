@@ -235,7 +235,8 @@ public:
     xiiUInt32 m_uiMaximumResidentMeshletCount = 0U;
   };
 
-  [[nodiscard]] static UploadHandles AddUploadPass(xiiRenderGraph& graph, xiiUInt64 uiFrameIndex);
+  [[nodiscard]] static UploadHandles DeclareUploadPass(xiiRenderGraph& graph);
+  [[nodiscard]] static xiiUInt32     GetMaximumResidentMeshletCount();
 
 private:
   static void      Startup();
@@ -324,6 +325,7 @@ private:
     xiiDynamicArray<Upload, xiiAlignedAllocatorWrapper>               m_Uploads;
     xiiDynamicArray<xiiGpuGeometryRecord, xiiAlignedAllocatorWrapper> m_Records;
     xiiDynamicArray<xiiSharedPtr<MeshletUpload>>                      m_MeshletUploads;
+    xiiRenderGraphPassHandle                                          m_hPass;
   };
 
   struct FreeRange

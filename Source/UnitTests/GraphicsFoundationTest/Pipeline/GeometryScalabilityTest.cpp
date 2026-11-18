@@ -11,7 +11,6 @@
 #include <Foundation/Types/ScopeExit.h>
 #include <Foundation/Utilities/AssetFileHeader.h>
 #include <Foundation/Utilities/CommandLineUtils.h>
-#include <GraphicsCore/Geometry/GeometryResidency.h>
 #include <GraphicsCore/Meshes/GpuInstanceData.h>
 #include <GraphicsCore/Meshes/MeshComponent.h>
 #include <GraphicsCore/Meshes/MeshResource.h>
@@ -19,6 +18,7 @@
 #include <GraphicsCore/Pipeline/MsgExtractRenderData.h>
 #include <GraphicsCore/Pipeline/RenderGraphResourceCache.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
+#include <GraphicsCore/Streaming/GpuResidencyManager.h>
 #include <GraphicsFoundationTest/TestingEnvironment/RenderGraphTestContext.h>
 
 XII_CREATE_SIMPLE_TEST(PipelineResources, GeometryCoverageScaling)
@@ -53,19 +53,19 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, GeometryCoverageScaling)
   const auto             buffer = xiiResourceManager::CreateResource<xiiMeshBufferResource>("Coverage stress mesh", std::move(descriptor));
   xiiGeometryDescription description;
   description.m_Lods.ExpandAndGetRef().m_hMeshBuffer = buffer;
-  const auto handle                                  = xiiGeometryResidencyManager::RegisterGeometry(description);
-  XII_SCOPE_EXIT(xiiGeometryResidencyManager::UnregisterGeometry(handle, 0));
+  const auto handle                                  = xiiGpuResidencyManager::RegisterGeometry(description);
+  XII_SCOPE_EXIT(xiiGpuResidencyManager::UnregisterGeometry(handle, 0));
   xiiUInt32  counts[xiiGpuGeometryRecord::s_uiMaxLods] = {};
-  const auto before                                    = xiiGeometryResidencyManager::GetStats();
+  const auto before                                    = xiiGpuResidencyManager::GetStats();
   const auto start                                     = xiiTime::Now();
   for (xiiUInt32 frame = 0; frame < 16; ++frame)
     for (xiiUInt32 section = 0; section < 512; ++section)
     {
-      XII_TEST_RESULT(xiiGeometryResidencyManager::GetPrimitiveRangeMeshletCounts(handle, section * 32 * 12 + 1, 32 * 12 - 2, xiiMakeArrayPtr(counts)));
+      XII_TEST_RESULT(xiiGpuResidencyManager::GetPrimitiveRangeMeshletCounts(handle, section * 32 * 12 + 1, 32 * 12 - 2, xiiMakeArrayPtr(counts)));
       XII_TEST_INT(counts[0], 32 * meshlets.GetCount());
     }
   xiiTestFramework::Output(xiiTestOutput::Details, "Coverage: %u meshlets, 512 ranges, 16 updates: %.3f ms.", copies * meshlets.GetCount(), (xiiTime::Now() - start).GetMilliseconds());
-  const auto after = xiiGeometryResidencyManager::GetStats();
+  const auto after = xiiGpuResidencyManager::GetStats();
   XII_TEST_INT(after.m_uiCoverageIndexBuilds - before.m_uiCoverageIndexBuilds, 1);
   XII_TEST_INT(after.m_uiCoverageMeshlets - before.m_uiCoverageMeshlets, copies * meshlets.GetCount());
 }
@@ -103,8 +103,8 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, CompiledGeometryScaling)
   xiiResourceLock<xiiMeshResource> loaded(mesh, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
   if (!XII_TEST_BOOL(loaded.GetAcquireResult() == xiiResourceAcquireResult::Final))
     return;
-  const auto handle = xiiGeometryResidencyManager::AcquireMeshGeometry(mesh);
-  XII_SCOPE_EXIT(xiiGeometryResidencyManager::ReleaseMeshGeometry(handle, 100));
+  const auto handle = xiiGpuResidencyManager::AcquireMeshGeometry(mesh);
+  XII_SCOPE_EXIT(xiiGpuResidencyManager::ReleaseMeshGeometry(handle, 100));
   xiiResourceLock<xiiMeshBufferResource> buffer(loaded->GetMeshBuffer(), xiiResourceAcquireMode::PointerOnly);
   const auto                             sections    = loaded->GetSections();
   xiiUInt64                              checksum    = 0;
@@ -120,7 +120,7 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, CompiledGeometryScaling)
   for (xiiUInt32 i = 0; i < sampleCount; ++i)
   {
     xiiUInt32 counts[xiiGpuGeometryRecord::s_uiMaxLods] = {};
-    XII_TEST_RESULT(xiiGeometryResidencyManager::GetPrimitiveRangeMeshletCounts(handle, sections[i].m_uiFirstPrimitive, sections[i].m_uiPrimitiveCount, xiiMakeArrayPtr(counts)));
+    XII_TEST_RESULT(xiiGpuResidencyManager::GetPrimitiveRangeMeshletCounts(handle, sections[i].m_uiFirstPrimitive, sections[i].m_uiPrimitiveCount, xiiMakeArrayPtr(counts)));
     for (const auto count : counts)
       indexedChecksum += count;
   }
@@ -148,12 +148,12 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, CompiledGeometryScaling)
   const auto cold = xiiTime::Now();
   XII_TEST_RESULT(renderer->UpdateGpuInstances(extracted, 1));
   const auto coldTime = xiiTime::Now() - cold;
-  const auto queries  = xiiGeometryResidencyManager::GetStats().m_uiCoverageQueries;
+  const auto queries  = xiiGpuResidencyManager::GetStats().m_uiCoverageQueries;
   const auto warm     = xiiTime::Now();
   for (xiiUInt32 frame = 2; frame <= 21; ++frame)
     XII_TEST_RESULT(renderer->UpdateGpuInstances(extracted, frame));
   XII_TEST_BOOL(renderer->GetGpuInstanceData()->GetUploadRanges().IsEmpty());
-  XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiCoverageQueries, queries);
+  XII_TEST_INT(xiiGpuResidencyManager::GetStats().m_uiCoverageQueries, queries);
   xiiTestFramework::Output(xiiTestOutput::Details, "Compiled geometry GPU scene: %u draw instances, cold %.3f ms; stationary %.3f ms/update (20 updates).", renderer->GetGpuInstanceData()->GetInstanceCount(), coldTime.GetMilliseconds(), (xiiTime::Now() - warm).GetMilliseconds() / 20.0);
 }
 
@@ -165,10 +165,10 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, GeometryAdmissionAndUploadOwnership)
   xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
   xiiStartup::StartupHighLevelSystems();
   XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiFrameAllocator::Reset(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
-  xiiGeometryResidencyDescription configuration;
+  xiiGpuResidencyDescription configuration;
   configuration.m_uiMaxGeometries = 8;
   configuration.m_uiMaxMeshlets   = 2;
-  XII_TEST_RESULT(xiiGeometryResidencyManager::Configure(configuration));
+  XII_TEST_RESULT(xiiGpuResidencyManager::Configure(configuration));
   xiiGeometry box;
   box.AddBox(xiiVec3(1), true);
   xiiMeshBufferResourceDescriptor descriptor;
@@ -181,25 +181,25 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, GeometryAdmissionAndUploadOwnership)
   xiiGeometryHandle handles[3];
   for (auto& handle : handles)
   {
-    handle = xiiGeometryResidencyManager::RegisterGeometry(description);
-    xiiGeometryResidencyManager::RequestResidency(handle, 0, 1);
+    handle = xiiGpuResidencyManager::RegisterGeometry(description);
+    xiiGpuResidencyManager::RequestGeometry(handle, 1);
   }
-  XII_SCOPE_EXIT(for (const auto handle : handles) xiiGeometryResidencyManager::UnregisterGeometry(handle, 3));
+  XII_SCOPE_EXIT(for (const auto handle : handles) xiiGpuResidencyManager::UnregisterGeometry(handle, 3));
   xiiRenderGraphTestContext stale;
   XII_TEST_RESULT(stale.Initialize("Pre-admission geometry snapshot"));
   stale.GetResourceCache().BeginFrame(1, 0);
   stale.GetGraph().BeginSetup(1);
-  const auto staleUpload = xiiGeometryResidencyManager::AddUploadPass(stale.GetGraph(), 1);
+  const auto staleUpload = xiiGpuResidencyManager::DeclareUploadPass(stale.GetGraph());
   XII_TEST_BOOL(!staleUpload.m_hGeometryMetadata.IsInvalidated());
   stale.GetGraph().EndSetup();
-  xiiGeometryResidencyManager::ProcessStreaming(1, 0, configuration.m_uiUploadBudgetPerFrameBytes);
-  auto stats = xiiGeometryResidencyManager::GetStats();
+  xiiGpuResidencyManager::ProcessStreaming(1, 0, configuration.m_uiUploadBudgetPerFrameBytes);
+  auto stats = xiiGpuResidencyManager::GetStats();
   XII_TEST_INT(stats.m_uiResidentGeometryCount, 2);
   XII_TEST_INT(stats.m_uiArenaDeferred, 1);
   XII_TEST_INT(stats.m_uiPreparedMeshlets, 2);
-  xiiGeometryResidencyManager::ProcessStreaming(1, 0, configuration.m_uiUploadBudgetPerFrameBytes);
-  XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiPreparedMeshlets, 2);
-  XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiArenaMeshlets, 2);
+  xiiGpuResidencyManager::ProcessStreaming(1, 0, configuration.m_uiUploadBudgetPerFrameBytes);
+  XII_TEST_INT(xiiGpuResidencyManager::GetStats().m_uiPreparedMeshlets, 2);
+  XII_TEST_INT(xiiGpuResidencyManager::GetStats().m_uiArenaMeshlets, 2);
 
   xiiRenderGraphTestContext graphs[3];
   for (auto& context : graphs)
@@ -207,7 +207,7 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, GeometryAdmissionAndUploadOwnership)
     XII_TEST_RESULT(context.Initialize("Shared pending geometry uploads"));
     context.GetResourceCache().BeginFrame(1, 0);
     context.GetGraph().BeginSetup(1);
-    const auto uploaded = xiiGeometryResidencyManager::AddUploadPass(context.GetGraph(), 1);
+    const auto uploaded = xiiGpuResidencyManager::DeclareUploadPass(context.GetGraph());
     XII_TEST_BOOL(!uploaded.m_hGeometryMetadata.IsInvalidated());
     context.GetGraph().EndSetup();
   }
@@ -220,7 +220,7 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, GeometryAdmissionAndUploadOwnership)
     XII_TEST_RESULT(context.GetGraph().Execute(environment.GetDevice(), nullptr, &context.GetBlackboard(), &context.GetResourceCache()));
     context.GetResourceCache().EndFrame();
     environment.GetDevice()->WaitIdle();
-    const auto bytes = xiiGeometryResidencyManager::GetStats().m_uiUploadedBytes;
+    const auto bytes = xiiGpuResidencyManager::GetStats().m_uiUploadedBytes;
     XII_TEST_INT(bytes, 3 * sizeof(xiiGpuGeometryRecord) + 2 * sizeof(xiiMeshlet));
   }
   // A delayed pre-admission graph must not overwrite the newer published record.
@@ -228,34 +228,34 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, GeometryAdmissionAndUploadOwnership)
   XII_TEST_RESULT(stale.GetGraph().Execute(environment.GetDevice(), nullptr, &stale.GetBlackboard(), &stale.GetResourceCache()));
   stale.GetResourceCache().EndFrame();
   environment.GetDevice()->WaitIdle();
-  XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiUploadedBytes, 3 * sizeof(xiiGpuGeometryRecord) + 2 * sizeof(xiiMeshlet));
-  xiiGeometryResidencyManager::UnregisterGeometry(handles[0], 1);
-  xiiGeometryResidencyManager::ProcessStreaming(2, 0, configuration.m_uiUploadBudgetPerFrameBytes);
-  XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiPreparedMeshlets, 0);
-  xiiGeometryResidencyManager::ProcessStreaming(2, 1, configuration.m_uiUploadBudgetPerFrameBytes);
-  XII_TEST_BOOL(!xiiGeometryResidencyManager::IsValid(handles[0]));
-  XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiPreparedMeshlets, 1);
-  XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiResidentGeometryCount, 2);
+  XII_TEST_INT(xiiGpuResidencyManager::GetStats().m_uiUploadedBytes, 3 * sizeof(xiiGpuGeometryRecord) + 2 * sizeof(xiiMeshlet));
+  xiiGpuResidencyManager::UnregisterGeometry(handles[0], 1);
+  xiiGpuResidencyManager::ProcessStreaming(2, 0, configuration.m_uiUploadBudgetPerFrameBytes);
+  XII_TEST_INT(xiiGpuResidencyManager::GetStats().m_uiPreparedMeshlets, 0);
+  xiiGpuResidencyManager::ProcessStreaming(2, 1, configuration.m_uiUploadBudgetPerFrameBytes);
+  XII_TEST_BOOL(!xiiGpuResidencyManager::IsValid(handles[0]));
+  XII_TEST_INT(xiiGpuResidencyManager::GetStats().m_uiPreparedMeshlets, 1);
+  XII_TEST_INT(xiiGpuResidencyManager::GetStats().m_uiResidentGeometryCount, 2);
   description.m_bPinned = true;
-  const auto pinned     = xiiGeometryResidencyManager::RegisterGeometry(description);
-  XII_SCOPE_EXIT(xiiGeometryResidencyManager::UnregisterGeometry(pinned, 6));
-  xiiGeometryResidencyManager::RequestResidency(pinned, 0, 3);
-  xiiGeometryResidencyManager::Touch(handles[1], 3);
-  xiiGeometryResidencyManager::ProcessStreaming(3, 2, configuration.m_uiUploadBudgetPerFrameBytes);
-  XII_TEST_BOOL(xiiGeometryResidencyManager::GetState(pinned) == xiiGeometryResidencyState::Resident);
-  XII_TEST_BOOL(xiiGeometryResidencyManager::GetState(handles[2]) == xiiGeometryResidencyState::Unloaded);
+  const auto pinned     = xiiGpuResidencyManager::RegisterGeometry(description);
+  XII_SCOPE_EXIT(xiiGpuResidencyManager::UnregisterGeometry(pinned, 6));
+  xiiGpuResidencyManager::RequestGeometry(pinned, 3);
+  xiiGpuResidencyManager::Touch(handles[1], 3);
+  xiiGpuResidencyManager::ProcessStreaming(3, 2, configuration.m_uiUploadBudgetPerFrameBytes);
+  XII_TEST_BOOL(xiiGpuResidencyManager::GetState(pinned) == xiiGeometryResidencyState::Resident);
+  XII_TEST_BOOL(xiiGpuResidencyManager::GetState(handles[2]) == xiiGeometryResidencyState::Unloaded);
   // Arena pressure evicts completed cold geometry even below the byte budget.
   // Pinned and current-frame geometry remain protected from immediate churn.
-  xiiGeometryResidencyManager::RequestResidency(handles[2], 0, 4);
-  xiiGeometryResidencyManager::ProcessStreaming(4, 3, configuration.m_uiUploadBudgetPerFrameBytes);
-  XII_TEST_BOOL(xiiGeometryResidencyManager::GetState(handles[1]) == xiiGeometryResidencyState::Unloaded);
-  XII_TEST_BOOL(xiiGeometryResidencyManager::GetState(handles[2]) == xiiGeometryResidencyState::Resident);
-  xiiGeometryResidencyManager::RequestResidency(handles[1], 0, 5);
-  xiiGeometryResidencyManager::Touch(handles[2], 5);
-  xiiGeometryResidencyManager::ProcessStreaming(5, 4, configuration.m_uiUploadBudgetPerFrameBytes);
-  XII_TEST_BOOL(xiiGeometryResidencyManager::GetState(pinned) == xiiGeometryResidencyState::Resident);
-  XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiArenaDeferred, 1);
-  XII_TEST_INT(xiiGeometryResidencyManager::GetStats().m_uiPreparedMeshlets, 0);
+  xiiGpuResidencyManager::RequestGeometry(handles[2], 4);
+  xiiGpuResidencyManager::ProcessStreaming(4, 3, configuration.m_uiUploadBudgetPerFrameBytes);
+  XII_TEST_BOOL(xiiGpuResidencyManager::GetState(handles[1]) == xiiGeometryResidencyState::Unloaded);
+  XII_TEST_BOOL(xiiGpuResidencyManager::GetState(handles[2]) == xiiGeometryResidencyState::Resident);
+  xiiGpuResidencyManager::RequestGeometry(handles[1], 5);
+  xiiGpuResidencyManager::Touch(handles[2], 5);
+  xiiGpuResidencyManager::ProcessStreaming(5, 4, configuration.m_uiUploadBudgetPerFrameBytes);
+  XII_TEST_BOOL(xiiGpuResidencyManager::GetState(pinned) == xiiGeometryResidencyState::Resident);
+  XII_TEST_INT(xiiGpuResidencyManager::GetStats().m_uiArenaDeferred, 1);
+  XII_TEST_INT(xiiGpuResidencyManager::GetStats().m_uiPreparedMeshlets, 0);
 }
 
 XII_CREATE_SIMPLE_TEST(PipelineResources, CompiledMeshletPreparation)
@@ -338,10 +338,10 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, GeometryCoverageIdentity)
   xiiGALDevice::SetDefaultDevice(environment.GetDeviceShared());
   xiiStartup::StartupHighLevelSystems();
   XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiFrameAllocator::Reset(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
-  xiiGeometryResidencyDescription configuration;
+  xiiGpuResidencyDescription configuration;
   configuration.m_uiMaxGeometries = 8;
   configuration.m_uiMaxMeshlets   = 8;
-  XII_TEST_RESULT(xiiGeometryResidencyManager::Configure(configuration));
+  XII_TEST_RESULT(xiiGpuResidencyManager::Configure(configuration));
   xiiGeometry box;
   box.AddBox(xiiVec3(1), true);
   xiiMeshBufferResourceDescriptor descriptor;
@@ -367,32 +367,32 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, GeometryCoverageIdentity)
     source.m_uiFirstMeshlet = lod * 2;
     source.m_uiMeshletCount = 2;
   }
-  const auto handle                                    = xiiGeometryResidencyManager::RegisterGeometry(description);
+  const auto handle                                    = xiiGpuResidencyManager::RegisterGeometry(description);
   xiiUInt32  counts[xiiGpuGeometryRecord::s_uiMaxLods] = {};
-  XII_TEST_RESULT(xiiGeometryResidencyManager::GetPrimitiveRangeMeshletCounts(handle, 5, 20, xiiMakeArrayPtr(counts)));
+  XII_TEST_RESULT(xiiGpuResidencyManager::GetPrimitiveRangeMeshletCounts(handle, 5, 20, xiiMakeArrayPtr(counts)));
   XII_TEST_INT(counts[0], 1);
   XII_TEST_INT(counts[1], 2);
-  XII_TEST_RESULT(xiiGeometryResidencyManager::GetPrimitiveRangeMeshletCounts(handle, 12, 12, xiiMakeArrayPtr(counts)));
+  XII_TEST_RESULT(xiiGpuResidencyManager::GetPrimitiveRangeMeshletCounts(handle, 12, 12, xiiMakeArrayPtr(counts)));
   XII_TEST_INT(counts[0], 0);
   XII_TEST_INT(counts[1], 1);
-  XII_TEST_RESULT(xiiGeometryResidencyManager::GetPrimitiveRangeMeshletCounts(handle, 0, 0, xiiMakeArrayPtr(counts)));
+  XII_TEST_RESULT(xiiGpuResidencyManager::GetPrimitiveRangeMeshletCounts(handle, 0, 0, xiiMakeArrayPtr(counts)));
   XII_TEST_INT(counts[0], 2);
   XII_TEST_INT(counts[1], 2);
-  xiiGeometryResidencyManager::RequestResidency(handle, 0, 1);
-  xiiGeometryResidencyManager::ProcessStreaming(1, 0, 1);
-  const auto* record = xiiGeometryResidencyManager::GetGpuRecord(handle);
+  xiiGpuResidencyManager::RequestGeometry(handle, 1);
+  xiiGpuResidencyManager::ProcessStreaming(1, 0, 1);
+  const auto* record = xiiGpuResidencyManager::GetGpuRecord(handle);
   if (!XII_TEST_BOOL(record != nullptr))
     return;
-  XII_TEST_INT(record->m_uiResidentLodMask, 3);
+  XII_TEST_INT(record->m_uiAvailableLodMask, 3);
   XII_TEST_INT(record->m_Lods[0].m_uiMeshletRangesOrdered, 1);
   XII_TEST_INT(record->m_Lods[1].m_uiMeshletRangesOrdered, 1);
-  xiiGeometryResidencyManager::UnregisterGeometry(handle, 1);
-  xiiGeometryResidencyManager::ProcessStreaming(2, 1, 0);
+  xiiGpuResidencyManager::UnregisterGeometry(handle, 1);
+  xiiGpuResidencyManager::ProcessStreaming(2, 1, 0);
   description.m_Lods[0].m_uiMeshletCount = 1;
-  const auto replacement                 = xiiGeometryResidencyManager::RegisterGeometry(description);
-  XII_SCOPE_EXIT(xiiGeometryResidencyManager::UnregisterGeometry(replacement, 2));
+  const auto replacement                 = xiiGpuResidencyManager::RegisterGeometry(description);
+  XII_SCOPE_EXIT(xiiGpuResidencyManager::UnregisterGeometry(replacement, 2));
   XII_TEST_BOOL(replacement != handle);
-  XII_TEST_BOOL(xiiGeometryResidencyManager::GetPrimitiveRangeMeshletCounts(handle, 24, 12, xiiMakeArrayPtr(counts)).Failed());
-  XII_TEST_RESULT(xiiGeometryResidencyManager::GetPrimitiveRangeMeshletCounts(replacement, 24, 12, xiiMakeArrayPtr(counts)));
+  XII_TEST_BOOL(xiiGpuResidencyManager::GetPrimitiveRangeMeshletCounts(handle, 24, 12, xiiMakeArrayPtr(counts)).Failed());
+  XII_TEST_RESULT(xiiGpuResidencyManager::GetPrimitiveRangeMeshletCounts(replacement, 24, 12, xiiMakeArrayPtr(counts)));
   XII_TEST_INT(counts[0], 0);
 }

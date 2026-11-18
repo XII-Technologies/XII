@@ -93,8 +93,8 @@ XII_CREATE_SIMPLE_TEST(NativeSceneLod, Selection)
   xiiTestNativeVisibility visibilityPipeline;
   if (!XII_TEST_RESULT(visibilityPipeline.Initialize()))
     return;
-  const auto geometryHandle = xiiGeometryResidencyManager::AcquireMeshGeometry(mesh);
-  XII_SCOPE_EXIT(xiiGeometryResidencyManager::ReleaseMeshGeometry(geometryHandle, 8));
+  const auto geometryHandle = xiiGpuResidencyManager::AcquireMeshGeometry(mesh);
+  XII_SCOPE_EXIT(xiiGpuResidencyManager::ReleaseMeshGeometry(geometryHandle, 8));
 
   xiiUInt64 frame = 0;
   auto      run   = [&](xiiUInt32 forcedLod, float bias, xiiUInt32 expectedLod, bool useHiZ, bool missingForced = false, xiiUInt32 missingLod = 0) {
@@ -130,13 +130,13 @@ XII_CREATE_SIMPLE_TEST(NativeSceneLod, Selection)
     XII_TEST_INT(instances[0].m_uiForcedLod, missingForced ? missingLod : forcedLod);
     XII_TEST_FLOAT(instances[0].m_fLodBias, bias, 0);
     const auto completed = gpuFrame.GetCompletedFrame();
-    xiiGeometryResidencyManager::ProcessStreaming(frame, completed, missingForced ? 0 : xiiMath::MaxValue<xiiUInt64>());
+    xiiGpuResidencyManager::ProcessStreaming(frame, completed, missingForced ? 0 : xiiMath::MaxValue<xiiUInt64>());
     auto& graph = graphContext.GetGraph();
     auto& cache = graphContext.GetResourceCache();
     cache.BeginFrame(frame, completed);
     graph.BeginSetup(frame);
-    const auto                  uploaded  = xiiGeometryResidencyManager::AddUploadPass(graph, frame);
-    const auto                  materials = xiiMaterialManager::AddUploadPasses(graph);
+    const auto                  uploaded  = xiiGpuResidencyManager::DeclareUploadPass(graph);
+    const auto                  materials = xiiMaterialManager::DeclareUploadPass(graph);
     xiiRenderGraphTextureHandle hiZ;
     if (useHiZ)
     {
@@ -200,7 +200,7 @@ XII_CREATE_SIMPLE_TEST(NativeSceneLod, Selection)
     if (!xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), graph.GetExportedBuffer(visible.m_hVisibleMeshlets).Borrow(), 0, meshlet))
       return;
     xiiMeshlet selected;
-    if (!xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), xiiGeometryResidencyManager::GetMeshletMetadataBuffer().Borrow(), meshlet.y * sizeof(selected), selected))
+    if (!xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), xiiGpuResidencyManager::GetMeshletMetadataBuffer().Borrow(), meshlet.y * sizeof(selected), selected))
       return;
     XII_TEST_INT(selected.m_uiLodIndex, expectedLod);
     if (forcedLod != xiiInvalidIndex)
@@ -225,7 +225,7 @@ XII_CREATE_SIMPLE_TEST(NativeSceneLod, Selection)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Component forced LOD bypasses coverage, bias and previous history")
   {
     run(1, 16, 1, false);
-    XII_TEST_INT(xiiGeometryResidencyManager::GetGpuRecord(geometryHandle)->m_uiResidentLodMask, 2);
+    XII_TEST_INT(xiiGpuResidencyManager::GetGpuRecord(geometryHandle)->m_uiAvailableLodMask, 2);
     run(1, 0, xiiInvalidIndex, false, true);   // LOD zero is missing: no substitution of resident LOD one.
     run(1, 0, xiiInvalidIndex, true, true, 7); // The geometry has no LOD seven: no invalid residency-bit shift.
     run(0, -16, 0, true);

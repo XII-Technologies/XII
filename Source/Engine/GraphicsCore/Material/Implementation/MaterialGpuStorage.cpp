@@ -184,6 +184,14 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiMaterialGpuStorageStatistics, xiiNoBase, 1, x
 XII_END_STATIC_REFLECTED_TYPE;
 // clang-format on
 
+struct xiiMaterialGpuStorage::UploadSource final : xiiRefCounted
+{
+  xiiMutex               m_Mutex;
+  xiiMaterialGpuStorage* m_pStorage = nullptr;
+};
+
+xiiMaterialGpuStorage::xiiMaterialGpuStorage() = default;
+
 xiiMaterialGpuStorage::~xiiMaterialGpuStorage()
 {
   Shutdown();
@@ -241,14 +249,22 @@ xiiResult xiiMaterialGpuStorage::Initialize(xiiGALDevice* pDevice, const xiiMate
     xiiMemoryUtils::ZeroFill(slot.m_LastUploadedRevision.GetData(), slot.m_LastUploadedRevision.GetCount());
   }
 
+  m_pUploadSource             = XII_DEFAULT_NEW(UploadSource);
+  m_pUploadSource->m_pStorage = this;
   return XII_SUCCESS;
 }
 
 void xiiMaterialGpuStorage::Shutdown()
 {
+  if (auto pSource = m_pUploadSource)
+  {
+    XII_LOCK(pSource->m_Mutex);
+    pSource->m_pStorage = nullptr;
+  }
   XII_LOCK(m_Mutex);
-  m_SetupUploads.Clear();
-  m_uiUploadFrame = xiiMath::MaxValue<xiiUInt64>();
+  m_pUploadSource.Clear();
+  m_DeclaredUploads         = {};
+  m_uiDeclarationGeneration = 0U;
   m_pBuffer.Clear();
   m_pSurfaceBuffer.Clear();
   m_MaterialIds.Clear();
@@ -419,54 +435,64 @@ void xiiMaterialGpuStorage::GatherUploads(xiiUInt64 uiFrameIndex, xiiMaterialGpu
   }
 }
 
-xiiMaterialGpuStorage::UploadHandles xiiMaterialGpuStorage::AddUploadPasses(xiiRenderGraph& graph, xiiUInt64 uiFrameIndex)
+xiiMaterialGpuStorage::UploadHandles xiiMaterialGpuStorage::DeclareUploadPass(xiiRenderGraph& graph)
 {
-  if (m_uiUploadFrame != uiFrameIndex)
+  XII_LOCK(m_Mutex);
+  if (m_pUploadSource == nullptr || !graph.IsDeclaringStructure())
+    return {};
+  if (m_uiDeclarationGeneration == graph.GetStructuralGeneration())
+    return m_DeclaredUploads;
+
+  struct Data
   {
-    m_SetupUploads.Clear();
-    m_uiUploadFrame = uiFrameIndex;
-  }
-  UploadHandles existing;
-  if (m_SetupUploads.TryGetValue(graph.GetFrameGeneration(), existing))
-    return existing;
-  xiiMaterialGpuUploadBatch batch;
-  GatherUploads(uiFrameIndex, batch);
-
-  auto pass = graph.AddPass<UploadPassData>("Material Upload", xiiGALCommandQueueFlags::Transfer, [this](UploadPassData& data, xiiRenderGraphBuilder& builder) {
-      data.m_hBuffer        = builder.ImportBuffer("Material GPU Storage", m_pBuffer, xiiGALResourceStateFlags::ShaderResource);
-      data.m_hBuffer        = builder.WriteBuffer(data.m_hBuffer, xiiGALResourceStateFlags::CopyDestination);
-      data.m_hSurfaceBuffer = builder.ImportBuffer("Surface Material GPU Storage", m_pSurfaceBuffer, xiiGALResourceStateFlags::ShaderResource);
-      data.m_hSurfaceBuffer = builder.WriteBuffer(data.m_hSurfaceBuffer, xiiGALResourceStateFlags::CopyDestination);
-      builder.ExportBuffer(data.m_hBuffer, xiiGALResourceStateFlags::ShaderResource);
-      builder.ExportBuffer(data.m_hSurfaceBuffer, xiiGALResourceStateFlags::ShaderResource);
-      builder.SetPassSideEffects(true);
-      builder.SetPassAllowMerge(false); }, [](const UploadPassData& data, xiiRenderGraphPassContext& context) {
-      xiiGALBuffer* pBuffer        = context.GetBuffer(data.m_hBuffer);
-      xiiGALBuffer* pSurfaceBuffer = context.GetBuffer(data.m_hSurfaceBuffer);
-      for (const xiiMaterialGpuUpload& upload : data.m_Batch.m_Uploads)
+    UploadHandles             m_Handles;
+    xiiMaterialGpuUploadBatch m_Batch;
+  };
+  const auto pass           = graph.AddPass<Data>("Material Upload", xiiGALCommandQueueFlags::Transfer, [&](Data& ref_data, xiiRenderGraphBuilder& builder) {
+    ref_data.m_Handles.m_hParameterData = builder.WriteBuffer(builder.DeclareImportedBuffer("Material GPU Storage", m_pBuffer->GetDescription()), xiiGALResourceStateFlags::CopyDestination);
+    ref_data.m_Handles.m_hSurfaceData = builder.WriteBuffer(builder.DeclareImportedBuffer("Surface Material GPU Storage", m_pSurfaceBuffer->GetDescription()), xiiGALResourceStateFlags::CopyDestination);
+    builder.ExportBuffer(ref_data.m_Handles.m_hParameterData, xiiGALResourceStateFlags::ShaderResource);
+    builder.ExportBuffer(ref_data.m_Handles.m_hSurfaceData, xiiGALResourceStateFlags::ShaderResource);
+    builder.SetPassAllowMerge(false);
+    builder.SetPassFramePreparation([pSource = m_pUploadSource, &ref_data](xiiRenderGraph& ref_graph, const xiiView*, xiiStringBuilder& out_sError) -> xiiResult {
+      XII_LOCK(pSource->m_Mutex);
+      auto* pStorage = pSource->m_pStorage;
+      if (pStorage == nullptr)
       {
-        context.GetCommandList().UpdateBuffer(pBuffer, upload.m_uiDestinationOffset, upload.m_Data);
-        context.GetCommandList().UpdateBuffer(pSurfaceBuffer, upload.m_uiSurfaceDestinationOffset, xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(&upload.m_SurfaceData), sizeof(upload.m_SurfaceData)));
+        out_sError = "The material storage that declared this graph has retired.";
+        return XII_FAILURE;
       }
-
-      data.m_pStorage->MarkUploadsRecorded(data.m_Batch); }, true);
-
-  pass.first->m_Batch    = std::move(batch);
-  pass.first->m_pStorage = this;
-  UploadHandles result;
-  result.m_hParameterData     = pass.first->m_hBuffer;
-  result.m_hSurfaceData       = pass.first->m_hSurfaceBuffer;
-  result.m_uiSurfaceBaseIndex = GetSurfaceBaseIndex(uiFrameIndex);
-  m_SetupUploads.Insert(graph.GetFrameGeneration(), result);
-  return result;
+      const auto& pParameters = pStorage->m_pBuffer;
+      const auto& pSurface = pStorage->m_pSurfaceBuffer;
+      if (ref_graph.BindImportedBuffer(ref_data.m_Handles.m_hParameterData, pParameters, pParameters->GetResourceState()).Failed() ||
+          ref_graph.BindImportedBuffer(ref_data.m_Handles.m_hSurfaceData, pSurface, pSurface->GetResourceState()).Failed())
+      {
+        out_sError = "Could not bind the declared material buffers.";
+        return XII_FAILURE;
+      }
+      pStorage->GatherUploads(ref_graph.GetFrameIndex(), ref_data.m_Batch);
+      return XII_SUCCESS;
+    });
+    builder.SetPassSubmissionCompletion([pSource = m_pUploadSource, &ref_data] {
+      XII_LOCK(pSource->m_Mutex);
+      if (auto* pStorage = pSource->m_pStorage)
+        pStorage->MarkUploadsSubmitted(ref_data.m_Batch);
+    }); }, [](const Data& data, xiiRenderGraphPassContext& context) {
+    auto* pBuffer = context.GetBuffer(data.m_Handles.m_hParameterData);
+    auto* pSurfaceBuffer = context.GetBuffer(data.m_Handles.m_hSurfaceData);
+    auto& commands = context.GetCommandList();
+    for (const auto& upload : data.m_Batch.m_Uploads)
+    {
+      commands.UpdateBuffer(pBuffer, upload.m_uiDestinationOffset, upload.m_Data);
+      const auto surface = xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(&upload.m_SurfaceData), sizeof(upload.m_SurfaceData));
+      commands.UpdateBuffer(pSurfaceBuffer, upload.m_uiSurfaceDestinationOffset, surface);
+    } }, true);
+  m_uiDeclarationGeneration = graph.GetStructuralGeneration();
+  m_DeclaredUploads         = pass.first->m_Handles;
+  return m_DeclaredUploads;
 }
 
-xiiRenderGraphBufferHandle xiiMaterialGpuStorage::AddUploadPass(xiiRenderGraph& graph, xiiUInt64 uiFrameIndex)
-{
-  return AddUploadPasses(graph, uiFrameIndex).m_hParameterData;
-}
-
-void xiiMaterialGpuStorage::MarkUploadsRecorded(const xiiMaterialGpuUploadBatch& batch)
+void xiiMaterialGpuStorage::MarkUploadsSubmitted(const xiiMaterialGpuUploadBatch& batch)
 {
   XII_LOCK(m_Mutex);
   if (m_Description.m_uiFramesInFlight == 0U)

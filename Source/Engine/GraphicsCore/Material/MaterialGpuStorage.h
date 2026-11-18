@@ -67,7 +67,7 @@ class XII_GRAPHICSCORE_DLL xiiMaterialGpuStorage
   XII_DISALLOW_COPY_AND_ASSIGN(xiiMaterialGpuStorage);
 
 public:
-  xiiMaterialGpuStorage() = default;
+  xiiMaterialGpuStorage();
   ~xiiMaterialGpuStorage();
 
   xiiResult Initialize(xiiGALDevice* pDevice, const xiiMaterialGpuStorageDescription& description = {});
@@ -104,11 +104,9 @@ public:
   {
     xiiRenderGraphBufferHandle m_hParameterData;
     xiiRenderGraphBufferHandle m_hSurfaceData;
-    xiiUInt32                  m_uiSurfaceBaseIndex = 0U;
   };
 
-  [[nodiscard]] UploadHandles              AddUploadPasses(xiiRenderGraph& graph, xiiUInt64 uiFrameIndex);
-  [[nodiscard]] xiiRenderGraphBufferHandle AddUploadPass(xiiRenderGraph& graph, xiiUInt64 uiFrameIndex);
+  [[nodiscard]] UploadHandles DeclareUploadPass(xiiRenderGraph& graph);
 
 private:
   struct Slot
@@ -124,20 +122,14 @@ private:
     xiiUInt64        m_uiLastUseFrame = 0ULL;
   };
 
-  struct UploadPassData
-  {
-    xiiRenderGraphBufferHandle m_hBuffer;
-    xiiRenderGraphBufferHandle m_hSurfaceBuffer;
-    xiiMaterialGpuUploadBatch  m_Batch;
-    xiiMaterialGpuStorage*     m_pStorage = nullptr;
-  };
+  struct UploadSource;
 
-  void MarkUploadsRecorded(const xiiMaterialGpuUploadBatch& batch);
+  void MarkUploadsSubmitted(const xiiMaterialGpuUploadBatch& batch);
   bool IsValidHandleLocked(xiiMaterialGpuHandle handle) const;
 
-  // Device uploads are shared by every occurrence in one graph setup.
-  xiiHashTable<xiiUInt64, UploadHandles>  m_SetupUploads;
-  xiiUInt64                               m_uiUploadFrame = xiiMath::MaxValue<xiiUInt64>();
+  xiiSharedPtr<UploadSource>              m_pUploadSource;
+  UploadHandles                           m_DeclaredUploads;
+  xiiUInt64                               m_uiDeclarationGeneration = 0U;
   mutable xiiMutex                        m_Mutex;
   xiiMaterialGpuStorageDescription        m_Description;
   xiiIdTable<xiiMaterialGpuId, xiiUInt32> m_MaterialIds;
