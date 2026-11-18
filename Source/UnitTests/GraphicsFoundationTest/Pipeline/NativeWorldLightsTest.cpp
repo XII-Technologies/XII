@@ -22,7 +22,6 @@
 #include <GraphicsCore/Components/Lights/SphereAreaLightComponent.h>
 #include <GraphicsCore/Components/Lights/SpotLightComponent.h>
 #include <GraphicsCore/Components/Lights/TubeAreaLightComponent.h>
-#include <GraphicsCore/Geometry/GeometryResidency.h>
 #include <GraphicsCore/Lighting/IESProfileResource.h>
 #include <GraphicsCore/Lighting/WorldLightData.h>
 #include <GraphicsCore/Material/MaterialManager.h>
@@ -31,6 +30,7 @@
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
+#include <GraphicsCore/Streaming/GpuResidencyManager.h>
 #include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
 #include <GraphicsFoundationTest/TestingEnvironment/BufferReadback.h>
 #include <GraphicsFoundationTest/TestingEnvironment/RenderGraphTestContext.h>
@@ -177,6 +177,7 @@ XII_CREATE_SIMPLE_TEST(NativeWorldLights, SharedViewsIncrementalUploadAndCompone
   tags.Set(hidden);
   pointObject->SetTags(tags);
   xiiUInt32 originalIdentity = 0, reenabledIdentity = 0, previousProfileRevision = 0;
+  xiiUInt64 uiInitialUploadContract = 0U;
   for (xiiUInt32 phase = 0; phase < 10; ++phase)
   {
     if (phase == 9 && !ReloadLightProfile(profile, true))
@@ -212,6 +213,10 @@ XII_CREATE_SIMPLE_TEST(NativeWorldLights, SharedViewsIncrementalUploadAndCompone
     const auto* lights = module->GetWorldLightData();
     if (!XII_TEST_BOOL(lights != nullptr))
       return;
+    if (phase == 0U)
+      uiInitialUploadContract = lights->GetUploadContractRevision();
+    else
+      XII_TEST_INT(lights->GetUploadContractRevision(), uiInitialUploadContract);
     const xiiUInt32 active = phase == 7 ? 0 : phase == 4 ? 6 :
                                                            7;
     XII_TEST_INT(lights->GetLights().GetCount(), active);
@@ -230,7 +235,7 @@ XII_CREATE_SIMPLE_TEST(NativeWorldLights, SharedViewsIncrementalUploadAndCompone
         XII_TEST_FLOAT(record.m_OrientationRightAndIES.w, i == 1 || i == 2 ? 1.0f : 0.0f, 0.0001f);
         XII_TEST_BOOL(record.m_BoundsCenterAndRadius.IsValid());
       }
-    XII_TEST_BOOL(module->GetGpuInstanceData() == nullptr && !xiiGeometryResidencyManager::IsInitialized() && !xiiMaterialManager::IsInitialized());
+    XII_TEST_BOOL(module->GetGpuInstanceData() == nullptr && !xiiGpuResidencyManager::IsInitialized() && !xiiMaterialManager::IsInitialized());
     XII_TEST_BOOL(module->GetExtractionRequirements() == xiiRenderExtractionCategory::Lights);
     if (phase != 4 && phase != 7)
     {

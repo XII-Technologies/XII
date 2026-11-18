@@ -203,7 +203,18 @@ xiiResult xiiRenderWorldModule::UpdateWorldLights(xiiArrayPtr<xiiRenderData* con
 {
   if (!m_pWorldLights)
     m_pWorldLights = XII_DEFAULT_NEW(xiiWorldLightData, *GetWorld());
-  return m_pWorldLights->UpdateFromExtraction(packets);
+  const xiiUInt64 uiPreviousRevision = m_pWorldLights->GetUploadContractRevision();
+  XII_SUCCEED_OR_RETURN(m_pWorldLights->UpdateFromExtraction(packets));
+  if (m_pWorldLights->GetUploadContractRevision() != uiPreviousRevision)
+  {
+    for (auto it = m_ViewIdTable.GetIterator(); it.IsValid(); ++it)
+    {
+      auto& view = *it.Value().m_pView;
+      if (view.GetRuntimeFeatures().IsSet(xiiRenderPipelineFeature::Lighting))
+        view.InvalidateRenderGraph("World light upload capacity grew");
+    }
+  }
+  return XII_SUCCESS;
 }
 
 xiiResult xiiRenderWorldModule::UpdateGpuInstances(const xiiExtractedRenderData& packets, xiiUInt64 frame, xiiStringBuilder* out_error)

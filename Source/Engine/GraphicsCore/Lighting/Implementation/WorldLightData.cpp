@@ -239,7 +239,6 @@ public:
   };
   struct Slot : public xiiRefCounted
   {
-    xiiUInt64                                    m_Id = nextOwner.Increment();
     xiiSharedPtr<xiiGALBuffer>                   m_Lights, m_Profiles, m_Counts;
     xiiSharedPtr<const WorldLightUploadSnapshot> m_Uploaded;
     xiiUInt64                                    m_LastUse     = 0;
@@ -247,7 +246,10 @@ public:
   };
   explicit xiiWorldLightDataState(const xiiWorld& world) : m_World(world), m_Owner(nextOwner.Increment()), m_Snapshot(XII_DEFAULT_NEW(WorldLightUploadSnapshot)) {}
   const xiiWorld&                              m_World;
-  xiiUInt64                                    m_Owner, m_StatsFrame = 0, m_UploadSetup = 0;
+  xiiUInt64                                    m_Owner, m_StatsFrame = 0, m_UploadStructure = 0;
+  xiiUInt64                                    m_uiUploadContractRevision = 0U;
+  xiiUInt32                                    m_uiLightCapacity          = 1U;
+  xiiUInt32                                    m_uiProfileCapacity        = 1U;
   xiiWorldLightData::UploadHandles             m_Upload;
   xiiDynamicArray<Source>                      m_Sources;
   xiiHashTable<xiiComponentHandle, xiiUInt32>  m_Indices;
@@ -264,6 +266,7 @@ xiiWorldLightData::xiiWorldLightData(const xiiWorld& world) : m_State(XII_DEFAUL
 xiiWorldLightData::~xiiWorldLightData() = default;
 xiiArrayPtr<const xiiGpuLightData>   xiiWorldLightData::GetLights() const { return m_State->m_Snapshot->m_Records.GetArrayPtr().GetSubArray(0, m_State->m_Snapshot->m_Counts.x); }
 const xiiWorldLightUploadStatistics& xiiWorldLightData::GetUploadStatistics() const { return m_State->m_Stats; }
+xiiUInt64                            xiiWorldLightData::GetUploadContractRevision() const { return m_State->m_uiUploadContractRevision; }
 xiiUInt32                            xiiWorldLightData::GetIndex(xiiComponentHandle component) const
 {
   if (!m_State->Live(component))
@@ -378,102 +381,176 @@ xiiResult xiiWorldLightData::UpdateFromExtraction(xiiArrayPtr<xiiRenderData* con
     xiiMemoryUtils::ZeroFill(&empty, 1);
     next->m_Records.PushBack(empty);
   }
+  if (next->m_Records.GetCount() > state.m_uiLightCapacity || next->m_Profiles.GetCount() > state.m_uiProfileCapacity)
+  {
+    const xiiUInt32 uiLightCapacity   = xiiMath::PowerOfTwo_Ceil(xiiMath::Max(state.m_uiLightCapacity, next->m_Records.GetCount()));
+    const xiiUInt32 uiProfileCapacity = xiiMath::PowerOfTwo_Ceil(xiiMath::Max(state.m_uiProfileCapacity, next->m_Profiles.GetCount()));
+    if (uiLightCapacity == 0U || uiProfileCapacity == 0U)
+      return XII_FAILURE;
+
+    state.m_uiLightCapacity   = uiLightCapacity;
+    state.m_uiProfileCapacity = uiProfileCapacity;
+    ++state.m_uiUploadContractRevision;
+  }
   const auto previous = state.m_Snapshot;
   if (previous->m_Counts != next->m_Counts || previous->m_Profiles != next->m_Profiles || previous->m_Records.GetCount() != next->m_Records.GetCount() || !xiiMemoryUtils::IsEqual(previous->m_Records.GetData(), next->m_Records.GetData(), next->m_Records.GetCount()))
     state.m_Snapshot = next;
   return XII_SUCCESS;
 }
 
-xiiWorldLightData::UploadHandles xiiWorldLightData::AddUploadPass(xiiRenderGraph& graph) const
+xiiWorldLightData::UploadHandles xiiWorldLightData::DeclareUploadPass(xiiRenderGraph& graph) const
 {
   auto state = m_State;
-  if (state->m_UploadSetup == graph.GetFrameGeneration())
+  if (state->m_UploadStructure == graph.GetStructuralGeneration())
     return state->m_Upload;
-  xiiUInt64 completed = 0;
-  if (!xiiGALDevice::HasDefaultDevice() || xiiRenderGraphManager::GetFrameCompletion(graph.GetFrameIndex(), completed).Failed())
-    return {};
-  xiiSharedPtr<xiiWorldLightDataState::Slot> slot;
-  for (const auto& candidate : state->m_Slots)
-    if (candidate->m_LastUse == graph.GetFrameIndex() || candidate->m_LastUse <= completed)
-    {
-      slot = candidate;
-      break;
-    }
-  if (!slot)
-  {
-    slot = XII_DEFAULT_NEW(xiiWorldLightDataState::Slot);
-    state->m_Slots.PushBack(slot);
-  }
-  slot->m_LastUse = graph.GetFrameIndex();
-  if (state->m_StatsFrame != graph.GetFrameIndex())
-  {
-    state->m_StatsFrame = graph.GetFrameIndex();
-    state->m_Stats      = {};
-  }
+
   struct Range
   {
     XII_DECLARE_POD_TYPE();
-    xiiUInt32 m_First, m_Count;
+    xiiUInt32 m_uiFirst, m_uiCount;
   };
   struct Data
   {
     UploadHandles                                m_Handles;
-    xiiSharedPtr<const WorldLightUploadSnapshot> m_Snapshot;
+    xiiSharedPtr<const WorldLightUploadSnapshot> m_pSnapshot;
     xiiDynamicArray<Range>                       m_Ranges;
-    xiiSharedPtr<xiiWorldLightDataState::Slot>   m_Slot;
-    bool                                         m_UpdateProfiles = false, m_UpdateCounts = false;
+    xiiSharedPtr<xiiWorldLightDataState::Slot>   m_pSlot;
+    bool                                         m_bUpdateProfiles = false;
+    bool                                         m_bUpdateCounts   = false;
   };
-  const auto allocate = [&](xiiSharedPtr<xiiGALBuffer>& buffer, xiiUInt32 stride, xiiUInt32 count) -> bool {
-    const xiiUInt64 size = xiiUInt64(stride) * xiiMath::Max(count, 1U);
-    if (buffer && buffer->GetDescription().m_uiSize == size)
-      return true;
-    xiiGALBufferCreationDescription description;
-    description.m_uiSize              = size;
-    description.m_uiElementByteStride = stride;
-    description.m_Mode                = xiiGALBufferMode::Structured;
-    description.m_Usage               = xiiGALResourceUsage::Mutable;
-    description.m_BindFlags           = xiiGALBindFlags::ShaderResource;
-    buffer                            = xiiGALDevice::GetDefaultDevice()->CreateBuffer(description);
-    return buffer != nullptr;
-  };
-  const auto oldLights = slot->m_Lights, oldProfiles = slot->m_Profiles, oldCounts = slot->m_Counts;
-  if (!allocate(slot->m_Lights, sizeof(xiiGpuLightData), state->m_Snapshot->m_Records.GetCount()) || !allocate(slot->m_Profiles, sizeof(float), state->m_Snapshot->m_Profiles.GetCount()) || !allocate(slot->m_Counts, sizeof(xiiVec4U32), 1))
-    return {};
-  const bool resetLights = oldLights != slot->m_Lights, resetProfiles = oldProfiles != slot->m_Profiles, resetCounts = oldCounts != slot->m_Counts;
-  const auto pass      = graph.AddPass<Data>("World Light Sparse Upload", xiiGALCommandQueueFlags::Transfer, [&](Data& data, xiiRenderGraphBuilder& builder) {
-    data.m_Slot=slot; data.m_Snapshot=state->m_Snapshot;
-    xiiStringBuilder name;
-    name.SetFormat("World {} Light Records [{}]",state->m_Owner,slot->m_Id);
-    data.m_Handles.m_Lights=builder.ImportBuffer(name,slot->m_Lights,slot->m_Lights->GetResourceState());
-    name.SetFormat("World {} IES Profiles [{}]",state->m_Owner,slot->m_Id);
-    data.m_Handles.m_Profiles=builder.ImportBuffer(name,slot->m_Profiles,slot->m_Profiles->GetResourceState());
-    name.SetFormat("World {} Light Counts [{}]",state->m_Owner,slot->m_Id);
-    data.m_Handles.m_Counts=builder.ImportBuffer(name,slot->m_Counts,slot->m_Counts->GetResourceState());
-    const auto changed=[&](xiiUInt32 i){return resetLights || !slot->m_Initialized || !slot->m_Uploaded || i>=slot->m_Uploaded->m_Records.GetCount() || !xiiMemoryUtils::IsEqual(&slot->m_Uploaded->m_Records[i],&data.m_Snapshot->m_Records[i],1);};
-    for(xiiUInt32 i=0;i<data.m_Snapshot->m_Records.GetCount();)
+  const auto pass          = graph.AddPass<Data>("World Light Sparse Upload", xiiGALCommandQueueFlags::Transfer, [&](Data& ref_data, xiiRenderGraphBuilder& ref_builder) {
+    const auto DeclareBuffer = [&](xiiStringView sName, xiiUInt32 uiStride, xiiUInt32 uiCount) {
+      xiiGALBufferCreationDescription description;
+      description.m_uiSize = xiiUInt64(uiStride) * uiCount;
+      description.m_uiElementByteStride = uiStride;
+      description.m_Mode = xiiGALBufferMode::Structured;
+      description.m_Usage = xiiGALResourceUsage::Mutable;
+      description.m_BindFlags = xiiGALBindFlags::ShaderResource;
+      xiiStringBuilder name;
+      name.SetFormat("World {} {}", state->m_Owner, sName);
+      return ref_builder.WriteBuffer(ref_builder.DeclareImportedBuffer(name, description), xiiGALResourceStateFlags::CopyDestination);
+    };
+    ref_data.m_Handles.m_Lights = DeclareBuffer("Light Records", sizeof(xiiGpuLightData), state->m_uiLightCapacity);
+    ref_data.m_Handles.m_Profiles = DeclareBuffer("IES Profiles", sizeof(float), state->m_uiProfileCapacity);
+    ref_data.m_Handles.m_Counts = DeclareBuffer("Light Counts", sizeof(xiiVec4U32), 1U);
+
+    ref_builder.SetPassFramePreparation([state, &ref_data](xiiRenderGraph& ref_graph, const xiiView*, xiiStringBuilder& ref_error) {
+      xiiUInt64 uiCompleted = 0U;
+      const xiiUInt64 uiFrame = ref_graph.GetFrameIndex();
+      if (!xiiGALDevice::HasDefaultDevice() || xiiRenderGraphManager::GetFrameCompletion(uiFrame, uiCompleted).Failed())
+      {
+        ref_error = "World light uploads require an active shared GPU frame.";
+        return XII_FAILURE;
+      }
+
+      const auto pDevice = xiiGALDevice::GetDefaultDevice();
+      const auto pSnapshot = state->m_Snapshot;
+      const auto& lights = *ref_graph.GetBufferDescription(ref_data.m_Handles.m_Lights);
+      const auto& profiles = *ref_graph.GetBufferDescription(ref_data.m_Handles.m_Profiles);
+      const auto& counts = *ref_graph.GetBufferDescription(ref_data.m_Handles.m_Counts);
+      if (pSnapshot->m_Records.GetCount() > lights.m_uiSize / sizeof(xiiGpuLightData) ||
+          pSnapshot->m_Profiles.GetCount() > profiles.m_uiSize / sizeof(float))
+      {
+        ref_error = "The current world light snapshot exceeds its declared upload capacity.";
+        return XII_FAILURE;
+      }
+
+      xiiSharedPtr<xiiWorldLightDataState::Slot> pSlot;
+      for (const auto& pCandidate : state->m_Slots)
+      {
+        if (pCandidate->m_LastUse == uiFrame || pCandidate->m_LastUse <= uiCompleted)
+        {
+          pSlot = pCandidate;
+          break;
+        }
+      }
+      if (pSlot == nullptr)
+      {
+        pSlot = XII_DEFAULT_NEW(xiiWorldLightDataState::Slot);
+        state->m_Slots.PushBack(pSlot);
+      }
+      const auto ResolveBuffer = [&](const xiiSharedPtr<xiiGALBuffer>& pBuffer, const xiiGALBufferCreationDescription& description) {
+        if (pBuffer != nullptr && pBuffer->GetDescription() == description)
+          return pBuffer;
+        return pDevice->CreateBuffer(description);
+      };
+      const auto pLights = ResolveBuffer(pSlot->m_Lights, lights);
+      const auto pProfiles = ResolveBuffer(pSlot->m_Profiles, profiles);
+      const auto pCounts = ResolveBuffer(pSlot->m_Counts, counts);
+      if (pLights == nullptr || pProfiles == nullptr || pCounts == nullptr ||
+          ref_graph.BindImportedBuffer(ref_data.m_Handles.m_Lights, pLights, pLights->GetResourceState()).Failed() ||
+          ref_graph.BindImportedBuffer(ref_data.m_Handles.m_Profiles, pProfiles, pProfiles->GetResourceState()).Failed() ||
+          ref_graph.BindImportedBuffer(ref_data.m_Handles.m_Counts, pCounts, pCounts->GetResourceState()).Failed())
+      {
+        ref_error = "Could not allocate or bind the declared world light buffers.";
+        return XII_FAILURE;
+      }
+
+      const auto pUploaded = pSlot->m_Initialized ? pSlot->m_Uploaded : nullptr;
+      const bool bResetLights = pSlot->m_Lights != pLights;
+      ref_data.m_bUpdateProfiles = pSlot->m_Profiles != pProfiles || pUploaded == nullptr || pUploaded->m_Profiles != pSnapshot->m_Profiles;
+      ref_data.m_bUpdateCounts = pSlot->m_Counts != pCounts || pUploaded == nullptr || pUploaded->m_Counts != pSnapshot->m_Counts;
+      ref_data.m_Ranges.Clear();
+      const auto Changed = [&](xiiUInt32 uiIndex) {
+        return bResetLights || pUploaded == nullptr || uiIndex >= pUploaded->m_Records.GetCount() ||
+               !xiiMemoryUtils::IsEqual(&pUploaded->m_Records[uiIndex], &pSnapshot->m_Records[uiIndex], 1U);
+      };
+      for (xiiUInt32 uiIndex = 0U; uiIndex < pSnapshot->m_Records.GetCount();)
+      {
+        if (!Changed(uiIndex))
+        {
+          ++uiIndex;
+          continue;
+        }
+        const xiiUInt32 uiFirst = uiIndex++;
+        while (uiIndex < pSnapshot->m_Records.GetCount() && Changed(uiIndex))
+          ++uiIndex;
+        ref_data.m_Ranges.PushBack({uiFirst, uiIndex - uiFirst});
+      }
+
+      if (bResetLights || pSlot->m_Profiles != pProfiles || pSlot->m_Counts != pCounts)
+        pSlot->m_Initialized = false;
+      pSlot->m_Lights = pLights;
+      pSlot->m_Profiles = pProfiles;
+      pSlot->m_Counts = pCounts;
+      pSlot->m_LastUse = uiFrame;
+      ref_data.m_pSnapshot = pSnapshot;
+      ref_data.m_pSlot = pSlot;
+      if (state->m_StatsFrame != uiFrame)
+      {
+        state->m_StatsFrame = uiFrame;
+        state->m_Stats = {};
+      }
+      return XII_SUCCESS;
+    }); }, [state](const Data& data, xiiRenderGraphPassContext& execute) {
+    auto& commands = execute.GetCommandList();
+    for (const auto& range : data.m_Ranges)
     {
-      if(!changed(i)) { ++i; continue; }
-      const auto first=i++; while(i<data.m_Snapshot->m_Records.GetCount() && changed(i)) ++i;
-      data.m_Ranges.PushBack({first,i-first});
+      const auto bytes = xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(data.m_pSnapshot->m_Records.GetData() + range.m_uiFirst), range.m_uiCount * sizeof(xiiGpuLightData));
+      commands.UpdateBuffer(execute.GetBuffer(data.m_Handles.m_Lights), range.m_uiFirst * sizeof(xiiGpuLightData), bytes);
+      state->m_Stats.m_uiBytesUploaded += bytes.GetCount();
+      ++state->m_Stats.m_uiRanges;
     }
-    data.m_UpdateProfiles=resetProfiles || !slot->m_Initialized || !slot->m_Uploaded || slot->m_Uploaded->m_Profiles!=data.m_Snapshot->m_Profiles;
-    data.m_UpdateCounts=resetCounts || !slot->m_Initialized || !slot->m_Uploaded || slot->m_Uploaded->m_Counts!=data.m_Snapshot->m_Counts;
-    if(!data.m_Ranges.IsEmpty()) data.m_Handles.m_Lights=builder.WriteBuffer(data.m_Handles.m_Lights,xiiGALResourceStateFlags::CopyDestination);
-    if(data.m_UpdateProfiles) data.m_Handles.m_Profiles=builder.WriteBuffer(data.m_Handles.m_Profiles,xiiGALResourceStateFlags::CopyDestination);
-    if(data.m_UpdateCounts) data.m_Handles.m_Counts=builder.WriteBuffer(data.m_Handles.m_Counts,xiiGALResourceStateFlags::CopyDestination);
-    builder.SetPassSideEffects(!data.m_Ranges.IsEmpty() || data.m_UpdateProfiles || data.m_UpdateCounts); }, [state](const Data& data, xiiRenderGraphPassContext& execute) {
-    auto& commands=execute.GetCommandList();
-    for(const auto& range:data.m_Ranges)
+    if (data.m_bUpdateProfiles)
     {
-      commands.UpdateBuffer(execute.GetBuffer(data.m_Handles.m_Lights),range.m_First*sizeof(xiiGpuLightData),xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(data.m_Snapshot->m_Records.GetData()+range.m_First),range.m_Count*sizeof(xiiGpuLightData)));
-      state->m_Stats.m_uiBytesUploaded+=range.m_Count*sizeof(xiiGpuLightData); ++state->m_Stats.m_uiRanges;
+      const auto bytes = data.m_pSnapshot->m_Profiles.GetByteArrayPtr();
+      commands.UpdateBuffer(execute.GetBuffer(data.m_Handles.m_Profiles), 0U, bytes);
+      state->m_Stats.m_uiBytesUploaded += bytes.GetCount();
+      ++state->m_Stats.m_uiRanges;
     }
-    if(data.m_UpdateProfiles) { commands.UpdateBuffer(execute.GetBuffer(data.m_Handles.m_Profiles),0,xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(data.m_Snapshot->m_Profiles.GetData()),data.m_Snapshot->m_Profiles.GetCount()*sizeof(float))); state->m_Stats.m_uiBytesUploaded+=data.m_Snapshot->m_Profiles.GetCount()*sizeof(float); ++state->m_Stats.m_uiRanges; }
-    if(data.m_UpdateCounts) { commands.UpdateBuffer(execute.GetBuffer(data.m_Handles.m_Counts),0,xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(&data.m_Snapshot->m_Counts),sizeof(data.m_Snapshot->m_Counts))); state->m_Stats.m_uiBytesUploaded+=sizeof(data.m_Snapshot->m_Counts); ++state->m_Stats.m_uiRanges; }
-    if(!data.m_Ranges.IsEmpty() || data.m_UpdateProfiles || data.m_UpdateCounts) ++state->m_Stats.m_uiUploadPasses;
-    data.m_Slot->m_Uploaded=data.m_Snapshot; data.m_Slot->m_Initialized=true; });
-  state->m_UploadSetup = graph.GetFrameGeneration();
-  state->m_Upload      = pass.first->m_Handles;
+    if (data.m_bUpdateCounts)
+    {
+      const auto bytes = xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(&data.m_pSnapshot->m_Counts), sizeof(data.m_pSnapshot->m_Counts));
+      commands.UpdateBuffer(execute.GetBuffer(data.m_Handles.m_Counts), 0U, bytes);
+      state->m_Stats.m_uiBytesUploaded += bytes.GetCount();
+      ++state->m_Stats.m_uiRanges;
+    }
+    if (!data.m_Ranges.IsEmpty() || data.m_bUpdateProfiles || data.m_bUpdateCounts)
+      ++state->m_Stats.m_uiUploadPasses;
+    data.m_pSlot->m_Uploaded = data.m_pSnapshot;
+    data.m_pSlot->m_Initialized = true; });
+  state->m_UploadStructure = graph.GetStructuralGeneration();
+  state->m_Upload          = pass.first->m_Handles;
   return state->m_Upload;
 }
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Lighting_Implementation_WorldLightData);
