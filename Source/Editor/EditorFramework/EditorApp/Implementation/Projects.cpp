@@ -8,6 +8,7 @@
 #include <EditorFramework/CodeGen/CppProject.h>
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
 #include <EditorFramework/Settings/EditorPreferences.h>
+#include <Foundation/Configuration/Plugin.h>
 #include <Foundation/IO/FileSystem/DeferredFileWriter.h>
 #include <Foundation/IO/MemoryStream.h>
 #include <Foundation/Utilities/CommandLineUtils.h>
@@ -342,6 +343,12 @@ xiiStatus xiiQtEditorApp::InitializeProject()
 
   UpdateStartupProgress(QStringLiteral("Registering project asset types"), QStringLiteral("Loading asset profiles and cached file metadata"));
   XII_SUCCEED_OR_RETURN(xiiAssetCurator::GetSingleton()->StartInitialize(m_FileSystemConfig));
+  if (!IsInHeadlessMode() && !xiiQtUiServices::IsHeadless())
+  {
+    // The first viewport uses this plugin for presentation. Load it before IPC negotiation
+    // so creating that viewport cannot invalidate the active document and redraw schemas.
+    xiiPlugin::LoadPlugin("xiiGraphicsVulkan", xiiPluginLoadFlags::PluginIsOptional).IgnoreResult();
+  }
   UpdateStartupProgress(QStringLiteral("Initializing the rendering process"), QStringLiteral("Loading project plugins and configuring the engine"));
   if (xiiEditorEngineProcessConnection::GetSingleton()->RestartProcess().Failed())
   {
