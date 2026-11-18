@@ -207,16 +207,12 @@ void xiiQtMemoryWidget::UpdateStats()
   {
     m_LastUsedMemoryStored = xiiTime::Now();
 
-    xiiUInt64 uiSumMemory = 0;
-
     for (auto it = m_AllocatorData.GetIterator(); it.IsValid(); ++it)
     {
       // sometimes no data arrives in time (game is too slow)
       // in this case simply assume the stats have not changed
       if (!it.Value().m_bReceivedData && !it.Value().m_UsedMemory.IsEmpty())
         it.Value().m_uiMaxUsedMemoryRecently = it.Value().m_UsedMemory.PeekBack();
-
-      uiSumMemory += it.Value().m_uiMaxUsedMemoryRecently;
 
       it.Value().m_UsedMemory.PushBack(it.Value().m_uiMaxUsedMemoryRecently);
 
@@ -226,10 +222,6 @@ void xiiQtMemoryWidget::UpdateStats()
   }
   else
     return;
-
-  QPainterPath pp[s_uiMaxColors];
-
-  xiiUInt32 uiMaxSamples = 0;
 
   xiiUInt64 uiUsedMemory    = 0;
   xiiUInt64 uiLiveAllocs    = 0;
@@ -255,12 +247,6 @@ void xiiQtMemoryWidget::UpdateStats()
     if (it.Value().m_UsedMemory.IsEmpty() || !it.Value().m_bDisplay)
       continue;
 
-    xiiUInt64 uiMinUsedMemoryThis = 0xFFFFFFFFFFFFFFFFull;
-    xiiUInt64 uiMaxUsedMemoryThis = 0;
-
-    const xiiUInt32 uiColorPath = it.Value().m_uiColor % s_uiMaxColors;
-    XII_ASSERT_DEV(uiColorPath < s_uiMaxColors, "Invalid color index: {}", uiColorPath);
-
     uiUsedMemory += it.Value().m_UsedMemory.PeekBack();
     uiLiveAllocs += it.Value().m_uiLiveAllocs;
     uiAllocs += it.Value().m_uiAllocs;
@@ -269,69 +255,99 @@ void xiiQtMemoryWidget::UpdateStats()
     if (it.Value().m_UsedMemory.GetCount() > m_uiMaxSamples)
       it.Value().m_UsedMemory.PopFront(it.Value().m_UsedMemory.GetCount() - m_uiMaxSamples);
 
-    uiMaxSamples = xiiMath::Max(uiMaxSamples, xiiMath::Min(m_uiDisplaySamples, it.Value().m_UsedMemory.GetCount()));
+    const xiiUInt32 uiSampleCount = xiiMath::Min(m_uiDisplaySamples, it.Value().m_UsedMemory.GetCount());
+    const xiiUInt32 uiFirstSample = it.Value().m_UsedMemory.GetCount() - uiSampleCount;
+    const xiiUInt32 uiStartPos    = m_uiDisplaySamples - uiSampleCount;
+    const bool      bTopLevel     = it.Value().m_uiParentId == xiiInvalidIndex;
 
-    const xiiUInt32 uiFirstSample = (it.Value().m_UsedMemory.GetCount() <= m_uiDisplaySamples) ? 0 : (it.Value().m_UsedMemory.GetCount() - m_uiDisplaySamples);
-    const xiiUInt32 uiStartPos    = (it.Value().m_UsedMemory.GetCount() >= m_uiDisplaySamples) ? 0 : (m_uiDisplaySamples - it.Value().m_UsedMemory.GetCount());
-
-    pp[uiColorPath].moveTo(QPointF(uiStartPos, it.Value().m_UsedMemory[uiFirstSample]));
-    uiMinUsedMemoryThis = xiiMath::Min(uiMinUsedMemoryThis, it.Value().m_UsedMemory[uiFirstSample]);
-    uiMaxUsedMemoryThis = xiiMath::Max(uiMaxUsedMemoryThis, it.Value().m_UsedMemory[uiFirstSample]);
-
-    if (it.Value().m_uiParentId == xiiInvalidIndex) // only accumulate top level allocators
+    if (bTopLevel)
     {
       m_Accu.m_uiAllocs += it.Value().m_uiAllocs;
       m_Accu.m_uiDeallocs += it.Value().m_uiDeallocs;
       m_Accu.m_uiLiveAllocs += it.Value().m_uiLiveAllocs;
-
-      m_Accu.m_UsedMemory[uiStartPos] += it.Value().m_UsedMemory[uiFirstSample];
       m_Accu.m_uiMaxUsedMemory += it.Value().m_uiMaxUsedMemory;
     }
 
-    for (xiiUInt32 i = uiFirstSample + 1; i < it.Value().m_UsedMemory.GetCount(); ++i)
+    for (xiiUInt32 i = 0; i < uiSampleCount; ++i)
     {
-      pp[uiColorPath].lineTo(QPointF(uiStartPos + i - uiFirstSample, it.Value().m_UsedMemory[i]));
+      const xiiUInt64 uiBytes = it.Value().m_UsedMemory[uiFirstSample + i];
+      uiMinUsedMemory         = xiiMath::Min(uiMinUsedMemory, uiBytes);
+      uiMaxUsedMemory         = xiiMath::Max(uiMaxUsedMemory, uiBytes);
 
-      uiMinUsedMemoryThis = xiiMath::Min(uiMinUsedMemoryThis, it.Value().m_UsedMemory[i]);
-      uiMaxUsedMemoryThis = xiiMath::Max(uiMaxUsedMemoryThis, it.Value().m_UsedMemory[i]);
-
-      if (it.Value().m_uiParentId == xiiInvalidIndex)
+      if (bTopLevel)
       {
-        m_Accu.m_UsedMemory[uiStartPos + i - uiFirstSample] += it.Value().m_UsedMemory[i];
+        m_Accu.m_UsedMemory[uiStartPos + i] += uiBytes;
       }
-
-      if (m_Accu.m_bDisplay)
-        uiMaxUsedMemoryThis = xiiMath::Max(uiMaxUsedMemoryThis, m_Accu.m_UsedMemory[uiStartPos + i - uiFirstSample]);
     }
-
-    uiMinUsedMemory = xiiMath::Min(uiMinUsedMemory, uiMinUsedMemoryThis);
-    uiMaxUsedMemory = xiiMath::Max(uiMaxUsedMemory, uiMaxUsedMemoryThis);
   }
-
-  QPainterPath pMax;
 
   if (m_Accu.m_bDisplay)
   {
-    pMax.moveTo(QPointF(0, m_Accu.m_UsedMemory[0]));
-
-    for (xiiUInt32 i = 1; i < m_Accu.m_UsedMemory.GetCount(); ++i)
-      pMax.lineTo(QPointF(i, m_Accu.m_UsedMemory[i]));
+    for (xiiUInt64 uiBytes : m_Accu.m_UsedMemory)
+    {
+      uiMinUsedMemory = xiiMath::Min(uiMinUsedMemory, uiBytes);
+      uiMaxUsedMemory = xiiMath::Max(uiMaxUsedMemory, uiBytes);
+    }
   }
 
-  m_pPathMax->setPath(pMax);
-
-  for (xiiUInt32 i = 0; i < s_uiMaxColors; ++i)
-    m_pPath[i]->setPath(pp[i]);
-
-  // round min and max to some power of two
+  uiMinUsedMemory = xiiMath::Min(uiMinUsedMemory, uiMaxUsedMemory);
+  if (uiMinUsedMemory > 0)
   {
     uiMinUsedMemory = xiiMath::PowerOfTwo_Floor(uiMinUsedMemory);
+  }
+  if (uiMaxUsedMemory > 0 && uiMaxUsedMemory <= (xiiUInt64{1} << 63))
+  {
     uiMaxUsedMemory = xiiMath::PowerOfTwo_Ceil(uiMaxUsedMemory);
   }
 
+  // Qt uses integer geometry when fitting the view. Keep byte counts out of scene coordinates.
+  const double fRange        = static_cast<double>(xiiMath::Max(uiMaxUsedMemory - uiMinUsedMemory, xiiUInt64{1}));
+  const auto   appendSamples = [this, uiMinUsedMemory, fRange](QPainterPath& ref_path, const xiiDeque<xiiUInt64>& samples) {
+    const xiiUInt32 uiSampleCount = xiiMath::Min(m_uiDisplaySamples, samples.GetCount());
+    const xiiUInt32 uiFirstSample = samples.GetCount() - uiSampleCount;
+    const xiiUInt32 uiStartPos    = m_uiDisplaySamples - uiSampleCount;
+
+    for (xiiUInt32 i = 0; i < uiSampleCount; ++i)
+    {
+      const double  fHeight = static_cast<double>(samples[uiFirstSample + i] - uiMinUsedMemory) / fRange;
+      const QPointF point(uiStartPos + i, fHeight);
+      if (i == 0)
+      {
+        ref_path.moveTo(point);
+      }
+      else
+      {
+        ref_path.lineTo(point);
+      }
+    }
+  };
+
+  QPainterPath accumulatedPath;
+  if (m_Accu.m_bDisplay)
   {
-    UsedMemoryView->setSceneRect(QRectF(0, uiMinUsedMemory, m_uiDisplaySamples - 1, uiMaxUsedMemory));
-    UsedMemoryView->fitInView(QRectF(0, uiMinUsedMemory, m_uiDisplaySamples - 1, uiMaxUsedMemory));
+    appendSamples(accumulatedPath, m_Accu.m_UsedMemory);
+  }
+  m_pPathMax->setPath(accumulatedPath);
+
+  QPainterPath allocatorPaths[s_uiMaxColors];
+  for (const auto& entry : m_AllocatorData)
+  {
+    const auto& data = entry.Value();
+    if (data.m_bDisplay)
+    {
+      appendSamples(allocatorPaths[data.m_uiColor % s_uiMaxColors], data.m_UsedMemory);
+    }
+  }
+
+  for (xiiUInt32 i = 0; i < s_uiMaxColors; ++i)
+  {
+    m_pPath[i]->setPath(allocatorPaths[i]);
+  }
+
+  {
+    const QRectF plotRect(0, 0, m_uiDisplaySamples - 1, 1);
+    UsedMemoryView->setSceneRect(plotRect);
+    UsedMemoryView->fitInView(plotRect, Qt::IgnoreAspectRatio);
 
     xiiStringBuilder s;
 
