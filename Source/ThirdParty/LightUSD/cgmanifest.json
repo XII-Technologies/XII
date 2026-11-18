@@ -1,0 +1,14 @@
+{
+  "Registrations": [
+    {
+      "component": {
+        "type": "git",
+        "git": {
+          "Name": "LightUSD",
+          "repositoryUrl": "https://github.com/lighttransport/LightUSD",
+          "commitHash": "a596dad9366a079892de8b003a7793188b34551a"
+        }
+      }
+    }
+  ]
+}
