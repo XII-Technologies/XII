@@ -165,7 +165,7 @@ XII_CREATE_SIMPLE_TEST(RenderGraphResources, HandleRetirementDuringFrame)
   xiiStartup::StartupHighLevelSystems();
   XII_SCOPE_EXIT(environment.GetDevice()->WaitIdle(); xiiStartup::ShutdownHighLevelSystems(); xiiGALDevice::SetDefaultDevice(nullptr); environment.Shutdown());
 
-  bool                                       destroyed = false;
+  bool                                             destroyed = false;
   const xiiRenderGraphManager::DeclarationDelegate build     = [&](xiiRenderGraph& graph, xiiRenderGraphBlackboard&, const xiiView*) -> xiiResult {
     struct Data
     {

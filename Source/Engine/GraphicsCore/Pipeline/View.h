@@ -220,7 +220,7 @@ public:
   /// An invalid handle restores ordinary camera selection by usage hint.
   void SetRenderConfigurationCamera(const xiiComponentHandle& hCamera) { m_hRenderConfigurationCamera = hCamera; }
 
-  using RenderGraphBuilder = xiiDelegate<void(xiiView&, xiiRenderGraph&, xiiRenderGraphBlackboard&)>;
+  using RenderGraphBuilder     = xiiDelegate<void(xiiView&, xiiRenderGraph&, xiiRenderGraphBlackboard&)>;
   using RenderGraphPreparation = xiiDelegate<xiiResult(xiiView&, xiiRenderGraph&, xiiRenderGraphBlackboard&)>;
   /// Declares the custom graph once. Refresh imported resources and other dynamic inputs in prepare.
   void                      SetRenderGraphBuilder(RenderGraphBuilder builder, RenderGraphPreparation prepare = {});
@@ -285,12 +285,12 @@ private:
 
   xiiHashedString m_sName;
 
-  xiiUInt32          m_uiRenderGraphBuilderVersion = 0;
-  bool               m_bRenderEnabled              = true;
-  xiiCamera*         m_pCamera                     = nullptr;
-  const xiiCamera*   m_pCullingCamera              = nullptr;
-  const xiiCamera*   m_pLodCamera                  = nullptr;
-  RenderGraphBuilder m_RenderGraphBuilder;
+  xiiUInt32              m_uiRenderGraphBuilderVersion = 0;
+  bool                   m_bRenderEnabled              = true;
+  xiiCamera*             m_pCamera                     = nullptr;
+  const xiiCamera*       m_pCullingCamera              = nullptr;
+  const xiiCamera*       m_pLodCamera                  = nullptr;
+  RenderGraphBuilder     m_RenderGraphBuilder;
   RenderGraphPreparation m_RenderGraphPreparation;
 
   mutable xiiUInt32 m_uiLastCameraSettingsModification    = 0;

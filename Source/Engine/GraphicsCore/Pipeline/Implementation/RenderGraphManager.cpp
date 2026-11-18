@@ -28,8 +28,8 @@ class xiiRenderGraphManagerState
 public:
   struct Entry
   {
-    xiiUniquePtr<xiiRenderGraph>         m_pGraph;
-    xiiRenderGraphBlackboard             m_Blackboard;
+    xiiUniquePtr<xiiRenderGraph>               m_pGraph;
+    xiiRenderGraphBlackboard                   m_Blackboard;
     xiiRenderGraphManager::DeclarationDelegate m_DeclarationDelegate;
     xiiRenderGraphManager::FrameDelegate       m_PrepareDelegate;
     xiiHashedString                            m_sPendingInvalidation = xiiMakeHashedString("Initial declaration");

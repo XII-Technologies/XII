@@ -150,7 +150,7 @@ xiiRenderGraphTextureHandle xiiRenderGraphBuilder::DeclareImportedTexture(xiiStr
   const auto qualified              = m_Graph.QualifyResourceName(sName);
   sName                             = qualified;
   const auto contract               = GetImportContract(description);
-  xiiUInt32 uiTextureResourceIndex = xiiInvalidIndex;
+  xiiUInt32  uiTextureResourceIndex = xiiInvalidIndex;
   if (!m_Graph.m_ResourceNameIndex.TryGetValue(xiiTempHashedString(sName), uiTextureResourceIndex))
   {
     uiTextureResourceIndex               = m_Graph.m_Resources.GetCount();
@@ -354,10 +354,10 @@ xiiRenderGraphBufferHandle xiiRenderGraphBuilder::DeclareBuffer(xiiStringView sN
 
 xiiRenderGraphBufferHandle xiiRenderGraphBuilder::DeclareImportedBuffer(xiiStringView sName, const xiiGALBufferCreationDescription& description)
 {
-  const auto qualified = m_Graph.QualifyResourceName(sName);
+  const auto qualified             = m_Graph.QualifyResourceName(sName);
   sName                            = qualified;
   const auto contract              = GetImportContract(description);
-  xiiUInt32 uiBufferResourceIndex = xiiInvalidIndex;
+  xiiUInt32  uiBufferResourceIndex = xiiInvalidIndex;
   if (!m_Graph.m_ResourceNameIndex.TryGetValue(xiiTempHashedString(sName), uiBufferResourceIndex))
   {
     uiBufferResourceIndex                = m_Graph.m_Resources.GetCount();
@@ -712,7 +712,7 @@ void xiiRenderGraph::EndSetup()
 {
   XII_ASSERT_DEV(m_bIsSetupOpen, "EndSetup called without a matching BeginSetup.");
 
-  m_bIsSetupOpen = false;
+  m_bIsSetupOpen                     = false;
   m_Statistics.m_StructuralBuildTime = xiiTime::Now() - m_DeclarationStart;
 }
 
@@ -733,7 +733,7 @@ xiiResult xiiRenderGraph::Compile(const xiiRenderGraphCompileSettings& settings,
   {
     m_sInvalidationReason.Assign("Compile settings changed");
   }
-  m_bIsCompiled = false;
+  m_bIsCompiled                  = false;
   const xiiTime compilationStart = xiiTime::Now();
   XII_SCOPE_EXIT(m_Statistics.m_CompilationTime = xiiTime::Now() - compilationStart; if (!m_bIsCompiled) xiiRenderGraphDebug::s_ExecutionEvents.Broadcast({*this, nullptr, m_Frame.m_uiIndex, false, out_pError ? out_pError->GetView() : xiiStringView{}}));
 
@@ -743,7 +743,7 @@ xiiResult xiiRenderGraph::Compile(const xiiRenderGraphCompileSettings& settings,
   m_Plan.m_QueueSubmissions.Clear();
   m_Plan.m_ResourceDescriptions.Clear();
   m_Plan.m_ResourceVersions.Clear();
-  m_Statistics.m_uiRegisteredPassCount = m_Passes.GetCount();
+  m_Statistics.m_uiRegisteredPassCount   = m_Passes.GetCount();
   m_Statistics.m_uiCompiledPassCount     = 0U;
   m_Statistics.m_uiCompiledResourceCount = 0U;
   m_Statistics.m_uiCulledPassCount       = 0U;
@@ -785,13 +785,13 @@ xiiResult xiiRenderGraph::Compile(const xiiRenderGraphCompileSettings& settings,
   // The attachment layout is static. Resolve framebuffer bindings during execution.
   PhaseF_RenderPassMerging();
 
-  m_bIsCompiled                         = true;
+  m_bIsCompiled = true;
   ++m_Statistics.m_uiPlanGeneration;
   m_Statistics.m_uiCompiledResourceCount = m_Resources.GetCount();
   m_Statistics.m_uiCompiledPassCount     = m_Plan.m_CompiledPasses.GetCount() - m_Statistics.m_uiCulledPassCount;
   m_Statistics.m_uiTotalBarrierCount     = m_Plan.m_Barriers.GetCount();
   m_Statistics.m_uiQueueSubmissionCount  = m_Plan.m_QueueSubmissions.GetCount();
-  m_LastCompileSettings                 = settings;
+  m_LastCompileSettings                  = settings;
 
   for (const xiiRenderGraphBarrierDescription& barrier : m_Plan.m_Barriers)
   {
@@ -1478,7 +1478,7 @@ void xiiRenderGraph::PhaseE_MultiQueueScheduling(const xiiDynamicArray<xiiUInt32
   {
     for (xiiUInt32 uiCompiledIndex : m_Plan.m_QueueSubmissions[uiSubmissionIndex].m_PassOrder)
     {
-      compiledToSubmissionIndex[uiCompiledIndex]                           = uiSubmissionIndex;
+      compiledToSubmissionIndex[uiCompiledIndex]                                  = uiSubmissionIndex;
       passToCompiledIndex[m_Plan.m_CompiledPasses[uiCompiledIndex].m_uiPassIndex] = uiCompiledIndex;
     }
   }
@@ -1748,7 +1748,7 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
   renderPassBindings.SetCount(m_Plan.m_MergeGroups.GetCount());
 
   // Resolve all transient and imported resources for this frame's execution.
-  const xiiUInt32                              uiResourceCount = m_Resources.GetCount();
+  const xiiUInt32                                uiResourceCount = m_Resources.GetCount();
   xiiTemporaryArray<xiiSharedPtr<xiiGALTexture>> resolvedTextures;
   xiiTemporaryArray<xiiSharedPtr<xiiGALBuffer>>  resolvedBuffers;
   resolvedTextures.SetCount(uiResourceCount);
@@ -2221,7 +2221,7 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
             transitionDescription.m_pResource = resolvedBuffers[barrier.m_uiResourceIndex];
           }
 
-          transitionDescription.m_OldState          = barrier.m_BeforeState;
+          transitionDescription.m_OldState = barrier.m_BeforeState;
           if (barrier.m_BeforeState == xiiGALResourceStateFlags::Unknown && m_Resources[barrier.m_uiResourceIndex].m_bIsImported)
           {
             const ImportedResource* pBinding = m_Frame.m_Imports.GetValue(barrier.m_uiResourceIndex);
@@ -2469,7 +2469,7 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
     ++m_Statistics.m_uiPlanReuseCount;
   }
   m_uiLastExecutedPlan = GetPlanGeneration();
-  bExecutionSucceeded = true;
+  bExecutionSucceeded  = true;
   return XII_SUCCESS;
 }
 

@@ -134,7 +134,7 @@ XII_ALWAYS_INLINE void xiiView::SetViewport(const xiiRectFloat& viewport)
 
 XII_ALWAYS_INLINE void xiiView::SetRenderGraphBuilder(RenderGraphBuilder builder, RenderGraphPreparation prepare)
 {
-  m_RenderGraphBuilder = std::move(builder);
+  m_RenderGraphBuilder     = std::move(builder);
   m_RenderGraphPreparation = std::move(prepare);
   ++m_uiRenderGraphBuilderVersion;
   InvalidateRenderGraph("View graph builder replaced");

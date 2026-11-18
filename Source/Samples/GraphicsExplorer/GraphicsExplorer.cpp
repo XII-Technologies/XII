@@ -482,7 +482,6 @@ private:
     textureDescription.m_BindFlags = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::DepthStencil;
 
     data.m_hDepthTexture = builder.WriteTexture("DepthStencil", textureDescription, xiiGALResourceStateFlags::DepthWrite);
-
   }
 
   void ExecuteOffscreenPass(const OffscreenPassData& data, xiiRenderGraphPassContext& context)

@@ -94,7 +94,7 @@ XII_CREATE_SIMPLE_TEST(EditorViews, WorldRenderFrames)
   }
   xiiSharedPtr<xiiGALBuffer> pCurrentStamp;
   xiiUInt32                  uiStampSequence = 0U;
-  xiiUInt64  registeredFrame = 0;
+  xiiUInt64                  registeredFrame = 0;
   const auto                 registered      = xiiRenderGraphManager::CreateGraph("Interleaved registered frame", [&](xiiRenderGraph& graph, xiiRenderGraphBlackboard&, const xiiView*) -> xiiResult {
     struct Stamp
     {
@@ -146,11 +146,11 @@ XII_CREATE_SIMPLE_TEST(EditorViews, WorldRenderFrames)
       XII_TEST_RESULT(xiiRenderGraphManager::ExecuteGraph(frame, registered, nullptr));
       XII_TEST_INT(registeredFrame, uiPreviousFrame + 1);
     }
-    auto*     graph         = xiiRenderGraphManager::GetGraph(registered);
+    auto* graph = xiiRenderGraphManager::GetGraph(registered);
     XII_TEST_INT(graph->GetPlanGeneration(), 1U);
     XII_TEST_INT(graph->GetStatistics().m_uiPlanReuseCount, iteration);
     XII_TEST_INT(graph->GetStatistics().m_uiStructuralBuildCount, 1U);
-    xiiUInt64 uploadedFrame = 0;
+    xiiUInt64  uploadedFrame = 0;
     const auto pResult       = graph->GetExportedBuffer(graph->FindBuffer("Frame stamp"));
     XII_TEST_BOOL(pResult == pCurrentStamp);
     if (iteration < 8U || iteration == uiFrameCount - 1U)

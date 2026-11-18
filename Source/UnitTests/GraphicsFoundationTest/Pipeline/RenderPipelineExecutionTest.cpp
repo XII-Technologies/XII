@@ -11,11 +11,11 @@
 #include <Core/World/WorldDesc.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <GraphicsCore/Material/MaterialManager.h>
-#include <GraphicsCore/Streaming/GpuResidencyManager.h>
 #include <GraphicsCore/Pipeline/Passes/Utility/ClearTexturePass.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
+#include <GraphicsCore/Streaming/GpuResidencyManager.h>
 #include <GraphicsCoreTest/Pipeline/PipelineLibraryTestUtils.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>

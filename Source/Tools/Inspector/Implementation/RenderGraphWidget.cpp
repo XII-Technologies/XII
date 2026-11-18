@@ -445,7 +445,7 @@ void xiiQtRenderGraphWidget::Rebuild()
   const auto submissions = graph["submissions"].toArray();
   for (int index = 0; index < submissions.size(); ++index)
   {
-    const auto submission = submissions[index].toObject();
+    const auto  submission = submissions[index].toObject();
     QStringList waits;
     for (const auto& wait : submission["waitValues"].toArray())
     {
