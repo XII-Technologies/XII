@@ -112,8 +112,9 @@ XII_CREATE_SIMPLE_TEST(EditorViews, WorldRenderFrames)
   xiiRenderGraphFrame inactive;
   XII_TEST_BOOL(inactive.Begin(0).Failed());
   XII_TEST_BOOL(xiiRenderGraphManager::ExecuteGraph(inactive, registered, nullptr).Failed());
-  xiiUInt64 previousFrame = 0;
-  for (xiiUInt32 iteration = 0; iteration < 8; ++iteration)
+  constexpr xiiUInt32 uiFrameCount    = 1000U;
+  xiiUInt64           uiPreviousFrame = 0;
+  for (xiiUInt32 iteration = 0; iteration < uiFrameCount; ++iteration)
   {
     if (iteration == 4U)
     {
@@ -126,24 +127,24 @@ XII_CREATE_SIMPLE_TEST(EditorViews, WorldRenderFrames)
       xiiTaskSystem::AddTaskToGroup(group, world->GetUpdateTask());
     xiiTaskSystem::StartTaskGroup(group);
     xiiTaskSystem::WaitForGroup(group);
-    XII_TEST_BOOL(frames[0] > previousFrame && frames[1] > previousFrame);
+    XII_TEST_BOOL(frames[0] > uiPreviousFrame && frames[1] > uiPreviousFrame);
     XII_TEST_BOOL(frames[0] != frames[1]);
     XII_TEST_INT(executions[0], iteration + 1);
     XII_TEST_INT(executions[1], iteration + 1);
     XII_TEST_INT(views[0]->GetRenderGraph()->GetPlanGeneration(), iteration < 4U ? 1U : 2U);
     XII_TEST_INT(views[1]->GetRenderGraph()->GetPlanGeneration(), 1U);
-    previousFrame = xiiMath::Max(frames[0], frames[1]);
+    uiPreviousFrame = xiiMath::Max(frames[0], frames[1]);
     {
       xiiRenderGraphFrame frame;
       if (!XII_TEST_RESULT(frame.Begin(2)))
         return;
-      XII_TEST_INT(frame.GetFrameIndex(), previousFrame + 1);
+      XII_TEST_INT(frame.GetFrameIndex(), uiPreviousFrame + 1);
       XII_TEST_BOOL(frame.GetCompletedFrame() >= frame.GetFrameIndex() - 2);
       xiiRenderGraphFrame nested;
       XII_TEST_BOOL(nested.Begin().Failed());
       XII_TEST_BOOL(frame.Begin().Failed());
       XII_TEST_RESULT(xiiRenderGraphManager::ExecuteGraph(frame, registered, nullptr));
-      XII_TEST_INT(registeredFrame, previousFrame + 1);
+      XII_TEST_INT(registeredFrame, uiPreviousFrame + 1);
     }
     auto*     graph         = xiiRenderGraphManager::GetGraph(registered);
     XII_TEST_INT(graph->GetPlanGeneration(), 1U);
@@ -152,14 +153,19 @@ XII_CREATE_SIMPLE_TEST(EditorViews, WorldRenderFrames)
     xiiUInt64 uploadedFrame = 0;
     const auto pResult       = graph->GetExportedBuffer(graph->FindBuffer("Frame stamp"));
     XII_TEST_BOOL(pResult == pCurrentStamp);
-    if (xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), pResult.Borrow(), 0, uploadedFrame))
-      XII_TEST_INT(uploadedFrame, registeredFrame);
-    previousFrame = registeredFrame;
+    if (iteration < 8U || iteration == uiFrameCount - 1U)
+    {
+      if (xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), pResult.Borrow(), 0, uploadedFrame))
+      {
+        XII_TEST_INT(uploadedFrame, registeredFrame);
+      }
+    }
+    uiPreviousFrame = registeredFrame;
     // Empty and early-return scopes still capture the queue timeline, keeping ring waits valid.
     {
       xiiRenderGraphFrame empty;
       XII_TEST_RESULT(empty.Begin(1));
-      XII_TEST_INT(empty.GetFrameIndex(), ++previousFrame);
+      XII_TEST_INT(empty.GetFrameIndex(), ++uiPreviousFrame);
       empty.End();
       empty.End();
       XII_TEST_BOOL(!empty.IsActive());
@@ -196,22 +202,22 @@ XII_CREATE_SIMPLE_TEST(EditorViews, WorldRenderFrames)
     XII_TEST_BOOL(xiiRenderGraphManager::ExecuteGraph(failed, cyclic, nullptr, {}, &error).Failed());
   }
   XII_TEST_BOOL(error.FindSubString("dependency cycle") != nullptr);
-  XII_TEST_INT(registeredFrame, ++previousFrame);
+  XII_TEST_INT(registeredFrame, ++uiPreviousFrame);
   XII_TEST_RESULT(xiiRenderGraphManager::DestroyGraph(cyclic));
   {
     xiiRenderGraphFrame recovery;
     XII_TEST_RESULT(recovery.Begin(1));
-    XII_TEST_INT(recovery.GetFrameIndex(), previousFrame + 1);
-    XII_TEST_BOOL(recovery.GetCompletedFrame() >= previousFrame);
+    XII_TEST_INT(recovery.GetFrameIndex(), uiPreviousFrame + 1);
+    XII_TEST_BOOL(recovery.GetCompletedFrame() >= uiPreviousFrame);
     XII_TEST_RESULT(xiiRenderGraphManager::ExecuteGraph(recovery, registered, nullptr));
-    previousFrame = registeredFrame;
+    uiPreviousFrame = registeredFrame;
   }
   worlds[0].Clear();
   {
     XII_LOCK(worlds[1]->GetWriteMarker());
     worlds[1]->Update();
   }
-  XII_TEST_BOOL(frames[1] > previousFrame);
+  XII_TEST_BOOL(frames[1] > uiPreviousFrame);
 }
 
 XII_CREATE_SIMPLE_TEST(EditorViews, DisabledViewsDoNotRecordFrames)

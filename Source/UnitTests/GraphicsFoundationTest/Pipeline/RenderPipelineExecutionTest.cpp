@@ -10,8 +10,8 @@
 #include <Core/World/World.h>
 #include <Core/World/WorldDesc.h>
 #include <Foundation/Types/ScopeExit.h>
-#include <GraphicsCore/Geometry/GeometryResidency.h>
 #include <GraphicsCore/Material/MaterialManager.h>
+#include <GraphicsCore/Streaming/GpuResidencyManager.h>
 #include <GraphicsCore/Pipeline/Passes/Utility/ClearTexturePass.h>
 #include <GraphicsCore/Pipeline/RenderPipelineInstance.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
@@ -423,7 +423,7 @@ XII_CREATE_SIMPLE_TEST(PipelineScheduling, OffscreenRendering)
       XII_TEST_INT(view->GetRenderGraph()->GetStatistics().m_uiQueueSubmissionCount, 1);
       XII_TEST_BOOL(view->GetRenderPipelineInstance().GetPipeline()->GetExtractionRequirements().IsNoFlagSet());
       XII_TEST_BOOL(module->GetGpuInstanceData() == nullptr);
-      XII_TEST_BOOL(!xiiGeometryResidencyManager::IsInitialized() && !xiiMaterialManager::IsInitialized());
+      XII_TEST_BOOL(!xiiGpuResidencyManager::IsInitialized() && !xiiMaterialManager::IsInitialized());
       const auto& execution = view->GetRenderPipelineInstance();
       const auto* output    = execution.GetInterfaceBinding(execution.GetPipeline()->FindInterface("ViewOutput", false));
       XII_TEST_BOOL(output && view->GetRenderGraph()->GetExportedTexture(output->m_hTexture) == target);

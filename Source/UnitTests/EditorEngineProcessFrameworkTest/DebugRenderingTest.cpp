@@ -387,6 +387,7 @@ XII_CREATE_SIMPLE_TEST(EditorViews, DebugRendering)
       first->SetRenderTargetView(color->GetDefaultView(xiiGALTextureViewType::RenderTarget));
       const xiiViewportNavigationGizmo geometry(camera, xiiVec2(static_cast<float>(display.m_Size.width), static_cast<float>(display.m_Size.height)) / scale);
       geometry.Draw(*first, scale, -1, false);
+      second->InvalidateRenderGraph("Shared debug attachment contracts changed");
       otherWorld.Update();
       xiiImage otherImage;
       if (XII_TEST_RESULT(xiiCaptureThumbnail(capturedColor, display.m_Size, otherImage)))
@@ -467,6 +468,7 @@ XII_CREATE_SIMPLE_TEST(EditorViews, DebugRendering)
     capturedColor = originalCapture;
     depth         = originalDepth;
     clearDepth    = 0;
+    second->InvalidateRenderGraph("Shared debug attachment contracts restored");
     first->SetViewport({0, 0, 64, 64});
     first->SetRenderTargetView(color->GetDefaultView(xiiGALTextureViewType::RenderTarget));
   }

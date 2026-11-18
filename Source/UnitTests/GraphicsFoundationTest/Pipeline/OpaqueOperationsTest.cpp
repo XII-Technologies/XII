@@ -13,10 +13,10 @@
 #include <Core/World/World.h>
 #include <Foundation/Math/Float16.h>
 #include <Foundation/Types/ScopeExit.h>
-#include <GraphicsCore/Geometry/GeometryResidency.h>
 #include <GraphicsCore/Lighting/DynamicGlobalIllumination.h>
 #include <GraphicsCore/Lighting/SparseVoxelRadiance.h>
 #include <GraphicsCore/Material/MaterialManager.h>
+#include <GraphicsCore/Streaming/GpuResidencyManager.h>
 #include <GraphicsCore/Pipeline/FrameConstants.h>
 #include <GraphicsCore/Pipeline/Passes/AmbientOcclusion/AmbientOcclusionPass.h>
 #include <GraphicsCore/Pipeline/Passes/GlobalIllumination/DDGIProbeGatherPass.h>
@@ -196,7 +196,7 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, IndependentOpaqueAndReflectionOperatio
     if (!XII_TEST_BOOL(compiled != nullptr))
       return;
     XII_TEST_BOOL(compiled->GetRuntimeFeatures().IsNoFlagSet() && compiled->GetExtractionRequirements().IsNoFlagSet());
-    XII_TEST_BOOL(!xiiGeometryResidencyManager::IsInitialized() && !xiiMaterialManager::IsInitialized());
+    XII_TEST_BOOL(!xiiGpuResidencyManager::IsInitialized() && !xiiMaterialManager::IsInitialized());
     xiiSharedPtr<xiiGALTexture> histories[2];
     xiiUInt32                   count = 0;
     for (xiiUInt32 i = 0; i < compiled->GetDescriptor().m_Passes.GetCount(); ++i)
@@ -454,7 +454,7 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, IndependentAmbientOcclusionHistory)
       if (!XII_TEST_BOOL(compiled != nullptr))
         return;
       XII_TEST_BOOL(compiled->GetExtractionRequirements().IsNoFlagSet() && compiled->GetRuntimeFeatures().IsNoFlagSet());
-      XII_TEST_BOOL(!xiiGeometryResidencyManager::IsInitialized() && !xiiMaterialManager::IsInitialized());
+      XII_TEST_BOOL(!xiiGpuResidencyManager::IsInitialized() && !xiiMaterialManager::IsInitialized());
       const bool waitsForHistory = views[view]->GetRenderGraph()->GetStatistics().m_uiExternalFenceWaitCount != 0U;
       XII_TEST_BOOL(waitsForHistory == (frame != 0 && !(view == 0 && frame == 2)));
       xiiSharedPtr<xiiGALTexture> next[2];
@@ -667,7 +667,7 @@ XII_CREATE_SIMPLE_TEST(PipelineResources, IndependentIrradianceGathers)
     if (!XII_TEST_BOOL(compiled != nullptr))
       return;
     XII_TEST_BOOL(compiled->GetRuntimeFeatures().IsNoFlagSet() && compiled->GetExtractionRequirements().IsNoFlagSet());
-    XII_TEST_BOOL(!xiiGeometryResidencyManager::IsInitialized() && !xiiMaterialManager::IsInitialized());
+    XII_TEST_BOOL(!xiiGpuResidencyManager::IsInitialized() && !xiiMaterialManager::IsInitialized());
     xiiUInt32 outputs = 0;
     for (xiiUInt32 i = 0; i < compiled->GetDescriptor().m_Passes.GetCount(); ++i)
     {
@@ -853,6 +853,6 @@ XII_CREATE_SIMPLE_TEST(NativeRadianceComposition, IndependentWeightsFogRangeAndR
       XII_TEST_INT(graph.GetStatistics().m_uiQueueSubmissionCount, 1);
       xiiTestFramework::Output(xiiTestOutput::Details, "Radiance composition: %u operations, %u submissions, %u barriers.", graph.GetStatistics().m_uiCompiledPassCount, graph.GetStatistics().m_uiQueueSubmissionCount, graph.GetStatistics().m_uiTotalBarrierCount);
     }
-    XII_TEST_BOOL(!xiiGeometryResidencyManager::IsInitialized() && !xiiMaterialManager::IsInitialized());
+    XII_TEST_BOOL(!xiiGpuResidencyManager::IsInitialized() && !xiiMaterialManager::IsInitialized());
   }
 }
