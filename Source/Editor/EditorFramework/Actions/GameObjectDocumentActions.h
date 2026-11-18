@@ -28,7 +28,6 @@ public:
   static xiiActionDescriptorHandle s_hRenderVisualizers;
   static xiiActionDescriptorHandle s_hRenderShapeIcons;
   static xiiActionDescriptorHandle s_hRenderGrid;
-  static xiiActionDescriptorHandle s_hAddAmbientLight;
   static xiiActionDescriptorHandle s_hSimulationSpeedMenu;
   static xiiActionDescriptorHandle s_hSimulationSpeed[10];
   static xiiActionDescriptorHandle s_hCameraSpeed;
@@ -47,7 +46,6 @@ public:
     RenderVisualizers,
     RenderShapeIcons,
     RenderGrid,
-    AddAmbientLight,
     SimulationSpeed,
     PickTransparent,
   };

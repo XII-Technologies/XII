@@ -17,7 +17,6 @@ xiiActionDescriptorHandle xiiGameObjectDocumentActions::s_hRenderSelectionOverla
 xiiActionDescriptorHandle xiiGameObjectDocumentActions::s_hRenderVisualizers;
 xiiActionDescriptorHandle xiiGameObjectDocumentActions::s_hRenderShapeIcons;
 xiiActionDescriptorHandle xiiGameObjectDocumentActions::s_hRenderGrid;
-xiiActionDescriptorHandle xiiGameObjectDocumentActions::s_hAddAmbientLight;
 xiiActionDescriptorHandle xiiGameObjectDocumentActions::s_hSimulationSpeedMenu;
 xiiActionDescriptorHandle xiiGameObjectDocumentActions::s_hSimulationSpeed[10];
 xiiActionDescriptorHandle xiiGameObjectDocumentActions::s_hCameraSpeed;
@@ -30,7 +29,6 @@ void xiiGameObjectDocumentActions::RegisterActions()
   s_hRenderVisualizers      = XII_REGISTER_ACTION_1("Scene.Render.Visualizers", xiiActionScope::Document, "Scene", "V", xiiGameObjectDocumentAction, xiiGameObjectDocumentAction::ActionType::RenderVisualizers);
   s_hRenderShapeIcons       = XII_REGISTER_ACTION_1("Scene.Render.ShapeIcons", xiiActionScope::Document, "Scene", "I", xiiGameObjectDocumentAction, xiiGameObjectDocumentAction::ActionType::RenderShapeIcons);
   s_hRenderGrid             = XII_REGISTER_ACTION_1("Scene.Render.Grid", xiiActionScope::Document, "Scene", "G", xiiGameObjectDocumentAction, xiiGameObjectDocumentAction::ActionType::RenderGrid);
-  s_hAddAmbientLight        = XII_REGISTER_ACTION_1("Scene.Render.AddAmbient", xiiActionScope::Document, "Scene", "", xiiGameObjectDocumentAction, xiiGameObjectDocumentAction::ActionType::AddAmbientLight);
 
   s_hSimulationSpeedMenu = XII_REGISTER_MENU_WITH_ICON("Scene.Simulation.Speed.Menu", "");
   s_hSimulationSpeed[0]  = XII_REGISTER_ACTION_2("Scene.Simulation.Speed.01", xiiActionScope::Document, "Simulation - Speed", "", xiiGameObjectDocumentAction, xiiGameObjectDocumentAction::ActionType::SimulationSpeed, 0.1f);
@@ -56,7 +54,6 @@ void xiiGameObjectDocumentActions::UnregisterActions()
   xiiActionManager::UnregisterAction(s_hRenderVisualizers);
   xiiActionManager::UnregisterAction(s_hRenderShapeIcons);
   xiiActionManager::UnregisterAction(s_hRenderGrid);
-  xiiActionManager::UnregisterAction(s_hAddAmbientLight);
 
   xiiActionManager::UnregisterAction(s_hSimulationSpeedMenu);
   for (int i = 0; i < XII_ARRAY_SIZE(s_hSimulationSpeed); ++i)
@@ -80,7 +77,6 @@ void xiiGameObjectDocumentActions::MapMenuActions(xiiStringView sMapping)
     pMap->MapAction(s_hRenderShapeIcons, sSubPath, 3.0f);
     pMap->MapAction(s_hRenderGrid, sSubPath, 4.0f);
     pMap->MapAction(s_hPickTransparent, sSubPath, 5.0f);
-    pMap->MapAction(s_hAddAmbientLight, sSubPath, 6.0f);
     pMap->MapAction(s_hCameraSpeed, sSubPath, 7.0f);
   }
 }
@@ -170,11 +166,6 @@ xiiGameObjectDocumentAction::xiiGameObjectDocumentAction(const xiiActionContext&
     }
     break;
 
-    case ActionType::AddAmbientLight:
-      SetCheckable(true);
-      SetChecked(m_pGameObjectDocument->GetAddAmbientLight());
-      break;
-
     case ActionType::SimulationSpeed:
       SetCheckable(true);
       SetChecked(m_pGameObjectDocument->GetSimulationSpeed() == m_fSimSpeed);
@@ -229,10 +220,6 @@ void xiiGameObjectDocumentAction::Execute(const xiiVariant& value)
       return;
     }
 
-    case ActionType::AddAmbientLight:
-      m_pGameObjectDocument->SetAddAmbientLight(!m_pGameObjectDocument->GetAddAmbientLight());
-      return;
-
     case ActionType::SimulationSpeed:
       m_pGameObjectDocument->SetSimulationSpeed(m_fSimSpeed);
       return;
@@ -273,15 +260,6 @@ void xiiGameObjectDocumentAction::SceneEventHandler(const xiiGameObjectEvent& e)
       if (m_Type == ActionType::RenderShapeIcons)
       {
         SetChecked(m_pGameObjectDocument->GetRenderShapeIcons());
-      }
-    }
-    break;
-
-    case xiiGameObjectEvent::Type::AddAmbientLightChanged:
-    {
-      if (m_Type == ActionType::AddAmbientLight)
-      {
-        SetChecked(m_pGameObjectDocument->GetAddAmbientLight());
       }
     }
     break;
