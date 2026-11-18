@@ -26,13 +26,12 @@ struct xiiToneMappingPass::Data
   xiiDisplayOutputSettings    m_DisplaySettings;
   xiiDisplayOutputSettings    m_AuthoredDisplay;
   bool                        m_bUseViewDefaults = false;
-  bool                        m_bVisualizeCurve = false;
+  bool                        m_bVisualizeCurve  = false;
   bool                        m_bHasBloomInput   = false;
 };
 struct xiiToneMappingPass::State
 {
   xiiSharedPtr<xiiGALComputePipelineState> m_Pipeline;
-
 };
 
 xiiToneMappingPass::xiiToneMappingPass()

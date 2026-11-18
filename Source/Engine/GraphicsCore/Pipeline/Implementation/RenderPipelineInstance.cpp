@@ -26,9 +26,9 @@ void xiiRenderPipelineInstance::Clear()
   m_ResourceAcquireResult = xiiResourceAcquireResult::None;
   m_sBuildError.Clear();
   m_uiPreparedFrame = m_uiDeclaredGeneration = 0;
-  m_pPreparedView                    = nullptr;
-  m_pPreparedBlackboard              = nullptr;
-  m_vResolution                      = xiiVec4U32::MakeZero();
+  m_pPreparedView                            = nullptr;
+  m_pPreparedBlackboard                      = nullptr;
+  m_vResolution                              = xiiVec4U32::MakeZero();
   for (auto* pass : m_Passes)
     pass->GetDynamicRTTI()->GetAllocator()->Deallocate(pass);
   m_Passes.Clear();

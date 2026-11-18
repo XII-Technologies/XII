@@ -28,7 +28,6 @@ struct xiiColorGradingPass::Data
 struct xiiColorGradingPass::State
 {
   xiiSharedPtr<xiiGALComputePipelineState> m_Pipeline;
-
 };
 
 xiiColorGradingPass::xiiColorGradingPass()

@@ -18,7 +18,7 @@ struct xiiBufferHistoryPass::State : public xiiRefCounted
   xiiDynamicArray<Slot> m_Slots;
   Slot                  m_Last;
   xiiUInt64             m_uiRevision = 0U;
-  bool                  m_bValid = false;
+  bool                  m_bValid     = false;
 };
 xiiBufferHistoryPass::xiiBufferHistoryPass()  = default;
 xiiBufferHistoryPass::~xiiBufferHistoryPass() = default;

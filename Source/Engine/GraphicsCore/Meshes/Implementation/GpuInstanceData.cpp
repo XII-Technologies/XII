@@ -112,22 +112,22 @@ public:
   {
     xiiSharedPtr<xiiGALBuffer> m_Instances, m_Poses;
     xiiDynamicArray<xiiUInt64> m_Versions;
-    xiiUInt64                  m_PoseVersion      = 0;
-    xiiUInt64                  m_uiLastUsedFrame  = 0U;
+    xiiUInt64                  m_PoseVersion     = 0;
+    xiiUInt64                  m_uiLastUsedFrame = 0U;
   };
   // Retained graph callbacks may outlive their world. Only the upload cache is
   // shared with them; world membership and resource leases remain world-owned.
   struct UploadState : xiiRefCounted
   {
-    xiiMutex                       m_Mutex;
-    xiiDynamicArray<Frame>         m_Frames;
+    xiiMutex                             m_Mutex;
+    xiiDynamicArray<Frame>               m_Frames;
     xiiUInt32                            m_uiBaseSlotCount = 0U;
     xiiDynamicArray<xiiGpuSceneInstance> m_Records;
     xiiDynamicArray<xiiUInt64>           m_RecordVersions;
     xiiDynamicArray<xiiMat4>             m_SkinningMatrices;
     xiiUInt64                            m_uiPoseVersion = 1U;
-    xiiUInt64                      m_StatsFrame = xiiMath::MaxValue<xiiUInt64>();
-    xiiGpuInstanceUploadStatistics m_Stats;
+    xiiUInt64                            m_StatsFrame    = xiiMath::MaxValue<xiiUInt64>();
+    xiiGpuInstanceUploadStatistics       m_Stats;
   };
   xiiSharedPtr<UploadState>                                                 m_Upload = XII_DEFAULT_NEW(UploadState);
   xiiGpuInstanceData::UploadHandles                                         m_DeclaredUpload;
@@ -450,9 +450,9 @@ xiiResult xiiGpuInstanceData::UpdateFromExtraction(xiiArrayPtr<xiiRenderData* co
     instances.RemoveAtAndSwap(i);
     if (i < state.m_Entries.GetCount())
     {
-      state.m_Packets[state.m_Entries[i].m_Key]       = i;
-      state.m_Identities[instances[i].m_uiObjectId]   = i;
-      state.m_Entries[i].m_Changed                    = true;
+      state.m_Packets[state.m_Entries[i].m_Key]     = i;
+      state.m_Identities[instances[i].m_uiObjectId] = i;
+      state.m_Entries[i].m_Changed                  = true;
     }
   }
   skinningMatrices.Clear();

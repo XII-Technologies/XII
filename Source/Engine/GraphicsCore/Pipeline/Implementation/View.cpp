@@ -662,7 +662,7 @@ void xiiView::UpdateRenderGraphContracts()
 
 xiiResult xiiView::BuildRenderPipeline(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
 {
-  auto* runtime = GetPipelineInstance();
+  auto* runtime              = GetPipelineInstance();
   m_DeclaredRenderResolution = {GetRenderResolutionWidth(), GetRenderResolutionHeight()};
   xiiHybridArray<xiiRenderPipelineInputBinding, 1> inputs;
   if (const auto* pipeline = runtime->GetPipeline())

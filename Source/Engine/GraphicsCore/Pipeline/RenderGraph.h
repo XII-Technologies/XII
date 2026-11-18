@@ -753,10 +753,10 @@ private:
     xiiHybridArray<ResourceUsage, 8U>    m_Reads;
     xiiHybridArray<ResourceUsage, 8U>    m_Writes;
 
-    void*                                         m_pPassData = nullptr;
-    xiiDelegate<void(void*)>                      m_DestroyPassDataDelegate;
-    xiiDelegate<void(xiiRenderGraphPassContext&)> m_ExecuteDelegate;
-    xiiDelegate<void(xiiRenderGraphPassContext&)> m_PrepareDelegate;
+    void*                                                                      m_pPassData = nullptr;
+    xiiDelegate<void(void*)>                                                   m_DestroyPassDataDelegate;
+    xiiDelegate<void(xiiRenderGraphPassContext&)>                              m_ExecuteDelegate;
+    xiiDelegate<void(xiiRenderGraphPassContext&)>                              m_PrepareDelegate;
     xiiDelegate<xiiResult(xiiRenderGraph&, const xiiView*, xiiStringBuilder&)> m_FramePreparation;
     xiiDelegate<void()>                                                        m_SubmissionCompletion;
   };

@@ -1887,8 +1887,8 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
     }
   }
 
-  const xiiTime executionStart         = xiiTime::Now();
-  bool          bExecutionSucceeded    = false;
+  const xiiTime executionStart      = xiiTime::Now();
+  bool          bExecutionSucceeded = false;
   XII_SCOPE_EXIT(
     m_Statistics.m_ExecutionTime = xiiTime::Now() - executionStart;
     if (!bExecutionSucceeded) {
