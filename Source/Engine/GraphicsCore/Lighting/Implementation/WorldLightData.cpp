@@ -522,33 +522,39 @@ xiiWorldLightData::UploadHandles xiiWorldLightData::DeclareUploadPass(xiiRenderG
         state->m_Stats = {};
       }
       return XII_SUCCESS;
-    }); }, [state](const Data& data, xiiRenderGraphPassContext& execute) {
+    });
+    ref_builder.SetPassSubmissionCompletion([state, &ref_data] {
+      for (const auto& range : ref_data.m_Ranges)
+        state->m_Stats.m_uiBytesUploaded += range.m_uiCount * sizeof(xiiGpuLightData);
+      state->m_Stats.m_uiRanges += ref_data.m_Ranges.GetCount();
+      if (ref_data.m_bUpdateProfiles)
+      {
+        state->m_Stats.m_uiBytesUploaded += ref_data.m_pSnapshot->m_Profiles.GetByteArrayPtr().GetCount();
+        ++state->m_Stats.m_uiRanges;
+      }
+      if (ref_data.m_bUpdateCounts)
+      {
+        state->m_Stats.m_uiBytesUploaded += sizeof(ref_data.m_pSnapshot->m_Counts);
+        ++state->m_Stats.m_uiRanges;
+      }
+      if (!ref_data.m_Ranges.IsEmpty() || ref_data.m_bUpdateProfiles || ref_data.m_bUpdateCounts)
+        ++state->m_Stats.m_uiUploadPasses;
+      ref_data.m_pSlot->m_Uploaded = ref_data.m_pSnapshot;
+      ref_data.m_pSlot->m_Initialized = true;
+    }); }, [](const Data& data, xiiRenderGraphPassContext& execute) {
     auto& commands = execute.GetCommandList();
     for (const auto& range : data.m_Ranges)
     {
       const auto bytes = xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(data.m_pSnapshot->m_Records.GetData() + range.m_uiFirst), range.m_uiCount * sizeof(xiiGpuLightData));
       commands.UpdateBuffer(execute.GetBuffer(data.m_Handles.m_Lights), range.m_uiFirst * sizeof(xiiGpuLightData), bytes);
-      state->m_Stats.m_uiBytesUploaded += bytes.GetCount();
-      ++state->m_Stats.m_uiRanges;
     }
     if (data.m_bUpdateProfiles)
-    {
-      const auto bytes = data.m_pSnapshot->m_Profiles.GetByteArrayPtr();
-      commands.UpdateBuffer(execute.GetBuffer(data.m_Handles.m_Profiles), 0U, bytes);
-      state->m_Stats.m_uiBytesUploaded += bytes.GetCount();
-      ++state->m_Stats.m_uiRanges;
-    }
+      commands.UpdateBuffer(execute.GetBuffer(data.m_Handles.m_Profiles), 0U, data.m_pSnapshot->m_Profiles.GetByteArrayPtr());
     if (data.m_bUpdateCounts)
     {
       const auto bytes = xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(&data.m_pSnapshot->m_Counts), sizeof(data.m_pSnapshot->m_Counts));
       commands.UpdateBuffer(execute.GetBuffer(data.m_Handles.m_Counts), 0U, bytes);
-      state->m_Stats.m_uiBytesUploaded += bytes.GetCount();
-      ++state->m_Stats.m_uiRanges;
-    }
-    if (!data.m_Ranges.IsEmpty() || data.m_bUpdateProfiles || data.m_bUpdateCounts)
-      ++state->m_Stats.m_uiUploadPasses;
-    data.m_pSlot->m_Uploaded = data.m_pSnapshot;
-    data.m_pSlot->m_Initialized = true; });
+    } });
   state->m_UploadStructure = graph.GetStructuralGeneration();
   state->m_Upload          = pass.first->m_Handles;
   return state->m_Upload;

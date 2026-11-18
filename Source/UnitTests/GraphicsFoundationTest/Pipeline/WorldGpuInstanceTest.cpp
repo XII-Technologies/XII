@@ -338,6 +338,7 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, WorldGpuInstances)
     environment.GetDevice()->WaitIdle();
     xiiTestFramework::Output(xiiTestOutput::Details, "Two-camera upload: one changed instance = %u bytes once; warmed static frame = 0 bytes.", xiiUInt32(sizeof(xiiGpuSceneInstance)));
 
+    bool                      bFailRecording = false;
     xiiRenderGraphTestContext retained;
     if (!XII_TEST_RESULT(retained.Initialize("Retained GPU instance upload")))
       return;
@@ -368,13 +369,25 @@ XII_CREATE_SIMPLE_TEST(PipelineExtraction, WorldGpuInstances)
         hRecords = instances->DeclareUploadPass(graph).m_Instances;
         graph.AddPass<xiiRenderGraphBufferHandle>("Export retained GPU instances", xiiGALCommandQueueFlags::Graphics, [&](auto& ref_handle, xiiRenderGraphBuilder& ref_builder) {
           ref_handle = ref_builder.ReadBuffer(hRecords, xiiGALResourceStateFlags::ShaderResource);
-          ref_builder.ExportBuffer(ref_handle, xiiGALResourceStateFlags::ShaderResource); }, [](const auto&, xiiRenderGraphPassContext&) {}, true);
+          ref_builder.ExportBuffer(ref_handle, xiiGALResourceStateFlags::ShaderResource); }, [&bFailRecording](const auto&, xiiRenderGraphPassContext& execute) {
+          if (bFailRecording)
+            execute.ReportFailure("Injected failure after recording the instance upload."); }, true);
         graph.EndSetup();
-        if (!XII_TEST_RESULT(graph.Compile({}, nullptr, environment.GetDevice())))
+        if (!XII_TEST_RESULT(graph.Compile({.m_bEnableAsyncQueues = false}, nullptr, environment.GetDevice())))
           return;
       }
       else
       {
+        graph.BeginExecutionFrame(executionFrame.GetFrameIndex());
+      }
+      if (uiIteration == 1U)
+      {
+        bFailRecording = true;
+        xiiStringBuilder error;
+        XII_TEST_BOOL(graph.Execute(environment.GetDevice(), nullptr, &retained.GetBlackboard(), &cache, nullptr, &error).Failed());
+        XII_TEST_BOOL(error.FindSubString("Injected failure after recording the instance upload") != nullptr);
+        XII_TEST_INT(instances->GetUploadStatistics().m_uiBytesUploaded, 0U);
+        bFailRecording = false;
         graph.BeginExecutionFrame(executionFrame.GetFrameIndex());
       }
       if (!XII_TEST_RESULT(graph.Execute(environment.GetDevice(), nullptr, &retained.GetBlackboard(), &cache)))
