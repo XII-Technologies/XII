@@ -96,6 +96,7 @@ XII_CREATE_SIMPLE_TEST(NativeShadowFeedback, ReusableViewsOverflowAndReconfigura
   XII_TEST_BOOL(pipelines[0].GetPipeline() == pipelines[1].GetPipeline());
   xiiUInt64              previousFrame = 0;
   xiiVirtualShadowPageId firstPages[2][2];
+  xiiRenderGraphBufferHandle streams[2][2];
   for (xiiUInt32 phase = 0; phase < 6; ++phase)
   {
     if (phase == 2)
@@ -112,14 +113,16 @@ XII_CREATE_SIMPLE_TEST(NativeShadowFeedback, ReusableViewsOverflowAndReconfigura
       auto& cache = contexts[view].GetResourceCache();
       cache.BeginFrame(frame.GetFrameIndex(), frame.GetCompletedFrame());
       XII_SCOPE_EXIT(cache.EndFrame());
-      graph.BeginSetup(frame.GetFrameIndex());
-      struct Source
+      if (phase == 0)
       {
-        xiiRenderGraphTextureHandle m_Depth;
-        xiiRenderGraphBufferHandle  m_Cascades;
-        xiiUInt32                   m_uiCascadeCount;
-      };
-      const auto                                       source = graph.AddPass<Source>("Synthetic receiver depth", xiiGALCommandQueueFlags::Graphics, [phase](Source& data, xiiRenderGraphBuilder& builder) {
+        graph.BeginSetup(frame.GetFrameIndex());
+        struct Source
+        {
+          xiiRenderGraphTextureHandle m_Depth;
+          xiiRenderGraphBufferHandle  m_Cascades;
+          xiiUInt32                   m_uiCascadeCount;
+        };
+        const auto                                       source = graph.AddPass<Source>("Synthetic receiver depth", xiiGALCommandQueueFlags::Graphics, [&](Source& data, xiiRenderGraphBuilder& builder) {
         xiiGALTextureCreationDescription image;
         image.m_Type = xiiGALResourceDimension::Texture2D;
         image.m_Size = {64, 64}; image.m_Format = xiiGALResourceFormat::D32Float;
@@ -129,7 +132,10 @@ XII_CREATE_SIMPLE_TEST(NativeShadowFeedback, ReusableViewsOverflowAndReconfigura
         constants.m_uiSize = sizeof(xiiShadowCascadeConstants); constants.m_BindFlags = xiiGALBindFlags::UniformBuffer;
         constants.m_Usage = xiiGALResourceUsage::Dynamic; constants.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
         data.m_Cascades = builder.WriteBuffer("Cascade Snapshot", constants, xiiGALResourceStateFlags::ConstantBuffer);
-        data.m_uiCascadeCount = phase >= 4 ? 0U : 1U; }, [](const Source& data, xiiRenderGraphPassContext& execute) {
+        builder.SetPassFramePreparation([&data, &phase](xiiRenderGraph&, const xiiView*, xiiStringBuilder&) {
+          data.m_uiCascadeCount = phase >= 4 ? 0U : 1U;
+          return XII_SUCCESS;
+        }); }, [](const Source& data, xiiRenderGraphPassContext& execute) {
         auto& cmd = execute.GetCommandList();
         auto* depth = execute.GetTexture(data.m_Depth);
         cmd.ClearDepthStencilView(depth->GetDefaultView(xiiGALTextureViewType::DepthStencil), true, false, 0.5f, 0);
@@ -143,17 +149,37 @@ XII_CREATE_SIMPLE_TEST(NativeShadowFeedback, ReusableViewsOverflowAndReconfigura
         constants->CascadeBlendStarts                                              = xiiVec4(100);
         constants->CascadeFiltering                                                = xiiVec4::MakeZero();
         constants->ActiveCascadeCount = data.m_uiCascadeCount; constants->_Pad = xiiVec3::MakeZero(); });
-      xiiHybridArray<xiiRenderPipelineInputBinding, 4> inputs;
-      for (auto prefix : {"Complete/", "Bounded/"})
-      {
-        inputs.PushBack(xiiRenderPipelineInputBinding(graph, compiled->FindInterface(xiiStringBuilder(prefix, "SceneDepth"), true), source.first->m_Depth));
-        inputs.PushBack(xiiRenderPipelineInputBinding(graph, compiled->FindInterface(xiiStringBuilder(prefix, "CascadeConstants"), true), source.first->m_Cascades));
+        xiiHybridArray<xiiRenderPipelineInputBinding, 4> inputs;
+        for (auto prefix : {"Complete/", "Bounded/"})
+        {
+          inputs.PushBack(xiiRenderPipelineInputBinding(graph, compiled->FindInterface(xiiStringBuilder(prefix, "SceneDepth"), true), source.first->m_Depth));
+          inputs.PushBack(xiiRenderPipelineInputBinding(graph, compiled->FindInterface(xiiStringBuilder(prefix, "CascadeConstants"), true), source.first->m_Cascades));
+        }
+        xiiVariantDictionary parameters;
+        parameters.Insert("ShadowFeedbackNearPlane", view ? 0.2f : 0.1f);
+        parameters.Insert("ShadowFeedbackInverseViewProjection", view ? xiiMat4::MakeScaling(xiiVec3(0.5f, 0.5f, 1)) : xiiMat4::MakeIdentity());
+        if (!XII_TEST_RESULT(pipelines[view].Build(nullptr, graph, contexts[view].GetBlackboard(), parameters, inputs)))
+          return;
+        for (xiiUInt32 i = 0; i < 2; ++i)
+        {
+          streams[view][i] = pipelines[view].GetInterfaceBinding(compiled->FindInterface(i ? "Bounded/Requests" : "Complete/Requests", false))->m_hBuffer;
+          graph.AddPass<xiiUInt32>(i ? "Export bounded requests" : "Export complete requests", xiiGALCommandQueueFlags::Graphics, [stream = streams[view][i]](auto&, xiiRenderGraphBuilder& builder) { builder.ExportBuffer(builder.ReadBuffer(stream, xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource); }, [](const auto&, xiiRenderGraphPassContext&) {}, true);
+        }
+        graph.EndSetup();
+        xiiStringBuilder error;
+        if (!XII_TEST_RESULT_MSG(graph.Compile({.m_bEnableAsyncQueues = view == 1}, &error), "%s", error.GetData()))
+          return;
       }
-      xiiVariantDictionary parameters;
-      parameters.Insert("ShadowFeedbackNearPlane", view ? 0.2f : 0.1f);
-      parameters.Insert("ShadowFeedbackInverseViewProjection", view ? xiiMat4::MakeScaling(xiiVec3(0.5f, 0.5f, 1)) : xiiMat4::MakeIdentity());
-      if (!XII_TEST_RESULT(pipelines[view].Build(nullptr, graph, contexts[view].GetBlackboard(), parameters, inputs)))
+      else
+      {
+        graph.BeginExecutionFrame(frame.GetFrameIndex());
+      }
+      if (phase == 2)
+        continue; // Skipping a frame leaves its retained readback unsubmitted.
+      xiiStringBuilder error;
+      if (!XII_TEST_RESULT_MSG(graph.Execute(environment.GetDevice(), nullptr, &contexts[view].GetBlackboard(), &cache, nullptr, &error), "%s", error.GetData()))
         return;
+      XII_TEST_INT(graph.GetPlanGeneration(), 1U);
       for (xiiUInt32 i = 0; i < 2; ++i)
       {
         const auto stats = static_cast<const xiiVirtualShadowFeedbackReadbackPass*>(pipelines[view].GetPass(readbacks[i]))->GetStats();
@@ -166,7 +192,7 @@ XII_CREATE_SIMPLE_TEST(NativeShadowFeedback, ReusableViewsOverflowAndReconfigura
           xiiVirtualShadowPageMapping mapping;
           XII_TEST_BOOL(xiiVirtualShadowMapManager::TryGetMapping(firstPages[view][i], mapping));
         }
-        if (phase == 2)
+        if (phase == 3)
         {
           XII_TEST_INT(stats.m_uiStaleReadbacks, 1);
         }
@@ -179,18 +205,6 @@ XII_CREATE_SIMPLE_TEST(NativeShadowFeedback, ReusableViewsOverflowAndReconfigura
           XII_TEST_INT(stats.m_uiDroppedReadbacks, 0);
         }
       }
-      xiiRenderGraphBufferHandle streams[2];
-      for (xiiUInt32 i = 0; i < 2; ++i)
-      {
-        streams[i] = pipelines[view].GetInterfaceBinding(compiled->FindInterface(i ? "Bounded/Requests" : "Complete/Requests", false))->m_hBuffer;
-        graph.AddPass<xiiUInt32>(i ? "Export bounded requests" : "Export complete requests", xiiGALCommandQueueFlags::Graphics, [stream = streams[i]](auto&, xiiRenderGraphBuilder& builder) { builder.ExportBuffer(builder.ReadBuffer(stream, xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource); }, [](const auto&, xiiRenderGraphPassContext&) {}, true);
-      }
-      graph.EndSetup();
-      if (phase == 2)
-        continue; // Abandoned setup must not publish or block the next capture.
-      xiiStringBuilder error;
-      if (!XII_TEST_RESULT_MSG(graph.Compile({.m_bEnableAsyncQueues = (phase & 1U) != 0}, &error), "%s", error.GetData()) || !XII_TEST_RESULT_MSG(graph.Execute(environment.GetDevice(), nullptr, &contexts[view].GetBlackboard(), &cache, nullptr, &error), "%s", error.GetData()))
-        return;
       if (view == 0 && phase < 2)
       {
         const auto& statistics = graph.GetStatistics();
@@ -203,7 +217,7 @@ XII_CREATE_SIMPLE_TEST(NativeShadowFeedback, ReusableViewsOverflowAndReconfigura
       environment.GetDevice()->WaitIdle();
       for (xiiUInt32 i = 0; i < 2; ++i)
       {
-        const auto                  stream = graph.GetExportedBuffer(streams[i]);
+        const auto                  stream = graph.GetExportedBuffer(streams[view][i]);
         xiiGpuVirtualShadowFeedback header;
         if (!xiiGpuTestReadback::ReadBufferRecord(*environment.GetDevice(), stream.Borrow(), 0, header))
           return;

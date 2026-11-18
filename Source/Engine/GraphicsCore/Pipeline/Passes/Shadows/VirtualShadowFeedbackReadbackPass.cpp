@@ -18,6 +18,7 @@ struct xiiVirtualShadowFeedbackReadbackPass::State : xiiRefCounted
     bool                       m_bPending = false;
   };
   xiiDynamicArray<xiiSharedPtr<Slot>> m_Slots;
+  xiiSharedPtr<xiiGALBuffer>          m_pIdleDestination;
   xiiSharedPtr<xiiGALCommandList>     m_MapCommands;
   xiiVirtualShadowFeedbackStats       m_Stats;
   void                                Consume(xiiGALDevice& device, xiiUInt64 completed)
@@ -108,63 +109,87 @@ xiiResult                     xiiVirtualShadowFeedbackReadbackPass::Build(xiiRen
   const auto* description = context.m_Graph.GetBufferDescription(input);
   if (!description || description->m_Mode != xiiGALBufferMode::Structured || description->m_uiElementByteStride != sizeof(xiiGpuVirtualShadowFeedback) || description->m_uiSize % sizeof(xiiGpuVirtualShadowFeedback) || description->m_uiSize < 2 * sizeof(xiiGpuVirtualShadowFeedback) || description->m_uiSize > 1048577ULL * sizeof(xiiGpuVirtualShadowFeedback))
     return context.ReportFailure("Shadow feedback readback requires a bounded structured append stream plus header.");
-  xiiUInt64 completed = 0;
-  if (!xiiVirtualShadowMapManager::IsInitialized() || !xiiGALDevice::HasDefaultDevice() || xiiRenderGraphManager::GetFrameCompletion(context.m_Graph.GetFrameIndex(), completed).Failed())
-    return context.ReportFailure("Shadow feedback readback requires configured device residency and an active shared GPU frame.");
-  const auto device = xiiGALDevice::GetDefaultDevice();
   if (!m_State)
     m_State = XII_DEFAULT_NEW(State);
-  m_State->Consume(*device, completed);
-  xiiSharedPtr<State::Slot> slot;
-  for (auto& candidate : m_State->m_Slots)
-    if (!candidate->m_bPending && candidate->m_uiFrame <= completed)
-    {
-      slot = candidate;
-      break;
-    }
-  if (!slot)
-  {
-    if (m_State->m_Slots.GetCount() >= m_uiMaxPendingReadbacks)
-    {
-      ++m_State->m_Stats.m_uiDroppedReadbacks;
-      return XII_SUCCESS;
-    }
-    slot = XII_DEFAULT_NEW(State::Slot);
-    m_State->m_Slots.PushBack(slot);
-  }
-  if (!slot->m_Buffer || slot->m_Buffer->GetDescription().m_uiSize != description->m_uiSize)
-  {
-    xiiGALBufferCreationDescription staging;
-    staging.m_uiSize         = description->m_uiSize;
-    staging.m_Usage          = xiiGALResourceUsage::Staging;
-    staging.m_CPUAccessFlags = xiiGALCPUAccessFlag::Read;
-    slot->m_Buffer           = device->CreateBuffer(staging);
-    if (!slot->m_Buffer)
-      return context.ReportFailure("Could not allocate shadow feedback staging storage.");
-  }
-  if (!slot->m_Fence)
-    slot->m_Fence = device->CreateFence({});
-  if (!slot->m_Fence)
-    return context.ReportFailure("Could not allocate shadow feedback completion fence.");
-  ++slot->m_uiValue;
-  slot->m_uiFrame                 = context.m_Graph.GetFrameIndex();
-  slot->m_uiConfigurationRevision = xiiVirtualShadowMapManager::GetConfigurationRevision();
+
+  xiiGALBufferCreationDescription staging;
+  staging.m_uiSize         = description->m_uiSize;
+  staging.m_Usage          = xiiGALResourceUsage::Staging;
+  staging.m_CPUAccessFlags = xiiGALCPUAccessFlag::Read;
+
   xiiRenderPassResourceScope scope(context);
   struct Data
   {
     xiiRenderGraphBufferHandle m_Input, m_Output;
-    xiiSharedPtr<State::Slot>  m_Slot;
-    xiiUInt64                  m_uiValue;
+    xiiSharedPtr<State::Slot>  m_pSlot;
+    xiiUInt64                  m_uiValue = 0U;
   };
   context.m_Graph.AddPass<Data>(context.m_sPassName, xiiGALCommandQueueFlags::Transfer, [&](Data& data, xiiRenderGraphBuilder& builder) {
     data.m_Input = builder.ReadBuffer(input, xiiGALResourceStateFlags::CopySource);
-    data.m_Output = builder.WriteBuffer(builder.ImportBuffer("Shadow Request Readback", slot->m_Buffer, slot->m_Buffer->GetResourceState()), xiiGALResourceStateFlags::CopyDestination);
+    data.m_Output = builder.WriteBuffer(builder.DeclareImportedBuffer("Shadow Request Readback", staging), xiiGALResourceStateFlags::CopyDestination);
     builder.ExportBuffer(data.m_Output, xiiGALResourceStateFlags::CopyDestination);
-    data.m_Slot = slot; data.m_uiValue = slot->m_uiValue; }, [](const Data& data, xiiRenderGraphPassContext& execute) {
-    auto& cmd = execute.GetCommandList();
-    cmd.CopyBuffer(execute.GetBuffer(data.m_Input), execute.GetBuffer(data.m_Output));
-    cmd.EnqueueSignal(data.m_Slot->m_Fence.Borrow(), data.m_uiValue);
-    data.m_Slot->m_bPending = true; }, true);
+    builder.SetPassFramePreparation([state = m_State, staging, uiSlotLimit = m_uiMaxPendingReadbacks, &data](xiiRenderGraph& ref_graph, const xiiView*, xiiStringBuilder& out_sError) -> xiiResult {
+      const xiiUInt64 uiFrame = ref_graph.GetFrameIndex();
+      xiiUInt64 uiCompleted = 0;
+      if (!xiiVirtualShadowMapManager::IsInitialized() || !xiiGALDevice::HasDefaultDevice() || xiiRenderGraphManager::GetFrameCompletion(uiFrame, uiCompleted).Failed())
+      {
+        out_sError = "Shadow feedback readback requires configured device residency and an active shared GPU frame.";
+        return XII_FAILURE;
+      }
+
+      const auto pDevice = xiiGALDevice::GetDefaultDevice();
+      state->Consume(*pDevice, uiCompleted);
+      data.m_pSlot.Clear();
+      for (const auto& pSlot : state->m_Slots)
+        if (!pSlot->m_bPending && pSlot->m_uiFrame <= uiCompleted)
+        {
+          data.m_pSlot = pSlot;
+          break;
+        }
+      if (!data.m_pSlot && state->m_Slots.GetCount() < uiSlotLimit)
+      {
+        data.m_pSlot = XII_DEFAULT_NEW(State::Slot);
+        state->m_Slots.PushBack(data.m_pSlot);
+      }
+
+      // Keep the declared import bound while the readback ring applies backpressure.
+      // This destination receives no copy and cannot alias an in-flight readback slot.
+      auto& pDestination = data.m_pSlot ? data.m_pSlot->m_Buffer : state->m_pIdleDestination;
+      if (!pDestination || pDestination->GetDescription() != staging)
+        pDestination = pDevice->CreateBuffer(staging);
+      if (!pDestination || ref_graph.BindImportedBuffer(data.m_Output, pDestination, pDestination->GetResourceState()).Failed())
+      {
+        out_sError = "Could not bind the declared shadow feedback staging storage.";
+        return XII_FAILURE;
+      }
+      if (!data.m_pSlot)
+      {
+        ++state->m_Stats.m_uiDroppedReadbacks;
+        return XII_SUCCESS;
+      }
+
+      auto& slot = *data.m_pSlot;
+      if (!slot.m_Fence)
+        slot.m_Fence = pDevice->CreateFence({});
+      if (!slot.m_Fence)
+      {
+        out_sError = "Could not allocate shadow feedback completion fence.";
+        return XII_FAILURE;
+      }
+      data.m_uiValue = ++slot.m_uiValue;
+      slot.m_uiFrame = uiFrame;
+      slot.m_uiConfigurationRevision = xiiVirtualShadowMapManager::GetConfigurationRevision();
+      return XII_SUCCESS;
+    });
+    builder.SetPassSubmissionCompletion([&data] {
+      if (data.m_pSlot)
+        data.m_pSlot->m_bPending = true;
+    }); }, [](const Data& data, xiiRenderGraphPassContext& execute) {
+    if (!data.m_pSlot)
+      return;
+    auto& commands = execute.GetCommandList();
+    commands.CopyBuffer(execute.GetBuffer(data.m_Input), execute.GetBuffer(data.m_Output));
+    commands.EnqueueSignal(data.m_pSlot->m_Fence.Borrow(), data.m_uiValue); }, true);
   return XII_SUCCESS;
 }
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Passes_Shadows_VirtualShadowFeedbackReadbackPass);
