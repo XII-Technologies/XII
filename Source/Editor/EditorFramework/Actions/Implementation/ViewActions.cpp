@@ -23,6 +23,7 @@
 #include <QCheckBox>
 #include <QDialog>
 #include <QDialogButtonBox>
+#include <QHBoxLayout>
 #include <QHeaderView>
 #include <QInputDialog>
 #include <QLabel>
@@ -31,6 +32,7 @@
 #include <QPushButton>
 #include <QShortcut>
 #include <QSignalBlocker>
+#include <QSlider>
 #include <QTimer>
 #include <QTreeWidget>
 #include <QVBoxLayout>
@@ -289,6 +291,49 @@ namespace
     }
   }
 
+  QSlider* AddRenderScaleSlider(QBoxLayout& layout)
+  {
+    auto* pSlider = new QSlider(Qt::Horizontal);
+    pSlider->setRange(10, 100);
+    pSlider->setAccessibleName(QStringLiteral("Internal scene resolution"));
+    auto* pValue = new QLabel;
+    QObject::connect(pSlider, &QSlider::valueChanged, pValue, [pValue](int iPercent) {
+      pValue->setText(QStringLiteral("%1%").arg(iPercent));
+    });
+    pValue->setText(QStringLiteral("%1%").arg(pSlider->value()));
+    layout.addWidget(pSlider, 1);
+    layout.addWidget(pValue);
+    return pSlider;
+  }
+
+  class xiiQtRenderScalePropertyWidget final : public xiiQtStandardPropertyWidget
+  {
+  private:
+    void OnInit() override
+    {
+      auto* pLayout = new QHBoxLayout(this);
+      pLayout->setContentsMargins(0, 0, 0, 0);
+      m_pSlider = AddRenderScaleSlider(*pLayout);
+      connect(m_pSlider, &QSlider::valueChanged, this, [this](int iPercent) {
+        if (!m_bUpdatingValue)
+        {
+          BroadcastValueChanged(static_cast<float>(iPercent) / 100.0F);
+        }
+      });
+    }
+
+    void InternalSetValue(const xiiVariant& value) override
+    {
+      // Updating the display must not create an edit transaction.
+      m_bUpdatingValue = true;
+      m_pSlider->setValue(static_cast<int>(xiiMath::Round(value.ConvertTo<float>() * 100.0F)));
+      m_bUpdatingValue = false;
+    }
+
+    QSlider* m_pSlider        = nullptr;
+    bool     m_bUpdatingValue = false;
+  };
+
   bool EditRenderSettings(QWidget& parent, const QString& title, xiiRenderConfiguration& configuration,
                           const xiiRenderConfiguration& effective, xiiQtEngineViewWidget* liveView = nullptr)
   {
@@ -395,17 +440,25 @@ namespace
         if (!owner)
           continue;
         auto* item   = new QTreeWidgetItem(parentItem, {segments.back()});
-        auto* editor = xiiQtPropertyGridWidget::CreatePropertyWidget(property.m_pProperty);
-        editor->Init(grid, accessor, owner->GetType(), property.m_pProperty);
+        xiiQtPropertyWidget* pEditor = nullptr;
+        if (type == xiiGetStaticRTTI<xiiDynamicResolutionSettings>() && property.m_sPath == "RenderScale")
+        {
+          pEditor = new xiiQtRenderScalePropertyWidget;
+        }
+        else
+        {
+          pEditor = xiiQtPropertyGridWidget::CreatePropertyWidget(property.m_pProperty);
+        }
+        pEditor->Init(grid, accessor, owner->GetType(), property.m_pProperty);
         xiiHybridArray<xiiPropertySelection, 8> selection;
         selection.PushBack({owner, {}});
-        editor->SetSelection(selection);
+        pEditor->SetSelection(selection);
         auto* cell       = new QWidget(tree);
         auto* cellLayout = new QHBoxLayout(cell);
         cellLayout->setContentsMargins(0, 0, 0, 0);
         auto* inherited = new QLabel(cell);
         inherited->setTextInteractionFlags(Qt::TextSelectableByMouse);
-        cellLayout->addWidget(editor);
+        cellLayout->addWidget(pEditor);
         cellLayout->addWidget(inherited);
         tree->setItemWidget(item, 1, cell);
         for (const auto* attribute : property.m_pProperty->GetAttributes())
@@ -426,7 +479,7 @@ namespace
         auto* toggle = new QCheckBox(tree);
         toggle->setAccessibleName(QString("Override %1").arg(segments.back()));
         tree->setItemWidget(item, 2, toggle);
-        rows.PushBack({item, toggle, editor, inherited, group, owner, property.m_pProperty, property.m_sPath});
+        rows.PushBack({item, toggle, pEditor, inherited, group, owner, property.m_pProperty, property.m_sPath});
         const auto path = property.m_sPath;
         QObject::connect(toggle, &QCheckBox::toggled, &dialog, [&, group, path](bool enabled) {
           xiiDynamicArray<xiiVariant> masks;
@@ -713,9 +766,20 @@ void xiiRenderingControlsAction::Execute(const xiiVariant& value)
       break;
     case 1:
     {
-      const double percent = QInputDialog::getDouble(view, "Render scale", "Internal scene resolution (%)", GetReportedRenderScale(*view) * 100.0, 10, 100, 0, &accepted);
-      if (accepted)
-        SetViewScale(view->GetViewID(), static_cast<float>(percent / 100.0));
+      QDialog dialog(view);
+      dialog.setWindowTitle(QStringLiteral("Render scale"));
+      auto* pLayout = new QVBoxLayout(&dialog);
+      pLayout->addWidget(new QLabel(QStringLiteral("Internal scene resolution"), &dialog));
+      auto* pSlider = AddRenderScaleSlider(*pLayout);
+      pSlider->setValue(static_cast<int>(xiiMath::Round(GetReportedRenderScale(*view) * 100.0F)));
+      auto* pButtons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dialog);
+      pLayout->addWidget(pButtons);
+      QObject::connect(pButtons, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
+      QObject::connect(pButtons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
+      if (dialog.exec() == QDialog::Accepted)
+      {
+        SetViewScale(view->GetViewID(), static_cast<float>(pSlider->value()) / 100.0F);
+      }
       break;
     }
     case 2:
