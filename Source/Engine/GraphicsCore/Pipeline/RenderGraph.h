@@ -212,6 +212,7 @@ struct XII_GRAPHICSCORE_DLL xiiRenderGraphQueueSubmission
   xiiUInt32                            m_uiQueueIndex = 0U;     ///< 0=Graphics, 1=AsyncCompute, 2=AsyncTransfer.
   xiiBitflags<xiiGALCommandQueueFlags> m_QueueFlags;            ///< Redundant with the queue index, but useful to have directly available during command list creation.
   xiiDynamicArray<xiiUInt32>           m_PassOrder;             ///< Ordered pass indices to execute.
+  bool                                 m_bSignalsConsumers = false;
   xiiHybridArray<xiiUInt32, 2>         m_WaitSubmissionIndices; ///< Producer submissions that must complete before this submission starts.
 };
 
@@ -574,7 +575,7 @@ public:
   /// \param out_pError - Optional diagnostics string populated on XII_FAILURE.
   ///
   /// \returns XII_SUCCESS on success, XII_FAILURE if a cycle or invalid state is detected.
-  xiiResult Compile(const xiiRenderGraphCompileSettings& settings = {}, xiiStringBuilder* out_pError = nullptr);
+  xiiResult Compile(const xiiRenderGraphCompileSettings& settings = {}, xiiStringBuilder* out_pError = nullptr, xiiGALDevice* pDevice = nullptr);
 
 
   /// Executes the compiled render graph.
@@ -622,6 +623,7 @@ public:
 
   /// Returns the list of queue submissions synthesized by the compiler, in execution order.
   [[nodiscard]] xiiArrayPtr<const xiiRenderGraphQueueSubmission> GetQueueSubmissions() const;
+  [[nodiscard]] xiiArrayPtr<const xiiUInt32>                     GetPhysicalQueueMapping() const { return xiiMakeArrayPtr(m_Plan.m_QueueMapping.m_PhysicalQueueIndices); }
 
   /// Returns frame-specific sync details for a submission recorded this execution.
   [[nodiscard]] const xiiRenderGraphSubmissionFrameInfo* GetSubmissionFrameInfo(xiiUInt32 uiSubmissionIndex) const;
@@ -721,7 +723,15 @@ private:
   void PhaseB_TopologicalSortAndCull(const xiiRenderGraphCompileSettings& settings, xiiDynamicArray<xiiUInt32>& out_sortedIndices);
   void PhaseC_LifetimeAnalysis(const xiiDynamicArray<xiiUInt32>& sortedIndices);
   void PhaseD_BarrierSynthesis(const xiiDynamicArray<xiiUInt32>& sortedIndices, const xiiRenderGraphCompileSettings& settings);
-  void PhaseE_MultiQueueScheduling(const xiiDynamicArray<xiiUInt32>& sortedIndices, xiiGALDevice* pDevice, const xiiRenderGraphCompileSettings& settings);
+  struct QueueMapping
+  {
+    xiiUInt32 m_PhysicalQueueIndices[3]             = {0U, 1U, 2U};
+    bool      operator==(const QueueMapping&) const = default;
+  };
+
+  [[nodiscard]] static QueueMapping ResolveQueueMapping(xiiGALDevice* pDevice, bool bAsyncQueues);
+  void                              AssignQueuesAndDependencies(const QueueMapping& mapping);
+  void                              BuildSubmissionBatches();
   void PhaseF_RenderPassMerging();
   struct RenderPassBinding
   {
@@ -749,6 +759,8 @@ private:
 
   struct CompiledPlan
   {
+    QueueMapping                                              m_QueueMapping;
+    xiiUInt32                                                 m_uiSignaledQueueMask = 0U;
     xiiDynamicArray<xiiRenderGraphCompiledPass>               m_CompiledPasses;
     xiiDynamicArray<xiiRenderGraphBarrierDescription>         m_Barriers;
     xiiDynamicArray<xiiRenderGraphMergeGroup>                 m_MergeGroups;

@@ -183,6 +183,8 @@ xiiResult xiiRenderGraphDebug::WriteSnapshot(const ExecutionEvent& event, xiiStr
   }
   writer.EndArray();
 
+  WriteIndices(writer, "physicalQueues", graph.GetPhysicalQueueMapping());
+
   writer.BeginArray("submissions");
   const auto submissions = graph.GetQueueSubmissions();
   for (xiiUInt32 uiIndex = 0U; uiIndex < submissions.GetCount(); ++uiIndex)

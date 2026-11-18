@@ -259,7 +259,7 @@ xiiResult xiiRenderGraphManager::ExecuteGraph(const xiiRenderGraphFrame& frame, 
     graph.BeginExecutionFrame(frame.GetFrameIndex());
   }
 
-  XII_SUCCEED_OR_RETURN(graph.Compile(settings, out_pError));
+  XII_SUCCEED_OR_RETURN(graph.Compile(settings, out_pError, pDevice.Borrow()));
 
   if (pEntry->m_PrepareDelegate.IsValid())
   {

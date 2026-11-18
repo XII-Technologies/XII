@@ -28,6 +28,19 @@ xiiRenderGraphResourceCache::~xiiRenderGraphResourceCache()
   m_uiCompletedFrame = 0;
 }
 
+xiiRenderGraphResourceCache::QueueTimeline* xiiRenderGraphResourceCache::AcquireQueueTimeline(xiiUInt32 uiPhysicalQueueIndex)
+{
+  auto& timeline = m_QueueTimelines[uiPhysicalQueueIndex];
+  XII_LOCK(timeline.m_Mutex);
+  if (timeline.m_pFence == nullptr)
+  {
+    xiiGALFenceCreationDescription description;
+    description.m_Type = xiiGALFenceType::General;
+    timeline.m_pFence  = m_pDevice->CreateFence(description);
+  }
+  return timeline.m_pFence != nullptr ? &timeline : nullptr;
+}
+
 void xiiRenderGraphResourceCache::BeginFrame(xiiUInt64 uiFrameIndex)
 {
   const xiiUInt64 uiConservativeCompletedFrame = uiFrameIndex > 3ULL ? uiFrameIndex - 3ULL : 0ULL;

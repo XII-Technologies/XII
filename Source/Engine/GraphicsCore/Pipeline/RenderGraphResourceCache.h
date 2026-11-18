@@ -8,6 +8,7 @@
 #include <Foundation/Threading/Mutex.h>
 #include <Foundation/Types/SharedPtr.h>
 #include <GraphicsFoundation/Resources/Buffer.h>
+#include <GraphicsFoundation/Resources/Fence.h>
 #include <GraphicsFoundation/Resources/Texture.h>
 
 /// Frame-scoped GPU resource pool dedicated to the render graph's transient resource needs.
@@ -82,6 +83,16 @@ public:
   [[nodiscard]] xiiUInt32 GetPooledResourceCount() const;
 
 private:
+  friend class xiiRenderGraph;
+
+  struct QueueTimeline
+  {
+    xiiMutex                  m_Mutex;
+    xiiSharedPtr<xiiGALFence> m_pFence;
+    xiiUInt64                 m_uiValue = 0U;
+  };
+
+  [[nodiscard]] QueueTimeline* AcquireQueueTimeline(xiiUInt32 uiPhysicalQueueIndex);
   void ReleaseStaleResourcesLocked(xiiUInt32 uiMinAgeFrames);
 
   struct PooledTexture
@@ -98,6 +109,7 @@ private:
 
 private:
   xiiSharedPtr<xiiGALDevice> m_pDevice;
+  QueueTimeline              m_QueueTimelines[3];
   xiiUInt64                  m_uiCurrentFrame   = 0ULL;
   xiiUInt64                  m_uiCompletedFrame = 0ULL;
 

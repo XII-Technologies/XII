@@ -716,10 +716,11 @@ void xiiRenderGraph::EndSetup()
   m_Statistics.m_StructuralBuildTime = xiiTime::Now() - m_DeclarationStart;
 }
 
-xiiResult xiiRenderGraph::Compile(const xiiRenderGraphCompileSettings& settings, xiiStringBuilder* out_pError)
+xiiResult xiiRenderGraph::Compile(const xiiRenderGraphCompileSettings& settings, xiiStringBuilder* out_pError, xiiGALDevice* pDevice)
 {
   XII_ASSERT_DEV(!m_bIsSetupOpen, "Cannot compile while graph declarations are open.");
-  if (m_bIsCompiled && m_LastCompileSettings.m_bEnablePassCulling == settings.m_bEnablePassCulling &&
+  const QueueMapping mapping = ResolveQueueMapping(pDevice, settings.m_bEnableAsyncQueues);
+  if (m_bIsCompiled && m_Plan.m_QueueMapping == mapping && m_LastCompileSettings.m_bEnablePassCulling == settings.m_bEnablePassCulling &&
       m_LastCompileSettings.m_bEnableSplitBarriers == settings.m_bEnableSplitBarriers &&
       m_LastCompileSettings.m_bEnableAsyncQueues == settings.m_bEnableAsyncQueues)
   {
@@ -731,7 +732,7 @@ xiiResult xiiRenderGraph::Compile(const xiiRenderGraphCompileSettings& settings,
 
   if (m_bIsCompiled)
   {
-    m_sInvalidationReason.Assign("Compile settings changed");
+    m_sInvalidationReason.Assign(m_Plan.m_QueueMapping == mapping ? "Compile settings changed" : "Physical queue mapping changed");
   }
   m_bIsCompiled                  = false;
   const xiiTime compilationStart = xiiTime::Now();
@@ -773,7 +774,8 @@ xiiResult xiiRenderGraph::Compile(const xiiRenderGraphCompileSettings& settings,
   // Phase E: multi-queue scheduling.
   // Queue assignment must precede lifetime analysis: aliasing is only legal when both
   // logical resources live on the same ordered queue timeline.
-  PhaseE_MultiQueueScheduling(sortedIndices, nullptr, settings);
+  m_Plan.m_QueueMapping = mapping;
+  AssignQueuesAndDependencies(mapping);
 
   // Phase C: transient resource lifetime analysis.
   PhaseC_LifetimeAnalysis(sortedIndices);
@@ -781,6 +783,7 @@ xiiResult xiiRenderGraph::Compile(const xiiRenderGraphCompileSettings& settings,
   // Phase D: barrier synthesis. Queue assignment runs first so barriers can encode ownership
   // transfers and the scheduler can pair them with fence waits.
   PhaseD_BarrierSynthesis(sortedIndices, settings);
+  BuildSubmissionBatches();
 
   // The attachment layout is static. Resolve framebuffer bindings during execution.
   PhaseF_RenderPassMerging();
@@ -1287,14 +1290,10 @@ void xiiRenderGraph::PhaseD_BarrierSynthesis(const xiiDynamicArray<xiiUInt32>& s
   };
   xiiDynamicArray<StateAccess> stateAccess;
   stateAccess.SetCount(m_Resources.GetCount());
-  xiiDynamicArray<xiiUInt32> passToCompiled, passToSubmission;
+  xiiDynamicArray<xiiUInt32> passToCompiled;
   passToCompiled.SetCount(m_Passes.GetCount(), xiiInvalidIndex);
-  passToSubmission.SetCount(m_Passes.GetCount(), xiiInvalidIndex);
   for (xiiUInt32 i = 0; i < m_Plan.m_CompiledPasses.GetCount(); ++i)
     passToCompiled[m_Plan.m_CompiledPasses[i].m_uiPassIndex] = i;
-  for (xiiUInt32 i = 0; i < m_Plan.m_QueueSubmissions.GetCount(); ++i)
-    for (xiiUInt32 compiledIndex : m_Plan.m_QueueSubmissions[i].m_PassOrder)
-      passToSubmission[m_Plan.m_CompiledPasses[compiledIndex].m_uiPassIndex] = i;
 
   const auto addStateDependency = [&](xiiUInt32 consumerPass, xiiUInt32 producerPass) {
     if (producerPass == xiiInvalidIndex || producerPass == consumerPass)
@@ -1302,14 +1301,6 @@ void xiiRenderGraph::PhaseD_BarrierSynthesis(const xiiDynamicArray<xiiUInt32>& s
     auto& consumer = m_Plan.m_CompiledPasses[passToCompiled[consumerPass]];
     if (!consumer.m_DependencyPassIndices.Contains(producerPass))
       consumer.m_DependencyPassIndices.PushBack(producerPass);
-    const xiiUInt32 producerSubmission = passToSubmission[producerPass];
-    const xiiUInt32 consumerSubmission = passToSubmission[consumerPass];
-    if (xiiRenderGraphSkills::AsyncCompute::RequiresFence(producerSubmission, consumerSubmission, m_Plan.m_QueueSubmissions[producerSubmission].m_uiQueueIndex, m_Plan.m_QueueSubmissions[consumerSubmission].m_uiQueueIndex))
-    {
-      auto& waits = m_Plan.m_QueueSubmissions[consumerSubmission].m_WaitSubmissionIndices;
-      if (!waits.Contains(producerSubmission))
-        waits.PushBack(producerSubmission);
-    }
   };
   const auto trackStateAccess = [&](xiiUInt32 passIndex, const ResourceUsage& usage) {
     auto&           state        = stateAccess[usage.m_uiResourceIndex];
@@ -1424,93 +1415,70 @@ void xiiRenderGraph::PhaseD_BarrierSynthesis(const xiiDynamicArray<xiiUInt32>& s
   }
 }
 
-void xiiRenderGraph::PhaseE_MultiQueueScheduling(const xiiDynamicArray<xiiUInt32>& sortedIndices, xiiGALDevice* /*pDevice*/, const xiiRenderGraphCompileSettings& settings)
+namespace
 {
-  XII_PROFILE_SCOPE("Render Graph: Schedule Queues");
+  constexpr xiiGALCommandQueueFlags::Enum s_QueueFlags[] = {
+    xiiGALCommandQueueFlags::Graphics,
+    xiiGALCommandQueueFlags::Compute,
+    xiiGALCommandQueueFlags::Transfer,
+  };
+} // namespace
 
-  // Identify distinct queue flags in use.
-  static constexpr xiiUInt32                                          s_uiMaxQueues = 3U;
-  xiiStaticArray<xiiBitflags<xiiGALCommandQueueFlags>, s_uiMaxQueues> queueFlags;
-  queueFlags.SetCount(s_uiMaxQueues);
-
-  queueFlags[0U] = xiiGALCommandQueueFlags::Graphics;
-  queueFlags[1U] = xiiGALCommandQueueFlags::Compute;
-  queueFlags[2U] = xiiGALCommandQueueFlags::Transfer;
-
-  // Assign queue index to each non-culled compiled pass.
-  for (xiiUInt32 uiSortedIndex = 0U; uiSortedIndex < sortedIndices.GetCount(); ++uiSortedIndex)
+xiiRenderGraph::QueueMapping xiiRenderGraph::ResolveQueueMapping(xiiGALDevice* pDevice, bool bAsyncQueues)
+{
+  QueueMapping mapping;
+  if (!bAsyncQueues || (pDevice != nullptr && pDevice->GetFeatures().m_NativeFence != xiiGALDeviceFeatureState::Enabled))
   {
-    const xiiUInt32             uiPassIndex  = sortedIndices[uiSortedIndex];
-    xiiRenderGraphCompiledPass& compiledPass = m_Plan.m_CompiledPasses[uiSortedIndex];
-    if (compiledPass.m_bIsCulled)
-      continue;
-
-    const xiiBitflags<xiiGALCommandQueueFlags> queueFlags = m_Passes[uiPassIndex].m_QueueFlags;
-    compiledPass.m_uiQueueIndex                           = xiiRenderGraphSkills::Scheduling::GetQueueIndex(queueFlags, settings.m_bEnableAsyncQueues);
+    mapping = {{0U, 0U, 0U}};
   }
-
-  // Build one xiiRenderGraphQueueSubmission per contiguous run of same-queue non-culled passes.
-  xiiUInt32                      uiCurrentQueue          = xiiInvalidIndex;
-  xiiRenderGraphQueueSubmission* pCurrentQueueSubmission = nullptr;
-
-  for (xiiUInt32 uiSortedIndex = 0U; uiSortedIndex < m_Plan.m_CompiledPasses.GetCount(); ++uiSortedIndex)
+  else if (pDevice != nullptr)
   {
-    xiiRenderGraphCompiledPass& compiledPass = m_Plan.m_CompiledPasses[uiSortedIndex];
-    if (compiledPass.m_bIsCulled)
-      continue;
-
-    if (compiledPass.m_uiQueueIndex != uiCurrentQueue)
+    xiiGALCommandQueue* queues[3];
+    for (xiiUInt32 uiIndex = 0U; uiIndex < XII_ARRAY_SIZE(queues); ++uiIndex)
     {
-      pCurrentQueueSubmission                 = &m_Plan.m_QueueSubmissions.ExpandAndGetRef();
-      pCurrentQueueSubmission->m_uiQueueIndex = compiledPass.m_uiQueueIndex;
-      pCurrentQueueSubmission->m_QueueFlags   = queueFlags[compiledPass.m_uiQueueIndex < s_uiMaxQueues ? compiledPass.m_uiQueueIndex : 0U];
-      uiCurrentQueue                          = compiledPass.m_uiQueueIndex;
+      queues[uiIndex] = pDevice->GetCommandQueue(s_QueueFlags[uiIndex]);
+      for (xiiUInt32 uiEarlier = 0U; uiEarlier < uiIndex; ++uiEarlier)
+      {
+        if (queues[uiEarlier] == queues[uiIndex])
+        {
+          mapping.m_PhysicalQueueIndices[uiIndex] = uiEarlier;
+          break;
+        }
+      }
     }
-    pCurrentQueueSubmission->m_PassOrder.PushBack(uiSortedIndex);
   }
+  return mapping;
+}
 
-  xiiDynamicArray<xiiUInt32> passToCompiledIndex;
-  xiiDynamicArray<xiiUInt32> compiledToSubmissionIndex;
-  passToCompiledIndex.SetCount(m_Passes.GetCount(), xiiInvalidIndex);
-  compiledToSubmissionIndex.SetCount(m_Plan.m_CompiledPasses.GetCount(), xiiInvalidIndex);
-
-  for (xiiUInt32 uiSubmissionIndex = 0U; uiSubmissionIndex < m_Plan.m_QueueSubmissions.GetCount(); ++uiSubmissionIndex)
+void xiiRenderGraph::AssignQueuesAndDependencies(const QueueMapping& mapping)
+{
+  xiiTemporaryArray<xiiUInt32> passToCompiled;
+  passToCompiled.SetCount(m_Passes.GetCount(), xiiInvalidIndex);
+  for (xiiUInt32 uiIndex = 0U; uiIndex < m_Plan.m_CompiledPasses.GetCount(); ++uiIndex)
   {
-    for (xiiUInt32 uiCompiledIndex : m_Plan.m_QueueSubmissions[uiSubmissionIndex].m_PassOrder)
+    auto& pass = m_Plan.m_CompiledPasses[uiIndex];
+    if (!pass.m_bIsCulled)
     {
-      compiledToSubmissionIndex[uiCompiledIndex]                                  = uiSubmissionIndex;
-      passToCompiledIndex[m_Plan.m_CompiledPasses[uiCompiledIndex].m_uiPassIndex] = uiCompiledIndex;
+      const xiiUInt32 uiLogicalQueue     = xiiRenderGraphSkills::Scheduling::GetQueueIndex(m_Passes[pass.m_uiPassIndex].m_QueueFlags, true);
+      pass.m_uiQueueIndex                = mapping.m_PhysicalQueueIndices[uiLogicalQueue];
+      passToCompiled[pass.m_uiPassIndex] = uiIndex;
     }
   }
 
-  // Materialize pass dependencies and cross-queue fence waits from the version timeline.
-  for (xiiUInt32 uiConsumerCompiledIndex = 0U; uiConsumerCompiledIndex < m_Plan.m_CompiledPasses.GetCount(); ++uiConsumerCompiledIndex)
+  for (auto& consumer : m_Plan.m_CompiledPasses)
   {
-    xiiRenderGraphCompiledPass& consumer = m_Plan.m_CompiledPasses[uiConsumerCompiledIndex];
     if (consumer.m_bIsCulled)
+    {
       continue;
-
+    }
     const PassEntry& pass        = m_Passes[consumer.m_uiPassIndex];
-    auto             AddProducer = [&](xiiUInt32 uiProducerPassIndex) {
-      if (uiProducerPassIndex == xiiInvalidIndex || uiProducerPassIndex == consumer.m_uiPassIndex)
-        return;
-
-      const xiiUInt32 uiProducerCompiledIndex = passToCompiledIndex[uiProducerPassIndex];
-      if (uiProducerCompiledIndex == xiiInvalidIndex)
-        return;
-
-      if (!consumer.m_DependencyPassIndices.Contains(uiProducerPassIndex))
+    const auto       AddProducer = [&](xiiUInt32 uiProducerPassIndex) {
+      if (uiProducerPassIndex != xiiInvalidIndex && uiProducerPassIndex != consumer.m_uiPassIndex &&
+          passToCompiled[uiProducerPassIndex] != xiiInvalidIndex && !consumer.m_DependencyPassIndices.Contains(uiProducerPassIndex))
+      {
         consumer.m_DependencyPassIndices.PushBack(uiProducerPassIndex);
-
-      const xiiUInt32 uiProducerSubmission = compiledToSubmissionIndex[uiProducerCompiledIndex];
-      const xiiUInt32 uiConsumerSubmission = compiledToSubmissionIndex[uiConsumerCompiledIndex];
-      if (!xiiRenderGraphSkills::AsyncCompute::RequiresFence(uiProducerSubmission, uiConsumerSubmission, m_Plan.m_QueueSubmissions[uiProducerSubmission].m_uiQueueIndex, m_Plan.m_QueueSubmissions[uiConsumerSubmission].m_uiQueueIndex))
-        return;
-
-      if (!m_Plan.m_QueueSubmissions[uiConsumerSubmission].m_WaitSubmissionIndices.Contains(uiProducerSubmission))
-        m_Plan.m_QueueSubmissions[uiConsumerSubmission].m_WaitSubmissionIndices.PushBack(uiProducerSubmission);
+      }
     };
-
     for (const ResourceUsage& read : pass.m_Reads)
       AddProducer(m_Resources[read.m_uiResourceIndex].m_Versions[read.m_uiVersion].m_uiProducerPassIdx);
 
@@ -1526,8 +1494,64 @@ void xiiRenderGraph::PhaseE_MultiQueueScheduling(const xiiDynamicArray<xiiUInt32
       }
     }
   }
+}
 
-  m_Statistics.m_uiQueueSubmissionCount = m_Plan.m_QueueSubmissions.GetCount();
+void xiiRenderGraph::BuildSubmissionBatches()
+{
+  XII_PROFILE_SCOPE("Render Graph: Batch Physical Queues");
+
+  xiiTemporaryArray<xiiUInt32> passToSubmission;
+  passToSubmission.SetCount(m_Passes.GetCount(), xiiInvalidIndex);
+  // Once a physical queue has waited for a producer, queue ordering carries that dependency
+  // into its later submissions. Keep only the newest producer on each other queue.
+  xiiUInt32 lastWaited[3][3]   = {};
+  xiiUInt32 uiBatchQueue       = xiiInvalidIndex;
+  m_Plan.m_uiSignaledQueueMask = 0U;
+  for (xiiUInt32 uiIndex = 0U; uiIndex < m_Plan.m_CompiledPasses.GetCount(); ++uiIndex)
+  {
+    const auto& pass = m_Plan.m_CompiledPasses[uiIndex];
+    if (pass.m_bIsCulled)
+    {
+      continue;
+    }
+
+    xiiUInt32       required[3] = {};
+    const xiiUInt32 uiQueue     = pass.m_uiQueueIndex;
+    bool            bNewWait    = false;
+    for (xiiUInt32 uiDependency : pass.m_DependencyPassIndices)
+    {
+      const xiiUInt32 uiProducer = passToSubmission[uiDependency];
+      XII_ASSERT_DEV(uiProducer != xiiInvalidIndex, "A dependency must precede its consumer in recording order.");
+      const xiiUInt32 uiProducerQueue = m_Plan.m_QueueSubmissions[uiProducer].m_uiQueueIndex;
+      if (uiProducerQueue != uiQueue && uiProducer + 1U > lastWaited[uiQueue][uiProducerQueue])
+      {
+        required[uiProducerQueue] = xiiMath::Max(required[uiProducerQueue], uiProducer + 1U);
+        bNewWait                  = true;
+      }
+    }
+
+    if (uiBatchQueue != uiQueue || bNewWait)
+    {
+      // Keep already-ready work ahead of a new dependency, even on the same queue.
+      uiBatchQueue         = uiQueue;
+      auto& batch          = m_Plan.m_QueueSubmissions.ExpandAndGetRef();
+      batch.m_uiQueueIndex = uiQueue;
+      batch.m_QueueFlags   = s_QueueFlags[uiQueue];
+      for (xiiUInt32 uiSourceQueue = 0U; uiSourceQueue < XII_ARRAY_SIZE(required); ++uiSourceQueue)
+      {
+        if (required[uiSourceQueue] != 0U)
+        {
+          const xiiUInt32 uiProducer         = required[uiSourceQueue] - 1U;
+          lastWaited[uiQueue][uiSourceQueue] = required[uiSourceQueue];
+          batch.m_WaitSubmissionIndices.PushBack(uiProducer);
+          m_Plan.m_QueueSubmissions[uiProducer].m_bSignalsConsumers = true;
+          m_Plan.m_uiSignaledQueueMask |= XII_BIT(uiSourceQueue);
+        }
+      }
+    }
+    passToSubmission[pass.m_uiPassIndex] = m_Plan.m_QueueSubmissions.GetCount() - 1U;
+    m_Plan.m_QueueSubmissions.PeekBack().m_PassOrder.PushBack(uiIndex);
+  }
 }
 
 void xiiRenderGraph::PhaseF_RenderPassMerging()
@@ -1731,6 +1755,11 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
       *out_pError = "Execute called on an uncompiled render graph.";
     }
     return XII_FAILURE;
+  }
+
+  if (m_Plan.m_QueueMapping != ResolveQueueMapping(pDevice, m_LastCompileSettings.m_bEnableAsyncQueues))
+  {
+    XII_SUCCEED_OR_RETURN(Compile(m_LastCompileSettings, out_pError, pDevice));
   }
 
   m_Frame.m_SubmissionInfo.Clear();
@@ -2050,33 +2079,25 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
     pProfiler->SetGraphInstance(m_uiInstanceId);
   }
 
-  // One general fence per producer submission that has cross-queue consumers. Fences are created
-  // per Execute call so frame overlap cannot accidentally reuse an in-flight timeline value.
-  xiiTemporaryArray<xiiSharedPtr<xiiGALFence>> submissionFences;
-  submissionFences.SetCount(m_Plan.m_QueueSubmissions.GetCount());
-  xiiGALFenceCreationDescription fenceDescription;
-  fenceDescription.m_Type = xiiGALFenceType::General;
-  for (const xiiRenderGraphQueueSubmission& consumer : m_Plan.m_QueueSubmissions)
+  xiiRenderGraphResourceCache::QueueTimeline* timelines[3] = {};
+  for (xiiUInt32 uiQueueIndex = 0U; uiQueueIndex < XII_ARRAY_SIZE(timelines); ++uiQueueIndex)
   {
-    for (xiiUInt32 uiProducerSubmission : consumer.m_WaitSubmissionIndices)
+    if ((m_Plan.m_uiSignaledQueueMask & XII_BIT(uiQueueIndex)) == 0U)
     {
-      if (submissionFences[uiProducerSubmission] == nullptr)
+      continue;
+    }
+    timelines[uiQueueIndex] = pResourceCache->AcquireQueueTimeline(uiQueueIndex);
+    if (timelines[uiQueueIndex] == nullptr)
+    {
+      if (out_pError != nullptr)
       {
-        XII_PROFILE_SCOPE("Render Graph: Create Submission Fence");
-        submissionFences[uiProducerSubmission] = pDevice->CreateFence(fenceDescription);
-        if (submissionFences[uiProducerSubmission] == nullptr)
-        {
-          if (out_pError != nullptr)
-          {
-            *out_pError = "Failed to allocate a render graph submission fence.";
-          }
-          if (bEnableGpuProfiling)
-          {
-            pProfiler->OnFrameAbort();
-          }
-          return XII_FAILURE;
-        }
+        *out_pError = "Failed to allocate a render graph queue timeline.";
       }
+      if (bEnableGpuProfiling)
+      {
+        pProfiler->OnFrameAbort();
+      }
+      return XII_FAILURE;
     }
   }
 
@@ -2158,7 +2179,10 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
       }
       for (xiiUInt32 uiProducerSubmission : submission.m_WaitSubmissionIndices)
       {
-        pCommandList->DeviceWaitForFence(submissionFences[uiProducerSubmission].Borrow(), 1ULL);
+        const xiiUInt32 uiProducerQueue = m_Plan.m_QueueSubmissions[uiProducerSubmission].m_uiQueueIndex;
+        const xiiUInt64 uiValue         = m_Frame.m_SubmissionInfo[uiProducerSubmission].m_uiSignalValue;
+        XII_ASSERT_DEV(uiValue != 0U, "The producer must be submitted before its timeline value can be used.");
+        pCommandList->DeviceWaitForFence(timelines[uiProducerQueue]->m_pFence.Borrow(), uiValue);
       }
     }
 
@@ -2435,26 +2459,35 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
       bInsideRenderPass = false;
     }
 
-    // Emit cross-queue signal.
-    if (submissionFences[uiSubmissionIndex] != nullptr)
-    {
-      pCommandList->EnqueueSignal(submissionFences[uiSubmissionIndex].Borrow(), 1ULL);
-      m_Frame.m_SubmissionInfo[uiSubmissionIndex].m_uiSignalValue = 1ULL;
-    }
-
     if (bEnableGpuProfiling)
     {
       pProfiler->OnGraphEnd(*pCommandList, m_Id.m_Data, uiSubmissionIndex, uiActualQueueIndex);
     }
 
+    const auto Submit = [&]() {
+      {
+        XII_PROFILE_SCOPE("Render Graph: End Command List");
+        pCommandList->End();
+      }
+      {
+        XII_PROFILE_SCOPE("Render Graph: Submit Commands");
+        pQueue->Submit(pCommandList);
+        ++m_Statistics.m_uiSubmittedCount;
+      }
+    };
+    if (submission.m_bSignalsConsumers)
     {
-      XII_PROFILE_SCOPE("Render Graph: End Command List");
-      pCommandList->End();
+      auto& timeline = *timelines[submission.m_uiQueueIndex];
+      // Allocate and enqueue the value in submission order, including when callers share the cache.
+      XII_LOCK(timeline.m_Mutex);
+      const xiiUInt64 uiSignalValue = ++timeline.m_uiValue;
+      pCommandList->EnqueueSignal(timeline.m_pFence.Borrow(), uiSignalValue);
+      Submit();
+      m_Frame.m_SubmissionInfo[uiSubmissionIndex].m_uiSignalValue = uiSignalValue;
     }
+    else
     {
-      XII_PROFILE_SCOPE("Render Graph: Submit Commands");
-      pQueue->Submit(pCommandList);
-      ++m_Statistics.m_uiSubmittedCount;
+      Submit();
     }
   } // per-submission loop
 
