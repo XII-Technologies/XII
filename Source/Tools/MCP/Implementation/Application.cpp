@@ -2,6 +2,7 @@
 
 #include <MCP/MCPPCH.h>
 
+#include <Foundation/Logging/Log.h>
 #include <Foundation/System/EnvironmentVariableUtils.h>
 #include <Foundation/Threading/ThreadUtils.h>
 #include <MCP/Application.h>
