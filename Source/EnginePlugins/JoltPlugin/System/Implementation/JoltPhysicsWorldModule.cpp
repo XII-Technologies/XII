@@ -3241,7 +3241,10 @@ void xiiJoltPhysicsWorldModule::UpdateMaterials()
   if (native.m_MaterialsDirty.Set(0) == 0)
     return;
   auto refresh = [](NativeWorld::BodyOwner& owner, const xiiSurfaceResourceHandle& handle) {
-    owner.m_hSurface     = handle;
+    if (owner.m_hSurface != handle)
+    {
+      owner.m_hSurface = handle;
+    }
     owner.m_fFriction    = 0.2f;
     owner.m_fRestitution = 0;
     owner.m_sCollisionInteraction.Clear();
