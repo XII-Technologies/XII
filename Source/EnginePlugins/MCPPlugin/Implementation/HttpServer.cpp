@@ -2,6 +2,7 @@
 
 #include <MCPPlugin/MCPPluginPCH.h>
 
+#include <Foundation/Containers/HybridArray.h>
 #include <Foundation/Memory/MemoryUtils.h>
 #include <Foundation/Network/TcpListener.h>
 #include <Foundation/Utilities/ConversionUtils.h>
@@ -26,6 +27,7 @@ namespace
     xiiTime                   m_Deadline;
     xiiUInt32                 m_uiSentBytes          = 0;
     xiiUInt32                 m_uiHeaderSearchOffset = 0;
+    bool                      m_bStreaming           = false;
   };
 
   struct xiiMCPHttpSession
@@ -189,6 +191,85 @@ namespace
       uiDifference |= static_cast<xiiUInt8>(sLeft.GetStartPointer()[uiIndex] ^ sRight.GetStartPointer()[uiIndex]);
     }
     return uiDifference == 0;
+  }
+
+  double ReadMediaQuality(xiiArrayPtr<const xiiStringView> parameters)
+  {
+    for (auto parameter : parameters)
+    {
+      const char* pEquals = parameter.FindSubString("=");
+      if (pEquals == nullptr)
+      {
+        continue;
+      }
+      xiiStringView sName(parameter.GetStartPointer(), pEquals);
+      sName.Trim(" \t");
+      if (!sName.IsEqual_NoCase("q"))
+      {
+        continue;
+      }
+      xiiStringView sQuality(pEquals + 1, parameter.GetEndPointer());
+      sQuality.Trim(" \t");
+      double      fQuality = 0.0;
+      const char* pEnd     = nullptr;
+      if (xiiConversionUtils::StringToFloat(sQuality, fQuality, &pEnd).Succeeded() && pEnd == sQuality.GetEndPointer() &&
+          fQuality >= 0.0 && fQuality <= 1.0)
+      {
+        return fQuality;
+      }
+      return 0.0;
+    }
+    return 1.0;
+  }
+
+  bool PrefersEventStream(xiiStringView sAccept)
+  {
+    xiiHybridArray<xiiStringView, 8> mediaRanges;
+    sAccept.Split(false, mediaRanges, ",");
+    double fEventQuality = 0.0;
+    double fJsonQuality  = 0.0;
+    for (auto range : mediaRanges)
+    {
+      xiiHybridArray<xiiStringView, 4> parts;
+      range.Split(false, parts, ";");
+      if (parts.IsEmpty())
+      {
+        continue;
+      }
+      auto sMediaType = parts[0];
+      sMediaType.Trim(" \t");
+      if (sMediaType.IsEqual_NoCase("text/event-stream"))
+      {
+        fEventQuality = xiiMath::Max(fEventQuality, ReadMediaQuality(parts.GetArrayPtr().GetSubArray(1)));
+      }
+      else if (sMediaType.IsEqual_NoCase("application/json"))
+      {
+        fJsonQuality = xiiMath::Max(fJsonQuality, ReadMediaQuality(parts.GetArrayPtr().GetSubArray(1)));
+      }
+    }
+    return fEventQuality > 0.0 && fEventQuality >= fJsonQuality;
+  }
+
+  void AppendEventChunk(xiiMCPHttpConnection& ref_connection, xiiStringView sEvent)
+  {
+    ref_connection.m_sOutput.AppendFormat("{}\r\n", xiiArgU(sEvent.GetElementCount(), 1, false, 16));
+    ref_connection.m_sOutput.Append(sEvent, "\r\n");
+  }
+
+  void BeginEventStream(xiiMCPHttpConnection& ref_connection)
+  {
+    ref_connection.m_bStreaming = true;
+    ref_connection.m_sOutput    = "HTTP/1.1 200 OK\r\nConnection: close\r\nCache-Control: no-store\r\n"
+                                  "Content-Type: text/event-stream\r\nTransfer-Encoding: chunked\r\nX-Accel-Buffering: no\r\n\r\n";
+    AppendEventChunk(ref_connection, ": accepted\n\n");
+  }
+
+  void FinishEventStream(xiiMCPHttpConnection& ref_connection, xiiStringView sReply)
+  {
+    xiiStringBuilder event("data: ", sReply, "\n\n");
+    AppendEventChunk(ref_connection, event);
+    ref_connection.m_sOutput.Append("0\r\n\r\n");
+    ref_connection.m_Deadline = xiiTime::Now() + xiiTime::MakeFromSeconds(3);
   }
 
   void Respond(xiiMCPHttpConnection& ref_connection, xiiStringView sStatus, xiiStringView sBody = {}, xiiStringView sSessionId = {}, xiiStringView sHeaders = {})
@@ -371,6 +452,10 @@ void xiiMCPHttpState::Dispatch(xiiMCPHttpConnection& ref_connection, const xiiMC
     case xiiMCPReplyStatus::Deferred:
       ref_connection.m_sSessionId = sSessionId;
       ref_connection.m_Deadline   = context.m_Deadline + xiiTime::MakeFromSeconds(1);
+      if (bModern && PrefersEventStream(GetHeader(request, "accept")))
+      {
+        BeginEventStream(ref_connection);
+      }
       return;
     case xiiMCPReplyStatus::Reply:
       break;
@@ -449,12 +534,26 @@ void xiiMCPHttpState::Update()
   {
     auto& connection = m_Connections[uiIndex];
     bool  bKeep      = now < connection.m_Deadline;
+    if (bKeep && connection.m_bStreaming && connection.m_Pending.IsPending())
+    {
+      // A request-scoped stream disconnect cancels exactly the invocation owned by this socket.
+      xiiUInt8   uiUnexpectedByte = 0;
+      const auto transfer         = connection.m_Socket.Receive(xiiArrayPtr(&uiUnexpectedByte, 1));
+      bKeep                       = transfer.Failed() && IsTransient(transfer.m_Error);
+    }
     if (bKeep && connection.m_Pending.IsPending())
     {
       xiiStringBuilder sReply;
       if (connection.m_Pending.Poll(sReply))
       {
-        Respond(connection, "200 OK", sReply);
+        if (connection.m_bStreaming)
+        {
+          FinishEventStream(connection, sReply);
+        }
+        else
+        {
+          Respond(connection, "200 OK", sReply);
+        }
       }
     }
     else if (bKeep && connection.m_sOutput.IsEmpty())
@@ -468,7 +567,13 @@ void xiiMCPHttpState::Update()
       const auto  uiLength = connection.m_sOutput.GetElementCount();
       const auto  transfer = connection.m_Socket.Send(xiiArrayPtr<const xiiUInt8>(pBytes + connection.m_uiSentBytes, uiLength - connection.m_uiSentBytes));
       connection.m_uiSentBytes += transfer.m_uiBytesTransferred;
-      bKeep = connection.m_uiSentBytes < uiLength && (transfer.Succeeded() || IsTransient(transfer.m_Error));
+      bKeep = transfer.Succeeded() || IsTransient(transfer.m_Error);
+      if (bKeep && connection.m_uiSentBytes == uiLength)
+      {
+        bKeep = connection.m_Pending.IsPending();
+        connection.m_sOutput.Clear();
+        connection.m_uiSentBytes = 0;
+      }
     }
 
     if (bKeep)

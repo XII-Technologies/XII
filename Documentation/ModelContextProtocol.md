@@ -34,7 +34,7 @@ Pass `-MCPTimeoutMs` with a value from 100 to 10000 to set the request deadline 
 
 ## Connect an MCP client
 
-The server supports stateless MCP requests with `2026-07-28` metadata and the `2025-11-25` initialization handshake. Streamable HTTP uses JSON replies. Stdio uses one UTF-8 JSON message per line and writes diagnostics to stderr. [MCP versioning](https://modelcontextprotocol.io/specification/2026-07-28/basic/versioning) · [Streamable HTTP](https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/streamable-http)
+The server supports stateless MCP requests with `2026-07-28` metadata and the `2025-11-25` initialization handshake. Streamable HTTP supports JSON replies and request-scoped SSE for deferred modern requests. Stdio uses one UTF-8 JSON message per line and writes diagnostics to stderr. [MCP versioning](https://modelcontextprotocol.io/specification/2026-07-28/basic/versioning) · [Streamable HTTP](https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/streamable-http)
 
 Configure a Streamable HTTP server with the URL `http://127.0.0.1:8372/mcp`. For stdio, configure the full executable path with arguments `-MCPTransport stdio`. The following entry can be used in the Copilot user MCP configuration or an MCP client with the same command and argument format. [Copilot MCP configuration reference](https://code.visualstudio.com/docs/agents/reference/mcp-configuration)
 
@@ -131,7 +131,7 @@ Use `xiiMCPRuntime::GetRegistry()` to extend an embedded runtime, or use `xiiMCP
 
 ## Current limits
 
-- HTTP serves JSON responses. SSE subscriptions, protocol progress streaming, OAuth and direct non-loopback listeners are outside this implementation. Stdio sends capability-list change notifications for initialized clients.
+- A deferred `2026-07-28` HTTP request starts an SSE stream when `Accept` includes `text/event-stream` with quality at least as high as `application/json`. The stream carries the final JSON-RPC reply and then closes. Closing the stream early requests cancellation. Long-lived subscriptions and progress messages remain separate from request-scoped streaming. Stdio sends capability-list change notifications for initialized clients.
 - Target discovery and forwarded invocations share bounded, asynchronous native RPC. Replies can arrive out of order across targets. The gateway accepts `notifications/cancelled` over stdio and initialized HTTP sessions using the `2025-11-25` protocol. Cancellation applies to the originating client and request ID. Foundation cancels native work on a best-effort basis. Completed mutations remain applied.
 - The Clients page lists stateful HTTP sessions. Stateless requests do not establish sessions. Applying workspace settings restarts the listener and reconnects targets.
 - See [MCP capability coverage](MCPCapabilityCoverage.md) for the existing APIs and the workflows that still require further integration.
