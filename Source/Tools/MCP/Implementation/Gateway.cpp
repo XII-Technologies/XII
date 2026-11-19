@@ -655,9 +655,8 @@ xiiVariantDictionary xiiMCPGateway::GetSnapshot() const
   snapshot["resources"]         = std::move(resources);
   snapshot["prompts"]           = std::move(prompts);
   snapshot["activity"]          = m_Activity;
-  snapshot["sessions"]          = m_Http.GetSessionCount();
   xiiVariantArray clients;
-  m_Http.ListSessions(clients);
+  m_Http.ListClients(clients);
   snapshot["clients"] = clients;
   xiiStringBuilder sEndpoint;
   const auto       endpoint = GetEndpoint();

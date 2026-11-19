@@ -33,6 +33,12 @@ namespace
     return value.IsA<xiiString>() || value.IsA<xiiInt64>() || value.IsA<xiiUInt64>();
   }
 
+  void ReadClientInfo(const xiiVariantDictionary& info, xiiMCPSession& ref_session)
+  {
+    ref_session.m_sClient        = xiiMCPJson::GetString(info, "name").GetSubString(0, 128);
+    ref_session.m_sClientVersion = xiiMCPJson::GetString(info, "version").GetSubString(0, 64);
+  }
+
   xiiVariantArray Versions()
   {
     xiiVariantArray versions;
@@ -226,6 +232,7 @@ xiiMCPReplyStatus xiiMCPProtocol::Process(xiiStringView sMessage, xiiMCPSession&
 {
   XII_ASSERT_DEV(pPending == nullptr || !pPending->IsPending(), "A pending request already owns this slot.");
   out_sReply.Clear();
+  ref_session.m_bModernRequest = false;
   if (out_pCancellationId != nullptr)
   {
     *out_pCancellationId = xiiVariant();
@@ -293,6 +300,14 @@ xiiMCPReplyStatus xiiMCPProtocol::Process(xiiStringView sMessage, xiiMCPSession&
       }
       else
       {
+        ref_session.m_bModernRequest = bModern;
+        if (bModern && pMetadata != nullptr)
+        {
+          if (const auto* pClient = xiiMCPJson::GetObject(*pMetadata, "io.modelcontextprotocol/clientInfo"))
+          {
+            ReadClientInfo(*pClient, ref_session);
+          }
+        }
         Dispatch(request, ref_session, context, bModern, reply, pPending);
         if (pPending != nullptr && pPending->IsPending())
         {
@@ -369,8 +384,8 @@ void xiiMCPProtocol::Dispatch(const xiiVariantDictionary& request, xiiMCPSession
     {
       result["serverInfo"]      = std::move(server);
       result["protocolVersion"] = xiiString(InitializeVersion);
-      ref_session.m_sClient     = xiiMCPJson::GetString(*pClientInfo, "name");
-      ref_session.m_State       = xiiMCPSession::State::Initializing;
+      ReadClientInfo(*pClientInfo, ref_session);
+      ref_session.m_State = xiiMCPSession::State::Initializing;
     }
   }
   else if (sMethod == "ping")

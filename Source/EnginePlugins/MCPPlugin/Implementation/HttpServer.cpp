@@ -15,6 +15,7 @@ namespace
   constexpr xiiUInt32 MaximumConnections       = 32;
   constexpr xiiUInt32 MaximumPendingRequests   = 24;
   constexpr xiiUInt32 MaximumSessions          = 64;
+  constexpr xiiUInt32 MaximumStatelessClients  = 64;
   constexpr xiiUInt32 MaximumRequestsPerSecond = 64;
 
   struct xiiMCPHttpConnection
@@ -24,6 +25,7 @@ namespace
     xiiStringBuilder          m_sOutput;
     xiiMCPPendingReply        m_Pending;
     xiiString                 m_sSessionId;
+    xiiString                 m_sStatelessClientKey;
     xiiTime                   m_Deadline;
     xiiUInt32                 m_uiSentBytes          = 0;
     xiiUInt32                 m_uiHeaderSearchOffset = 0;
@@ -34,6 +36,13 @@ namespace
   {
     xiiMCPSession m_Protocol;
     xiiTime       m_LastActivity;
+  };
+
+  struct xiiMCPHttpClient
+  {
+    xiiString m_sName;
+    xiiString m_sVersion;
+    xiiTime   m_LastActivity;
   };
 
   struct xiiMCPHttpRequest
@@ -300,6 +309,7 @@ public:
   void Dispatch(xiiMCPHttpConnection& ref_connection, const xiiMCPHttpRequest& request, xiiStringView sBody);
   void Update();
   void CancelSessionRequests(xiiStringView sSessionId, const xiiVariant* pId = nullptr);
+  void TrackStatelessClient(xiiMCPHttpConnection& ref_connection, const xiiMCPSession& requestInfo, xiiStringView sUserAgent, xiiTime now);
 
   const xiiMCPProtocol&                 m_Protocol;
   xiiMCPHttpConfiguration               m_Configuration;
@@ -310,9 +320,44 @@ public:
   xiiString                             m_sExpectedAuthorization;
   xiiDynamicArray<xiiMCPHttpConnection> m_Connections;
   xiiMap<xiiString, xiiMCPHttpSession>  m_Sessions;
+  xiiMap<xiiString, xiiMCPHttpClient>   m_StatelessClients;
   xiiTime                               m_RateWindow;
   xiiUInt32                             m_uiRequests = 0;
 };
+
+void xiiMCPHttpState::TrackStatelessClient(xiiMCPHttpConnection& ref_connection, const xiiMCPSession& requestInfo, xiiStringView sUserAgent, xiiTime now)
+{
+  const bool bDeclared = !requestInfo.m_sClient.IsEmpty();
+  auto       sName     = bDeclared ? requestInfo.m_sClient.GetView() : sUserAgent.GetSubString(0, 128);
+  if (sName.IsEmpty())
+  {
+    sName = "Unknown client";
+  }
+  const auto       sVersion = bDeclared ? requestInfo.m_sClientVersion.GetView() : xiiStringView();
+  xiiStringBuilder sKey;
+  sKey.SetFormat("{}:{}:{}{}", bDeclared, sName.GetElementCount(), sName, sVersion);
+  ref_connection.m_sStatelessClientKey = sKey;
+
+  if (auto it = m_StatelessClients.Find(sKey); it.IsValid())
+  {
+    it.Value().m_LastActivity = now;
+    return;
+  }
+
+  if (m_StatelessClients.GetCount() >= MaximumStatelessClients)
+  {
+    auto oldest = m_StatelessClients.GetIterator();
+    for (auto it = oldest; it.IsValid(); ++it)
+    {
+      if (it.Value().m_LastActivity < oldest.Value().m_LastActivity)
+      {
+        oldest = it;
+      }
+    }
+    m_StatelessClients.Remove(oldest);
+  }
+  m_StatelessClients.Insert(xiiString(sKey), xiiMCPHttpClient{xiiString(sName), xiiString(sVersion), now});
+}
 
 void xiiMCPHttpState::CancelSessionRequests(xiiStringView sSessionId, const xiiVariant* pId)
 {
@@ -420,6 +465,10 @@ void xiiMCPHttpState::Dispatch(xiiMCPHttpConnection& ref_connection, const xiiMC
   const bool bSessionCanCancel = it.IsValid() && session.m_State == xiiMCPSession::State::Ready &&
     (metadata.m_sVersion.IsEmpty() || metadata.m_sVersion == xiiMCPProtocol::InitializeVersion);
   const auto replyStatus = m_Protocol.Process(sBody, session, context, sReply, &metadata, pPending, bSessionCanCancel ? &cancellationId : nullptr);
+  if (fresh.m_bModernRequest)
+  {
+    TrackStatelessClient(ref_connection, fresh, GetHeader(request, "user-agent"), now);
+  }
   if (cancellationId.IsValid())
   {
     CancelSessionRequests(sSessionId, &cancellationId);
@@ -523,6 +572,17 @@ void xiiMCPHttpState::Update()
     {
       CancelSessionRequests(it.Key());
       it = m_Sessions.Remove(it);
+    }
+    else
+    {
+      ++it;
+    }
+  }
+  for (auto it = m_StatelessClients.GetIterator(); it.IsValid();)
+  {
+    if (now - it.Value().m_LastActivity > xiiTime::MakeFromMinutes(15))
+    {
+      it = m_StatelessClients.Remove(it);
     }
     else
     {
@@ -657,26 +717,41 @@ xiiNetworkEndpoint xiiMCPHttpServer::GetEndpoint() const
   return m_pState ? m_pState->m_Endpoint : xiiNetworkEndpoint();
 }
 
-xiiUInt32 xiiMCPHttpServer::GetSessionCount() const
+void xiiMCPHttpServer::ListClients(xiiVariantArray& out_clients) const
 {
-  return m_pState ? m_pState->m_Sessions.GetCount() : 0;
-}
-
-void xiiMCPHttpServer::ListSessions(xiiVariantArray& out_sessions) const
-{
-  out_sessions.Clear();
+  out_clients.Clear();
   if (!m_pState)
   {
     return;
   }
-  const auto now = xiiTime::Now();
+  const auto now    = xiiTime::Now();
+  const auto append = [&](xiiStringView sKey, bool bStateless, xiiStringView sName, xiiStringView sVersion, xiiStringView sState, xiiTime lastActivity) {
+    xiiUInt32 uiPending = 0;
+    for (const auto& connection : m_pState->m_Connections)
+    {
+      const auto& sOwner = bStateless ? connection.m_sStatelessClientKey : connection.m_sSessionId;
+      if (connection.m_Pending.IsPending() && sOwner == sKey)
+      {
+        ++uiPending;
+      }
+    }
+    xiiVariantDictionary entry;
+    entry["name"]            = xiiString(sName);
+    entry["version"]         = xiiString(sVersion);
+    entry["state"]           = xiiString(sState);
+    entry["pendingRequests"] = uiPending;
+    entry["idleSeconds"]     = static_cast<xiiUInt32>((now - lastActivity).GetSeconds());
+    out_clients.PushBack(std::move(entry));
+  };
   for (auto it = m_pState->m_Sessions.GetIterator(); it.IsValid(); ++it)
   {
-    const auto&          session = it.Value();
-    xiiVariantDictionary entry;
-    entry["name"]        = session.m_Protocol.m_sClient;
-    entry["state"]       = xiiString(session.m_Protocol.m_State == xiiMCPSession::State::Ready ? "Ready" : "Initializing");
-    entry["idleSeconds"] = static_cast<xiiUInt32>((now - session.m_LastActivity).GetSeconds());
-    out_sessions.PushBack(entry);
+    const auto& session = it.Value();
+    append(it.Key(), false, session.m_Protocol.m_sClient, session.m_Protocol.m_sClientVersion,
+           session.m_Protocol.m_State == xiiMCPSession::State::Ready ? "Ready" : "Initializing", session.m_LastActivity);
+  }
+  for (auto it = m_pState->m_StatelessClients.GetIterator(); it.IsValid(); ++it)
+  {
+    const auto& client = it.Value();
+    append(it.Key(), true, client.m_sName, client.m_sVersion, "Stateless", client.m_LastActivity);
   }
 }

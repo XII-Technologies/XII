@@ -18,7 +18,9 @@ struct XII_MCPPLUGIN_DLL xiiMCPSession
 
   State     m_State = State::Created;
   xiiString m_sClient;
+  xiiString m_sClientVersion;
   bool      m_bListNotifications = false;
+  bool      m_bModernRequest     = false; ///< Last request passed modern envelope and version checks.
 };
 
 struct XII_MCPPLUGIN_DLL xiiMCPHttpMetadata
