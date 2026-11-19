@@ -50,12 +50,8 @@ void xiiWorldRttiConverterContext::DeleteExistingObjects()
   m_GameObjectMap.Clear();
   m_ComponentMap.Clear();
   m_ComponentPickingMap.Clear();
-  // Need to do this to make sure all deleted objects are actually deleted as singleton components are
-  // still considered alive until Update actually deletes them.
-  const bool bSim = m_pWorld->GetWorldSimulationEnabled();
-  m_pWorld->SetWorldSimulationEnabled(false);
-  m_pWorld->Update();
-  m_pWorld->SetWorldSimulationEnabled(bSim);
+  // Release singleton component storage before the replacement scene objects are mirrored.
+  m_pWorld->FlushDeletedObjects();
   // m_OtherPickingMap.Clear(); // do not clear this
 }
 

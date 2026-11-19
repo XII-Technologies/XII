@@ -110,8 +110,6 @@ private:
 
   xiiStaticArray<FrameSlot, XII_MAX_VIEWPORT_FRAME_SLOTS> m_FrameSlots;
   xiiUInt8                                                m_uiRenderSlot   = XII_MAX_VIEWPORT_FRAME_SLOTS;
-  xiiUInt64                                               m_uiTextureID    = 0;
-  xiiUInt64                                               m_uiFrameID      = 0;
   bool                                                    m_bViewportSetup = false;
   bool                                                    m_bSharingFailed = false;
   xiiString                                               m_sScreenshot;

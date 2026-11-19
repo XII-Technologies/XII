@@ -1436,6 +1436,14 @@ xiiResult xiiWorld::RegisterUpdateFunctionInternal(const xiiWorldModule::UpdateF
   return XII_SUCCESS;
 }
 
+void xiiWorld::FlushDeletedObjects()
+{
+  CheckForWriteAccess();
+
+  DeleteDeadObjects();
+  DeleteDeadComponents();
+}
+
 void xiiWorld::DeleteDeadObjects()
 {
   while (!m_Data.m_DeadObjects.IsEmpty())
