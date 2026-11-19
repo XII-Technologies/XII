@@ -22,9 +22,9 @@ xiiMCP -MCPTransport stdio
 
 Automatic discovery is on by default. To select explicit local endpoints, use `-MCPTarget NAME` followed by one or more endpoint names. Use `-MCPNoDiscovery` to disable the advertisement scan. Call `xii.targets` for connection status and capability counts. Then use `tools/list`, `resources/list`, `resources/templates/list` and `prompts/list` to discover names scoped to each connected target. Follow `nextCursor` when present. Restart discovery if the registry changes during pagination.
 
-The Qt window has live gateway settings for loopback HTTP, the request deadline, discovery and explicit Local endpoints. It persists ordinary preferences through Qt settings. Bearer tokens and elevated permissions apply only to the current process. The Clients page shows initialized HTTP sessions and can copy an editor-managed VS Code HTTP configuration. With authentication enabled, the configuration prompts for the token.
+The Qt window has live gateway settings for loopback HTTP, the request deadline, discovery and explicit Local endpoints. Use **Instances** to connect, disconnect or browse an individual target without resetting the listener. The workspace persists ordinary preferences through Qt settings. Bearer tokens and elevated permissions apply only to the current process. The Clients page shows initialized HTTP sessions and can copy an editor-managed VS Code HTTP configuration. With authentication enabled, the configuration prompts for the token.
 
-The Capabilities page shows tools, resources, resource templates and prompts. It generates fields for common tool argument types from each input schema and offers an advanced JSON editor. Invocations enter a bounded worker queue. **Cancel queued requests** clears waiting work. Recent activity includes the capability, target, elapsed time and outcome. Target discovery uses independent native RPC exchanges for each instance.
+The Capabilities page shows tools, resources, resource templates and prompts. It generates fields for common tool argument types from each input schema and offers an advanced JSON editor. Invocations enter a bounded worker queue. **Cancel requests** clears waiting work and requests cancellation of the current GUI invocation. Recent activity includes the capability, target, elapsed time and outcome. Target discovery uses independent native RPC exchanges for each instance.
 
 Pass `-MCPTimeoutMs` with a value from 100 to 10000 to set the request deadline for the gateway. HTTP defaults to `127.0.0.1:8372/mcp`. The listener accepts numeric IPv4 or IPv6 loopback endpoints. Port zero requests an ephemeral port.
 
@@ -107,7 +107,7 @@ Editor capabilities include:
 | `editor.set_document_property` | Set a supported reflected value in an undoable transaction. |
 | `editor.document_history` | Undo or redo one operation at the current document revision. |
 | `editor.graph` | Page through nodes, pins and links or discover creation templates in a supported graph document. |
-| `editor.edit_graph` | Connect pins, disconnect a link or remove a node through the document's command history. |
+| `editor.edit_graph` | Create a node from a template, connect pins, disconnect a link or remove a node through command history. |
 | `editor.scene` | Page through scene, prefab or layer objects and inspect supported properties. |
 | `editor.edit_scene` | Add or remove objects or components, reparent objects, and set supported members in one undoable transaction. |
 | `editor.save` | Queue an asynchronous save. Read the document's dirty state to confirm completion. |
@@ -127,6 +127,6 @@ Use `xiiMCPRuntime::GetRegistry()` to extend an embedded runtime, or use `xiiMCP
 ## Current limits
 
 - HTTP serves JSON responses. SSE subscriptions, protocol progress streaming, OAuth and direct non-loopback listeners are outside this implementation. Stdio sends capability-list change notifications for initialized clients.
-- Target discovery is asynchronous. Forwarded invocations are serialized by the gateway. Foundation cancels expired native RPC requests on a best-effort basis. GUI cancellation applies to queued work. Completed mutations are not rolled back on a transport disconnect.
+- Target discovery is asynchronous. Forwarded invocations are serialized by the gateway. Foundation cancels expired and GUI-canceled native RPC requests on a best-effort basis. Completed mutations are not rolled back on cancellation or disconnection.
 - The Clients page lists stateful HTTP sessions. Stateless requests do not establish sessions. Applying workspace settings restarts the listener and reconnects targets.
 - See [MCP capability coverage](MCPCapabilityCoverage.md) for the existing APIs and the workflows that still require further integration.
