@@ -7,10 +7,33 @@
 #include <Foundation/Utilities/ConversionUtils.h>
 #include <MCPPlugin/Json.h>
 #include <MCPPlugin/Providers/RuntimeProviders.h>
+#include <MCPPlugin/Providers/World/World.h>
 #include <MCPPlugin/Reflection.h>
+
+xiiWorld* xiiMCPRuntimeProviders::FindWorld(const xiiVariantDictionary& arguments)
+{
+  const auto sWorld = xiiMCPJson::GetString(arguments, "world");
+  if (!xiiConversionUtils::IsStringUuid(sWorld))
+  {
+    return nullptr;
+  }
+
+  const auto instance = xiiConversionUtils::ConvertStringToUuid(sWorld);
+  for (xiiUInt32 uiIndex = 0; uiIndex < xiiWorld::GetWorldCount(); ++uiIndex)
+  {
+    if (auto* pWorld = xiiWorld::GetWorld(uiIndex); pWorld != nullptr && pWorld->GetInstanceId() == instance)
+    {
+      return pWorld;
+    }
+  }
+  return nullptr;
+}
 
 namespace
 {
+  using xiiMCPRuntimeProviders::FindWorld;
+  using xiiMCPRuntimeProviders::FormatHandle;
+
   constexpr xiiUInt32 DefaultPageSize = 32;
   constexpr xiiUInt32 MaximumPageSize = 128;
 
@@ -18,33 +41,6 @@ namespace
   {
     xiiStringBuilder sId;
     xiiConversionUtils::ToString(world.GetInstanceId(), sId);
-    return xiiString(sId);
-  }
-
-  xiiWorld* FindWorld(const xiiVariantDictionary& arguments)
-  {
-    const auto sWorld = xiiMCPJson::GetString(arguments, "world");
-    if (!xiiConversionUtils::IsStringUuid(sWorld))
-    {
-      return nullptr;
-    }
-
-    const auto instance = xiiConversionUtils::ConvertStringToUuid(sWorld);
-    for (xiiUInt32 uiIndex = 0; uiIndex < xiiWorld::GetWorldCount(); ++uiIndex)
-    {
-      if (auto* pWorld = xiiWorld::GetWorld(uiIndex); pWorld != nullptr && pWorld->GetInstanceId() == instance)
-      {
-        return pWorld;
-      }
-    }
-    return nullptr;
-  }
-
-  template <typename Handle>
-  xiiString FormatHandle(Handle handle)
-  {
-    xiiStringBuilder sId;
-    sId.SetFormat("{}", handle.GetInternalID().m_Data);
     return xiiString(sId);
   }
 
