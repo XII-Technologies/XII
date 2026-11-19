@@ -55,6 +55,29 @@ namespace
     }
   }
 
+  bool IsRuntimeEditable(const xiiAbstractProperty& property)
+  {
+    if (!IsExposedMember(property) || property.GetFlags().IsAnySet(xiiPropertyFlags::ReadOnly | xiiPropertyFlags::Bitflags) ||
+        property.GetAttributeByType<xiiReadOnlyAttribute>() != nullptr || property.GetAttributeByType<xiiRuntimeEditableAttribute>() == nullptr)
+    {
+      return false;
+    }
+
+    if (property.GetFlags().IsSet(xiiPropertyFlags::IsEnum))
+    {
+      return true;
+    }
+
+    const auto type = property.GetSpecificType()->GetVariantType();
+    if (!xiiReflectionUtils::IsValueType(&property) || GetJsonType(type) == nullptr)
+    {
+      return false;
+    }
+
+    return type != xiiVariantType::StringView && type != xiiVariantType::Uuid && type != xiiVariantType::HashedString &&
+      type != xiiVariantType::Time && type != xiiVariantType::Angle && type != xiiVariantType::Angled;
+  }
+
   xiiVariantArray Components(std::initializer_list<double> values)
   {
     xiiVariantArray result;
@@ -65,7 +88,7 @@ namespace
     return result;
   }
 
-  xiiVariantDictionary DescribeType(const xiiRTTI& type, xiiUInt32 uiDepth)
+  xiiVariantDictionary DescribeType(const xiiRTTI& type, xiiUInt32 uiDepth, bool bRoot)
   {
     xiiVariantDictionary result;
     result["type"]  = xiiString("object");
@@ -102,11 +125,26 @@ namespace
         }
         else if (flags.IsSet(xiiPropertyFlags::Class))
         {
-          schema = DescribeType(*pType, uiDepth - 1);
+          schema = DescribeType(*pType, uiDepth - 1, false);
         }
         else
         {
           continue;
+        }
+        if (bRoot && IsRuntimeEditable(*pProperty))
+        {
+          schema["x-xii-runtime-editable"] = true;
+          if (const auto* pClamp = pProperty->GetAttributeByType<xiiClampValueAttribute>())
+          {
+            if (pClamp->GetMinValue().IsNumber())
+            {
+              schema["minimum"] = pClamp->GetMinValue();
+            }
+            if (pClamp->GetMaxValue().IsNumber())
+            {
+              schema["maximum"] = pClamp->GetMaxValue();
+            }
+          }
         }
         schema["readOnly"]                    = flags.IsSet(xiiPropertyFlags::ReadOnly);
         members[pProperty->GetPropertyName()] = std::move(schema);
@@ -188,7 +226,7 @@ namespace
 
 xiiVariantDictionary xiiMCPReflection::Describe(const xiiRTTI& type)
 {
-  return DescribeType(type, 3);
+  return DescribeType(type, 3, true);
 }
 
 xiiVariantDictionary xiiMCPReflection::ReadMembers(const xiiRTTI& type, const void* pObject)
@@ -376,4 +414,31 @@ bool xiiMCPReflection::ConvertArgument(const xiiAbstractProperty& property, cons
     default:
       return false;
   }
+}
+
+xiiStatus xiiMCPReflection::SetRuntimeMember(const xiiRTTI& type, void* pObject, xiiStringView sProperty, const xiiVariant& json)
+{
+  const auto* pProperty = type.FindPropertyByName(sProperty);
+  if (pProperty == nullptr || !IsRuntimeEditable(*pProperty))
+  {
+    return xiiStatus("Use a property marked x-xii-runtime-editable in the component schema.");
+  }
+
+  xiiVariant value;
+  if (!ConvertArgument(*pProperty, json, value))
+  {
+    return xiiStatus("The value does not match the reflected property type.");
+  }
+
+  if (const auto* pClamp = pProperty->GetAttributeByType<xiiClampValueAttribute>())
+  {
+    xiiVariant clamped = value;
+    if (xiiReflectionUtils::ClampValue(clamped, pClamp).Failed() || clamped != value)
+    {
+      return xiiStatus("The value is outside the reflected property bounds.");
+    }
+  }
+
+  xiiReflectionUtils::SetMemberPropertyValue(static_cast<const xiiAbstractMemberProperty*>(pProperty), pObject, value);
+  return XII_SUCCESS;
 }

@@ -80,8 +80,8 @@ Live runtime capabilities include:
 | `runtime.worlds` | Live world IDs, registry slots, object count and simulation timing. |
 | `runtime.objects` | A page of objects with name, parent and component-type filters. |
 | `runtime.object` | Local and global transforms and a page of attached components. |
-| `runtime.component` | Supported reflected member values and their schema. |
-| `runtime.edit_component` | Attach a concrete component to a dynamic owner, or activate or remove a component by its current handle ID. |
+| `runtime.component` | Current component ID, supported reflected member values and their schema. |
+| `runtime.edit_component` | Attach a concrete component to a dynamic owner, activate or remove an attached component, or set an eligible reflected property. Requires edit permission. |
 | `runtime.edit_object` | Create, reposition, rotate, scale, activate, reparent or schedule removal of a live object with edit permission. Reparenting preserves the local transform. |
 | `runtime.edit_objects` | Execute up to 24 object edits in order. Reports partial results if an operation fails or expires. |
 | `runtime.simulation` | Change enablement, pause and speed with execute permission. |
@@ -99,6 +99,8 @@ Live runtime capabilities include:
 | `runtime.render_graph` | Request and poll a bounded pass and dependency snapshot with available GPU timings. Requires capture permission and an active graphics device. |
 
 Runtime resources include `xii://runtime/status` and the `xii://runtime/worlds/{index}` template. Use the numeric registry slot as `index`. Its result includes the live world ID required by world operations. The `runtime.inspect_scene` prompt describes the world inspection workflow.
+
+To edit a live component member, take the component ID and exact RTTI type from `runtime.object` and inspect its schema with `runtime.component`. Pass `action: "set"`, `world`, `object`, `component`, `type`, `property` and `value` to `runtime.edit_component`. Set accepts top-level members marked `x-xii-runtime-editable` and validates the value against its reflected type and bounds before invoking the setter. Marker radius and volume shape, falloff and sort order support live changes. Component authors can opt in additional members with `xiiRuntimeEditableAttribute` when they support live changes under the world write marker. Live values are transient.
 
 Editor capabilities include:
 
