@@ -41,7 +41,7 @@ namespace
 
   xiiCVarInt cvar_ViewportFrameSlots("Rendering.Editor.ViewportFrameSlots", 3, xiiCVarFlags::Default,
                                      "Number of persistent offscreen targets per new editor view (2 or 3).");
-}
+} // namespace
 
 xiiEngineProcessViewContext::xiiEngineProcessViewContext(xiiEngineProcessDocumentContext* pContext) :
   m_pDocumentContext(pContext), m_uiViewID(0xFFFFFFFFU)
