@@ -42,6 +42,18 @@ namespace
     }
     return true;
   }
+
+  bool SplitResourceTemplate(xiiStringView sTemplate, xiiStringView& out_sPrefix, xiiStringView& out_sVariable)
+  {
+    const char* pVariableStart = sTemplate.FindSubString("{");
+    if (pVariableStart == nullptr || pVariableStart == sTemplate.GetStartPointer() || pVariableStart[-1] != '/' || !sTemplate.EndsWith("}"))
+    {
+      return false;
+    }
+    out_sPrefix   = xiiStringView(sTemplate.GetStartPointer(), pVariableStart);
+    out_sVariable = xiiStringView(pVariableStart + 1, sTemplate.GetEndPointer() - 1);
+    return IsName(out_sVariable);
+  }
 } // namespace
 
 bool xiiMCPCallContext::Allows(xiiMCPPermission permission) const
@@ -67,7 +79,7 @@ xiiResult xiiMCPRegistry::Register(xiiMCPCapability kind, xiiStringView sKey, xi
     return XII_FAILURE;
   }
 
-  const bool bNamed = kind == xiiMCPCapability::Tool || kind == xiiMCPCapability::Prompt;
+  const bool bNamed    = kind == xiiMCPCapability::Tool || kind == xiiMCPCapability::Prompt;
   const bool bTemplate = kind == xiiMCPCapability::ResourceTemplate;
   if (bNamed ? !IsName(sKey) : (!IsUri(sKey) || xiiMCPJson::GetString(descriptor, "name").IsEmpty()))
   {
@@ -82,8 +94,17 @@ xiiResult xiiMCPRegistry::Register(xiiMCPCapability kind, xiiStringView sKey, xi
       return XII_FAILURE;
     }
   }
+  if (bTemplate)
+  {
+    xiiStringView sPrefix, sVariable;
+    if (!SplitResourceTemplate(sKey, sPrefix, sVariable))
+    {
+      return XII_FAILURE;
+    }
+  }
 
-  descriptor[bNamed ? "name" : bTemplate ? "uriTemplate" : "uri"] = xiiString(sKey);
+  descriptor[bNamed ? "name" : bTemplate ? "uriTemplate" :
+                                           "uri"] = xiiString(sKey);
   xiiStringBuilder sDescriptor;
   if (xiiMCPJson::Write(descriptor, sDescriptor, 8 * 1024).Failed())
   {
@@ -160,4 +181,36 @@ xiiStatus xiiMCPRegistry::Invoke(xiiMCPCapability kind, xiiStringView sKey, cons
   }
 
   return pEntry->m_Callback(context, arguments, out_result);
+}
+
+xiiStatus xiiMCPRegistry::ReadResource(xiiStringView sUri, const xiiMCPCallContext& context, xiiVariantDictionary& out_result) const
+{
+  if (!IsUri(sUri) || context.HasExpired())
+  {
+    return xiiStatus("Provide a valid resource URI before the request deadline.");
+  }
+
+  xiiVariantDictionary arguments;
+  arguments["uri"] = xiiString(sUri);
+  if (const auto* pEntry = Find(xiiMCPCapability::Resource, sUri, context))
+  {
+    return pEntry->m_Callback(context, arguments, out_result);
+  }
+
+  const auto& templates = m_Entries[static_cast<xiiUInt8>(xiiMCPCapability::ResourceTemplate)];
+  for (auto it = templates.GetIterator(); it.IsValid(); ++it)
+  {
+    xiiStringView sPrefix, sVariable;
+    if (!context.Allows(it.Value().m_Permission) || !SplitResourceTemplate(it.Key(), sPrefix, sVariable) || !sUri.StartsWith(sPrefix))
+    {
+      continue;
+    }
+    const auto sValue = xiiStringView(sUri.GetStartPointer() + sPrefix.GetElementCount(), sUri.GetEndPointer());
+    if (IsName(sValue) && sVariable != "uri")
+    {
+      arguments[sVariable] = xiiString(sValue);
+      return it.Value().m_Callback(context, arguments, out_result);
+    }
+  }
+  return xiiStatus("The resource is unavailable or requires additional permission.");
 }

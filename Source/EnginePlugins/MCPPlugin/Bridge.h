@@ -21,12 +21,12 @@ public:
 
   [[nodiscard]] xiiStatus StartClient();
   [[nodiscard]] xiiStatus StartServer(xiiMCPRegistry& registry, xiiStringView sApplication, xiiStringView sEndpoint, xiiUInt8 uiPermissions, bool bAdvertise);
-  void Stop();
-  void Update();
+  void                    Stop();
+  void                    Update();
 
   [[nodiscard]] xiiStatus Connect(xiiStringView sEndpoint, xiiNetworkConnection& out_hConnection);
-  void Disconnect(xiiNetworkConnection hConnection);
-  [[nodiscard]] bool IsConnected(xiiNetworkConnection hConnection) const;
+  void                    Disconnect(xiiNetworkConnection hConnection);
+  [[nodiscard]] bool      IsConnected(xiiNetworkConnection hConnection) const;
   [[nodiscard]] xiiStatus Call(xiiNetworkConnection hConnection, const xiiVariantDictionary& request, xiiTime deadline, xiiVariantDictionary& out_response);
 
   [[nodiscard]] static xiiResult Discover(xiiDynamicArray<xiiTelemetryInstance>& out_instances);

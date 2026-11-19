@@ -46,8 +46,8 @@ xiiResult xiiMCPJson::Parse(xiiStringView sJson, xiiVariant& out_value, xiiUInt3
   }
 
   xiiRawMemoryStreamReader stream(sJson.GetStartPointer(), sJson.GetElementCount());
-  xiiMuteLog log;
-  xiiJSONReader reader;
+  xiiMuteLog               log;
+  xiiJSONReader            reader;
   reader.SetLogInterface(&log);
   XII_SUCCEED_OR_RETURN(reader.ParseStrict(stream, MaximumDepth));
   switch (reader.GetTopLevelElementType())
@@ -69,7 +69,7 @@ xiiResult xiiMCPJson::Parse(xiiStringView sJson, xiiVariant& out_value, xiiUInt3
 xiiResult xiiMCPJson::Write(const xiiVariant& value, xiiStringBuilder& out_sJson, xiiUInt32 uiMaximumBytes)
 {
   xiiMCPBoundedJsonStream stream(uiMaximumBytes);
-  xiiStandardJSONWriter writer;
+  xiiStandardJSONWriter   writer;
   writer.SetOutputStream(&stream);
   writer.SetWhitespaceMode(xiiJSONWriter::WhitespaceMode::None);
   XII_SUCCEED_OR_RETURN(writer.WritePlainVariant(value, MaximumDepth));

@@ -11,10 +11,10 @@
 struct XII_MCPPLUGIN_DLL xiiMCPHttpConfiguration
 {
   xiiNetworkEndpoint m_Endpoint;
-  xiiString m_sBearerToken;
-  xiiString m_sAllowedOrigin;
-  xiiTime m_RequestTimeout = xiiTime::MakeFromSeconds(5);
-  xiiUInt8 m_uiPermissions = static_cast<xiiUInt8>(xiiMCPPermission::Read);
+  xiiString          m_sBearerToken;
+  xiiString          m_sAllowedOrigin;
+  xiiTime            m_RequestTimeout = xiiTime::MakeFromSeconds(5);
+  xiiUInt8           m_uiPermissions  = static_cast<xiiUInt8>(xiiMCPPermission::Read);
 };
 
 class xiiMCPHttpState;
@@ -26,13 +26,13 @@ public:
   explicit xiiMCPHttpServer(const xiiMCPProtocol& protocol);
   ~xiiMCPHttpServer();
 
-  [[nodiscard]] xiiStatus Start(const xiiMCPHttpConfiguration& configuration);
-  void Stop();
-  void Update();
+  [[nodiscard]] xiiStatus          Start(const xiiMCPHttpConfiguration& configuration);
+  void                             Stop();
+  void                             Update();
   [[nodiscard]] xiiNetworkEndpoint GetEndpoint() const;
-  [[nodiscard]] xiiUInt32 GetSessionCount() const;
+  [[nodiscard]] xiiUInt32          GetSessionCount() const;
 
 private:
-  const xiiMCPProtocol& m_Protocol;
+  const xiiMCPProtocol&         m_Protocol;
   xiiUniquePtr<xiiMCPHttpState> m_pState;
 };

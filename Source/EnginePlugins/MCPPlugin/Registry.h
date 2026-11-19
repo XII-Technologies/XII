@@ -21,17 +21,17 @@ enum class xiiMCPCapability : xiiUInt8
 
 enum class xiiMCPPermission : xiiUInt8
 {
-  Read = 1,
-  Capture = 2,
-  Edit = 4,
-  Execute = 8,
+  Read           = 1,
+  Capture        = 2,
+  Edit           = 4,
+  Execute        = 8,
   Administration = 16
 };
 
 struct XII_MCPPLUGIN_DLL xiiMCPCallContext
 {
-  xiiUInt8 m_uiPermissions = static_cast<xiiUInt8>(xiiMCPPermission::Read);
-  xiiTime m_Deadline;
+  xiiUInt8      m_uiPermissions = static_cast<xiiUInt8>(xiiMCPPermission::Read);
+  xiiTime       m_Deadline;
   xiiStringView m_sIdentity;
 
   [[nodiscard]] bool Allows(xiiMCPPermission permission) const;
@@ -49,25 +49,26 @@ public:
 
   [[nodiscard]] xiiResult Register(xiiMCPCapability kind, xiiStringView sKey, xiiVariantDictionary descriptor, xiiMCPPermission permission, Callback callback);
   [[nodiscard]] xiiResult RegisterTool(xiiStringView sName, xiiStringView sDescription, xiiStringView sInputSchema, xiiMCPPermission permission, Callback callback);
-  void Remove(xiiMCPCapability kind, xiiStringView sKey);
+  void                    Remove(xiiMCPCapability kind, xiiStringView sKey);
 
-  void List(xiiMCPCapability kind, const xiiMCPCallContext& context, xiiVariantArray& out_entries) const;
-  [[nodiscard]] bool Contains(xiiMCPCapability kind, xiiStringView sKey, const xiiMCPCallContext& context) const;
+  void                    List(xiiMCPCapability kind, const xiiMCPCallContext& context, xiiVariantArray& out_entries) const;
+  [[nodiscard]] bool      Contains(xiiMCPCapability kind, xiiStringView sKey, const xiiMCPCallContext& context) const;
   [[nodiscard]] xiiStatus Invoke(xiiMCPCapability kind, xiiStringView sKey, const xiiMCPCallContext& context, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result) const;
+  [[nodiscard]] xiiStatus ReadResource(xiiStringView sUri, const xiiMCPCallContext& context, xiiVariantDictionary& out_result) const;
   [[nodiscard]] xiiUInt64 GetRevision() const { return m_uiRevision; }
 
 private:
   struct Entry
   {
     xiiVariantDictionary m_Descriptor;
-    xiiMCPPermission m_Permission = xiiMCPPermission::Read;
-    Callback m_Callback;
+    xiiMCPPermission     m_Permission = xiiMCPPermission::Read;
+    Callback             m_Callback;
   };
 
   using Entries = xiiMap<xiiString, Entry>;
 
   [[nodiscard]] const Entry* Find(xiiMCPCapability kind, xiiStringView sKey, const xiiMCPCallContext& context) const;
 
-  Entries m_Entries[static_cast<xiiUInt8>(xiiMCPCapability::Count)];
+  Entries   m_Entries[static_cast<xiiUInt8>(xiiMCPCapability::Count)];
   xiiUInt64 m_uiRevision = 1;
 };

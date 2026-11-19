@@ -16,26 +16,27 @@ public:
   xiiVariantDictionary Query(const xiiVariantDictionary& request);
 
   xiiMCPRegistry* m_pRegistry = nullptr;
-  xiiString m_sInstance;
-  xiiString m_sApplication;
-  xiiString m_sIdentity;
-  xiiUInt8 m_uiPermissions = 0;
+  xiiString       m_sInstance;
+  xiiString       m_sApplication;
+  xiiString       m_sIdentity;
+  xiiTime         m_Deadline;
+  xiiUInt8        m_uiPermissions = 0;
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_NO_LINKAGE, xiiMCPBridgeMethods);
 
 namespace
 {
-  constexpr xiiUInt64 ServiceId = 0x5849494D43503031ULL;
-  constexpr xiiUInt64 QueryMethod = 1;
-  constexpr xiiUInt8 AllPermissions = 31;
+  constexpr xiiUInt64 ServiceId      = 0x5849494D43503031ULL;
+  constexpr xiiUInt64 QueryMethod    = 1;
+  constexpr xiiUInt8  AllPermissions = 31;
 
   xiiNetworkRpcAttribute* MakeQueryAttribute()
   {
-    auto* pAttribute = new xiiNetworkRpcAttribute(QueryMethod);
-    pAttribute->m_bAllowFireAndForget = false;
+    auto* pAttribute                     = new xiiNetworkRpcAttribute(QueryMethod);
+    pAttribute->m_bAllowFireAndForget    = false;
     pAttribute->m_uiMaximumArgumentBytes = xiiMCPJson::DefaultMaximumBytes;
-    pAttribute->m_uiTimeoutMilliseconds = 5000;
+    pAttribute->m_uiTimeoutMilliseconds  = 5000;
     return pAttribute;
   }
 
@@ -50,7 +51,7 @@ namespace
   {
   public:
     const xiiRTTI* GetType() const override { return xiiGetStaticRTTI<xiiMCPBridgeMethods>(); }
-    void* GetObject() override { return &m_Methods; }
+    void*          GetObject() override { return &m_Methods; }
 
     bool Authorize(const xiiNetworkDispatchContext& context) const override
     {
@@ -68,6 +69,7 @@ namespace
 
       // Authorization and invocation run serially on the same executor.
       m_Methods.m_sIdentity = info.m_sAuthenticatedIdentity;
+      m_Methods.m_Deadline  = context.m_Deadline;
       return true;
     }
 
@@ -76,40 +78,38 @@ namespace
 } // namespace
 
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiMCPBridgeMethods, xiiNoBase, 1, xiiRTTINoAllocator)
-{
-  XII_BEGIN_FUNCTIONS
   {
-    XII_FUNCTION_PROPERTY(Query)->AddAttributes(MakeQueryAttribute()),
+    XII_BEGIN_FUNCTIONS
+    {
+      XII_FUNCTION_PROPERTY(Query)->AddAttributes(MakeQueryAttribute()),
+    } XII_END_FUNCTIONS;
+    XII_BEGIN_ATTRIBUTES
+    {
+      new xiiNetworkIdentityAttribute(0x5849494D43500101ULL)} XII_END_ATTRIBUTES;
   }
-  XII_END_FUNCTIONS;
-  XII_BEGIN_ATTRIBUTES
-  {
-    new xiiNetworkIdentityAttribute(0x5849494D43500101ULL)
-  }
-  XII_END_ATTRIBUTES;
-}
 XII_END_STATIC_REFLECTED_TYPE;
 
 xiiVariantDictionary xiiMCPBridgeMethods::Query(const xiiVariantDictionary& request)
 {
-  xiiUInt64 uiPermissions = 0;
-  const auto* pPermissions = request.GetValue("permissions");
+  xiiUInt64   uiPermissions = 0;
+  const auto* pPermissions  = request.GetValue("permissions");
   if (pPermissions == nullptr || !xiiMCPJson::ReadUInt(*pPermissions, uiPermissions) || uiPermissions > AllPermissions)
   {
     return BridgeError("Invalid permission mask.");
   }
 
   xiiMCPCallContext context;
-  context.m_uiPermissions = m_uiPermissions & static_cast<xiiUInt8>(uiPermissions);
-  context.m_sIdentity = m_sIdentity;
-  const auto sAction = xiiMCPJson::GetString(request, "action");
+  context.m_uiPermissions      = m_uiPermissions & static_cast<xiiUInt8>(uiPermissions);
+  context.m_sIdentity          = m_sIdentity;
+  context.m_Deadline           = m_Deadline;
+  const auto           sAction = xiiMCPJson::GetString(request, "action");
   xiiVariantDictionary response;
   if (sAction == "identity")
   {
-    response["instance"] = m_sInstance;
+    response["instance"]    = m_sInstance;
     response["application"] = m_sApplication;
-    response["processId"] = static_cast<xiiUInt32>(xiiProcess::GetCurrentProcessID());
-    response["revision"] = m_pRegistry->GetRevision();
+    response["processId"]   = static_cast<xiiUInt32>(xiiProcess::GetCurrentProcessID());
+    response["revision"]    = m_pRegistry->GetRevision();
     return response;
   }
 
@@ -118,8 +118,8 @@ xiiVariantDictionary xiiMCPBridgeMethods::Query(const xiiVariantDictionary& requ
     return BridgeError("The target instance changed. Rediscover it before sending another operation.");
   }
 
-  xiiUInt64 uiKind = 0;
-  const auto* pKind = request.GetValue("kind");
+  xiiUInt64   uiKind = 0;
+  const auto* pKind  = request.GetValue("kind");
   if (pKind == nullptr || !xiiMCPJson::ReadUInt(*pKind, uiKind) || uiKind >= static_cast<xiiUInt8>(xiiMCPCapability::Count))
   {
     return BridgeError("Invalid capability kind.");
@@ -128,8 +128,8 @@ xiiVariantDictionary xiiMCPBridgeMethods::Query(const xiiVariantDictionary& requ
   const auto kind = static_cast<xiiMCPCapability>(uiKind);
   if (sAction == "list")
   {
-    xiiUInt64 uiOffset = 0;
-    const auto* pOffset = request.GetValue("offset");
+    xiiUInt64   uiOffset = 0;
+    const auto* pOffset  = request.GetValue("offset");
     if (pOffset != nullptr && !xiiMCPJson::ReadUInt(*pOffset, uiOffset))
     {
       return BridgeError("Invalid capability offset.");
@@ -143,12 +143,12 @@ xiiVariantDictionary xiiMCPBridgeMethods::Query(const xiiVariantDictionary& requ
     }
 
     xiiVariantArray page;
-    const auto uiEnd = xiiMath::Min(entries.GetCount(), static_cast<xiiUInt32>(uiOffset) + 8);
+    const auto      uiEnd = xiiMath::Min(entries.GetCount(), static_cast<xiiUInt32>(uiOffset) + 8);
     for (xiiUInt32 uiIndex = static_cast<xiiUInt32>(uiOffset); uiIndex < uiEnd; ++uiIndex)
     {
       page.PushBack(entries[uiIndex]);
     }
-    response["entries"] = std::move(page);
+    response["entries"]  = std::move(page);
     response["revision"] = m_pRegistry->GetRevision();
     if (uiEnd < entries.GetCount())
     {
@@ -169,7 +169,10 @@ xiiVariantDictionary xiiMCPBridgeMethods::Query(const xiiVariantDictionary& requ
   }
 
   xiiVariantDictionary result;
-  const auto status = m_pRegistry->Invoke(kind, xiiMCPJson::GetString(request, "key"), context, *pArguments, result);
+  const auto           sKey   = xiiMCPJson::GetString(request, "key");
+  const auto           status = kind == xiiMCPCapability::Resource || kind == xiiMCPCapability::ResourceTemplate ?
+    m_pRegistry->ReadResource(sKey, context, result) :
+    m_pRegistry->Invoke(kind, sKey, context, *pArguments, result);
   if (status.Failed())
   {
     return BridgeError(status.GetMessageString());
@@ -196,12 +199,12 @@ public:
   xiiStatus Start()
   {
     xiiNetworkHostConfiguration config;
-    config.m_Transport = xiiNetworkTransportType::Local;
-    config.m_Authentication = xiiNetworkAuthenticationPolicy::LocalUser;
-    config.m_Protocol = xiiUuid(ServiceId, 1);
-    config.m_uiMaximumConnections = 32;
+    config.m_Transport                      = xiiNetworkTransportType::Local;
+    config.m_Authentication                 = xiiNetworkAuthenticationPolicy::LocalUser;
+    config.m_Protocol                       = xiiUuid(ServiceId, 1);
+    config.m_uiMaximumConnections           = 32;
     config.m_uiMaximumChannelsPerConnection = 2;
-    config.m_uiMaximumMessageBytes = 512 * 1024;
+    config.m_uiMaximumMessageBytes          = 512 * 1024;
     xiiNetworkReflectionEndpoint::EnableProtocol(config);
     const auto error = m_Host.Start(config);
     if (error.Failed())
@@ -210,13 +213,13 @@ public:
     }
 
     xiiNetworkReflectionConfiguration reflection;
-    reflection.m_uiMaximumPeers = config.m_uiMaximumConnections;
-    reflection.m_uiMaximumPendingCalls = 32;
+    reflection.m_uiMaximumPeers         = config.m_uiMaximumConnections;
+    reflection.m_uiMaximumPendingCalls  = 32;
     reflection.m_uiMaximumQueuedPackets = 64;
-    reflection.m_uiMaximumQueuedBytes = 4 * 1024 * 1024;
-    reflection.m_uiRequestsPerSecond = 32;
-    reflection.m_uiRequestBurst = 8;
-    reflection.m_MaximumCallTimeout = xiiTime::MakeFromSeconds(10);
+    reflection.m_uiMaximumQueuedBytes   = 4 * 1024 * 1024;
+    reflection.m_uiRequestsPerSecond    = 32;
+    reflection.m_uiRequestBurst         = 8;
+    reflection.m_MaximumCallTimeout     = xiiTime::MakeFromSeconds(10);
     if (m_Reflection.Start(reflection).Failed() || RegisterMethods().Failed())
     {
       return xiiStatus("Could not register the reflected MCP protocol.");
@@ -233,10 +236,10 @@ public:
       return m_Reflection.DeclareRemoteService(ServiceId, xiiGetStaticRTTI<xiiMCPBridgeMethods>()).GetResult();
     }
     xiiNetworkRpcServiceLimits limits;
-    limits.m_uiRequestsPerSecond = 32;
-    limits.m_uiBurst = 8;
+    limits.m_uiRequestsPerSecond         = 32;
+    limits.m_uiBurst                     = 8;
     limits.m_uiMaximumConcurrentRequests = 8;
-    limits.m_uiMaximumResponseBytes = 256 * 1024;
+    limits.m_uiMaximumResponseBytes      = 256 * 1024;
     return m_Reflection.RegisterService(ServiceId, m_pService, 0, limits).GetResult();
   }
 
@@ -270,15 +273,15 @@ public:
     m_Reflection.Update();
   }
 
-  xiiTelemetryDiscovery m_Discovery;
-  xiiNetworkHost m_Host;
-  xiiNetworkTypeRegistry m_TypeRegistry;
-  xiiNetworkReflectionEndpoint m_Reflection;
+  xiiTelemetryDiscovery             m_Discovery;
+  xiiNetworkHost                    m_Host;
+  xiiNetworkTypeRegistry            m_TypeRegistry;
+  xiiNetworkReflectionEndpoint      m_Reflection;
   xiiSharedPtr<xiiMCPBridgeService> m_pService;
-  xiiUInt64 m_uiTypeGeneration = 0;
+  xiiUInt64                         m_uiTypeGeneration = 0;
 };
 
-xiiMCPBridge::xiiMCPBridge() = default;
+xiiMCPBridge::xiiMCPBridge()  = default;
 xiiMCPBridge::~xiiMCPBridge() = default;
 
 xiiStatus xiiMCPBridge::StartClient()
@@ -289,7 +292,7 @@ xiiStatus xiiMCPBridge::StartClient()
   }
 
   xiiUniquePtr<xiiMCPBridgeState> pState = XII_DEFAULT_NEW(xiiMCPBridgeState);
-  const auto status = pState->Start();
+  const auto                      status = pState->Start();
   if (status.Succeeded())
   {
     m_pState = std::move(pState);
@@ -305,9 +308,9 @@ xiiStatus xiiMCPBridge::StartServer(xiiMCPRegistry& registry, xiiStringView sApp
   }
 
   xiiTelemetryInstance instance;
-  instance.m_Instance = xiiUuid::MakeUuid();
+  instance.m_Instance     = xiiUuid::MakeUuid();
   instance.m_sApplication = sApplication;
-  instance.m_uiProcessId = xiiProcess::GetCurrentProcessID();
+  instance.m_uiProcessId  = xiiProcess::GetCurrentProcessID();
   xiiStringBuilder sInstance;
   xiiConversionUtils::ToString(instance.m_Instance, sInstance);
   if (sEndpoint.IsEmpty())
@@ -328,20 +331,20 @@ xiiStatus xiiMCPBridge::StartServer(xiiMCPRegistry& registry, xiiStringView sApp
     return xiiStatus("Invalid Local MCP endpoint name.");
   }
 
-  xiiUniquePtr<xiiMCPBridgeState> pState = XII_DEFAULT_NEW(xiiMCPBridgeState);
-  pState->m_pService = XII_DEFAULT_NEW(xiiMCPBridgeService);
-  pState->m_pService->m_Methods.m_pRegistry = &registry;
-  pState->m_pService->m_Methods.m_sInstance = sInstance;
-  pState->m_pService->m_Methods.m_sApplication = sApplication;
+  xiiUniquePtr<xiiMCPBridgeState> pState        = XII_DEFAULT_NEW(xiiMCPBridgeState);
+  pState->m_pService                            = XII_DEFAULT_NEW(xiiMCPBridgeService);
+  pState->m_pService->m_Methods.m_pRegistry     = &registry;
+  pState->m_pService->m_Methods.m_sInstance     = sInstance;
+  pState->m_pService->m_Methods.m_sApplication  = sApplication;
   pState->m_pService->m_Methods.m_uiPermissions = uiPermissions & AllPermissions;
-  const auto status = pState->Start();
+  const auto status                             = pState->Start();
   if (status.Failed())
   {
     return status;
   }
 
   xiiNetworkListener hListener;
-  const auto error = pState->m_Host.Listen(endpoint, hListener);
+  const auto         error = pState->m_Host.Listen(endpoint, hListener);
   if (error.Failed())
   {
     return xiiStatus(xiiFmt("Could not listen on Local MCP endpoint '{0}' ({1}).", instance.m_sEndpoint, error.GetCodeName()));
@@ -413,9 +416,9 @@ xiiStatus xiiMCPBridge::Call(xiiNetworkConnection hConnection, const xiiVariantD
   {
     return xiiStatus("The request deadline expired.");
   }
-  const xiiVariant arguments[] = {request};
+  const xiiVariant     arguments[] = {request};
   xiiNetworkRpcRequest pending;
-  const auto admission = m_pState->m_Reflection.CallRpc(channel, ServiceId, QueryMethod, arguments, pending, remaining);
+  const auto           admission = m_pState->m_Reflection.CallRpc(channel, ServiceId, QueryMethod, arguments, pending, remaining);
   if (admission.Failed())
   {
     return xiiStatus(xiiFmt("Could not send the operation to the selected XII target (code {0}).", static_cast<xiiUInt32>(admission.m_Code)));

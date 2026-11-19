@@ -37,7 +37,7 @@ namespace
   const xiiVariantArray& GetArray(const xiiVariantDictionary& snapshot, xiiStringView sName)
   {
     static const xiiVariantArray Empty;
-    const auto* pValue = snapshot.GetValue(sName);
+    const auto*                  pValue = snapshot.GetValue(sName);
     return pValue && pValue->IsA<xiiVariantArray>() ? pValue->Get<xiiVariantArray>() : Empty;
   }
 
@@ -73,19 +73,19 @@ namespace
     {
       XII_LOCK(m_Mutex);
       out_snapshot = m_Snapshot;
-      out_sReply = m_sReply;
+      out_sReply   = m_sReply;
     }
 
   private:
     xiiUInt32 Run() override
     {
       xiiMCPGateway gateway;
-      const auto status = gateway.Start(m_Configuration);
+      const auto    status = gateway.Start(m_Configuration);
       if (status.Failed())
       {
         XII_LOCK(m_Mutex);
         m_Snapshot["error"] = status.GetMessageString();
-        m_bStop = true;
+        m_bStop             = true;
         return 1;
       }
 
@@ -107,7 +107,7 @@ namespace
           xiiStringBuilder sReply;
           gateway.Process(sRequest, session, sReply);
           XII_LOCK(m_Mutex);
-          m_sReply = sReply;
+          m_sReply    = sReply;
           m_bInvoking = false;
         }
 
@@ -116,7 +116,7 @@ namespace
         {
           auto snapshot = gateway.GetSnapshot();
           XII_LOCK(m_Mutex);
-          m_Snapshot = std::move(snapshot);
+          m_Snapshot   = std::move(snapshot);
           nextSnapshot = now + xiiTime::MakeFromMilliseconds(200);
         }
         xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(5));
@@ -125,12 +125,12 @@ namespace
     }
 
     xiiMCPGatewayConfiguration m_Configuration;
-    xiiMutex m_Mutex;
-    xiiVariantDictionary m_Snapshot;
-    xiiString m_sRequest;
-    xiiString m_sReply;
-    std::atomic_bool m_bStop = false;
-    bool m_bInvoking = false;
+    xiiMutex                   m_Mutex;
+    xiiVariantDictionary       m_Snapshot;
+    xiiString                  m_sRequest;
+    xiiString                  m_sReply;
+    std::atomic_bool           m_bStop     = false;
+    bool                       m_bInvoking = false;
   };
 
   QTableWidget* MakeTable(const QStringList& headings)
@@ -149,12 +149,12 @@ namespace
     ref_table.setRowCount(static_cast<int>(values.GetCount()));
     for (xiiUInt32 uiRow = 0; uiRow < values.GetCount(); ++uiRow)
     {
-      const auto& row = values[uiRow].Get<xiiVariantDictionary>();
-      int iColumn = 0;
+      const auto& row     = values[uiRow].Get<xiiVariantDictionary>();
+      int         iColumn = 0;
       for (const auto* szField : fields)
       {
         const auto* pValue = row.GetValue(szField);
-        auto* pCell = ref_table.item(static_cast<int>(uiRow), iColumn);
+        auto*       pCell  = ref_table.item(static_cast<int>(uiRow), iColumn);
         if (pCell == nullptr)
         {
           pCell = new QTableWidgetItem();
@@ -169,11 +169,11 @@ namespace
 
 int RunMCPWindow(const xiiMCPGatewayConfiguration& configuration)
 {
-  int iArgumentCount = 1;
-  char szApplication[] = "xiiMCP";
-  char* pArguments[] = {szApplication, nullptr};
-  QApplication application(iArgumentCount, pArguments);
-  QSettings settings("XII", "xiiMCP");
+  int                 iArgumentCount  = 1;
+  char                szApplication[] = "xiiMCP";
+  char*               pArguments[]    = {szApplication, nullptr};
+  QApplication        application(iArgumentCount, pArguments);
+  QSettings           settings("XII", "xiiMCP");
   xiiMCPGatewayThread gateway(configuration);
 
   QMainWindow window;
@@ -183,7 +183,7 @@ int RunMCPWindow(const xiiMCPGatewayConfiguration& configuration)
   auto* pTabs = new QTabWidget(&window);
   window.setCentralWidget(pTabs);
   auto* pOverview = new QWidget();
-  auto* pStatus = new QLabel("Starting gateway...");
+  auto* pStatus   = new QLabel("Starting gateway...");
   pStatus->setTextFormat(Qt::PlainText);
   auto* pOverviewLayout = new QVBoxLayout(pOverview);
   pOverviewLayout->addWidget(pStatus);
@@ -193,19 +193,19 @@ int RunMCPWindow(const xiiMCPGatewayConfiguration& configuration)
   auto* pInstances = MakeTable({"Application", "Local endpoint", "Instance", "Connected", "Capabilities"});
   pTabs->addTab(pInstances, "Instances");
 
-  auto* pCapabilities = new QWidget();
+  auto* pCapabilities     = new QWidget();
   auto* pCapabilityLayout = new QVBoxLayout(pCapabilities);
-  auto* pFilter = new QLineEdit(settings.value("filter").toString());
+  auto* pFilter           = new QLineEdit(settings.value("filter").toString());
   pFilter->setPlaceholderText("Filter by capability name or URI");
   auto* pKind = new QComboBox();
   pKind->addItems({"Tools", "Resources", "Prompts"});
   auto* pCapability = new QComboBox();
-  auto* pSchema = new QPlainTextEdit();
+  auto* pSchema     = new QPlainTextEdit();
   pSchema->setReadOnly(true);
   pSchema->setPlaceholderText("Capability descriptor");
   auto* pInput = new QPlainTextEdit("{}");
   pInput->setPlaceholderText("JSON arguments");
-  auto* pRun = new QPushButton("Invoke");
+  auto* pRun    = new QPushButton("Invoke");
   auto* pResult = new QPlainTextEdit();
   pResult->setReadOnly(true);
   pResult->setPlaceholderText("Operation result");
@@ -221,7 +221,7 @@ int RunMCPWindow(const xiiMCPGatewayConfiguration& configuration)
   auto* pActivity = MakeTable({"Capability", "Target", "Elapsed (ms)", "Result"});
   pTabs->addTab(pActivity, "Activity");
 
-  auto* pOptions = new QWidget();
+  auto* pOptions       = new QWidget();
   auto* pOptionsLayout = new QFormLayout(pOptions);
   pOptionsLayout->addRow("Automatic discovery", new QLabel(configuration.m_bDiscovery ? "Enabled" : "Disabled"));
   pOptionsLayout->addRow("HTTP authentication", new QLabel(configuration.m_Http.m_sBearerToken.IsEmpty() ? "Local inspection" : "Bearer token"));
@@ -246,8 +246,8 @@ int RunMCPWindow(const xiiMCPGatewayConfiguration& configuration)
       pResult->setPlainText("Enter a JSON object for arguments.");
       return;
     }
-    const auto key = pCapability->currentText().toUtf8();
-    const bool bResource = pKind->currentIndex() == 1;
+    const auto           key       = pCapability->currentText().toUtf8();
+    const bool           bResource = pKind->currentIndex() == 1;
     xiiVariantDictionary params;
     params[bResource ? "uri" : "name"] = xiiString(xiiStringView(key.constData(), static_cast<xiiUInt32>(key.size())));
     if (!bResource)
@@ -256,9 +256,10 @@ int RunMCPWindow(const xiiMCPGatewayConfiguration& configuration)
     }
     xiiVariantDictionary request;
     request["jsonrpc"] = xiiString("2.0");
-    request["id"] = 1u;
-    request["method"] = xiiString(pKind->currentIndex() == 0 ? "tools/call" : bResource ? "resources/read" : "prompts/get");
-    request["params"] = std::move(params);
+    request["id"]      = 1u;
+    request["method"]  = xiiString(pKind->currentIndex() == 0 ? "tools/call" : bResource ? "resources/read" :
+                                                                                           "prompts/get");
+    request["params"]  = std::move(params);
     xiiStringBuilder sRequest;
     if (xiiMCPJson::Write(request, sRequest).Failed() || !gateway.Submit(sRequest))
     {
@@ -270,11 +271,11 @@ int RunMCPWindow(const xiiMCPGatewayConfiguration& configuration)
     }
   });
 
-  QTimer timer;
+  QTimer    timer;
   xiiString sLastReply;
   QObject::connect(&timer, &QTimer::timeout, [&] {
     xiiVariantDictionary snapshot;
-    xiiString sReply;
+    xiiString            sReply;
     gateway.Read(snapshot, sReply);
     if (sReply != sLastReply)
     {
@@ -295,23 +296,26 @@ int RunMCPWindow(const xiiMCPGatewayConfiguration& configuration)
       return;
     }
 
-    const auto& targets = GetArray(snapshot, "targets");
+    const auto& targets  = GetArray(snapshot, "targets");
     const auto& activity = GetArray(snapshot, "activity");
-    const auto& tools = GetArray(snapshot, "tools");
+    const auto& tools    = GetArray(snapshot, "tools");
     pStatus->setText(QString("Listening at http://%1/mcp\n%2 known instances · %3 tools · %4 HTTP sessions")
-        .arg(ToQt(xiiMCPJson::GetString(snapshot, "endpoint")))
-        .arg(targets.GetCount()).arg(tools.GetCount()).arg(snapshot["sessions"].ConvertTo<xiiUInt32>()));
+                       .arg(ToQt(xiiMCPJson::GetString(snapshot, "endpoint")))
+                       .arg(targets.GetCount())
+                       .arg(tools.GetCount())
+                       .arg(snapshot["sessions"].ConvertTo<xiiUInt32>()));
     FillTable(*pInstances, targets, {"application", "endpoint", "instance", "connected", "capabilityCount"});
     FillTable(*pActivity, activity, {"capability", "target", "elapsedMs", "status"});
 
-    const auto& entries = GetArray(snapshot, pKind->currentIndex() == 0 ? "tools" : pKind->currentIndex() == 1 ? "resources" : "prompts");
-    const auto sSelected = pCapability->currentText();
+    const auto& entries   = GetArray(snapshot, pKind->currentIndex() == 0 ? "tools" : pKind->currentIndex() == 1 ? "resources" :
+                                                                                                                   "prompts");
+    const auto  sSelected = pCapability->currentText();
     pCapability->blockSignals(true);
     pCapability->clear();
     for (const auto& entry : entries)
     {
       const auto& descriptor = entry.Get<xiiVariantDictionary>();
-      const auto sName = ToQt(xiiMCPJson::GetString(descriptor, pKind->currentIndex() == 1 ? "uri" : "name"));
+      const auto  sName      = ToQt(xiiMCPJson::GetString(descriptor, pKind->currentIndex() == 1 ? "uri" : "name"));
       if (sName.contains(pFilter->text(), Qt::CaseInsensitive))
       {
         xiiStringBuilder sDescriptor;

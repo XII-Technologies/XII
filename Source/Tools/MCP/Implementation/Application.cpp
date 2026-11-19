@@ -98,7 +98,7 @@ namespace
     }
     const int iRead = _read(_fileno(stdin), out_input.GetPtr(), out_input.GetCount());
 #else
-    pollfd input{STDIN_FILENO, POLLIN, 0};
+    pollfd    input{STDIN_FILENO, POLLIN, 0};
     const int iReady = poll(&input, 1, 0);
     if (iReady == 0 || (iReady < 0 && errno == EINTR))
     {
@@ -121,6 +121,12 @@ namespace
     out_uiCount = static_cast<xiiUInt32>(iRead);
     return xiiMCPInputState::Available;
   }
+
+  bool WriteFrame(std::FILE* pOutput, xiiStringView sMessage)
+  {
+    return std::fwrite(sMessage.GetStartPointer(), 1, sMessage.GetElementCount(), pOutput) == sMessage.GetElementCount() &&
+      std::fputc('\n', pOutput) != EOF && std::fflush(pOutput) == 0;
+  }
 } // namespace
 
 xiiMCPApplication::xiiMCPApplication() :
@@ -142,15 +148,16 @@ xiiResult xiiMCPApplication::BeforeCoreSystemsStartup()
   if (pOptions->GetBoolOption("-help"))
   {
     std::fputs("xiiMCP [-MCPTransport http|stdio] [-MCPListen 127.0.0.1:8372] [-MCPTarget NAME ...]\n"
-               "       [-MCPNoDiscovery] [-MCPAllowEdit] [-MCPAllowExecute] [-MCPTimeoutMs 5000] [-gui]\n"
-               "       Set XII_MCP_TOKEN to require Bearer authentication for HTTP.\n", stderr);
+               "       [-MCPNoDiscovery] [-MCPAllowCapture] [-MCPAllowEdit] [-MCPAllowExecute] [-MCPTimeoutMs 5000] [-gui]\n"
+               "       Set XII_MCP_TOKEN to require Bearer authentication for HTTP.\n",
+               stderr);
     RequestQuit();
     return XII_SUCCESS;
   }
 
   const auto sTransport = pOptions->GetStringOption("-MCPTransport", 0, "http");
-  m_bStdio = sTransport == "stdio";
-  m_bGui = pOptions->GetBoolOption("-gui");
+  m_bStdio              = sTransport == "stdio";
+  m_bGui                = pOptions->GetBoolOption("-gui");
   if ((m_bStdio && m_bGui) || (!m_bStdio && sTransport != "http"))
   {
     std::fputs("Select HTTP or stdio. The GUI uses HTTP.\n", stderr);
@@ -168,6 +175,7 @@ xiiResult xiiMCPApplication::BeforeCoreSystemsStartup()
 
   if (m_bStdio)
   {
+    m_StdioSession.m_bListNotifications = true;
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
     if (_setmode(_fileno(stdin), _O_BINARY) == -1)
     {
@@ -204,7 +212,7 @@ xiiResult xiiMCPApplication::BeforeCoreSystemsStartup()
   }
 
   m_Configuration.m_Http.m_RequestTimeout = xiiTime::MakeFromMilliseconds(iTimeoutMs);
-  m_Configuration.m_bDiscovery = !pOptions->GetBoolOption("-MCPNoDiscovery");
+  m_Configuration.m_bDiscovery            = !pOptions->GetBoolOption("-MCPNoDiscovery");
   for (xiiUInt32 uiIndex = 0; uiIndex < pOptions->GetStringOptionArguments("-MCPTarget"); ++uiIndex)
   {
     m_Configuration.m_Endpoints.PushBack(xiiString(pOptions->GetStringOption("-MCPTarget", uiIndex)));
@@ -213,12 +221,16 @@ xiiResult xiiMCPApplication::BeforeCoreSystemsStartup()
   {
     m_Configuration.m_uiPermissions |= static_cast<xiiUInt8>(xiiMCPPermission::Edit);
   }
+  if (pOptions->GetBoolOption("-MCPAllowCapture"))
+  {
+    m_Configuration.m_uiPermissions |= static_cast<xiiUInt8>(xiiMCPPermission::Capture);
+  }
   if (pOptions->GetBoolOption("-MCPAllowExecute"))
   {
     m_Configuration.m_uiPermissions |= static_cast<xiiUInt8>(xiiMCPPermission::Execute);
   }
   m_Configuration.m_Http.m_uiPermissions = m_Configuration.m_uiPermissions;
-  m_Configuration.m_Http.m_sBearerToken = xiiEnvironmentVariableUtils::GetValueString("XII_MCP_TOKEN");
+  m_Configuration.m_Http.m_sBearerToken  = xiiEnvironmentVariableUtils::GetValueString("XII_MCP_TOKEN");
   return XII_SUCCESS;
 }
 
@@ -229,7 +241,7 @@ void xiiMCPApplication::AfterCoreSystemsStartup()
     return;
   }
 
-  m_pGateway = XII_DEFAULT_NEW(xiiMCPGateway);
+  m_pGateway        = XII_DEFAULT_NEW(xiiMCPGateway);
   const auto status = m_pGateway->Start(m_Configuration);
   if (status.Failed())
   {
@@ -270,9 +282,21 @@ xiiApplication::Execution xiiMCPApplication::Run()
   m_pGateway->Update();
   if (m_bStdio)
   {
-    char input[4096];
-    xiiUInt32 uiCount = 0;
-    const auto state = ReadInput(input, uiCount);
+    const auto uiRevision = m_pGateway->GetCapabilityRevision();
+    if (m_StdioSession.m_State == xiiMCPSession::State::Ready && m_uiLastCapabilityRevision != 0 && uiRevision != m_uiLastCapabilityRevision)
+    {
+      if (!WriteFrame(m_pProtocolOutput, R"({"jsonrpc":"2.0","method":"notifications/tools/list_changed"})") ||
+          !WriteFrame(m_pProtocolOutput, R"({"jsonrpc":"2.0","method":"notifications/resources/list_changed"})") ||
+          !WriteFrame(m_pProtocolOutput, R"({"jsonrpc":"2.0","method":"notifications/prompts/list_changed"})"))
+      {
+        return Execution::Quit;
+      }
+    }
+    m_uiLastCapabilityRevision = uiRevision;
+
+    char       input[4096];
+    xiiUInt32  uiCount = 0;
+    const auto state   = ReadInput(input, uiCount);
     if (state == xiiMCPInputState::Closed)
     {
       return Execution::Quit;
@@ -304,8 +328,7 @@ xiiApplication::Execution xiiMCPApplication::Run()
       }
       m_Input.Clear();
       m_bDiscardLine = false;
-      if (!sReply.IsEmpty() && (std::fwrite(sReply.GetData(), 1, sReply.GetElementCount(), m_pProtocolOutput) != sReply.GetElementCount() ||
-                               std::fputc('\n', m_pProtocolOutput) == EOF || std::fflush(m_pProtocolOutput) != 0))
+      if (!sReply.IsEmpty() && !WriteFrame(m_pProtocolOutput, sReply))
       {
         return Execution::Quit;
       }

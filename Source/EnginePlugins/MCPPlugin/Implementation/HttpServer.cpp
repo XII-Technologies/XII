@@ -12,39 +12,39 @@
 
 namespace
 {
-  constexpr xiiUInt32 MaximumHeaderBytes = 8192;
-  constexpr xiiUInt32 MaximumConnections = 32;
-  constexpr xiiUInt32 MaximumSessions = 64;
+  constexpr xiiUInt32 MaximumHeaderBytes       = 8192;
+  constexpr xiiUInt32 MaximumConnections       = 32;
+  constexpr xiiUInt32 MaximumSessions          = 64;
   constexpr xiiUInt32 MaximumRequestsPerSecond = 64;
 
   struct xiiMCPHttpConnection
   {
-    xiiTcpSocket m_Socket;
+    xiiTcpSocket              m_Socket;
     xiiDynamicArray<xiiUInt8> m_Input;
-    xiiStringBuilder m_sOutput;
-    xiiTime m_Deadline;
-    xiiUInt32 m_uiSentBytes = 0;
-    xiiUInt32 m_uiHeaderSearchOffset = 0;
+    xiiStringBuilder          m_sOutput;
+    xiiTime                   m_Deadline;
+    xiiUInt32                 m_uiSentBytes          = 0;
+    xiiUInt32                 m_uiHeaderSearchOffset = 0;
   };
 
   struct xiiMCPHttpSession
   {
     xiiMCPSession m_Protocol;
-    xiiTime m_LastActivity;
+    xiiTime       m_LastActivity;
   };
 
   struct xiiMCPHttpRequest
   {
-    std::string_view m_Method;
-    std::string_view m_Path;
+    std::string_view             m_Method;
+    std::string_view             m_Path;
     xiiMap<xiiString, xiiString> m_Headers;
-    xiiUInt32 m_uiBodyBytes = 0;
+    xiiUInt32                    m_uiBodyBytes = 0;
   };
 
   bool IsTokenCharacter(char character)
   {
     return (character >= 'A' && character <= 'Z') || (character >= 'a' && character <= 'z') ||
-           (character >= '0' && character <= '9') || std::string_view("!#$%&'*+-.^_`|~").find(character) != std::string_view::npos;
+      (character >= '0' && character <= '9') || std::string_view("!#$%&'*+-.^_`|~").find(character) != std::string_view::npos;
   }
 
   bool IsHeaderValue(std::string_view sValue)
@@ -86,14 +86,14 @@ namespace
 
     const auto requestLine = sHeaders.substr(0, uiLineEnd);
     const auto uiMethodEnd = requestLine.find(' ');
-    const auto uiPathEnd = uiMethodEnd == std::string_view::npos ? uiMethodEnd : requestLine.find(' ', uiMethodEnd + 1);
+    const auto uiPathEnd   = uiMethodEnd == std::string_view::npos ? uiMethodEnd : requestLine.find(' ', uiMethodEnd + 1);
     if (uiPathEnd == std::string_view::npos || requestLine.substr(uiPathEnd + 1) != "HTTP/1.1")
     {
       return false;
     }
 
     out_request.m_Method = requestLine.substr(0, uiMethodEnd);
-    out_request.m_Path = requestLine.substr(uiMethodEnd + 1, uiPathEnd - uiMethodEnd - 1);
+    out_request.m_Path   = requestLine.substr(uiMethodEnd + 1, uiPathEnd - uiMethodEnd - 1);
     sHeaders.remove_prefix(uiLineEnd + 2);
     while (sHeaders != "\r\n")
     {
@@ -102,7 +102,7 @@ namespace
       {
         return false;
       }
-      const auto line = sHeaders.substr(0, uiEnd);
+      const auto line        = sHeaders.substr(0, uiEnd);
       const auto uiSeparator = line.find(':');
       if (uiSeparator == std::string_view::npos || uiSeparator == 0)
       {
@@ -198,23 +198,23 @@ public:
   void Dispatch(xiiMCPHttpConnection& ref_connection, const xiiMCPHttpRequest& request, xiiStringView sBody);
   void Update();
 
-  const xiiMCPProtocol& m_Protocol;
-  xiiMCPHttpConfiguration m_Configuration;
-  xiiTcpListener m_Listener;
-  xiiNetworkEndpoint m_Endpoint;
-  xiiString m_sHost;
-  xiiString m_sLocalhost;
-  xiiString m_sExpectedAuthorization;
+  const xiiMCPProtocol&                 m_Protocol;
+  xiiMCPHttpConfiguration               m_Configuration;
+  xiiTcpListener                        m_Listener;
+  xiiNetworkEndpoint                    m_Endpoint;
+  xiiString                             m_sHost;
+  xiiString                             m_sLocalhost;
+  xiiString                             m_sExpectedAuthorization;
   xiiDynamicArray<xiiMCPHttpConnection> m_Connections;
-  xiiMap<xiiString, xiiMCPHttpSession> m_Sessions;
-  xiiTime m_RateWindow;
-  xiiUInt32 m_uiRequests = 0;
+  xiiMap<xiiString, xiiMCPHttpSession>  m_Sessions;
+  xiiTime                               m_RateWindow;
+  xiiUInt32                             m_uiRequests = 0;
 };
 
 void xiiMCPHttpState::Dispatch(xiiMCPHttpConnection& ref_connection, const xiiMCPHttpRequest& request, xiiStringView sBody)
 {
-  const auto sHost = GetHeader(request, "host");
-  const auto sOrigin = GetHeader(request, "origin");
+  const auto       sHost   = GetHeader(request, "host");
+  const auto       sOrigin = GetHeader(request, "origin");
   xiiStringBuilder sSameOrigin("http://", sHost);
   if ((sHost != m_sHost && sHost != m_sLocalhost) ||
       (request.m_Headers.Contains("origin") && sOrigin != sSameOrigin && (sOrigin.IsEmpty() || sOrigin != m_Configuration.m_sAllowedOrigin)))
@@ -245,21 +245,16 @@ void xiiMCPHttpState::Dispatch(xiiMCPHttpConnection& ref_connection, const xiiMC
     return;
   }
 
-  const auto sSessionId = GetHeader(request, "mcp-session-id");
-  auto it = m_Sessions.Find(sSessionId);
+  const xiiMCPHttpMetadata metadata{GetHeader(request, "mcp-protocol-version"), GetHeader(request, "mcp-method"), GetHeader(request, "mcp-name")};
+  const bool               bModern    = metadata.m_sVersion == xiiMCPProtocol::Version || !metadata.m_sMethod.IsEmpty();
+  const auto               sSessionId = bModern ? xiiStringView() : GetHeader(request, "mcp-session-id");
+  auto                     it         = m_Sessions.Find(sSessionId);
   if (!sSessionId.IsEmpty() && !it.IsValid())
   {
     Respond(ref_connection, "404 Not Found");
     return;
   }
-  const auto sVersion = GetHeader(request, "mcp-protocol-version");
-  if (!sVersion.IsEmpty() && sVersion != xiiMCPProtocol::Version)
-  {
-    Respond(ref_connection, "400 Bad Request");
-    return;
-  }
-
-  if (request.m_Method == "DELETE")
+  if (request.m_Method == "DELETE" && !bModern)
   {
     if (!it.IsValid())
     {
@@ -283,19 +278,19 @@ void xiiMCPHttpState::Dispatch(xiiMCPHttpConnection& ref_connection, const xiiMC
   }
 
   xiiMCPSession fresh;
-  if (!it.IsValid() && m_Sessions.GetCount() >= MaximumSessions)
+  if (!bModern && !it.IsValid() && m_Sessions.GetCount() >= MaximumSessions)
   {
     Respond(ref_connection, "503 Service Unavailable");
     return;
   }
 
   xiiMCPCallContext context;
-  context.m_Deadline = now + m_Configuration.m_RequestTimeout;
-  context.m_uiPermissions = m_Configuration.m_uiPermissions;
-  context.m_sIdentity = "streamable-http";
-  auto& session = it.IsValid() ? it.Value().m_Protocol : fresh;
+  context.m_Deadline       = now + m_Configuration.m_RequestTimeout;
+  context.m_uiPermissions  = m_Configuration.m_uiPermissions;
+  context.m_sIdentity      = "streamable-http";
+  auto&            session = it.IsValid() ? it.Value().m_Protocol : fresh;
   xiiStringBuilder sReply;
-  m_Protocol.Process(sBody, session, context, sReply);
+  const auto       replyStatus = m_Protocol.Process(sBody, session, context, sReply, &metadata);
 
   if (it.IsValid())
   {
@@ -309,12 +304,27 @@ void xiiMCPHttpState::Dispatch(xiiMCPHttpConnection& ref_connection, const xiiMC
     m_Sessions.Insert(xiiString(sNewSession), xiiMCPHttpSession{std::move(fresh), now});
   }
 
-  Respond(ref_connection, sReply.IsEmpty() ? "202 Accepted" : "200 OK", sReply, sNewSession);
+  const char* szStatus = "200 OK";
+  switch (replyStatus)
+  {
+    case xiiMCPReplyStatus::Notification:
+      szStatus = "202 Accepted";
+      break;
+    case xiiMCPReplyStatus::BadRequest:
+      szStatus = "400 Bad Request";
+      break;
+    case xiiMCPReplyStatus::MethodNotFound:
+      szStatus = "404 Not Found";
+      break;
+    case xiiMCPReplyStatus::Reply:
+      break;
+  }
+  Respond(ref_connection, szStatus, sReply, sNewSession);
 }
 
 bool xiiMCPHttpState::Receive(xiiMCPHttpConnection& ref_connection)
 {
-  xiiUInt8 uiBuffer[8192];
+  xiiUInt8   uiBuffer[8192];
   const auto transfer = ref_connection.m_Socket.Receive(uiBuffer);
   if (transfer.Failed())
   {
@@ -322,7 +332,7 @@ bool xiiMCPHttpState::Receive(xiiMCPHttpConnection& ref_connection)
   }
   ref_connection.m_Input.PushBackRange(xiiArrayPtr<const xiiUInt8>(uiBuffer, transfer.m_uiBytesTransferred));
   const std::string_view input(reinterpret_cast<const char*>(ref_connection.m_Input.GetData()), ref_connection.m_Input.GetCount());
-  const auto uiHeaderEnd = input.find("\r\n\r\n", ref_connection.m_uiHeaderSearchOffset);
+  const auto             uiHeaderEnd = input.find("\r\n\r\n", ref_connection.m_uiHeaderSearchOffset);
   if (uiHeaderEnd == std::string_view::npos)
   {
     if (input.size() >= MaximumHeaderBytes)
@@ -333,7 +343,7 @@ bool xiiMCPHttpState::Receive(xiiMCPHttpConnection& ref_connection)
     return true;
   }
 
-  const auto uiBodyStart = uiHeaderEnd + 4;
+  const auto        uiBodyStart = uiHeaderEnd + 4;
   xiiMCPHttpRequest request;
   if (uiBodyStart > MaximumHeaderBytes || !ParseHeaders(input.substr(0, uiBodyStart), request))
   {
@@ -375,7 +385,7 @@ void xiiMCPHttpState::Update()
   for (xiiUInt32 uiIndex = 0; uiIndex < m_Connections.GetCount();)
   {
     auto& connection = m_Connections[uiIndex];
-    bool bKeep = now < connection.m_Deadline;
+    bool  bKeep      = now < connection.m_Deadline;
     if (bKeep && connection.m_sOutput.IsEmpty())
     {
       bKeep = Receive(connection);
@@ -383,9 +393,9 @@ void xiiMCPHttpState::Update()
 
     if (bKeep && !connection.m_sOutput.IsEmpty())
     {
-      const auto* pBytes = reinterpret_cast<const xiiUInt8*>(connection.m_sOutput.GetData());
-      const auto uiLength = connection.m_sOutput.GetElementCount();
-      const auto transfer = connection.m_Socket.Send(xiiArrayPtr<const xiiUInt8>(pBytes + connection.m_uiSentBytes, uiLength - connection.m_uiSentBytes));
+      const auto* pBytes   = reinterpret_cast<const xiiUInt8*>(connection.m_sOutput.GetData());
+      const auto  uiLength = connection.m_sOutput.GetElementCount();
+      const auto  transfer = connection.m_Socket.Send(xiiArrayPtr<const xiiUInt8>(pBytes + connection.m_uiSentBytes, uiLength - connection.m_uiSentBytes));
       connection.m_uiSentBytes += transfer.m_uiBytesTransferred;
       bKeep = connection.m_uiSentBytes < uiLength && (transfer.Succeeded() || IsTransient(transfer.m_Error));
     }
@@ -431,8 +441,8 @@ xiiStatus xiiMCPHttpServer::Start(const xiiMCPHttpConfiguration& configuration)
   }
 
   xiiUniquePtr<xiiMCPHttpState> pState = XII_DEFAULT_NEW(xiiMCPHttpState, m_Protocol);
-  pState->m_Configuration = configuration;
-  auto& listener = pState->m_Listener;
+  pState->m_Configuration              = configuration;
+  auto& listener                       = pState->m_Listener;
   if (listener.Open(configuration.m_Endpoint.GetAddress().GetFamily()).Failed() || listener.Bind(configuration.m_Endpoint).Failed() ||
       listener.Listen(MaximumConnections).Failed() || listener.GetLocalEndpoint(pState->m_Endpoint).Failed())
   {
