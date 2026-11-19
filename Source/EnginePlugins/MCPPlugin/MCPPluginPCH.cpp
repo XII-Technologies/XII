@@ -6,5 +6,10 @@
 
 XII_STATICLINK_LIBRARY(MCPPlugin)
 {
-  XII_IGNORE_UNUSED(bReturn);
+  if (bReturn)
+  {
+    return;
+  }
+
+  XII_STATICLINK_REFERENCE(MCPPlugin_Implementation_Bridge);
 }

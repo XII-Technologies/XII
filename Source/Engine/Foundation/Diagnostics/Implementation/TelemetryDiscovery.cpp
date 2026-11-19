@@ -18,26 +18,32 @@
 
 namespace
 {
-  xiiResult Directory(xiiStringBuilder& out_directory)
+  const char* GetAdvertisementVersion(xiiTelemetryDiscoveryScope scope)
   {
+    return scope == xiiTelemetryDiscoveryScope::ModelContextProtocol ? "XII-MCP-1" : "XII-DIAGNOSTICS-2";
+  }
+
+  xiiResult Directory(xiiTelemetryDiscoveryScope scope, xiiStringBuilder& out_sDirectory)
+  {
+    const char* szDirectory = scope == xiiTelemetryDiscoveryScope::ModelContextProtocol ? "xii-mcp" : "xii-diagnostics";
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
-    out_directory.Set(xiiOSFile::GetTempDataFolder(), "/xii-diagnostics");
-    XII_SUCCEED_OR_RETURN(xiiOSFile::CreateDirectoryStructure(out_directory));
-    const auto attributes = GetFileAttributesW(xiiStringWChar(out_directory).GetData());
+    out_sDirectory.Set(xiiOSFile::GetTempDataFolder(), "/", szDirectory);
+    XII_SUCCEED_OR_RETURN(xiiOSFile::CreateDirectoryStructure(out_sDirectory));
+    const auto attributes = GetFileAttributesW(xiiStringWChar(out_sDirectory).GetData());
     if (attributes == INVALID_FILE_ATTRIBUTES || (attributes & FILE_ATTRIBUTE_DIRECTORY) == 0 || (attributes & FILE_ATTRIBUTE_REPARSE_POINT) != 0)
       return XII_FAILURE;
 #else
-    out_directory.SetFormat("{}/xii-diagnostics-{}", xiiOSFile::GetTempDataFolder(), static_cast<xiiUInt64>(geteuid()));
-    if (mkdir(out_directory.GetData(), 0700) != 0 && errno != EEXIST)
+    out_sDirectory.SetFormat("{}/{}-{}", xiiOSFile::GetTempDataFolder(), szDirectory, static_cast<xiiUInt64>(geteuid()));
+    if (mkdir(out_sDirectory.GetData(), 0700) != 0 && errno != EEXIST)
       return XII_FAILURE;
     struct stat status = {};
-    if (lstat(out_directory.GetData(), &status) != 0 || !S_ISDIR(status.st_mode) || status.st_uid != geteuid() || (status.st_mode & 0077) != 0)
+    if (lstat(out_sDirectory.GetData(), &status) != 0 || !S_ISDIR(status.st_mode) || status.st_uid != geteuid() || (status.st_mode & 0077) != 0)
       return XII_FAILURE;
 #endif
     return XII_SUCCESS;
   }
 
-  xiiResult Read(xiiStringView sPath, xiiTelemetryInstance& out_instance)
+  xiiResult Read(xiiStringView sPath, xiiTelemetryDiscoveryScope scope, xiiTelemetryInstance& out_instance)
   {
     xiiOSFile file;
     file.SetRetryOnSharingViolation(false);
@@ -51,7 +57,7 @@ namespace
     xiiStringView                    text(bytes, static_cast<xiiUInt32>(size));
     xiiHybridArray<xiiStringView, 8> lines;
     text.Split(false, lines, "\n");
-    if (lines.GetCount() != 5 || lines[0] != "XII-DIAGNOSTICS-2" || !xiiConversionUtils::IsStringUuid(lines[1]) || lines[4].GetElementCount() > 256)
+    if (lines.GetCount() != 5 || lines[0] != GetAdvertisementVersion(scope) || !xiiConversionUtils::IsStringUuid(lines[1]) || lines[4].GetElementCount() > 256)
       return XII_FAILURE;
     xiiNetworkLocalEndpoint endpoint;
     XII_SUCCEED_OR_RETURN(xiiNetworkLocalEndpoint::Make(lines[3], endpoint).GetResult());
@@ -62,7 +68,7 @@ namespace
     return out_instance.m_Instance.IsValid() ? XII_SUCCESS : XII_FAILURE;
   }
 
-  void ReadAdvertisement(const xiiStringBuilder& path, xiiDynamicArray<xiiTelemetryInstance>& out_instances)
+  void ReadAdvertisement(const xiiStringBuilder& path, xiiTelemetryDiscoveryScope scope, xiiDynamicArray<xiiTelemetryInstance>& out_instances)
   {
     // Advertisements have UUID-only basenames; never derive paths from their contents.
     if (!xiiConversionUtils::IsStringUuid(path.GetFileName()))
@@ -87,21 +93,21 @@ namespace
       return;
     }
     xiiTelemetryInstance instance;
-    if (Read(path, instance).Succeeded())
+    if (Read(path, scope, instance).Succeeded())
       out_instances.PushBack(std::move(instance));
   }
 } // namespace
 
 xiiTelemetryDiscovery::~xiiTelemetryDiscovery() { Reset(); }
 
-xiiResult xiiTelemetryDiscovery::Publish(const xiiTelemetryInstance& instance)
+xiiResult xiiTelemetryDiscovery::Publish(const xiiTelemetryInstance& instance, xiiTelemetryDiscoveryScope scope)
 {
   if (m_Lease.IsOpen() || !instance.m_Instance.IsValid() || instance.m_sApplication.IsEmpty() || instance.m_sApplication.GetElementCount() > 256)
     return XII_FAILURE;
   xiiNetworkLocalEndpoint endpoint;
   XII_SUCCEED_OR_RETURN(xiiNetworkLocalEndpoint::Make(instance.m_sEndpoint, endpoint).GetResult());
   xiiStringBuilder directory, id;
-  XII_SUCCEED_OR_RETURN(Directory(directory));
+  XII_SUCCEED_OR_RETURN(Directory(scope, directory));
   xiiConversionUtils::ToString(instance.m_Instance, id);
   xiiStringBuilder path(directory, "/", id, ".instance");
   xiiStringBuilder lease(path, ".lease");
@@ -111,7 +117,7 @@ xiiResult xiiTelemetryDiscovery::Publish(const xiiTelemetryInstance& instance)
   name.ReplaceAll("\n", " ");
   name.ReplaceAll("\r", " ");
   xiiStringBuilder text;
-  text.SetFormat("XII-DIAGNOSTICS-2\n{}\n{}\n{}\n{}\n", id, instance.m_uiProcessId, endpoint.GetName(), name);
+  text.SetFormat("{}\n{}\n{}\n{}\n{}\n", GetAdvertisementVersion(scope), id, instance.m_uiProcessId, endpoint.GetName(), name);
   xiiOSFile file;
   if (file.Open(path, xiiFileOpenMode::Write).Failed() || file.Write(text.GetData(), text.GetElementCount()).Failed())
   {
@@ -136,11 +142,11 @@ void xiiTelemetryDiscovery::Reset()
   m_sPath.Clear();
 }
 
-xiiResult xiiTelemetryDiscovery::Enumerate(xiiDynamicArray<xiiTelemetryInstance>& out_instances)
+xiiResult xiiTelemetryDiscovery::Enumerate(xiiDynamicArray<xiiTelemetryInstance>& out_instances, xiiTelemetryDiscoveryScope scope)
 {
   out_instances.Clear();
   xiiStringBuilder directory;
-  XII_SUCCEED_OR_RETURN(Directory(directory));
+  XII_SUCCEED_OR_RETURN(Directory(scope, directory));
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
   xiiFileSystemIterator files;
   files.StartSearch(xiiStringBuilder(directory, "/*.instance"), xiiFileSystemIteratorFlags::ReportFiles);
@@ -149,7 +155,7 @@ xiiResult xiiTelemetryDiscovery::Enumerate(xiiDynamicArray<xiiTelemetryInstance>
   {
     xiiStringBuilder path;
     files.GetStats().GetFullPath(path);
-    ReadAdvertisement(path, out_instances);
+    ReadAdvertisement(path, scope, out_instances);
   }
 #else
   DIR* files = opendir(directory.GetData());
@@ -166,7 +172,7 @@ xiiResult xiiTelemetryDiscovery::Enumerate(xiiDynamicArray<xiiTelemetryInstance>
     const char*         szName = entry->d_name;
     const xiiStringView name(szName);
     if (name.EndsWith(".instance"))
-      ReadAdvertisement(xiiStringBuilder(directory, "/", name), out_instances);
+      ReadAdvertisement(xiiStringBuilder(directory, "/", name), scope, out_instances);
   }
 #endif
   return XII_SUCCESS;
