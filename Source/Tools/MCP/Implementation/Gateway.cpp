@@ -578,9 +578,24 @@ void xiiMCPGateway::Process(xiiStringView sRequest, xiiMCPSession& ref_session, 
   context.m_Deadline      = xiiTime::Now() + m_Configuration.m_Http.m_RequestTimeout;
   xiiMCPPendingReply pending;
   auto*              pPending = m_LocalRequests.GetCount() < MaximumLocalRequests ? &pending : nullptr;
-  if (m_Protocol.Process(sRequest, ref_session, context, out_sReply, nullptr, pPending) == xiiMCPReplyStatus::Deferred)
+  xiiVariant         cancellationId;
+  if (m_Protocol.Process(sRequest, ref_session, context, out_sReply, nullptr, pPending, &cancellationId) == xiiMCPReplyStatus::Deferred)
   {
     m_LocalRequests.PushBack(std::move(pending));
+  }
+  if (cancellationId.IsValid())
+  {
+    for (xiiUInt32 uiIndex = 0; uiIndex < m_LocalRequests.GetCount();)
+    {
+      if (m_LocalRequests[uiIndex].MatchesId(cancellationId))
+      {
+        m_LocalRequests.RemoveAtAndSwap(uiIndex);
+      }
+      else
+      {
+        ++uiIndex;
+      }
+    }
   }
 }
 

@@ -178,6 +178,26 @@ namespace
   }
 } // namespace
 
+bool xiiMCPPendingReply::MatchesId(const xiiVariant& id) const
+{
+  if (!IsPending())
+  {
+    return false;
+  }
+  if (m_Id.IsA<xiiString>())
+  {
+    return id.IsA<xiiString>() && m_Id.Get<xiiString>() == id.Get<xiiString>();
+  }
+  if (m_Id.IsA<xiiInt64>() && id.IsA<xiiInt64>())
+  {
+    return m_Id.Get<xiiInt64>() == id.Get<xiiInt64>();
+  }
+
+  xiiUInt64 uiExpected  = 0;
+  xiiUInt64 uiCandidate = 0;
+  return xiiMCPJson::ReadUInt(m_Id, uiExpected) && xiiMCPJson::ReadUInt(id, uiCandidate) && uiExpected == uiCandidate;
+}
+
 bool xiiMCPPendingReply::Poll(xiiStringBuilder& out_sReply)
 {
   xiiStatus            status(XII_SUCCESS);
@@ -202,10 +222,14 @@ xiiMCPProtocol::xiiMCPProtocol(const xiiMCPRegistry& registry) :
 }
 
 xiiMCPReplyStatus xiiMCPProtocol::Process(xiiStringView sMessage, xiiMCPSession& ref_session, const xiiMCPCallContext& context, xiiStringBuilder& out_sReply,
-                                          const xiiMCPHttpMetadata* pHttpMetadata, xiiMCPPendingReply* pPending) const
+                                          const xiiMCPHttpMetadata* pHttpMetadata, xiiMCPPendingReply* pPending, xiiVariant* out_pCancellationId) const
 {
   XII_ASSERT_DEV(pPending == nullptr || !pPending->IsPending(), "A pending request already owns this slot.");
   out_sReply.Clear();
+  if (out_pCancellationId != nullptr)
+  {
+    *out_pCancellationId = xiiVariant();
+  }
   xiiVariantDictionary reply;
   reply["jsonrpc"]        = xiiString("2.0");
   reply["id"]             = xiiVariant();
@@ -239,6 +263,13 @@ xiiMCPReplyStatus xiiMCPProtocol::Process(xiiStringView sMessage, xiiMCPSession&
       if (sMethod == "notifications/initialized" && ref_session.m_State == xiiMCPSession::State::Initializing)
       {
         ref_session.m_State = xiiMCPSession::State::Ready;
+      }
+      if (sMethod == "notifications/cancelled" && out_pCancellationId != nullptr && pParams != nullptr)
+      {
+        if (const auto* pCanceled = pParams->GetValue("requestId"); pCanceled != nullptr && IsId(*pCanceled))
+        {
+          *out_pCancellationId = *pCanceled;
+        }
       }
       return xiiMCPReplyStatus::Notification;
     }

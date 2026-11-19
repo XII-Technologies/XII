@@ -26,7 +26,7 @@ Automatic discovery is on by default. To select explicit local endpoints, use `-
 
 The Qt window has live gateway settings for loopback HTTP, the request deadline, discovery and explicit Local endpoints. Use **Instances** to connect, disconnect or browse an individual target without resetting the listener. The workspace persists ordinary preferences through Qt settings. Bearer tokens and elevated permissions apply only to the current process. The Clients page shows initialized HTTP sessions and can copy an editor-managed VS Code HTTP configuration. With authentication enabled, the configuration prompts for the token.
 
-The Capabilities page shows tools, resources, resource templates and prompts. It generates fields for common tool argument types from each input schema and offers an advanced JSON editor. Invocations enter a bounded worker queue. **Cancel requests** clears waiting work and requests cancellation of the current GUI invocation. Recent activity includes the capability, target, elapsed time and outcome. Target discovery uses independent native RPC exchanges for each instance.
+The Capabilities page shows tools, resources, resource templates and prompts. It generates fields for common tool argument types from each input schema and offers an advanced JSON editor. Invocations enter a bounded worker queue. **Cancel requests** clears waiting work and requests cancellation of pending GUI invocations. Recent activity includes the capability, target, elapsed time and outcome. Target discovery uses independent native RPC exchanges for each instance.
 
 Inspect a capability descriptor or a result in **Tree** or **JSON**. For tool replies, the viewer uses the structured result when available. A reply with one JSON resource shows that resource's decoded content. Use **Response** to view or copy the original MCP message, and **Response history** to revisit recent replies.
 
@@ -132,6 +132,6 @@ Use `xiiMCPRuntime::GetRegistry()` to extend an embedded runtime, or use `xiiMCP
 ## Current limits
 
 - HTTP serves JSON responses. SSE subscriptions, protocol progress streaming, OAuth and direct non-loopback listeners are outside this implementation. Stdio sends capability-list change notifications for initialized clients.
-- Target discovery is asynchronous. Forwarded invocations are serialized by the gateway. Foundation cancels expired and GUI-canceled native RPC requests on a best-effort basis. Completed mutations are not rolled back on cancellation or disconnection.
+- Target discovery and forwarded invocations share bounded, asynchronous native RPC. Replies can arrive out of order across targets. The gateway accepts `notifications/cancelled` over stdio and initialized HTTP sessions using the `2025-11-25` protocol. Cancellation applies to the originating client and request ID. Foundation cancels native work on a best-effort basis. Completed mutations remain applied.
 - The Clients page lists stateful HTTP sessions. Stateless requests do not establish sessions. Applying workspace settings restarts the listener and reconnects targets.
 - See [MCP capability coverage](MCPCapabilityCoverage.md) for the existing APIs and the workflows that still require further integration.
