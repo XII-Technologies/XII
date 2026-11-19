@@ -72,7 +72,7 @@ namespace
     bool bCommitted = false;
     XII_SCOPE_EXIT(if (!bCommitted) { ref_accessor.CancelTransaction(); });
     xiiUuid id;
-    XII_SUCCEED_OR_RETURN(ref_accessor.AddObjectByName(nullptr, "", xiiInt32(-1), pMatch->m_pType, id));
+    XII_SUCCEED_OR_RETURN(ref_accessor.AddObject(nullptr, nullptr, xiiInt32(-1), pMatch->m_pType, id));
     const auto* pObject = ref_accessor.GetObject(id);
     if (pObject == nullptr || !manager.IsNode(pObject))
     {
