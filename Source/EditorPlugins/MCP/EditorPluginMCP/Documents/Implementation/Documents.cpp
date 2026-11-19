@@ -4,16 +4,39 @@
 
 #include <EditorPluginMCP/EditorMCP.h>
 #include <EditorPluginMCP/EditorMCPArguments.h>
+#include <Foundation/Strings/PathUtils.h>
 #include <GuiFoundation/DocumentWindow/DocumentWindow.moc.h>
 #include <MCPPlugin/Reflection.h>
 #include <ToolsFoundation/CommandHistory/CommandHistory.h>
+#include <ToolsFoundation/Document/DocumentUtils.h>
 #include <ToolsFoundation/Object/ObjectAccessorBase.h>
 #include <ToolsFoundation/Project/ToolsProject.h>
 #include <ToolsFoundation/Selection/SelectionManager.h>
 
 #include <QApplication>
+#include <QDir>
+#include <QFileInfo>
 
 using namespace xiiEditorMCPArguments;
+
+namespace
+{
+  bool HasPendingDocumentEdits(const xiiDocument& mainDocument)
+  {
+    for (const auto* pManager : xiiDocumentManager::GetAllDocumentManagers())
+    {
+      for (const auto* pDocument : pManager->GetAllOpenDocuments())
+      {
+        if (pDocument->GetMainDocument() == &mainDocument &&
+            (pDocument->IsModified() || pDocument->GetCommandHistory()->IsInTransaction() || pDocument->GetCommandHistory()->IsInUndoRedo()))
+        {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+} // namespace
 
 void xiiEditorMCP::DescribeDocument(const xiiDocument& document, const xiiUuid& session, xiiVariantDictionary& out_result)
 {
@@ -27,6 +50,10 @@ void xiiEditorMCP::DescribeDocument(const xiiDocument& document, const xiiUuid& 
   out_result["readOnly"]   = document.IsReadOnly();
   out_result["canUndo"]    = document.GetCommandHistory()->CanUndo();
   out_result["canRedo"]    = document.GetCommandHistory()->CanRedo();
+  if (const auto* pMainDocument = document.GetMainDocument(); pMainDocument != nullptr && pMainDocument != &document)
+  {
+    out_result["mainDocument"] = FormatGuid(pMainDocument->GetGuid());
+  }
 }
 
 void xiiEditorMCP::DocumentEvent(const xiiDocumentManager::Event& event)
@@ -139,6 +166,114 @@ xiiStatus xiiEditorMCP::Document(const xiiMCPCallContext&, const xiiVariantDicti
   return InspectDocumentObject(*pDocument, arguments, out_result);
 }
 
+xiiStatus xiiEditorMCP::CreateDocument(const xiiMCPCallContext& context, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result)
+{
+  const auto* pProject     = xiiToolsProject::GetSingleton();
+  xiiUInt64   uiGeneration = 0;
+  if (!xiiToolsProject::IsProjectOpen() || pProject->GetManifest().m_ProjectID != m_AllowedProject ||
+      !ReadUnsigned(arguments, "generation", uiGeneration) || !xiiToolsProject::IsProjectGenerationCurrent(uiGeneration))
+  {
+    return xiiStatus("Use the current generation of an authorized ready project.");
+  }
+
+  const QString sRelative = QDir::fromNativeSeparators(xiiMakeQString(xiiMCPJson::GetString(arguments, "path")));
+  if (sRelative.isEmpty() || sRelative.size() > 1024 || QDir::isAbsolutePath(sRelative) || sRelative.contains(u':') ||
+      sRelative.contains(QChar::Null) || sRelative.split(u'/').contains(u"..") || sRelative.endsWith(u'/'))
+  {
+    return xiiStatus("Provide a document path relative to the current project.");
+  }
+
+  const auto      sRoot = QFileInfo(xiiMakeQString(pProject->GetProjectDirectory())).canonicalFilePath();
+  const QDir      projectRoot(sRoot);
+  const QFileInfo requested(projectRoot.absoluteFilePath(sRelative));
+  const auto      sParent   = QFileInfo(requested.absolutePath()).canonicalFilePath();
+  const auto      sFromRoot = projectRoot.relativeFilePath(sParent);
+  const auto      fileName  = requested.fileName().toUtf8();
+  if (sRoot.isEmpty() || sParent.isEmpty() || !QFileInfo(sParent).isDir() || QDir::isAbsolutePath(sFromRoot) || sFromRoot == u".." || sFromRoot.startsWith(u"../") ||
+      fileName.isEmpty() || xiiPathUtils::ContainsInvalidFilenameChars(fileName.constData()))
+  {
+    return xiiStatus("The document needs an existing directory inside the current project and a valid file name.");
+  }
+
+  // Qt can retain a Windows junction in a canonical path, so inspect every directory below the project root.
+  QString sDirectory = sRoot;
+  for (const auto& sPart : sFromRoot.split(u'/', Qt::SkipEmptyParts))
+  {
+    sDirectory += u'/';
+    sDirectory += sPart;
+    if (const QFileInfo directory(sDirectory); directory.isJunction() || directory.isSymLink())
+    {
+      return xiiStatus("Use a directory inside the current project without filesystem links.");
+    }
+  }
+
+  const QFileInfo destination(QDir(sParent).filePath(requested.fileName()));
+  const auto      absolute = destination.absoluteFilePath().toUtf8();
+  if (!pProject->IsDocumentInAllowedRoot(absolute.constData()) || destination.exists() || destination.isSymLink() || destination.isJunction())
+  {
+    return xiiStatus("The document must be new and inside an allowed project data root.");
+  }
+
+  const xiiDocumentTypeDescriptor* pType = nullptr;
+  XII_SUCCEED_OR_RETURN(xiiDocumentUtils::IsValidSaveLocationForDocument(absolute.constData(), &pType));
+  if (context.HasExpired())
+  {
+    return xiiStatus("The document creation request expired.");
+  }
+
+  xiiDocument* pDocument = nullptr;
+  XII_SUCCEED_OR_RETURN(pType->m_pManager->CreateDocument(pType->m_sDocumentTypeName, absolute.constData(), pDocument,
+                                                          xiiDocumentFlags::RequestWindow | xiiDocumentFlags::AddToRecentFilesList));
+  DescribeDocument(*pDocument, GetDocumentSession(*pDocument), out_result);
+  return XII_SUCCESS;
+}
+
+xiiStatus xiiEditorMCP::CloseDocument(const xiiMCPCallContext& context, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result)
+{
+  xiiDocument* pDocument = nullptr;
+  XII_SUCCEED_OR_RETURN(ValidateEdit(arguments, pDocument));
+
+  if (pDocument->IsSubDocument() || context.HasExpired())
+  {
+    return xiiStatus("Select the main document and submit the close request again.");
+  }
+
+  const auto* pWindow = xiiQtDocumentWindow::FindWindowByDocument(pDocument);
+  if (auto* pFocus = QApplication::focusWidget(); pWindow != nullptr && pFocus != nullptr && pWindow->isAncestorOf(pFocus))
+  {
+    pFocus->clearFocus();
+    XII_SUCCEED_OR_RETURN(ValidateEdit(arguments, pDocument));
+  }
+
+  if (HasPendingDocumentEdits(*pDocument))
+  {
+    return xiiStatus("Finish active edits, save the document and its loaded sub-documents, and refresh its revision before closing it.");
+  }
+
+  auto* pDocumentWindow = xiiQtDocumentWindow::FindWindowByDocument(pDocument);
+  if (pDocumentWindow != nullptr && !pDocumentWindow->CanCloseWindow())
+  {
+    return xiiStatus("The document window refused to close.");
+  }
+
+  XII_SUCCEED_OR_RETURN(ValidateEdit(arguments, pDocument));
+  if (HasPendingDocumentEdits(*pDocument) || !xiiToolsProject::CanCloseDocuments(xiiArrayPtr(&pDocument, 1U)))
+  {
+    return xiiStatus("The Editor refused to close the document.");
+  }
+
+  XII_SUCCEED_OR_RETURN(ValidateEdit(arguments, pDocument));
+  if (HasPendingDocumentEdits(*pDocument) || context.HasExpired())
+  {
+    return xiiStatus("The document changed or the close request expired.");
+  }
+
+  out_result["document"] = FormatGuid(pDocument->GetGuid());
+  pDocument->GetDocumentManager()->CloseDocument(pDocument);
+  out_result["closed"] = true;
+  return XII_SUCCESS;
+}
+
 xiiStatus xiiEditorMCP::SetDocumentProperty(const xiiMCPCallContext& context, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result)
 {
   xiiDocument* pDocument = nullptr;
@@ -218,6 +353,10 @@ xiiResult xiiEditorMCP::RegisterDocuments()
       m_Registry.RegisterTool("editor.document", "Inspect an open document's reflected object tree, properties and history availability.",
                               R"({"type":"object","required":["document"],"properties":{"document":{"type":"string"},"object":{"type":"string"},"offset":{"type":"integer","minimum":0},"limit":{"type":"integer","minimum":1,"maximum":128}}})", read, xiiMakeDelegate(&xiiEditorMCP::Document, this))
         .Failed() ||
+      m_Registry.RegisterTool("editor.create_document", "Create and open a new document at a project-relative path. The extension determines the document type. Discover creatable extensions through editor.project.",
+                              R"({"type":"object","required":["path","generation"],"properties":{"path":{"type":"string","minLength":1,"maxLength":1024},"generation":{"type":"integer"}}})", edit, xiiMakeDelegate(&xiiEditorMCP::CreateDocument, this))
+        .Failed() ||
+      m_Registry.RegisterTool("editor.close_document", "Close a saved writable main document at its current session and revision. Save the document and its loaded sub-documents first.", sRevision, edit, xiiMakeDelegate(&xiiEditorMCP::CloseDocument, this)).Failed() ||
       m_Registry.RegisterTool("editor.set_document_property", "Set a supported reflected member on an open document object using its command history.",
                               R"({"type":"object","required":["document","session","revision","generation","object","property","value"],"properties":{"document":{"type":"string"},"session":{"type":"string"},"revision":{"type":"integer"},"generation":{"type":"integer"},"object":{"type":"string"},"property":{"type":"string"},"value":{}}})", edit, xiiMakeDelegate(&xiiEditorMCP::SetDocumentProperty, this))
         .Failed() ||
