@@ -2,13 +2,11 @@
 
 #include <MCPPlugin/MCPPluginPCH.h>
 
+#include <Foundation/Memory/MemoryUtils.h>
 #include <Foundation/Network/TcpListener.h>
 #include <Foundation/Utilities/ConversionUtils.h>
 #include <MCPPlugin/HttpServer.h>
 #include <MCPPlugin/Json.h>
-
-#include <charconv>
-#include <string_view>
 
 namespace
 {
@@ -35,22 +33,41 @@ namespace
 
   struct xiiMCPHttpRequest
   {
-    std::string_view             m_Method;
-    std::string_view             m_Path;
+    xiiStringView                m_Method;
+    xiiStringView                m_Path;
     xiiMap<xiiString, xiiString> m_Headers;
     xiiUInt32                    m_uiBodyBytes = 0;
   };
 
+  // Incoming bytes may contain malformed UTF-8 or NUL. HTTP framing uses byte offsets.
+  const char* FindDelimiter(xiiStringView bytes, xiiStringView delimiter)
+  {
+    if (bytes.GetElementCount() < delimiter.GetElementCount())
+    {
+      return nullptr;
+    }
+    const char* pLast = bytes.GetEndPointer() - delimiter.GetElementCount();
+    for (const char* pByte = bytes.GetStartPointer(); pByte <= pLast; ++pByte)
+    {
+      if (xiiMemoryUtils::IsEqual(pByte, delimiter.GetStartPointer(), delimiter.GetElementCount()))
+      {
+        return pByte;
+      }
+    }
+    return nullptr;
+  }
+
   bool IsTokenCharacter(char character)
   {
     return (character >= 'A' && character <= 'Z') || (character >= 'a' && character <= 'z') ||
-      (character >= '0' && character <= '9') || std::string_view("!#$%&'*+-.^_`|~").find(character) != std::string_view::npos;
+      (character >= '0' && character <= '9') || (character != '\0' && character > 0 && xiiStringView("!#$%&'*+-.^_`|~").FindSubString(xiiStringView(&character, 1)) != nullptr);
   }
 
-  bool IsHeaderValue(std::string_view sValue)
+  bool IsHeaderValue(xiiStringView sValue)
   {
-    for (const auto character : sValue)
+    for (const char* pByte = sValue.GetStartPointer(); pByte != sValue.GetEndPointer(); ++pByte)
     {
+      const char character = *pByte;
       if (character != '\t' && (character < ' ' || character > '~'))
       {
         return false;
@@ -59,79 +76,79 @@ namespace
     return true;
   }
 
-  std::string_view TrimWhitespace(std::string_view sValue)
-  {
-    const auto uiStart = sValue.find_first_not_of(" \t");
-    if (uiStart == std::string_view::npos)
-    {
-      return {};
-    }
-
-    return sValue.substr(uiStart, sValue.find_last_not_of(" \t") - uiStart + 1);
-  }
-
   xiiStringView GetHeader(const xiiMCPHttpRequest& request, xiiStringView sHeader)
   {
     const auto it = request.m_Headers.Find(sHeader);
     return it.IsValid() ? it.Value().GetView() : xiiStringView();
   }
 
-  bool ParseHeaders(std::string_view sHeaders, xiiMCPHttpRequest& out_request)
+  bool ParseHeaders(xiiStringView sHeaders, xiiMCPHttpRequest& out_request)
   {
-    const auto uiLineEnd = sHeaders.find("\r\n");
-    if (uiLineEnd == std::string_view::npos)
+    const char* pLineEnd = FindDelimiter(sHeaders, "\r\n");
+    if (pLineEnd == nullptr)
     {
       return false;
     }
 
-    const auto requestLine = sHeaders.substr(0, uiLineEnd);
-    const auto uiMethodEnd = requestLine.find(' ');
-    const auto uiPathEnd   = uiMethodEnd == std::string_view::npos ? uiMethodEnd : requestLine.find(' ', uiMethodEnd + 1);
-    if (uiPathEnd == std::string_view::npos || requestLine.substr(uiPathEnd + 1) != "HTTP/1.1")
+    const xiiStringView requestLine(sHeaders.GetStartPointer(), pLineEnd);
+    if (!IsHeaderValue(requestLine))
+    {
+      return false;
+    }
+    const char* pMethodEnd = requestLine.FindSubString(" ");
+    if (pMethodEnd == nullptr || pMethodEnd == requestLine.GetStartPointer())
+    {
+      return false;
+    }
+    const xiiStringView pathAndVersion(pMethodEnd + 1, pLineEnd);
+    const char*         pPathEnd = pathAndVersion.FindSubString(" ");
+    if (pPathEnd == nullptr || pPathEnd == pathAndVersion.GetStartPointer() ||
+        xiiStringView(pPathEnd + 1, pLineEnd) != "HTTP/1.1")
     {
       return false;
     }
 
-    out_request.m_Method = requestLine.substr(0, uiMethodEnd);
-    out_request.m_Path   = requestLine.substr(uiMethodEnd + 1, uiPathEnd - uiMethodEnd - 1);
-    sHeaders.remove_prefix(uiLineEnd + 2);
-    while (sHeaders != "\r\n")
+    out_request.m_Method = xiiStringView(requestLine.GetStartPointer(), pMethodEnd);
+    out_request.m_Path   = xiiStringView(pathAndVersion.GetStartPointer(), pPathEnd);
+    sHeaders.SetStartPosition(pLineEnd + 2);
+    while (sHeaders.GetElementCount() != 2)
     {
-      const auto uiEnd = sHeaders.find("\r\n");
-      if (uiEnd == std::string_view::npos || uiEnd == 0 || out_request.m_Headers.GetCount() >= 64)
+      const char* pEnd = FindDelimiter(sHeaders, "\r\n");
+      if (pEnd == nullptr || pEnd == sHeaders.GetStartPointer() || out_request.m_Headers.GetCount() >= 64)
       {
         return false;
       }
-      const auto line        = sHeaders.substr(0, uiEnd);
-      const auto uiSeparator = line.find(':');
-      if (uiSeparator == std::string_view::npos || uiSeparator == 0)
+      const xiiStringView line(sHeaders.GetStartPointer(), pEnd);
+      const char*         pSeparator = FindDelimiter(line, ":");
+      if (pSeparator == nullptr || pSeparator == line.GetStartPointer())
       {
         return false;
       }
 
-      const auto sHeader = line.substr(0, uiSeparator);
-      for (const char character : sHeader)
+      const xiiStringView sHeader(line.GetStartPointer(), pSeparator);
+      for (const char* pByte = sHeader.GetStartPointer(); pByte != sHeader.GetEndPointer(); ++pByte)
       {
-        if (!IsTokenCharacter(character))
+        if (!IsTokenCharacter(*pByte))
         {
           return false;
         }
       }
 
-      const auto sValue = TrimWhitespace(line.substr(uiSeparator + 1));
+      xiiStringView sValue(pSeparator + 1, pEnd);
       if (!IsHeaderValue(sValue))
       {
         return false;
       }
+      sValue.Trim(" \t");
 
-      xiiStringBuilder sKey(xiiStringView(sHeader.data(), static_cast<xiiUInt32>(sHeader.size())));
+      xiiStringBuilder sKey(sHeader);
       sKey.ToLower();
       if (out_request.m_Headers.Contains(sKey))
       {
         return false;
       }
-      out_request.m_Headers.Insert(xiiString(sKey), xiiString(xiiStringView(sValue.data(), static_cast<xiiUInt32>(sValue.size()))));
-      sHeaders.remove_prefix(uiEnd + 2);
+      out_request.m_Headers.Insert(xiiString(sKey), xiiString(sValue));
+      sHeaders.SetStartPosition(pEnd + 2);
     }
 
     const auto sLength = GetHeader(out_request, "content-length");
@@ -141,11 +158,12 @@ namespace
     }
     if (!sLength.IsEmpty())
     {
-      const auto result = std::from_chars(sLength.GetStartPointer(), sLength.GetEndPointer(), out_request.m_uiBodyBytes);
-      if (result.ec != std::errc() || result.ptr != sLength.GetEndPointer())
+      xiiUInt64 uiBodyBytes = 0;
+      if (xiiConversionUtils::StringToUInt64Strict(sLength, uiBodyBytes).Failed() || uiBodyBytes > xiiMath::MaxValue<xiiUInt32>())
       {
         return false;
       }
+      out_request.m_uiBodyBytes = static_cast<xiiUInt32>(uiBodyBytes);
     }
     return true;
   }
@@ -331,21 +349,27 @@ bool xiiMCPHttpState::Receive(xiiMCPHttpConnection& ref_connection)
     return IsTransient(transfer.m_Error);
   }
   ref_connection.m_Input.PushBackRange(xiiArrayPtr<const xiiUInt8>(uiBuffer, transfer.m_uiBytesTransferred));
-  const std::string_view input(reinterpret_cast<const char*>(ref_connection.m_Input.GetData()), ref_connection.m_Input.GetCount());
-  const auto             uiHeaderEnd = input.find("\r\n\r\n", ref_connection.m_uiHeaderSearchOffset);
-  if (uiHeaderEnd == std::string_view::npos)
+  if (ref_connection.m_Input.IsEmpty())
   {
-    if (input.size() >= MaximumHeaderBytes)
+    return false;
+  }
+  const auto*         pInput  = reinterpret_cast<const char*>(ref_connection.m_Input.GetData());
+  const auto          uiBytes = ref_connection.m_Input.GetCount();
+  const xiiStringView headerSearch(pInput + ref_connection.m_uiHeaderSearchOffset, pInput + uiBytes);
+  const char*         pHeaderEnd = FindDelimiter(headerSearch, "\r\n\r\n");
+  if (pHeaderEnd == nullptr)
+  {
+    if (uiBytes >= MaximumHeaderBytes)
     {
       Respond(ref_connection, "431 Request Header Fields Too Large");
     }
-    ref_connection.m_uiHeaderSearchOffset = input.size() > 3 ? static_cast<xiiUInt32>(input.size() - 3) : 0;
+    ref_connection.m_uiHeaderSearchOffset = uiBytes > 3 ? uiBytes - 3 : 0;
     return true;
   }
 
-  const auto        uiBodyStart = uiHeaderEnd + 4;
+  const auto        uiBodyStart = static_cast<xiiUInt32>(pHeaderEnd - pInput) + 4;
   xiiMCPHttpRequest request;
-  if (uiBodyStart > MaximumHeaderBytes || !ParseHeaders(input.substr(0, uiBodyStart), request))
+  if (uiBodyStart > MaximumHeaderBytes || !ParseHeaders(xiiStringView(pInput, uiBodyStart), request))
   {
     Respond(ref_connection, "400 Bad Request");
   }
@@ -353,15 +377,15 @@ bool xiiMCPHttpState::Receive(xiiMCPHttpConnection& ref_connection)
   {
     Respond(ref_connection, "413 Content Too Large");
   }
-  else if (input.size() >= uiBodyStart + request.m_uiBodyBytes)
+  else if (uiBytes >= uiBodyStart + request.m_uiBodyBytes)
   {
-    if (input.size() != uiBodyStart + request.m_uiBodyBytes)
+    if (uiBytes != uiBodyStart + request.m_uiBodyBytes)
     {
       Respond(ref_connection, "400 Bad Request");
     }
     else
     {
-      Dispatch(ref_connection, request, xiiStringView(input.data() + uiBodyStart, request.m_uiBodyBytes));
+      Dispatch(ref_connection, request, xiiStringView(pInput + uiBodyStart, request.m_uiBodyBytes));
     }
   }
   return true;
@@ -484,4 +508,23 @@ xiiNetworkEndpoint xiiMCPHttpServer::GetEndpoint() const
 xiiUInt32 xiiMCPHttpServer::GetSessionCount() const
 {
   return m_pState ? m_pState->m_Sessions.GetCount() : 0;
+}
+
+void xiiMCPHttpServer::ListSessions(xiiVariantArray& out_sessions) const
+{
+  out_sessions.Clear();
+  if (!m_pState)
+  {
+    return;
+  }
+  const auto now = xiiTime::Now();
+  for (auto it = m_pState->m_Sessions.GetIterator(); it.IsValid(); ++it)
+  {
+    const auto&          session = it.Value();
+    xiiVariantDictionary entry;
+    entry["name"]        = session.m_Protocol.m_sClient;
+    entry["state"]       = xiiString(session.m_Protocol.m_State == xiiMCPSession::State::Ready ? "Ready" : "Initializing");
+    entry["idleSeconds"] = static_cast<xiiUInt32>((now - session.m_LastActivity).GetSeconds());
+    out_sessions.PushBack(entry);
+  }
 }

@@ -18,6 +18,9 @@ namespace xiiMCPJson
   /// Encode JSON-compatible variants into compact UTF-8 text. Output is unchanged on failure.
   [[nodiscard]] XII_MCPPLUGIN_DLL xiiResult Write(const xiiVariant& value, xiiStringBuilder& out_sJson, xiiUInt32 uiMaximumBytes = DefaultMaximumBytes);
 
+  /// Encode human-readable UTF-8 JSON through the same bounded writer.
+  [[nodiscard]] XII_MCPPLUGIN_DLL xiiResult WriteIndented(const xiiVariant& value, xiiStringBuilder& out_sJson, xiiUInt32 uiMaximumBytes = DefaultMaximumBytes);
+
   [[nodiscard]] XII_MCPPLUGIN_DLL xiiStringView               GetString(const xiiVariantDictionary& object, xiiStringView sKey);
   [[nodiscard]] XII_MCPPLUGIN_DLL const xiiVariantDictionary* GetObject(const xiiVariantDictionary& object, xiiStringView sKey);
   [[nodiscard]] XII_MCPPLUGIN_DLL bool                        ReadUInt(const xiiVariant& value, xiiUInt64& out_uiValue);

@@ -7,8 +7,8 @@
 #include <MCPPlugin/Json.h>
 #include <MCPPlugin/Reflection.h>
 
-#include <cmath>
-#include <limits>
+#include <initializer_list>
+#include <utility>
 
 namespace
 {
@@ -60,7 +60,7 @@ namespace
     xiiVariantArray result;
     for (double fValue : values)
     {
-      result.PushBack(std::isfinite(fValue) ? xiiVariant(fValue) : xiiVariant());
+      result.PushBack(xiiMath::IsFinite(fValue) ? xiiVariant(fValue) : xiiVariant());
     }
     return result;
   }
@@ -251,7 +251,7 @@ bool xiiMCPReflection::ConvertValue(const xiiVariant& value, xiiVariant& out_jso
       out_json = xiiString(value.ConvertTo<xiiStringView>());
       return true;
     default:
-      if (GetJsonType(value.GetType()) == nullptr || (value.IsNumber() && !std::isfinite(value.ConvertTo<double>())))
+      if (GetJsonType(value.GetType()) == nullptr || (value.IsNumber() && !xiiMath::IsFinite(value.ConvertTo<double>())))
       {
         return false;
       }
@@ -319,8 +319,8 @@ bool xiiMCPReflection::ConvertArgument(const xiiAbstractProperty& property, cons
       return ConvertInteger<xiiUInt64>(json, out_value);
     case xiiVariantType::Float:
     case xiiVariantType::Double:
-      if (!json.IsNumber() || json.IsA<bool>() || !std::isfinite(json.ConvertTo<double>()) ||
-          (type == xiiVariantType::Float && std::abs(json.ConvertTo<double>()) > std::numeric_limits<float>::max()))
+      if (!json.IsNumber() || json.IsA<bool>() || !xiiMath::IsFinite(json.ConvertTo<double>()) ||
+          (type == xiiVariantType::Float && xiiMath::Abs(json.ConvertTo<double>()) > xiiMath::MaxValue<float>()))
       {
         return false;
       }

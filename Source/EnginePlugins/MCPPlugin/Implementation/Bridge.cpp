@@ -274,14 +274,24 @@ public:
 
     m_Reflection.Dispatch(0, 4).IgnoreResult();
     m_Reflection.Update();
+    xiiNetworkRpcResult result;
+    while (m_Reflection.TryGetRpcResult(result))
+    {
+      if (m_Pending.Contains(result.m_Request))
+      {
+        m_Completed.PushBack(std::move(result));
+      }
+    }
   }
 
-  xiiTelemetryDiscovery             m_Discovery;
-  xiiNetworkHost                    m_Host;
-  xiiNetworkTypeRegistry            m_TypeRegistry;
-  xiiNetworkReflectionEndpoint      m_Reflection;
-  xiiSharedPtr<xiiMCPBridgeService> m_pService;
-  xiiUInt64                         m_uiTypeGeneration = 0;
+  xiiTelemetryDiscovery                   m_Discovery;
+  xiiNetworkHost                          m_Host;
+  xiiNetworkTypeRegistry                  m_TypeRegistry;
+  xiiNetworkReflectionEndpoint            m_Reflection;
+  xiiSharedPtr<xiiMCPBridgeService>       m_pService;
+  xiiHybridArray<xiiNetworkRpcRequest, 8> m_Pending;
+  xiiHybridArray<xiiNetworkRpcResult, 8>  m_Completed;
+  xiiUInt64                               m_uiTypeGeneration = 0;
 };
 
 xiiMCPBridge::xiiMCPBridge()  = default;
@@ -400,11 +410,27 @@ bool xiiMCPBridge::IsConnected(xiiNetworkConnection hConnection) const
   return m_pState && m_pState->m_Host.GetConnectionInfo(hConnection, info).Succeeded() && info.m_State == xiiNetworkConnectionState::Connected;
 }
 
-xiiStatus xiiMCPBridge::Call(xiiNetworkConnection hConnection, const xiiVariantDictionary& request, xiiTime deadline, xiiVariantDictionary& out_response)
+void xiiMCPBridge::SetServerPermissions(xiiUInt8 uiPermissions)
+{
+  uiPermissions &= AllPermissions;
+  if (m_pState && m_pState->m_pService && m_pState->m_pService->m_Methods.m_uiPermissions != uiPermissions)
+  {
+    auto& service           = m_pState->m_pService->m_Methods;
+    service.m_uiPermissions = uiPermissions;
+    service.m_pRegistry->NotifyAvailabilityChanged();
+  }
+}
+
+xiiStatus xiiMCPBridge::BeginCall(xiiNetworkConnection hConnection, const xiiVariantDictionary& request, xiiTime deadline, xiiNetworkRpcRequest& out_request)
 {
   if (!m_pState || !IsConnected(hConnection))
   {
     return xiiStatus("The selected XII target is disconnected.");
+  }
+
+  if (m_pState->m_Pending.GetCount() >= 32)
+  {
+    return xiiStatus("The native MCP request queue is full.");
   }
 
   Update();
@@ -427,32 +453,78 @@ xiiStatus xiiMCPBridge::Call(xiiNetworkConnection hConnection, const xiiVariantD
     return xiiStatus(xiiFmt("Could not send the operation to the selected XII target ({0}).", admission.GetCodeName()));
   }
 
+  m_pState->m_Pending.PushBack(pending);
+  out_request = pending;
+  return XII_SUCCESS;
+}
+
+bool xiiMCPBridge::PollCall(xiiNetworkRpcRequest request, xiiStatus& out_status, xiiVariantDictionary& out_response)
+{
+  if (!m_pState || !m_pState->m_Pending.Contains(request))
+  {
+    out_status = xiiStatus("The native MCP request is no longer active.");
+    return true;
+  }
+  for (xiiUInt32 uiIndex = 0; uiIndex < m_pState->m_Completed.GetCount(); ++uiIndex)
+  {
+    if (m_pState->m_Completed[uiIndex].m_Request != request)
+    {
+      continue;
+    }
+    auto result = std::move(m_pState->m_Completed[uiIndex]);
+    m_pState->m_Completed.RemoveAtAndSwap(uiIndex);
+    m_pState->m_Pending.RemoveAndSwap(request);
+    if (result.m_Error.Failed())
+    {
+      out_status = xiiStatus(xiiFmt("The XII target did not complete the operation ({0}).", result.m_Error.GetCodeName()));
+      return true;
+    }
+    const auto decodeError = m_pState->m_Reflection.DecodeRpcResult(result, out_response);
+    if (decodeError.Failed())
+    {
+      out_status = xiiStatus(xiiFmt("Could not decode the XII target response ({0}).", decodeError.GetCodeName()));
+      return true;
+    }
+    const auto sError = xiiMCPJson::GetString(out_response, "error");
+    out_status        = sError.IsEmpty() ? xiiStatus(XII_SUCCESS) : xiiStatus(sError);
+    return true;
+  }
+  return false;
+}
+
+void xiiMCPBridge::CancelCall(xiiNetworkRpcRequest request)
+{
+  if (!m_pState || !m_pState->m_Pending.RemoveAndSwap(request))
+  {
+    return;
+  }
+  for (xiiUInt32 uiIndex = 0; uiIndex < m_pState->m_Completed.GetCount(); ++uiIndex)
+  {
+    if (m_pState->m_Completed[uiIndex].m_Request == request)
+    {
+      m_pState->m_Completed.RemoveAtAndSwap(uiIndex);
+      return;
+    }
+  }
+  m_pState->m_Reflection.CancelRpc(request).IgnoreResult();
+}
+
+xiiStatus xiiMCPBridge::Call(xiiNetworkConnection hConnection, const xiiVariantDictionary& request, xiiTime deadline, xiiVariantDictionary& out_response)
+{
+  xiiNetworkRpcRequest pending;
+  XII_SUCCEED_OR_RETURN(BeginCall(hConnection, request, deadline, pending));
   do
   {
     Update();
-    xiiNetworkRpcResult result;
-    while (m_pState->m_Reflection.TryGetRpcResult(result))
+    xiiStatus status(XII_SUCCESS);
+    if (PollCall(pending, status, out_response))
     {
-      if (result.m_Request == pending)
-      {
-        if (result.m_Error.Failed())
-        {
-          return xiiStatus(xiiFmt("The XII target did not complete the operation ({0}).", result.m_Error.GetCodeName()));
-        }
-        const auto decodeError = m_pState->m_Reflection.DecodeRpcResult(result, out_response);
-        if (decodeError.Failed())
-        {
-          return xiiStatus(xiiFmt("Could not decode the XII target response ({0}).", decodeError.GetCodeName()));
-        }
-        const auto sError = xiiMCPJson::GetString(out_response, "error");
-        return sError.IsEmpty() ? xiiStatus(XII_SUCCESS) : xiiStatus(sError);
-      }
+      return status;
     }
-
     xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(1));
   } while (xiiTime::Now() < deadline);
 
-  m_pState->m_Reflection.CancelRpc(pending).IgnoreResult();
+  CancelCall(pending);
   return xiiStatus("The XII target did not respond before the deadline.");
 }
 

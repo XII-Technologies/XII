@@ -105,6 +105,13 @@ xiiResult xiiMCPRegistry::Register(xiiMCPCapability kind, xiiStringView sKey, xi
 
   descriptor[bNamed ? "name" : bTemplate ? "uriTemplate" :
                                            "uri"] = xiiString(sKey);
+  xiiVariantDictionary metadata;
+  if (const auto* pMetadata = xiiMCPJson::GetObject(descriptor, "_meta"))
+  {
+    metadata = *pMetadata;
+  }
+  metadata["xii/permission"] = static_cast<xiiUInt8>(permission);
+  descriptor["_meta"]        = metadata;
   xiiStringBuilder sDescriptor;
   if (xiiMCPJson::Write(descriptor, sDescriptor, 8 * 1024).Failed())
   {

@@ -31,6 +31,7 @@ public:
   void                             Update();
   [[nodiscard]] xiiNetworkEndpoint GetEndpoint() const;
   [[nodiscard]] xiiUInt32          GetSessionCount() const;
+  void                             ListSessions(xiiVariantArray& out_sessions) const;
 
 private:
   const xiiMCPProtocol&         m_Protocol;

@@ -36,6 +36,17 @@ namespace
   private:
     xiiUInt32 m_uiMaximumBytes;
   };
+
+  xiiResult WriteJson(const xiiVariant& value, xiiStringBuilder& out_sJson, xiiUInt32 uiMaximumBytes, xiiJSONWriter::WhitespaceMode whitespace)
+  {
+    xiiMCPBoundedJsonStream stream(uiMaximumBytes);
+    xiiStandardJSONWriter   writer;
+    writer.SetOutputStream(&stream);
+    writer.SetWhitespaceMode(whitespace);
+    XII_SUCCEED_OR_RETURN(writer.WritePlainVariant(value, xiiMCPJson::MaximumDepth));
+    out_sJson.Set(xiiStringView(stream.m_Bytes.GetData(), stream.m_Bytes.GetCount()));
+    return XII_SUCCESS;
+  }
 } // namespace
 
 xiiResult xiiMCPJson::Parse(xiiStringView sJson, xiiVariant& out_value, xiiUInt32 uiMaximumBytes)
@@ -68,13 +79,12 @@ xiiResult xiiMCPJson::Parse(xiiStringView sJson, xiiVariant& out_value, xiiUInt3
 
 xiiResult xiiMCPJson::Write(const xiiVariant& value, xiiStringBuilder& out_sJson, xiiUInt32 uiMaximumBytes)
 {
-  xiiMCPBoundedJsonStream stream(uiMaximumBytes);
-  xiiStandardJSONWriter   writer;
-  writer.SetOutputStream(&stream);
-  writer.SetWhitespaceMode(xiiJSONWriter::WhitespaceMode::None);
-  XII_SUCCEED_OR_RETURN(writer.WritePlainVariant(value, MaximumDepth));
-  out_sJson.Set(xiiStringView(stream.m_Bytes.GetData(), stream.m_Bytes.GetCount()));
-  return XII_SUCCESS;
+  return WriteJson(value, out_sJson, uiMaximumBytes, xiiJSONWriter::WhitespaceMode::None);
+}
+
+xiiResult xiiMCPJson::WriteIndented(const xiiVariant& value, xiiStringBuilder& out_sJson, xiiUInt32 uiMaximumBytes)
+{
+  return WriteJson(value, out_sJson, uiMaximumBytes, xiiJSONWriter::WhitespaceMode::All);
 }
 
 xiiStringView xiiMCPJson::GetString(const xiiVariantDictionary& object, xiiStringView sKey)

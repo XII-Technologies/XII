@@ -56,6 +56,8 @@ public:
   [[nodiscard]] xiiStatus Invoke(xiiMCPCapability kind, xiiStringView sKey, const xiiMCPCallContext& context, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result) const;
   [[nodiscard]] xiiStatus ReadResource(xiiStringView sUri, const xiiMCPCallContext& context, xiiVariantDictionary& out_result) const;
   [[nodiscard]] xiiUInt64 GetRevision() const { return m_uiRevision; }
+  /// Publish a binding-side authorization change to catalog consumers.
+  void NotifyAvailabilityChanged() { ++m_uiRevision; }
 
 private:
   struct Entry
