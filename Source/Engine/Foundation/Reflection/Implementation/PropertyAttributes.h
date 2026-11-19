@@ -33,6 +33,13 @@ class XII_FOUNDATION_DLL xiiTemporaryAttribute : public xiiPropertyAttribute
   XII_ADD_DYNAMIC_REFLECTION(xiiTemporaryAttribute, xiiPropertyAttribute);
 };
 
+/// Allows live editing of a reflected member while holding the owning world write marker.
+/// The member must support live changes in every lifecycle state and preserve its invariants for all values allowed by its reflected constraints.
+class XII_FOUNDATION_DLL xiiRuntimeEditableAttribute : public xiiPropertyAttribute
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiRuntimeEditableAttribute, xiiPropertyAttribute);
+};
+
 /// Used to categorize types (e.g. add component menu)
 class XII_FOUNDATION_DLL xiiCategoryAttribute : public xiiPropertyAttribute
 {

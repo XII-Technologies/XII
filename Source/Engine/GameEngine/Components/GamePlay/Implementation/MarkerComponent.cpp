@@ -15,7 +15,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiMarkerComponent, 1, xiiComponentMode::Static)
   XII_BEGIN_PROPERTIES
   {
     XII_ACCESSOR_PROPERTY("Marker", GetMarkerType, SetMarkerType)->AddAttributes(new xiiDynamicStringEnumAttribute("SpatialDataCategoryEnum")),
-    XII_ACCESSOR_PROPERTY("Radius", GetRadius, SetRadius)->AddAttributes(new xiiDefaultValueAttribute(0.1)),
+    XII_ACCESSOR_PROPERTY("Radius", GetRadius, SetRadius)->AddAttributes(new xiiDefaultValueAttribute(0.1), new xiiClampValueAttribute(0.0f, xiiVariant()), new xiiRuntimeEditableAttribute()),
   }
   XII_END_PROPERTIES;
   XII_BEGIN_MESSAGEHANDLERS
