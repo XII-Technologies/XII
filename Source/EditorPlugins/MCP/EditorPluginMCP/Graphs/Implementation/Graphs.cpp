@@ -4,6 +4,7 @@
 
 #include <EditorPluginMCP/EditorMCP.h>
 #include <EditorPluginMCP/EditorMCPArguments.h>
+#include <Foundation/Types/ScopeExit.h>
 #include <MCPPlugin/Reflection.h>
 #include <ToolsFoundation/Command/NodeCommands.h>
 #include <ToolsFoundation/NodeObject/DocumentNodeManager.h>
@@ -40,6 +41,55 @@ namespace
       rows.PushBack(row);
     }
     return rows;
+  }
+
+  xiiStatus CreateNode(const xiiMCPCallContext& context, const xiiDocumentNodeManager& manager, xiiObjectAccessorBase& ref_accessor,
+                       const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result)
+  {
+    const auto                               sType     = xiiMCPJson::GetString(arguments, "type");
+    const auto                               sTemplate = xiiMCPJson::GetString(arguments, "template");
+    xiiDynamicArray<xiiNodeCreationTemplate> templates;
+    manager.GetNodeCreationTemplates(templates);
+    const xiiNodeCreationTemplate* pMatch = nullptr;
+    for (const auto& creation : templates)
+    {
+      if (creation.m_pType == nullptr || creation.m_pType->GetTypeName() != sType || (!sTemplate.IsEmpty() && creation.m_sTypeName != sTemplate))
+      {
+        continue;
+      }
+      if (pMatch != nullptr)
+      {
+        return xiiStatus("Select a unique node template by type and name.");
+      }
+      pMatch = &creation;
+    }
+    if (pMatch == nullptr || context.HasExpired())
+    {
+      return xiiStatus("Choose a current creation template before the deadline.");
+    }
+
+    ref_accessor.StartTransaction("Create graph node through MCP");
+    bool bCommitted = false;
+    XII_SCOPE_EXIT(if (!bCommitted) { ref_accessor.CancelTransaction(); });
+    xiiUuid id;
+    XII_SUCCEED_OR_RETURN(ref_accessor.AddObjectByName(nullptr, "", xiiInt32(-1), pMatch->m_pType, id));
+    const auto* pObject = ref_accessor.GetObject(id);
+    if (pObject == nullptr || !manager.IsNode(pObject))
+    {
+      return xiiStatus("The template did not create a node in this document.");
+    }
+    for (const auto& property : pMatch->m_PropertyValues)
+    {
+      XII_SUCCEED_OR_RETURN(ref_accessor.SetValueByName(pObject, property.m_sPropertyName.GetView(), property.m_Value));
+    }
+    if (context.HasExpired())
+    {
+      return xiiStatus("The node creation deadline expired before commit.");
+    }
+    ref_accessor.FinishTransaction();
+    bCommitted           = true;
+    out_result["object"] = xiiEditorMCPArguments::FormatGuid(id);
+    return XII_SUCCESS;
   }
 } // namespace
 
@@ -145,7 +195,11 @@ xiiStatus xiiEditorMCP::EditGraph(const xiiMCPCallContext& context, const xiiVar
   const auto sAction  = xiiMCPJson::GetString(arguments, "action");
   auto&      accessor = *pDocument->GetObjectAccessor();
   auto*      pHistory = pDocument->GetCommandHistory();
-  if (sAction == "connect")
+  if (sAction == "create")
+  {
+    XII_SUCCEED_OR_RETURN(CreateNode(context, *pManager, accessor, arguments, out_result));
+  }
+  else if (sAction == "connect")
   {
     const auto* pSource = accessor.GetObject(xiiEditorMCPArguments::ReadGuid(arguments, "source"));
     const auto* pTarget = accessor.GetObject(xiiEditorMCPArguments::ReadGuid(arguments, "target"));
@@ -206,6 +260,6 @@ xiiResult xiiEditorMCP::RegisterGraphs()
 {
   XII_SUCCEED_OR_RETURN(m_Registry.RegisterTool("editor.graph", "Page nodes, pins and connections or list creation templates for an open node document.",
                                                 R"({"type":"object","required":["document"],"properties":{"document":{"type":"string"},"view":{"enum":["graph","templates"]},"offset":{"type":"integer","minimum":0},"limit":{"type":"integer","minimum":1,"maximum":128}}})", xiiMCPPermission::Read, xiiMakeDelegate(&xiiEditorMCP::Graph, this)));
-  return m_Registry.RegisterTool("editor.edit_graph", "Connect pins, disconnect an existing link or remove a node through the document command history.",
-                                 R"({"type":"object","required":["document","session","revision","generation","action"],"properties":{"document":{"type":"string"},"session":{"type":"string"},"revision":{"type":"integer"},"generation":{"type":"integer"},"action":{"enum":["connect","disconnect","remove"]},"source":{"type":"string"},"sourcePin":{"type":"string"},"target":{"type":"string"},"targetPin":{"type":"string"},"object":{"type":"string"}}})", xiiMCPPermission::Edit, xiiMakeDelegate(&xiiEditorMCP::EditGraph, this));
+  return m_Registry.RegisterTool("editor.edit_graph", "Create a template node, connect pins, disconnect a link or remove a node through the document command history.",
+                                 R"({"type":"object","required":["document","session","revision","generation","action"],"properties":{"document":{"type":"string"},"session":{"type":"string"},"revision":{"type":"integer"},"generation":{"type":"integer"},"action":{"enum":["create","connect","disconnect","remove"]},"type":{"type":"string"},"template":{"type":"string"},"source":{"type":"string"},"sourcePin":{"type":"string"},"target":{"type":"string"},"targetPin":{"type":"string"},"object":{"type":"string"}}})", xiiMCPPermission::Edit, xiiMakeDelegate(&xiiEditorMCP::EditGraph, this));
 }
