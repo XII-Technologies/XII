@@ -11,4 +11,5 @@ target_link_libraries(${PROJECT_NAME} PRIVATE Foundation MCPPlugin)
 
 if(XII_ENABLE_QT_SUPPORT)
   xii_link_target_qt(TARGET ${PROJECT_NAME} COMPONENTS Core Gui Widgets)
+  target_link_libraries(${PROJECT_NAME} PRIVATE GuiFoundation)
 endif()

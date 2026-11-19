@@ -148,7 +148,8 @@ xiiResult xiiMCPApplication::BeforeCoreSystemsStartup()
   const auto* pOptions = xiiCommandLineUtils::GetGlobalInstance();
   if (pOptions->GetBoolOption("-help"))
   {
-    std::fputs("xiiMCP [-MCPTransport http|stdio] [-MCPListen 127.0.0.1:8372] [-MCPTarget NAME ...]\n"
+    std::fputs("xiiMCP launches its graphical workspace in Qt builds when started without arguments.\n"
+               "xiiMCP [-MCPTransport http|stdio] [-MCPListen 127.0.0.1:8372] [-MCPTarget NAME ...]\n"
                "       [-MCPNoDiscovery] [-MCPAllowCapture] [-MCPAllowEdit] [-MCPAllowExecute] [-MCPTimeoutMs 5000] [-gui]\n"
                "       Set XII_MCP_TOKEN to require Bearer authentication for HTTP.\n",
                stderr);
@@ -159,6 +160,10 @@ xiiResult xiiMCPApplication::BeforeCoreSystemsStartup()
   const auto sTransport = pOptions->GetStringOption("-MCPTransport", 0, "http");
   m_bStdio              = sTransport == "stdio";
   m_bGui                = pOptions->GetBoolOption("-gui");
+#ifdef XII_USE_QT
+  m_Configuration.m_bRestorePreferences = pOptions->GetParameterCount() <= 1;
+  m_bGui                                = m_bGui || m_Configuration.m_bRestorePreferences;
+#endif
   if ((m_bStdio && m_bGui) || (!m_bStdio && sTransport != "http"))
   {
     std::fputs("Select HTTP or stdio. The GUI uses HTTP.\n", stderr);

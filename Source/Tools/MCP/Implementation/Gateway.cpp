@@ -130,6 +130,7 @@ void xiiMCPGateway::RefreshTargets()
 
     if (!target.m_bExplicit && !bAdvertised)
     {
+      m_Bridge.CancelCall(target.m_PendingDiscovery);
       RemoveCapabilities(target);
       if (target.m_hConnection.IsValid())
       {
@@ -177,6 +178,38 @@ void xiiMCPGateway::Update()
 
 void xiiMCPGateway::UpdateTarget(Target& ref_target, xiiTime now)
 {
+  if (ref_target.m_PendingDiscovery.IsValid())
+  {
+    xiiStatus            status(XII_SUCCESS);
+    xiiVariantDictionary response;
+    if (!m_Bridge.PollCall(ref_target.m_PendingDiscovery, status, response))
+    {
+      if (now < ref_target.m_DiscoveryDeadline && m_Bridge.IsConnected(ref_target.m_hConnection))
+      {
+        return;
+      }
+      m_Bridge.CancelCall(ref_target.m_PendingDiscovery);
+      status = xiiStatus("Target discovery expired or disconnected.");
+    }
+    ref_target.m_PendingDiscovery = {};
+    if (status.Failed())
+    {
+      ref_target.m_sConnectionStatus = status.GetMessageString();
+    }
+    else if (ref_target.m_DiscoveryKind == xiiMCPCapability::Count ? AcceptIdentity(ref_target, response) : AcceptCapabilityPage(ref_target, response))
+    {
+      return;
+    }
+    else
+    {
+      ref_target.m_sConnectionStatus = "Target capabilities changed during discovery or could not be published.";
+    }
+
+    ref_target.m_Draft.Clear();
+    ref_target.m_DiscoveryKind = xiiMCPCapability::Count;
+    RemoveCapabilities(ref_target);
+    return;
+  }
   if (now < ref_target.m_NextAttempt)
   {
     return;
@@ -196,52 +229,116 @@ void xiiMCPGateway::UpdateTarget(Target& ref_target, xiiTime now)
     return;
   }
 
-  ref_target.m_NextAttempt = now + xiiTime::MakeFromSeconds(2);
-  xiiVariantDictionary identity;
-  const auto           request        = CreateBridgeRequest("identity", m_Configuration.m_uiPermissions);
-  const auto           identityStatus = m_Bridge.Call(ref_target.m_hConnection, request, now + xiiTime::MakeFromMilliseconds(600), identity);
-  if (identityStatus.Failed())
+  ref_target.m_NextAttempt       = now + xiiTime::MakeFromSeconds(2);
+  ref_target.m_DiscoveryDeadline = now + xiiTime::MakeFromMilliseconds(600);
+  const auto status              = StartDiscoveryCall(ref_target);
+  if (status.Failed())
   {
-    ref_target.m_sConnectionStatus = identityStatus.GetMessageString();
+    ref_target.m_sConnectionStatus = status.GetMessageString();
     RemoveCapabilities(ref_target);
-    return;
   }
+}
 
-  const auto sInstance = xiiMCPJson::GetString(identity, "instance");
-  if (!xiiConversionUtils::IsStringUuid(sInstance) ||
-      (!ref_target.m_sExpectedInstance.IsEmpty() && sInstance != ref_target.m_sExpectedInstance))
+xiiStatus xiiMCPGateway::StartDiscoveryCall(Target& ref_target)
+{
+  const bool bIdentity = ref_target.m_DiscoveryKind == xiiMCPCapability::Count;
+  auto       request   = CreateBridgeRequest(bIdentity ? "identity" : "list", m_Configuration.m_uiPermissions,
+                                             bIdentity ? xiiStringView() : ref_target.m_sInstance.GetView());
+  if (!bIdentity)
   {
-    ref_target.m_sConnectionStatus = "The connected endpoint has a different instance identity.";
-    RemoveCapabilities(ref_target);
+    request["kind"]   = static_cast<xiiUInt8>(ref_target.m_DiscoveryKind);
+    request["offset"] = ref_target.m_uiDiscoveryOffset;
+  }
+  return m_Bridge.BeginCall(ref_target.m_hConnection, request, ref_target.m_DiscoveryDeadline, ref_target.m_PendingDiscovery);
+}
+
+bool xiiMCPGateway::AcceptIdentity(Target& ref_target, const xiiVariantDictionary& identity)
+{
+  const auto sInstance = xiiMCPJson::GetString(identity, "instance");
+  if (!xiiConversionUtils::IsStringUuid(sInstance) || (!ref_target.m_sExpectedInstance.IsEmpty() && sInstance != ref_target.m_sExpectedInstance))
+  {
     m_Bridge.Disconnect(ref_target.m_hConnection);
-    return;
+    return false;
   }
   if (ref_target.m_sExpectedInstance.IsEmpty())
   {
     ref_target.m_sExpectedInstance = sInstance;
   }
+
   ref_target.m_sInstance    = sInstance;
   ref_target.m_sApplication = xiiMCPJson::GetString(identity, "application");
-  const auto* pRevision     = identity.GetValue("revision");
-  xiiUInt64   uiRevision    = 0;
-  if (pRevision != nullptr && xiiMCPJson::ReadUInt(*pRevision, uiRevision) && (!ref_target.m_bPublished || uiRevision != ref_target.m_uiRevision))
+  if (const auto* pId = identity.GetValue("processId"); pId != nullptr && pId->IsNumber())
   {
-    RemoveCapabilities(ref_target);
-    ref_target.m_bPublished = RefreshCapabilities(ref_target, uiRevision);
-    if (ref_target.m_bPublished)
-    {
-      ref_target.m_uiRevision        = uiRevision;
-      ref_target.m_sConnectionStatus = "Ready";
-    }
-    else
-    {
-      RemoveCapabilities(ref_target);
-      if (ref_target.m_sConnectionStatus.IsEmpty())
-      {
-        ref_target.m_sConnectionStatus = "Could not publish target capabilities.";
-      }
-    }
+    ref_target.m_uiProcessId = pId->ConvertTo<xiiUInt32>();
   }
+  const auto* pRevision  = identity.GetValue("revision");
+  xiiUInt64   uiRevision = 0;
+  if (pRevision == nullptr || !xiiMCPJson::ReadUInt(*pRevision, uiRevision))
+  {
+    return false;
+  }
+  if (ref_target.m_bPublished && uiRevision == ref_target.m_uiRevision)
+  {
+    return true;
+  }
+
+  ref_target.m_DiscoveryKind       = xiiMCPCapability::Tool;
+  ref_target.m_uiDiscoveryRevision = uiRevision;
+  ref_target.m_uiDiscoveryOffset   = 0;
+  ref_target.m_DiscoveryDeadline   = xiiTime::Now() + xiiTime::MakeFromSeconds(3);
+  ref_target.m_Draft.Clear();
+  return StartDiscoveryCall(ref_target).Succeeded();
+}
+
+bool xiiMCPGateway::AcceptCapabilityPage(Target& ref_target, const xiiVariantDictionary& response)
+{
+  const auto* pEntries   = response.GetValue("entries");
+  const auto* pRevision  = response.GetValue("revision");
+  xiiUInt64   uiRevision = 0;
+  if (pEntries == nullptr || !pEntries->IsA<xiiVariantArray>() || pRevision == nullptr ||
+      !xiiMCPJson::ReadUInt(*pRevision, uiRevision) || uiRevision != ref_target.m_uiDiscoveryRevision)
+  {
+    return false;
+  }
+
+  for (const auto& entry : pEntries->Get<xiiVariantArray>())
+  {
+    if (!entry.IsA<xiiVariantDictionary>() || ref_target.m_Draft.GetCount() >= MaximumCapabilitiesPerTarget)
+    {
+      return false;
+    }
+    ref_target.m_Draft.PushBack(RemoteCapability{ref_target.m_DiscoveryKind, entry.Get<xiiVariantDictionary>()});
+  }
+
+  if (const auto* pOffset = response.GetValue("nextOffset"))
+  {
+    xiiUInt64 uiOffset = 0;
+    if (!xiiMCPJson::ReadUInt(*pOffset, uiOffset) || uiOffset <= ref_target.m_uiDiscoveryOffset || uiOffset >= MaximumCapabilitiesPerTarget)
+    {
+      return false;
+    }
+    ref_target.m_uiDiscoveryOffset = static_cast<xiiUInt32>(uiOffset);
+  }
+  else
+  {
+    ref_target.m_uiDiscoveryOffset = 0;
+    ref_target.m_DiscoveryKind     = static_cast<xiiMCPCapability>(static_cast<xiiUInt8>(ref_target.m_DiscoveryKind) + 1U);
+  }
+  if (ref_target.m_DiscoveryKind != xiiMCPCapability::Count)
+  {
+    return StartDiscoveryCall(ref_target).Succeeded();
+  }
+
+  RemoveCapabilities(ref_target);
+  ref_target.m_bPublished = PublishCapabilities(ref_target);
+  ref_target.m_Draft.Clear();
+  if (!ref_target.m_bPublished)
+  {
+    return false;
+  }
+  ref_target.m_uiRevision        = ref_target.m_uiDiscoveryRevision;
+  ref_target.m_sConnectionStatus = "Ready";
+  return true;
 }
 
 void xiiMCPGateway::RemoveCapabilities(Target& ref_target)
@@ -254,72 +351,43 @@ void xiiMCPGateway::RemoveCapabilities(Target& ref_target)
   ref_target.m_bPublished = false;
 }
 
-bool xiiMCPGateway::RefreshCapabilities(Target& ref_target, xiiUInt64 uiRevision)
+bool xiiMCPGateway::PublishCapabilities(Target& ref_target)
 {
-  const auto deadline = xiiTime::Now() + xiiTime::MakeFromMilliseconds(800);
-  const auto sPrefix  = MakeTargetNamespace(ref_target.m_sInstance);
-  for (const auto kind : {xiiMCPCapability::Tool, xiiMCPCapability::Resource, xiiMCPCapability::ResourceTemplate, xiiMCPCapability::Prompt})
+  const auto sPrefix = MakeTargetNamespace(ref_target.m_sInstance);
+  for (auto& entry : ref_target.m_Draft)
   {
-    auto request    = CreateBridgeRequest("list", m_Configuration.m_uiPermissions, ref_target.m_sInstance);
-    request["kind"] = static_cast<xiiUInt8>(kind);
-    for (xiiUInt32 uiOffset = 0; uiOffset < MaximumCapabilitiesPerTarget;)
+    const auto kind       = entry.m_Kind;
+    auto&      descriptor = entry.m_Descriptor;
+    const auto sRemoteKey = xiiString(xiiMCPJson::GetString(descriptor, GetCapabilityField(kind)));
+    if (sRemoteKey.IsEmpty())
     {
-      request["offset"] = uiOffset;
-      xiiVariantDictionary response;
-      const auto           status = m_Bridge.Call(ref_target.m_hConnection, request, deadline, response);
-      if (status.Failed())
-      {
-        ref_target.m_sConnectionStatus = status.GetMessageString();
-        return false;
-      }
-
-      const auto* pEntries           = response.GetValue("entries");
-      const auto* pRevision          = response.GetValue("revision");
-      xiiUInt64   uiResponseRevision = 0;
-      if (pEntries == nullptr || !pEntries->IsA<xiiVariantArray>() || pRevision == nullptr || !xiiMCPJson::ReadUInt(*pRevision, uiResponseRevision) ||
-          uiResponseRevision != uiRevision)
-      {
-        return false;
-      }
-
-      for (const auto& entry : pEntries->Get<xiiVariantArray>())
-      {
-        if (!entry.IsA<xiiVariantDictionary>() || ref_target.m_Capabilities.GetCount() >= MaximumCapabilitiesPerTarget)
-        {
-          return false;
-        }
-        auto       descriptor = entry.Get<xiiVariantDictionary>();
-        const auto sRemoteKey = xiiString(xiiMCPJson::GetString(descriptor, GetCapabilityField(kind)));
-        if (sRemoteKey.IsEmpty())
-        {
-          return false;
-        }
-        const bool      bResource  = kind == xiiMCPCapability::Resource || kind == xiiMCPCapability::ResourceTemplate;
-        const xiiString sPublicKey = bResource ? xiiString(xiiStringBuilder("xii-mcp://", sPrefix, "/", sRemoteKey)) :
-                                                 xiiString(xiiStringBuilder(sPrefix, ".", sRemoteKey));
-        auto            forward    = [this, sEndpoint = ref_target.m_sEndpoint, sInstance = ref_target.m_sInstance, kind, sRemoteKey, sPublicKey](
-                                       const xiiMCPCallContext& context, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result) {
-          return Forward(sEndpoint, sInstance, kind, sRemoteKey, sPublicKey, context, arguments, out_result);
-        };
-        if (m_Registry.Register(kind, sPublicKey, std::move(descriptor), xiiMCPPermission::Read, std::move(forward)).Failed())
-        {
-          return false;
-        }
-        ref_target.m_Capabilities.PushBack(Capability{kind, sPublicKey});
-      }
-
-      const auto* pOffset = response.GetValue("nextOffset");
-      if (pOffset == nullptr)
-      {
-        break;
-      }
-      xiiUInt64 uiNextOffset = 0;
-      if (!xiiMCPJson::ReadUInt(*pOffset, uiNextOffset) || uiNextOffset <= uiOffset || uiNextOffset >= MaximumCapabilitiesPerTarget)
-      {
-        return false;
-      }
-      uiOffset = static_cast<xiiUInt32>(uiNextOffset);
+      return false;
     }
+    const bool      bResource  = kind == xiiMCPCapability::Resource || kind == xiiMCPCapability::ResourceTemplate;
+    const xiiString sPublicKey = bResource ? xiiString(xiiStringBuilder("xii-mcp://", sPrefix, "/", sRemoteKey)) :
+                                             xiiString(xiiStringBuilder(sPrefix, ".", sRemoteKey));
+    auto            forward    = [this, sEndpoint = ref_target.m_sEndpoint, sInstance = ref_target.m_sInstance, kind, sRemoteKey, sPublicKey](
+                                   const xiiMCPCallContext& context, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result) {
+      return Forward(sEndpoint, sInstance, kind, sRemoteKey, sPublicKey, context, arguments, out_result);
+    };
+    auto permission = xiiMCPPermission::Read;
+    if (const auto* pMetadata = xiiMCPJson::GetObject(descriptor, "_meta"))
+    {
+      const auto* pPermission  = pMetadata->GetValue("xii/permission");
+      xiiUInt64   uiPermission = 0;
+      if (pPermission == nullptr || !xiiMCPJson::ReadUInt(*pPermission, uiPermission) ||
+          uiPermission == 0 || uiPermission > static_cast<xiiUInt8>(xiiMCPPermission::Administration) ||
+          (uiPermission & (uiPermission - 1)) != 0)
+      {
+        return false;
+      }
+      permission = static_cast<xiiMCPPermission>(uiPermission);
+    }
+    if (m_Registry.Register(kind, sPublicKey, std::move(descriptor), permission, std::move(forward)).Failed())
+    {
+      return false;
+    }
+    ref_target.m_Capabilities.PushBack(Capability{kind, sPublicKey});
   }
   return true;
 }
@@ -409,6 +477,7 @@ xiiStatus xiiMCPGateway::ListTargets(const xiiMCPCallContext&, const xiiVariantD
     xiiVariantDictionary row;
     row["endpoint"]        = target.m_sEndpoint;
     row["instance"]        = target.m_sInstance;
+    row["processId"]       = target.m_uiProcessId;
     row["namespace"]       = MakeTargetNamespace(target.m_sInstance);
     row["application"]     = target.m_sApplication;
     row["connected"]       = m_Bridge.IsConnected(target.m_hConnection);
@@ -430,13 +499,23 @@ xiiVariantDictionary xiiMCPGateway::GetSnapshot() const
   m_Registry.List(xiiMCPCapability::Tool, context, tools);
   m_Registry.List(xiiMCPCapability::Resource, context, resources);
   m_Registry.List(xiiMCPCapability::Prompt, context, prompts);
-  snapshot["tools"]     = std::move(tools);
-  snapshot["resources"] = std::move(resources);
-  snapshot["prompts"]   = std::move(prompts);
-  snapshot["activity"]  = m_Activity;
-  snapshot["sessions"]  = m_Http.GetSessionCount();
+  xiiVariantArray templates;
+  m_Registry.List(xiiMCPCapability::ResourceTemplate, context, templates);
+  snapshot["resourceTemplates"] = templates;
+  snapshot["tools"]             = std::move(tools);
+  snapshot["resources"]         = std::move(resources);
+  snapshot["prompts"]           = std::move(prompts);
+  snapshot["activity"]          = m_Activity;
+  snapshot["sessions"]          = m_Http.GetSessionCount();
+  xiiVariantArray clients;
+  m_Http.ListSessions(clients);
+  snapshot["clients"] = clients;
   xiiStringBuilder sEndpoint;
-  GetEndpoint().ToString(sEndpoint);
+  const auto       endpoint = GetEndpoint();
+  if (endpoint.GetAddress().IsValid())
+  {
+    endpoint.ToString(sEndpoint);
+  }
   snapshot["endpoint"] = xiiString(sEndpoint);
   return snapshot;
 }
