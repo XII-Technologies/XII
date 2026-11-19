@@ -103,6 +103,16 @@ void xiiMCPRegistry::Remove(xiiMCPCapability kind, xiiStringView sKey)
   }
 }
 
+xiiResult xiiMCPRegistry::RegisterTool(xiiStringView sName, xiiStringView sDescription, xiiStringView sInputSchema, xiiMCPPermission permission, Callback callback)
+{
+  xiiVariant schema;
+  XII_SUCCEED_OR_RETURN(xiiMCPJson::Parse(sInputSchema, schema, 8 * 1024));
+  xiiVariantDictionary descriptor;
+  descriptor["description"] = xiiString(sDescription);
+  descriptor["inputSchema"] = std::move(schema);
+  return Register(xiiMCPCapability::Tool, sName, std::move(descriptor), permission, std::move(callback));
+}
+
 void xiiMCPRegistry::List(xiiMCPCapability kind, const xiiMCPCallContext& context, xiiVariantArray& out_entries) const
 {
   out_entries.Clear();

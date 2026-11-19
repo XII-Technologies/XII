@@ -3,6 +3,7 @@
 #pragma once
 
 #include <Core/World/Implementation/WorldData.h>
+#include <Foundation/Types/Uuid.h>
 
 struct xiiEventMessage;
 class xiiEventMessageHandlerComponent;
@@ -32,6 +33,9 @@ public:
 
   /// Returns the index of this world.
   xiiUInt32 GetIndex() const;
+
+  /// Identifies the lifetime of this world, independently of its reusable registry slot.
+  xiiUuid GetInstanceId() const { return m_InstanceId; }
 
   /// \name Object Functions
   ///@{
@@ -464,6 +468,7 @@ private:
   using QueuedMsgMetaData = xiiInternal::WorldData::QueuedMsgMetaData;
 
   xiiUInt32                                        m_uiIndex;
+  const xiiUuid                                    m_InstanceId = xiiUuid::MakeUuid();
   static xiiStaticArray<xiiWorld*, XII_MAX_WORLDS> s_Worlds;
 };
 

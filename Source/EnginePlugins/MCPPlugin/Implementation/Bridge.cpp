@@ -200,7 +200,7 @@ public:
     config.m_Authentication = xiiNetworkAuthenticationPolicy::LocalUser;
     config.m_Protocol = xiiUuid(ServiceId, 1);
     config.m_uiMaximumConnections = 32;
-    config.m_uiMaximumChannelsPerConnection = 1;
+    config.m_uiMaximumChannelsPerConnection = 2;
     config.m_uiMaximumMessageBytes = 512 * 1024;
     xiiNetworkReflectionEndpoint::EnableProtocol(config);
     const auto error = m_Host.Start(config);

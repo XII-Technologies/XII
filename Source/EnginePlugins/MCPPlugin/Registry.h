@@ -48,6 +48,7 @@ public:
   static constexpr xiiUInt32 MaximumEntriesPerKind = 256;
 
   [[nodiscard]] xiiResult Register(xiiMCPCapability kind, xiiStringView sKey, xiiVariantDictionary descriptor, xiiMCPPermission permission, Callback callback);
+  [[nodiscard]] xiiResult RegisterTool(xiiStringView sName, xiiStringView sDescription, xiiStringView sInputSchema, xiiMCPPermission permission, Callback callback);
   void Remove(xiiMCPCapability kind, xiiStringView sKey);
 
   void List(xiiMCPCapability kind, const xiiMCPCallContext& context, xiiVariantArray& out_entries) const;
