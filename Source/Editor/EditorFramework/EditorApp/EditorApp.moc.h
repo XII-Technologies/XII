@@ -329,6 +329,7 @@ private:
   xiiDynamicArray<xiiString> m_DocumentsToOpen;
 
   xiiSet<xiiString> m_RestartRequiredReasons;
+  xiiString         m_sRestartProjectFile;
   xiiSet<xiiString> m_ReloadProjectRequiredReasons;
 
   xiiPluginBundleSet m_PluginBundles;

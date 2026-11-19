@@ -3,6 +3,7 @@
 #include <EditorFramework/EditorFrameworkPCH.h>
 
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
+#include <GuiFoundation/ContainerWindow/ContainerWindow.moc.h>
 
 void xiiQtEditorApp::AddRestartRequiredReason(const char* szReason, bool bPrompt)
 {
@@ -20,13 +21,21 @@ void xiiQtEditorApp::AddRestartRequiredReason(const char* szReason, bool bPrompt
 
   if (xiiQtUiServices::MessageBoxQuestion(s, QMessageBox::StandardButton::Yes | QMessageBox::StandardButton::No, QMessageBox::StandardButton::Yes) == QMessageBox::StandardButton::Yes)
   {
-    if (xiiToolsProject::CanCloseProject())
+    const auto* pProject = xiiToolsProject::GetSingleton();
+    auto*       pWindow  = xiiQtContainerWindow::GetContainerWindow();
+    if (pProject == nullptr || pWindow == nullptr)
     {
-      LaunchEditor(xiiToolsProject::GetSingleton()->GetProjectFile(), false);
-
-      QApplication::closeAllWindows();
       return;
     }
+
+    m_sRestartProjectFile = pProject->GetProjectFile();
+    if (!pWindow->close())
+    {
+      m_sRestartProjectFile.Clear();
+      return;
+    }
+
+    QCoreApplication::quit();
   }
 }
 
