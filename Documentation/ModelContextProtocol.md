@@ -12,17 +12,19 @@ The gateway forwards tool calls through Foundation's authenticated [Local transp
 
 ## Launch the gateway
 
-Run the executable from a XII binary directory with its companion libraries available. Use `.exe` on Windows.
+Run the executable from a XII binary directory with its companion libraries available. Use `.exe` on Windows. In a Qt build, launching without arguments opens the XII-styled management window and restores saved gateway preferences. A Qt-free build defaults to headless HTTP.
 
 ```text
-xiiMCP -MCPListen 127.0.0.1:8372
+xiiMCP
+xiiMCP -MCPTransport http -MCPListen 127.0.0.1:8372
 xiiMCP -MCPTransport stdio
-xiiMCP -gui -MCPListen 127.0.0.1:8372
 ```
 
 Automatic discovery is on by default. To select explicit local endpoints, use `-MCPTarget NAME` followed by one or more endpoint names. Use `-MCPNoDiscovery` to disable the advertisement scan. Call `xii.targets` for connection status and capability counts. Then use `tools/list`, `resources/list`, `resources/templates/list` and `prompts/list` to discover names scoped to each connected target. Follow `nextCursor` when present. Restart discovery if the registry changes during pagination.
 
-The Qt window displays listener status and sessions, discovered instances, capability descriptors, manual invocation results and recent forwarded operations. Recent activity contains a capability name, target, elapsed time and outcome. Arguments are omitted from the activity list. Window geometry and the capability filter are stored in Qt application settings.
+The Qt window has live gateway settings for loopback HTTP, the request deadline, discovery and explicit Local endpoints. It persists ordinary preferences through Qt settings. Bearer tokens and elevated permissions apply only to the current process. The Clients page shows initialized HTTP sessions and can copy an editor-managed VS Code HTTP configuration. With authentication enabled, the configuration prompts for the token.
+
+The Capabilities page shows tools, resources, resource templates and prompts. It generates fields for common tool argument types from each input schema and offers an advanced JSON editor. Invocations enter a bounded worker queue. **Cancel queued requests** clears waiting work. Recent activity includes the capability, target, elapsed time and outcome. Target discovery uses independent native RPC exchanges for each instance.
 
 Pass `-MCPTimeoutMs` with a value from 100 to 10000 to set the request deadline for the gateway. HTTP defaults to `127.0.0.1:8372/mcp`. The listener accepts numeric IPv4 or IPv6 loopback endpoints. Port zero requests an ephemeral port.
 
@@ -49,7 +51,7 @@ For an existing HTTP gateway, Claude Code can register the URL with `claude mcp 
 
 ## Enable MCP in a target
 
-To include MCP in a project, select **Model Context Protocol (MCP)** under **Configuration → Plugins** and restart the Editor. The bundle loads the authoring plugin in the Editor and includes the runtime plugin in the Editor game process and packaged builds. MCP listeners still require launch options.
+To include MCP in a project, select **Model Context Protocol (MCP)** under **Configuration → Plugins** and restart the Editor. The bundle loads the authoring plugin in the Editor and includes the runtime plugin in the Editor game process and packaged builds. Loading the bundle starts read-only, same-user Local discovery by default. Use `-MCPDisable` to suppress automatic MCP startup for a process.
 
 Applications that already load `xiiMCPPlugin` can use `-MCP` to start an advertised native endpoint or `-MCPListen 127.0.0.1:8373` to host HTTP directly. Use both switches to enable both endpoints. `-MCPLocal NAME` selects the Local endpoint name. Applications derived from `xiiGameApplication` load the optional plugin automatically when either switch is set. Custom application loops can instantiate `xiiMCPRuntime`, supply explicit endpoint configuration, and call `Update` on the owning thread after completing any concurrent world updates.
 
@@ -57,7 +59,9 @@ Start the Editor with `-MCP` or `-MCPListen` to load the authoring plugin. Add `
 
 ## Permissions
 
-Read permission is the default. `-MCPAllowCapture` enables runtime diagnostic captures, `-MCPAllowEdit` enables supported changes and `-MCPAllowExecute` enables simulation control or Editor asset transformation. A forwarded operation needs the appropriate permission at both the gateway and the target. Editor changes also require `-MCPProject` with the exact project UUID returned by `editor.project`. Mutating requests carry the current project generation. Scene edits and saves also carry the document ID, open session ID and content revision returned by `editor.documents` or `editor.scene`.
+Read permission is the default. Under **Configuration → Editor Preferences → Project (This User) → Integrations → MCP**, enable **Allow Editor Changes** or **Allow Asset Processing** to grant the corresponding native permission for the open project. The gateway also needs the corresponding permission. For direct HTTP, grant permissions with the explicit launch options and authorize the exact project UUID from `editor.project` using `-MCPProject`. This UUID also overrides native project preferences for the process. Mutating requests carry the current project generation. Document edits, history and saves also carry the document ID, open session ID and content revision returned by `editor.documents` or `editor.document`.
+
+In applications, `-MCPAllowCapture` enables diagnostic captures, `-MCPAllowEdit` enables supported live changes and `-MCPAllowExecute` enables simulation and resource operations. Tool descriptors include the required permission as `_meta["xii/permission"]`.
 
 Set `XII_MCP_TOKEN` in the listener process environment to require an `Authorization: Bearer …` header. HTTP capture, edit and execute permissions require a token. HTTP checks the Host and Origin headers and binds only to loopback. Use an authenticated TLS reverse proxy if clients must connect from another machine. Native discovery provides metadata only. The target authorizes the authenticated operating-system user independently for each reflected RPC invocation.
 
@@ -73,15 +77,20 @@ Live runtime capabilities include:
 | `runtime.objects` | A page of objects with name, parent and component-type filters. |
 | `runtime.object` | Local and global transforms and a page of attached components. |
 | `runtime.component` | Supported reflected member values and their schema. |
+| `runtime.edit_component` | Attach a concrete component to a dynamic owner, or activate or remove a component by its current handle ID. |
 | `runtime.edit_object` | Create, reposition, rotate, scale, activate, reparent or schedule removal of a live object with edit permission. Reparenting preserves the local transform. |
+| `runtime.edit_objects` | Execute up to 24 object edits in order. Reports partial results if an operation fails or expires. |
 | `runtime.simulation` | Change enablement, pause and speed with execute permission. |
-| `runtime.resources` | A bounded loaded-resource snapshot filtered by RTTI type. |
+| `runtime.types`, `runtime.type` | Search RTTI by base type, plugin or name and inspect the generated schema for a type. |
+| `runtime.resources` | Page registered resources by RTTI type and ID, with content availability, quality levels and memory. |
 | `runtime.reload_resource` | Request a standard reload of an existing resource with execute permission. |
 | `runtime.status` | Running application and frame timing. |
+| `runtime.subsystems` | Owning plugins, startup phases and dependency names for registered subsystems. |
 | `runtime.diagnostics` | Allocator usage, loaded plugins and numeric performance counters. |
 | `runtime.cvars` | A filtered list of CVars with string values redacted. |
 | `runtime.logs` | Recent engine warnings and errors with capture permission. |
-| `runtime.graphics` | Graphics device heap statistics when a graphics device is active. |
+| `runtime.graphics` | Active adapter, optional features and graphics memory heap statistics. |
+| `runtime.render_views` | The first view for each camera usage in a selected world, with camera, pipeline, render path and resolution. |
 | `runtime.screenshot` | Request an image through the game application's normal screenshot pipeline. Requires capture permission and a game window. |
 | `runtime.render_graph` | Request and poll a bounded pass and dependency snapshot with available GPU timings. Requires capture permission and an active graphics device. |
 
@@ -92,12 +101,19 @@ Editor capabilities include:
 | Tool | Result |
 | --- | --- |
 | `editor.project` | Project manifest, profile, generation, document types and engine-process readiness. |
+| `editor.cpp_project` | Configured C++ source and output paths, SDK compiler and solution status. |
 | `editor.documents` | Open documents with selection, dirty state and revision tokens. |
+| `editor.document` | Reflected members and paginated object trees for open documents. |
+| `editor.set_document_property` | Set a supported reflected value in an undoable transaction. |
+| `editor.document_history` | Undo or redo one operation at the current document revision. |
+| `editor.graph` | Page through nodes, pins and links or discover creation templates in a supported graph document. |
+| `editor.edit_graph` | Connect pins, disconnect a link or remove a node through the document's command history. |
 | `editor.scene` | Page through scene, prefab or layer objects and inspect supported properties. |
 | `editor.edit_scene` | Add or remove objects or components, reparent objects, and set supported members in one undoable transaction. |
 | `editor.save` | Queue an asynchronous save. Read the document's dirty state to confirm completion. |
 | `editor.assets` | Search indexed assets by name, type or tag. |
 | `editor.asset` | Dependencies, output tags, transform state and recent transformation messages. |
+| `editor.open_asset` | Open an indexed asset through the existing Editor document manager. |
 | `editor.transform_asset` | Queue transformation through the existing background asset processor. |
 
 To author a scene, call `editor.documents` and `editor.scene` first. Send up to 24 operations to `editor.edit_scene`, then use its new revision for `editor.save`. An operation can provide `newId` when it adds an object, and a later operation in the same batch can reference that UUID. A failed operation cancels the whole transaction.
@@ -111,6 +127,6 @@ Use `xiiMCPRuntime::GetRegistry()` to extend an embedded runtime, or use `xiiMCP
 ## Current limits
 
 - HTTP serves JSON responses. SSE subscriptions, protocol progress streaming, OAuth and direct non-loopback listeners are outside this implementation. Stdio sends capability-list change notifications for initialized clients.
-- The gateway holds multiple target connections and serializes forwarded calls on its owning thread. Foundation cancels expired native RPC requests on a best-effort basis. Completed mutations are not rolled back on a transport disconnect.
-- Live resource enumeration is bounded to a prefix. CPU profiling snapshots and higher-level renderer configuration editing are outside the tool catalog.
-- The Qt workspace shows connection and listener status. Connection endpoints, permissions, and listener settings are configured at launch.
+- Target discovery is asynchronous. Forwarded invocations are serialized by the gateway. Foundation cancels expired native RPC requests on a best-effort basis. GUI cancellation applies to queued work. Completed mutations are not rolled back on a transport disconnect.
+- The Clients page lists stateful HTTP sessions. Stateless requests do not establish sessions. Applying workspace settings restarts the listener and reconnects targets.
+- See [MCP capability coverage](MCPCapabilityCoverage.md) for the existing APIs and the workflows that still require further integration.
