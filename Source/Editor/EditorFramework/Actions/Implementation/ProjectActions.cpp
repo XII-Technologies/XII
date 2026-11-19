@@ -64,6 +64,7 @@ xiiActionDescriptorHandle xiiProjectActions::s_hReloadResources;
 xiiActionDescriptorHandle xiiProjectActions::s_hReloadEngine;
 xiiActionDescriptorHandle xiiProjectActions::s_hLaunchFileserve;
 xiiActionDescriptorHandle xiiProjectActions::s_hLaunchInspector;
+xiiActionDescriptorHandle xiiProjectActions::s_hLaunchMCP;
 xiiActionDescriptorHandle xiiProjectActions::s_hSaveProfiling;
 xiiActionDescriptorHandle xiiProjectActions::s_hOpenVsCode;
 
@@ -136,6 +137,7 @@ void xiiProjectActions::RegisterActions()
   s_hReloadEngine    = XII_REGISTER_ACTION_1("Engine.ReloadEngine", xiiActionScope::Global, "Engine", "Ctrl+Shift+F4", xiiProjectAction, xiiProjectAction::ButtonType::ReloadEngine);
   s_hLaunchFileserve = XII_REGISTER_ACTION_1("Editor.LaunchFileserve", xiiActionScope::Global, "Engine", "", xiiProjectAction, xiiProjectAction::ButtonType::LaunchFileserve);
   s_hLaunchInspector = XII_REGISTER_ACTION_1("Editor.LaunchInspector", xiiActionScope::Global, "Engine", "", xiiProjectAction, xiiProjectAction::ButtonType::LaunchInspector);
+  s_hLaunchMCP       = XII_REGISTER_ACTION_1("Editor.LaunchMCP", xiiActionScope::Global, "Engine", "", xiiProjectAction, xiiProjectAction::ButtonType::LaunchMCP);
   s_hSaveProfiling   = XII_REGISTER_ACTION_1("Editor.SaveProfiling", xiiActionScope::Global, "Engine", "Ctrl+Alt+P", xiiProjectAction, xiiProjectAction::ButtonType::SaveProfiling);
   s_hOpenVsCode      = XII_REGISTER_ACTION_1("Editor.OpenVsCode", xiiActionScope::Global, "Project", "Ctrl+Alt+O", xiiProjectAction, xiiProjectAction::ButtonType::OpenVsCode);
 
@@ -173,6 +175,7 @@ void xiiProjectActions::UnregisterActions()
   xiiActionManager::UnregisterAction(s_hReloadEngine);
   xiiActionManager::UnregisterAction(s_hLaunchFileserve);
   xiiActionManager::UnregisterAction(s_hLaunchInspector);
+  xiiActionManager::UnregisterAction(s_hLaunchMCP);
   xiiActionManager::UnregisterAction(s_hSaveProfiling);
   xiiActionManager::UnregisterAction(s_hOpenVsCode);
   xiiActionManager::UnregisterAction(s_hShortcutEditor);
@@ -247,6 +250,7 @@ void xiiProjectActions::MapActions(xiiStringView sMapping, const xiiBitflags<xii
 
   pMap->MapAction(s_hOpenVsCode, "G.Tools.External", 1.0f);
   pMap->MapAction(s_hLaunchInspector, "G.Tools.External", 2.0f);
+  pMap->MapAction(s_hLaunchMCP, "G.Tools.External", 3.0f);
   pMap->MapAction(s_hLaunchFileserve, "G.Tools.External", 4.0f);
 
   pMap->MapAction(s_hReloadResources, "G.Tools.Editor", 1.0f);
@@ -410,6 +414,9 @@ xiiProjectAction::xiiProjectAction(const xiiActionContext& context, const char* 
       break;
     case xiiProjectAction::ButtonType::LaunchInspector:
       SetIconPath(":/EditorFramework/Icons/Inspector.svg");
+      break;
+    case xiiProjectAction::ButtonType::LaunchMCP:
+      SetIconPath(":/GuiFoundation/Icons/MCP.svg");
       break;
     case xiiProjectAction::ButtonType::ReloadEngine:
       SetIconPath(":/GuiFoundation/Icons/ReloadEngine.svg");
@@ -710,6 +717,16 @@ void xiiProjectAction::Execute(const xiiVariant& value)
       xiiQtUiServices::GetSingleton()->ShowAllDocumentsTemporaryStatusBarMessage("Launching xiiInspector...", xiiTime::MakeFromSeconds(5));
 
       xiiQtEditorApp::GetSingleton()->RunInspector();
+    }
+    break;
+
+    case xiiProjectAction::ButtonType::LaunchMCP:
+    {
+      const auto status = xiiQtEditorApp::GetSingleton()->RunMCP();
+      if (status.Failed())
+      {
+        xiiQtUiServices::MessageBoxWarning(status.GetMessageString().GetView());
+      }
     }
     break;
 

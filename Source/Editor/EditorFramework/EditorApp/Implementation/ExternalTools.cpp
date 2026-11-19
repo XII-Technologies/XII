@@ -4,6 +4,7 @@
 
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
 #include <EditorFramework/Settings/EditorPreferences.h>
+#include <Foundation/System/Process.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <GuiFoundation/UIServices/UIServices.moc.h>
 #include <ToolsFoundation/Application/ApplicationServices.h>
@@ -227,4 +228,21 @@ void xiiQtEditorApp::RunInspector()
   QStringList            args;
 
   QProcess::startDetached(sToolPath.GetData(), args);
+}
+
+xiiStatus xiiQtEditorApp::RunMCP()
+{
+  xiiProcessOptions options;
+  options.m_sProcess = FindToolApplication("xiiMCP");
+  if (!options.m_sProcess.GetView().IsAbsolutePath())
+  {
+    return xiiStatus("Could not find xiiMCP in the Editor's tool directories.");
+  }
+
+  xiiProcess process;
+  if (process.Launch(options, xiiProcessLaunchFlags::Detached).Failed())
+  {
+    return xiiStatus(xiiFmt("Could not launch xiiMCP at '{}'.", options.m_sProcess));
+  }
+  return XII_SUCCESS;
 }

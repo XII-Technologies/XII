@@ -12,6 +12,8 @@ The gateway forwards tool calls through Foundation's authenticated [Local transp
 
 ## Launch the gateway
 
+In XII Editor, choose **Tools → Launch MCP** to open the gateway with your saved desktop preferences.
+
 Run the executable from a XII binary directory with its companion libraries available. Use `.exe` on Windows. In a Qt build, launching without arguments opens the XII-styled management window and restores saved gateway preferences. A Qt-free build defaults to headless HTTP.
 
 ```text

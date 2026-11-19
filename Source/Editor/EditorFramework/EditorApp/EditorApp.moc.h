@@ -118,6 +118,9 @@ public:
   /// Launches xiiInspector.
   void RunInspector();
 
+  /// Launches the standalone MCP application with its saved desktop settings.
+  [[nodiscard]] xiiStatus RunMCP();
+
   /// Launches Tracy.
 
   //
