@@ -18,6 +18,13 @@ public:
   [[nodiscard]] xiiStatus Start();
 
 private:
+  [[nodiscard]] xiiResult RegisterProject();
+  [[nodiscard]] xiiResult RegisterDocuments();
+  [[nodiscard]] xiiResult RegisterScenes();
+  [[nodiscard]] xiiResult RegisterAssets();
+  static bool             IsScene(const xiiDocument& document);
+  static void             DescribeDocument(const xiiDocument& document, const xiiUuid& session, xiiVariantDictionary& out_result);
+
   void         DocumentEvent(const xiiDocumentManager::Event& event);
   xiiUuid      GetDocumentSession(const xiiDocument& document);
   xiiDocument* FindDocument(const xiiVariantDictionary& arguments);
