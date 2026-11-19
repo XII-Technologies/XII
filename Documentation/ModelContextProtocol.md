@@ -49,6 +49,8 @@ For an existing HTTP gateway, Claude Code can register the URL with `claude mcp 
 
 ## Enable MCP in a target
 
+To include MCP in a project, select **Model Context Protocol (MCP)** under **Configuration → Plugins** and restart the Editor. The bundle loads the authoring plugin in the Editor and includes the runtime plugin in the Editor game process and packaged builds. MCP listeners still require launch options.
+
 Applications that already load `xiiMCPPlugin` can use `-MCP` to start an advertised native endpoint or `-MCPListen 127.0.0.1:8373` to host HTTP directly. Use both switches to enable both endpoints. `-MCPLocal NAME` selects the Local endpoint name. Applications derived from `xiiGameApplication` load the optional plugin automatically when either switch is set. Custom application loops can instantiate `xiiMCPRuntime`, supply explicit endpoint configuration, and call `Update` on the owning thread after completing any concurrent world updates.
 
 Start the Editor with `-MCP` or `-MCPListen` to load the authoring plugin. Add `-MCPEngine` to expose the Editor's game process as a separate read-only native target. The Editor forwards engine startup flags without forwarding its HTTP listener or authoring credentials. Use capabilities from the corresponding process to inspect live state or change persistent documents.

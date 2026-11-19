@@ -1,0 +1,13 @@
+PluginInfo
+{
+  string %DisplayName{"Model Context Protocol (MCP)"}
+  string %Description{"Adds MCP tools for Editor project authoring and live runtime inspection. Listeners are enabled through launch options."}
+  string %EditorPlugins{"xiiEditorPluginMCP"}
+  string %EditorEnginePlugins{}
+  string %RuntimePlugins{"xiiMCPPlugin"}
+  string %PackageDependencies{"libcrypto-3-x64.dll", "libssl-3-x64.dll", "libcrypto-3-arm64.dll", "libssl-3-arm64.dll", "msquic.dll", "libcrypto.so.3", "libssl.so.3", "libmsquic.so.2"}
+  string %RequiredPlugins{}
+  string %ExclusiveFeatures{}
+  string %EnabledInTemplates{}
+  bool %SupportsLoadCopy{false}
+}

@@ -14,3 +14,5 @@ target_link_libraries(${PROJECT_NAME}
   EditorFramework
   MCPPlugin
 )
+
+xii_copy_plugin_bundle(${PROJECT_NAME} "MCP")
