@@ -12,8 +12,13 @@
 
 #ifdef XII_MCP_HAS_RENDERING
 #  include <Core/GameApplication/GameApplicationBase.h>
+#  include <Core/Graphics/Camera.h>
 #  include <Core/System/WindowManager.h>
+#  include <Core/World/World.h>
+#  include <Foundation/Utilities/ConversionUtils.h>
 #  include <GraphicsCore/Pipeline/RenderGraph.h>
+#  include <GraphicsCore/Pipeline/RenderWorldModule.h>
+#  include <GraphicsCore/Pipeline/View.h>
 #  include <GraphicsFoundation/Device/Device.h>
 #endif
 
@@ -129,6 +134,15 @@ namespace
     {
       return xiiStatus("No graphics device is active.");
     }
+    const auto& adapter               = pDevice->GetGraphicsDeviceAdapterProperties();
+    const auto& features              = pDevice->GetFeatures();
+    out_result["adapter"]             = adapter.m_sAdapterName;
+    out_result["vendorId"]            = adapter.m_uiVendorID;
+    out_result["deviceId"]            = adapter.m_uiDeviceID;
+    out_result["computeShaders"]      = features.m_ComputeShaders != xiiGALDeviceFeatureState::Disabled;
+    out_result["meshShaders"]         = features.m_MeshShaders != xiiGALDeviceFeatureState::Disabled;
+    out_result["rayTracing"]          = features.m_RayTracing != xiiGALDeviceFeatureState::Disabled;
+    out_result["variableRateShading"] = features.m_VariableRateShading != xiiGALDeviceFeatureState::Disabled;
     xiiDynamicArray<xiiGALMemoryHeapStatistics> heaps;
     pDevice->GetMemoryHeapStatistics(heaps);
     xiiVariantArray rows;
@@ -147,6 +161,75 @@ namespace
     }
     out_result["memoryHeaps"] = std::move(rows);
     return XII_SUCCESS;
+  }
+
+  xiiStatus ListRenderViews(const xiiMCPCallContext& context, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result)
+  {
+    const auto sWorld = xiiMCPJson::GetString(arguments, "world");
+    if (!xiiConversionUtils::IsStringUuid(sWorld))
+    {
+      return xiiStatus("Use a world ID returned by runtime.worlds.");
+    }
+    const auto worldId = xiiConversionUtils::ConvertStringToUuid(sWorld);
+    for (xiiUInt32 uiSlot = 0; uiSlot < xiiWorld::GetWorldCount(); ++uiSlot)
+    {
+      const auto* pWorld = xiiWorld::GetWorld(uiSlot);
+      if (pWorld == nullptr || pWorld->GetInstanceId() != worldId)
+      {
+        continue;
+      }
+      XII_LOCK(pWorld->GetReadMarker());
+      const auto* pRender = pWorld->GetModule<xiiRenderWorldModule>();
+      if (pRender == nullptr)
+      {
+        return xiiStatus("The selected world has no rendering module.");
+      }
+
+      xiiVariantArray views;
+      for (xiiUInt32 uiHint = 0; uiHint < xiiCameraUsageHint::ENUM_COUNT; ++uiHint)
+      {
+        if (context.HasExpired())
+        {
+          return xiiStatus("Render view inspection exceeded its deadline.");
+        }
+        const auto* pView = pRender->GetViewByUsageHint(static_cast<xiiCameraUsageHint::Enum>(uiHint));
+        if (pView == nullptr)
+        {
+          continue;
+        }
+        const auto&          viewport = pView->GetViewport();
+        xiiVariantDictionary row;
+        row["name"]            = xiiString(pView->GetName());
+        row["usageHint"]       = uiHint;
+        row["viewportWidth"]   = viewport.width;
+        row["viewportHeight"]  = viewport.height;
+        row["renderWidth"]     = pView->GetRenderResolutionWidth();
+        row["renderHeight"]    = pView->GetRenderResolutionHeight();
+        row["renderScale"]     = pView->GetRenderScale();
+        row["resolutionScale"] = pView->GetRenderResolutionScale();
+        row["renderMode"]      = pView->GetViewRenderMode().GetValue();
+        row["renderPath"]      = pView->GetRenderPath().GetValue();
+        if (pView->GetRenderPipelineResource().IsValid())
+        {
+          row["pipeline"] = xiiString(pView->GetRenderPipelineResource().GetResourceID());
+        }
+        if (const auto* pCamera = pView->GetCamera())
+        {
+          if (xiiVariant position; xiiMCPReflection::ConvertValue(pCamera->GetPosition(), position))
+          {
+            row["cameraPosition"] = position;
+          }
+          if (xiiVariant forward; xiiMCPReflection::ConvertValue(pCamera->GetDirForwards(), forward))
+          {
+            row["cameraForward"] = forward;
+          }
+        }
+        views.PushBack(row);
+      }
+      out_result["views"] = views;
+      return XII_SUCCESS;
+    }
+    return xiiStatus("The selected world no longer exists.");
   }
 #endif
 } // namespace
@@ -216,8 +299,11 @@ void xiiMCPRuntimeDiagnostics::Update()
     m_Registry.RegisterTool("runtime.screenshot", "Request a screenshot of the game application output. XII saves it through its normal screenshot pipeline.",
                             R"({"type":"object","additionalProperties":false})", xiiMCPPermission::Capture, &RequestScreenshot)
       .IgnoreResult();
-    m_Registry.RegisterTool("runtime.graphics", "Read active graphics device heap budgets and allocations.", R"({"type":"object","additionalProperties":false})",
+    m_Registry.RegisterTool("runtime.graphics", "Read the active graphics adapter, optional features and heap allocations.", R"({"type":"object","additionalProperties":false})",
                             xiiMCPPermission::Read, &GetGraphics)
+      .IgnoreResult();
+    m_Registry.RegisterTool("runtime.render_views", "Inspect the first view for each camera usage in a world, including camera, pipeline, mode and render resolution.",
+                            R"({"type":"object","required":["world"],"properties":{"world":{"type":"string"}}})", xiiMCPPermission::Read, &ListRenderViews)
       .IgnoreResult();
     m_Registry.RegisterTool("runtime.render_graph", "Request a bounded render graph snapshot for a named view (or the next rendered view) and poll for its passes and available GPU timings.",
                             R"({"type":"object","properties":{"capture":{"type":"boolean","default":false},"view":{"type":"string","maxLength":128}}})",
@@ -230,6 +316,7 @@ void xiiMCPRuntimeDiagnostics::Update()
   {
     m_Registry.Remove(xiiMCPCapability::Tool, "runtime.render_graph");
     m_Registry.Remove(xiiMCPCapability::Tool, "runtime.graphics");
+    m_Registry.Remove(xiiMCPCapability::Tool, "runtime.render_views");
     m_Registry.Remove(xiiMCPCapability::Tool, "runtime.screenshot");
     xiiRenderGraphDebug::s_ExecutionEvents.RemoveEventHandler(m_GraphSubscription);
     xiiRenderGraphTimestampProfiler::s_TimingEvents.RemoveEventHandler(m_TimingSubscription);
