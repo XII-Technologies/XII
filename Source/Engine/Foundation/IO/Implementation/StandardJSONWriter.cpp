@@ -100,7 +100,7 @@ void xiiStandardJSONWriter::OutputEscapedString(xiiStringView s)
 {
   OutputString("\"");
   const char* pStart = s.GetStartPointer();
-  const char* pEnd = s.GetEndPointer();
+  const char* pEnd   = s.GetEndPointer();
   for (const char* pCharacter = pStart; pCharacter != pEnd; ++pCharacter)
   {
     const auto uiCharacter = static_cast<xiiUInt8>(*pCharacter);
@@ -113,14 +113,29 @@ void xiiStandardJSONWriter::OutputEscapedString(xiiStringView s)
     const char* szEscape = nullptr;
     switch (uiCharacter)
     {
-      case '\\': szEscape = "\\\\"; break;
-      case '"': szEscape = "\\\""; break;
-      case '\b': szEscape = "\\b"; break;
-      case '\f': szEscape = "\\f"; break;
-      case '\n': szEscape = "\\n"; break;
-      case '\r': szEscape = "\\r"; break;
-      case '\t': szEscape = "\\t"; break;
-      default: break;
+      case '\\':
+        szEscape = "\\\\";
+        break;
+      case '"':
+        szEscape = "\\\"";
+        break;
+      case '\b':
+        szEscape = "\\b";
+        break;
+      case '\f':
+        szEscape = "\\f";
+        break;
+      case '\n':
+        szEscape = "\\n";
+        break;
+      case '\r':
+        szEscape = "\\r";
+        break;
+      case '\t':
+        szEscape = "\\t";
+        break;
+      default:
+        break;
     }
     if (szEscape != nullptr)
     {
@@ -129,7 +144,7 @@ void xiiStandardJSONWriter::OutputEscapedString(xiiStringView s)
     else
     {
       constexpr char HexDigits[] = "0123456789abcdef";
-      const char szControl[] = {'\\', 'u', '0', '0', HexDigits[uiCharacter >> 4], HexDigits[uiCharacter & 0xF], '\0'};
+      const char     szControl[] = {'\\', 'u', '0', '0', HexDigits[uiCharacter >> 4], HexDigits[uiCharacter & 0xF], '\0'};
       OutputString(szControl);
     }
     pStart = pCharacter + 1;

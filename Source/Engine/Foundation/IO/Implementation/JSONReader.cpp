@@ -102,7 +102,7 @@ void xiiJSONReader::AddValue(xiiVariant value)
   if (m_Stack.IsEmpty())
   {
     m_Stack.ExpandAndGetRef().m_Mode = ElementType::Scalar;
-    m_Scalar = std::move(value);
+    m_Scalar                         = std::move(value);
   }
   else if (m_Stack.PeekBack().m_Mode == ElementType::Array)
   {

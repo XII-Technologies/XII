@@ -148,6 +148,7 @@ xiiNetworkDataError xiiNetworkReflectionEndpointState::DispatchRpc(Packet& packe
   if (packet.m_bFireAndForget && !method->m_bFireAndForget)
     return xiiNetworkDataError(xiiNetworkDataErrorCode::Unauthorized);
   xiiNetworkDispatchContext context;
+  context.m_Deadline  = packet.m_Deadline;
   context.m_pSession  = packet.m_Event.m_pSessionInfo;
   context.m_Channel   = packet.m_Event.m_Channel;
   context.m_uiService = packet.m_uiService;

@@ -74,7 +74,7 @@ private:
   void OnEndArray() override;
 
   void OnParsingError(xiiStringView sMessage, bool bFatal, xiiUInt32 uiLine, xiiUInt32 uiColumn) override;
-  void AddValue(xiiVariant value);
+  void      AddValue(xiiVariant value);
   xiiResult ParseDocument(xiiStreamReader& ref_input, xiiUInt32 uiFirstLineOffset);
 
 protected:
@@ -89,7 +89,7 @@ protected:
   xiiHybridArray<Element, 32> m_Stack;
 
   bool      m_bParsingError = false;
-  bool      m_bStrict = false;
+  bool       m_bStrict       = false;
   xiiString m_sLastName;
   xiiVariant m_Scalar;
 };

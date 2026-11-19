@@ -129,7 +129,7 @@ private:
     JSONState() { m_State = NotStarted; }
 
     State m_State;
-    bool m_bAfterComma = false;
+    bool  m_bAfterComma = false;
   };
 
   void   StartParsing();
@@ -164,7 +164,7 @@ private:
   xiiHybridArray<xiiUInt8, 4096> m_TempString;
 
   bool m_bSkippingMode;
-  bool m_bReadNullByte = false;
+  bool      m_bReadNullByte        = false;
   xiiUInt32 m_uiMaximumStrictDepth = 0;
-  xiiUInt32 m_uiContainerDepth = 0;
+  xiiUInt32 m_uiContainerDepth     = 0;
 };

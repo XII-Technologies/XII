@@ -26,7 +26,7 @@ void xiiJSONParser::SetInputStream(xiiStreamReader& stream, xiiUInt32 uiFirstLin
   m_uiCurByte = '\0';
   m_TempString.Clear();
   m_bSkippingMode = false;
-  m_bReadNullByte = false;
+  m_bReadNullByte    = false;
   m_uiContainerDepth = 0;
   m_uiCurLine     = 1 + uiFirstLineOffset;
   m_uiCurColumn   = 0;
@@ -768,8 +768,8 @@ void xiiJSONParser::ReadString()
               ParsingError("JSON strings cannot contain U+0000 in the engine string representation.", false);
               break;
             }
-            const xiiUInt16* pStart = &cpt[0];
-            const xiiUInt32 uiCodePoint = xiiUnicodeUtils::DecodeUtf16ToUtf32(pStart);
+            const xiiUInt16*                                                   pStart      = &cpt[0];
+            const xiiUInt32                                                    uiCodePoint = xiiUnicodeUtils::DecodeUtf16ToUtf32(pStart);
             xiiUnicodeUtils::UtfInserter<char, xiiHybridArray<xiiUInt8, 4096>> tempInserter(&m_TempString);
             xiiUnicodeUtils::EncodeUtf32ToUtf8(uiCodePoint, tempInserter);
           }
@@ -862,11 +862,13 @@ void xiiJSONParser::ReadNumber()
 
 void xiiJSONParser::ReadStrictNumber(xiiStringView sNumber)
 {
-  const char* pBegin = sNumber.GetStartPointer();
-  const char* pEnd = sNumber.GetEndPointer();
-  const bool bNegative = *pBegin == '-';
-  const char* pInteger = pBegin + (bNegative ? 1 : 0);
-  const auto IsDigit = [](char character) { return character >= '0' && character <= '9'; };
+  const char* pBegin    = sNumber.GetStartPointer();
+  const char* pEnd      = sNumber.GetEndPointer();
+  const bool  bNegative = *pBegin == '-';
+  const char* pInteger  = pBegin + (bNegative ? 1 : 0);
+  const auto  IsDigit   = [](char character) {
+    return character >= '0' && character <= '9';
+  };
   if (pInteger == pEnd || !IsDigit(*pInteger) || (*pInteger == '0' && pInteger + 1 < pEnd && IsDigit(pInteger[1])))
   {
     ParsingError("Invalid JSON number.", true);
@@ -877,7 +879,7 @@ void xiiJSONParser::ReadStrictNumber(xiiStringView sNumber)
   {
     if (bNegative)
     {
-      xiiInt64 iValue = 0;
+      xiiInt64   iValue = 0;
       const auto result = std::from_chars(pBegin, pEnd, iValue);
       if (result.ec == std::errc() && result.ptr == pEnd)
       {
@@ -890,8 +892,8 @@ void xiiJSONParser::ReadStrictNumber(xiiStringView sNumber)
     }
     else
     {
-      xiiUInt64 uiValue = 0;
-      const auto result = std::from_chars(pBegin, pEnd, uiValue);
+      xiiUInt64  uiValue = 0;
+      const auto result  = std::from_chars(pBegin, pEnd, uiValue);
       if (result.ec == std::errc() && result.ptr == pEnd)
       {
         if (!m_bSkippingMode)
@@ -910,7 +912,7 @@ void xiiJSONParser::ReadStrictNumber(xiiStringView sNumber)
     return;
   }
 
-  double fValue = 0.0;
+  double     fValue = 0.0;
   const auto result = std::from_chars(pBegin, pEnd, fValue);
   if (result.ec != std::errc() || result.ptr != pEnd || !std::isfinite(fValue))
   {
