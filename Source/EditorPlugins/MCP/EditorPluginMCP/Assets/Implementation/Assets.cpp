@@ -130,7 +130,7 @@ xiiStatus xiiEditorMCP::Transform(const xiiMCPCallContext&, const xiiVariantDict
   xiiUInt64  uiGeneration = 0;
   const auto id           = ReadGuid(arguments, "asset");
   auto*      pProcessor   = xiiAssetProcessor::GetSingleton();
-  if (!xiiToolsProject::IsProjectOpen() || !ReadUnsigned(arguments, "generation", uiGeneration) || !xiiToolsProject::IsProjectGenerationCurrent(uiGeneration) ||
+  if (!m_bAllowAssetProcessing || !xiiToolsProject::IsProjectOpen() || !ReadUnsigned(arguments, "generation", uiGeneration) || !xiiToolsProject::IsProjectGenerationCurrent(uiGeneration) ||
       xiiToolsProject::GetSingleton()->GetManifest().m_ProjectID != m_AllowedProject || pProcessor == nullptr || !id.IsValid())
   {
     return xiiStatus("Asset transformation requires an authorized ready project, current project generation and indexed asset UUID.");
