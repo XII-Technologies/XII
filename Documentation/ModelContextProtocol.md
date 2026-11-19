@@ -71,7 +71,7 @@ Live runtime capabilities include:
 | `runtime.objects` | A page of objects with name, parent and component-type filters. |
 | `runtime.object` | Local and global transforms and a page of attached components. |
 | `runtime.component` | Supported reflected member values and their schema. |
-| `runtime.edit_object` | Create, reposition, rotate, scale, activate or schedule removal of a live object with edit permission. |
+| `runtime.edit_object` | Create, reposition, rotate, scale, activate, reparent or schedule removal of a live object with edit permission. Reparenting preserves the local transform. |
 | `runtime.simulation` | Change enablement, pause and speed with execute permission. |
 | `runtime.resources` | A bounded loaded-resource snapshot filtered by RTTI type. |
 | `runtime.reload_resource` | Request a standard reload of an existing resource with execute permission. |

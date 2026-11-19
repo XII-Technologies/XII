@@ -318,7 +318,74 @@ namespace
     return true;
   }
 
-  xiiStatus EditObject(const xiiMCPCallContext&, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result)
+  xiiStatus ReparentObject(const xiiMCPCallContext& context, xiiGameObject& ref_object, const xiiVariant& parent)
+  {
+    xiiGameObject* pParent = nullptr;
+    if (parent.IsValid())
+    {
+      if (!parent.IsA<xiiString>() || (pParent = FindObject(*ref_object.GetWorld(), parent.Get<xiiString>())) == nullptr)
+      {
+        return xiiStatus("The parent must be null or a current object ID in the same world.");
+      }
+    }
+    if (ref_object.GetParent() == pParent)
+    {
+      return XII_SUCCESS;
+    }
+    if (ref_object.IsStatic() && pParent != nullptr && pParent->IsDynamic())
+    {
+      return xiiStatus("A static object cannot be attached to a dynamic parent.");
+    }
+
+    xiiUInt32 uiNewDepth = 0;
+    for (const auto* pAncestor = pParent; pAncestor != nullptr; pAncestor = pAncestor->GetParent())
+    {
+      if (pAncestor == &ref_object)
+      {
+        return xiiStatus("This parent would create a hierarchy cycle.");
+      }
+      ++uiNewDepth;
+    }
+    if (uiNewDepth >= xiiWorld::GetMaxNumHierarchyLevels())
+    {
+      return xiiStatus("The resulting object hierarchy would exceed the world limit.");
+    }
+
+    xiiHybridArray<xiiGameObject::ConstChildIterator, 16> subtree;
+    subtree.PushBack(static_cast<const xiiGameObject&>(ref_object).GetChildren());
+    xiiUInt32 uiVisited = 0;
+    while (!subtree.IsEmpty())
+    {
+      auto& it = subtree.PeekBack();
+      if (!it.IsValid())
+      {
+        subtree.PopBack();
+        continue;
+      }
+      if (uiNewDepth + subtree.GetCount() >= xiiWorld::GetMaxNumHierarchyLevels())
+      {
+        return xiiStatus("The resulting object hierarchy would exceed the world limit.");
+      }
+      if ((uiVisited++ % 128) == 0 && context.HasExpired())
+      {
+        return xiiStatus("The reparent deadline expired while checking descendants.");
+      }
+
+      const auto children = it->GetChildren();
+      ++it;
+      subtree.PushBack(children);
+    }
+    if (context.HasExpired())
+    {
+      return xiiStatus("The reparent deadline expired.");
+    }
+
+    const xiiGameObjectHandle hParent = pParent != nullptr ? pParent->GetHandle() : xiiGameObjectHandle();
+    ref_object.SetParent(hParent, xiiTransformPreservation::PreserveLocal);
+    return XII_SUCCESS;
+  }
+
+  xiiStatus EditObject(const xiiMCPCallContext& context, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result)
   {
     auto*       pWorld       = FindWorld(arguments);
     const auto  sAction      = xiiMCPJson::GetString(arguments, "action");
@@ -350,7 +417,7 @@ namespace
       xiiGameObjectDescription description;
       pWorld->CreateObject(description, pObject);
     }
-    else if (sAction == "modify" || sAction == "remove")
+    else if (sAction == "modify" || sAction == "remove" || sAction == "reparent")
     {
       pObject = FindObject(*pWorld, xiiMCPJson::GetString(arguments, "object"));
     }
@@ -364,6 +431,17 @@ namespace
       out_result["id"] = ObjectId(pObject->GetHandle());
       pWorld->DeleteObjectDelayed(pObject->GetHandle(), false);
       out_result["removalScheduled"] = true;
+      return XII_SUCCESS;
+    }
+    if (sAction == "reparent")
+    {
+      const auto* pParent = arguments.GetValue("parent");
+      if (pParent == nullptr)
+      {
+        return xiiStatus("Provide a parent object ID, or null to move the object to the root.");
+      }
+      XII_SUCCEED_OR_RETURN(ReparentObject(context, *pObject, *pParent));
+      out_result = DescribeObject(*pObject);
       return XII_SUCCESS;
     }
     if (!sName.IsEmpty())
@@ -541,7 +619,7 @@ namespace
     ref_registry.RegisterTool("runtime.objects", "List live game objects using a bounded page and optional filters. Object IDs belong to the specified world.", R"({"type":"object","required":["world"],"properties":{"world":{"type":"string"},"name":{"type":"string"},"parent":{"type":"string"},"componentType":{"type":"string"},"offset":{"type":"integer","minimum":0},"limit":{"type":"integer","minimum":1,"maximum":128,"default":32}}})", read, &ListObjects).IgnoreResult();
     ref_registry.RegisterTool("runtime.object", "Inspect one live game object, its local and global transforms, and a page of components.", R"({"type":"object","required":["world","object"],"properties":{"world":{"type":"string"},"object":{"type":"string"},"offset":{"type":"integer","minimum":0},"limit":{"type":"integer","minimum":1,"maximum":32,"default":32}}})", read, &InspectObject).IgnoreResult();
     ref_registry.RegisterTool("runtime.component", "Inspect supported reflected properties on a live component. Discover its index and type with runtime.object.", R"({"type":"object","required":["world","object","index","type"],"properties":{"world":{"type":"string"},"object":{"type":"string"},"index":{"type":"integer","minimum":0},"type":{"type":"string"}}})", read, &InspectComponent).IgnoreResult();
-    ref_registry.RegisterTool("runtime.edit_object", "Create, modify or schedule removal of a live object and its children. Transforms are local. Rotation is a normalized quaternion in x,y,z,w order.", R"({"type":"object","required":["world","action"],"properties":{"world":{"type":"string"},"action":{"enum":["create","modify","remove"]},"object":{"type":"string"},"name":{"type":"string","maxLength":128},"position":{"type":"array","items":{"type":"number"},"minItems":3,"maxItems":3},"rotation":{"type":"array","items":{"type":"number"},"minItems":4,"maxItems":4},"scale":{"type":"array","items":{"type":"number"},"minItems":3,"maxItems":3},"active":{"type":"boolean"}}})", edit, &EditObject).IgnoreResult();
+    ref_registry.RegisterTool("runtime.edit_object", "Create, modify, reparent or schedule removal of a live object. Reparenting preserves the local transform and accepts null to move to the root. Rotation is a normalized quaternion in x,y,z,w order.", R"({"type":"object","required":["world","action"],"properties":{"world":{"type":"string"},"action":{"enum":["create","modify","reparent","remove"]},"object":{"type":"string"},"parent":{"type":["string","null"]},"name":{"type":"string","maxLength":128},"position":{"type":"array","items":{"type":"number"},"minItems":3,"maxItems":3},"rotation":{"type":"array","items":{"type":"number"},"minItems":4,"maxItems":4},"scale":{"type":"array","items":{"type":"number"},"minItems":3,"maxItems":3},"active":{"type":"boolean"}}})", edit, &EditObject).IgnoreResult();
     ref_registry.RegisterTool("runtime.simulation", "Set simulation enabled, clock pause, or simulation speed for a live world and return its current timing.", R"({"type":"object","required":["world"],"properties":{"world":{"type":"string"},"enabled":{"type":"boolean"},"paused":{"type":"boolean"},"speed":{"type":"number","minimum":0,"maximum":16}}})", execute, &SetSimulation).IgnoreResult();
     ref_registry.RegisterTool("runtime.resources", "Inspect matching resources from a bounded live resource snapshot, including async content state and memory use.", R"({"type":"object","required":["type"],"properties":{"type":{"type":"string"}}})", read, &ListResources).IgnoreResult();
     ref_registry.RegisterTool("runtime.reload_resource", "Request a standard, non-forced reload of an existing resource. A false result means no reload was needed or available.",
