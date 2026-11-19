@@ -56,6 +56,10 @@ public:
   /// If bAlsoDeleteEmptyParents is set, any ancestor object that has no other children and no components, will also get deleted.
   void DeleteObjectDelayed(const xiiGameObjectHandle& hObject, bool bAlsoDeleteEmptyParents = true); // [tested]
 
+  /// Reclaims storage for objects and components already deleted. Requires world write access.
+  /// Call between world updates, when no code can hold pointers into object or component storage.
+  void FlushDeletedObjects();
+
   /// Returns the event that is triggered before an object is deleted. This can be used for external systems to cleanup data
   /// which is associated with the deleted object.
   const xiiEvent<const xiiGameObject*>& GetObjectDeletionEvent() const;
