@@ -640,6 +640,12 @@ void xiiQtEditorApp::ShutdownEditor()
 
   xiiTranslationLookup::Clear();
 
+  if (!m_sRestartProjectFile.IsEmpty())
+  {
+    LaunchEditor(m_sRestartProjectFile.GetData(), false);
+    m_sRestartProjectFile.Clear();
+  }
+
   xiiGlobalLog::RemoveLogWriter(xiiLogWriter::Console::LogMessageHandler);
   xiiGlobalLog::RemoveLogWriter(xiiLogWriter::VisualStudio::LogMessageHandler);
   xiiGlobalLog::RemoveLogWriter(xiiLoggingEvent::Handler(&xiiLogWriter::HTML::LogMessageHandler, &m_LogHTML));

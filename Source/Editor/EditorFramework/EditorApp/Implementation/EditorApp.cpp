@@ -784,7 +784,10 @@ void xiiQtEditorApp::LaunchEditor(const char* szProject, bool bCreate)
   }
 
   QProcess proc;
-  proc.startDetached(QString::fromUtf8(app, app.GetElementCount()), args);
+  if (!proc.startDetached(QString::fromUtf8(app, app.GetElementCount()), args))
+  {
+    xiiLog::Error("Could not launch the Editor for project '{}': {}", szProject, proc.errorString().toUtf8().constData());
+  }
 }
 
 const xiiApplicationPluginConfig xiiQtEditorApp::GetRuntimePluginConfig(bool bIncludeEditorPlugins) const

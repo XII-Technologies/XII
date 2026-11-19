@@ -606,8 +606,14 @@ xiiResult xiiQtConfigurationDlg::ApplyPages()
           ddl.SetOutputStream(&file);
           selection.WriteStateToDDL(ddl);
           XII_SUCCEED_OR_RETURN(file.Close());
-          pEditor->GetPluginBundles() = selection;
-          pEditor->AddRestartRequiredReason("The set of active plugins has changed.", false);
+          pEditor->GetPluginBundles()         = selection;
+          const xiiUInt64 uiProjectGeneration = xiiToolsProject::GetProjectGeneration();
+          QTimer::singleShot(0, pEditor, [pEditor, uiProjectGeneration] {
+            if (xiiToolsProject::IsProjectGenerationCurrent(uiProjectGeneration))
+            {
+              pEditor->AddRestartRequiredReason("The set of active plugins has changed.");
+            }
+          });
         }
         break;
       }
