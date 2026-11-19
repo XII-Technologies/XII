@@ -325,6 +325,13 @@ void xiiGameApplication::Init_LoadRequiredPlugins()
 {
   xiiPlugin::InitializeStaticallyLinkedPlugins();
 
+  const auto* pCommandLine = xiiCommandLineUtils::GetGlobalInstance();
+  if ((pCommandLine->GetBoolOption("-MCP") || !pCommandLine->GetStringOption("-MCPListen").IsEmpty()) &&
+      xiiPlugin::LoadPlugin("xiiMCPPlugin", xiiPluginLoadFlags::PluginIsOptional).Failed())
+  {
+    xiiLog::Error("The optional runtime MCP plugin could not be loaded.");
+  }
+
   xiiStringView sGraphicsAPIName = xiiCommandLineUtils::GetGlobalInstance()->GetStringOption("-renderer", 0, szDefaultGraphicsAPI);
   xiiStringView sShaderModel     = {};
   xiiStringView sShaderCompiler  = {};

@@ -23,6 +23,9 @@ public:
   void SetLogInterface(xiiLogInterface* pLog) { m_pLogInterface = pLog; }
 
 protected:
+  /// Enables standard JSON syntax and limits the number of nested containers. Zero restores legacy parsing.
+  void SetMaximumStrictDepth(xiiUInt32 uiDepth) { m_uiMaximumStrictDepth = uiDepth; }
+
   /// Resets the parser to the start state and configures it to read from the given stream.
   void SetInputStream(xiiStreamReader& stream, xiiUInt32 uiFirstLineOffset = 0);
 
@@ -66,6 +69,10 @@ private:
 
   /// \copydoc xiiJSONParser::OnReadValue()
   virtual void OnReadValue(double fValue) = 0;
+
+  /// Strict parsing retains integers that fit in a 64-bit signed or unsigned value.
+  virtual void OnReadInteger(xiiInt64 iValue) { OnReadValue(static_cast<double>(iValue)); }
+  virtual void OnReadUnsignedInteger(xiiUInt64 uiValue) { OnReadValue(static_cast<double>(uiValue)); }
 
   /// \copydoc xiiJSONParser::OnReadValue()
   virtual void OnReadValue(bool bValue) = 0;
@@ -122,14 +129,19 @@ private:
     JSONState() { m_State = NotStarted; }
 
     State m_State;
+    bool  m_bAfterComma = false;
   };
 
-  void   StartParsing();
-  void   SkipWhitespace();
-  void   SkipString();
-  void   ReadString();
-  double ReadNumber();
-  void   ReadWord();
+  void StartParsing();
+  void SkipWhitespace();
+  void SkipString();
+  void ReadString();
+  void ReadNumber();
+  void ReadWord();
+  void ReadStrictNumber(xiiStringView sNumber);
+  bool BeginContainer(State state);
+  bool IsWhiteSpace(xiiUInt8 uiByte) const;
+  bool IsStrict() const { return m_uiMaximumStrictDepth != 0; }
 
   void ContinueObject();
   void ContinueArray();
@@ -151,5 +163,8 @@ private:
   xiiHybridArray<JSONState, 32>  m_StateStack;
   xiiHybridArray<xiiUInt8, 4096> m_TempString;
 
-  bool m_bSkippingMode;
+  bool      m_bSkippingMode;
+  bool      m_bReadNullByte        = false;
+  xiiUInt32 m_uiMaximumStrictDepth = 0;
+  xiiUInt32 m_uiContainerDepth     = 0;
 };

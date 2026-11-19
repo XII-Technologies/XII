@@ -444,6 +444,14 @@ void xiiQtEditorApp::StartupEditor(xiiBitflags<StartupFlags> startupFlags, const
   UpdateStartupProgress(QStringLiteral("Discovering editor plugins"));
   LoadEditorPlugins();
 
+  if (pCmd->GetBoolOption("-MCP") || !pCmd->GetStringOption("-MCPListen").IsEmpty())
+  {
+    if (xiiPlugin::LoadPlugin("xiiEditorPluginMCP", xiiPluginLoadFlags::PluginIsOptional).Failed())
+    {
+      xiiLog::Error("The optional Editor MCP plugin could not be loaded.");
+    }
+  }
+
   m_bIsRunning = true;
   {
     xiiEditorAppEvent e;

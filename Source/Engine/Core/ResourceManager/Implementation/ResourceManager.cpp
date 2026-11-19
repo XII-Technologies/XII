@@ -965,6 +965,51 @@ xiiHashTable<const xiiRTTI*, xiiResourceManager::LoadedResources>& xiiResourceMa
   return s_pState->m_LoadedResources;
 }
 
+xiiLockedObject<xiiMutex, xiiDynamicArray<xiiResource*>> xiiResourceManager::GetAllResourcesOfType(const xiiRTTI& baseType, xiiUInt32 uiMaximumResources, xiiUInt32 uiOffset, xiiStringView sIdFilter)
+{
+  auto& container = GetLoadedResourceOfTypeTempContainer();
+
+  // We use a static container here to ensure its life-time is extended beyond
+  // calls to this function as the locked object does not own the passed-in object
+  // and thus does not extend the data life-time. It is safe to do this, as the
+  // locked object holding the container ensures the container will not be
+  // accessed concurrently.
+  xiiLockedObject<xiiMutex, xiiDynamicArray<xiiResource*>> loadedResourcesLock(s_ResourceMutex, &container);
+
+  container.Clear();
+
+  for (auto itType = GetLoadedResources().GetIterator(); itType.IsValid(); itType.Next())
+  {
+    const xiiRTTI* pDerivedType = itType.Key();
+
+    if (pDerivedType->IsDerivedFrom(&baseType))
+    {
+      const LoadedResources& lr = itType.Value();
+      container.Reserve(container.GetCount() + xiiMath::Min(lr.m_Resources.GetCount(), uiMaximumResources - container.GetCount()));
+
+      for (auto itResource : lr.m_Resources)
+      {
+        if (!sIdFilter.IsEmpty() && itResource.Value()->GetResourceID().FindSubString_NoCase(sIdFilter) == nullptr)
+        {
+          continue;
+        }
+        if (uiOffset != 0)
+        {
+          --uiOffset;
+          continue;
+        }
+        if (container.GetCount() == uiMaximumResources)
+        {
+          return loadedResourcesLock;
+        }
+        container.PushBack(itResource.Value());
+      }
+    }
+  }
+
+  return loadedResourcesLock;
+}
+
 xiiDynamicArray<xiiResource*>& xiiResourceManager::GetLoadedResourceOfTypeTempContainer()
 {
   return s_pState->m_LoadedResourceOfTypeTempContainer;

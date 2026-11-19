@@ -67,6 +67,9 @@ public:
   /// Returns false if the given string does not contain a completely valid Utf8 string.
   static bool IsValidUtf8(const char* szString, const char* szStringEnd = GetMaxStringEnd<char>());
 
+  /// Validates a bounded byte range in every build configuration.
+  static bool ValidateUtf8(const char* pTextBegin, const char* pTextEnd);
+
   /// If the given string starts with a Utf8 Bom, the pointer is incremented behind the Bom, and the function returns true.
   ///
   /// Otherwise the pointer is unchanged and false is returned.

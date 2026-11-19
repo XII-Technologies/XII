@@ -5,6 +5,7 @@
 #include <Foundation/Basics.h>
 #include <Foundation/Network/Session/NetworkSession.h>
 #include <Foundation/Reflection/Reflection.h>
+#include <Foundation/Time/Time.h>
 
 /// Stable delivery context captured at session establishment, never obtained from a recycled slot.
 struct XII_FOUNDATION_DLL xiiNetworkDispatchContext
@@ -14,6 +15,7 @@ struct XII_FOUNDATION_DLL xiiNetworkDispatchContext
   xiiUInt64                                 m_uiService = 0;
   xiiUInt64                                 m_uiMethod  = 0;
   xiiUInt64                                 m_uiRequest = 0;
+  xiiTime                                   m_Deadline; ///< Local deadline of a correlated RPC. Zero for messages without a deadline.
 };
 
 /// Explicit incoming-message allowlist entry. The endpoint owns this handler until removal; active

@@ -295,6 +295,12 @@
       - any-glob-to-any-file:
           - "Source/EnginePlugins/JoltPlugin/**"
 
+"Module: MCPPlugin":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "Source/EnginePlugins/MCPPlugin/**"
+          - "Source/Tools/MCP/**"
+
 "Module: MujocoPlugin":
   - changed-files:
       - any-glob-to-any-file:
@@ -324,6 +330,11 @@
   - changed-files:
       - any-glob-to-any-file:
           - "Source/EditorPlugins/Jolt/**"
+
+"Module: EditorPlugins/MCP":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "Source/EditorPlugins/MCP/**"
 
 "Module: EditorPlugins/Mujoco":
   - changed-files:

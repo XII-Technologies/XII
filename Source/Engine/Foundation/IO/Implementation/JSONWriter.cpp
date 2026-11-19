@@ -3,6 +3,8 @@
 #include <Foundation/FoundationPCH.h>
 
 #include <Foundation/IO/JSONWriter.h>
+#include <Foundation/Math/Math.h>
+#include <Foundation/Strings/UnicodeUtils.h>
 
 xiiJSONWriter::xiiJSONWriter()  = default;
 xiiJSONWriter::~xiiJSONWriter() = default;
@@ -509,6 +511,79 @@ void xiiJSONWriter::WriteDataBuffer(const xiiDataBuffer& value)
   XII_IGNORE_UNUSED(value);
 
   XII_REPORT_FAILURE("The complex data type xiiDateBuffer is not supported by this JSON writer.");
+}
+
+namespace
+{
+  bool IsPlainJsonString(xiiStringView sValue)
+  {
+    return sValue.IsEmpty() || xiiUnicodeUtils::ValidateUtf8(sValue.GetStartPointer(), sValue.GetEndPointer());
+  }
+
+  bool IsPlainJsonValue(const xiiVariant& value, xiiUInt32 uiRemainingDepth)
+  {
+    switch (value.GetType())
+    {
+      case xiiVariantType::Invalid:
+      case xiiVariantType::Bool:
+      case xiiVariantType::Int8:
+      case xiiVariantType::UInt8:
+      case xiiVariantType::Int16:
+      case xiiVariantType::UInt16:
+      case xiiVariantType::Int32:
+      case xiiVariantType::UInt32:
+      case xiiVariantType::Int64:
+      case xiiVariantType::UInt64:
+        return true;
+      case xiiVariantType::Float:
+        return xiiMath::IsFinite(value.Get<float>());
+      case xiiVariantType::Double:
+        return xiiMath::IsFinite(value.Get<double>());
+      case xiiVariantType::String:
+        return IsPlainJsonString(value.Get<xiiString>());
+      case xiiVariantType::StringView:
+        return IsPlainJsonString(value.Get<xiiStringView>());
+      case xiiVariantType::VariantArray:
+        if (uiRemainingDepth == 0)
+        {
+          return false;
+        }
+        for (const auto& element : value.Get<xiiVariantArray>())
+        {
+          if (!IsPlainJsonValue(element, uiRemainingDepth - 1))
+          {
+            return false;
+          }
+        }
+        return true;
+      case xiiVariantType::VariantDictionary:
+        if (uiRemainingDepth == 0)
+        {
+          return false;
+        }
+        for (const auto& entry : value.Get<xiiVariantDictionary>())
+        {
+          if (!IsPlainJsonString(entry.Key()) || !IsPlainJsonValue(entry.Value(), uiRemainingDepth - 1))
+          {
+            return false;
+          }
+        }
+        return true;
+      default:
+        return false;
+    }
+  }
+} // namespace
+
+xiiResult xiiJSONWriter::WritePlainVariant(const xiiVariant& value, xiiUInt32 uiMaximumDepth)
+{
+  if (!IsPlainJsonValue(value, uiMaximumDepth))
+  {
+    return XII_FAILURE;
+  }
+
+  WriteVariant(value);
+  return HadWriteError() ? XII_FAILURE : XII_SUCCESS;
 }
 
 void xiiJSONWriter::WriteVariant(const xiiVariant& value)

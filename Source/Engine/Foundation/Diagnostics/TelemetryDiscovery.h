@@ -15,6 +15,12 @@ struct XII_FOUNDATION_DLL xiiTelemetryInstance
   xiiString m_sEndpoint;
 };
 
+enum class xiiTelemetryDiscoveryScope : xiiUInt8
+{
+  Diagnostics,
+  ModelContextProtocol
+};
+
 /// Per-user local diagnostics advertisements. A held OS file lease distinguishes live entries
 /// from abandoned registrations, including process crashes and reused PIDs. Discovery grants no
 /// authentication or command permissions; clients still establish an authenticated network session.
@@ -22,9 +28,9 @@ class XII_FOUNDATION_DLL xiiTelemetryDiscovery final
 {
 public:
   ~xiiTelemetryDiscovery();
-  xiiResult        Publish(const xiiTelemetryInstance& instance);
+  xiiResult        Publish(const xiiTelemetryInstance& instance, xiiTelemetryDiscoveryScope scope = xiiTelemetryDiscoveryScope::Diagnostics);
   void             Reset();
-  static xiiResult Enumerate(xiiDynamicArray<xiiTelemetryInstance>& out_instances);
+  static xiiResult Enumerate(xiiDynamicArray<xiiTelemetryInstance>& out_instances, xiiTelemetryDiscoveryScope scope = xiiTelemetryDiscoveryScope::Diagnostics);
 
 private:
   xiiOSFile m_Lease;

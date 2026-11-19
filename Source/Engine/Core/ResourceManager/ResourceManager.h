@@ -206,6 +206,10 @@ public:
   template <typename ResourceType>
   static xiiLockedObject<xiiMutex, xiiDynamicArray<xiiResource*>> GetAllResourcesOfType(xiiUInt32 uiMaximumResources = xiiInvalidIndex);
 
+  /// Collects a page of matching registered resources. Offset applies after type and ID filtering.
+  /// The returned lock keeps the entries alive and prevents concurrent mutation of the resource table.
+  static xiiLockedObject<xiiMutex, xiiDynamicArray<xiiResource*>> GetAllResourcesOfType(const xiiRTTI& baseType, xiiUInt32 uiMaximumResources, xiiUInt32 uiOffset = 0, xiiStringView sIdFilter = {});
+
   ///@}
   /// \name Unloading resources
   ///@{

@@ -136,6 +136,28 @@ void xiiEditorEngineProcessConnection::Initialize(const xiiRTTI* pFirstAllowedMe
   QStringList args = QCoreApplication::arguments();
   args.pop_front(); // Remove first argument which is the name of the path to the editor executable
 
+  const bool bRuntimeMcp = xiiCommandLineUtils::GetGlobalInstance()->GetBoolOption("-MCPEngine");
+  for (qsizetype iArgument = args.size(); iArgument > 0; --iArgument)
+  {
+    const qsizetype iIndex = iArgument - 1;
+    if (args[iIndex].startsWith("-MCP", Qt::CaseInsensitive))
+    {
+      if (iIndex + 1 < args.size() && !args[iIndex + 1].startsWith('-'))
+      {
+        args.removeAt(iIndex + 1);
+      }
+      args.removeAt(iIndex);
+    }
+  }
+  if (bRuntimeMcp)
+  {
+    args << "-MCP";
+    if (xiiCommandLineUtils::GetGlobalInstance()->GetBoolOption("-MCPNoDiscovery"))
+    {
+      args << "-MCPNoDiscovery";
+    }
+  }
+
   {
     xiiStringBuilder sWndCfgPath = xiiApplicationServices::GetSingleton()->GetProjectPreferencesFolder();
     sWndCfgPath.AppendPath("RuntimeConfigs/Window.ddl");

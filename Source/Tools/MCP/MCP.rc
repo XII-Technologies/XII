@@ -1,0 +1,4 @@
+// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
+// Qt's Windows window classes also load the icon by this resource name.
+IDI_ICON1 ICON "MCP.ico"

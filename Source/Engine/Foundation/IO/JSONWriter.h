@@ -367,6 +367,10 @@ public:
   /// A derived class may override this function to implement support for the remaining variant types, if required.
   virtual void WriteVariant(const xiiVariant& value); // [tested]
 
+  /// Writes a JSON-native variant (including arrays and dictionaries). Rejects engine-specific
+  /// value types, non-finite numbers, invalid UTF-8 and excessive nesting before writing any bytes.
+  [[nodiscard]] xiiResult WritePlainVariant(const xiiVariant& value, xiiUInt32 uiMaximumDepth = 32);
+
   /// Outputs a chunk of memory in some JSON form that can be interpreted as binary data when reading it again.
   ///
   /// How exactly the raw data is represented in JSON is up to the derived class. \a szDataType allows to additionally output a string

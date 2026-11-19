@@ -47,6 +47,9 @@ namespace xiiConversionUtils
   /// Same as StringToInt but converts to a 64bit integer value instead.
   XII_FOUNDATION_DLL xiiResult StringToInt64(xiiStringView sText, xiiInt64& out_iRes, const char** out_pLastParsePosition = nullptr); // [tested]
 
+  /// Parses a complete unsigned decimal integer. Accepts only ASCII digits and preserves the output on failure.
+  [[nodiscard]] XII_FOUNDATION_DLL xiiResult StringToUInt64Strict(xiiStringView sText, xiiUInt64& out_uiResult);
+
   /// Parses szString and converts it to a double value. Returns XII_FAILURE if the string contains no parseable floating point value.
   ///
   /// \param szString

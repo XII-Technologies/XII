@@ -23,3 +23,7 @@ target_link_libraries(${PROJECT_NAME}
 add_dependencies(${PROJECT_NAME}
   InspectorPlugin
 )
+
+if(TARGET MCPPlugin)
+  add_dependencies(${PROJECT_NAME} MCPPlugin)
+endif()
