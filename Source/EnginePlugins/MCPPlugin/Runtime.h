@@ -7,13 +7,15 @@
 #include <MCPPlugin/Bridge.h>
 #include <MCPPlugin/HttpServer.h>
 
+class xiiMCPRuntimeDiagnostics;
+
 struct XII_MCPPLUGIN_DLL xiiMCPRuntimeConfiguration
 {
-  xiiString m_sApplication;
-  xiiString m_sLocalEndpoint;
-  xiiUInt8 m_uiPermissions = static_cast<xiiUInt8>(xiiMCPPermission::Read);
-  bool m_bNative = false;
-  bool m_bAdvertise = true;
+  xiiString               m_sApplication;
+  xiiString               m_sLocalEndpoint;
+  xiiUInt8                m_uiPermissions = static_cast<xiiUInt8>(xiiMCPPermission::Read);
+  bool                    m_bNative       = false;
+  bool                    m_bAdvertise    = true;
   xiiMCPHttpConfiguration m_Http;
 };
 
@@ -24,14 +26,15 @@ public:
   xiiMCPRuntime();
   ~xiiMCPRuntime();
 
-  [[nodiscard]] xiiStatus Start(const xiiMCPRuntimeConfiguration& configuration);
-  void Update();
-  void Stop();
+  [[nodiscard]] xiiStatus       Start(const xiiMCPRuntimeConfiguration& configuration);
+  void                          Update();
+  void                          Stop();
   [[nodiscard]] xiiMCPRegistry& GetRegistry() { return m_Registry; }
 
 private:
-  xiiMCPRegistry m_Registry;
-  xiiMCPProtocol m_Protocol;
-  xiiMCPBridge m_Bridge;
-  xiiMCPHttpServer m_Http;
+  xiiMCPRegistry                         m_Registry;
+  xiiMCPProtocol                         m_Protocol;
+  xiiMCPBridge                           m_Bridge;
+  xiiMCPHttpServer                       m_Http;
+  xiiUniquePtr<xiiMCPRuntimeDiagnostics> m_pDiagnostics;
 };

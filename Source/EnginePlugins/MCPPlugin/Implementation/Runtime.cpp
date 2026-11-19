@@ -9,6 +9,7 @@
 #include <Foundation/Logging/Log.h>
 #include <Foundation/System/EnvironmentVariableUtils.h>
 #include <Foundation/Utilities/ConversionUtils.h>
+#include <MCPPlugin/Implementation/RuntimeDiagnostics.h>
 #include <MCPPlugin/Json.h>
 #include <MCPPlugin/Reflection.h>
 #include <MCPPlugin/Runtime.h>
@@ -62,7 +63,7 @@ namespace
     }
 
     xiiGameObjectId id;
-    const auto result = std::from_chars(sObject.GetStartPointer(), sObject.GetEndPointer(), id.m_Data);
+    const auto      result = std::from_chars(sObject.GetStartPointer(), sObject.GetEndPointer(), id.m_Data);
     if (result.ec != std::errc() || result.ptr != sObject.GetEndPointer() || id.m_WorldIndex != ref_world.GetIndex())
     {
       return nullptr;
@@ -74,9 +75,9 @@ namespace
   xiiVariantDictionary DescribeObject(const xiiGameObject& object)
   {
     xiiVariantDictionary result;
-    result["id"] = ObjectId(object.GetHandle());
-    result["name"] = xiiString(object.GetName());
-    result["active"] = object.IsActive();
+    result["id"]             = ObjectId(object.GetHandle());
+    result["name"]           = xiiString(object.GetName());
+    result["active"]         = object.IsActive();
     result["componentCount"] = object.GetComponents().GetCount();
     if (const auto* pParent = object.GetParent())
     {
@@ -96,24 +97,24 @@ namespace
 
   void DescribeSimulation(const xiiWorld& world, xiiVariantDictionary& out_result)
   {
-    const auto& clock = world.GetClock();
+    const auto& clock               = world.GetClock();
     out_result["simulationEnabled"] = world.GetWorldSimulationEnabled();
-    out_result["paused"] = clock.GetPaused();
-    out_result["speed"] = clock.GetSpeed();
-    out_result["timeSeconds"] = clock.GetAccumulatedTime().GetSeconds();
-    out_result["stepSeconds"] = clock.GetTimeDiff().GetSeconds();
-    out_result["updateCount"] = world.GetUpdateCounter();
+    out_result["paused"]            = clock.GetPaused();
+    out_result["speed"]             = clock.GetSpeed();
+    out_result["timeSeconds"]       = clock.GetAccumulatedTime().GetSeconds();
+    out_result["stepSeconds"]       = clock.GetTimeDiff().GetSeconds();
+    out_result["updateCount"]       = world.GetUpdateCounter();
   }
 
   bool ReadPage(const xiiVariantDictionary& arguments, xiiUInt64& out_uiOffset, xiiUInt64& out_uiLimit)
   {
     const auto* pOffset = arguments.GetValue("offset");
-    const auto* pLimit = arguments.GetValue("limit");
-    out_uiOffset = 0;
-    out_uiLimit = DefaultPageSize;
+    const auto* pLimit  = arguments.GetValue("limit");
+    out_uiOffset        = 0;
+    out_uiLimit         = DefaultPageSize;
     return (pOffset == nullptr || xiiMCPJson::ReadUInt(*pOffset, out_uiOffset)) &&
-           (pLimit == nullptr || xiiMCPJson::ReadUInt(*pLimit, out_uiLimit)) &&
-           out_uiOffset <= xiiMath::MaxValue<xiiUInt32>() && out_uiLimit >= 1 && out_uiLimit <= MaximumPageSize;
+      (pLimit == nullptr || xiiMCPJson::ReadUInt(*pLimit, out_uiLimit)) &&
+      out_uiOffset <= xiiMath::MaxValue<xiiUInt32>() && out_uiLimit >= 1 && out_uiLimit <= MaximumPageSize;
   }
 
   xiiStatus ListWorlds(const xiiMCPCallContext&, const xiiVariantDictionary&, xiiVariantDictionary& out_result)
@@ -125,8 +126,9 @@ namespace
       {
         XII_LOCK(pWorld->GetReadMarker());
         xiiVariantDictionary world;
-        world["id"] = WorldId(*pWorld);
-        world["name"] = xiiString(pWorld->GetName());
+        world["id"]          = WorldId(*pWorld);
+        world["slot"]        = uiIndex;
+        world["name"]        = xiiString(pWorld->GetName());
         world["objectCount"] = pWorld->GetObjectCount();
         DescribeSimulation(*pWorld, world);
         worlds.PushBack(std::move(world));
@@ -138,20 +140,20 @@ namespace
 
   xiiStatus ListObjects(const xiiMCPCallContext& context, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result)
   {
-    const auto* pWorld = FindWorld(arguments);
-    xiiUInt64 uiOffset = 0, uiLimit = 0;
+    const auto* pWorld   = FindWorld(arguments);
+    xiiUInt64   uiOffset = 0, uiLimit = 0;
     if (pWorld == nullptr || !ReadPage(arguments, uiOffset, uiLimit))
     {
       return xiiStatus("Provide a world ID from runtime.worlds and a valid page range.");
     }
 
-    const auto sName = xiiMCPJson::GetString(arguments, "name");
-    const auto sType = xiiMCPJson::GetString(arguments, "componentType");
+    const auto sName   = xiiMCPJson::GetString(arguments, "name");
+    const auto sType   = xiiMCPJson::GetString(arguments, "componentType");
     const auto sParent = xiiMCPJson::GetString(arguments, "parent");
     XII_LOCK(pWorld->GetReadMarker());
     xiiVariantArray objects;
-    xiiUInt64 uiMatched = 0;
-    xiiUInt32 uiVisited = 0;
+    xiiUInt64       uiMatched = 0;
+    xiiUInt32       uiVisited = 0;
     for (auto it = pWorld->GetObjects(); it.IsValid(); ++it)
     {
       if ((uiVisited++ % 128) == 0 && context.HasExpired())
@@ -194,7 +196,7 @@ namespace
       objects.PushBack(DescribeObject(*it));
     }
     out_result["objects"] = std::move(objects);
-    out_result["world"] = WorldId(*pWorld);
+    out_result["world"]   = WorldId(*pWorld);
     return XII_SUCCESS;
   }
 
@@ -219,11 +221,11 @@ namespace
       return xiiStatus("The object no longer exists in the selected world.");
     }
 
-    out_result = DescribeObject(*pObject);
-    out_result["localTransform"] = DescribeTransform(pObject->GetLocalTransform());
+    out_result                    = DescribeObject(*pObject);
+    out_result["localTransform"]  = DescribeTransform(pObject->GetLocalTransform());
     out_result["globalTransform"] = DescribeTransform(pObject->GetGlobalTransform());
     xiiVariantArray components;
-    xiiUInt64 uiIndex = 0;
+    xiiUInt64       uiIndex = 0;
     for (const auto* pComponent : pObject->GetComponents())
     {
       if (uiIndex++ < uiOffset)
@@ -236,9 +238,9 @@ namespace
         break;
       }
       xiiVariantDictionary component;
-      component["type"] = xiiString(pComponent->GetDynamicRTTI()->GetTypeName());
+      component["type"]   = xiiString(pComponent->GetDynamicRTTI()->GetTypeName());
       component["active"] = pComponent->IsActive();
-      component["index"] = uiIndex - 1;
+      component["index"]  = uiIndex - 1;
       components.PushBack(std::move(component));
     }
     out_result["components"] = std::move(components);
@@ -247,9 +249,9 @@ namespace
 
   xiiStatus InspectComponent(const xiiMCPCallContext&, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result)
   {
-    auto* pWorld = FindWorld(arguments);
-    xiiUInt64 uiIndex = 0;
-    const auto* pIndex = arguments.GetValue("index");
+    auto*       pWorld  = FindWorld(arguments);
+    xiiUInt64   uiIndex = 0;
+    const auto* pIndex  = arguments.GetValue("index");
     if (pWorld == nullptr || pIndex == nullptr || !xiiMCPJson::ReadUInt(*pIndex, uiIndex))
     {
       return xiiStatus("Provide a world ID and component index from runtime.object.");
@@ -262,24 +264,24 @@ namespace
       return xiiStatus("The component is unavailable. Inspect the object again.");
     }
 
-    const auto* pComponent = pObject->GetComponents()[static_cast<xiiUInt32>(uiIndex)];
-    const auto& type = *pComponent->GetDynamicRTTI();
-    const auto sExpectedType = xiiMCPJson::GetString(arguments, "type");
+    const auto* pComponent    = pObject->GetComponents()[static_cast<xiiUInt32>(uiIndex)];
+    const auto& type          = *pComponent->GetDynamicRTTI();
+    const auto  sExpectedType = xiiMCPJson::GetString(arguments, "type");
     if (type.GetTypeName() != sExpectedType)
     {
       return xiiStatus("The component changed. Inspect the object again.");
     }
-    out_result["schema"] = xiiMCPReflection::Describe(type);
+    out_result["schema"]     = xiiMCPReflection::Describe(type);
     out_result["properties"] = xiiMCPReflection::ReadMembers(type, pComponent);
     return XII_SUCCESS;
   }
 
   xiiStatus SetSimulation(const xiiMCPCallContext&, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result)
   {
-    auto* pWorld = FindWorld(arguments);
+    auto*       pWorld   = FindWorld(arguments);
     const auto* pEnabled = arguments.GetValue("enabled");
-    const auto* pPaused = arguments.GetValue("paused");
-    const auto* pSpeed = arguments.GetValue("speed");
+    const auto* pPaused  = arguments.GetValue("paused");
+    const auto* pSpeed   = arguments.GetValue("speed");
     if (pWorld == nullptr || (pEnabled != nullptr && !pEnabled->IsA<bool>()) || (pPaused != nullptr && !pPaused->IsA<bool>()) ||
         (pSpeed != nullptr && (!pSpeed->IsNumber() || pSpeed->IsA<bool>() || !xiiMath::IsInRange(pSpeed->ConvertTo<double>(), 0.0, 16.0))))
     {
@@ -325,12 +327,12 @@ namespace
 
   xiiStatus EditObject(const xiiMCPCallContext&, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result)
   {
-    auto* pWorld = FindWorld(arguments);
-    const auto sAction = xiiMCPJson::GetString(arguments, "action");
-    const auto sName = xiiMCPJson::GetString(arguments, "name");
+    auto*       pWorld    = FindWorld(arguments);
+    const auto  sAction   = xiiMCPJson::GetString(arguments, "action");
+    const auto  sName     = xiiMCPJson::GetString(arguments, "name");
     const auto* pPosition = arguments.GetValue("position");
-    const auto* pActive = arguments.GetValue("active");
-    xiiVec3 vPosition = xiiVec3::MakeZero();
+    const auto* pActive   = arguments.GetValue("active");
+    xiiVec3     vPosition = xiiVec3::MakeZero();
     if (pWorld == nullptr || sName.GetElementCount() > 128 || (pPosition != nullptr && !ReadPosition(*pPosition, vPosition)) ||
         (pActive != nullptr && !pActive->IsA<bool>()))
     {
@@ -379,7 +381,7 @@ namespace
 
   xiiStatus ListResources(const xiiMCPCallContext&, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result)
   {
-    const auto sType = xiiMCPJson::GetString(arguments, "type");
+    const auto  sType = xiiMCPJson::GetString(arguments, "type");
     const auto* pType = xiiRTTI::FindTypeByName(sType);
     if (pType == nullptr || !pType->IsDerivedFrom<xiiResource>())
     {
@@ -387,7 +389,7 @@ namespace
     }
 
     // Existing resource enumeration takes a manager lock. Snapshot only one bounded prefix.
-    auto resources = xiiResourceManager::GetAllResourcesOfType<xiiResource>(256);
+    auto            resources = xiiResourceManager::GetAllResourcesOfType<xiiResource>(256);
     xiiVariantArray rows;
     for (const auto* pResource : *resources)
     {
@@ -396,24 +398,32 @@ namespace
         continue;
       }
       xiiVariantDictionary row;
-      row["id"] = xiiString(pResource->GetResourceID());
+      row["id"]   = xiiString(pResource->GetResourceID());
       row["type"] = xiiString(pResource->GetDynamicRTTI()->GetTypeName());
       xiiResource::ContentStats stats;
       if (pResource->TryCaptureContentStats(stats))
       {
         switch (stats.m_State)
         {
-          case xiiResourceState::Invalid: row["state"] = xiiString("invalid"); break;
-          case xiiResourceState::Unloaded: row["state"] = xiiString("unloaded"); break;
-          case xiiResourceState::LoadedResourceMissing: row["state"] = xiiString("missing"); break;
-          case xiiResourceState::Loaded: row["state"] = xiiString("loaded"); break;
+          case xiiResourceState::Invalid:
+            row["state"] = xiiString("invalid");
+            break;
+          case xiiResourceState::Unloaded:
+            row["state"] = xiiString("unloaded");
+            break;
+          case xiiResourceState::LoadedResourceMissing:
+            row["state"] = xiiString("missing");
+            break;
+          case xiiResourceState::Loaded:
+            row["state"] = xiiString("loaded");
+            break;
         }
         row["cpuBytes"] = stats.m_Memory.m_uiMemoryCPU;
         row["gpuBytes"] = stats.m_Memory.m_uiMemoryGPU;
       }
       rows.PushBack(std::move(row));
     }
-    out_result["resources"] = std::move(rows);
+    out_result["resources"]     = std::move(rows);
     out_result["prefixLimited"] = resources->GetCount() == 256;
     return XII_SUCCESS;
   }
@@ -422,17 +432,79 @@ namespace
   {
     if (const auto* pApplication = xiiGameApplicationBase::GetGameApplicationBaseInstance())
     {
-      out_result["application"] = pApplication->GetApplicationName();
+      out_result["application"]  = pApplication->GetApplicationName();
       out_result["frameSeconds"] = pApplication->GetFrameTime().GetSeconds();
     }
     out_result["worldSlots"] = xiiWorld::GetWorldCount();
     return XII_SUCCESS;
   }
 
+  xiiStatus WriteRuntimeResource(xiiStringView sUri, const xiiVariantDictionary& data, xiiVariantDictionary& out_result)
+  {
+    xiiStringBuilder sData;
+    if (xiiMCPJson::Write(data, sData).Failed())
+    {
+      return xiiStatus("The resource snapshot exceeded its response budget.");
+    }
+    xiiVariantDictionary content;
+    content["uri"]      = xiiString(sUri);
+    content["mimeType"] = xiiString("application/json");
+    content["text"]     = xiiString(sData);
+    xiiVariantArray contents;
+    contents.PushBack(std::move(content));
+    out_result["contents"] = std::move(contents);
+    return XII_SUCCESS;
+  }
+
+  xiiStatus ReadRuntimeStatus(const xiiMCPCallContext& context, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result)
+  {
+    xiiVariantDictionary data;
+    const auto           status = InspectRuntime(context, arguments, data);
+    return status.Succeeded() ? WriteRuntimeResource(xiiMCPJson::GetString(arguments, "uri"), data, out_result) : status;
+  }
+
+  xiiStatus ReadWorldSlot(const xiiMCPCallContext&, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result)
+  {
+    const auto sIndex  = xiiMCPJson::GetString(arguments, "index");
+    xiiUInt32  uiIndex = 0;
+    const auto result  = std::from_chars(sIndex.GetStartPointer(), sIndex.GetEndPointer(), uiIndex);
+    if (result.ec != std::errc() || result.ptr != sIndex.GetEndPointer() || uiIndex >= xiiWorld::GetWorldCount())
+    {
+      return xiiStatus("The specified world slot is unavailable.");
+    }
+    const auto* pWorld = xiiWorld::GetWorld(uiIndex);
+    if (pWorld == nullptr)
+    {
+      return xiiStatus("The specified world slot is empty.");
+    }
+    XII_LOCK(pWorld->GetReadMarker());
+    xiiVariantDictionary data;
+    data["id"]          = WorldId(*pWorld);
+    data["name"]        = xiiString(pWorld->GetName());
+    data["objectCount"] = pWorld->GetObjectCount();
+    DescribeSimulation(*pWorld, data);
+    return WriteRuntimeResource(xiiMCPJson::GetString(arguments, "uri"), data, out_result);
+  }
+
+  xiiStatus SceneInspectionPrompt(const xiiMCPCallContext&, const xiiVariantDictionary&, xiiVariantDictionary& out_result)
+  {
+    xiiVariantDictionary text;
+    text["type"] = xiiString("text");
+    text["text"] = xiiString("Inspect a live XII scene. Select a specific target, list its worlds, page through the chosen world's objects, "
+                             "and inspect one object's transforms and reflected components. Report its simulation timing and any unavailable properties.");
+    xiiVariantDictionary message;
+    message["role"]    = xiiString("user");
+    message["content"] = std::move(text);
+    xiiVariantArray messages;
+    messages.PushBack(std::move(message));
+    out_result["messages"] = std::move(messages);
+    return XII_SUCCESS;
+  }
+
   void RegisterRuntimeTools(xiiMCPRegistry& ref_registry)
   {
-    const auto read = xiiMCPPermission::Read;
-    const auto edit = xiiMCPPermission::Edit;
+    const auto read    = xiiMCPPermission::Read;
+    const auto edit    = xiiMCPPermission::Edit;
     const auto execute = xiiMCPPermission::Execute;
     ref_registry.RegisterTool("runtime.worlds", "List live worlds and simulation timing. World IDs are valid for the lifetime of each world.", R"({"type":"object","additionalProperties":false})", read, &ListWorlds).IgnoreResult();
     ref_registry.RegisterTool("runtime.objects", "List live game objects using a bounded page and optional filters. Object IDs belong to the specified world.", R"({"type":"object","required":["world"],"properties":{"world":{"type":"string"},"name":{"type":"string"},"parent":{"type":"string"},"componentType":{"type":"string"},"offset":{"type":"integer","minimum":0},"limit":{"type":"integer","minimum":1,"maximum":128,"default":32}}})", read, &ListObjects).IgnoreResult();
@@ -442,6 +514,22 @@ namespace
     ref_registry.RegisterTool("runtime.simulation", "Set simulation enabled, clock pause, or simulation speed for a live world and return its current timing.", R"({"type":"object","required":["world"],"properties":{"world":{"type":"string"},"enabled":{"type":"boolean"},"paused":{"type":"boolean"},"speed":{"type":"number","minimum":0,"maximum":16}}})", execute, &SetSimulation).IgnoreResult();
     ref_registry.RegisterTool("runtime.resources", "Inspect matching resources from a bounded live resource snapshot, including async content state and memory use.", R"({"type":"object","required":["type"],"properties":{"type":{"type":"string"}}})", read, &ListResources).IgnoreResult();
     ref_registry.RegisterTool("runtime.status", "Report application frame time and live world registry size.", R"({"type":"object","additionalProperties":false})", read, &InspectRuntime).IgnoreResult();
+
+    xiiVariantDictionary status;
+    status["name"]        = xiiString("Runtime status");
+    status["description"] = xiiString("Application name, frame time and current world registry size.");
+    status["mimeType"]    = xiiString("application/json");
+    ref_registry.Register(xiiMCPCapability::Resource, "xii://runtime/status", std::move(status), read, &ReadRuntimeStatus).IgnoreResult();
+
+    xiiVariantDictionary worldSlot;
+    worldSlot["name"]        = xiiString("Live world slot");
+    worldSlot["description"] = xiiString("Snapshot of the world currently occupying a numeric registry slot. Use its returned ID for operations.");
+    worldSlot["mimeType"]    = xiiString("application/json");
+    ref_registry.Register(xiiMCPCapability::ResourceTemplate, "xii://runtime/worlds/{index}", std::move(worldSlot), read, &ReadWorldSlot).IgnoreResult();
+
+    xiiVariantDictionary prompt;
+    prompt["description"] = xiiString("Walk through inspection of a live world, its object hierarchy and reflected components.");
+    ref_registry.Register(xiiMCPCapability::Prompt, "runtime.inspect_scene", std::move(prompt), read, &SceneInspectionPrompt).IgnoreResult();
   }
 
   xiiMCPRuntime* s_pRuntime = nullptr;
@@ -456,22 +544,26 @@ namespace
 
   void StartRuntime()
   {
-    auto* pApplication = xiiGameApplicationBase::GetGameApplicationBaseInstance();
+    auto*       pApplication = xiiGameApplicationBase::GetGameApplicationBaseInstance();
     const auto* pCommandLine = xiiCommandLineUtils::GetGlobalInstance();
-    const auto sListen = pCommandLine->GetStringOption("-MCPListen");
+    const auto  sListen      = pCommandLine->GetStringOption("-MCPListen");
     if (pApplication == nullptr || (!pCommandLine->GetBoolOption("-MCP") && sListen.IsEmpty()))
     {
       return;
     }
 
     xiiMCPRuntimeConfiguration configuration;
-    configuration.m_sApplication = pApplication->GetApplicationName();
+    configuration.m_sApplication   = pApplication->GetApplicationName();
     configuration.m_sLocalEndpoint = pCommandLine->GetStringOption("-MCPLocal");
-    configuration.m_bNative = pCommandLine->GetBoolOption("-MCP");
-    configuration.m_bAdvertise = !pCommandLine->GetBoolOption("-MCPNoDiscovery");
+    configuration.m_bNative        = pCommandLine->GetBoolOption("-MCP");
+    configuration.m_bAdvertise     = !pCommandLine->GetBoolOption("-MCPNoDiscovery");
     if (pCommandLine->GetBoolOption("-MCPAllowEdit"))
     {
       configuration.m_uiPermissions |= static_cast<xiiUInt8>(xiiMCPPermission::Edit);
+    }
+    if (pCommandLine->GetBoolOption("-MCPAllowCapture"))
+    {
+      configuration.m_uiPermissions |= static_cast<xiiUInt8>(xiiMCPPermission::Capture);
     }
     if (pCommandLine->GetBoolOption("-MCPAllowExecute"))
     {
@@ -482,11 +574,11 @@ namespace
       xiiLog::Error("Invalid -MCPListen endpoint.");
       return;
     }
-    configuration.m_Http.m_sBearerToken = xiiEnvironmentVariableUtils::GetValueString("XII_MCP_TOKEN");
+    configuration.m_Http.m_sBearerToken  = xiiEnvironmentVariableUtils::GetValueString("XII_MCP_TOKEN");
     configuration.m_Http.m_uiPermissions = configuration.m_uiPermissions;
 
     xiiUniquePtr<xiiMCPRuntime> pRuntime = XII_DEFAULT_NEW(xiiMCPRuntime);
-    const auto status = pRuntime->Start(configuration);
+    const auto                  status   = pRuntime->Start(configuration);
     if (status.Failed())
     {
       xiiLog::Error("Could not start MCP: {}", status.GetMessageString());
@@ -512,12 +604,16 @@ namespace
 
 xiiMCPRuntime::xiiMCPRuntime() :
   m_Protocol(m_Registry),
-  m_Http(m_Protocol)
+  m_Http(m_Protocol),
+  m_pDiagnostics(XII_DEFAULT_NEW(xiiMCPRuntimeDiagnostics, m_Registry))
 {
   RegisterRuntimeTools(m_Registry);
 }
 
-xiiMCPRuntime::~xiiMCPRuntime() = default;
+xiiMCPRuntime::~xiiMCPRuntime()
+{
+  Stop();
+}
 
 xiiStatus xiiMCPRuntime::Start(const xiiMCPRuntimeConfiguration& configuration)
 {
@@ -545,6 +641,7 @@ xiiStatus xiiMCPRuntime::Start(const xiiMCPRuntimeConfiguration& configuration)
 
 void xiiMCPRuntime::Update()
 {
+  m_pDiagnostics->Update();
   m_Bridge.Update();
   m_Http.Update();
 }
@@ -558,7 +655,7 @@ void xiiMCPRuntime::Stop()
 XII_BEGIN_SUBSYSTEM_DECLARATION(MCPPlugin, MCPRuntime)
 
   BEGIN_SUBSYSTEM_DEPENDENCIES
-  "Core"
+    "Core"
   END_SUBSYSTEM_DEPENDENCIES
 
   ON_CORESYSTEMS_STARTUP

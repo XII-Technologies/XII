@@ -4,8 +4,8 @@
 
 #include <Foundation/Reflection/ReflectionUtils.h>
 #include <Foundation/Utilities/ConversionUtils.h>
-#include <MCPPlugin/Reflection.h>
 #include <MCPPlugin/Json.h>
+#include <MCPPlugin/Reflection.h>
 
 #include <cmath>
 #include <limits>
@@ -15,14 +15,15 @@ namespace
   bool IsExposedMember(const xiiAbstractProperty& property)
   {
     return property.GetCategory() == xiiPropertyCategory::Member && !property.GetFlags().IsAnySet(xiiPropertyFlags::Pointer | xiiPropertyFlags::PointerOwner) &&
-           property.GetAttributeByType<xiiHiddenAttribute>() == nullptr && property.GetAttributeByType<xiiTemporaryAttribute>() == nullptr;
+      property.GetAttributeByType<xiiHiddenAttribute>() == nullptr && property.GetAttributeByType<xiiTemporaryAttribute>() == nullptr;
   }
 
   const char* GetJsonType(xiiVariantType::Enum type)
   {
     switch (type)
     {
-      case xiiVariantType::Bool: return "boolean";
+      case xiiVariantType::Bool:
+        return "boolean";
       case xiiVariantType::Int8:
       case xiiVariantType::UInt8:
       case xiiVariantType::Int16:
@@ -30,22 +31,27 @@ namespace
       case xiiVariantType::Int32:
       case xiiVariantType::UInt32:
       case xiiVariantType::Int64:
-      case xiiVariantType::UInt64: return "integer";
+      case xiiVariantType::UInt64:
+        return "integer";
       case xiiVariantType::Float:
       case xiiVariantType::Double:
       case xiiVariantType::Time:
       case xiiVariantType::Angle:
-      case xiiVariantType::Angled: return "number";
+      case xiiVariantType::Angled:
+        return "number";
       case xiiVariantType::String:
       case xiiVariantType::StringView:
       case xiiVariantType::Uuid:
-      case xiiVariantType::HashedString: return "string";
+      case xiiVariantType::HashedString:
+        return "string";
       case xiiVariantType::Vector2:
       case xiiVariantType::Vector3:
       case xiiVariantType::Vector4:
       case xiiVariantType::Quaternion:
-      case xiiVariantType::Color: return "array";
-      default: return nullptr;
+      case xiiVariantType::Color:
+        return "array";
+      default:
+        return nullptr;
     }
   }
 
@@ -62,7 +68,7 @@ namespace
   xiiVariantDictionary DescribeType(const xiiRTTI& type, xiiUInt32 uiDepth)
   {
     xiiVariantDictionary result;
-    result["type"] = xiiString("object");
+    result["type"]  = xiiString("object");
     result["title"] = xiiString(type.GetTypeName());
     xiiVariantDictionary members;
     if (uiDepth != 0)
@@ -75,8 +81,8 @@ namespace
         {
           continue;
         }
-        const auto* pType = pProperty->GetSpecificType();
-        const auto flags = pProperty->GetFlags();
+        const auto*          pType = pProperty->GetSpecificType();
+        const auto           flags = pProperty->GetFlags();
         xiiVariantDictionary schema;
         if (flags.IsAnySet(xiiPropertyFlags::IsEnum | xiiPropertyFlags::Bitflags))
         {
@@ -102,7 +108,7 @@ namespace
         {
           continue;
         }
-        schema["readOnly"] = flags.IsSet(xiiPropertyFlags::ReadOnly);
+        schema["readOnly"]                    = flags.IsSet(xiiPropertyFlags::ReadOnly);
         members[pProperty->GetPropertyName()] = std::move(schema);
       }
     }
@@ -127,11 +133,11 @@ namespace
         continue;
       }
       const auto* pMember = static_cast<const xiiAbstractMemberProperty*>(pProperty);
-      const auto flags = pProperty->GetFlags();
-      xiiVariant propertyValue;
+      const auto  flags   = pProperty->GetFlags();
+      xiiVariant  propertyValue;
       if (flags.IsAnySet(xiiPropertyFlags::IsEnum | xiiPropertyFlags::Bitflags))
       {
-        const auto value = xiiReflectionUtils::GetMemberPropertyValue(pMember, pObject);
+        const auto       value = xiiReflectionUtils::GetMemberPropertyValue(pMember, pObject);
         xiiStringBuilder sValue;
         if (xiiReflectionUtils::EnumerationToString(pProperty->GetSpecificType(), value.ConvertTo<xiiInt64>(), sValue))
         {
@@ -197,31 +203,31 @@ bool xiiMCPReflection::ConvertValue(const xiiVariant& value, xiiVariant& out_jso
     case xiiVariantType::Vector2:
     {
       const auto& v = value.Get<xiiVec2>();
-      out_json = Components({v.x, v.y});
+      out_json      = Components({v.x, v.y});
       return true;
     }
     case xiiVariantType::Vector3:
     {
       const auto& v = value.Get<xiiVec3>();
-      out_json = Components({v.x, v.y, v.z});
+      out_json      = Components({v.x, v.y, v.z});
       return true;
     }
     case xiiVariantType::Vector4:
     {
       const auto& v = value.Get<xiiVec4>();
-      out_json = Components({v.x, v.y, v.z, v.w});
+      out_json      = Components({v.x, v.y, v.z, v.w});
       return true;
     }
     case xiiVariantType::Quaternion:
     {
       const auto& q = value.Get<xiiQuat>();
-      out_json = Components({q.x, q.y, q.z, q.w});
+      out_json      = Components({q.x, q.y, q.z, q.w});
       return true;
     }
     case xiiVariantType::Color:
     {
       const auto& color = value.Get<xiiColor>();
-      out_json = Components({color.r, color.g, color.b, color.a});
+      out_json          = Components({color.r, color.g, color.b, color.a});
       return true;
     }
     case xiiVariantType::Uuid:
@@ -254,6 +260,26 @@ bool xiiMCPReflection::ConvertValue(const xiiVariant& value, xiiVariant& out_jso
   }
 }
 
+bool xiiMCPReflection::ReadFloatArray(const xiiVariant& json, xiiArrayPtr<float> out_values)
+{
+  if (!json.IsA<xiiVariantArray>() || json.Get<xiiVariantArray>().GetCount() != out_values.GetCount())
+  {
+    return false;
+  }
+
+  const auto& elements = json.Get<xiiVariantArray>();
+  for (xiiUInt32 uiIndex = 0; uiIndex < elements.GetCount(); ++uiIndex)
+  {
+    const auto& value = elements[uiIndex];
+    if (!value.IsNumber() || value.IsA<bool>() || !xiiMath::IsInRange(value.ConvertTo<double>(), -1.0e8, 1.0e8))
+    {
+      return false;
+    }
+    out_values[uiIndex] = value.ConvertTo<float>();
+  }
+  return true;
+}
+
 bool xiiMCPReflection::ConvertArgument(const xiiAbstractProperty& property, const xiiVariant& json, xiiVariant& out_value)
 {
   if (!IsExposedMember(property) || property.GetFlags().IsSet(xiiPropertyFlags::ReadOnly))
@@ -275,14 +301,22 @@ bool xiiMCPReflection::ConvertArgument(const xiiAbstractProperty& property, cons
   const auto type = property.GetSpecificType()->GetVariantType();
   switch (type)
   {
-    case xiiVariantType::Int8: return ConvertInteger<xiiInt8>(json, out_value);
-    case xiiVariantType::UInt8: return ConvertInteger<xiiUInt8>(json, out_value);
-    case xiiVariantType::Int16: return ConvertInteger<xiiInt16>(json, out_value);
-    case xiiVariantType::UInt16: return ConvertInteger<xiiUInt16>(json, out_value);
-    case xiiVariantType::Int32: return ConvertInteger<xiiInt32>(json, out_value);
-    case xiiVariantType::UInt32: return ConvertInteger<xiiUInt32>(json, out_value);
-    case xiiVariantType::Int64: return ConvertInteger<xiiInt64>(json, out_value);
-    case xiiVariantType::UInt64: return ConvertInteger<xiiUInt64>(json, out_value);
+    case xiiVariantType::Int8:
+      return ConvertInteger<xiiInt8>(json, out_value);
+    case xiiVariantType::UInt8:
+      return ConvertInteger<xiiUInt8>(json, out_value);
+    case xiiVariantType::Int16:
+      return ConvertInteger<xiiInt16>(json, out_value);
+    case xiiVariantType::UInt16:
+      return ConvertInteger<xiiUInt16>(json, out_value);
+    case xiiVariantType::Int32:
+      return ConvertInteger<xiiInt32>(json, out_value);
+    case xiiVariantType::UInt32:
+      return ConvertInteger<xiiUInt32>(json, out_value);
+    case xiiVariantType::Int64:
+      return ConvertInteger<xiiInt64>(json, out_value);
+    case xiiVariantType::UInt64:
+      return ConvertInteger<xiiUInt64>(json, out_value);
     case xiiVariantType::Float:
     case xiiVariantType::Double:
       if (!json.IsNumber() || json.IsA<bool>() || !std::isfinite(json.ConvertTo<double>()) ||
@@ -300,6 +334,45 @@ bool xiiMCPReflection::ConvertArgument(const xiiAbstractProperty& property, cons
       }
       out_value = json;
       return true;
+    case xiiVariantType::Vector2:
+    case xiiVariantType::Vector3:
+    case xiiVariantType::Vector4:
+    case xiiVariantType::Color:
+    case xiiVariantType::Quaternion:
+    {
+      float           fValues[4] = {};
+      const xiiUInt32 uiCount    = type == xiiVariantType::Vector2 ? 2 : type == xiiVariantType::Vector3 ? 3 :
+                                                                                                           4;
+      if (!ReadFloatArray(json, xiiArrayPtr<float>(fValues, uiCount)))
+      {
+        return false;
+      }
+      switch (type)
+      {
+        case xiiVariantType::Vector2:
+          out_value = xiiVec2(fValues[0], fValues[1]);
+          return true;
+        case xiiVariantType::Vector3:
+          out_value = xiiVec3(fValues[0], fValues[1], fValues[2]);
+          return true;
+        case xiiVariantType::Vector4:
+          out_value = xiiVec4(fValues[0], fValues[1], fValues[2], fValues[3]);
+          return true;
+        case xiiVariantType::Color:
+          out_value = xiiColor(fValues[0], fValues[1], fValues[2], fValues[3]);
+          return true;
+        default:
+        {
+          const auto qRotation = xiiQuat::MakeFromElements(fValues[0], fValues[1], fValues[2], fValues[3]);
+          if (!qRotation.IsValid())
+          {
+            return false;
+          }
+          out_value = qRotation;
+          return true;
+        }
+      }
+    }
     default:
       return false;
   }

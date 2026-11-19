@@ -9,3 +9,8 @@ target_link_libraries(${PROJECT_NAME}
   PUBLIC Foundation
   PRIVATE Core
 )
+
+if(TARGET GraphicsCore AND TARGET GraphicsFoundation)
+  target_link_libraries(${PROJECT_NAME} PRIVATE GraphicsCore GraphicsFoundation)
+  target_compile_definitions(${PROJECT_NAME} PRIVATE XII_MCP_HAS_RENDERING)
+endif()
