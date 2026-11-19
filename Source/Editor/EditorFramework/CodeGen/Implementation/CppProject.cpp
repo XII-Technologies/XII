@@ -20,6 +20,8 @@
 #include <ToolsFoundation/Application/ApplicationServices.h>
 #include <ToolsFoundation/Project/ToolsProject.h>
 
+#include <algorithm>
+
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
 #  include <Shlobj.h>
 #endif
@@ -598,7 +600,7 @@ xiiResult xiiCppProject::CheckCMakeCache(const xiiCppSettings& cfg)
     const xiiString                  sConfigurations = ReadCacheValue("CMAKE_CONFIGURATION_TYPES");
     xiiHybridArray<xiiStringView, 4> configurations;
     sConfigurations.Split(false, configurations, ";");
-    if (!configurations.Contains(BUILDSYSTEM_BUILDTYPE))
+    if (std::ranges::find(configurations, xiiStringView(BUILDSYSTEM_BUILDTYPE)) == std::ranges::end(configurations))
     {
       return XII_FAILURE;
     }
