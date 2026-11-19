@@ -109,6 +109,31 @@ namespace xiiConversionUtils
     return XII_FAILURE;
   }
 
+  xiiResult StringToUInt64Strict(xiiStringView sText, xiiUInt64& out_uiResult)
+  {
+    if (sText.IsEmpty())
+    {
+      return XII_FAILURE;
+    }
+
+    xiiUInt64 uiValue = 0;
+    for (const char* pDigit = sText.GetStartPointer(); pDigit != sText.GetEndPointer(); ++pDigit)
+    {
+      if (*pDigit < '0' || *pDigit > '9')
+      {
+        return XII_FAILURE;
+      }
+      const auto uiDigit = static_cast<xiiUInt64>(*pDigit - '0');
+      if (uiValue > (xiiMath::MaxValue<xiiUInt64>() - uiDigit) / 10U)
+      {
+        return XII_FAILURE;
+      }
+      uiValue = uiValue * 10U + uiDigit;
+    }
+    out_uiResult = uiValue;
+    return XII_SUCCESS;
+  }
+
   xiiResult StringToInt64(xiiStringView sText, xiiInt64& out_iRes, const char** out_pLastParsePosition)
   {
     if (sText.IsEmpty())
