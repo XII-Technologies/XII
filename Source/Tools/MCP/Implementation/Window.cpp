@@ -20,6 +20,7 @@
 #  include <QGridLayout>
 #  include <QHBoxLayout>
 #  include <QHeaderView>
+#  include <QIcon>
 #  include <QLabel>
 #  include <QLineEdit>
 #  include <QListWidget>
@@ -108,6 +109,7 @@ int RunMCPWindow(const xiiMCPGatewayConfiguration& configuration)
   char*        pArguments[]    = {szApplication, nullptr};
   QApplication application(iArgumentCount, pArguments);
   QApplication::setStyle(new xiiQtDarkEditorStyle());
+  QApplication::setWindowIcon(QIcon(QStringLiteral(":/GuiFoundation/Icons/MCP.svg")));
   QSettings                  settings("XII", "xiiMCP");
   auto*                      pSettingsPanel = new xiiMCPSettingsPanel(configuration, settings, configuration.m_bRestorePreferences);
   xiiMCPGatewayConfiguration current        = configuration;
