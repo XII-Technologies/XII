@@ -63,7 +63,7 @@ bool xiiMCPCallContext::Allows(xiiMCPPermission permission) const
 
 bool xiiMCPCallContext::HasExpired() const
 {
-  return m_Deadline.IsPositive() && xiiTime::Now() >= m_Deadline;
+  return (m_pCanceled != nullptr && *m_pCanceled) || (m_Deadline.IsPositive() && xiiTime::Now() >= m_Deadline);
 }
 
 xiiResult xiiMCPRegistry::Register(xiiMCPCapability kind, xiiStringView sKey, xiiVariantDictionary descriptor, xiiMCPPermission permission, Callback callback)

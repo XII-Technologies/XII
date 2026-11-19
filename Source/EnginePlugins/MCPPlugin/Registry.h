@@ -5,6 +5,7 @@
 #include <MCPPlugin/MCPPluginDLL.h>
 
 #include <Foundation/Containers/Map.h>
+#include <Foundation/Threading/AtomicInteger.h>
 #include <Foundation/Time/Time.h>
 #include <Foundation/Types/Delegate.h>
 #include <Foundation/Types/Status.h>
@@ -30,9 +31,10 @@ enum class xiiMCPPermission : xiiUInt8
 
 struct XII_MCPPLUGIN_DLL xiiMCPCallContext
 {
-  xiiUInt8      m_uiPermissions = static_cast<xiiUInt8>(xiiMCPPermission::Read);
-  xiiTime       m_Deadline;
-  xiiStringView m_sIdentity;
+  xiiUInt8             m_uiPermissions = static_cast<xiiUInt8>(xiiMCPPermission::Read);
+  xiiTime              m_Deadline;
+  const xiiAtomicBool* m_pCanceled = nullptr; ///< Borrowed for the duration of local invocation only.
+  xiiStringView        m_sIdentity;
 
   [[nodiscard]] bool Allows(xiiMCPPermission permission) const;
   [[nodiscard]] bool HasExpired() const;
