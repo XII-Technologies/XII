@@ -16,11 +16,18 @@ public:
   ~xiiMCPGatewayThread() override;
 
   bool Submit(xiiStringView sRequest);
+  bool SetTargetEnabled(xiiStringView sEndpoint, bool bEnabled);
   bool ApplyConfiguration(const xiiMCPGatewayConfiguration& configuration);
-  void CancelQueued();
+  void CancelRequests();
   void Read(xiiVariantDictionary& out_snapshot, xiiDeque<xiiString>& out_replies);
 
 private:
+  struct TargetChange
+  {
+    xiiString m_sEndpoint;
+    bool      m_bEnabled = false;
+  };
+
   xiiUInt32 Run() override;
 
   xiiMCPGatewayConfiguration               m_Configuration;
@@ -28,7 +35,9 @@ private:
   xiiVariantDictionary                     m_Snapshot;
   xiiDeque<xiiString>                      m_Requests;
   xiiDeque<xiiString>                      m_Replies;
+  xiiDeque<TargetChange>                   m_TargetChanges;
   xiiUniquePtr<xiiMCPGatewayConfiguration> m_pPendingConfiguration;
   xiiAtomicBool                            m_bStop     = false;
+  xiiAtomicBool                            m_bCanceled = false;
   bool                                     m_bApplying = false;
 };

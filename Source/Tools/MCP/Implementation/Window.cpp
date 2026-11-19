@@ -16,17 +16,21 @@
 #  include <QCheckBox>
 #  include <QClipboard>
 #  include <QComboBox>
-#  include <QFormLayout>
+#  include <QFrame>
+#  include <QGridLayout>
+#  include <QHBoxLayout>
 #  include <QHeaderView>
 #  include <QLabel>
 #  include <QLineEdit>
+#  include <QListWidget>
 #  include <QMainWindow>
 #  include <QPlainTextEdit>
 #  include <QPushButton>
 #  include <QScrollArea>
 #  include <QSettings>
 #  include <QSplitter>
-#  include <QTabWidget>
+#  include <QStackedWidget>
+#  include <QStyle>
 #  include <QTableWidget>
 #  include <QTimer>
 #  include <QVBoxLayout>
@@ -43,6 +47,24 @@ namespace
     static const xiiVariantArray Empty;
     const auto*                  pValue = snapshot.GetValue(sName);
     return pValue && pValue->IsA<xiiVariantArray>() ? pValue->Get<xiiVariantArray>() : Empty;
+  }
+
+  QFrame* SummaryCard(const QString& label, QLabel*& out_pValue)
+  {
+    auto* pCard = new QFrame();
+    pCard->setProperty("summaryCard", true);
+    auto* pLayout = new QVBoxLayout(pCard);
+    pLayout->setContentsMargins(14, 12, 14, 12);
+    pLayout->addWidget(new QLabel(label));
+    out_pValue = new QLabel("-");
+    out_pValue->setTextFormat(Qt::PlainText);
+    out_pValue->setWordWrap(true);
+    QFont font = out_pValue->font();
+    font.setPointSize(font.pointSize() + 4);
+    font.setBold(true);
+    out_pValue->setFont(font);
+    pLayout->addWidget(out_pValue);
+    return pCard;
   }
 
   QTableWidget* MakeTable(const QStringList& headings)
@@ -96,18 +118,106 @@ int RunMCPWindow(const xiiMCPGatewayConfiguration& configuration)
   window.setWindowTitle("XII MCP");
   window.resize(1024, 720);
   window.restoreGeometry(settings.value("geometry").toByteArray());
-  auto* pTabs = new QTabWidget(&window);
-  window.setCentralWidget(pTabs);
-  auto* pOverview = new QWidget();
-  auto* pStatus   = new QLabel("Starting gateway...");
-  pStatus->setTextFormat(Qt::PlainText);
-  auto* pOverviewLayout = new QVBoxLayout(pOverview);
-  pOverviewLayout->addWidget(pStatus);
-  pOverviewLayout->addStretch();
-  pTabs->addTab(pOverview, "Overview");
+  auto* pWorkspace       = new QWidget();
+  auto* pWorkspaceLayout = new QHBoxLayout(pWorkspace);
+  pWorkspaceLayout->setContentsMargins(12, 12, 12, 12);
+  pWorkspaceLayout->setSpacing(12);
+  pWorkspace->setStyleSheet("QFrame[summaryCard=\"true\"] { background: palette(base); border: 1px solid palette(mid); border-radius: 5px; }"
+                            "QListWidget::item { padding: 8px; }");
+  auto* pNavigation = new QListWidget();
+  pNavigation->setAccessibleName("MCP workspace navigation");
+  pNavigation->setMinimumWidth(145);
+  pNavigation->setMaximumWidth(185);
+  pNavigation->setUniformItemSizes(true);
+  auto* pContent       = new QWidget();
+  auto* pContentLayout = new QVBoxLayout(pContent);
+  pContentLayout->setContentsMargins(0, 0, 0, 0);
+  auto* pPageTitle = new QLabel();
+  QFont titleFont  = pPageTitle->font();
+  titleFont.setPointSize(titleFont.pointSize() + 7);
+  titleFont.setBold(true);
+  pPageTitle->setFont(titleFont);
+  auto* pPages = new QStackedWidget();
+  pContentLayout->addWidget(pPageTitle);
+  pContentLayout->addWidget(pPages, 1);
+  pWorkspaceLayout->addWidget(pNavigation);
+  pWorkspaceLayout->addWidget(pContent, 1);
+  window.setCentralWidget(pWorkspace);
+  auto addPage = [&](QWidget* pPage, const QString& title, QStyle::StandardPixmap icon) {
+    pPages->addWidget(pPage);
+    return new QListWidgetItem(window.style()->standardIcon(icon), title, pNavigation);
+  };
 
+  auto* pOverview       = new QWidget();
+  auto* pOverviewLayout = new QVBoxLayout(pOverview);
+  pOverviewLayout->setContentsMargins(0, 0, 0, 0);
+  auto*   pMetrics       = new QGridLayout();
+  QLabel* pListenValue   = nullptr;
+  QLabel* pTargetsValue  = nullptr;
+  QLabel* pToolsValue    = nullptr;
+  QLabel* pSessionsValue = nullptr;
+  pMetrics->addWidget(SummaryCard("HTTP listener", pListenValue), 0, 0, 1, 3);
+  pMetrics->addWidget(SummaryCard("Connected applications", pTargetsValue), 1, 0);
+  pMetrics->addWidget(SummaryCard("Available tools", pToolsValue), 1, 1);
+  pMetrics->addWidget(SummaryCard("HTTP sessions", pSessionsValue), 1, 2);
+  pOverviewLayout->addLayout(pMetrics);
+  auto* pStatus = new QLabel("Starting gateway...");
+  pStatus->setTextFormat(Qt::PlainText);
+  pStatus->setWordWrap(true);
+  pOverviewLayout->addWidget(pStatus);
+  auto* pOverviewActions = new QHBoxLayout();
+  auto* pGoSettings      = new QPushButton("Manage listener");
+  auto* pGoClients       = new QPushButton("Connect a client");
+  pOverviewActions->addWidget(pGoSettings);
+  pOverviewActions->addWidget(pGoClients);
+  pOverviewActions->addStretch();
+  pOverviewLayout->addLayout(pOverviewActions);
+  auto* pRecent = MakeTable({"Capability", "Target", "Elapsed (ms)", "Result"});
+  pOverviewLayout->addWidget(new QLabel("Recent target operations"));
+  pOverviewLayout->addWidget(pRecent, 1);
+  addPage(pOverview, "Overview", QStyle::SP_ComputerIcon);
+
+  auto* pInstancePage   = new QWidget();
+  auto* pInstanceLayout = new QVBoxLayout(pInstancePage);
+  pInstanceLayout->setContentsMargins(0, 0, 0, 0);
+  auto* pInstanceActions = new QHBoxLayout();
+  auto* pManualTarget    = new QLineEdit();
+  pManualTarget->setPlaceholderText("Local endpoint name");
+  pManualTarget->setAccessibleName("Local endpoint name");
+  auto* pConnectTarget    = new QPushButton("Connect");
+  auto* pDisconnectTarget = new QPushButton("Disconnect selected");
+  auto* pUseTarget        = new QPushButton("Browse selected");
+  pInstanceActions->addWidget(pManualTarget, 1);
+  pInstanceActions->addWidget(pConnectTarget);
+  pInstanceActions->addWidget(pDisconnectTarget);
+  pInstanceActions->addWidget(pUseTarget);
+  auto* pTargetStatus = new QLabel("Discovered applications appear here when ready.");
+  pTargetStatus->setTextFormat(Qt::PlainText);
   auto* pInstances = MakeTable({"Application", "Local endpoint", "Process ID", "Instance", "Connected", "Capabilities", "Status"});
-  pTabs->addTab(pInstances, "Instances");
+  pInstances->setSelectionMode(QAbstractItemView::SingleSelection);
+  pInstanceLayout->addLayout(pInstanceActions);
+  pInstanceLayout->addWidget(pTargetStatus);
+  pInstanceLayout->addWidget(pInstances, 1);
+  addPage(pInstancePage, "Instances", QStyle::SP_DriveNetIcon);
+  auto submitTarget = [&](const QString& endpoint, bool bEnabled) {
+    const auto name = endpoint.trimmed().toUtf8();
+    if (name.isEmpty())
+    {
+      pTargetStatus->setText("Enter or select a Local endpoint.");
+      return;
+    }
+    if (!gateway.SetTargetEnabled(name.constData(), bEnabled))
+    {
+      pTargetStatus->setText("The gateway is busy. Retry in a moment.");
+    }
+  };
+  QObject::connect(pConnectTarget, &QPushButton::clicked, [&] { submitTarget(pManualTarget->text(), true); });
+  QObject::connect(pDisconnectTarget, &QPushButton::clicked, [&] {
+    if (const auto* pEndpoint = pInstances->item(pInstances->currentRow(), 1))
+    {
+      submitTarget(pEndpoint->text(), false);
+    }
+  });
 
   auto* pCapabilities     = new QWidget();
   auto* pCapabilityLayout = new QVBoxLayout(pCapabilities);
@@ -118,6 +228,7 @@ int RunMCPWindow(const xiiMCPGatewayConfiguration& configuration)
   auto* pCapability = new QComboBox();
   auto* pSchema     = new QPlainTextEdit();
   pSchema->setReadOnly(true);
+  pSchema->setAccessibleName("Capability descriptor");
   pSchema->setPlaceholderText("Capability descriptor");
   auto* pInput = new QPlainTextEdit("{}");
   pInput->setPlaceholderText("JSON arguments");
@@ -133,6 +244,7 @@ int RunMCPWindow(const xiiMCPGatewayConfiguration& configuration)
   auto* pRun    = new QPushButton("Invoke");
   auto* pResult = new QPlainTextEdit();
   pResult->setReadOnly(true);
+  pResult->setAccessibleName("Operation results");
   pResult->setPlaceholderText("Operation result");
   pCapabilityLayout->addWidget(pFilter);
   pCapabilityLayout->addWidget(pKind);
@@ -144,16 +256,46 @@ int RunMCPWindow(const xiiMCPGatewayConfiguration& configuration)
   pEditors->addWidget(pFormScroll);
   pEditors->addWidget(pInput);
   pEditors->addWidget(pResult);
-  pEditors->restoreState(settings.value("capabilitySplitter").toByteArray());
+  pEditors->setChildrenCollapsible(false);
+  pFormScroll->setMinimumWidth(220);
+  pEditors->setStretchFactor(0, 1);
+  pEditors->setStretchFactor(1, 1);
+  pEditors->setStretchFactor(2, 1);
+  pEditors->setStretchFactor(3, 1);
+  const auto splitterState = settings.value("workspaceSplitter").toByteArray();
+  if (splitterState.isEmpty())
+  {
+    pEditors->setSizes({290, 300, 300, 320});
+  }
+  else
+  {
+    pEditors->restoreState(splitterState);
+  }
   pCapabilityLayout->addWidget(pEditors, 1);
   pCapabilityLayout->addWidget(pRun);
-  auto* pCancel = new QPushButton("Cancel queued requests");
+  auto* pCancel = new QPushButton("Cancel requests");
   pCapabilityLayout->addWidget(pCancel);
-  QObject::connect(pCancel, &QPushButton::clicked, [&] { gateway.CancelQueued(); });
-  pTabs->addTab(pCapabilities, "Capabilities");
+  QObject::connect(pCancel, &QPushButton::clicked, [&] {
+    gateway.CancelRequests();
+    pResult->appendPlainText("Queued requests cleared. Cancellation requested for any running call.");
+  });
+  auto* pCapabilityNav = addPage(pCapabilities, "Capabilities", QStyle::SP_FileDialogDetailedView);
+  QObject::connect(pUseTarget, &QPushButton::clicked, [&] {
+    if (const auto* pEndpoint = pInstances->item(pInstances->currentRow(), 1))
+    {
+      pFilter->setText(pEndpoint->data(Qt::UserRole).toString());
+      pNavigation->setCurrentItem(pCapabilityNav);
+    }
+  });
 
-  auto* pActivity = MakeTable({"Capability", "Target", "Elapsed (ms)", "Result"});
-  pTabs->addTab(pActivity, "Activity");
+  auto* pActivityPage   = new QWidget();
+  auto* pActivityLayout = new QVBoxLayout(pActivityPage);
+  auto* pActivityFilter = new QLineEdit();
+  pActivityFilter->setPlaceholderText("Filter by capability, target or result");
+  auto* pActivity = MakeTable({"Capability", "Target", "Elapsed (ms)", "Result", "Details"});
+  pActivityLayout->addWidget(pActivityFilter);
+  pActivityLayout->addWidget(pActivity, 1);
+  addPage(pActivityPage, "Activity", QStyle::SP_FileDialogContentsView);
 
   auto* pConnections      = new QWidget();
   auto* pConnectionLayout = new QVBoxLayout(pConnections);
@@ -166,7 +308,7 @@ int RunMCPWindow(const xiiMCPGatewayConfiguration& configuration)
   pConnectionLayout->addWidget(pClientEndpoint);
   pConnectionLayout->addWidget(pCopy);
   pConnectionLayout->addWidget(pClients, 1);
-  pTabs->addTab(pConnections, "Clients");
+  auto* pClientNav = addPage(pConnections, "Clients", QStyle::SP_MessageBoxInformation);
   QObject::connect(pCopy, &QPushButton::clicked, [&] {
     xiiVariantDictionary server;
     server["type"] = xiiString("http");
@@ -209,7 +351,17 @@ int RunMCPWindow(const xiiMCPGatewayConfiguration& configuration)
   pOptionsLayout->addWidget(pSettingsStatus);
   pOptionsLayout->addWidget(pApply);
   pOptionsLayout->addStretch();
-  pTabs->addTab(pOptions, "Settings");
+  auto* pSettingsNav = addPage(pOptions, "Settings", QStyle::SP_DialogApplyButton);
+  QObject::connect(pNavigation, &QListWidget::currentRowChanged, [&](int iRow) {
+    if (iRow >= 0)
+    {
+      pPages->setCurrentIndex(iRow);
+      pPageTitle->setText(pNavigation->currentItem()->text());
+    }
+  });
+  QObject::connect(pGoSettings, &QPushButton::clicked, [&] { pNavigation->setCurrentItem(pSettingsNav); });
+  QObject::connect(pGoClients, &QPushButton::clicked, [&] { pNavigation->setCurrentItem(pClientNav); });
+  pNavigation->setCurrentRow(0);
 
   xiiMCPGatewayConfiguration pending;
   bool                       bAwaitingConfiguration  = false;
@@ -357,21 +509,75 @@ int RunMCPWindow(const xiiMCPGatewayConfiguration& configuration)
       }
     }
     uiConfigurationRevision = uiRevision;
-    const auto& targets   = GetArray(snapshot, "targets");
-    const auto& activity  = GetArray(snapshot, "activity");
-    const auto& tools     = GetArray(snapshot, "tools");
-    const auto  sEndpoint = xiiMCPJson::GetString(snapshot, "endpoint");
+    const auto& targets     = GetArray(snapshot, "targets");
+    const auto& activity    = GetArray(snapshot, "activity");
+    const auto& tools       = GetArray(snapshot, "tools");
+    const auto  sEndpoint   = xiiMCPJson::GetString(snapshot, "endpoint");
     pClientEndpoint->setText(sEndpoint.IsEmpty() ? QString() : QString("http://%1/mcp").arg(ToQt(sEndpoint)));
     pCopy->setEnabled(!sEndpoint.IsEmpty());
-    pStatus->setText(QString("%1\n%2 known instances | %3 tools | %4 HTTP sessions\n%5")
-                       .arg(sEndpoint.IsEmpty() ? QString("HTTP listener stopped") : pClientEndpoint->text())
-                       .arg(targets.GetCount())
-                       .arg(tools.GetCount())
-                       .arg(snapshot["sessions"].ConvertTo<xiiUInt32>())
-                       .arg(ToQt(sError)));
+    pListenValue->setText(sEndpoint.IsEmpty() ? QString("Stopped") : pClientEndpoint->text());
+    xiiUInt32 uiConnected = 0;
+    for (const auto& entry : targets)
+    {
+      const auto& row        = entry.Get<xiiVariantDictionary>();
+      const auto* pConnected = row.GetValue("connected");
+      uiConnected += pConnected != nullptr && pConnected->IsA<bool>() && pConnected->Get<bool>() ? 1U : 0U;
+    }
+    pTargetsValue->setText(QString::number(uiConnected));
+    pToolsValue->setText(QString::number(tools.GetCount()));
+    pSessionsValue->setText(QString::number(snapshot["sessions"].ConvertTo<xiiUInt32>()));
+    pStatus->setVisible(!sError.IsEmpty() || uiConnected == 0);
+    pStatus->setText(sError.IsEmpty() ? QString("Launch an MCP-enabled XII application or connect to an instance by Local endpoint.") : ToQt(sError));
+    const auto sTargetStatus = xiiMCPJson::GetString(snapshot, "targetStatus");
+    if (!sTargetStatus.IsEmpty())
+    {
+      pTargetStatus->setText(ToQt(sTargetStatus));
+    }
     FillTable(*pClients, GetArray(snapshot, "clients"), {"name", "state", "idleSeconds"});
+    QString selectedEndpoint;
+    if (const auto* pSelected = pInstances->item(pInstances->currentRow(), 1))
+    {
+      selectedEndpoint = pSelected->text();
+    }
     FillTable(*pInstances, targets, {"application", "endpoint", "processId", "instance", "connected", "capabilityCount", "status"});
-    FillTable(*pActivity, activity, {"capability", "target", "elapsedMs", "status"});
+    int iSelectedRow = -1;
+    for (xiiUInt32 uiRow = 0; uiRow < targets.GetCount(); ++uiRow)
+    {
+      const auto& row       = targets[uiRow].Get<xiiVariantDictionary>();
+      auto*       pEndpoint = pInstances->item(static_cast<int>(uiRow), 1);
+      pEndpoint->setData(Qt::UserRole, ToQt(xiiMCPJson::GetString(row, "namespace")));
+      if (pEndpoint->text() == selectedEndpoint)
+      {
+        iSelectedRow = static_cast<int>(uiRow);
+      }
+    }
+    if (pInstances->currentRow() != iSelectedRow)
+    {
+      pInstances->setCurrentCell(iSelectedRow, iSelectedRow < 0 ? -1 : 1);
+    }
+    pDisconnectTarget->setEnabled(iSelectedRow >= 0);
+    pUseTarget->setEnabled(iSelectedRow >= 0 && !pInstances->item(iSelectedRow, 1)->data(Qt::UserRole).toString().isEmpty());
+    xiiVariantArray recent;
+    xiiVariantArray filtered;
+    const auto      filter = pActivityFilter->text();
+    for (xiiUInt32 uiIndex = activity.GetCount(); uiIndex > 0; --uiIndex)
+    {
+      const auto& entry = activity[uiIndex - 1];
+      const auto& row   = entry.Get<xiiVariantDictionary>();
+      if (recent.GetCount() < 8)
+      {
+        recent.PushBack(entry);
+      }
+      if (filter.isEmpty() || ToQt(xiiMCPJson::GetString(row, "capability")).contains(filter, Qt::CaseInsensitive) ||
+          ToQt(xiiMCPJson::GetString(row, "target")).contains(filter, Qt::CaseInsensitive) ||
+          ToQt(xiiMCPJson::GetString(row, "status")).contains(filter, Qt::CaseInsensitive) ||
+          ToQt(xiiMCPJson::GetString(row, "error")).contains(filter, Qt::CaseInsensitive))
+      {
+        filtered.PushBack(entry);
+      }
+    }
+    FillTable(*pRecent, recent, {"capability", "target", "elapsedMs", "status"});
+    FillTable(*pActivity, filtered, {"capability", "target", "elapsedMs", "status", "error"});
 
     constexpr const char* Categories[] = {"tools", "resources", "prompts", "resourceTemplates"};
     constexpr const char* KeyFields[]  = {"name", "uri", "name", "uriTemplate"};
@@ -404,7 +610,7 @@ int RunMCPWindow(const xiiMCPGatewayConfiguration& configuration)
   window.show();
   const int iExitCode = application.exec();
   settings.setValue("geometry", window.saveGeometry());
-  settings.setValue("capabilitySplitter", pEditors->saveState());
+  settings.setValue("workspaceSplitter", pEditors->saveState());
   settings.setValue("filter", pFilter->text());
   return iExitCode;
 }

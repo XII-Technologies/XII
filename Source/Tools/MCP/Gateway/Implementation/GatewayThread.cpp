@@ -15,6 +15,7 @@ xiiMCPGatewayThread::xiiMCPGatewayThread(const xiiMCPGatewayConfiguration& confi
 xiiMCPGatewayThread::~xiiMCPGatewayThread()
 {
   m_bStop = true;
+  CancelRequests();
   Join();
 }
 
@@ -32,7 +33,7 @@ bool xiiMCPGatewayThread::Submit(xiiStringView sRequest)
 bool xiiMCPGatewayThread::ApplyConfiguration(const xiiMCPGatewayConfiguration& configuration)
 {
   XII_LOCK(m_Mutex);
-  if (m_bStop || m_pPendingConfiguration || m_bApplying || !m_Requests.IsEmpty())
+  if (m_bStop || m_pPendingConfiguration || m_bApplying || !m_Requests.IsEmpty() || !m_TargetChanges.IsEmpty())
   {
     return false;
   }
@@ -40,10 +41,22 @@ bool xiiMCPGatewayThread::ApplyConfiguration(const xiiMCPGatewayConfiguration& c
   return true;
 }
 
-void xiiMCPGatewayThread::CancelQueued()
+bool xiiMCPGatewayThread::SetTargetEnabled(xiiStringView sEndpoint, bool bEnabled)
+{
+  XII_LOCK(m_Mutex);
+  if (m_TargetChanges.GetCount() >= 16 || m_bStop || m_pPendingConfiguration || m_bApplying)
+  {
+    return false;
+  }
+  m_TargetChanges.PushBack(TargetChange{xiiString(sEndpoint), bEnabled});
+  return true;
+}
+
+void xiiMCPGatewayThread::CancelRequests()
 {
   XII_LOCK(m_Mutex);
   m_Requests.Clear();
+  m_bCanceled = true;
 }
 
 void xiiMCPGatewayThread::Read(xiiVariantDictionary& out_snapshot, xiiDeque<xiiString>& out_replies)
@@ -58,6 +71,7 @@ xiiUInt32 xiiMCPGatewayThread::Run()
   xiiUniquePtr<xiiMCPGateway> pGateway = XII_DEFAULT_NEW(xiiMCPGateway);
   auto                        status   = pGateway->Start(m_Configuration);
   xiiString                   sConfigurationError;
+  xiiString                   sTargetStatus;
   if (status.Failed())
   {
     sConfigurationError = status.GetMessageString();
@@ -70,6 +84,7 @@ xiiUInt32 xiiMCPGatewayThread::Run()
   xiiUInt64 uiConfigurationRevision = 0;
   while (!m_bStop)
   {
+    TargetChange                             targetChange;
     xiiString                                sRequest;
     xiiUniquePtr<xiiMCPGatewayConfiguration> pPending;
     {
@@ -78,8 +93,14 @@ xiiUInt32 xiiMCPGatewayThread::Run()
       m_bApplying = pPending != nullptr;
       if (!m_Requests.IsEmpty())
       {
-        sRequest = std::move(m_Requests.PeekFront());
+        m_bCanceled = false;
+        sRequest    = std::move(m_Requests.PeekFront());
         m_Requests.PopFront();
+      }
+      if (!m_TargetChanges.IsEmpty())
+      {
+        targetChange = std::move(m_TargetChanges.PeekFront());
+        m_TargetChanges.PopFront();
       }
     }
     if (pPending)
@@ -112,6 +133,18 @@ xiiUInt32 xiiMCPGatewayThread::Run()
     }
     if (pGateway)
     {
+      if (!targetChange.m_sEndpoint.IsEmpty())
+      {
+        const auto targetStatus = pGateway->SetTargetEnabled(targetChange.m_sEndpoint, targetChange.m_bEnabled);
+        if (targetStatus.Failed())
+        {
+          sTargetStatus = targetStatus.GetMessageString();
+        }
+        else
+        {
+          sTargetStatus = targetChange.m_bEnabled ? "Connection requested." : "Target disconnected.";
+        }
+      }
       pGateway->Update();
     }
     if (!sRequest.IsEmpty())
@@ -119,7 +152,7 @@ xiiUInt32 xiiMCPGatewayThread::Run()
       xiiStringBuilder sReply;
       if (pGateway)
       {
-        pGateway->Process(sRequest, session, sReply);
+        pGateway->Process(sRequest, session, sReply, &m_bCanceled);
       }
       else
       {
@@ -138,6 +171,7 @@ xiiUInt32 xiiMCPGatewayThread::Run()
     {
       auto snapshot                     = pGateway ? pGateway->GetSnapshot() : xiiVariantDictionary();
       snapshot["error"]                 = sConfigurationError;
+      snapshot["targetStatus"]          = sTargetStatus;
       snapshot["configurationRevision"] = uiConfigurationRevision;
       XII_LOCK(m_Mutex);
       m_Snapshot   = std::move(snapshot);

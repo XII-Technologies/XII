@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <Foundation/Containers/Set.h>
 #include <MCPPlugin/Bridge.h>
 #include <MCPPlugin/HttpServer.h>
 
@@ -20,7 +21,8 @@ public:
   xiiMCPGateway();
   [[nodiscard]] xiiStatus            Start(const xiiMCPGatewayConfiguration& configuration);
   void                               Update();
-  void                               Process(xiiStringView sRequest, xiiMCPSession& ref_session, xiiStringBuilder& out_sReply);
+  [[nodiscard]] xiiStatus            SetTargetEnabled(xiiStringView sEndpoint, bool bEnabled);
+  void                               Process(xiiStringView sRequest, xiiMCPSession& ref_session, xiiStringBuilder& out_sReply, const xiiAtomicBool* pCanceled = nullptr);
   [[nodiscard]] xiiUInt64            GetCapabilityRevision() const { return m_Registry.GetRevision(); }
   [[nodiscard]] xiiNetworkEndpoint   GetEndpoint() const { return m_Http.GetEndpoint(); }
   [[nodiscard]] xiiVariantDictionary GetSnapshot() const;
@@ -78,6 +80,7 @@ private:
   xiiMCPBridge               m_Bridge;
   xiiMCPHttpServer           m_Http;
   xiiMap<xiiString, Target>  m_Targets;
+  xiiSet<xiiString>          m_BlockedTargets;
   xiiVariantArray            m_Activity;
   xiiTime                    m_NextDiscovery;
   xiiUInt32                  m_uiNextTarget = 0;

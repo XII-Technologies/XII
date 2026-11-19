@@ -93,7 +93,7 @@ xiiStatus xiiMCPGateway::Start(const xiiMCPGatewayConfiguration& configuration)
 
 void xiiMCPGateway::AddTarget(xiiStringView sEndpoint, xiiStringView sInstance, xiiStringView sApplication, bool bExplicit)
 {
-  if (m_Targets.GetCount() >= MaximumTargets || m_Targets.Contains(sEndpoint))
+  if (m_Targets.GetCount() >= MaximumTargets || m_Targets.Contains(sEndpoint) || m_BlockedTargets.Contains(sEndpoint))
   {
     return;
   }
@@ -103,6 +103,37 @@ void xiiMCPGateway::AddTarget(xiiStringView sEndpoint, xiiStringView sInstance, 
   target.m_sApplication      = sApplication;
   target.m_bExplicit         = bExplicit;
   m_Targets.Insert(xiiString(sEndpoint), std::move(target));
+}
+
+xiiStatus xiiMCPGateway::SetTargetEnabled(xiiStringView sEndpoint, bool bEnabled)
+{
+  xiiNetworkLocalEndpoint endpoint;
+  if (xiiNetworkLocalEndpoint::Make(sEndpoint, endpoint).Failed())
+  {
+    return xiiStatus("Enter a valid Local endpoint name.");
+  }
+  if (bEnabled)
+  {
+    if (!m_Targets.Contains(sEndpoint) && m_Targets.GetCount() >= MaximumTargets)
+    {
+      return xiiStatus("The gateway target limit has been reached.");
+    }
+    m_BlockedTargets.Remove(sEndpoint);
+    AddTarget(sEndpoint, {}, {}, true);
+  }
+  else if (auto target = m_Targets.Find(sEndpoint); target.IsValid())
+  {
+    if (m_BlockedTargets.GetCount() == 128)
+    {
+      return xiiStatus("The disconnected target list is full. Reconnect an endpoint first.");
+    }
+    m_Bridge.CancelCall(target.Value().m_PendingDiscovery);
+    RemoveCapabilities(target.Value());
+    m_Bridge.Disconnect(target.Value().m_hConnection);
+    m_Targets.Remove(target);
+    m_BlockedTargets.Insert(xiiString(sEndpoint));
+  }
+  return XII_SUCCESS;
 }
 
 void xiiMCPGateway::RefreshTargets()
@@ -418,13 +449,17 @@ xiiStatus xiiMCPGateway::Forward(xiiStringView sEndpoint, xiiStringView sInstanc
   request["arguments"]          = arguments;
   const auto           deadline = context.m_Deadline.IsPositive() ? context.m_Deadline : start + xiiTime::MakeFromSeconds(5);
   xiiVariantDictionary response;
-  const auto           status = m_Bridge.Call(it.Value().m_hConnection, request, deadline, response);
+  const auto           status = m_Bridge.Call(it.Value().m_hConnection, request, deadline, response, context.m_pCanceled);
 
   xiiVariantDictionary activity;
   activity["capability"] = xiiString(sRemoteKey);
   activity["target"]     = xiiString(sEndpoint);
   activity["elapsedMs"]  = (xiiTime::Now() - start).GetMilliseconds();
   activity["status"]     = xiiString(status.Succeeded() ? "Completed" : "Failed");
+  if (status.Failed())
+  {
+    activity["error"] = xiiString(status.GetMessageString().GetView().GetSubString(0, 256));
+  }
   if (m_Activity.GetCount() >= 100)
   {
     m_Activity.RemoveAtAndCopy(0);
@@ -459,12 +494,13 @@ xiiStatus xiiMCPGateway::Forward(xiiStringView sEndpoint, xiiStringView sInstanc
   return XII_SUCCESS;
 }
 
-void xiiMCPGateway::Process(xiiStringView sRequest, xiiMCPSession& ref_session, xiiStringBuilder& out_sReply)
+void xiiMCPGateway::Process(xiiStringView sRequest, xiiMCPSession& ref_session, xiiStringBuilder& out_sReply, const xiiAtomicBool* pCanceled)
 {
   xiiMCPCallContext context;
   context.m_sIdentity     = "local-client";
   context.m_uiPermissions = m_Configuration.m_uiPermissions;
   context.m_Deadline      = xiiTime::Now() + m_Configuration.m_Http.m_RequestTimeout;
+  context.m_pCanceled     = pCanceled;
   m_Protocol.Process(sRequest, ref_session, context, out_sReply);
 }
 
