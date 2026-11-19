@@ -49,10 +49,10 @@ namespace
   bool ReadPage(const xiiVariantDictionary& arguments, xiiUInt64& out_uiOffset, xiiUInt64& out_uiLimit)
   {
     out_uiOffset = 0;
-    out_uiLimit = 32;
+    out_uiLimit  = 32;
     return (!arguments.Contains("offset") || ReadUnsigned(arguments, "offset", out_uiOffset)) &&
-           (!arguments.Contains("limit") || ReadUnsigned(arguments, "limit", out_uiLimit)) &&
-           out_uiLimit > 0 && out_uiLimit <= 128;
+      (!arguments.Contains("limit") || ReadUnsigned(arguments, "limit", out_uiLimit)) &&
+      out_uiLimit > 0 && out_uiLimit <= 128;
   }
 
   bool IsScene(const xiiDocument& document)
@@ -63,23 +63,23 @@ namespace
 
   void DescribeDocument(const xiiDocument& document, const xiiUuid& session, xiiVariantDictionary& out_result)
   {
-    out_result["id"] = FormatGuid(document.GetGuid());
-    out_result["session"] = FormatGuid(session);
-    out_result["revision"] = document.GetModificationRevision();
+    out_result["id"]         = FormatGuid(document.GetGuid());
+    out_result["session"]    = FormatGuid(session);
+    out_result["revision"]   = document.GetModificationRevision();
     out_result["generation"] = xiiToolsProject::GetProjectGeneration();
-    out_result["type"] = xiiString(document.GetDocumentTypeName());
-    out_result["path"] = xiiString(document.GetDocumentPath());
-    out_result["dirty"] = document.IsModified();
-    out_result["readOnly"] = document.IsReadOnly();
+    out_result["type"]       = xiiString(document.GetDocumentTypeName());
+    out_result["path"]       = xiiString(document.GetDocumentPath());
+    out_result["dirty"]      = document.IsModified();
+    out_result["readOnly"]   = document.IsReadOnly();
   }
 
   xiiVariantDictionary DescribeDocumentObject(const xiiDocumentObject& object)
   {
     xiiVariantDictionary row;
-    row["id"] = FormatGuid(object.GetGuid());
-    row["type"] = xiiString(object.GetType()->GetTypeName());
+    row["id"]             = FormatGuid(object.GetGuid());
+    row["type"]           = xiiString(object.GetType()->GetTypeName());
     row["parentProperty"] = xiiString(object.GetParentProperty());
-    row["childCount"] = object.GetChildren().GetCount();
+    row["childCount"]     = object.GetChildren().GetCount();
     return row;
   }
 
@@ -91,19 +91,20 @@ namespace
 
   xiiStatus ApplySceneCommand(xiiObjectAccessorBase& ref_accessor, const xiiVariantDictionary& operation, xiiVariantDictionary& out_row)
   {
-    const auto sAction = xiiMCPJson::GetString(operation, "action");
+    const auto  sAction = xiiMCPJson::GetString(operation, "action");
     const auto* pObject = FindDocumentObject(ref_accessor, operation, "object");
     if (sAction == "addObject" || sAction == "addComponent" || sAction == "reparent")
     {
-      const auto* pParent = FindDocumentObject(ref_accessor, operation, "parent");
-      const bool bComponent = sAction == "addComponent";
+      const auto* pParent    = FindDocumentObject(ref_accessor, operation, "parent");
+      const bool  bComponent = sAction == "addComponent";
       if ((operation.Contains("parent") && pParent == nullptr) ||
           (pParent != nullptr && !pParent->GetType()->IsDerivedFrom<xiiGameObject>()) ||
           (bComponent && pParent == nullptr))
       {
         return xiiStatus("The destination must be a valid game object. A component requires a parent.");
       }
-      const auto sProperty = pParent == nullptr ? "" : bComponent ? "Components" : "Children";
+      const auto sProperty = pParent == nullptr ? "" : bComponent ? "Components" :
+                                                                    "Children";
       if (sAction == "reparent")
       {
         if (pObject == nullptr || !pObject->GetType()->IsDerivedFrom<xiiGameObject>())
@@ -145,10 +146,10 @@ namespace
     }
     if (sAction == "set")
     {
-      const auto sProperty = xiiMCPJson::GetString(operation, "property");
+      const auto  sProperty = xiiMCPJson::GetString(operation, "property");
       const auto* pProperty = pObject->GetType()->FindPropertyByName(sProperty);
-      const auto* pValue = operation.GetValue("value");
-      xiiVariant converted;
+      const auto* pValue    = operation.GetValue("value");
+      xiiVariant  converted;
       if (pProperty == nullptr || pValue == nullptr || !xiiMCPReflection::ConvertArgument(*pProperty, *pValue, converted))
       {
         return xiiStatus("The property is unavailable, read-only, or the JSON value does not match its supported type.");
@@ -161,7 +162,7 @@ namespace
   const char* AssetState(xiiAssetInfo::TransformState state)
   {
     constexpr const char* Names[] = {"unknown", "upToDate", "needsImport", "needsTransform", "needsThumbnail", "transformError", "missingTransformDependency",
-                                  "missingThumbnailDependency", "missingPackageDependency", "circularDependency"};
+                                     "missingThumbnailDependency", "missingPackageDependency", "circularDependency"};
     static_assert(XII_ARRAY_SIZE(Names) == xiiAssetInfo::TransformState::COUNT);
     return state < xiiAssetInfo::TransformState::COUNT ? Names[state] : "unknown";
   }
@@ -182,11 +183,11 @@ namespace
 
   void DescribeAsset(const xiiAssetInfo& asset, xiiVariantDictionary& out_row)
   {
-    const auto& info = *asset.m_Info;
-    out_row["id"] = FormatGuid(info.m_DocumentID);
-    out_row["path"] = asset.m_Path.IsValid() ? xiiString(asset.m_Path.GetDataDirRelativePath()) : asset.m_Path.GetAbsolutePath();
-    out_row["type"] = xiiString(info.m_sAssetsDocumentTypeName.GetView());
-    out_row["tags"] = info.m_sAssetsDocumentTags;
+    const auto& info          = *asset.m_Info;
+    out_row["id"]             = FormatGuid(info.m_DocumentID);
+    out_row["path"]           = asset.m_Path.IsValid() ? xiiString(asset.m_Path.GetDataDirRelativePath()) : asset.m_Path.GetAbsolutePath();
+    out_row["type"]           = xiiString(info.m_sAssetsDocumentTypeName.GetView());
+    out_row["tags"]           = info.m_sAssetsDocumentTags;
     out_row["transformState"] = xiiString(AssetState(asset.m_TransformState));
   }
 } // namespace
@@ -209,7 +210,7 @@ xiiEditorMCP::~xiiEditorMCP()
 xiiStatus xiiEditorMCP::Start()
 {
   const auto* pOptions = xiiCommandLineUtils::GetGlobalInstance();
-  m_DocumentEvents = xiiDocumentManager::s_Events.AddEventHandler(xiiMakeDelegate(&xiiEditorMCP::DocumentEvent, this));
+  m_DocumentEvents     = xiiDocumentManager::s_Events.AddEventHandler(xiiMakeDelegate(&xiiEditorMCP::DocumentEvent, this));
 
   const auto sProject = pOptions->GetStringOption("-MCPProject");
   if (!sProject.IsEmpty())
@@ -230,10 +231,10 @@ xiiStatus xiiEditorMCP::Start()
     uiPermissions |= static_cast<xiiUInt8>(xiiMCPPermission::Execute);
   }
 
-  const auto read = xiiMCPPermission::Read;
-  const auto edit = xiiMCPPermission::Edit;
-  const auto execute = xiiMCPPermission::Execute;
-  const auto sEmpty = R"({"type":"object","additionalProperties":false})";
+  const auto read      = xiiMCPPermission::Read;
+  const auto edit      = xiiMCPPermission::Edit;
+  const auto execute   = xiiMCPPermission::Execute;
+  const auto sEmpty    = R"({"type":"object","additionalProperties":false})";
   const auto sDocument = R"({"type":"object","required":["document"],"properties":{"document":{"type":"string"},"object":{"type":"string"},"offset":{"type":"integer","minimum":0},"limit":{"type":"integer","minimum":1,"maximum":128}}})";
   const auto sRevision = R"({"type":"object","required":["document","session","revision","generation"],"properties":{"document":{"type":"string"},"session":{"type":"string"},"revision":{"type":"integer"},"generation":{"type":"integer"}}})";
   if (m_Registry.RegisterTool("editor.project", "Describe the current XII project, manifest, active asset profile and engine-process readiness.", sEmpty, read, xiiMakeDelegate(&xiiEditorMCP::Project, this)).Failed() ||
@@ -261,7 +262,7 @@ xiiStatus xiiEditorMCP::Start()
   if (!sListen.IsEmpty())
   {
     xiiMCPHttpConfiguration http;
-    http.m_sBearerToken = xiiEnvironmentVariableUtils::GetValueString("XII_MCP_TOKEN");
+    http.m_sBearerToken  = xiiEnvironmentVariableUtils::GetValueString("XII_MCP_TOKEN");
     http.m_uiPermissions = uiPermissions;
     if (xiiNetworkEndpoint::Parse(sListen, http.m_Endpoint).Failed())
     {
@@ -313,8 +314,8 @@ xiiDocument* xiiEditorMCP::FindDocument(const xiiVariantDictionary& arguments)
     return nullptr;
   }
 
-  const auto id = ReadGuid(arguments, "document");
-  auto* pDocument = id.IsValid() ? xiiDocumentManager::GetDocumentByGuid(id) : nullptr;
+  const auto id        = ReadGuid(arguments, "document");
+  auto*      pDocument = id.IsValid() ? xiiDocumentManager::GetDocumentByGuid(id) : nullptr;
   return pDocument != nullptr && xiiToolsProject::GetSingleton()->IsDocumentInAllowedRoot(pDocument->GetDocumentPath()) ? pDocument : nullptr;
 }
 
@@ -344,21 +345,21 @@ xiiStatus xiiEditorMCP::ValidateEdit(const xiiVariantDictionary& arguments, xiiD
 
 xiiStatus xiiEditorMCP::Project(const xiiMCPCallContext&, const xiiVariantDictionary&, xiiVariantDictionary& out_result)
 {
-  const auto* pProject = xiiToolsProject::GetSingleton();
-  out_result["ready"] = xiiToolsProject::IsProjectOpen();
+  const auto* pProject     = xiiToolsProject::GetSingleton();
+  out_result["ready"]      = xiiToolsProject::IsProjectOpen();
   out_result["generation"] = xiiToolsProject::GetProjectGeneration();
   if (pProject != nullptr)
   {
-    const auto& manifest = pProject->GetManifest();
-    out_result["id"] = FormatGuid(manifest.m_ProjectID);
-    out_result["name"] = manifest.m_sName;
-    out_result["description"] = manifest.m_sDescription;
-    out_result["projectFile"] = pProject->GetProjectFile();
-    out_result["projectDirectory"] = pProject->GetProjectDirectory();
+    const auto& manifest                = pProject->GetManifest();
+    out_result["id"]                    = FormatGuid(manifest.m_ProjectID);
+    out_result["name"]                  = manifest.m_sName;
+    out_result["description"]           = manifest.m_sDescription;
+    out_result["projectFile"]           = pProject->GetProjectFile();
+    out_result["projectDirectory"]      = pProject->GetProjectDirectory();
     out_result["dataDirectoriesConfig"] = manifest.m_sDataDirectories;
-    out_result["runtimePluginsConfig"] = manifest.m_sRuntimePlugins;
-    out_result["assetProfilesConfig"] = manifest.m_sAssetProfiles;
-    out_result["defaultScene"] = manifest.m_sDefaultScene;
+    out_result["runtimePluginsConfig"]  = manifest.m_sRuntimePlugins;
+    out_result["assetProfilesConfig"]   = manifest.m_sAssetProfiles;
+    out_result["defaultScene"]          = manifest.m_sDefaultScene;
   }
   if (const auto* pEngine = xiiEditorEngineProcessConnection::GetSingleton())
   {
@@ -421,17 +422,17 @@ xiiStatus xiiEditorMCP::Scene(const xiiMCPCallContext&, const xiiVariantDictiona
   {
     return xiiStatus("Select an open scene, prefab or layer in the active project.");
   }
-  auto& accessor = *pDocument->GetObjectAccessor();
-  const auto* pObject = arguments.Contains("object") ? FindDocumentObject(accessor, arguments, "object") : accessor.GetObjectManager()->GetRootObject();
-  xiiUInt64 uiOffset = 0, uiLimit = 0;
+  auto&       accessor = *pDocument->GetObjectAccessor();
+  const auto* pObject  = arguments.Contains("object") ? FindDocumentObject(accessor, arguments, "object") : accessor.GetObjectManager()->GetRootObject();
+  xiiUInt64   uiOffset = 0, uiLimit = 0;
   if (pObject == nullptr || !ReadPage(arguments, uiOffset, uiLimit))
   {
     return xiiStatus("The requested object or page is unavailable.");
   }
 
   DescribeDocument(*pDocument, GetDocumentSession(*pDocument), out_result);
-  out_result["object"] = DescribeDocumentObject(*pObject);
-  const auto& children = pObject->GetChildren();
+  out_result["object"]     = DescribeDocumentObject(*pObject);
+  const auto&     children = pObject->GetChildren();
   xiiVariantArray rows;
   if (uiOffset < children.GetCount())
   {
@@ -446,8 +447,8 @@ xiiStatus xiiEditorMCP::Scene(const xiiMCPCallContext&, const xiiVariantDictiona
     }
   }
   out_result["children"] = std::move(rows);
-  const auto& type = *pObject->GetType();
-  out_result["schema"] = xiiMCPReflection::Describe(type);
+  const auto& type       = *pObject->GetType();
+  out_result["schema"]   = xiiMCPReflection::Describe(type);
   xiiHybridArray<const xiiAbstractProperty*, 32> properties;
   type.GetAllProperties(properties);
   xiiVariantDictionary values;
@@ -470,8 +471,8 @@ xiiStatus xiiEditorMCP::Scene(const xiiMCPCallContext&, const xiiVariantDictiona
 
 xiiStatus xiiEditorMCP::EditScene(const xiiMCPCallContext& context, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result)
 {
-  xiiDocument* pDocument = nullptr;
-  const auto validation = ValidateEdit(arguments, pDocument);
+  xiiDocument* pDocument  = nullptr;
+  const auto   validation = ValidateEdit(arguments, pDocument);
   if (validation.Failed())
   {
     return validation;
@@ -499,7 +500,7 @@ xiiStatus xiiEditorMCP::EditScene(const xiiMCPCallContext& context, const xiiVar
       return xiiStatus("The batch expired or contains an invalid operation.");
     }
     xiiVariantDictionary row;
-    const auto status = ApplySceneCommand(accessor, operation.Get<xiiVariantDictionary>(), row);
+    const auto           status = ApplySceneCommand(accessor, operation.Get<xiiVariantDictionary>(), row);
     if (status.Failed())
     {
       return xiiStatus(xiiFmt("Operation {0} failed: {1}", results.GetCount(), status.GetMessageString()));
@@ -519,13 +520,13 @@ xiiStatus xiiEditorMCP::EditScene(const xiiMCPCallContext& context, const xiiVar
 
 xiiStatus xiiEditorMCP::Save(const xiiMCPCallContext&, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result)
 {
-  xiiDocument* pDocument = nullptr;
-  const auto validation = ValidateEdit(arguments, pDocument);
+  xiiDocument* pDocument  = nullptr;
+  const auto   validation = ValidateEdit(arguments, pDocument);
   if (validation.Failed())
   {
     return validation;
   }
-  const bool bDirty = pDocument->IsModified();
+  const bool bDirty  = pDocument->IsModified();
   const bool bQueued = bDirty && pDocument->SaveDocumentAsync({}).IsValid();
   if (bDirty && !bQueued)
   {
@@ -539,18 +540,18 @@ xiiStatus xiiEditorMCP::Save(const xiiMCPCallContext&, const xiiVariantDictionar
 xiiStatus xiiEditorMCP::Assets(const xiiMCPCallContext& context, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result)
 {
   const auto* pCurator = xiiAssetCurator::GetSingleton();
-  xiiUInt64 uiOffset = 0, uiLimit = 0;
+  xiiUInt64   uiOffset = 0, uiLimit = 0;
   if (!xiiToolsProject::IsProjectOpen() || pCurator == nullptr || !pCurator->IsReady() || !ReadPage(arguments, uiOffset, uiLimit))
   {
     return xiiStatus("A ready asset curator and a valid page range are required.");
   }
 
-  const auto sQuery = xiiMCPJson::GetString(arguments, "query");
-  const auto sType = xiiMCPJson::GetString(arguments, "type");
-  const auto sTag = xiiMCPJson::GetString(arguments, "tag");
+  const auto      sQuery = xiiMCPJson::GetString(arguments, "query");
+  const auto      sType  = xiiMCPJson::GetString(arguments, "type");
+  const auto      sTag   = xiiMCPJson::GetString(arguments, "tag");
   xiiVariantArray rows;
-  xiiUInt64 uiMatched = 0;
-  const auto assets = pCurator->GetKnownAssets();
+  xiiUInt64       uiMatched = 0;
+  const auto      assets    = pCurator->GetKnownAssets();
   for (auto it : *assets)
   {
     if (context.HasExpired())
@@ -558,7 +559,7 @@ xiiStatus xiiEditorMCP::Assets(const xiiMCPCallContext& context, const xiiVarian
       return xiiStatus("Asset search exceeded its deadline. Narrow the search or lower the page limit.");
     }
     const auto& asset = *it.Value();
-    const auto& info = *asset.m_Info;
+    const auto& info  = *asset.m_Info;
     if ((!sQuery.IsEmpty() && asset.m_Path.GetAbsolutePath().FindSubString_NoCase(sQuery) == nullptr) ||
         (!sType.IsEmpty() && info.m_sAssetsDocumentTypeName.GetView() != sType) ||
         (!sTag.IsEmpty() && info.m_sAssetsDocumentTags.FindSubString_NoCase(sTag) == nullptr))
@@ -585,12 +586,12 @@ xiiStatus xiiEditorMCP::Assets(const xiiMCPCallContext& context, const xiiVarian
 xiiStatus xiiEditorMCP::Asset(const xiiMCPCallContext&, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result)
 {
   const auto* pCurator = xiiAssetCurator::GetSingleton();
-  const auto id = ReadGuid(arguments, "asset");
+  const auto  id       = ReadGuid(arguments, "asset");
   if (!xiiToolsProject::IsProjectOpen() || pCurator == nullptr || !pCurator->IsReady() || !id.IsValid())
   {
     return xiiStatus("Provide an indexed asset UUID in a ready project.");
   }
-  const auto sId = FormatGuid(id);
+  const auto sId   = FormatGuid(id);
   const auto asset = pCurator->FindSubAsset(sId);
   if (!asset.isValid() || asset->m_pAssetInfo == nullptr)
   {
@@ -600,8 +601,8 @@ xiiStatus xiiEditorMCP::Asset(const xiiMCPCallContext&, const xiiVariantDictiona
   DescribeAsset(info, out_result);
   out_result["transformDependencies"] = BoundedStrings(info.m_Info->m_TransformDependencies);
   out_result["thumbnailDependencies"] = BoundedStrings(info.m_Info->m_ThumbnailDependencies);
-  out_result["packageDependencies"] = BoundedStrings(info.m_Info->m_PackageDependencies);
-  out_result["outputTags"] = BoundedStrings(info.m_Info->m_Outputs);
+  out_result["packageDependencies"]   = BoundedStrings(info.m_Info->m_PackageDependencies);
+  out_result["outputTags"]            = BoundedStrings(info.m_Info->m_Outputs);
   xiiVariantArray logs;
   for (const auto& log : info.m_LogEntries)
   {
@@ -617,9 +618,9 @@ xiiStatus xiiEditorMCP::Asset(const xiiMCPCallContext&, const xiiVariantDictiona
 
 xiiStatus xiiEditorMCP::Transform(const xiiMCPCallContext&, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result)
 {
-  xiiUInt64 uiGeneration = 0;
-  const auto id = ReadGuid(arguments, "asset");
-  auto* pProcessor = xiiAssetProcessor::GetSingleton();
+  xiiUInt64  uiGeneration = 0;
+  const auto id           = ReadGuid(arguments, "asset");
+  auto*      pProcessor   = xiiAssetProcessor::GetSingleton();
   if (!xiiToolsProject::IsProjectOpen() || !ReadUnsigned(arguments, "generation", uiGeneration) || !xiiToolsProject::IsProjectGenerationCurrent(uiGeneration) ||
       xiiToolsProject::GetSingleton()->GetManifest().m_ProjectID != m_AllowedProject || pProcessor == nullptr || !id.IsValid())
   {
@@ -628,7 +629,7 @@ xiiStatus xiiEditorMCP::Transform(const xiiMCPCallContext&, const xiiVariantDict
   const auto status = pProcessor->QueueTransformAssets(xiiArrayPtr<const xiiUuid>(&id, 1));
   if (status.Succeeded())
   {
-    out_result["asset"] = FormatGuid(id);
+    out_result["asset"]  = FormatGuid(id);
     out_result["queued"] = true;
   }
   return status;

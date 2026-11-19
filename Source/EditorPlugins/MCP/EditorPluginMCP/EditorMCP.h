@@ -18,10 +18,10 @@ public:
   [[nodiscard]] xiiStatus Start();
 
 private:
-  void DocumentEvent(const xiiDocumentManager::Event& event);
-  xiiUuid GetDocumentSession(const xiiDocument& document);
+  void         DocumentEvent(const xiiDocumentManager::Event& event);
+  xiiUuid      GetDocumentSession(const xiiDocument& document);
   xiiDocument* FindDocument(const xiiVariantDictionary& arguments);
-  xiiStatus ValidateEdit(const xiiVariantDictionary& arguments, xiiDocument*& out_pDocument);
+  xiiStatus    ValidateEdit(const xiiVariantDictionary& arguments, xiiDocument*& out_pDocument);
 
   xiiStatus Project(const xiiMCPCallContext&, const xiiVariantDictionary&, xiiVariantDictionary& out_result);
   xiiStatus Documents(const xiiMCPCallContext&, const xiiVariantDictionary&, xiiVariantDictionary& out_result);
@@ -32,13 +32,13 @@ private:
   xiiStatus Asset(const xiiMCPCallContext&, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result);
   xiiStatus Transform(const xiiMCPCallContext&, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result);
 
-  xiiMCPRegistry m_Registry;
-  xiiMCPProtocol m_Protocol;
-  xiiMCPBridge m_Bridge;
-  xiiMCPHttpServer m_Http;
-  QTimer m_Timer;
+  xiiMCPRegistry           m_Registry;
+  xiiMCPProtocol           m_Protocol;
+  xiiMCPBridge             m_Bridge;
+  xiiMCPHttpServer         m_Http;
+  QTimer                   m_Timer;
   xiiMap<xiiUuid, xiiUuid> m_DocumentSessions;
-  xiiUuid m_AllowedProject;
-  xiiEventSubscriptionID m_DocumentEvents = 0;
-  bool m_bUpdating = false;
+  xiiUuid                  m_AllowedProject;
+  xiiEventSubscriptionID   m_DocumentEvents = 0;
+  bool                     m_bUpdating      = false;
 };
