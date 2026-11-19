@@ -72,6 +72,8 @@ public:
 
   /// Returns when the document was last marked as modified. Invalid if the document is not modified.
   xiiTime GetModifiedTime() const { return m_ModifiedTime; }
+  /// The current in-memory content revision, including edits made while already dirty.
+  xiiUInt64 GetModificationRevision() const { return m_uiModificationRevision; }
 
   const xiiUuid GetGuid() const { return m_pDocumentInfo ? m_pDocumentInfo->m_DocumentID : xiiUuid(); }
 
