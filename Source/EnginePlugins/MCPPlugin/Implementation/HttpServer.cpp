@@ -20,6 +20,7 @@ namespace
     xiiTcpSocket              m_Socket;
     xiiDynamicArray<xiiUInt8> m_Input;
     xiiStringBuilder          m_sOutput;
+    xiiMCPPendingReply        m_Pending;
     xiiTime                   m_Deadline;
     xiiUInt32                 m_uiSentBytes          = 0;
     xiiUInt32                 m_uiHeaderSearchOffset = 0;
@@ -308,7 +309,7 @@ void xiiMCPHttpState::Dispatch(xiiMCPHttpConnection& ref_connection, const xiiMC
   context.m_sIdentity      = "streamable-http";
   auto&            session = it.IsValid() ? it.Value().m_Protocol : fresh;
   xiiStringBuilder sReply;
-  const auto       replyStatus = m_Protocol.Process(sBody, session, context, sReply, &metadata);
+  const auto       replyStatus = m_Protocol.Process(sBody, session, context, sReply, &metadata, &ref_connection.m_Pending);
 
   if (it.IsValid())
   {
@@ -334,6 +335,9 @@ void xiiMCPHttpState::Dispatch(xiiMCPHttpConnection& ref_connection, const xiiMC
     case xiiMCPReplyStatus::MethodNotFound:
       szStatus = "404 Not Found";
       break;
+    case xiiMCPReplyStatus::Deferred:
+      ref_connection.m_Deadline = context.m_Deadline + xiiTime::MakeFromSeconds(1);
+      return;
     case xiiMCPReplyStatus::Reply:
       break;
   }
@@ -410,7 +414,15 @@ void xiiMCPHttpState::Update()
   {
     auto& connection = m_Connections[uiIndex];
     bool  bKeep      = now < connection.m_Deadline;
-    if (bKeep && connection.m_sOutput.IsEmpty())
+    if (bKeep && connection.m_Pending.IsPending())
+    {
+      xiiStringBuilder sReply;
+      if (connection.m_Pending.Poll(sReply))
+      {
+        Respond(connection, "200 OK", sReply);
+      }
+    }
+    else if (bKeep && connection.m_sOutput.IsEmpty())
     {
       bKeep = Receive(connection);
     }

@@ -66,9 +66,21 @@ bool xiiMCPCallContext::HasExpired() const
   return (m_pCanceled != nullptr && *m_pCanceled) || (m_Deadline.IsPositive() && xiiTime::Now() >= m_Deadline);
 }
 
+xiiMCPInvocation::~xiiMCPInvocation() = default;
+
 xiiResult xiiMCPRegistry::Register(xiiMCPCapability kind, xiiStringView sKey, xiiVariantDictionary descriptor, xiiMCPPermission permission, Callback callback)
 {
-  if (kind >= xiiMCPCapability::Count || !callback.IsValid())
+  return RegisterEntry(kind, sKey, Entry{std::move(descriptor), permission, std::move(callback), {}});
+}
+
+xiiResult xiiMCPRegistry::RegisterDeferred(xiiMCPCapability kind, xiiStringView sKey, xiiVariantDictionary descriptor, xiiMCPPermission permission, DeferredCallback callback)
+{
+  return RegisterEntry(kind, sKey, Entry{std::move(descriptor), permission, {}, std::move(callback)});
+}
+
+xiiResult xiiMCPRegistry::RegisterEntry(xiiMCPCapability kind, xiiStringView sKey, Entry&& entry)
+{
+  if (kind >= xiiMCPCapability::Count || (!entry.m_Callback.IsValid() && !entry.m_Deferred.IsValid()))
   {
     return XII_FAILURE;
   }
@@ -79,8 +91,9 @@ xiiResult xiiMCPRegistry::Register(xiiMCPCapability kind, xiiStringView sKey, xi
     return XII_FAILURE;
   }
 
-  const bool bNamed    = kind == xiiMCPCapability::Tool || kind == xiiMCPCapability::Prompt;
-  const bool bTemplate = kind == xiiMCPCapability::ResourceTemplate;
+  const bool bNamed     = kind == xiiMCPCapability::Tool || kind == xiiMCPCapability::Prompt;
+  const bool bTemplate  = kind == xiiMCPCapability::ResourceTemplate;
+  auto&      descriptor = entry.m_Descriptor;
   if (bNamed ? !IsName(sKey) : (!IsUri(sKey) || xiiMCPJson::GetString(descriptor, "name").IsEmpty()))
   {
     return XII_FAILURE;
@@ -110,7 +123,7 @@ xiiResult xiiMCPRegistry::Register(xiiMCPCapability kind, xiiStringView sKey, xi
   {
     metadata = *pMetadata;
   }
-  metadata["xii/permission"] = static_cast<xiiUInt8>(permission);
+  metadata["xii/permission"] = static_cast<xiiUInt8>(entry.m_Permission);
   descriptor["_meta"]        = metadata;
   xiiStringBuilder sDescriptor;
   if (xiiMCPJson::Write(descriptor, sDescriptor, 8 * 1024).Failed())
@@ -118,7 +131,7 @@ xiiResult xiiMCPRegistry::Register(xiiMCPCapability kind, xiiStringView sKey, xi
     return XII_FAILURE;
   }
 
-  entries.Insert(xiiString(sKey), Entry{std::move(descriptor), permission, std::move(callback)});
+  entries.Insert(xiiString(sKey), std::move(entry));
   ++m_uiRevision;
   return XII_SUCCESS;
 }
@@ -174,7 +187,30 @@ bool xiiMCPRegistry::Contains(xiiMCPCapability kind, xiiStringView sKey, const x
   return Find(kind, sKey, context) != nullptr;
 }
 
-xiiStatus xiiMCPRegistry::Invoke(xiiMCPCapability kind, xiiStringView sKey, const xiiMCPCallContext& context, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result) const
+xiiStatus xiiMCPRegistry::InvokeEntry(const Entry& entry, const xiiMCPCallContext& context, const xiiVariantDictionary& arguments,
+                                      xiiVariantDictionary& out_result, xiiUniquePtr<xiiMCPInvocation>* pPending)
+{
+  if (entry.m_Callback.IsValid())
+  {
+    return entry.m_Callback(context, arguments, out_result);
+  }
+  if (pPending == nullptr)
+  {
+    return xiiStatus("No deferred request slot is available.");
+  }
+
+  xiiUniquePtr<xiiMCPInvocation> invocation;
+  XII_SUCCEED_OR_RETURN(entry.m_Deferred(context, arguments, invocation));
+  if (!invocation)
+  {
+    return xiiStatus("The capability did not start an invocation.");
+  }
+  *pPending = std::move(invocation);
+  return XII_SUCCESS;
+}
+
+xiiStatus xiiMCPRegistry::Invoke(xiiMCPCapability kind, xiiStringView sKey, const xiiMCPCallContext& context, const xiiVariantDictionary& arguments,
+                                 xiiVariantDictionary& out_result, xiiUniquePtr<xiiMCPInvocation>* pPending) const
 {
   if (context.HasExpired())
   {
@@ -187,10 +223,11 @@ xiiStatus xiiMCPRegistry::Invoke(xiiMCPCapability kind, xiiStringView sKey, cons
     return xiiStatus("The capability is unavailable or requires additional permission.");
   }
 
-  return pEntry->m_Callback(context, arguments, out_result);
+  return InvokeEntry(*pEntry, context, arguments, out_result, pPending);
 }
 
-xiiStatus xiiMCPRegistry::ReadResource(xiiStringView sUri, const xiiMCPCallContext& context, xiiVariantDictionary& out_result) const
+xiiStatus xiiMCPRegistry::ReadResource(xiiStringView sUri, const xiiMCPCallContext& context, xiiVariantDictionary& out_result,
+                                       xiiUniquePtr<xiiMCPInvocation>* pPending) const
 {
   if (!IsUri(sUri) || context.HasExpired())
   {
@@ -201,7 +238,7 @@ xiiStatus xiiMCPRegistry::ReadResource(xiiStringView sUri, const xiiMCPCallConte
   arguments["uri"] = xiiString(sUri);
   if (const auto* pEntry = Find(xiiMCPCapability::Resource, sUri, context))
   {
-    return pEntry->m_Callback(context, arguments, out_result);
+    return InvokeEntry(*pEntry, context, arguments, out_result, pPending);
   }
 
   const auto& templates = m_Entries[static_cast<xiiUInt8>(xiiMCPCapability::ResourceTemplate)];
@@ -216,7 +253,7 @@ xiiStatus xiiMCPRegistry::ReadResource(xiiStringView sUri, const xiiMCPCallConte
     if (IsName(sValue) && sVariable != "uri")
     {
       arguments[sVariable] = xiiString(sValue);
-      return it.Value().m_Callback(context, arguments, out_result);
+      return InvokeEntry(it.Value(), context, arguments, out_result, pPending);
     }
   }
   return xiiStatus("The resource is unavailable or requires additional permission.");
