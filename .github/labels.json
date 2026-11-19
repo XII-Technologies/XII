@@ -418,6 +418,15 @@
     ]
   },
   {
+    "name": "Module: MCPPlugin",
+    "color": "4db6ac",
+    "description": "Model Context Protocol runtime and gateway integration.",
+    "paths": [
+      "Source/EnginePlugins/MCPPlugin/**",
+      "Source/Tools/MCP/**"
+    ]
+  },
+  {
     "name": "Module: MujocoPlugin",
     "color": "4db6ac",
     "description": "MuJoCo model-based simulation integration.",
@@ -463,6 +472,14 @@
     "description": "Editor plugin family: Jolt.",
     "paths": [
       "Source/EditorPlugins/Jolt/**"
+    ]
+  },
+  {
+    "name": "Module: EditorPlugins/MCP",
+    "color": "1975d2",
+    "description": "Editor plugin family: MCP.",
+    "paths": [
+      "Source/EditorPlugins/MCP/**"
     ]
   },
   {
