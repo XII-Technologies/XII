@@ -63,7 +63,7 @@ bool xiiMCPCallContext::Allows(xiiMCPPermission permission) const
 
 bool xiiMCPCallContext::HasExpired() const
 {
-  return (m_pCanceled != nullptr && *m_pCanceled) || (m_Deadline.IsPositive() && xiiTime::Now() >= m_Deadline);
+  return m_Deadline.IsPositive() && xiiTime::Now() >= m_Deadline;
 }
 
 xiiMCPInvocation::~xiiMCPInvocation() = default;

@@ -11,6 +11,7 @@ namespace
 {
   constexpr xiiUInt32 MaximumTargets               = 24;
   constexpr xiiUInt32 MaximumCapabilitiesPerTarget = 64;
+  constexpr xiiUInt32 MaximumLocalRequests         = 16;
 
   xiiString MakeTargetNamespace(xiiStringView sInstance)
   {
@@ -52,6 +53,12 @@ namespace
     }
   }
 } // namespace
+
+xiiMCPGateway::~xiiMCPGateway()
+{
+  m_LocalRequests.Clear();
+  m_Http.Stop();
+}
 
 xiiMCPGateway::xiiMCPGateway() :
   m_Protocol(m_Registry),
@@ -398,8 +405,8 @@ bool xiiMCPGateway::PublishCapabilities(Target& ref_target)
     const xiiString sPublicKey = bResource ? xiiString(xiiStringBuilder("xii-mcp://", sPrefix, "/", sRemoteKey)) :
                                              xiiString(xiiStringBuilder(sPrefix, ".", sRemoteKey));
     auto            forward    = [this, sEndpoint = ref_target.m_sEndpoint, sInstance = ref_target.m_sInstance, kind, sRemoteKey, sPublicKey](
-                                   const xiiMCPCallContext& context, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result) {
-      return Forward(sEndpoint, sInstance, kind, sRemoteKey, sPublicKey, context, arguments, out_result);
+                                   const xiiMCPCallContext& context, const xiiVariantDictionary& arguments, xiiUniquePtr<xiiMCPInvocation>& out_invocation) {
+      return BeginForward(sEndpoint, sInstance, kind, sRemoteKey, sPublicKey, context, arguments, out_invocation);
     };
     auto permission = xiiMCPPermission::Read;
     if (const auto* pMetadata = xiiMCPJson::GetObject(descriptor, "_meta"))
@@ -414,7 +421,7 @@ bool xiiMCPGateway::PublishCapabilities(Target& ref_target)
       }
       permission = static_cast<xiiMCPPermission>(uiPermission);
     }
-    if (m_Registry.Register(kind, sPublicKey, std::move(descriptor), permission, std::move(forward)).Failed())
+    if (m_Registry.RegisterDeferred(kind, sPublicKey, std::move(descriptor), permission, std::move(forward)).Failed())
     {
       return false;
     }
@@ -423,8 +430,93 @@ bool xiiMCPGateway::PublishCapabilities(Target& ref_target)
   return true;
 }
 
-xiiStatus xiiMCPGateway::Forward(xiiStringView sEndpoint, xiiStringView sInstance, xiiMCPCapability kind, xiiStringView sRemoteKey, xiiStringView sPublicKey,
-                                 const xiiMCPCallContext& context, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result)
+class xiiMCPGateway::ForwardedInvocation final : public xiiMCPInvocation
+{
+public:
+  ForwardedInvocation(xiiMCPGateway& ref_gateway, xiiNetworkRpcRequest request, xiiMCPCapability kind, xiiStringView sEndpoint, xiiStringView sCapability,
+                      xiiStringView sUri, xiiTime start, xiiTime deadline) :
+    m_Gateway(ref_gateway), m_Request(request), m_Kind(kind), m_sEndpoint(sEndpoint), m_sCapability(sCapability), m_sUri(sUri), m_Start(start), m_Deadline(deadline)
+  {
+  }
+
+  ~ForwardedInvocation() override
+  {
+    if (m_Request.IsValid())
+    {
+      m_Gateway.m_Bridge.CancelCall(m_Request);
+      m_Gateway.RecordForward(m_sEndpoint, m_sCapability, m_Start, "Canceled");
+    }
+  }
+
+  bool Poll(xiiStatus& out_status, xiiVariantDictionary& out_result) override
+  {
+    xiiVariantDictionary response;
+    if (!m_Gateway.m_Bridge.PollCall(m_Request, out_status, response))
+    {
+      if (xiiTime::Now() < m_Deadline)
+      {
+        return false;
+      }
+      m_Gateway.m_Bridge.CancelCall(m_Request);
+      out_status = xiiStatus("The XII target did not respond before the deadline.");
+    }
+    m_Request = {};
+
+    if (out_status.Succeeded())
+    {
+      if (const auto* pValue = xiiMCPJson::GetObject(response, "value"))
+      {
+        out_result = *pValue;
+        RewriteResourceUris(out_result);
+      }
+      else
+      {
+        out_status = xiiStatus("The target returned an invalid MCP result.");
+      }
+    }
+    m_Gateway.RecordForward(m_sEndpoint, m_sCapability, m_Start, out_status.Succeeded() ? "Completed" : "Failed",
+                            out_status.GetMessageString().GetView());
+    return true;
+  }
+
+private:
+  void RewriteResourceUris(xiiVariantDictionary& ref_result) const
+  {
+    if (m_Kind != xiiMCPCapability::Resource && m_Kind != xiiMCPCapability::ResourceTemplate)
+    {
+      return;
+    }
+    const auto* pContents = ref_result.GetValue("contents");
+    if (pContents == nullptr || !pContents->IsA<xiiVariantArray>())
+    {
+      return;
+    }
+
+    xiiVariantArray rewritten;
+    for (const auto& item : pContents->Get<xiiVariantArray>())
+    {
+      if (item.IsA<xiiVariantDictionary>())
+      {
+        auto content   = item.Get<xiiVariantDictionary>();
+        content["uri"] = m_sUri;
+        rewritten.PushBack(std::move(content));
+      }
+    }
+    ref_result["contents"] = std::move(rewritten);
+  }
+
+  xiiMCPGateway&       m_Gateway;
+  xiiNetworkRpcRequest m_Request;
+  xiiMCPCapability     m_Kind;
+  xiiString            m_sEndpoint;
+  xiiString            m_sCapability;
+  xiiString            m_sUri;
+  xiiTime              m_Start;
+  xiiTime              m_Deadline;
+};
+
+xiiStatus xiiMCPGateway::BeginForward(xiiStringView sEndpoint, xiiStringView sInstance, xiiMCPCapability kind, xiiStringView sRemoteKey, xiiStringView sPublicKey,
+                                      const xiiMCPCallContext& context, const xiiVariantDictionary& arguments, xiiUniquePtr<xiiMCPInvocation>& out_invocation)
 {
   const auto it = m_Targets.Find(sEndpoint);
   if (!it.IsValid() || !it.Value().m_bPublished || it.Value().m_sInstance != sInstance)
@@ -448,60 +540,66 @@ xiiStatus xiiMCPGateway::Forward(xiiStringView sEndpoint, xiiStringView sInstanc
   request["key"]                = xiiString(sRemoteKey);
   request["arguments"]          = arguments;
   const auto           deadline = context.m_Deadline.IsPositive() ? context.m_Deadline : start + xiiTime::MakeFromSeconds(5);
-  xiiVariantDictionary response;
-  const auto           status = m_Bridge.Call(it.Value().m_hConnection, request, deadline, response, context.m_pCanceled);
-
-  xiiVariantDictionary activity;
-  activity["capability"] = xiiString(sRemoteKey);
-  activity["target"]     = xiiString(sEndpoint);
-  activity["elapsedMs"]  = (xiiTime::Now() - start).GetMilliseconds();
-  activity["status"]     = xiiString(status.Succeeded() ? "Completed" : "Failed");
+  xiiNetworkRpcRequest pending;
+  const auto           status = m_Bridge.BeginCall(it.Value().m_hConnection, request, deadline, pending);
   if (status.Failed())
   {
-    activity["error"] = xiiString(status.GetMessageString().GetView().GetSubString(0, 256));
+    RecordForward(sEndpoint, sRemoteKey, start, "Failed", status.GetMessageString());
+    return status;
+  }
+
+  out_invocation = XII_DEFAULT_NEW(ForwardedInvocation, *this, pending, kind, sEndpoint, sRemoteKey, sUri, start, deadline);
+  return XII_SUCCESS;
+}
+
+void xiiMCPGateway::RecordForward(xiiStringView sEndpoint, xiiStringView sCapability, xiiTime start, xiiStringView sStatus, xiiStringView sError)
+{
+  xiiVariantDictionary activity;
+  activity["capability"] = xiiString(sCapability);
+  activity["target"]     = xiiString(sEndpoint);
+  activity["elapsedMs"]  = (xiiTime::Now() - start).GetMilliseconds();
+  activity["status"]     = xiiString(sStatus);
+  if (!sError.IsEmpty())
+  {
+    activity["error"] = xiiString(sError.GetSubString(0, 256));
   }
   if (m_Activity.GetCount() >= 100)
   {
     m_Activity.RemoveAtAndCopy(0);
   }
   m_Activity.PushBack(std::move(activity));
-
-  const auto* pValue = xiiMCPJson::GetObject(response, "value");
-  if (status.Failed() || pValue == nullptr)
-  {
-    return status.Failed() ? status : xiiStatus("The target returned an invalid MCP result.");
-  }
-
-  out_result = *pValue;
-  if (kind == xiiMCPCapability::Resource || kind == xiiMCPCapability::ResourceTemplate)
-  {
-    const auto* pContents = pValue->GetValue("contents");
-    if (pContents != nullptr && pContents->IsA<xiiVariantArray>())
-    {
-      xiiVariantArray rewritten;
-      for (const auto& item : pContents->Get<xiiVariantArray>())
-      {
-        if (item.IsA<xiiVariantDictionary>())
-        {
-          auto content   = item.Get<xiiVariantDictionary>();
-          content["uri"] = xiiString(sUri);
-          rewritten.PushBack(std::move(content));
-        }
-      }
-      out_result["contents"] = std::move(rewritten);
-    }
-  }
-  return XII_SUCCESS;
 }
 
-void xiiMCPGateway::Process(xiiStringView sRequest, xiiMCPSession& ref_session, xiiStringBuilder& out_sReply, const xiiAtomicBool* pCanceled)
+void xiiMCPGateway::Process(xiiStringView sRequest, xiiMCPSession& ref_session, xiiStringBuilder& out_sReply)
 {
   xiiMCPCallContext context;
   context.m_sIdentity     = "local-client";
   context.m_uiPermissions = m_Configuration.m_uiPermissions;
   context.m_Deadline      = xiiTime::Now() + m_Configuration.m_Http.m_RequestTimeout;
-  context.m_pCanceled     = pCanceled;
-  m_Protocol.Process(sRequest, ref_session, context, out_sReply);
+  xiiMCPPendingReply pending;
+  auto*              pPending = m_LocalRequests.GetCount() < MaximumLocalRequests ? &pending : nullptr;
+  if (m_Protocol.Process(sRequest, ref_session, context, out_sReply, nullptr, pPending) == xiiMCPReplyStatus::Deferred)
+  {
+    m_LocalRequests.PushBack(std::move(pending));
+  }
+}
+
+bool xiiMCPGateway::PollLocalReply(xiiStringBuilder& out_sReply)
+{
+  for (xiiUInt32 uiIndex = 0; uiIndex < m_LocalRequests.GetCount(); ++uiIndex)
+  {
+    if (m_LocalRequests[uiIndex].Poll(out_sReply))
+    {
+      m_LocalRequests.RemoveAtAndSwap(uiIndex);
+      return true;
+    }
+  }
+  return false;
+}
+
+void xiiMCPGateway::CancelLocalRequests()
+{
+  m_LocalRequests.Clear();
 }
 
 xiiStatus xiiMCPGateway::ListTargets(const xiiMCPCallContext&, const xiiVariantDictionary&, xiiVariantDictionary& out_reply)
