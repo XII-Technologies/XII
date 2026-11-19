@@ -190,7 +190,7 @@ int RunMCPWindow(const xiiMCPGatewayConfiguration& configuration)
   pOverviewLayout->addStretch();
   pTabs->addTab(pOverview, "Overview");
 
-  auto* pInstances = MakeTable({"Application", "Local endpoint", "Instance", "Connected", "Capabilities"});
+  auto* pInstances = MakeTable({"Application", "Local endpoint", "Instance", "Connected", "Capabilities", "Status"});
   pTabs->addTab(pInstances, "Instances");
 
   auto* pCapabilities     = new QWidget();
@@ -304,7 +304,7 @@ int RunMCPWindow(const xiiMCPGatewayConfiguration& configuration)
                        .arg(targets.GetCount())
                        .arg(tools.GetCount())
                        .arg(snapshot["sessions"].ConvertTo<xiiUInt32>()));
-    FillTable(*pInstances, targets, {"application", "endpoint", "instance", "connected", "capabilityCount"});
+    FillTable(*pInstances, targets, {"application", "endpoint", "instance", "connected", "capabilityCount", "status"});
     FillTable(*pActivity, activity, {"capability", "target", "elapsedMs", "status"});
 
     const auto& entries   = GetArray(snapshot, pKind->currentIndex() == 0 ? "tools" : pKind->currentIndex() == 1 ? "resources" :

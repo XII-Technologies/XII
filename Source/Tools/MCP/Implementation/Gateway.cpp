@@ -171,16 +171,19 @@ void xiiMCPGateway::UpdateTarget(Target& ref_target, xiiTime now)
       m_Bridge.Disconnect(ref_target.m_hConnection);
       ref_target.m_hConnection = {};
     }
-    const auto status        = m_Bridge.Connect(ref_target.m_sEndpoint, ref_target.m_hConnection);
-    ref_target.m_NextAttempt = now + xiiTime::MakeFromSeconds(status.Succeeded() ? 1 : 3);
+    const auto status              = m_Bridge.Connect(ref_target.m_sEndpoint, ref_target.m_hConnection);
+    ref_target.m_sConnectionStatus = status.Succeeded() ? xiiString("Connecting") : status.GetMessageString();
+    ref_target.m_NextAttempt       = now + xiiTime::MakeFromSeconds(status.Succeeded() ? 1 : 3);
     return;
   }
 
   ref_target.m_NextAttempt = now + xiiTime::MakeFromSeconds(2);
   xiiVariantDictionary identity;
-  const auto           request = CreateBridgeRequest("identity", m_Configuration.m_uiPermissions);
-  if (m_Bridge.Call(ref_target.m_hConnection, request, now + xiiTime::MakeFromMilliseconds(300), identity).Failed())
+  const auto           request        = CreateBridgeRequest("identity", m_Configuration.m_uiPermissions);
+  const auto           identityStatus = m_Bridge.Call(ref_target.m_hConnection, request, now + xiiTime::MakeFromMilliseconds(600), identity);
+  if (identityStatus.Failed())
   {
+    ref_target.m_sConnectionStatus = identityStatus.GetMessageString();
     RemoveCapabilities(ref_target);
     return;
   }
@@ -189,6 +192,7 @@ void xiiMCPGateway::UpdateTarget(Target& ref_target, xiiTime now)
   if (!xiiConversionUtils::IsStringUuid(sInstance) ||
       (!ref_target.m_sExpectedInstance.IsEmpty() && sInstance != ref_target.m_sExpectedInstance))
   {
+    ref_target.m_sConnectionStatus = "The connected endpoint has a different instance identity.";
     RemoveCapabilities(ref_target);
     m_Bridge.Disconnect(ref_target.m_hConnection);
     return;
@@ -207,11 +211,16 @@ void xiiMCPGateway::UpdateTarget(Target& ref_target, xiiTime now)
     ref_target.m_bPublished = RefreshCapabilities(ref_target, uiRevision);
     if (ref_target.m_bPublished)
     {
-      ref_target.m_uiRevision = uiRevision;
+      ref_target.m_uiRevision        = uiRevision;
+      ref_target.m_sConnectionStatus = "Ready";
     }
     else
     {
       RemoveCapabilities(ref_target);
+      if (ref_target.m_sConnectionStatus.IsEmpty())
+      {
+        ref_target.m_sConnectionStatus = "Could not publish target capabilities.";
+      }
     }
   }
 }
@@ -238,8 +247,10 @@ bool xiiMCPGateway::RefreshCapabilities(Target& ref_target, xiiUInt64 uiRevision
     {
       request["offset"] = uiOffset;
       xiiVariantDictionary response;
-      if (m_Bridge.Call(ref_target.m_hConnection, request, deadline, response).Failed())
+      const auto           status = m_Bridge.Call(ref_target.m_hConnection, request, deadline, response);
+      if (status.Failed())
       {
+        ref_target.m_sConnectionStatus = status.GetMessageString();
         return false;
       }
 
@@ -382,6 +393,7 @@ xiiStatus xiiMCPGateway::ListTargets(const xiiMCPCallContext&, const xiiVariantD
     row["application"]     = target.m_sApplication;
     row["connected"]       = m_Bridge.IsConnected(target.m_hConnection);
     row["capabilityCount"] = target.m_Capabilities.GetCount();
+    row["status"]          = target.m_sConnectionStatus;
     targets.PushBack(std::move(row));
   }
   out_reply["targets"] = std::move(targets);

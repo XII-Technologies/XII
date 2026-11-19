@@ -37,6 +37,7 @@ private:
     xiiString                   m_sInstance;
     xiiString                   m_sApplication;
     xiiString                   m_sExpectedInstance;
+    xiiString                   m_sConnectionStatus;
     xiiNetworkConnection        m_hConnection;
     xiiTime                     m_NextAttempt;
     xiiUInt64                   m_uiRevision = 0;

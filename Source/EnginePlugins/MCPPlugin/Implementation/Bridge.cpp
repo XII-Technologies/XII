@@ -248,6 +248,9 @@ public:
     const auto uiGeneration = m_TypeRegistry.GetStatistics().m_uiGeneration;
     if (uiGeneration != m_uiTypeGeneration)
     {
+      // Startup can register the service before the registry processes AfterPluginChanges.
+      // Replace the descriptor even when the endpoint missed the preceding invalidation event.
+      m_Reflection.RemoveService(ServiceId).IgnoreResult();
       if (RegisterMethods().Failed())
       {
         return;
@@ -421,7 +424,7 @@ xiiStatus xiiMCPBridge::Call(xiiNetworkConnection hConnection, const xiiVariantD
   const auto           admission = m_pState->m_Reflection.CallRpc(channel, ServiceId, QueryMethod, arguments, pending, remaining);
   if (admission.Failed())
   {
-    return xiiStatus(xiiFmt("Could not send the operation to the selected XII target (code {0}).", static_cast<xiiUInt32>(admission.m_Code)));
+    return xiiStatus(xiiFmt("Could not send the operation to the selected XII target ({0}).", admission.GetCodeName()));
   }
 
   do
@@ -432,9 +435,14 @@ xiiStatus xiiMCPBridge::Call(xiiNetworkConnection hConnection, const xiiVariantD
     {
       if (result.m_Request == pending)
       {
-        if (result.m_Error.Failed() || m_pState->m_Reflection.DecodeRpcResult(result, out_response).Failed())
+        if (result.m_Error.Failed())
         {
-          return xiiStatus(xiiFmt("The XII target did not complete the operation (code {0}).", static_cast<xiiUInt32>(result.m_Error.m_Code)));
+          return xiiStatus(xiiFmt("The XII target did not complete the operation ({0}).", result.m_Error.GetCodeName()));
+        }
+        const auto decodeError = m_pState->m_Reflection.DecodeRpcResult(result, out_response);
+        if (decodeError.Failed())
+        {
+          return xiiStatus(xiiFmt("Could not decode the XII target response ({0}).", decodeError.GetCodeName()));
         }
         const auto sError = xiiMCPJson::GetString(out_response, "error");
         return sError.IsEmpty() ? xiiStatus(XII_SUCCESS) : xiiStatus(sError);
