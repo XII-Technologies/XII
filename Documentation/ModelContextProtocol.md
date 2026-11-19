@@ -106,6 +106,7 @@ Editor capabilities include:
 | `editor.document` | Reflected members and paginated object trees for open documents. |
 | `editor.set_document_property` | Set a supported reflected value in an undoable transaction. |
 | `editor.document_history` | Undo or redo one operation at the current document revision. |
+| `editor.viewport` | Inspect the focused or specified document's views, camera, resolution and render mode. Pass a view ID to include its effective rendering settings. |
 | `editor.graph` | Page through nodes, pins and links or discover creation templates in a supported graph document. |
 | `editor.edit_graph` | Create a node from a template, connect pins, disconnect a link or remove a node through command history. |
 | `editor.scene` | Page through scene, prefab or layer objects and inspect supported properties. |

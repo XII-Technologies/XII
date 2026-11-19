@@ -24,6 +24,7 @@ private:
   [[nodiscard]] xiiResult RegisterScenes();
   [[nodiscard]] xiiResult RegisterAssets();
   [[nodiscard]] xiiResult RegisterGraphs();
+  [[nodiscard]] xiiResult RegisterViewport();
   static bool             IsScene(const xiiDocument& document);
   static void             DescribeDocument(const xiiDocument& document, const xiiUuid& session, xiiVariantDictionary& out_result);
 
@@ -48,6 +49,7 @@ private:
   xiiStatus Transform(const xiiMCPCallContext&, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result);
   xiiStatus Graph(const xiiMCPCallContext& context, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result);
   xiiStatus EditGraph(const xiiMCPCallContext& context, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result);
+  xiiStatus Viewport(const xiiMCPCallContext&, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result);
 
   xiiMCPRegistry           m_Registry;
   xiiMCPProtocol           m_Protocol;

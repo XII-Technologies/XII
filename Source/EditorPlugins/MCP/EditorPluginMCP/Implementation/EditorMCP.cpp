@@ -58,7 +58,7 @@ xiiStatus xiiEditorMCP::Start()
     m_uiArgumentPermissions |= static_cast<xiiUInt8>(xiiMCPPermission::Execute);
   }
 
-  if (RegisterProject().Failed() || RegisterDocuments().Failed() || RegisterScenes().Failed() || RegisterAssets().Failed() || RegisterGraphs().Failed())
+  if (RegisterProject().Failed() || RegisterDocuments().Failed() || RegisterScenes().Failed() || RegisterAssets().Failed() || RegisterGraphs().Failed() || RegisterViewport().Failed())
   {
     return xiiStatus("Could not register Editor MCP capabilities.");
   }
