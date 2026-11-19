@@ -10,6 +10,8 @@
 #  include <GuiFoundation/Style/DarkEditorStyle.moc.h>
 #  include <MCP/Gateway/GatewayThread.h>
 #  include <MCP/Panels/ArgumentForm.h>
+#  include <MCP/Panels/JsonView.h>
+#  include <MCP/Panels/ReplyPanel.h>
 #  include <MCP/Panels/SettingsPanel.h>
 
 #  include <QApplication>
@@ -228,10 +230,8 @@ int RunMCPWindow(const xiiMCPGatewayConfiguration& configuration)
   auto* pKind = new QComboBox();
   pKind->addItems({"Tools", "Resources", "Prompts", "Resource templates"});
   auto* pCapability = new QComboBox();
-  auto* pSchema     = new QPlainTextEdit();
-  pSchema->setReadOnly(true);
-  pSchema->setAccessibleName("Capability descriptor");
-  pSchema->setPlaceholderText("Capability descriptor");
+  auto* pSchema     = new xiiMCPJsonView("Capability descriptor");
+  pSchema->Clear("Select a capability to inspect its descriptor.");
   auto* pInput = new QPlainTextEdit("{}");
   pInput->setPlaceholderText("JSON arguments");
   auto* pArgumentForm = new xiiMCPArgumentForm();
@@ -244,10 +244,7 @@ int RunMCPWindow(const xiiMCPGatewayConfiguration& configuration)
   pResourceUri->hide();
   pInput->hide();
   auto* pRun    = new QPushButton("Invoke");
-  auto* pResult = new QPlainTextEdit();
-  pResult->setReadOnly(true);
-  pResult->setAccessibleName("Operation results");
-  pResult->setPlaceholderText("Operation result");
+  auto* pResult = new xiiMCPReplyPanel();
   pCapabilityLayout->addWidget(pFilter);
   pCapabilityLayout->addWidget(pKind);
   pCapabilityLayout->addWidget(pCapability);
@@ -277,9 +274,14 @@ int RunMCPWindow(const xiiMCPGatewayConfiguration& configuration)
   pCapabilityLayout->addWidget(pRun);
   auto* pCancel = new QPushButton("Cancel requests");
   pCapabilityLayout->addWidget(pCancel);
+  auto* pRequestStatus = new QLabel();
+  pRequestStatus->setTextFormat(Qt::PlainText);
+  pRequestStatus->setWordWrap(true);
+  pRequestStatus->setMinimumHeight(pRequestStatus->fontMetrics().height());
+  pCapabilityLayout->addWidget(pRequestStatus);
   QObject::connect(pCancel, &QPushButton::clicked, [&] {
     gateway.CancelRequests();
-    pResult->appendPlainText("Queued requests cleared. Cancellation requested for any running call.");
+    pRequestStatus->setText("Queued requests cleared. Cancellation requested for any running call.");
   });
   auto* pCapabilityNav = addPage(pCapabilities, "Capabilities", QStyle::SP_FileDialogDetailedView);
   QObject::connect(pUseTarget, &QPushButton::clicked, [&] {
@@ -387,30 +389,34 @@ int RunMCPWindow(const xiiMCPGatewayConfiguration& configuration)
     }
   });
 
-  QString sPreviousDescriptor;
-  auto    updateForm = [&] {
+  xiiVariantArray visibleDescriptors;
+  xiiVariant      previousDescriptor;
+  auto            updateForm = [&] {
     const int  iKind      = pKind->currentIndex();
     const bool bArguments = iKind == 0 || iKind == 2;
     pRawArguments->setVisible(bArguments);
     pResourceUri->setVisible(iKind == 3);
     pInput->setVisible(bArguments && (pRawArguments->isChecked() || iKind == 2));
     pFormScroll->setVisible(iKind == 0 && !pRawArguments->isChecked());
-    const auto sDescriptor = pCapability->currentData().toString();
-    if (sDescriptor == sPreviousDescriptor)
+    const int        iSelected  = pCapability->currentIndex();
+    const xiiVariant descriptor = iSelected >= 0 ? visibleDescriptors[static_cast<xiiUInt32>(iSelected)] : xiiVariant();
+    if (descriptor == previousDescriptor)
     {
       return;
     }
-    sPreviousDescriptor = sDescriptor;
-    pSchema->setPlainText(sDescriptor);
-    const auto descriptor = sDescriptor.toUtf8();
-    xiiVariant value;
-    if (xiiMCPJson::Parse(descriptor.constData(), value).Succeeded() && value.IsA<xiiVariantDictionary>())
+    previousDescriptor = descriptor;
+    if (descriptor.IsA<xiiVariantDictionary>())
     {
-      if (const auto* pSchemaData = xiiMCPJson::GetObject(value.Get<xiiVariantDictionary>(), "inputSchema"))
+      pSchema->SetDocument(descriptor);
+      if (const auto* pSchemaData = xiiMCPJson::GetObject(descriptor.Get<xiiVariantDictionary>(), "inputSchema"))
       {
         pArgumentForm->SetSchema(*pSchemaData);
         return;
       }
+    }
+    else
+    {
+      pSchema->Clear("Select a capability to inspect its descriptor.");
     }
     pArgumentForm->SetSchema({});
   };
@@ -430,7 +436,7 @@ int RunMCPWindow(const xiiMCPGatewayConfiguration& configuration)
       const auto status = pArgumentForm->ReadArguments(arguments);
       if (status.Failed())
       {
-        pResult->appendPlainText(ToQt(status.GetMessageString()));
+        pRequestStatus->setText(ToQt(status.GetMessageString()));
         return;
       }
     }
@@ -441,7 +447,7 @@ int RunMCPWindow(const xiiMCPGatewayConfiguration& configuration)
       if (xiiMCPJson::Parse(xiiStringView(rawArguments.constData(), static_cast<xiiUInt32>(rawArguments.size())), json).Failed() ||
           !json.IsA<xiiVariantDictionary>())
       {
-        pResult->appendPlainText("Enter a JSON object for arguments.");
+        pRequestStatus->setText("Enter a JSON object for arguments.");
         return;
       }
       arguments = json.Get<xiiVariantDictionary>();
@@ -449,7 +455,7 @@ int RunMCPWindow(const xiiMCPGatewayConfiguration& configuration)
     const auto key = (iKind == 3 ? pResourceUri->text().trimmed() : pCapability->currentText()).toUtf8();
     if (key.isEmpty())
     {
-      pResult->appendPlainText("Enter the concrete resource URI.");
+      pRequestStatus->setText("Enter the concrete resource URI.");
       return;
     }
     xiiVariantDictionary params;
@@ -467,26 +473,23 @@ int RunMCPWindow(const xiiMCPGatewayConfiguration& configuration)
     xiiStringBuilder sRequest;
     if (xiiMCPJson::Write(request, sRequest).Failed() || !gateway.Submit(sRequest))
     {
-      pResult->appendPlainText("The request could not be queued.");
+      pRequestStatus->setText("The request could not be queued.");
     }
     else
     {
-      pResult->appendPlainText(QString("Queued request %1").arg(uiNextRequest - 1));
+      pRequestStatus->setText(QString("Queued request %1").arg(uiNextRequest - 1));
     }
   });
 
   QTimer timer;
-  pResult->setMaximumBlockCount(4096);
   QObject::connect(&timer, &QTimer::timeout, [&] {
     xiiVariantDictionary snapshot;
     xiiDeque<xiiString>  replies;
     gateway.Read(snapshot, replies);
-    for (const auto& sReply : replies)
+    pResult->AppendReplies(replies);
+    if (!replies.IsEmpty() && pRequestStatus->text().startsWith("Queued request "))
     {
-      xiiVariant       value;
-      xiiStringBuilder sFormatted;
-      const bool       bFormatted = xiiMCPJson::Parse(sReply, value).Succeeded() && xiiMCPJson::WriteIndented(value, sFormatted).Succeeded();
-      pResult->appendPlainText(ToQt(bFormatted ? sFormatted.GetView() : sReply.GetView()));
+      pRequestStatus->clear();
     }
     if (snapshot.IsEmpty())
     {
@@ -588,15 +591,15 @@ int RunMCPWindow(const xiiMCPGatewayConfiguration& configuration)
     const auto            sSelected    = pCapability->currentText();
     pCapability->blockSignals(true);
     pCapability->clear();
+    visibleDescriptors.Clear();
     for (const auto& entry : entries)
     {
       const auto& descriptor = entry.Get<xiiVariantDictionary>();
       const auto  sName      = ToQt(xiiMCPJson::GetString(descriptor, KeyFields[iKind]));
       if (sName.contains(pFilter->text(), Qt::CaseInsensitive))
       {
-        xiiStringBuilder sDescriptor;
-        xiiMCPJson::WriteIndented(entry, sDescriptor).IgnoreResult();
-        pCapability->addItem(sName, ToQt(sDescriptor));
+        visibleDescriptors.PushBack(entry);
+        pCapability->addItem(sName);
       }
     }
     const int iPrevious = pCapability->findText(sSelected);

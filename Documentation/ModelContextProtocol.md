@@ -28,6 +28,8 @@ The Qt window has live gateway settings for loopback HTTP, the request deadline,
 
 The Capabilities page shows tools, resources, resource templates and prompts. It generates fields for common tool argument types from each input schema and offers an advanced JSON editor. Invocations enter a bounded worker queue. **Cancel requests** clears waiting work and requests cancellation of the current GUI invocation. Recent activity includes the capability, target, elapsed time and outcome. Target discovery uses independent native RPC exchanges for each instance.
 
+Inspect a capability descriptor or a result in **Tree** or **JSON**. For tool replies, the viewer uses the structured result when available. A reply with one JSON resource shows that resource's decoded content. Use **Response** to view or copy the original MCP message, and **Response history** to revisit recent replies.
+
 Pass `-MCPTimeoutMs` with a value from 100 to 10000 to set the request deadline for the gateway. HTTP defaults to `127.0.0.1:8372/mcp`. The listener accepts numeric IPv4 or IPv6 loopback endpoints. Port zero requests an ephemeral port.
 
 ## Connect an MCP client
