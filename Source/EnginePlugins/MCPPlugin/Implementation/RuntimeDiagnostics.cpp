@@ -11,6 +11,8 @@
 #include <MCPPlugin/Reflection.h>
 
 #ifdef XII_MCP_HAS_RENDERING
+#  include <Core/GameApplication/GameApplicationBase.h>
+#  include <Core/System/WindowManager.h>
 #  include <GraphicsCore/Pipeline/RenderGraph.h>
 #  include <GraphicsFoundation/Device/Device.h>
 #endif
@@ -98,6 +100,28 @@ namespace
   }
 
 #ifdef XII_MCP_HAS_RENDERING
+  xiiStatus RequestScreenshot(const xiiMCPCallContext&, const xiiVariantDictionary&, xiiVariantDictionary& out_result)
+  {
+    auto* pApplication = xiiGameApplicationBase::GetGameApplicationBaseInstance();
+    auto* pWindows     = xiiWindowManager::GetSingleton();
+    if (pApplication == nullptr || pWindows == nullptr || pApplication->GetActiveGameState() == nullptr)
+    {
+      return xiiStatus("No active game window supports screenshot capture.");
+    }
+
+    xiiDynamicArray<xiiRegisteredWindowHandle> windows;
+    pWindows->GetRegistered(windows, pApplication->GetActiveGameState());
+    if (windows.IsEmpty())
+    {
+      return xiiStatus("No active game window supports screenshot capture.");
+    }
+
+    pApplication->TakeScreenshot();
+    out_result["requested"]       = true;
+    out_result["outputDirectory"] = xiiString(":appdata/Screenshots");
+    return XII_SUCCESS;
+  }
+
   xiiStatus GetGraphics(const xiiMCPCallContext&, const xiiVariantDictionary&, xiiVariantDictionary& out_result)
   {
     auto pDevice = xiiGALDevice::GetDefaultDevice();
@@ -189,6 +213,9 @@ void xiiMCPRuntimeDiagnostics::Update()
   const bool bAvailable = xiiGALDevice::HasDefaultDevice();
   if (bAvailable && m_GraphSubscription == 0)
   {
+    m_Registry.RegisterTool("runtime.screenshot", "Request a screenshot of the game application output. XII saves it through its normal screenshot pipeline.",
+                            R"({"type":"object","additionalProperties":false})", xiiMCPPermission::Capture, &RequestScreenshot)
+      .IgnoreResult();
     m_Registry.RegisterTool("runtime.graphics", "Read active graphics device heap budgets and allocations.", R"({"type":"object","additionalProperties":false})",
                             xiiMCPPermission::Read, &GetGraphics)
       .IgnoreResult();
@@ -203,6 +230,7 @@ void xiiMCPRuntimeDiagnostics::Update()
   {
     m_Registry.Remove(xiiMCPCapability::Tool, "runtime.render_graph");
     m_Registry.Remove(xiiMCPCapability::Tool, "runtime.graphics");
+    m_Registry.Remove(xiiMCPCapability::Tool, "runtime.screenshot");
     xiiRenderGraphDebug::s_ExecutionEvents.RemoveEventHandler(m_GraphSubscription);
     xiiRenderGraphTimestampProfiler::s_TimingEvents.RemoveEventHandler(m_TimingSubscription);
     m_Graph.Clear();

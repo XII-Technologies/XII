@@ -308,35 +308,39 @@ namespace
 
   bool ReadPosition(const xiiVariant& json, xiiVec3& out_vPosition)
   {
-    if (!json.IsA<xiiVariantArray>() || json.Get<xiiVariantArray>().GetCount() != 3)
+    float fValues[3] = {};
+    if (!xiiMCPReflection::ReadFloatArray(json, fValues))
     {
       return false;
     }
 
-    const auto& values = json.Get<xiiVariantArray>();
-    for (xiiUInt32 uiIndex = 0; uiIndex < 3; ++uiIndex)
-    {
-      if (!values[uiIndex].IsNumber() || values[uiIndex].IsA<bool>() || !xiiMath::IsInRange(values[uiIndex].ConvertTo<double>(), -1.0e8, 1.0e8))
-      {
-        return false;
-      }
-    }
-    out_vPosition = xiiVec3(values[0].ConvertTo<float>(), values[1].ConvertTo<float>(), values[2].ConvertTo<float>());
+    out_vPosition = xiiVec3(fValues[0], fValues[1], fValues[2]);
     return true;
   }
 
   xiiStatus EditObject(const xiiMCPCallContext&, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result)
   {
-    auto*       pWorld    = FindWorld(arguments);
-    const auto  sAction   = xiiMCPJson::GetString(arguments, "action");
-    const auto  sName     = xiiMCPJson::GetString(arguments, "name");
-    const auto* pPosition = arguments.GetValue("position");
-    const auto* pActive   = arguments.GetValue("active");
-    xiiVec3     vPosition = xiiVec3::MakeZero();
+    auto*       pWorld       = FindWorld(arguments);
+    const auto  sAction      = xiiMCPJson::GetString(arguments, "action");
+    const auto  sName        = xiiMCPJson::GetString(arguments, "name");
+    const auto* pPosition    = arguments.GetValue("position");
+    const auto* pRotation    = arguments.GetValue("rotation");
+    const auto* pScale       = arguments.GetValue("scale");
+    const auto* pActive      = arguments.GetValue("active");
+    xiiVec3     vPosition    = xiiVec3::MakeZero();
+    xiiVec3     vScale       = xiiVec3(1.0f);
+    float       fRotation[4] = {0.0f, 0.0f, 0.0f, 1.0f};
     if (pWorld == nullptr || sName.GetElementCount() > 128 || (pPosition != nullptr && !ReadPosition(*pPosition, vPosition)) ||
+        (pScale != nullptr && (!ReadPosition(*pScale, vScale) || vScale.x == 0.0f || vScale.y == 0.0f || vScale.z == 0.0f)) ||
+        (pRotation != nullptr && !xiiMCPReflection::ReadFloatArray(*pRotation, fRotation)) ||
         (pActive != nullptr && !pActive->IsA<bool>()))
     {
-      return xiiStatus("Provide a current world ID and valid name, position and active fields.");
+      return xiiStatus("Provide a current world ID and valid name, transform and active fields.");
+    }
+    const auto qRotation = xiiQuat::MakeFromElements(fRotation[0], fRotation[1], fRotation[2], fRotation[3]);
+    if (!qRotation.IsValid())
+    {
+      return xiiStatus("The rotation must be a normalized quaternion using x, y, z, w order.");
     }
 
     XII_LOCK(pWorld->GetWriteMarker());
@@ -370,12 +374,21 @@ namespace
     {
       pObject->SetLocalPosition(vPosition);
     }
+    if (pRotation != nullptr)
+    {
+      pObject->SetLocalRotation(qRotation);
+    }
+    if (pScale != nullptr)
+    {
+      pObject->SetLocalScaling(vScale);
+    }
     if (pActive != nullptr)
     {
       pObject->SetActiveFlag(pActive->Get<bool>());
     }
 
-    out_result = DescribeObject(*pObject);
+    out_result                   = DescribeObject(*pObject);
+    out_result["localTransform"] = DescribeTransform(pObject->GetLocalTransform());
     return XII_SUCCESS;
   }
 
@@ -425,6 +438,24 @@ namespace
     }
     out_result["resources"]     = std::move(rows);
     out_result["prefixLimited"] = resources->GetCount() == 256;
+    return XII_SUCCESS;
+  }
+
+  xiiStatus ReloadResource(const xiiMCPCallContext&, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result)
+  {
+    const auto  sId   = xiiMCPJson::GetString(arguments, "id");
+    const auto* pType = xiiRTTI::FindTypeByName(xiiMCPJson::GetString(arguments, "type"));
+    if (sId.IsEmpty() || sId.GetElementCount() > 2048 || pType == nullptr || !pType->IsDerivedFrom<xiiResource>())
+    {
+      return xiiStatus("Provide an existing resource ID and its concrete RTTI type.");
+    }
+
+    const auto hResource = xiiResourceManager::GetExistingResourceByType(pType, sId);
+    if (!hResource.IsValid())
+    {
+      return xiiStatus("The resource is no longer registered. Inspect resources again.");
+    }
+    out_result["reloadRequested"] = xiiResourceManager::ReloadResource(pType, hResource, false);
     return XII_SUCCESS;
   }
 
@@ -510,9 +541,12 @@ namespace
     ref_registry.RegisterTool("runtime.objects", "List live game objects using a bounded page and optional filters. Object IDs belong to the specified world.", R"({"type":"object","required":["world"],"properties":{"world":{"type":"string"},"name":{"type":"string"},"parent":{"type":"string"},"componentType":{"type":"string"},"offset":{"type":"integer","minimum":0},"limit":{"type":"integer","minimum":1,"maximum":128,"default":32}}})", read, &ListObjects).IgnoreResult();
     ref_registry.RegisterTool("runtime.object", "Inspect one live game object, its local and global transforms, and a page of components.", R"({"type":"object","required":["world","object"],"properties":{"world":{"type":"string"},"object":{"type":"string"},"offset":{"type":"integer","minimum":0},"limit":{"type":"integer","minimum":1,"maximum":32,"default":32}}})", read, &InspectObject).IgnoreResult();
     ref_registry.RegisterTool("runtime.component", "Inspect supported reflected properties on a live component. Discover its index and type with runtime.object.", R"({"type":"object","required":["world","object","index","type"],"properties":{"world":{"type":"string"},"object":{"type":"string"},"index":{"type":"integer","minimum":0},"type":{"type":"string"}}})", read, &InspectComponent).IgnoreResult();
-    ref_registry.RegisterTool("runtime.edit_object", "Create, modify or schedule removal of a live object. Changes affect running state only. Remove also deletes the object's subtree.", R"({"type":"object","required":["world","action"],"properties":{"world":{"type":"string"},"action":{"enum":["create","modify","remove"]},"object":{"type":"string"},"name":{"type":"string","maxLength":128},"position":{"type":"array","items":{"type":"number"},"minItems":3,"maxItems":3},"active":{"type":"boolean"}}})", edit, &EditObject).IgnoreResult();
+    ref_registry.RegisterTool("runtime.edit_object", "Create, modify or schedule removal of a live object and its children. Transforms are local. Rotation is a normalized quaternion in x,y,z,w order.", R"({"type":"object","required":["world","action"],"properties":{"world":{"type":"string"},"action":{"enum":["create","modify","remove"]},"object":{"type":"string"},"name":{"type":"string","maxLength":128},"position":{"type":"array","items":{"type":"number"},"minItems":3,"maxItems":3},"rotation":{"type":"array","items":{"type":"number"},"minItems":4,"maxItems":4},"scale":{"type":"array","items":{"type":"number"},"minItems":3,"maxItems":3},"active":{"type":"boolean"}}})", edit, &EditObject).IgnoreResult();
     ref_registry.RegisterTool("runtime.simulation", "Set simulation enabled, clock pause, or simulation speed for a live world and return its current timing.", R"({"type":"object","required":["world"],"properties":{"world":{"type":"string"},"enabled":{"type":"boolean"},"paused":{"type":"boolean"},"speed":{"type":"number","minimum":0,"maximum":16}}})", execute, &SetSimulation).IgnoreResult();
     ref_registry.RegisterTool("runtime.resources", "Inspect matching resources from a bounded live resource snapshot, including async content state and memory use.", R"({"type":"object","required":["type"],"properties":{"type":{"type":"string"}}})", read, &ListResources).IgnoreResult();
+    ref_registry.RegisterTool("runtime.reload_resource", "Request a standard, non-forced reload of an existing resource. A false result means no reload was needed or available.",
+                              R"({"type":"object","required":["id","type"],"properties":{"id":{"type":"string","maxLength":2048},"type":{"type":"string"}}})", execute, &ReloadResource)
+      .IgnoreResult();
     ref_registry.RegisterTool("runtime.status", "Report application frame time and live world registry size.", R"({"type":"object","additionalProperties":false})", read, &InspectRuntime).IgnoreResult();
 
     xiiVariantDictionary status;

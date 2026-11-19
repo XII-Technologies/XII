@@ -71,14 +71,16 @@ Live runtime capabilities include:
 | `runtime.objects` | A page of objects with name, parent and component-type filters. |
 | `runtime.object` | Local and global transforms and a page of attached components. |
 | `runtime.component` | Supported reflected member values and their schema. |
-| `runtime.edit_object` | Create, modify or schedule removal of a live object with edit permission. |
+| `runtime.edit_object` | Create, reposition, rotate, scale, activate or schedule removal of a live object with edit permission. |
 | `runtime.simulation` | Change enablement, pause and speed with execute permission. |
 | `runtime.resources` | A bounded loaded-resource snapshot filtered by RTTI type. |
+| `runtime.reload_resource` | Request a standard reload of an existing resource with execute permission. |
 | `runtime.status` | Running application and frame timing. |
 | `runtime.diagnostics` | Allocator usage, loaded plugins and numeric performance counters. |
 | `runtime.cvars` | A filtered list of CVars with string values redacted. |
 | `runtime.logs` | Recent engine warnings and errors with capture permission. |
 | `runtime.graphics` | Graphics device heap statistics when a graphics device is active. |
+| `runtime.screenshot` | Request an image through the game application's normal screenshot pipeline. Requires capture permission and a game window. |
 | `runtime.render_graph` | Request and poll a bounded pass and dependency snapshot with available GPU timings. Requires capture permission and an active graphics device. |
 
 Runtime resources include `xii://runtime/status` and the `xii://runtime/worlds/{index}` template. Use the numeric registry slot as `index`. Its result includes the live world ID required by world operations. The `runtime.inspect_scene` prompt describes the world inspection workflow.
@@ -108,5 +110,5 @@ Use `xiiMCPRuntime::GetRegistry()` to extend an embedded runtime, or use `xiiMCP
 
 - HTTP serves JSON responses. SSE subscriptions, protocol progress streaming, OAuth and direct non-loopback listeners are outside this implementation. Stdio sends capability-list change notifications for initialized clients.
 - The gateway holds multiple target connections and serializes forwarded calls on its owning thread. Foundation cancels expired native RPC requests on a best-effort basis. Completed mutations are not rolled back on a transport disconnect.
-- Live resource enumeration is bounded to a prefix. CPU profiling snapshots, screenshots, resource reload, and higher-level renderer configuration editing are outside the tool catalog.
+- Live resource enumeration is bounded to a prefix. CPU profiling snapshots and higher-level renderer configuration editing are outside the tool catalog.
 - The Qt workspace shows connection and listener status. Connection endpoints, permissions, and listener settings are configured at launch.
