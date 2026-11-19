@@ -132,16 +132,16 @@ private:
     bool  m_bAfterComma = false;
   };
 
-  void   StartParsing();
-  void   SkipWhitespace();
-  void   SkipString();
-  void   ReadString();
-  void   ReadNumber();
-  void   ReadWord();
-  void   ReadStrictNumber(xiiStringView sNumber);
-  bool   BeginContainer(State state);
-  bool   IsWhiteSpace(xiiUInt8 uiByte) const;
-  bool   IsStrict() const { return m_uiMaximumStrictDepth != 0; }
+  void StartParsing();
+  void SkipWhitespace();
+  void SkipString();
+  void ReadString();
+  void ReadNumber();
+  void ReadWord();
+  void ReadStrictNumber(xiiStringView sNumber);
+  bool BeginContainer(State state);
+  bool IsWhiteSpace(xiiUInt8 uiByte) const;
+  bool IsStrict() const { return m_uiMaximumStrictDepth != 0; }
 
   void ContinueObject();
   void ContinueArray();
@@ -163,7 +163,7 @@ private:
   xiiHybridArray<JSONState, 32>  m_StateStack;
   xiiHybridArray<xiiUInt8, 4096> m_TempString;
 
-  bool m_bSkippingMode;
+  bool      m_bSkippingMode;
   bool      m_bReadNullByte        = false;
   xiiUInt32 m_uiMaximumStrictDepth = 0;
   xiiUInt32 m_uiContainerDepth     = 0;

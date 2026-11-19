@@ -25,11 +25,11 @@ void xiiJSONParser::SetInputStream(xiiStreamReader& stream, xiiUInt32 uiFirstLin
   m_StateStack.Clear();
   m_uiCurByte = '\0';
   m_TempString.Clear();
-  m_bSkippingMode = false;
+  m_bSkippingMode    = false;
   m_bReadNullByte    = false;
   m_uiContainerDepth = 0;
-  m_uiCurLine     = 1 + uiFirstLineOffset;
-  m_uiCurColumn   = 0;
+  m_uiCurLine        = 1 + uiFirstLineOffset;
+  m_uiCurColumn      = 0;
 
   m_pInput = &stream;
 
@@ -415,7 +415,7 @@ void xiiJSONParser::ContinueValue()
 
       ReadWord();
 
-      bool bRes = false;
+      bool                bRes = false;
       const xiiStringView sWord(reinterpret_cast<const char*>(m_TempString.GetData()));
       if (IsStrict())
       {
