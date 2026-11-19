@@ -8,7 +8,7 @@ XII exposes live application state and Editor authoring through the Model Contex
 | `EditorPluginMCP` | The optional `xiiEditorPluginMCP` Editor extension. It reads project state and applies persistent changes through the document command history. |
 | `MCP` | The `xiiMCP` standalone gateway. It connects to same-user XII targets and serves stdio or Streamable HTTP. Qt builds also provide a gateway window. |
 
-The gateway forwards tool calls through Foundation's authenticated [Local transport](NetworkLocalTransport.md) and [reflected RPC](NetworkReflection.md). The target sends its own capability descriptors and executes operations on its owning thread. Advertisements use the [diagnostics discovery lease](TelemetryDiagnostics.md) in a dedicated MCP namespace. Each forwarded capability name includes the target endpoint and an instance identifier. If a target disappears, its capabilities are removed. A restarted process publishes a new instance. Operations sent to older identifiers fail rather than moving to the replacement process.
+The gateway forwards tool calls through Foundation's authenticated [Local transport](NetworkLocalTransport.md) and [reflected RPC](NetworkReflection.md). The target sends its own capability descriptors and executes operations on its owning thread. Advertisements use the [diagnostics discovery lease](TelemetryDiagnostics.md) in a dedicated MCP namespace. Each forwarded capability name or URI contains the full target instance UUID. Match this namespace to an endpoint using `xii.targets`. If a target disappears, its capabilities are removed. A restarted process publishes a new instance. Operations sent to older identifiers fail rather than moving to the replacement process.
 
 ## Launch the gateway
 

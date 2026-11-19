@@ -2,6 +2,7 @@
 
 #include <MCP/MCPPCH.h>
 
+#include <Foundation/Strings/StringUtils.h>
 #include <Foundation/Utilities/ConversionUtils.h>
 #include <MCP/Gateway.h>
 #include <MCPPlugin/Json.h>
@@ -10,6 +11,24 @@ namespace
 {
   constexpr xiiUInt32 MaximumTargets               = 24;
   constexpr xiiUInt32 MaximumCapabilitiesPerTarget = 64;
+
+  xiiString MakeTargetNamespace(xiiStringView sInstance)
+  {
+    if (sInstance.IsEmpty())
+    {
+      return {};
+    }
+
+    xiiStringBuilder sNamespace("xii-");
+    for (const char* pCharacter = sInstance.GetStartPointer(); pCharacter < sInstance.GetEndPointer(); ++pCharacter)
+    {
+      if (xiiStringUtils::IsHexDigit(static_cast<xiiUInt8>(*pCharacter)))
+      {
+        sNamespace.Append(*pCharacter);
+      }
+    }
+    return xiiString(sNamespace);
+  }
 
   xiiVariantDictionary CreateBridgeRequest(xiiStringView sAction, xiiUInt8 uiPermissions, xiiStringView sInstance = {})
   {
@@ -237,8 +256,8 @@ void xiiMCPGateway::RemoveCapabilities(Target& ref_target)
 
 bool xiiMCPGateway::RefreshCapabilities(Target& ref_target, xiiUInt64 uiRevision)
 {
-  const auto       deadline = xiiTime::Now() + xiiTime::MakeFromMilliseconds(800);
-  xiiStringBuilder sPrefix(ref_target.m_sEndpoint, "-", ref_target.m_sInstance.GetSubString(2, 8));
+  const auto deadline = xiiTime::Now() + xiiTime::MakeFromMilliseconds(800);
+  const auto sPrefix  = MakeTargetNamespace(ref_target.m_sInstance);
   for (const auto kind : {xiiMCPCapability::Tool, xiiMCPCapability::Resource, xiiMCPCapability::ResourceTemplate, xiiMCPCapability::Prompt})
   {
     auto request    = CreateBridgeRequest("list", m_Configuration.m_uiPermissions, ref_target.m_sInstance);
@@ -390,6 +409,7 @@ xiiStatus xiiMCPGateway::ListTargets(const xiiMCPCallContext&, const xiiVariantD
     xiiVariantDictionary row;
     row["endpoint"]        = target.m_sEndpoint;
     row["instance"]        = target.m_sInstance;
+    row["namespace"]       = MakeTargetNamespace(target.m_sInstance);
     row["application"]     = target.m_sApplication;
     row["connected"]       = m_Bridge.IsConnected(target.m_hConnection);
     row["capabilityCount"] = target.m_Capabilities.GetCount();
