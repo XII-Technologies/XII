@@ -3,6 +3,7 @@
 #include <Foundation/FoundationPCH.h>
 
 #include <Foundation/IO/JSONReader.h>
+#include <Foundation/Math/Math.h>
 
 xiiJSONReader::xiiJSONReader()
 {
@@ -11,11 +12,26 @@ xiiJSONReader::xiiJSONReader()
 
 xiiResult xiiJSONReader::Parse(xiiStreamReader& ref_inputStream, xiiUInt32 uiFirstLineOffset)
 {
+  m_bStrict = false;
+  SetMaximumStrictDepth(0);
+  return ParseDocument(ref_inputStream, uiFirstLineOffset);
+}
+
+xiiResult xiiJSONReader::ParseStrict(xiiStreamReader& ref_input, xiiUInt32 uiMaximumDepth)
+{
+  m_bStrict = true;
+  SetMaximumStrictDepth(xiiMath::Max(uiMaximumDepth, 1u));
+  return ParseDocument(ref_input, 0);
+}
+
+xiiResult xiiJSONReader::ParseDocument(xiiStreamReader& ref_input, xiiUInt32 uiFirstLineOffset)
+{
   m_bParsingError = false;
   m_Stack.Clear();
   m_sLastName.Clear();
+  m_Scalar = xiiVariant();
 
-  SetInputStream(ref_inputStream, uiFirstLineOffset);
+  SetInputStream(ref_input, uiFirstLineOffset);
 
   while (!m_bParsingError && ContinueParsing())
   {
@@ -41,6 +57,11 @@ xiiResult xiiJSONReader::Parse(xiiStreamReader& ref_inputStream, xiiUInt32 uiFir
 
 bool xiiJSONReader::OnVariable(xiiStringView sVarName)
 {
+  if (m_bStrict && m_Stack.PeekBack().m_Dictionary.Contains(sVarName))
+  {
+    m_bParsingError = true;
+  }
+
   m_sLastName = sVarName;
 
   return true;
@@ -48,40 +69,49 @@ bool xiiJSONReader::OnVariable(xiiStringView sVarName)
 
 void xiiJSONReader::OnReadValue(xiiStringView sValue)
 {
-  if (m_Stack.PeekBack().m_Mode == ElementType::Array)
-    m_Stack.PeekBack().m_Array.PushBack(std::move(xiiString(sValue)));
-  else
-    m_Stack.PeekBack().m_Dictionary[m_sLastName] = std::move(xiiString(sValue));
-
-  m_sLastName.Clear();
+  AddValue(xiiString(sValue));
 }
 
 void xiiJSONReader::OnReadValue(double fValue)
 {
-  if (m_Stack.PeekBack().m_Mode == ElementType::Array)
-    m_Stack.PeekBack().m_Array.PushBack(xiiVariant(fValue));
-  else
-    m_Stack.PeekBack().m_Dictionary[m_sLastName] = xiiVariant(fValue);
+  AddValue(fValue);
+}
 
-  m_sLastName.Clear();
+void xiiJSONReader::OnReadInteger(xiiInt64 iValue)
+{
+  AddValue(iValue);
+}
+
+void xiiJSONReader::OnReadUnsignedInteger(xiiUInt64 uiValue)
+{
+  AddValue(uiValue);
 }
 
 void xiiJSONReader::OnReadValue(bool bValue)
 {
-  if (m_Stack.PeekBack().m_Mode == ElementType::Array)
-    m_Stack.PeekBack().m_Array.PushBack(xiiVariant(bValue));
-  else
-    m_Stack.PeekBack().m_Dictionary[m_sLastName] = xiiVariant(bValue);
-
-  m_sLastName.Clear();
+  AddValue(bValue);
 }
 
 void xiiJSONReader::OnReadValueNULL()
 {
-  if (m_Stack.PeekBack().m_Mode == ElementType::Array)
-    m_Stack.PeekBack().m_Array.PushBack(xiiVariant());
+  AddValue(xiiVariant());
+}
+
+void xiiJSONReader::AddValue(xiiVariant value)
+{
+  if (m_Stack.IsEmpty())
+  {
+    m_Stack.ExpandAndGetRef().m_Mode = ElementType::Scalar;
+    m_Scalar = std::move(value);
+  }
+  else if (m_Stack.PeekBack().m_Mode == ElementType::Array)
+  {
+    m_Stack.PeekBack().m_Array.PushBack(std::move(value));
+  }
   else
-    m_Stack.PeekBack().m_Dictionary[m_sLastName] = xiiVariant();
+  {
+    m_Stack.PeekBack().m_Dictionary[m_sLastName] = std::move(value);
+  }
 
   m_sLastName.Clear();
 }

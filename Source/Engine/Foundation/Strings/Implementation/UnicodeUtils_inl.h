@@ -169,12 +169,17 @@ XII_ALWAYS_INLINE bool xiiUnicodeUtils::IsValidUtf8(const char* szString, const 
     szStringEnd = szString + strlen(szString);
   }
 
-  return utf8::is_valid(szString, szStringEnd);
+  return ValidateUtf8(szString, szStringEnd);
 #else
   XII_IGNORE_UNUSED(szString);
   XII_IGNORE_UNUSED(szStringEnd);
   return true;
 #endif
+}
+
+inline bool xiiUnicodeUtils::ValidateUtf8(const char* pTextBegin, const char* pTextEnd)
+{
+  return utf8::is_valid(pTextBegin, pTextEnd);
 }
 
 inline bool xiiUnicodeUtils::SkipUtf8Bom(const char*& ref_szUtf8)

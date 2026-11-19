@@ -6,6 +6,9 @@
 #include <Foundation/Logging/Log.h>
 #include <Foundation/Utilities/ConversionUtils.h>
 
+#include <charconv>
+#include <cmath>
+
 xiiJSONParser::xiiJSONParser()
 {
   m_uiCurByte     = '\0';
@@ -23,6 +26,8 @@ void xiiJSONParser::SetInputStream(xiiStreamReader& stream, xiiUInt32 uiFirstLin
   m_uiCurByte = '\0';
   m_TempString.Clear();
   m_bSkippingMode = false;
+  m_bReadNullByte = false;
+  m_uiContainerDepth = 0;
   m_uiCurLine     = 1 + uiFirstLineOffset;
   m_uiCurColumn   = 0;
 
@@ -62,9 +67,10 @@ void xiiJSONParser::StartParsing()
 
     case '{':
     {
-      JSONState s;
-      s.m_State = ReadingObject;
-      m_StateStack.PushBack(s);
+      if (!BeginContainer(ReadingObject))
+      {
+        return;
+      }
 
       SkipWhitespace();
 
@@ -76,9 +82,10 @@ void xiiJSONParser::StartParsing()
 
     case '[':
     {
-      JSONState s;
-      s.m_State = ReadingArray;
-      m_StateStack.PushBack(s);
+      if (!BeginContainer(ReadingArray))
+      {
+        return;
+      }
 
       SkipWhitespace();
 
@@ -90,6 +97,12 @@ void xiiJSONParser::StartParsing()
 
     default:
     {
+      if (IsStrict())
+      {
+        m_StateStack.ExpandAndGetRef().m_State = ReadingValue;
+        return;
+      }
+
       // Document is malformed
 
       xiiStringBuilder s;
@@ -158,10 +171,21 @@ void xiiJSONParser::SkipStack(State s)
 
 bool xiiJSONParser::ContinueParsing()
 {
+  if (IsStrict() && m_bReadNullByte)
+  {
+    ParsingError("JSON input contains a null byte.", true);
+    return false;
+  }
+
+  if (m_StateStack.IsEmpty())
+  {
+    return false;
+  }
+
   if (m_uiCurByte == '\0')
   {
     // there's always the 'finished' state on the top of the stack when everything went fine
-    if (m_StateStack.GetCount() > 1)
+    if (m_StateStack.GetCount() > 1 || (IsStrict() && m_StateStack.PeekBack().m_State != Finished))
     {
       ParsingError("End of the document reached without closing all objects.", true);
     }
@@ -176,6 +200,15 @@ bool xiiJSONParser::ContinueParsing()
       break;
 
     case Finished:
+      if (IsStrict())
+      {
+        if (IsWhiteSpace(m_uiCurByte))
+        {
+          SkipWhitespace();
+          return true;
+        }
+        ParsingError("Unexpected characters after the JSON value.", true);
+      }
       return false;
 
     case ReadingObject:
@@ -208,6 +241,12 @@ bool xiiJSONParser::ContinueParsing()
 
 void xiiJSONParser::ContinueObject()
 {
+  if (IsStrict() && (m_uiCurByte == ',' || (m_uiCurByte == '}' && m_StateStack.PeekBack().m_bAfterComma)))
+  {
+    ParsingError("Unexpected comma in JSON object.", true);
+    return;
+  }
+
   switch (m_uiCurByte)
   {
     case '\"':
@@ -225,6 +264,7 @@ void xiiJSONParser::ContinueObject()
 
       if (!m_bSkippingMode)
         OnEndObject();
+      --m_uiContainerDepth;
       return;
 
     case ',': // ignore superfluous commas
@@ -243,6 +283,12 @@ void xiiJSONParser::ContinueObject()
 
 void xiiJSONParser::ContinueArray()
 {
+  if (IsStrict() && m_uiCurByte == ']' && m_StateStack.PeekBack().m_bAfterComma)
+  {
+    ParsingError("Trailing comma in JSON array.", true);
+    return;
+  }
+
   switch (m_uiCurByte)
   {
     case ']':
@@ -253,6 +299,7 @@ void xiiJSONParser::ContinueArray()
 
       if (!m_bSkippingMode)
         OnEndArray();
+      --m_uiContainerDepth;
     }
       return;
 
@@ -276,6 +323,11 @@ void xiiJSONParser::ContinueVariable()
     ReadString();
   else
     SkipString();
+
+  if (m_StateStack.IsEmpty())
+  {
+    return;
+  }
 
   SkipWhitespace();
 
@@ -321,6 +373,11 @@ void xiiJSONParser::ContinueValue()
       else
         SkipString();
 
+      if (m_StateStack.IsEmpty())
+      {
+        return;
+      }
+
       SkipWhitespace();
 
       // remove ReadingValue from the stack
@@ -345,13 +402,8 @@ void xiiJSONParser::ContinueValue()
     case '9':
     case '.':
     {
-      const double fValue = ReadNumber();
-
-      // remove ReadingValue from the stack
       m_StateStack.PopBack();
-
-      if (!m_bSkippingMode)
-        OnReadValue(fValue);
+      ReadNumber();
     }
       return;
 
@@ -364,7 +416,17 @@ void xiiJSONParser::ContinueValue()
       ReadWord();
 
       bool bRes = false;
-      if (xiiConversionUtils::StringToBool((const char*)&m_TempString[0], bRes) == XII_FAILURE)
+      const xiiStringView sWord(reinterpret_cast<const char*>(m_TempString.GetData()));
+      if (IsStrict())
+      {
+        if (sWord != "true" && sWord != "false")
+        {
+          ParsingError("Expected a JSON boolean.", true);
+          return;
+        }
+        bRes = sWord == "true";
+      }
+      else if (xiiConversionUtils::StringToBool((const char*)&m_TempString[0], bRes) == XII_FAILURE)
       {
         xiiStringBuilder s;
         s.SetFormat("Parsing value: Expected 'true' or 'false', Got '{0}' instead.", (const char*)&m_TempString[0]);
@@ -395,6 +457,10 @@ void xiiJSONParser::ContinueValue()
         xiiStringBuilder s;
         s.SetFormat("Parsing value: Expected 'null', Got '{0}' instead.", (const char*)&m_TempString[0]);
         ParsingError(s.GetData(), !bIsNull);
+        if (IsStrict() || !bIsNull)
+        {
+          return;
+        }
       }
 
       if (!m_bSkippingMode)
@@ -407,9 +473,10 @@ void xiiJSONParser::ContinueValue()
       // remove ReadingValue from the stack
       m_StateStack.PopBack();
 
-      JSONState s;
-      s.m_State = ReadingArray;
-      m_StateStack.PushBack(s);
+      if (!BeginContainer(ReadingArray))
+      {
+        return;
+      }
 
       SkipWhitespace();
 
@@ -423,9 +490,10 @@ void xiiJSONParser::ContinueValue()
       // remove ReadingValue from the stack
       m_StateStack.PopBack();
 
-      JSONState s;
-      s.m_State = ReadingObject;
-      m_StateStack.PushBack(s);
+      if (!BeginContainer(ReadingObject))
+      {
+        return;
+      }
 
       SkipWhitespace();
 
@@ -446,7 +514,7 @@ void xiiJSONParser::ContinueValue()
 
 void xiiJSONParser::ContinueSeparator()
 {
-  if (xiiStringUtils::IsWhiteSpace(m_uiCurByte))
+  if (IsWhiteSpace(m_uiCurByte))
     SkipWhitespace();
 
   // remove ExpectSeparator from the stack
@@ -458,11 +526,13 @@ void xiiJSONParser::ContinueSeparator()
       return;
 
     case ',':
+      m_StateStack.PeekBack().m_bAfterComma = true;
       SkipWhitespace();
       return;
 
     case ']':
     case '}':
+      m_StateStack.PeekBack().m_bAfterComma = false;
       return;
 
     default:
@@ -477,7 +547,10 @@ void xiiJSONParser::ContinueSeparator()
 
 void xiiJSONParser::ReadNextByte()
 {
-  m_pInput->ReadBytes(&m_uiNextByte, sizeof(xiiUInt8));
+  if (m_pInput->ReadBytes(&m_uiNextByte, sizeof(xiiUInt8)) != 0 && m_uiNextByte == '\0')
+  {
+    m_bReadNullByte = true;
+  }
 
   if (m_uiNextByte == '\n')
   {
@@ -496,7 +569,7 @@ bool xiiJSONParser::ReadCharacter(bool bSkipComments)
   ReadNextByte();
 
   // skip comments
-  if (m_uiCurByte == '/' && bSkipComments)
+  if (m_uiCurByte == '/' && bSkipComments && !IsStrict())
   {
     // line comment, read till line break
     if (m_uiNextByte == '/')
@@ -543,7 +616,7 @@ void xiiJSONParser::SkipWhitespace()
 
     if (!ReadCharacter(true))
       return; // stop when end of stream is encountered
-  } while (xiiStringUtils::IsWhiteSpace(m_uiCurByte));
+  } while (IsWhiteSpace(m_uiCurByte));
 }
 
 void xiiJSONParser::SkipString()
@@ -663,8 +736,12 @@ void xiiJSONParser::ReadString()
           };
           if (ReadUtf16CodePoint(cpt[0]))
           {
-            xiiUInt16* start = &cpt[0];
-            if (xiiUnicodeUtils::IsUtf16Surrogate(start))
+            if (cpt[0] >= 0xDC00 && cpt[0] <= 0xDFFF)
+            {
+              ParsingError("A Unicode low surrogate requires a preceding high surrogate.", false);
+              break;
+            }
+            if (cpt[0] >= 0xD800 && cpt[0] <= 0xDBFF)
             {
               if (m_uiNextByte != '\\' || !ReadCharacter(false))
               {
@@ -680,8 +757,19 @@ void xiiJSONParser::ReadString()
               {
                 break;
               }
+              if (cpt[1] < 0xDC00 || cpt[1] > 0xDFFF)
+              {
+                ParsingError("A Unicode high surrogate requires a following low surrogate.", false);
+                break;
+              }
             }
-            xiiUInt32                                                          uiCodePoint = xiiUnicodeUtils::DecodeUtf16ToUtf32(start);
+            if (IsStrict() && cpt[0] == 0)
+            {
+              ParsingError("JSON strings cannot contain U+0000 in the engine string representation.", false);
+              break;
+            }
+            const xiiUInt16* pStart = &cpt[0];
+            const xiiUInt32 uiCodePoint = xiiUnicodeUtils::DecodeUtf16ToUtf32(pStart);
             xiiUnicodeUtils::UtfInserter<char, xiiHybridArray<xiiUInt8, 4096>> tempInserter(&m_TempString);
             xiiUnicodeUtils::EncodeUtf32ToUtf8(uiCodePoint, tempInserter);
           }
@@ -698,11 +786,20 @@ void xiiJSONParser::ReadString()
     }
     else if (m_uiCurByte != '\\')
     {
+      if (IsStrict() && m_uiCurByte < 0x20)
+      {
+        ParsingError("Unescaped control character in JSON string.", false);
+      }
       m_TempString.PushBack(m_uiCurByte);
     }
   }
 
   m_TempString.PushBack('\0');
+  const char* pText = reinterpret_cast<const char*>(m_TempString.GetData());
+  if (IsStrict() && !m_StateStack.IsEmpty() && !xiiUnicodeUtils::ValidateUtf8(pText, pText + m_TempString.GetCount() - 1))
+  {
+    ParsingError("Invalid UTF-8 in JSON string.", true);
+  }
 }
 
 void xiiJSONParser::ReadWord()
@@ -719,12 +816,12 @@ void xiiJSONParser::ReadWord()
 
     if (!ReadCharacter(true))
       break; // Stop when end of stream is encountered
-  } while (!xiiStringUtils::IsWhiteSpace(m_uiCurByte) && m_uiCurByte != ',' && m_uiCurByte != ']' && m_uiCurByte != '}');
+  } while (!IsWhiteSpace(m_uiCurByte) && m_uiCurByte != ',' && m_uiCurByte != ']' && m_uiCurByte != '}');
 
   m_TempString.PushBack('\0');
 }
 
-double xiiJSONParser::ReadNumber()
+void xiiJSONParser::ReadNumber()
 {
   XII_ASSERT_DEBUG(m_pInput != nullptr, "Input Stream is not set up.");
 
@@ -742,13 +839,105 @@ double xiiJSONParser::ReadNumber()
 
   m_TempString.PushBack('\0');
 
+  if (IsStrict())
+  {
+    ReadStrictNumber(xiiStringView(reinterpret_cast<const char*>(m_TempString.GetData()), m_TempString.GetCount() - 1));
+    return;
+  }
+
   double fResult = 0;
   if (xiiConversionUtils::StringToFloat((const char*)&m_TempString[0], fResult) == XII_FAILURE)
   {
     xiiStringBuilder s;
     s.SetFormat("Reading number failed: Could not convert '{0}' to a floating point value.", (const char*)&m_TempString[0]);
     ParsingError(s.GetData(), true);
+    return;
   }
 
-  return fResult;
+  if (!m_bSkippingMode)
+  {
+    OnReadValue(fResult);
+  }
+}
+
+void xiiJSONParser::ReadStrictNumber(xiiStringView sNumber)
+{
+  const char* pBegin = sNumber.GetStartPointer();
+  const char* pEnd = sNumber.GetEndPointer();
+  const bool bNegative = *pBegin == '-';
+  const char* pInteger = pBegin + (bNegative ? 1 : 0);
+  const auto IsDigit = [](char character) { return character >= '0' && character <= '9'; };
+  if (pInteger == pEnd || !IsDigit(*pInteger) || (*pInteger == '0' && pInteger + 1 < pEnd && IsDigit(pInteger[1])))
+  {
+    ParsingError("Invalid JSON number.", true);
+    return;
+  }
+
+  if (sNumber.FindSubString(".") == nullptr && sNumber.FindSubString_NoCase("e") == nullptr)
+  {
+    if (bNegative)
+    {
+      xiiInt64 iValue = 0;
+      const auto result = std::from_chars(pBegin, pEnd, iValue);
+      if (result.ec == std::errc() && result.ptr == pEnd)
+      {
+        if (!m_bSkippingMode)
+        {
+          OnReadInteger(iValue);
+        }
+        return;
+      }
+    }
+    else
+    {
+      xiiUInt64 uiValue = 0;
+      const auto result = std::from_chars(pBegin, pEnd, uiValue);
+      if (result.ec == std::errc() && result.ptr == pEnd)
+      {
+        if (!m_bSkippingMode)
+        {
+          OnReadUnsignedInteger(uiValue);
+        }
+        return;
+      }
+    }
+  }
+
+  const char* pDecimal = sNumber.FindSubString(".");
+  if (pDecimal != nullptr && (pDecimal + 1 == pEnd || !IsDigit(pDecimal[1])))
+  {
+    ParsingError("Expected a digit after the JSON decimal point.", true);
+    return;
+  }
+
+  double fValue = 0.0;
+  const auto result = std::from_chars(pBegin, pEnd, fValue);
+  if (result.ec != std::errc() || result.ptr != pEnd || !std::isfinite(fValue))
+  {
+    ParsingError("Invalid or out-of-range JSON number.", true);
+    return;
+  }
+
+  if (!m_bSkippingMode)
+  {
+    OnReadValue(fValue);
+  }
+}
+
+bool xiiJSONParser::BeginContainer(State state)
+{
+  if (IsStrict() && m_uiContainerDepth >= m_uiMaximumStrictDepth)
+  {
+    ParsingError("JSON nesting limit exceeded.", true);
+    return false;
+  }
+
+  ++m_uiContainerDepth;
+  m_StateStack.ExpandAndGetRef().m_State = state;
+  return true;
+}
+
+bool xiiJSONParser::IsWhiteSpace(xiiUInt8 uiByte) const
+{
+  return IsStrict() ? (uiByte == ' ' || uiByte == '\t' || uiByte == '\r' || uiByte == '\n') : xiiStringUtils::IsWhiteSpace(uiByte);
 }

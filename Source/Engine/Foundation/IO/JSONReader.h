@@ -20,6 +20,7 @@ public:
     None,       ///< The JSON document is entirely empty (not even containing an empty object or array).
     Dictionary, ///< The top level element in the JSON document is an dictionary.
     Array,      ///< The top level element in the JSON document is an array.
+    Scalar,     ///< The top level element is a JSON scalar, including null.
   };
 
   xiiJSONReader();
@@ -28,11 +29,16 @@ public:
   /// error occurred.
   xiiResult Parse(xiiStreamReader& ref_input, xiiUInt32 uiFirstLineOffset = 0);
 
+  /// Parses one standard JSON value. Rejects duplicate keys and strings containing U+0000.
+  xiiResult ParseStrict(xiiStreamReader& ref_input, xiiUInt32 uiMaximumDepth = 32);
+
   /// Returns the top-level object of the JSON document.
   const xiiVariantDictionary& GetTopLevelObject() const { return m_Stack.PeekBack().m_Dictionary; }
 
   /// Returns the top-level array of the JSON document.
   const xiiVariantArray& GetTopLevelArray() const { return m_Stack.PeekBack().m_Array; }
+
+  const xiiVariant& GetTopLevelScalar() const { return m_Scalar; }
 
   /// Returns whether the top level element is an array or an object.
   ElementType GetTopLevelElementType() const { return m_Stack.PeekBack().m_Mode; }
@@ -46,6 +52,8 @@ private:
 
   /// [internal] Do not override further.
   void OnReadValue(double fValue) override;
+  void OnReadInteger(xiiInt64 iValue) override;
+  void OnReadUnsignedInteger(xiiUInt64 uiValue) override;
 
   /// [internal] Do not override further.
   void OnReadValue(bool bValue) override;
@@ -66,6 +74,8 @@ private:
   void OnEndArray() override;
 
   void OnParsingError(xiiStringView sMessage, bool bFatal, xiiUInt32 uiLine, xiiUInt32 uiColumn) override;
+  void AddValue(xiiVariant value);
+  xiiResult ParseDocument(xiiStreamReader& ref_input, xiiUInt32 uiFirstLineOffset);
 
 protected:
   struct Element
@@ -79,5 +89,7 @@ protected:
   xiiHybridArray<Element, 32> m_Stack;
 
   bool      m_bParsingError = false;
+  bool      m_bStrict = false;
   xiiString m_sLastName;
+  xiiVariant m_Scalar;
 };

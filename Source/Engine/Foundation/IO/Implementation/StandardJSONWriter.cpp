@@ -15,7 +15,9 @@ xiiStandardJSONWriter::CommaWriter::CommaWriter(xiiStandardJSONWriter* pWriter)
 {
   const xiiStandardJSONWriter::State state = pWriter->m_StateStack.PeekBack().m_State;
   XII_IGNORE_UNUSED(state);
-  XII_ASSERT_DEV(state == xiiStandardJSONWriter::Array || state == xiiStandardJSONWriter::NamedArray || state == xiiStandardJSONWriter::Variable, "Values can only be written inside BeginVariable() / EndVariable() and BeginArray() / EndArray().");
+  XII_ASSERT_DEV(state == xiiStandardJSONWriter::Array || state == xiiStandardJSONWriter::NamedArray || state == xiiStandardJSONWriter::Variable ||
+                   (state == xiiStandardJSONWriter::Empty && !pWriter->m_StateStack.PeekBack().m_bValueWasWritten),
+                 "Values can be written at the top level, in a variable, or in an array.");
 
   m_pWriter = pWriter;
 
@@ -96,18 +98,46 @@ void xiiStandardJSONWriter::OutputString(xiiStringView s)
 
 void xiiStandardJSONWriter::OutputEscapedString(xiiStringView s)
 {
-  xiiStringBuilder sEscaped = s;
-  sEscaped.ReplaceAll("\\", "\\\\");
-  // sEscaped.ReplaceAll("/", "\\/"); // this is not necessary to escape
-  sEscaped.ReplaceAll("\"", "\\\"");
-  sEscaped.ReplaceAll("\b", "\\b");
-  sEscaped.ReplaceAll("\r", "\\r");
-  sEscaped.ReplaceAll("\f", "\\f");
-  sEscaped.ReplaceAll("\n", "\\n");
-  sEscaped.ReplaceAll("\t", "\\t");
-
   OutputString("\"");
-  OutputString(sEscaped);
+  const char* pStart = s.GetStartPointer();
+  const char* pEnd = s.GetEndPointer();
+  for (const char* pCharacter = pStart; pCharacter != pEnd; ++pCharacter)
+  {
+    const auto uiCharacter = static_cast<xiiUInt8>(*pCharacter);
+    if (uiCharacter >= 0x20 && uiCharacter != '\\' && uiCharacter != '"')
+    {
+      continue;
+    }
+
+    OutputString(xiiStringView(pStart, pCharacter));
+    const char* szEscape = nullptr;
+    switch (uiCharacter)
+    {
+      case '\\': szEscape = "\\\\"; break;
+      case '"': szEscape = "\\\""; break;
+      case '\b': szEscape = "\\b"; break;
+      case '\f': szEscape = "\\f"; break;
+      case '\n': szEscape = "\\n"; break;
+      case '\r': szEscape = "\\r"; break;
+      case '\t': szEscape = "\\t"; break;
+      default: break;
+    }
+    if (szEscape != nullptr)
+    {
+      OutputString(szEscape);
+    }
+    else
+    {
+      constexpr char HexDigits[] = "0123456789abcdef";
+      const char szControl[] = {'\\', 'u', '0', '0', HexDigits[uiCharacter >> 4], HexDigits[uiCharacter & 0xF], '\0'};
+      OutputString(szControl);
+    }
+    pStart = pCharacter + 1;
+  }
+  if (pStart != pEnd)
+  {
+    OutputString(xiiStringView(pStart, pEnd));
+  }
   OutputString("\"");
 }
 
