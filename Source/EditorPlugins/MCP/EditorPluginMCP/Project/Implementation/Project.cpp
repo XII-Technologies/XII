@@ -4,6 +4,8 @@
 
 #include <Core/Configuration/PlatformProfile.h>
 #include <EditorFramework/Assets/AssetCurator.h>
+#include <EditorFramework/CodeGen/CppProject.h>
+#include <EditorFramework/EditorApp/EditorApp.moc.h>
 #include <EditorFramework/IPC/EngineProcessConnection.h>
 #include <EditorPluginMCP/EditorMCP.h>
 #include <EditorPluginMCP/EditorMCPArguments.h>
@@ -39,6 +41,38 @@ xiiStatus xiiEditorMCP::Project(const xiiMCPCallContext&, const xiiVariantDictio
     {
       out_result["assetProfile"] = xiiString(pProfile->GetConfigName());
     }
+    xiiVariantArray profiles;
+    for (xiiUInt32 uiIndex = 0; uiIndex < pCurator->GetNumAssetProfiles() && uiIndex < 64; ++uiIndex)
+    {
+      if (const auto* pProfile = pCurator->GetAssetProfile(uiIndex))
+      {
+        xiiVariantDictionary profile;
+        profile["name"]     = xiiString(pProfile->GetConfigName());
+        profile["platform"] = xiiString(pProfile->GetTargetPlatform());
+        profiles.PushBack(profile);
+      }
+    }
+    out_result["assetProfiles"] = profiles;
+  }
+  if (const auto* pEditor = xiiQtEditorApp::GetSingleton(); pEditor != nullptr && xiiToolsProject::IsProjectOpen())
+  {
+    xiiVariantArray bundles;
+    for (const auto& bundle : pEditor->GetPluginBundles().m_Plugins)
+    {
+      if (bundles.GetCount() == 128)
+      {
+        out_result["pluginBundlesTruncated"] = true;
+        break;
+      }
+      xiiVariantDictionary row;
+      row["id"]        = bundle.Key();
+      row["name"]      = bundle.Value().m_sDisplayName;
+      row["selected"]  = bundle.Value().m_bSelected;
+      row["mandatory"] = bundle.Value().m_bMandatory;
+      row["missing"]   = bundle.Value().m_bMissing;
+      bundles.PushBack(row);
+    }
+    out_result["pluginBundles"] = bundles;
   }
   xiiVariantArray types;
   for (auto it = xiiDocumentManager::GetAllDocumentDescriptors().GetIterator(); it.IsValid() && types.GetCount() < 128; ++it)
@@ -49,11 +83,37 @@ xiiStatus xiiEditorMCP::Project(const xiiMCPCallContext&, const xiiVariantDictio
   return XII_SUCCESS;
 }
 
+xiiStatus xiiEditorMCP::CppProject(const xiiMCPCallContext&, const xiiVariantDictionary&, xiiVariantDictionary& out_result)
+{
+  if (!xiiToolsProject::IsProjectOpen())
+  {
+    return xiiStatus("Open a project before inspecting its C++ integration.");
+  }
+  out_result["hasBuildFiles"]           = xiiCppProject::ExistsProjectCMakeListsTxt();
+  out_result["sdkCompiler"]             = xiiString(xiiCppProject::CompilerToString(xiiCppProject::GetSdkCompiler()));
+  out_result["sdkCompilerMajorVersion"] = xiiCppProject::GetSdkCompilerMajorVersion();
+  xiiCppSettings settings;
+  if (settings.Load().Failed() || !xiiCppSettings::IsValidPluginName(settings.m_sPluginName))
+  {
+    out_result["configured"] = false;
+    return XII_SUCCESS;
+  }
+  out_result["configured"]      = true;
+  out_result["plugin"]          = settings.m_sPluginName;
+  out_result["sourceDirectory"] = xiiCppProject::GetPluginSourceDir(settings);
+  out_result["buildDirectory"]  = xiiCppProject::GetBuildDir(settings);
+  out_result["outputDirectory"] = xiiCppProject::GetPluginOutputDir();
+  out_result["generator"]       = xiiCppProject::GetCMakeGeneratorName(settings);
+  out_result["solutionExists"]  = xiiCppProject::ExistsSolution(settings);
+  return XII_SUCCESS;
+}
+
 xiiResult xiiEditorMCP::RegisterProject()
 {
   const auto read   = xiiMCPPermission::Read;
   const auto sEmpty = R"({"type":"object","additionalProperties":false})";
-  if (m_Registry.RegisterTool("editor.project", "Describe the current XII project, manifest, active asset profile and engine-process readiness.", sEmpty, read, xiiMakeDelegate(&xiiEditorMCP::Project, this)).Failed())
+  if (m_Registry.RegisterTool("editor.project", "Describe the current project, available asset profiles, plugin configuration and engine-process readiness.", sEmpty, read, xiiMakeDelegate(&xiiEditorMCP::Project, this)).Failed() ||
+      m_Registry.RegisterTool("editor.cpp_project", "Inspect configured C++ plugin source, generated solution, compiler and build directories.", sEmpty, read, xiiMakeDelegate(&xiiEditorMCP::CppProject, this)).Failed())
   {
     return XII_FAILURE;
   }

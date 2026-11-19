@@ -113,7 +113,12 @@ xiiStatus xiiEditorMCP::Scene(const xiiMCPCallContext&, const xiiVariantDictiona
   {
     return xiiStatus("Select an open scene, prefab or layer in the active project.");
   }
-  auto&       accessor = *pDocument->GetObjectAccessor();
+  return InspectDocumentObject(*pDocument, arguments, out_result);
+}
+
+xiiStatus xiiEditorMCP::InspectDocumentObject(xiiDocument& ref_document, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result)
+{
+  auto&       accessor = *ref_document.GetObjectAccessor();
   const auto* pObject  = arguments.Contains("object") ? FindDocumentObject(accessor, arguments, "object") : accessor.GetObjectManager()->GetRootObject();
   xiiUInt64   uiOffset = 0, uiLimit = 0;
   if (pObject == nullptr || !ReadPage(arguments, uiOffset, uiLimit))
@@ -121,7 +126,7 @@ xiiStatus xiiEditorMCP::Scene(const xiiMCPCallContext&, const xiiVariantDictiona
     return xiiStatus("The requested object or page is unavailable.");
   }
 
-  DescribeDocument(*pDocument, GetDocumentSession(*pDocument), out_result);
+  DescribeDocument(ref_document, GetDocumentSession(ref_document), out_result);
   out_result["object"]     = DescribeDocumentObject(*pObject);
   const auto&     children = pObject->GetChildren();
   xiiVariantArray rows;
@@ -145,8 +150,8 @@ xiiStatus xiiEditorMCP::Scene(const xiiMCPCallContext&, const xiiVariantDictiona
   xiiVariantDictionary values;
   for (const auto* pProperty : properties)
   {
-    if (pProperty->GetCategory() != xiiPropertyCategory::Member || pProperty->GetFlags().IsSet(xiiPropertyFlags::Pointer) ||
-        pProperty->GetAttributeByType<xiiHiddenAttribute>() != nullptr || values.GetCount() >= 64)
+    if (pProperty->GetCategory() != xiiPropertyCategory::Member || pProperty->GetFlags().IsAnySet(xiiPropertyFlags::Pointer | xiiPropertyFlags::PointerOwner) ||
+        pProperty->GetAttributeByType<xiiHiddenAttribute>() != nullptr || pProperty->GetAttributeByType<xiiTemporaryAttribute>() != nullptr || values.GetCount() >= 64)
     {
       continue;
     }
@@ -167,6 +172,10 @@ xiiStatus xiiEditorMCP::EditScene(const xiiMCPCallContext& context, const xiiVar
   if (validation.Failed())
   {
     return validation;
+  }
+  if (!IsScene(*pDocument))
+  {
+    return xiiStatus("Select an open writable scene, prefab or layer.");
   }
   const auto* pOperations = arguments.GetValue("operations");
   if (pOperations == nullptr || !pOperations->IsA<xiiVariantArray>())

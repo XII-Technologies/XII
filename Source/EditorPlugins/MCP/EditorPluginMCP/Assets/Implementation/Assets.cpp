@@ -4,6 +4,7 @@
 
 #include <EditorFramework/Assets/AssetCurator.h>
 #include <EditorFramework/Assets/AssetProcessor.h>
+#include <EditorFramework/EditorApp/EditorApp.moc.h>
 #include <EditorPluginMCP/EditorMCP.h>
 #include <EditorPluginMCP/EditorMCPArguments.h>
 #include <ToolsFoundation/Project/ToolsProject.h>
@@ -143,12 +144,49 @@ xiiStatus xiiEditorMCP::Transform(const xiiMCPCallContext&, const xiiVariantDict
   return status;
 }
 
+xiiStatus xiiEditorMCP::OpenAsset(const xiiMCPCallContext& context, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result)
+{
+  xiiUInt64   uiGeneration = 0;
+  const auto* pProject     = xiiToolsProject::GetSingleton();
+  const auto* pCurator     = xiiAssetCurator::GetSingleton();
+  auto*       pEditor      = xiiQtEditorApp::GetSingleton();
+  const auto  id           = ReadGuid(arguments, "asset");
+  if (!xiiToolsProject::IsProjectOpen() || pProject == nullptr || pProject->GetManifest().m_ProjectID != m_AllowedProject ||
+      !ReadUnsigned(arguments, "generation", uiGeneration) || !xiiToolsProject::IsProjectGenerationCurrent(uiGeneration) ||
+      pCurator == nullptr || !pCurator->IsReady() || pEditor == nullptr || !id.IsValid())
+  {
+    return xiiStatus("Use the current generation of an authorized ready project and an indexed asset ID.");
+  }
+
+  xiiString sPath;
+  {
+    const auto asset = pCurator->FindSubAsset(FormatGuid(id));
+    if (asset.isValid() && asset->m_pAssetInfo != nullptr)
+    {
+      sPath = asset->m_pAssetInfo->m_Path.GetAbsolutePath();
+    }
+  }
+  if (sPath.IsEmpty() || !pProject->IsDocumentInAllowedRoot(sPath) || context.HasExpired())
+  {
+    return xiiStatus("The indexed asset document is unavailable in the authorized project.");
+  }
+  const auto* pDocument = pEditor->OpenDocument(sPath, xiiDocumentFlags::RequestWindow | xiiDocumentFlags::AddToRecentFilesList);
+  if (pDocument == nullptr || !xiiToolsProject::IsProjectGenerationCurrent(uiGeneration))
+  {
+    return xiiStatus("The Editor could not open the document in the current project generation.");
+  }
+  DescribeDocument(*pDocument, GetDocumentSession(*pDocument), out_result);
+  return XII_SUCCESS;
+}
+
 xiiResult xiiEditorMCP::RegisterAssets()
 {
   const auto read    = xiiMCPPermission::Read;
+  const auto edit    = xiiMCPPermission::Edit;
   const auto execute = xiiMCPPermission::Execute;
   if (m_Registry.RegisterTool("editor.assets", "Search indexed assets by data-relative path, type and tags with bounded pagination.", R"({"type":"object","properties":{"query":{"type":"string"},"type":{"type":"string"},"tag":{"type":"string"},"offset":{"type":"integer","minimum":0},"limit":{"type":"integer","minimum":1,"maximum":128}}})", read, xiiMakeDelegate(&xiiEditorMCP::Assets, this)).Failed() ||
       m_Registry.RegisterTool("editor.asset", "Inspect one indexed asset's transform state, dependencies, outputs and recent transform messages.", R"({"type":"object","required":["asset"],"properties":{"asset":{"type":"string"}}})", read, xiiMakeDelegate(&xiiEditorMCP::Asset, this)).Failed() ||
+      m_Registry.RegisterTool("editor.open_asset", "Open an indexed asset document through the Editor. Use its returned session and revision for authoring.", R"({"type":"object","required":["asset","generation"],"properties":{"asset":{"type":"string"},"generation":{"type":"integer"}}})", edit, xiiMakeDelegate(&xiiEditorMCP::OpenAsset, this)).Failed() ||
       m_Registry.RegisterTool("editor.transform_asset", "Queue an indexed asset for transformation by the Editor's background asset processor.", R"({"type":"object","required":["asset","generation"],"properties":{"asset":{"type":"string"},"generation":{"type":"integer"}}})", execute, xiiMakeDelegate(&xiiEditorMCP::Transform, this)).Failed())
   {
     return XII_FAILURE;
