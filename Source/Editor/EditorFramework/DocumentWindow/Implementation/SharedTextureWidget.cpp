@@ -172,9 +172,14 @@ void xiiQtSharedTextureWidget::SetFrame(const xiiViewFrameMsgToEditor& frame)
 
   CollectCompletedFrames();
   auto& imported = m_ImportedSlots[frame.m_uiSlotIndex];
-  if (imported.m_uiFrameID >= frame.m_uiFrameID || imported.m_uiReleaseFence != 0)
+  if (imported.m_uiFrameID >= frame.m_uiFrameID)
   {
-    // The producer can only publish after we acknowledge the previous frame in this slot.
+    return;
+  }
+  if (imported.m_uiReleaseFence != 0)
+  {
+    // A recreated producer can publish before the old slot's GPU copy completes.
+    m_OnFrameConsumed(frame.m_uiSlotIndex, frame.m_uiFrameID, false);
     return;
   }
   imported.m_uiFrameID = frame.m_uiFrameID;

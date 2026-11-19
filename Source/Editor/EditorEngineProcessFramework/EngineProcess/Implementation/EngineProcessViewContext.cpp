@@ -17,6 +17,7 @@
 #include <EditorEngineProcessFramework/Rendering/ViewportNavigationGizmo.h>
 #include <Foundation/Configuration/CVar.h>
 #include <Foundation/Profiling/Profiling.h>
+#include <Foundation/Threading/AtomicInteger.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <Foundation/Utilities/Stats.h>
 #include <GraphicsCore/Components/Render/CameraComponent.h>
@@ -35,6 +36,9 @@
 
 namespace
 {
+  // The Editor presentation widget survives document context resets.
+  xiiAtomicInteger64 s_ViewportPublicationID{0};
+
   xiiCVarInt cvar_ViewportFrameSlots("Rendering.Editor.ViewportFrameSlots", 3, xiiCVarFlags::Default,
                                      "Number of persistent offscreen targets per new editor view (2 or 3).");
 }
@@ -317,7 +321,7 @@ xiiResult xiiEngineProcessViewContext::CreateFrameSlot(FrameSlot& ref_slot, xiiS
   ref_slot.m_pTarget  = std::move(pTarget);
   ref_slot.m_pTexture = std::move(pTexture);
   ref_slot.m_pReadback.Clear();
-  ref_slot.m_uiTextureID = ++m_uiTextureID;
+  ref_slot.m_uiTextureID = static_cast<xiiUInt64>(s_ViewportPublicationID.Increment());
   return XII_SUCCESS;
 }
 
@@ -369,7 +373,7 @@ void xiiEngineProcessViewContext::PresentFrame()
       xiiLog::Error("Could not capture viewport screenshot '{}'.", m_sScreenshot);
     m_sScreenshot.Clear();
   }
-  frame.m_uiFrameID   = ++m_uiFrameID;
+  frame.m_uiFrameID   = static_cast<xiiUInt64>(s_ViewportPublicationID.Increment());
   frame.m_uiTextureID = slot.m_uiTextureID;
   frame.m_uiSlotIndex = uiSlotIndex;
   frame.m_uiWidth     = static_cast<xiiUInt16>(size.width);
