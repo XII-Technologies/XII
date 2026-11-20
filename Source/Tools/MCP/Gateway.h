@@ -19,15 +19,21 @@ class xiiMCPGateway final
 {
 public:
   xiiMCPGateway();
+  ~xiiMCPGateway();
   [[nodiscard]] xiiStatus            Start(const xiiMCPGatewayConfiguration& configuration);
   void                               Update();
   [[nodiscard]] xiiStatus            SetTargetEnabled(xiiStringView sEndpoint, bool bEnabled);
-  void                               Process(xiiStringView sRequest, xiiMCPSession& ref_session, xiiStringBuilder& out_sReply, const xiiAtomicBool* pCanceled = nullptr);
+  void                               Process(xiiStringView sRequest, xiiMCPSession& ref_session, xiiStringBuilder& out_sReply);
+  [[nodiscard]] bool                 HasPendingLocalRequests() const { return !m_LocalRequests.IsEmpty(); }
+  [[nodiscard]] bool                 PollLocalReply(xiiStringBuilder& out_sReply);
+  void                               CancelLocalRequests();
   [[nodiscard]] xiiUInt64            GetCapabilityRevision() const { return m_Registry.GetRevision(); }
   [[nodiscard]] xiiNetworkEndpoint   GetEndpoint() const { return m_Http.GetEndpoint(); }
   [[nodiscard]] xiiVariantDictionary GetSnapshot() const;
 
 private:
+  class ForwardedInvocation;
+
   struct Capability
   {
     xiiMCPCapability m_Kind = xiiMCPCapability::Tool;
@@ -71,17 +77,19 @@ private:
   bool      AcceptCapabilityPage(Target& ref_target, const xiiVariantDictionary& response);
   bool      PublishCapabilities(Target& ref_target);
   xiiStatus ListTargets(const xiiMCPCallContext&, const xiiVariantDictionary&, xiiVariantDictionary& out_reply);
-  xiiStatus Forward(xiiStringView sEndpoint, xiiStringView sInstance, xiiMCPCapability kind, xiiStringView sRemoteKey, xiiStringView sPublicKey,
-                    const xiiMCPCallContext& context, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result);
+  xiiStatus BeginForward(xiiStringView sEndpoint, xiiStringView sInstance, xiiMCPCapability kind, xiiStringView sRemoteKey, xiiStringView sPublicKey,
+                         const xiiMCPCallContext& context, const xiiVariantDictionary& arguments, xiiUniquePtr<xiiMCPInvocation>& out_invocation);
+  void      RecordForward(xiiStringView sEndpoint, xiiStringView sCapability, xiiTime start, xiiStringView sStatus, xiiStringView sError = {});
 
-  xiiMCPGatewayConfiguration m_Configuration;
-  xiiMCPRegistry             m_Registry;
-  xiiMCPProtocol             m_Protocol;
-  xiiMCPBridge               m_Bridge;
-  xiiMCPHttpServer           m_Http;
-  xiiMap<xiiString, Target>  m_Targets;
-  xiiSet<xiiString>          m_BlockedTargets;
-  xiiVariantArray            m_Activity;
-  xiiTime                    m_NextDiscovery;
-  xiiUInt32                  m_uiNextTarget = 0;
+  xiiMCPGatewayConfiguration          m_Configuration;
+  xiiMCPRegistry                      m_Registry;
+  xiiMCPProtocol                      m_Protocol;
+  xiiMCPBridge                        m_Bridge;
+  xiiMCPHttpServer                    m_Http;
+  xiiMap<xiiString, Target>           m_Targets;
+  xiiSet<xiiString>                   m_BlockedTargets;
+  xiiVariantArray                     m_Activity;
+  xiiDynamicArray<xiiMCPPendingReply> m_LocalRequests;
+  xiiTime                             m_NextDiscovery;
+  xiiUInt32                           m_uiNextTarget = 0;
 };

@@ -4,6 +4,7 @@
 
 #include <MCPPlugin/MCPPluginDLL.h>
 
+#include <Foundation/Strings/StringBuilder.h>
 #include <MCPPlugin/Registry.h>
 
 struct XII_MCPPLUGIN_DLL xiiMCPSession
@@ -32,7 +33,27 @@ enum class xiiMCPReplyStatus : xiiUInt8
   Reply,
   Notification,
   BadRequest,
-  MethodNotFound
+  MethodNotFound,
+  Deferred
+};
+
+/// Owns a deferred response independently of its request bytes and session.
+class XII_MCPPLUGIN_DLL xiiMCPPendingReply
+{
+public:
+  [[nodiscard]] bool IsPending() const { return m_pInvocation != nullptr; }
+  [[nodiscard]] bool MatchesId(const xiiVariant& id) const;
+
+  /// Checks the provider and writes a JSON-RPC response if it has finished.
+  [[nodiscard]] bool Poll(xiiStringBuilder& out_sReply);
+
+private:
+  friend class xiiMCPProtocol;
+
+  xiiUniquePtr<xiiMCPInvocation> m_pInvocation;
+  xiiVariant                     m_Id;
+  xiiMCPCapability               m_Kind    = xiiMCPCapability::Tool;
+  bool                           m_bModern = false;
 };
 
 /// Transport-independent MCP request and reply handling. Transport-supplied context is authoritative.
@@ -44,12 +65,15 @@ public:
 
   explicit xiiMCPProtocol(const xiiMCPRegistry& registry);
 
-  /// A successful notification produces no output. Requests always produce one UTF-8 JSON reply.
+  /// An accepted notification produces no output. An uncanceled request produces one UTF-8 JSON reply.
+  /// Poll an admitted deferred request through its pending reply, or destroy the reply to cancel it.
+  /// A transport that accepts cancellation notifications can retrieve the request ID in out_pCancellationId.
   xiiMCPReplyStatus Process(xiiStringView sMessage, xiiMCPSession& ref_session, const xiiMCPCallContext& context, xiiStringBuilder& out_sReply,
-                            const xiiMCPHttpMetadata* pHttpMetadata = nullptr) const;
+                            const xiiMCPHttpMetadata* pHttpMetadata = nullptr, xiiMCPPendingReply* pPending = nullptr, xiiVariant* out_pCancellationId = nullptr) const;
 
 private:
-  void Dispatch(const xiiVariantDictionary& request, xiiMCPSession& ref_session, const xiiMCPCallContext& context, bool bModern, xiiVariantDictionary& ref_reply) const;
+  void Dispatch(const xiiVariantDictionary& request, xiiMCPSession& ref_session, const xiiMCPCallContext& context, bool bModern,
+                xiiVariantDictionary& ref_reply, xiiMCPPendingReply* pPending) const;
 
   const xiiMCPRegistry& m_Registry;
 };

@@ -5,7 +5,6 @@
 #include <Foundation/Network/Messaging/NetworkReflectionEndpoint.h>
 #include <Foundation/Network/Reflection/NetworkAttributes.h>
 #include <Foundation/System/Process.h>
-#include <Foundation/Threading/ThreadUtils.h>
 #include <Foundation/Utilities/ConversionUtils.h>
 #include <MCPPlugin/Bridge.h>
 #include <MCPPlugin/Json.h>
@@ -509,33 +508,6 @@ void xiiMCPBridge::CancelCall(xiiNetworkRpcRequest request)
   m_pState->m_Reflection.CancelRpc(request).IgnoreResult();
 }
 
-xiiStatus xiiMCPBridge::Call(xiiNetworkConnection hConnection, const xiiVariantDictionary& request, xiiTime deadline, xiiVariantDictionary& out_response, const xiiAtomicBool* pCanceled)
-{
-  if (pCanceled != nullptr && *pCanceled)
-  {
-    return xiiStatus("The operation was canceled before submission.");
-  }
-  xiiNetworkRpcRequest pending;
-  XII_SUCCEED_OR_RETURN(BeginCall(hConnection, request, deadline, pending));
-  do
-  {
-    Update();
-    xiiStatus status(XII_SUCCESS);
-    if (PollCall(pending, status, out_response))
-    {
-      return status;
-    }
-    if (pCanceled != nullptr && *pCanceled)
-    {
-      CancelCall(pending);
-      return xiiStatus("Cancellation was requested. The target may already have completed the operation.");
-    }
-    xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(1));
-  } while (xiiTime::Now() < deadline);
-
-  CancelCall(pending);
-  return xiiStatus("The XII target did not respond before the deadline.");
-}
 
 xiiResult xiiMCPBridge::Discover(xiiDynamicArray<xiiTelemetryInstance>& out_instances)
 {

@@ -118,46 +118,103 @@ namespace
     return true;
   }
 
-  void CallTool(const xiiMCPRegistry& registry, const xiiVariantDictionary& params, const xiiMCPCallContext& context, xiiVariantDictionary& ref_reply)
+  void CompleteInvocation(xiiMCPCapability kind, bool bModern, const xiiStatus& status, xiiVariantDictionary&& value, xiiVariantDictionary& ref_reply)
   {
-    const auto sName = xiiMCPJson::GetString(params, "name");
-    if (!registry.Contains(xiiMCPCapability::Tool, sName, context))
+    if (kind != xiiMCPCapability::Tool)
     {
-      Error(ref_reply, -32602, "Unknown or unauthorized tool.");
+      if (status.Failed())
+      {
+        const bool bResource = kind == xiiMCPCapability::Resource || kind == xiiMCPCapability::ResourceTemplate;
+        Error(ref_reply, bResource && !bModern ? -32002 : -32602, status.GetMessageString());
+      }
+      else
+      {
+        ref_reply["result"] = std::move(value);
+      }
       return;
     }
 
-    const xiiVariantDictionary empty;
-    const auto*                pArguments = xiiMCPJson::GetObject(params, "arguments");
-    if (pArguments == nullptr && params.Contains("arguments"))
-    {
-      Error(ref_reply, -32602, "Tool arguments must be a JSON object.");
-      return;
-    }
-
-    xiiVariantDictionary structured;
     xiiVariantDictionary result;
-    const auto           status = registry.Invoke(xiiMCPCapability::Tool, sName, context, pArguments != nullptr ? *pArguments : empty, structured);
     xiiStringBuilder     sText;
     if (status.Failed())
     {
       sText             = status.GetMessageString();
       result["isError"] = true;
     }
-    else if (xiiMCPJson::Write(structured, sText, 96 * 1024).Failed())
+    else if (xiiMCPJson::Write(value, sText, 96 * 1024).Failed())
     {
       sText             = "The tool result exceeded the JSON response budget or contained unsupported values.";
       result["isError"] = true;
     }
     else
     {
-      result["structuredContent"] = std::move(structured);
+      result["structuredContent"] = std::move(value);
     }
 
     result["content"]   = MakeTextContent(sText);
     ref_reply["result"] = std::move(result);
   }
+
+  void WriteReply(xiiVariantDictionary& ref_reply, bool bModern, xiiStringBuilder& out_sReply)
+  {
+    if (bModern)
+    {
+      if (const auto* pResult = xiiMCPJson::GetObject(ref_reply, "result"))
+      {
+        auto result          = *pResult;
+        result["resultType"] = xiiString("complete");
+        ref_reply["result"]  = std::move(result);
+      }
+    }
+    if (xiiMCPJson::Write(ref_reply, out_sReply).Failed())
+    {
+      ref_reply.Remove("result");
+      Error(ref_reply, -32603, "The response could not be encoded within the server limit.");
+      if (xiiMCPJson::Write(ref_reply, out_sReply).Failed())
+      {
+        out_sReply = R"({"jsonrpc":"2.0","id":null,"error":{"code":-32603,"message":"Response exceeds server limits."}})";
+      }
+    }
+  }
 } // namespace
+
+bool xiiMCPPendingReply::MatchesId(const xiiVariant& id) const
+{
+  if (!IsPending())
+  {
+    return false;
+  }
+  if (m_Id.IsA<xiiString>())
+  {
+    return id.IsA<xiiString>() && m_Id.Get<xiiString>() == id.Get<xiiString>();
+  }
+  if (m_Id.IsA<xiiInt64>() && id.IsA<xiiInt64>())
+  {
+    return m_Id.Get<xiiInt64>() == id.Get<xiiInt64>();
+  }
+
+  xiiUInt64 uiExpected  = 0;
+  xiiUInt64 uiCandidate = 0;
+  return xiiMCPJson::ReadUInt(m_Id, uiExpected) && xiiMCPJson::ReadUInt(id, uiCandidate) && uiExpected == uiCandidate;
+}
+
+bool xiiMCPPendingReply::Poll(xiiStringBuilder& out_sReply)
+{
+  xiiStatus            status(XII_SUCCESS);
+  xiiVariantDictionary value;
+  if (!m_pInvocation || !m_pInvocation->Poll(status, value))
+  {
+    return false;
+  }
+
+  m_pInvocation.Clear();
+  xiiVariantDictionary reply;
+  reply["jsonrpc"] = xiiString("2.0");
+  reply["id"]      = m_Id;
+  CompleteInvocation(m_Kind, m_bModern, status, std::move(value), reply);
+  WriteReply(reply, m_bModern, out_sReply);
+  return true;
+}
 
 xiiMCPProtocol::xiiMCPProtocol(const xiiMCPRegistry& registry) :
   m_Registry(registry)
@@ -165,13 +222,19 @@ xiiMCPProtocol::xiiMCPProtocol(const xiiMCPRegistry& registry) :
 }
 
 xiiMCPReplyStatus xiiMCPProtocol::Process(xiiStringView sMessage, xiiMCPSession& ref_session, const xiiMCPCallContext& context, xiiStringBuilder& out_sReply,
-                                          const xiiMCPHttpMetadata* pHttpMetadata) const
+                                          const xiiMCPHttpMetadata* pHttpMetadata, xiiMCPPendingReply* pPending, xiiVariant* out_pCancellationId) const
 {
+  XII_ASSERT_DEV(pPending == nullptr || !pPending->IsPending(), "A pending request already owns this slot.");
   out_sReply.Clear();
+  if (out_pCancellationId != nullptr)
+  {
+    *out_pCancellationId = xiiVariant();
+  }
   xiiVariantDictionary reply;
-  reply["jsonrpc"]  = xiiString("2.0");
-  reply["id"]       = xiiVariant();
-  auto       status = xiiMCPReplyStatus::Reply;
+  reply["jsonrpc"]        = xiiString("2.0");
+  reply["id"]             = xiiVariant();
+  auto       status       = xiiMCPReplyStatus::Reply;
+  bool       bModernReply = false;
   xiiVariant input;
   if (xiiMCPJson::Parse(sMessage, input).Failed())
   {
@@ -201,6 +264,13 @@ xiiMCPReplyStatus xiiMCPProtocol::Process(xiiStringView sMessage, xiiMCPSession&
       {
         ref_session.m_State = xiiMCPSession::State::Ready;
       }
+      if (sMethod == "notifications/cancelled" && out_pCancellationId != nullptr && pParams != nullptr)
+      {
+        if (const auto* pCanceled = pParams->GetValue("requestId"); pCanceled != nullptr && IsId(*pCanceled))
+        {
+          *out_pCancellationId = *pCanceled;
+        }
+      }
       return xiiMCPReplyStatus::Notification;
     }
     else
@@ -223,17 +293,18 @@ xiiMCPReplyStatus xiiMCPProtocol::Process(xiiStringView sMessage, xiiMCPSession&
       }
       else
       {
-        Dispatch(request, ref_session, context, bModern, reply);
+        Dispatch(request, ref_session, context, bModern, reply, pPending);
+        if (pPending != nullptr && pPending->IsPending())
+        {
+          pPending->m_Id      = *pId;
+          pPending->m_bModern = bModern;
+          return xiiMCPReplyStatus::Deferred;
+        }
+
+        bModernReply = bModern;
         if (bModern)
         {
-          const auto* pResult = xiiMCPJson::GetObject(reply, "result");
-          if (pResult != nullptr)
-          {
-            auto result          = *pResult;
-            result["resultType"] = xiiString("complete");
-            reply["result"]      = std::move(result);
-          }
-          else if (const auto* pError = xiiMCPJson::GetObject(reply, "error"))
+          if (const auto* pError = xiiMCPJson::GetObject(reply, "error"))
           {
             if (const auto* pCode = pError->GetValue("code"); pCode != nullptr && *pCode == xiiVariant(xiiInt32(-32601)))
             {
@@ -245,19 +316,12 @@ xiiMCPReplyStatus xiiMCPProtocol::Process(xiiStringView sMessage, xiiMCPSession&
     }
   }
 
-  if (xiiMCPJson::Write(reply, out_sReply).Failed())
-  {
-    reply.Remove("result");
-    Error(reply, -32603, "The response could not be encoded within the server limit.");
-    if (xiiMCPJson::Write(reply, out_sReply).Failed())
-    {
-      out_sReply = R"({"jsonrpc":"2.0","id":null,"error":{"code":-32603,"message":"Response exceeds server limits."}})";
-    }
-  }
+  WriteReply(reply, bModernReply, out_sReply);
   return status;
 }
 
-void xiiMCPProtocol::Dispatch(const xiiVariantDictionary& request, xiiMCPSession& ref_session, const xiiMCPCallContext& context, bool bModern, xiiVariantDictionary& ref_reply) const
+void xiiMCPProtocol::Dispatch(const xiiVariantDictionary& request, xiiMCPSession& ref_session, const xiiMCPCallContext& context, bool bModern,
+                              xiiVariantDictionary& ref_reply, xiiMCPPendingReply* pPending) const
 {
   const auto  sMethod = xiiMCPJson::GetString(request, "method");
   const auto* pParams = xiiMCPJson::GetObject(request, "params");
@@ -318,30 +382,42 @@ void xiiMCPProtocol::Dispatch(const xiiVariantDictionary& request, xiiMCPSession
     Error(ref_reply, -32002, "Initialize the MCP session before sending this request.");
     return;
   }
-  else if (sMethod == "tools/call")
+  else if (sMethod == "tools/call" || sMethod == "resources/read" || sMethod == "prompts/get")
   {
-    CallTool(m_Registry, params, context, ref_reply);
-    return;
-  }
-  else if (sMethod == "resources/read" || sMethod == "prompts/get")
-  {
-    const bool  bResource  = sMethod == "resources/read";
-    const auto  kind       = bResource ? xiiMCPCapability::Resource : xiiMCPCapability::Prompt;
-    const auto  sKey       = xiiMCPJson::GetString(params, bResource ? "uri" : "name");
+    const bool bTool     = sMethod == "tools/call";
+    const bool bResource = sMethod == "resources/read";
+    auto       kind      = xiiMCPCapability::Prompt;
+    if (bTool)
+    {
+      kind = xiiMCPCapability::Tool;
+    }
+    else if (bResource)
+    {
+      kind = xiiMCPCapability::Resource;
+    }
+    const auto sKey = xiiMCPJson::GetString(params, bResource ? "uri" : "name");
+    if (bTool && !m_Registry.Contains(kind, sKey, context))
+    {
+      Error(ref_reply, -32602, "Unknown or unauthorized tool.");
+      return;
+    }
     const auto* pArguments = bResource ? &params : xiiMCPJson::GetObject(params, "arguments");
     if (pArguments == nullptr && params.Contains("arguments"))
     {
-      Error(ref_reply, -32602, "Prompt arguments must be a JSON object.");
+      Error(ref_reply, -32602, bTool ? "Tool arguments must be a JSON object." : "Prompt arguments must be a JSON object.");
       return;
     }
 
-    const auto status = bResource ? m_Registry.ReadResource(sKey, context, result) :
-                                    m_Registry.Invoke(kind, sKey, context, pArguments != nullptr ? *pArguments : empty, result);
-    if (status.Failed())
+    auto*      pInvocation = pPending != nullptr ? &pPending->m_pInvocation : nullptr;
+    const auto status      = bResource ? m_Registry.ReadResource(sKey, context, result, pInvocation) :
+                                         m_Registry.Invoke(kind, sKey, context, pArguments != nullptr ? *pArguments : empty, result, pInvocation);
+    if (pPending != nullptr && pPending->IsPending())
     {
-      Error(ref_reply, bResource && !bModern ? -32002 : -32602, status.GetMessageString());
+      pPending->m_Kind = kind;
       return;
     }
+    CompleteInvocation(kind, bModern, status, std::move(result), ref_reply);
+    return;
   }
   else
   {

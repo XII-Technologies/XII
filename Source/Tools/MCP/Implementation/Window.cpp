@@ -281,7 +281,7 @@ int RunMCPWindow(const xiiMCPGatewayConfiguration& configuration)
   pCapabilityLayout->addWidget(pRequestStatus);
   QObject::connect(pCancel, &QPushButton::clicked, [&] {
     gateway.CancelRequests();
-    pRequestStatus->setText("Queued requests cleared. Cancellation requested for any running call.");
+    pRequestStatus->setText("Queued requests cleared. Cancellation requested for pending calls.");
   });
   auto* pCapabilityNav = addPage(pCapabilities, "Capabilities", QStyle::SP_FileDialogDetailedView);
   QObject::connect(pUseTarget, &QPushButton::clicked, [&] {
