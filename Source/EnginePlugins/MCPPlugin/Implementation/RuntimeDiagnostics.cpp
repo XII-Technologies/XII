@@ -8,17 +8,13 @@
 #include <Foundation/Utilities/Stats.h>
 #include <MCPPlugin/Implementation/RuntimeDiagnostics.h>
 #include <MCPPlugin/Json.h>
+#include <MCPPlugin/Providers/RuntimeProviders.h>
 #include <MCPPlugin/Reflection.h>
 
 #ifdef XII_MCP_HAS_RENDERING
 #  include <Core/GameApplication/GameApplicationBase.h>
-#  include <Core/Graphics/Camera.h>
 #  include <Core/System/WindowManager.h>
-#  include <Core/World/World.h>
-#  include <Foundation/Utilities/ConversionUtils.h>
 #  include <GraphicsCore/Pipeline/RenderGraph.h>
-#  include <GraphicsCore/Pipeline/RenderWorldModule.h>
-#  include <GraphicsCore/Pipeline/View.h>
 #  include <GraphicsFoundation/Device/Device.h>
 #endif
 
@@ -163,74 +159,6 @@ namespace
     return XII_SUCCESS;
   }
 
-  xiiStatus ListRenderViews(const xiiMCPCallContext& context, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result)
-  {
-    const auto sWorld = xiiMCPJson::GetString(arguments, "world");
-    if (!xiiConversionUtils::IsStringUuid(sWorld))
-    {
-      return xiiStatus("Use a world ID returned by runtime.worlds.");
-    }
-    const auto worldId = xiiConversionUtils::ConvertStringToUuid(sWorld);
-    for (xiiUInt32 uiSlot = 0; uiSlot < xiiWorld::GetWorldCount(); ++uiSlot)
-    {
-      const auto* pWorld = xiiWorld::GetWorld(uiSlot);
-      if (pWorld == nullptr || pWorld->GetInstanceId() != worldId)
-      {
-        continue;
-      }
-      XII_LOCK(pWorld->GetReadMarker());
-      const auto* pRender = pWorld->GetModule<xiiRenderWorldModule>();
-      if (pRender == nullptr)
-      {
-        return xiiStatus("The selected world has no rendering module.");
-      }
-
-      xiiVariantArray views;
-      for (xiiUInt32 uiHint = 0; uiHint < xiiCameraUsageHint::ENUM_COUNT; ++uiHint)
-      {
-        if (context.HasExpired())
-        {
-          return xiiStatus("Render view inspection exceeded its deadline.");
-        }
-        const auto* pView = pRender->GetViewByUsageHint(static_cast<xiiCameraUsageHint::Enum>(uiHint));
-        if (pView == nullptr)
-        {
-          continue;
-        }
-        const auto&          viewport = pView->GetViewport();
-        xiiVariantDictionary row;
-        row["name"]            = xiiString(pView->GetName());
-        row["usageHint"]       = uiHint;
-        row["viewportWidth"]   = viewport.width;
-        row["viewportHeight"]  = viewport.height;
-        row["renderWidth"]     = pView->GetRenderResolutionWidth();
-        row["renderHeight"]    = pView->GetRenderResolutionHeight();
-        row["renderScale"]     = pView->GetRenderScale();
-        row["resolutionScale"] = pView->GetRenderResolutionScale();
-        row["renderMode"]      = pView->GetViewRenderMode().GetValue();
-        row["renderPath"]      = pView->GetRenderPath().GetValue();
-        if (pView->GetRenderPipelineResource().IsValid())
-        {
-          row["pipeline"] = xiiString(pView->GetRenderPipelineResource().GetResourceID());
-        }
-        if (const auto* pCamera = pView->GetCamera())
-        {
-          if (xiiVariant position; xiiMCPReflection::ConvertValue(pCamera->GetPosition(), position))
-          {
-            row["cameraPosition"] = position;
-          }
-          if (xiiVariant forward; xiiMCPReflection::ConvertValue(pCamera->GetDirForwards(), forward))
-          {
-            row["cameraForward"] = forward;
-          }
-        }
-        views.PushBack(row);
-      }
-      out_result["views"] = views;
-      return XII_SUCCESS;
-    }
-    return xiiStatus("The selected world no longer exists.");
-  }
 #endif
 } // namespace
 
@@ -302,9 +230,7 @@ void xiiMCPRuntimeDiagnostics::Update()
     m_Registry.RegisterTool("runtime.graphics", "Read the active graphics adapter, optional features and heap allocations.", R"({"type":"object","additionalProperties":false})",
                             xiiMCPPermission::Read, &GetGraphics)
       .IgnoreResult();
-    m_Registry.RegisterTool("runtime.render_views", "Inspect the first view for each camera usage in a world, including camera, pipeline, mode and render resolution.",
-                            R"({"type":"object","required":["world"],"properties":{"world":{"type":"string"}}})", xiiMCPPermission::Read, &ListRenderViews)
-      .IgnoreResult();
+    xiiMCPRuntimeProviders::RegisterRenderViews(m_Registry);
     m_Registry.RegisterTool("runtime.render_graph", "Request a bounded render graph snapshot for a named view (or the next rendered view) and poll for its passes and available GPU timings.",
                             R"({"type":"object","properties":{"capture":{"type":"boolean","default":false},"view":{"type":"string","maxLength":128}}})",
                             xiiMCPPermission::Capture, xiiMakeDelegate(&xiiMCPRuntimeDiagnostics::GetGraph, this))
@@ -316,7 +242,7 @@ void xiiMCPRuntimeDiagnostics::Update()
   {
     m_Registry.Remove(xiiMCPCapability::Tool, "runtime.render_graph");
     m_Registry.Remove(xiiMCPCapability::Tool, "runtime.graphics");
-    m_Registry.Remove(xiiMCPCapability::Tool, "runtime.render_views");
+    xiiMCPRuntimeProviders::RemoveRenderViews(m_Registry);
     m_Registry.Remove(xiiMCPCapability::Tool, "runtime.screenshot");
     xiiRenderGraphDebug::s_ExecutionEvents.RemoveEventHandler(m_GraphSubscription);
     xiiRenderGraphTimestampProfiler::s_TimingEvents.RemoveEventHandler(m_TimingSubscription);

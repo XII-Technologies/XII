@@ -57,25 +57,9 @@ namespace
 
   bool IsRuntimeEditable(const xiiAbstractProperty& property)
   {
-    if (!IsExposedMember(property) || property.GetFlags().IsAnySet(xiiPropertyFlags::ReadOnly | xiiPropertyFlags::Bitflags) ||
-        property.GetAttributeByType<xiiReadOnlyAttribute>() != nullptr || property.GetAttributeByType<xiiRuntimeEditableAttribute>() == nullptr)
-    {
-      return false;
-    }
-
-    if (property.GetFlags().IsSet(xiiPropertyFlags::IsEnum))
-    {
-      return true;
-    }
-
-    const auto type = property.GetSpecificType()->GetVariantType();
-    if (!xiiReflectionUtils::IsValueType(&property) || GetJsonType(type) == nullptr)
-    {
-      return false;
-    }
-
-    return type != xiiVariantType::StringView && type != xiiVariantType::Uuid && type != xiiVariantType::HashedString &&
-      type != xiiVariantType::Time && type != xiiVariantType::Angle && type != xiiVariantType::Angled;
+    return xiiMCPReflection::SupportsArgument(property) && !property.GetFlags().IsSet(xiiPropertyFlags::Bitflags) &&
+      property.GetAttributeByType<xiiReadOnlyAttribute>() == nullptr && property.GetAttributeByType<xiiRuntimeEditableAttribute>() != nullptr &&
+      (property.GetFlags().IsSet(xiiPropertyFlags::IsEnum) || xiiReflectionUtils::IsValueType(&property));
   }
 
   xiiVariantArray Components(std::initializer_list<double> values)
@@ -318,9 +302,26 @@ bool xiiMCPReflection::ReadFloatArray(const xiiVariant& json, xiiArrayPtr<float>
   return true;
 }
 
-bool xiiMCPReflection::ConvertArgument(const xiiAbstractProperty& property, const xiiVariant& json, xiiVariant& out_value)
+bool xiiMCPReflection::SupportsArgument(const xiiAbstractProperty& property)
 {
   if (!IsExposedMember(property) || property.GetFlags().IsSet(xiiPropertyFlags::ReadOnly))
+  {
+    return false;
+  }
+
+  if (property.GetFlags().IsAnySet(xiiPropertyFlags::IsEnum | xiiPropertyFlags::Bitflags))
+  {
+    return true;
+  }
+
+  const auto type = property.GetSpecificType()->GetVariantType();
+  return GetJsonType(type) != nullptr && type != xiiVariantType::StringView && type != xiiVariantType::Uuid && type != xiiVariantType::HashedString &&
+    type != xiiVariantType::Time && type != xiiVariantType::Angle && type != xiiVariantType::Angled;
+}
+
+bool xiiMCPReflection::ConvertArgument(const xiiAbstractProperty& property, const xiiVariant& json, xiiVariant& out_value)
+{
+  if (!SupportsArgument(property))
   {
     return false;
   }
