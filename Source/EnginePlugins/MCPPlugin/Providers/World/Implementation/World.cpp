@@ -29,8 +29,20 @@ xiiWorld* xiiMCPRuntimeProviders::FindWorld(const xiiVariantDictionary& argument
   return nullptr;
 }
 
+xiiGameObject* xiiMCPRuntimeProviders::FindObject(xiiWorld& ref_world, xiiStringView sObject)
+{
+  xiiGameObjectId id;
+  if (xiiConversionUtils::StringToUInt64Strict(sObject, id.m_Data).Failed() || id.m_WorldIndex != ref_world.GetIndex())
+  {
+    return nullptr;
+  }
+  xiiGameObject* pObject = nullptr;
+  return ref_world.TryGetObject(xiiGameObjectHandle(id), pObject) ? pObject : nullptr;
+}
+
 namespace
 {
+  using xiiMCPRuntimeProviders::FindObject;
   using xiiMCPRuntimeProviders::FindWorld;
   using xiiMCPRuntimeProviders::FormatHandle;
 
@@ -42,22 +54,6 @@ namespace
     xiiStringBuilder sId;
     xiiConversionUtils::ToString(world.GetInstanceId(), sId);
     return xiiString(sId);
-  }
-
-  xiiGameObject* FindObject(xiiWorld& ref_world, xiiStringView sObject)
-  {
-    if (sObject.IsEmpty())
-    {
-      return nullptr;
-    }
-
-    xiiGameObjectId id;
-    if (xiiConversionUtils::StringToUInt64Strict(sObject, id.m_Data).Failed() || id.m_WorldIndex != ref_world.GetIndex())
-    {
-      return nullptr;
-    }
-    xiiGameObject* pObject = nullptr;
-    return ref_world.TryGetObject(xiiGameObjectHandle(id), pObject) ? pObject : nullptr;
   }
 
   xiiVariantDictionary DescribeObject(const xiiGameObject& object)

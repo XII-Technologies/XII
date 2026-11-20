@@ -91,6 +91,7 @@ xiiMCPRuntime::xiiMCPRuntime() :
   xiiMCPRuntimeProviders::RegisterApplication(m_Registry);
   xiiMCPRuntimeProviders::RegisterInput(m_Registry);
   xiiMCPRuntimeProviders::RegisterWorld(m_Registry);
+  xiiMCPRuntimeProviders::RegisterScripting(m_Registry);
   xiiMCPRuntimeProviders::RegisterResources(m_Registry);
   xiiMCPRuntimeProviders::RegisterReflection(m_Registry);
 }
