@@ -63,6 +63,7 @@ private:
   xiiStatus                        Graph(const xiiMCPCallContext& context, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result);
   xiiStatus                        EditGraph(const xiiMCPCallContext& context, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result);
   xiiStatus                        Viewport(const xiiMCPCallContext&, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result);
+  xiiStatus                        ConfigureViewport(const xiiMCPCallContext& context, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result);
 
   void               ConnectCppBuildProcess();
   void               DrainCppBuild();

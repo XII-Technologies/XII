@@ -129,7 +129,8 @@ Editor capabilities include:
 | `editor.close_document` | Close a saved writable main document using its current session and revision. Finish transactions and save the main document and its loaded sub-documents first. |
 | `editor.set_document_property` | Set a supported reflected value in an undoable transaction. |
 | `editor.document_history` | Undo or redo one operation at the current document revision. |
-| `editor.viewport` | Inspect the focused or specified document's views, camera, resolution and render mode. Pass a view ID to include its effective rendering settings. |
+| `editor.viewport` | Inspect the focused or specified document's views, camera, resolution and render mode. Pass a view ID to include available render modes and effective rendering settings. |
+| `editor.configure_viewport` | Set a view's render mode, frame statistics, vertical sync or monoscopic perspective camera pose. Use the document, session, generation, revision and view ID from `editor.viewport`. Supply `position`, `target` and `up` together as three-number arrays to move the camera. Requires project edit access. |
 | `editor.graph` | Page through nodes, pins and links or discover creation templates in a supported graph document. |
 | `editor.edit_graph` | Create a node from a template, connect pins, disconnect a link or remove a node through command history. |
 | `editor.scene` | Page through scene, prefab or layer objects and inspect supported properties. |
