@@ -37,4 +37,5 @@ private:
   xiiMCPBridge                           m_Bridge;
   xiiMCPHttpServer                       m_Http;
   xiiUniquePtr<xiiMCPRuntimeDiagnostics> m_pDiagnostics;
+  bool                                   m_bPhysicsRegistered = false;
 };

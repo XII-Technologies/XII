@@ -126,6 +126,7 @@ xiiStatus xiiMCPRuntime::Start(const xiiMCPRuntimeConfiguration& configuration)
 void xiiMCPRuntime::Update()
 {
   m_pDiagnostics->Update();
+  xiiMCPRuntimeProviders::UpdatePhysics(m_Registry, m_bPhysicsRegistered);
   m_Bridge.Update();
   m_Http.Update();
 }

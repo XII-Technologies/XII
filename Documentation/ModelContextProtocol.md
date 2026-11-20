@@ -85,6 +85,8 @@ Live runtime capabilities include:
 | `runtime.edit_object` | Create, reposition, rotate, scale, activate, reparent or schedule removal of a live object with edit permission. Reparenting preserves the local transform. |
 | `runtime.edit_objects` | Execute up to 24 object edits in order. Reports partial results if an operation fails or expires. |
 | `runtime.simulation` | Change enablement, pause and speed with execute permission. |
+| `runtime.physics` | Active rigid-body physics module and world gravity. |
+| `runtime.physics_query` | Nearest-hit raycast, sphere sweep or sphere overlap through the active physics module. Casts report distance, position, normal and available actor and shape IDs. |
 | `runtime.types`, `runtime.type` | Search RTTI by base type, plugin or name and inspect the generated schema for a type. |
 | `runtime.resources` | Page registered resources by RTTI type and ID, with content availability, quality levels and memory. |
 | `runtime.reload_resource` | Request a standard reload of an existing resource with execute permission. |
@@ -101,6 +103,8 @@ Live runtime capabilities include:
 Runtime resources include `xii://runtime/status` and the `xii://runtime/worlds/{index}` template. Use the numeric registry slot as `index`. Its result includes the live world ID required by world operations. The `runtime.inspect_scene` prompt describes the world inspection workflow.
 
 To edit a live component member, take the component ID and exact RTTI type from `runtime.object` and inspect its schema with `runtime.component`. Pass `action: "set"`, `world`, `object`, `component`, `type`, `property` and `value` to `runtime.edit_component`. Set accepts top-level members marked `x-xii-runtime-editable` and validates the value against its reflected type and bounds before invoking the setter. Marker radius and volume shape, falloff and sort order support live changes. Component authors can opt in additional members with `xiiRuntimeEditableAttribute` when they support live changes under the world write marker. Live values are transient.
+
+Physics tools appear when a live world has an initialized rigid-body physics module. Queries use world coordinates and distances. A cast requires nonzero `direction` and positive `distance`. Sphere queries also require positive `radius`. Omit `collisionLayer` to use layer 0 or supply a name recognized by the active module.
 
 Editor capabilities include:
 
