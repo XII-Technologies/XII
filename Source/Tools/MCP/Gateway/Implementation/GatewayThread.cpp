@@ -56,7 +56,7 @@ void xiiMCPGatewayThread::CancelRequests()
 {
   XII_LOCK(m_Mutex);
   m_Requests.Clear();
-  m_bCanceled = true;
+  m_bCancelRequested = true;
 }
 
 void xiiMCPGatewayThread::Read(xiiVariantDictionary& out_snapshot, xiiDeque<xiiString>& out_replies)
@@ -80,21 +80,38 @@ xiiUInt32 xiiMCPGatewayThread::Run()
 
   xiiMCPSession session;
   session.m_State = xiiMCPSession::State::Ready;
-  xiiTime   nextSnapshot;
-  xiiUInt64 uiConfigurationRevision = 0;
+  xiiTime    nextSnapshot;
+  xiiUInt64  uiConfigurationRevision = 0;
+  const auto publishReply            = [this](xiiStringView sReply) {
+    if (sReply.IsEmpty())
+    {
+      return;
+    }
+    XII_LOCK(m_Mutex);
+    if (m_Replies.GetCount() == 16)
+    {
+      m_Replies.PopFront();
+    }
+    m_Replies.PushBack(xiiString(sReply));
+  };
   while (!m_bStop)
   {
     TargetChange                             targetChange;
     xiiString                                sRequest;
     xiiUniquePtr<xiiMCPGatewayConfiguration> pPending;
+    bool                                     bCancelRequested = false;
     {
       XII_LOCK(m_Mutex);
-      pPending    = std::move(m_pPendingConfiguration);
-      m_bApplying = pPending != nullptr;
+      if (!pGateway || !pGateway->HasPendingLocalRequests())
+      {
+        pPending = std::move(m_pPendingConfiguration);
+      }
+      m_bApplying        = pPending != nullptr;
+      bCancelRequested   = m_bCancelRequested;
+      m_bCancelRequested = false;
       if (!m_Requests.IsEmpty())
       {
-        m_bCanceled = false;
-        sRequest    = std::move(m_Requests.PeekFront());
+        sRequest = std::move(m_Requests.PeekFront());
         m_Requests.PopFront();
       }
       if (!m_TargetChanges.IsEmpty())
@@ -133,6 +150,10 @@ xiiUInt32 xiiMCPGatewayThread::Run()
     }
     if (pGateway)
     {
+      if (bCancelRequested)
+      {
+        pGateway->CancelLocalRequests();
+      }
       if (!targetChange.m_sEndpoint.IsEmpty())
       {
         const auto targetStatus = pGateway->SetTargetEnabled(targetChange.m_sEndpoint, targetChange.m_bEnabled);
@@ -146,24 +167,24 @@ xiiUInt32 xiiMCPGatewayThread::Run()
         }
       }
       pGateway->Update();
+      xiiStringBuilder sReply;
+      while (pGateway->PollLocalReply(sReply))
+      {
+        publishReply(sReply);
+      }
     }
     if (!sRequest.IsEmpty())
     {
       xiiStringBuilder sReply;
       if (pGateway)
       {
-        pGateway->Process(sRequest, session, sReply, &m_bCanceled);
+        pGateway->Process(sRequest, session, sReply);
       }
       else
       {
         sReply = "The gateway is unavailable.";
       }
-      XII_LOCK(m_Mutex);
-      if (m_Replies.GetCount() == 16)
-      {
-        m_Replies.PopFront();
-      }
-      m_Replies.PushBack(xiiString(sReply));
+      publishReply(sReply);
     }
 
     const auto now = xiiTime::Now();

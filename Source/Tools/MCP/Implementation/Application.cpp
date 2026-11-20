@@ -300,10 +300,19 @@ xiiApplication::Execution xiiMCPApplication::Run()
     }
     m_uiLastCapabilityRevision = uiRevision;
 
+    xiiStringBuilder sCompleted;
+    while (m_pGateway->PollLocalReply(sCompleted))
+    {
+      if (!WriteFrame(m_pProtocolOutput, sCompleted))
+      {
+        return Execution::Quit;
+      }
+    }
+
     char       input[4096];
     xiiUInt32  uiCount = 0;
     const auto state   = ReadInput(input, uiCount);
-    if (state == xiiMCPInputState::Closed)
+    if (state == xiiMCPInputState::Closed && !m_pGateway->HasPendingLocalRequests())
     {
       return Execution::Quit;
     }

@@ -32,7 +32,6 @@ public:
   [[nodiscard]] xiiStatus BeginCall(xiiNetworkConnection hConnection, const xiiVariantDictionary& request, xiiTime deadline, xiiNetworkRpcRequest& out_request);
   [[nodiscard]] bool      PollCall(xiiNetworkRpcRequest request, xiiStatus& out_status, xiiVariantDictionary& out_response);
   void                    CancelCall(xiiNetworkRpcRequest request);
-  [[nodiscard]] xiiStatus Call(xiiNetworkConnection hConnection, const xiiVariantDictionary& request, xiiTime deadline, xiiVariantDictionary& out_response, const xiiAtomicBool* pCanceled = nullptr);
 
   [[nodiscard]] static xiiResult Discover(xiiDynamicArray<xiiTelemetryInstance>& out_instances);
 

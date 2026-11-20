@@ -37,7 +37,7 @@ private:
   xiiDeque<xiiString>                      m_Replies;
   xiiDeque<TargetChange>                   m_TargetChanges;
   xiiUniquePtr<xiiMCPGatewayConfiguration> m_pPendingConfiguration;
-  xiiAtomicBool                            m_bStop     = false;
-  xiiAtomicBool                            m_bCanceled = false;
-  bool                                     m_bApplying = false;
+  xiiAtomicBool                            m_bStop            = false;
+  bool                                     m_bCancelRequested = false;
+  bool                                     m_bApplying        = false;
 };

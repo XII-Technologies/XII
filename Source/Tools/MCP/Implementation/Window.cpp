@@ -155,15 +155,15 @@ int RunMCPWindow(const xiiMCPGatewayConfiguration& configuration)
   auto* pOverview       = new QWidget();
   auto* pOverviewLayout = new QVBoxLayout(pOverview);
   pOverviewLayout->setContentsMargins(0, 0, 0, 0);
-  auto*   pMetrics       = new QGridLayout();
-  QLabel* pListenValue   = nullptr;
-  QLabel* pTargetsValue  = nullptr;
-  QLabel* pToolsValue    = nullptr;
-  QLabel* pSessionsValue = nullptr;
+  auto*   pMetrics      = new QGridLayout();
+  QLabel* pListenValue  = nullptr;
+  QLabel* pTargetsValue = nullptr;
+  QLabel* pToolsValue   = nullptr;
+  QLabel* pClientsValue = nullptr;
   pMetrics->addWidget(SummaryCard("HTTP listener", pListenValue), 0, 0, 1, 3);
   pMetrics->addWidget(SummaryCard("Connected applications", pTargetsValue), 1, 0);
   pMetrics->addWidget(SummaryCard("Available tools", pToolsValue), 1, 1);
-  pMetrics->addWidget(SummaryCard("HTTP sessions", pSessionsValue), 1, 2);
+  pMetrics->addWidget(SummaryCard("Recent HTTP clients", pClientsValue), 1, 2);
   pOverviewLayout->addLayout(pMetrics);
   auto* pStatus = new QLabel("Starting gateway...");
   pStatus->setTextFormat(Qt::PlainText);
@@ -281,7 +281,7 @@ int RunMCPWindow(const xiiMCPGatewayConfiguration& configuration)
   pCapabilityLayout->addWidget(pRequestStatus);
   QObject::connect(pCancel, &QPushButton::clicked, [&] {
     gateway.CancelRequests();
-    pRequestStatus->setText("Queued requests cleared. Cancellation requested for any running call.");
+    pRequestStatus->setText("Queued requests cleared. Cancellation requested for pending calls.");
   });
   auto* pCapabilityNav = addPage(pCapabilities, "Capabilities", QStyle::SP_FileDialogDetailedView);
   QObject::connect(pUseTarget, &QPushButton::clicked, [&] {
@@ -308,7 +308,7 @@ int RunMCPWindow(const xiiMCPGatewayConfiguration& configuration)
   pClientEndpoint->setPlaceholderText("Start the HTTP listener to connect a client.");
   auto* pCopy = new QPushButton("Copy VS Code HTTP configuration");
   pCopy->setEnabled(false);
-  auto* pClients = MakeTable({"Client", "State", "Idle (s)"});
+  auto* pClients = MakeTable({"Client", "Version", "State", "Pending", "Idle (s)"});
   pConnectionLayout->addWidget(pClientEndpoint);
   pConnectionLayout->addWidget(pCopy);
   pConnectionLayout->addWidget(pClients, 1);
@@ -530,7 +530,8 @@ int RunMCPWindow(const xiiMCPGatewayConfiguration& configuration)
     }
     pTargetsValue->setText(QString::number(uiConnected));
     pToolsValue->setText(QString::number(tools.GetCount()));
-    pSessionsValue->setText(QString::number(snapshot["sessions"].ConvertTo<xiiUInt32>()));
+    const auto& clients = GetArray(snapshot, "clients");
+    pClientsValue->setText(QString::number(clients.GetCount()));
     pStatus->setVisible(!sError.IsEmpty() || uiConnected == 0);
     pStatus->setText(sError.IsEmpty() ? QString("Launch an MCP-enabled XII application or connect to an instance by Local endpoint.") : ToQt(sError));
     const auto sTargetStatus = xiiMCPJson::GetString(snapshot, "targetStatus");
@@ -538,7 +539,7 @@ int RunMCPWindow(const xiiMCPGatewayConfiguration& configuration)
     {
       pTargetStatus->setText(ToQt(sTargetStatus));
     }
-    FillTable(*pClients, GetArray(snapshot, "clients"), {"name", "state", "idleSeconds"});
+    FillTable(*pClients, clients, {"name", "version", "state", "pendingRequests", "idleSeconds"});
     QString selectedEndpoint;
     if (const auto* pSelected = pInstances->item(pInstances->currentRow(), 1))
     {
