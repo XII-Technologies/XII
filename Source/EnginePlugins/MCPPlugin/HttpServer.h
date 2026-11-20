@@ -30,8 +30,8 @@ public:
   void                             Stop();
   void                             Update();
   [[nodiscard]] xiiNetworkEndpoint GetEndpoint() const;
-  [[nodiscard]] xiiUInt32          GetSessionCount() const;
-  void                             ListSessions(xiiVariantArray& out_sessions) const;
+  /// Returns initialized sessions and recent stateless client profiles for display.
+  void ListClients(xiiVariantArray& out_clients) const;
 
 private:
   const xiiMCPProtocol&         m_Protocol;

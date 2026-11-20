@@ -24,7 +24,7 @@ xiiMCP -MCPTransport stdio
 
 Automatic discovery is on by default. To select explicit local endpoints, use `-MCPTarget NAME` followed by one or more endpoint names. Use `-MCPNoDiscovery` to disable the advertisement scan. Call `xii.targets` for connection status and capability counts. Then use `tools/list`, `resources/list`, `resources/templates/list` and `prompts/list` to discover names scoped to each connected target. Follow `nextCursor` when present. Restart discovery if the registry changes during pagination.
 
-The Qt window has live gateway settings for loopback HTTP, the request deadline, discovery and explicit Local endpoints. Use **Instances** to connect, disconnect or browse an individual target without resetting the listener. The workspace persists ordinary preferences through Qt settings. Bearer tokens and elevated permissions apply only to the current process. The Clients page shows initialized HTTP sessions and can copy an editor-managed VS Code HTTP configuration. With authentication enabled, the configuration prompts for the token.
+The Qt window has live gateway settings for loopback HTTP, the request deadline, discovery and explicit Local endpoints. Use **Instances** to connect, disconnect or browse an individual target without resetting the listener. The workspace persists ordinary preferences through Qt settings. Bearer tokens and elevated permissions apply only to the current process. The Clients page shows initialized HTTP sessions, recent stateless client profiles and pending requests. Stateless profiles group requests by advertised client name and version, or by User-Agent when client information is absent. Profiles expire after 15 minutes and serve only as local diagnostics. The Clients page can copy an editor-managed VS Code HTTP configuration. With authentication enabled, the configuration prompts for the token.
 
 The Capabilities page shows tools, resources, resource templates and prompts. It generates fields for common tool argument types from each input schema and offers an advanced JSON editor. Invocations enter a bounded worker queue. **Cancel requests** clears waiting work and requests cancellation of pending GUI invocations. Recent activity includes the capability, target, elapsed time and outcome. Target discovery uses independent native RPC exchanges for each instance.
 
@@ -34,7 +34,7 @@ Pass `-MCPTimeoutMs` with a value from 100 to 10000 to set the request deadline 
 
 ## Connect an MCP client
 
-The server supports stateless MCP requests with `2026-07-28` metadata and the `2025-11-25` initialization handshake. Streamable HTTP uses JSON replies. Stdio uses one UTF-8 JSON message per line and writes diagnostics to stderr. [MCP versioning](https://modelcontextprotocol.io/specification/2026-07-28/basic/versioning) · [Streamable HTTP](https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/streamable-http)
+The server supports stateless MCP requests with `2026-07-28` metadata and the `2025-11-25` initialization handshake. Streamable HTTP supports JSON replies and request-scoped SSE for deferred modern requests. Stdio uses one UTF-8 JSON message per line and writes diagnostics to stderr. [MCP versioning](https://modelcontextprotocol.io/specification/2026-07-28/basic/versioning) · [Streamable HTTP](https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/streamable-http)
 
 Configure a Streamable HTTP server with the URL `http://127.0.0.1:8372/mcp`. For stdio, configure the full executable path with arguments `-MCPTransport stdio`. The following entry can be used in the Copilot user MCP configuration or an MCP client with the same command and argument format. [Copilot MCP configuration reference](https://code.visualstudio.com/docs/agents/reference/mcp-configuration)
 
@@ -131,7 +131,7 @@ Use `xiiMCPRuntime::GetRegistry()` to extend an embedded runtime, or use `xiiMCP
 
 ## Current limits
 
-- HTTP serves JSON responses. SSE subscriptions, protocol progress streaming, OAuth and direct non-loopback listeners are outside this implementation. Stdio sends capability-list change notifications for initialized clients.
+- A deferred `2026-07-28` HTTP request starts an SSE stream when `Accept` includes `text/event-stream` with quality at least as high as `application/json`. The stream carries the final JSON-RPC reply and then closes. Closing the stream early requests cancellation. Long-lived subscriptions and progress messages remain separate from request-scoped streaming. Stdio sends capability-list change notifications for initialized clients.
 - Target discovery and forwarded invocations share bounded, asynchronous native RPC. Replies can arrive out of order across targets. The gateway accepts `notifications/cancelled` over stdio and initialized HTTP sessions using the `2025-11-25` protocol. Cancellation applies to the originating client and request ID. Foundation cancels native work on a best-effort basis. Completed mutations remain applied.
 - The Clients page lists stateful HTTP sessions. Stateless requests do not establish sessions. Applying workspace settings restarts the listener and reconnects targets.
 - See [MCP capability coverage](MCPCapabilityCoverage.md) for the existing APIs and the workflows that still require further integration.
