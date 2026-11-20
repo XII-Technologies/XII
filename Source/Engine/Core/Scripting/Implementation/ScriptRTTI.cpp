@@ -127,6 +127,11 @@ void xiiScriptInstance::SetInstanceVariables(const xiiArrayMap<xiiHashedString, 
   }
 }
 
+void xiiScriptInstance::GetInstanceVariableNames(xiiDynamicArray<xiiString>& out_names) const
+{
+  out_names.Clear();
+}
+
 //////////////////////////////////////////////////////////////////////////
 
 // static

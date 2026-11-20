@@ -314,7 +314,11 @@ bool xiiMCPReflection::SupportsArgument(const xiiAbstractProperty& property)
     return true;
   }
 
-  const auto type = property.GetSpecificType()->GetVariantType();
+  return SupportsTypedValue(property.GetSpecificType()->GetVariantType());
+}
+
+bool xiiMCPReflection::SupportsTypedValue(xiiVariantType::Enum type)
+{
   return GetJsonType(type) != nullptr && type != xiiVariantType::StringView && type != xiiVariantType::Uuid && type != xiiVariantType::HashedString &&
     type != xiiVariantType::Time && type != xiiVariantType::Angle && type != xiiVariantType::Angled;
 }
@@ -337,7 +341,11 @@ bool xiiMCPReflection::ConvertArgument(const xiiAbstractProperty& property, cons
     return true;
   }
 
-  const auto type = property.GetSpecificType()->GetVariantType();
+  return ConvertTypedValue(property.GetSpecificType()->GetVariantType(), json, out_value);
+}
+
+bool xiiMCPReflection::ConvertTypedValue(xiiVariantType::Enum type, const xiiVariant& json, xiiVariant& out_value)
+{
   switch (type)
   {
     case xiiVariantType::Int8:

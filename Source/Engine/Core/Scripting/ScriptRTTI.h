@@ -4,6 +4,7 @@
 
 #include <Core/CoreDLL.h>
 #include <Foundation/Containers/ArrayMap.h>
+#include <Foundation/Containers/DynamicArray.h>
 #include <Foundation/Reflection/Reflection.h>
 #include <Foundation/Strings/HashedString.h>
 #include <Foundation/Types/SharedPtr.h>
@@ -80,6 +81,9 @@ public:
   virtual void       SetInstanceVariables(const xiiArrayMap<xiiHashedString, xiiVariant>& parameters);
   virtual void       SetInstanceVariable(const xiiHashedString& sName, const xiiVariant& value) = 0;
   virtual xiiVariant GetInstanceVariable(const xiiHashedString& sName)                          = 0;
+
+  /// Copies the names that can be queried on this instance. Backends without enumeration return an empty list.
+  virtual void GetInstanceVariableNames(xiiDynamicArray<xiiString>& out_names) const;
 
 private:
   xiiReflectedClass& m_Owner;

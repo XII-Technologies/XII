@@ -87,6 +87,10 @@ Live runtime capabilities include:
 | `runtime.simulation` | Change enablement, pause and speed with execute permission. |
 | `runtime.physics` | Active rigid-body physics module and world gravity. |
 | `runtime.physics_query` | Nearest-hit raycast, sphere sweep or sphere overlap through the active physics module. Casts report distance, position, normal and available actor and shape IDs. |
+| `runtime.script` | Inspect a live script component, its class and update settings. Page through variable names and types, or pass a variable name to read its value. |
+| `runtime.configure_script` | Change the component's update interval or simulation-only updates. Requires edit permission. |
+| `runtime.set_script_variable` | Set an initialized variable by name using its current native type. Requires edit permission and the current script class ID. |
+| `runtime.set_script_class` | Assign a known component script class or clear the current class with null. For an indexed Visual Script asset, repeat the request while it reports `pending`. Runs the native script lifecycle and requires execute permission. |
 | `runtime.input` | Page through input sets or list the actions, frame state and bindings of a selected set. |
 | `runtime.input_slots` | Page and filter registered input slot IDs and display names. |
 | `runtime.bind_input` | Change one of an existing action's three binding alternatives for the running process. Requires edit permission. |
@@ -112,6 +116,8 @@ To edit a live component member, take the component ID and exact RTTI type from 
 Physics tools appear when a live world has an initialized rigid-body physics module. Queries use world coordinates and distances. A cast requires nonzero `direction` and positive `distance`. Sphere queries also require positive `radius`. Omit `collisionLayer` to use layer 0 or supply a name recognized by the active module.
 
 Use `runtime.input` and `runtime.input_slots` to look up a game action and a supported slot. Pass its `set`, `action`, zero-based `alternative` and `slot` to `runtime.bind_input`. A null slot clears the selected alternative. Changes apply to the running process.
+
+Use the world, object and generation-checked component IDs from `runtime.worlds` and `runtime.object` to inspect a script. Visual Script instances enumerate their authored variables. Changes to variables apply to the current instance and are reset when the script is reinitialized. Updates support booleans, numeric types, strings, vectors, quaternions and colors. A live class change can run script lifecycle functions. The runtime can queue a load for a Visual Script asset UUID from its asset table and leaves the current class in place while loading. The script update interval is expressed in seconds, with zero using the runtime's per-frame schedule.
 
 Use a world and view ID from `runtime.render_views` with `runtime.render_view`. Then select a returned subsystem and look up an editable setting path. Pass that path as `property` to `runtime.edit_render_view` with `action: "set"` and a JSON `value`, or use `action: "clear"` to inherit the lower-priority setting. Poll `runtime.render_view` after the next frame to read the effective value. Source scopes run from subsystem defaults (0) through project, pipeline, scene, camera and viewport (5).
 

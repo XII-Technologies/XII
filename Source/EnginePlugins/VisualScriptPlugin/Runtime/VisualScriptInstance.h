@@ -13,6 +13,7 @@ public:
 
   virtual void       SetInstanceVariable(const xiiHashedString& sName, const xiiVariant& value) override;
   virtual xiiVariant GetInstanceVariable(const xiiHashedString& sName) override;
+  virtual void       GetInstanceVariableNames(xiiDynamicArray<xiiString>& out_names) const override;
 
   xiiVisualScriptDataStorage* GetConstantDataStorage() { return m_pConstantDataStorage.Borrow(); }
   xiiVisualScriptDataStorage* GetInstanceDataStorage() { return &m_InstanceDataStorage; }

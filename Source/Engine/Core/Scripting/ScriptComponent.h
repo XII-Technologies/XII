@@ -56,7 +56,8 @@ public:
   void                                         RemoveParameter(xiiStringView sKey);
   bool                                         GetParameter(xiiStringView sKey, xiiVariant& out_value) const;
 
-  XII_ALWAYS_INLINE xiiScriptInstance* GetScriptInstance() { return m_pInstance.Borrow(); }
+  XII_ALWAYS_INLINE xiiScriptInstance*       GetScriptInstance() { return m_pInstance.Borrow(); }
+  XII_ALWAYS_INLINE const xiiScriptInstance* GetScriptInstance() const { return m_pInstance.Borrow(); }
 
 private:
   void InstantiateScript(bool bActivate);

@@ -52,3 +52,18 @@ xiiVariant xiiVisualScriptInstance::GetInstanceVariable(const xiiHashedString& s
 
   return m_InstanceDataStorage.GetDataAsVariant(pInstanceData->m_DataOffset, nullptr, 0);
 }
+
+void xiiVisualScriptInstance::GetInstanceVariableNames(xiiDynamicArray<xiiString>& out_names) const
+{
+  out_names.Clear();
+  if (m_pInstanceDataMapping == nullptr)
+  {
+    return;
+  }
+
+  out_names.Reserve(m_pInstanceDataMapping->m_Content.GetCount());
+  for (const auto& variable : m_pInstanceDataMapping->m_Content)
+  {
+    out_names.PushBack(variable.Key().GetString());
+  }
+}
