@@ -123,6 +123,9 @@ public:
   /// Retrieves a view by its handle. Returns false if the handle is invalid.
   bool TryGetView(const xiiViewHandle& hView, xiiView*& out_pView) const;
 
+  /// Copies the current view handles. Call at a CPU frame boundary under world access.
+  void GetViewHandles(xiiDynamicArray<xiiViewHandle>& out_viewHandles) const;
+
   /// Retrieves a view by its usage hint. If multiple views share the same hint, the first one found is returned.
   xiiView* GetViewByUsageHint(xiiEnum<xiiCameraUsageHint> usageHint, xiiEnum<xiiCameraUsageHint> alternativeUsageHint = {}) const;
 

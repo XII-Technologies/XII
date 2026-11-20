@@ -300,6 +300,16 @@ bool xiiRenderWorldModule::TryGetView(const xiiViewHandle& hView, xiiView*& out_
   return true;
 }
 
+void xiiRenderWorldModule::GetViewHandles(xiiDynamicArray<xiiViewHandle>& out_viewHandles) const
+{
+  out_viewHandles.Clear();
+  out_viewHandles.Reserve(m_ViewIdTable.GetCount());
+  for (auto it = m_ViewIdTable.GetIterator(); it.IsValid(); ++it)
+  {
+    out_viewHandles.PushBack(it.Value().m_pView->GetHandle());
+  }
+}
+
 xiiView* xiiRenderWorldModule::GetViewByUsageHint(xiiEnum<xiiCameraUsageHint> usageHint, xiiEnum<xiiCameraUsageHint> alternativeUsageHint) const
 {
   xiiView* pAlternativeView = nullptr;

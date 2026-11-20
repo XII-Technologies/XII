@@ -99,7 +99,9 @@ Live runtime capabilities include:
 | `runtime.cvars` | A filtered list of CVars with string values redacted. |
 | `runtime.logs` | Recent engine warnings and errors with capture permission. |
 | `runtime.graphics` | Active adapter, optional features and graphics memory heap statistics. |
-| `runtime.render_views` | The first view for each camera usage in a selected world, with camera, pipeline, render path and resolution. |
+| `runtime.render_views` | A page of live render views with their current IDs, cameras, pipelines, modes and resolutions. |
+| `runtime.render_view` | Inspect one view and discover its effective rendering subsystems. Supply a subsystem type to see its settings, source scopes and explicit view overrides. |
+| `runtime.edit_render_view` | Set or clear a validated per-view setting override. Requires edit permission. |
 | `runtime.screenshot` | Request an image through the game application's normal screenshot pipeline. Requires capture permission and a game window. |
 | `runtime.render_graph` | Request and poll a bounded pass and dependency snapshot with available GPU timings. Requires capture permission and an active graphics device. |
 
@@ -110,6 +112,8 @@ To edit a live component member, take the component ID and exact RTTI type from 
 Physics tools appear when a live world has an initialized rigid-body physics module. Queries use world coordinates and distances. A cast requires nonzero `direction` and positive `distance`. Sphere queries also require positive `radius`. Omit `collisionLayer` to use layer 0 or supply a name recognized by the active module.
 
 Use `runtime.input` and `runtime.input_slots` to look up a game action and a supported slot. Pass its `set`, `action`, zero-based `alternative` and `slot` to `runtime.bind_input`. A null slot clears the selected alternative. Changes apply to the running process.
+
+Use a world and view ID from `runtime.render_views` with `runtime.render_view`. Then select a returned subsystem and look up an editable setting path. Pass that path as `property` to `runtime.edit_render_view` with `action: "set"` and a JSON `value`, or use `action: "clear"` to inherit the lower-priority setting. Poll `runtime.render_view` after the next frame to read the effective value. Source scopes run from subsystem defaults (0) through project, pipeline, scene, camera and viewport (5).
 
 Editor capabilities include:
 
