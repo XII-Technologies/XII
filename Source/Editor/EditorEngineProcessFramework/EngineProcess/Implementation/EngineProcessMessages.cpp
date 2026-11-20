@@ -447,6 +447,32 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiViewScreenshotMsgToEngine, 1, xiiRTTIDefault
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiCaptureViewportMsgToEngine, 1, xiiRTTIDefaultAllocator<xiiCaptureViewportMsgToEngine>)
+{
+  XII_BEGIN_PROPERTIES
+  {
+    XII_MEMBER_PROPERTY("RequestId", m_RequestId)->AddAttributes(new xiiNetworkAttribute(1)),
+  }
+  XII_END_PROPERTIES;
+  XII_BEGIN_ATTRIBUTES { new xiiNetworkIdentityAttribute(0x5849494500000038ULL) } XII_END_ATTRIBUTES;
+}
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiViewportCaptureMsgToEditor, 1, xiiRTTIDefaultAllocator<xiiViewportCaptureMsgToEditor>)
+{
+  XII_BEGIN_PROPERTIES
+  {
+    XII_MEMBER_PROPERTY("RequestId", m_RequestId)->AddAttributes(new xiiNetworkAttribute(1)),
+    XII_MEMBER_PROPERTY("Png", m_Png)->AddAttributes(new xiiNetworkAttribute(2)),
+    XII_MEMBER_PROPERTY("Width", m_uiWidth)->AddAttributes(new xiiNetworkAttribute(3)),
+    XII_MEMBER_PROPERTY("Height", m_uiHeight)->AddAttributes(new xiiNetworkAttribute(4)),
+    XII_MEMBER_PROPERTY("Failure", m_sFailure)->AddAttributes(new xiiNetworkAttribute(5)),
+  }
+  XII_END_PROPERTIES;
+  XII_BEGIN_ATTRIBUTES { new xiiNetworkIdentityAttribute(0x5849494500000039ULL) } XII_END_ATTRIBUTES;
+}
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiActivateRemoteViewMsgToEngine, 1, xiiRTTIDefaultAllocator<xiiActivateRemoteViewMsgToEngine>)
 {
   XII_BEGIN_ATTRIBUTES { new xiiNetworkIdentityAttribute(0x584949450000001DULL) } XII_END_ATTRIBUTES;

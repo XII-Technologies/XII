@@ -3,6 +3,7 @@
 #include <EditorPluginMCP/EditorPluginMCPPCH.h>
 
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
+#include <EditorFramework/IPC/EngineProcessConnection.h>
 #include <EditorPluginMCP/EditorMCP.h>
 #include <EditorPluginMCP/Project/ProjectPreferences.h>
 #include <Foundation/Configuration/Plugin.h>
@@ -29,6 +30,10 @@ xiiEditorMCP::~xiiEditorMCP()
 {
   m_Timer.stop();
   DrainCppBuild();
+  if (m_EngineEvents != 0)
+  {
+    xiiEditorEngineProcessConnection::s_Events.RemoveEventHandler(m_EngineEvents);
+  }
   if (m_ProjectEvents != 0)
   {
     xiiToolsProject::s_Events.RemoveEventHandler(m_ProjectEvents);
@@ -60,6 +65,11 @@ xiiStatus xiiEditorMCP::Start()
   m_AllowedProject        = m_ArgumentProject;
   m_bAllowAssetProcessing = m_ArgumentProject.IsValid() && pOptions->GetBoolOption("-MCPAllowExecute");
   m_bAllowCppBuilds       = m_ArgumentProject.IsValid() && pOptions->GetBoolOption("-MCPAllowBuild");
+  m_bAllowViewportCapture = m_ArgumentProject.IsValid() && pOptions->GetBoolOption("-MCPAllowCapture");
+  if (m_bAllowViewportCapture)
+  {
+    m_uiArgumentPermissions |= static_cast<xiiUInt8>(xiiMCPPermission::Capture);
+  }
   if (m_ArgumentProject.IsValid() && pOptions->GetBoolOption("-MCPAllowEdit"))
   {
     m_uiArgumentPermissions |= static_cast<xiiUInt8>(xiiMCPPermission::Edit);
@@ -77,6 +87,15 @@ xiiStatus xiiEditorMCP::Start()
   ConnectCppBuildProcess();
   m_ProjectRequests = xiiToolsProject::s_Requests.AddEventHandler(xiiMakeDelegate(&xiiEditorMCP::OnProjectRequest, this));
   m_ProjectEvents   = xiiToolsProject::s_Events.AddEventHandler(xiiMakeDelegate(&xiiEditorMCP::OnProjectEvent, this));
+  m_EngineEvents    = xiiEditorEngineProcessConnection::s_Events.AddEventHandler([this](const xiiEditorEngineProcessConnection::Event& event) {
+    if (event.m_Type == xiiEditorEngineProcessConnection::Event::Type::ProcessMessage)
+    {
+      if (const auto* pCapture = xiiDynamicCast<const xiiViewportCaptureMsgToEditor*>(event.m_pMsg))
+      {
+        OnViewportCapture(*pCapture);
+      }
+    }
+  });
 
   const auto sListen = pOptions->GetStringOption("-MCPListen");
   if (pOptions->GetBoolOption("-MCP", sListen.IsEmpty()))
@@ -112,6 +131,7 @@ xiiStatus xiiEditorMCP::Start()
     m_bUpdating = true;
     XII_SCOPE_EXIT(m_bUpdating = false);
     UpdateProjectPermissions();
+    UpdateViewportCaptures();
     m_Bridge.Update();
     m_Http.Update();
   });
@@ -131,6 +151,7 @@ void xiiEditorMCP::UpdateProjectPermissions()
   m_AllowedProject        = {};
   m_bAllowAssetProcessing = false;
   m_bAllowCppBuilds       = false;
+  m_bAllowViewportCapture = false;
   if (xiiToolsProject::IsProjectOpen())
   {
     if (const auto* pPreferences = xiiEditorSettings::QuerySettings<xiiMCPProjectPreferences>())
@@ -141,6 +162,11 @@ void xiiEditorMCP::UpdateProjectPermissions()
       }
       m_bAllowAssetProcessing = pPreferences->m_bAllowAssetProcessing;
       m_bAllowCppBuilds       = pPreferences->m_bAllowCppBuilds;
+      m_bAllowViewportCapture = pPreferences->m_bAllowViewportCapture;
+      if (m_bAllowViewportCapture)
+      {
+        uiPermissions |= static_cast<xiiUInt8>(xiiMCPPermission::Capture);
+      }
       if (m_bAllowAssetProcessing || m_bAllowCppBuilds)
       {
         uiPermissions |= static_cast<xiiUInt8>(xiiMCPPermission::Execute);
@@ -149,6 +175,16 @@ void xiiEditorMCP::UpdateProjectPermissions()
     }
   }
   m_Bridge.SetServerPermissions(uiPermissions);
+}
+
+void xiiEditorMCP::OnProjectEvent(const xiiToolsProjectEvent& event)
+{
+  if (event.m_Type == xiiToolsProjectEvent::Type::ProjectClosing)
+  {
+    m_ViewportCaptures.Clear();
+    DrainCppBuild();
+    m_CppBuild = {};
+  }
 }
 
 XII_PLUGIN_DEPENDENCY(xiiMCPPlugin);

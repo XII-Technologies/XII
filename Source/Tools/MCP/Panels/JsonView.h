@@ -9,8 +9,11 @@
 #  include <QString>
 #  include <QWidget>
 
+class QImage;
+class QLabel;
 class QPlainTextEdit;
 class QPushButton;
+class QScrollArea;
 class QTabWidget;
 class QTreeWidget;
 
@@ -20,6 +23,7 @@ public:
   explicit xiiMCPJsonView(const QString& title);
 
   void SetDocument(const xiiVariant& value, xiiStringView sResponse = {});
+  void SetImagePreview(const QImage& image);
   void Clear(const QString& message = {});
   void SetMessage(const QString& message);
 
@@ -34,6 +38,8 @@ private:
   QTreeWidget*    m_pTree        = nullptr;
   QPlainTextEdit* m_pJson        = nullptr;
   QPlainTextEdit* m_pResponse    = nullptr;
+  QScrollArea*    m_pImageScroll = nullptr;
+  QLabel*         m_pImage       = nullptr;
   QPushButton*    m_pCopy        = nullptr;
   bool            m_bHasDocument = false;
 };

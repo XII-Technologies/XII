@@ -18,10 +18,13 @@
 #  include <QColor>
 #  include <QFontDatabase>
 #  include <QHeaderView>
+#  include <QImage>
 #  include <QLabel>
+#  include <QPixmap>
 #  include <QPlainTextEdit>
 #  include <QPushButton>
 #  include <QRegularExpression>
+#  include <QScrollArea>
 #  include <QSyntaxHighlighter>
 #  include <QTabWidget>
 #  include <QTextDocument>
@@ -187,6 +190,8 @@ xiiMCPJsonView::xiiMCPJsonView(const QString& title) :
   m_pTree(new QTreeWidget(m_pTabs)),
   m_pJson(MakeJsonSource(title + " JSON")),
   m_pResponse(MakeJsonSource("Original MCP response")),
+  m_pImageScroll(new QScrollArea(m_pTabs)),
+  m_pImage(new QLabel),
   m_pCopy(new QPushButton("Copy JSON", this))
 {
   auto* pLayout = new QVBoxLayout(this);
@@ -202,6 +207,10 @@ xiiMCPJsonView::xiiMCPJsonView(const QString& title) :
   m_pTabs->addTab(m_pJson, "JSON");
   m_pTabs->addTab(m_pResponse, "Response");
   m_pTabs->setTabVisible(2, false);
+  m_pImageScroll->setAlignment(Qt::AlignCenter);
+  m_pImageScroll->setWidget(m_pImage);
+  m_pImage->setAccessibleName("MCP image preview");
+  m_pTabs->setTabVisible(m_pTabs->addTab(m_pImageScroll, "Image"), false);
   pLayout->addWidget(m_pTabs, 1);
 
   m_pCopy->setEnabled(false);
@@ -226,6 +235,7 @@ void xiiMCPJsonView::Clear(const QString& message)
   m_bHasDocument = false;
   m_pJson->clear();
   m_pResponse->clear();
+  SetImagePreview({});
   m_pTabs->setTabVisible(2, false);
   m_pTabs->setTabEnabled(0, false);
   m_pJson->setPlaceholderText(message);
@@ -248,6 +258,7 @@ void xiiMCPJsonView::SetDocument(const xiiVariant& value, xiiStringView sRespons
   m_sResponse = JsonText(sResponse);
   m_pJson->clear();
   m_pResponse->clear();
+  SetImagePreview({});
   m_pJson->setPlaceholderText({});
   m_bHasDocument = true;
   m_pTabs->setTabEnabled(0, true);
@@ -261,6 +272,19 @@ void xiiMCPJsonView::SetDocument(const xiiVariant& value, xiiStringView sRespons
     m_pTabs->setCurrentWidget(m_pTree);
   }
   RefreshSource();
+}
+
+void xiiMCPJsonView::SetImagePreview(const QImage& image)
+{
+  m_pTabs->setTabVisible(m_pTabs->indexOf(m_pImageScroll), !image.isNull());
+  if (image.isNull())
+  {
+    m_pImage->clear();
+    return;
+  }
+  m_pImage->setPixmap(QPixmap::fromImage(image));
+  m_pImage->resize(image.size());
+  m_pTabs->setCurrentWidget(m_pImageScroll);
 }
 
 const QString& xiiMCPJsonView::GetJsonSource()

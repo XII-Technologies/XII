@@ -13,6 +13,7 @@
 #include <QTimer>
 
 class xiiAssetProcessor;
+class xiiViewportCaptureMsgToEditor;
 
 class xiiEditorMCP final
 {
@@ -64,6 +65,26 @@ private:
   xiiStatus                        EditGraph(const xiiMCPCallContext& context, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result);
   xiiStatus                        Viewport(const xiiMCPCallContext&, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result);
   xiiStatus                        ConfigureViewport(const xiiMCPCallContext& context, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result);
+  xiiStatus                        CaptureViewport(const xiiMCPCallContext& context, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result);
+  xiiStatus                        GetViewportCapture(const xiiMCPCallContext&, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result);
+  xiiStatus                        ReadViewportCapture(const xiiMCPCallContext&, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result);
+
+  struct ViewportCapture
+  {
+    xiiTime   m_Started;
+    xiiUInt32 m_uiView   = 0;
+    xiiUInt32 m_uiWidth  = 0;
+    xiiUInt32 m_uiHeight = 0;
+    xiiString m_sBlob;
+    xiiString m_sFailure;
+
+    [[nodiscard]] bool IsPending() const { return m_sBlob.IsEmpty() && m_sFailure.IsEmpty(); }
+  };
+
+  [[nodiscard]] bool                   IsViewportCaptureAuthorized() const;
+  [[nodiscard]] const ViewportCapture* FindViewportCapture(xiiStringView sKey) const;
+  void                                 UpdateViewportCaptures();
+  void                                 OnViewportCapture(const xiiViewportCaptureMsgToEditor& message);
 
   void               ConnectCppBuildProcess();
   void               DrainCppBuild();
@@ -101,22 +122,25 @@ private:
     bool       m_bHasExitCode = false;
   };
 
-  xiiMCPRegistry           m_Registry;
-  xiiMCPProtocol           m_Protocol;
-  xiiMCPBridge             m_Bridge;
-  xiiMCPHttpServer         m_Http;
-  QTimer                   m_Timer;
-  QProcess                 m_CppBuildProcess;
-  CppBuild                 m_CppBuild;
-  xiiMap<xiiUuid, xiiUuid> m_DocumentSessions;
-  xiiUuid                  m_AllowedProject;
-  xiiUuid                  m_ArgumentProject;
-  xiiTime                  m_NextPermissionUpdate;
-  xiiUInt8                 m_uiArgumentPermissions = static_cast<xiiUInt8>(xiiMCPPermission::Read);
-  xiiEventSubscriptionID   m_DocumentEvents        = 0;
-  xiiEventSubscriptionID   m_ProjectRequests       = 0;
-  xiiEventSubscriptionID   m_ProjectEvents         = 0;
-  bool                     m_bAllowAssetProcessing = false;
-  bool                     m_bAllowCppBuilds       = false;
-  bool                     m_bUpdating             = false;
+  xiiMCPRegistry                   m_Registry;
+  xiiMCPProtocol                   m_Protocol;
+  xiiMCPBridge                     m_Bridge;
+  xiiMCPHttpServer                 m_Http;
+  QTimer                           m_Timer;
+  QProcess                         m_CppBuildProcess;
+  CppBuild                         m_CppBuild;
+  xiiMap<xiiUuid, ViewportCapture> m_ViewportCaptures;
+  xiiMap<xiiUuid, xiiUuid>         m_DocumentSessions;
+  xiiUuid                          m_AllowedProject;
+  xiiUuid                          m_ArgumentProject;
+  xiiTime                          m_NextPermissionUpdate;
+  xiiUInt8                         m_uiArgumentPermissions = static_cast<xiiUInt8>(xiiMCPPermission::Read);
+  xiiEventSubscriptionID           m_DocumentEvents        = 0;
+  xiiEventSubscriptionID           m_ProjectRequests       = 0;
+  xiiEventSubscriptionID           m_ProjectEvents         = 0;
+  xiiEventSubscriptionID           m_EngineEvents          = 0;
+  bool                             m_bAllowAssetProcessing = false;
+  bool                             m_bAllowCppBuilds       = false;
+  bool                             m_bAllowViewportCapture = false;
+  bool                             m_bUpdating             = false;
 };

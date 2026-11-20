@@ -15,7 +15,9 @@
 #  include <MCP/Panels/ReplyPanel.h>
 #  include <MCPPlugin/Json.h>
 
+#  include <QBuffer>
 #  include <QComboBox>
+#  include <QImageReader>
 #  include <QSignalBlocker>
 #  include <QVBoxLayout>
 #  include <utility>
@@ -86,6 +88,47 @@ namespace
       }
     }
     return *pResult;
+  }
+
+  QImage ReadPngPreview(const xiiVariant& payload)
+  {
+    if (!payload.IsA<xiiVariantDictionary>())
+    {
+      return {};
+    }
+    const auto* pContents = payload.Get<xiiVariantDictionary>().GetValue("contents");
+    if (pContents == nullptr || !pContents->IsA<xiiVariantArray>())
+    {
+      return {};
+    }
+    for (const auto& content : pContents->Get<xiiVariantArray>())
+    {
+      if (!content.IsA<xiiVariantDictionary>())
+      {
+        continue;
+      }
+      const auto& item  = content.Get<xiiVariantDictionary>();
+      const auto  sBlob = xiiMCPJson::GetString(item, "blob");
+      if (xiiMCPJson::GetString(item, "mimeType") != "image/png" || sBlob.IsEmpty())
+      {
+        continue;
+      }
+      const auto encoded = QByteArray::fromRawData(sBlob.GetStartPointer(), sBlob.GetElementCount());
+      auto       decoded = QByteArray::fromBase64Encoding(encoded, QByteArray::AbortOnBase64DecodingErrors);
+      if (!decoded)
+      {
+        continue;
+      }
+      QBuffer buffer(&decoded.decoded);
+      buffer.open(QIODevice::ReadOnly);
+      QImageReader reader(&buffer, "PNG");
+      const auto   size = reader.size();
+      if (size.isValid() && size.width() <= 1024 && size.height() <= 1024)
+      {
+        return reader.read();
+      }
+    }
+    return {};
   }
 } // namespace
 
@@ -158,6 +201,10 @@ void xiiMCPReplyPanel::ShowReply(int iIndex)
   if (reply.m_bHasJson)
   {
     m_pView->SetDocument(reply.m_Payload, reply.m_sResponse);
+    if (const auto image = ReadPngPreview(reply.m_Payload); !image.isNull())
+    {
+      m_pView->SetImagePreview(image);
+    }
   }
   else
   {
