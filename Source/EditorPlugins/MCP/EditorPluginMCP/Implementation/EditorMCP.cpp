@@ -28,6 +28,15 @@ xiiEditorMCP::xiiEditorMCP() :
 xiiEditorMCP::~xiiEditorMCP()
 {
   m_Timer.stop();
+  DrainCppBuild();
+  if (m_ProjectEvents != 0)
+  {
+    xiiToolsProject::s_Events.RemoveEventHandler(m_ProjectEvents);
+  }
+  if (m_ProjectRequests != 0)
+  {
+    xiiToolsProject::s_Requests.RemoveEventHandler(m_ProjectRequests);
+  }
   if (m_DocumentEvents != 0)
   {
     xiiDocumentManager::s_Events.RemoveEventHandler(m_DocumentEvents);
@@ -48,20 +57,26 @@ xiiStatus xiiEditorMCP::Start()
     }
     m_ArgumentProject = xiiConversionUtils::ConvertStringToUuid(sProject);
   }
-  m_AllowedProject = m_ArgumentProject;
+  m_AllowedProject        = m_ArgumentProject;
+  m_bAllowAssetProcessing = m_ArgumentProject.IsValid() && pOptions->GetBoolOption("-MCPAllowExecute");
+  m_bAllowCppBuilds       = m_ArgumentProject.IsValid() && pOptions->GetBoolOption("-MCPAllowBuild");
   if (m_ArgumentProject.IsValid() && pOptions->GetBoolOption("-MCPAllowEdit"))
   {
     m_uiArgumentPermissions |= static_cast<xiiUInt8>(xiiMCPPermission::Edit);
   }
-  if (m_ArgumentProject.IsValid() && pOptions->GetBoolOption("-MCPAllowExecute"))
+  if (m_bAllowAssetProcessing || m_bAllowCppBuilds)
   {
     m_uiArgumentPermissions |= static_cast<xiiUInt8>(xiiMCPPermission::Execute);
   }
 
-  if (RegisterProject().Failed() || RegisterDocuments().Failed() || RegisterScenes().Failed() || RegisterAssets().Failed() || RegisterGraphs().Failed() || RegisterViewport().Failed())
+  if (RegisterProject().Failed() || RegisterCppBuild().Failed() || RegisterDocuments().Failed() || RegisterScenes().Failed() || RegisterAssets().Failed() || RegisterGraphs().Failed() || RegisterViewport().Failed())
   {
     return xiiStatus("Could not register Editor MCP capabilities.");
   }
+
+  ConnectCppBuildProcess();
+  m_ProjectRequests = xiiToolsProject::s_Requests.AddEventHandler(xiiMakeDelegate(&xiiEditorMCP::OnProjectRequest, this));
+  m_ProjectEvents   = xiiToolsProject::s_Events.AddEventHandler(xiiMakeDelegate(&xiiEditorMCP::OnProjectEvent, this));
 
   const auto sListen = pOptions->GetStringOption("-MCPListen");
   if (pOptions->GetBoolOption("-MCP", sListen.IsEmpty()))
@@ -111,9 +126,11 @@ void xiiEditorMCP::UpdateProjectPermissions()
   {
     return;
   }
-  m_NextPermissionUpdate = now + xiiTime::MakeFromMilliseconds(100);
-  auto uiPermissions     = static_cast<xiiUInt8>(xiiMCPPermission::Read);
-  m_AllowedProject       = {};
+  m_NextPermissionUpdate  = now + xiiTime::MakeFromMilliseconds(100);
+  auto uiPermissions      = static_cast<xiiUInt8>(xiiMCPPermission::Read);
+  m_AllowedProject        = {};
+  m_bAllowAssetProcessing = false;
+  m_bAllowCppBuilds       = false;
   if (xiiToolsProject::IsProjectOpen())
   {
     if (const auto* pPreferences = xiiEditorSettings::QuerySettings<xiiMCPProjectPreferences>())
@@ -122,7 +139,9 @@ void xiiEditorMCP::UpdateProjectPermissions()
       {
         uiPermissions |= static_cast<xiiUInt8>(xiiMCPPermission::Edit);
       }
-      if (pPreferences->m_bAllowAssetProcessing)
+      m_bAllowAssetProcessing = pPreferences->m_bAllowAssetProcessing;
+      m_bAllowCppBuilds       = pPreferences->m_bAllowCppBuilds;
+      if (m_bAllowAssetProcessing || m_bAllowCppBuilds)
       {
         uiPermissions |= static_cast<xiiUInt8>(xiiMCPPermission::Execute);
       }

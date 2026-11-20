@@ -116,7 +116,9 @@ Editor capabilities include:
 | Tool | Result |
 | --- | --- |
 | `editor.project` | Project manifest, profile, generation, document types, creatable file extensions and engine-process readiness. |
-| `editor.cpp_project` | Configured C++ source and output paths, SDK compiler and solution status. |
+| `editor.cpp_project` | Configured C++ source, build, solution and output paths, SDK compiler, plugin binary status and build authorization. |
+| `editor.build_cpp_project` | Start an asynchronous build of the authorized project's configured plugin and return a build ID. |
+| `editor.cpp_build` | Read the latest build's progress, compiler output tail, exit code and terminal status. Supply a build ID to check that the result belongs to that build. |
 | `editor.documents` | Open documents with selection, dirty state and revision tokens. |
 | `editor.document` | Reflected members and paginated object trees for open documents. |
 | `editor.create_document` | Create and open a new document through the manager for its file extension. Requires the current project generation and a new path inside the project. |
@@ -135,6 +137,8 @@ Editor capabilities include:
 | `editor.transform_asset` | Queue transformation through the existing background asset processor. |
 
 To author a scene, call `editor.documents` and `editor.scene` first. Send up to 24 operations to `editor.edit_scene`, then use its new revision for `editor.save`. An operation can provide `newId` when it adds an object, and a later operation in the same batch can reference that UUID. A failed operation cancels the whole transaction.
+
+Enable **Allow Cpp Builds** in the project's per-user MCP preferences for native clients. For direct HTTP, set `-MCPAllowBuild` with `-MCPProject` and an authenticated listener. The build grant is independent of the asset processing grant. Start with the current project `generation` and poll `editor.cpp_build` with the returned `build` ID while the state is `starting` or `building`. An empty request finds the latest build and returns its output tail. Page through the latest 256 KiB of output by passing `outputOffset` and following `nextOutputOffset` up to `outputBytes`. Offsets count bytes from the beginning of the build output. The result reports `retainedOutputOffset` if earlier bytes have been dropped. The build uses the Editor's current configuration and existing CMake solution. Close the project after the active build finishes. Builds and results belong to the current Editor session.
 
 ## Extend the registry
 

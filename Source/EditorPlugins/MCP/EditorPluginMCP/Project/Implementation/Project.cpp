@@ -9,6 +9,7 @@
 #include <EditorFramework/IPC/EngineProcessConnection.h>
 #include <EditorPluginMCP/EditorMCP.h>
 #include <EditorPluginMCP/EditorMCPArguments.h>
+#include <Foundation/Configuration/Plugin.h>
 #include <ToolsFoundation/Project/ToolsProject.h>
 
 using namespace xiiEditorMCPArguments;
@@ -99,6 +100,7 @@ xiiStatus xiiEditorMCP::CppProject(const xiiMCPCallContext&, const xiiVariantDic
     return xiiStatus("Open a project before inspecting its C++ integration.");
   }
   out_result["hasBuildFiles"]           = xiiCppProject::ExistsProjectCMakeListsTxt();
+  out_result["buildAllowed"]            = IsCppBuildAuthorized();
   out_result["sdkCompiler"]             = xiiString(xiiCppProject::CompilerToString(xiiCppProject::GetSdkCompiler()));
   out_result["sdkCompilerMajorVersion"] = xiiCppProject::GetSdkCompilerMajorVersion();
   xiiCppSettings settings;
@@ -107,13 +109,15 @@ xiiStatus xiiEditorMCP::CppProject(const xiiMCPCallContext&, const xiiVariantDic
     out_result["configured"] = false;
     return XII_SUCCESS;
   }
-  out_result["configured"]      = true;
-  out_result["plugin"]          = settings.m_sPluginName;
-  out_result["sourceDirectory"] = xiiCppProject::GetPluginSourceDir(settings);
-  out_result["buildDirectory"]  = xiiCppProject::GetBuildDir(settings);
-  out_result["outputDirectory"] = xiiCppProject::GetPluginOutputDir();
-  out_result["generator"]       = xiiCppProject::GetCMakeGeneratorName(settings);
-  out_result["solutionExists"]  = xiiCppProject::ExistsSolution(settings);
+  out_result["configured"]         = true;
+  out_result["plugin"]             = settings.m_sPluginName;
+  out_result["sourceDirectory"]    = xiiCppProject::GetPluginSourceDir(settings);
+  out_result["buildDirectory"]     = xiiCppProject::GetBuildDir(settings);
+  out_result["outputDirectory"]    = xiiCppProject::GetPluginOutputDir();
+  out_result["generator"]          = xiiCppProject::GetCMakeGeneratorName(settings);
+  out_result["solutionExists"]     = xiiCppProject::ExistsSolution(settings);
+  out_result["solutionPath"]       = xiiCppProject::GetSolutionPath(settings);
+  out_result["pluginBinaryExists"] = xiiPlugin::ExistsPluginFile(xiiStringBuilder(settings.m_sPluginName, "Plugin"), xiiCppProject::GetPluginOutputDir());
   return XII_SUCCESS;
 }
 

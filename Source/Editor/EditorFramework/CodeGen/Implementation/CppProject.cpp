@@ -20,6 +20,8 @@
 #include <ToolsFoundation/Application/ApplicationServices.h>
 #include <ToolsFoundation/Project/ToolsProject.h>
 
+#include <algorithm>
+
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
 #  include <Shlobj.h>
 #endif
@@ -598,7 +600,7 @@ xiiResult xiiCppProject::CheckCMakeCache(const xiiCppSettings& cfg)
     const xiiString                  sConfigurations = ReadCacheValue("CMAKE_CONFIGURATION_TYPES");
     xiiHybridArray<xiiStringView, 4> configurations;
     sConfigurations.Split(false, configurations, ";");
-    if (!configurations.Contains(BUILDSYSTEM_BUILDTYPE))
+    if (std::ranges::find(configurations, xiiStringView(BUILDSYSTEM_BUILDTYPE)) == std::ranges::end(configurations))
     {
       return XII_FAILURE;
     }
@@ -845,8 +847,19 @@ xiiResult xiiCppProject::PopulateWithDefaultSources(const xiiCppSettings& cfg)
   return XII_SUCCESS;
 }
 
+namespace
+{
+  // Build consumers and project tools all acquire this slot on the Editor thread.
+  bool s_bCompilingProject = false;
+} // namespace
+
 xiiResult xiiCppProject::CleanBuildDir(const xiiCppSettings& cfg)
 {
+  if (s_bCompilingProject)
+  {
+    xiiLog::Error("Wait for the active C++ build before cleaning the build directory.");
+    return XII_FAILURE;
+  }
   QApplication::setOverrideCursor(Qt::WaitCursor);
   XII_SCOPE_EXIT(QApplication::restoreOverrideCursor());
 
@@ -860,6 +873,11 @@ xiiResult xiiCppProject::CleanBuildDir(const xiiCppSettings& cfg)
 
 xiiResult xiiCppProject::RunCMake(const xiiCppSettings& cfg)
 {
+  if (s_bCompilingProject)
+  {
+    xiiLog::Error("Wait for the active C++ build before generating the project.");
+    return XII_FAILURE;
+  }
   QApplication::setOverrideCursor(Qt::WaitCursor);
   XII_SCOPE_EXIT(QApplication::restoreOverrideCursor());
 
@@ -922,6 +940,12 @@ xiiResult xiiCppProject::RunCMake(const xiiCppSettings& cfg)
 
 xiiResult xiiCppProject::RunCMakeIfNecessary(const xiiCppSettings& cfg)
 {
+  if (s_bCompilingProject)
+  {
+    xiiLog::Error("A C++ project build is already running in this Editor.");
+    return XII_FAILURE;
+  }
+
   if (!xiiCppProject::ExistsProjectCMakeListsTxt())
     return XII_SUCCESS;
 
@@ -942,8 +966,54 @@ xiiResult xiiCppProject::RunCMakeIfNecessary(const xiiCppSettings& cfg)
   return xiiCppProject::RunCMake(cfg);
 }
 
+xiiStatus xiiCppProject::BeginCompile(const xiiCppSettings& cfg, xiiProcessOptions& out_options)
+{
+  if (s_bCompilingProject)
+  {
+    return xiiStatus("A C++ project build is already running in this Editor.");
+  }
+
+  const auto sBuildDirectory      = GetBuildDir(cfg);
+  out_options.m_sProcess          = xiiQtEditorApp::GetSingleton()->FindToolApplication(GetCMakePath());
+  out_options.m_sWorkingDirectory = sBuildDirectory;
+  out_options.AddArgument("--build");
+  out_options.AddArgument(sBuildDirectory);
+  out_options.AddArgument("--target");
+  out_options.AddArgument(xiiStringBuilder(cfg.m_sPluginName, "Plugin"));
+  out_options.AddArgument("--config");
+  out_options.AddArgument(BUILDSYSTEM_BUILDTYPE);
+  s_bCompilingProject = true;
+  return XII_SUCCESS;
+}
+
+void xiiCppProject::EndCompile()
+{
+  XII_ASSERT_DEV(s_bCompilingProject, "No project compile is active.");
+  s_bCompilingProject = false;
+}
+
+xiiStatus xiiCppProject::CheckCompileResult(xiiStringView sPluginName, xiiStringView sOutputDirectory, xiiInt32 iExitCode)
+{
+  if (iExitCode != 0)
+  {
+    return xiiStatus(xiiFmt("CMake --build failed with return code {}.", iExitCode));
+  }
+  if (!xiiPlugin::ExistsPluginFile(xiiStringBuilder(sPluginName, "Plugin"), sOutputDirectory))
+  {
+    return xiiStatus(xiiFmt("The build succeeded but the C++ plugin was not produced in '{}'. Check the project's CMake output settings.", sOutputDirectory));
+  }
+  return XII_SUCCESS;
+}
+
 xiiResult xiiCppProject::CompileSolution(const xiiCppSettings& cfg)
 {
+  xiiProcessOptions process;
+  if (BeginCompile(cfg, process).LogFailure())
+  {
+    return XII_FAILURE;
+  }
+  XII_SCOPE_EXIT(EndCompile());
+
   QApplication::setOverrideCursor(Qt::WaitCursor);
   XII_SCOPE_EXIT(QApplication::restoreOverrideCursor());
 
@@ -959,51 +1029,32 @@ xiiResult xiiCppProject::CompileSolution(const xiiCppSettings& cfg)
   xiiMutex         outputMutex;
   xiiInt32         iReturnCode = 0;
 
-  xiiProcessOptions po;
-
-  xiiString cmakePath = xiiQtEditorApp::GetSingleton()->FindToolApplication(xiiCppProject::GetCMakePath());
-
-  po.m_sProcess = cmakePath;
-  po.AddArgument("--build");
-  po.AddArgument(GetBuildDir(cfg));
-  po.AddArgument("--target");
-  po.AddArgument(xiiStringBuilder(cfg.m_sPluginName, "Plugin"));
-  po.AddArgument("--config");
-  po.AddArgument(BUILDSYSTEM_BUILDTYPE);
-  po.m_sWorkingDirectory  = GetBuildDir(cfg);
-  po.m_bHideConsoleWindow = true;
-  po.m_onStdOut           = [&](xiiStringView sText) {
+  process.m_onStdOut = [&](xiiStringView sText) {
     XII_LOCK(outputMutex);
     sBuildOutput.Append(sText);
   };
-  po.m_onStdError = po.m_onStdOut;
+  process.m_onStdError = process.m_onStdOut;
 
   xiiStringBuilder sCMakeBuildCmd;
-  po.BuildCommandLineString(sCMakeBuildCmd);
-  xiiLog::Dev("Running {} {}", cmakePath, sCMakeBuildCmd);
-  if (xiiProcess::Execute(po, &iReturnCode).Failed())
+  process.BuildCommandLineString(sCMakeBuildCmd);
+  xiiLog::Dev("Running {} {}", process.m_sProcess, sCMakeBuildCmd);
+  if (xiiProcess::Execute(process, &iReturnCode).Failed())
   {
     xiiLog::Error("Failed to start CMake.");
     return XII_FAILURE;
   }
 
-  if (iReturnCode == 0)
+  if (CheckCompileResult(cfg.m_sPluginName, GetPluginOutputDir(), iReturnCode).LogFailure())
   {
-    if (!xiiPlugin::ExistsPluginFile(xiiStringBuilder(cfg.m_sPluginName, "Plugin"), GetPluginOutputDir()))
+    if (iReturnCode != 0)
     {
-      xiiLog::Error("The build succeeded but the C++ plugin was not produced in '{}'. Check the project's CMake output settings.", GetPluginOutputDir());
-      return XII_FAILURE;
+      xiiLog::Error("C++ build output:\n{}", sBuildOutput);
     }
-    xiiLog::Success("Compiled C++ code.");
-    bSucceeded = true;
-    return XII_SUCCESS;
+    return XII_FAILURE;
   }
-
-  xiiLog::Error("CMake --build failed with return code {}", iReturnCode);
-
-  xiiLog::Error("C++ build output:\n{}", sBuildOutput);
-
-  return XII_FAILURE;
+  xiiLog::Success("Compiled C++ code.");
+  bSucceeded = true;
+  return XII_SUCCESS;
 }
 
 xiiResult xiiCppProject::BuildCodeIfNecessary(const xiiCppSettings& cfg)

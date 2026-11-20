@@ -10,6 +10,8 @@
 #include <Foundation/Types/Status.h>
 #include <Foundation/Types/VariantType.h>
 
+struct xiiProcessOptions;
+
 // Only saved in editor preferences, does not have to work cross-platform
 struct XII_EDITORFRAMEWORK_DLL xiiIDE
 {
@@ -160,6 +162,11 @@ struct XII_EDITORFRAMEWORK_DLL xiiCppProject : public xiiEditorSettings
   static xiiResult RunCMakeIfNecessary(const xiiCppSettings& cfg);
 
   static xiiResult CompileSolution(const xiiCppSettings& cfg);
+
+  /// Reserves the Editor's C++ build slot and prepares the normal project plugin compile. Call EndCompile on the Editor thread after the process stops.
+  [[nodiscard]] static xiiStatus BeginCompile(const xiiCppSettings& cfg, xiiProcessOptions& out_options);
+  static void                    EndCompile();
+  [[nodiscard]] static xiiStatus CheckCompileResult(xiiStringView sPluginName, xiiStringView sOutputDirectory, xiiInt32 iExitCode);
 
   static xiiResult BuildCodeIfNecessary(const xiiCppSettings& cfg);
 

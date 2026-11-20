@@ -16,4 +16,5 @@ public:
 
   bool m_bAllowEditorChanges   = false;
   bool m_bAllowAssetProcessing = false;
+  bool m_bAllowCppBuilds       = false;
 };
