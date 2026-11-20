@@ -17,6 +17,9 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTemporaryAttribute, 1, xiiRTTIDefaultAllocator<xiiTemporaryAttribute>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRuntimeEditableAttribute, 1, xiiRTTIDefaultAllocator<xiiRuntimeEditableAttribute>)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
 XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiDependencyFlags, 1)
   XII_BITFLAGS_CONSTANTS(xiiDependencyFlags::Package, xiiDependencyFlags::Thumbnail, xiiDependencyFlags::Transform)
 XII_END_STATIC_REFLECTED_BITFLAGS;

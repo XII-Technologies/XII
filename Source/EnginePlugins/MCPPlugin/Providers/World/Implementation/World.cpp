@@ -265,6 +265,7 @@ namespace
     {
       return xiiStatus("The component changed. Inspect the object again.");
     }
+    out_result["id"]         = FormatHandle(pComponent->GetHandle());
     out_result["schema"]     = xiiMCPReflection::Describe(type);
     out_result["properties"] = xiiMCPReflection::ReadMembers(type, pComponent);
     return XII_SUCCESS;
@@ -352,6 +353,22 @@ namespace
       {
         pComponent->DeleteComponent();
         out_result["removed"] = true;
+        return XII_SUCCESS;
+      }
+      if (sAction == "set")
+      {
+        const auto& type      = *pComponent->GetDynamicRTTI();
+        const auto  sProperty = xiiMCPJson::GetString(arguments, "property");
+        const auto* pValue    = arguments.GetValue("value");
+        if (type.GetTypeName() != xiiMCPJson::GetString(arguments, "type") || sProperty.IsEmpty() || pValue == nullptr)
+        {
+          return xiiStatus("Provide the component's current type, a property name and its new value.");
+        }
+
+        const auto sId = FormatHandle(pComponent->GetHandle());
+        XII_SUCCEED_OR_RETURN(xiiMCPReflection::SetRuntimeMember(type, pComponent, sProperty, *pValue));
+        out_result["id"]       = sId;
+        out_result["property"] = xiiString(sProperty);
         return XII_SUCCESS;
       }
       const auto* pActive = arguments.GetValue("active");
@@ -629,7 +646,7 @@ void xiiMCPRuntimeProviders::RegisterWorld(xiiMCPRegistry& ref_registry)
   ref_registry.RegisterTool("runtime.objects", "List live game objects using a bounded page and optional filters. Object IDs belong to the specified world.", R"({"type":"object","required":["world"],"properties":{"world":{"type":"string"},"name":{"type":"string"},"parent":{"type":"string"},"componentType":{"type":"string"},"offset":{"type":"integer","minimum":0},"limit":{"type":"integer","minimum":1,"maximum":128,"default":32}}})", read, &ListObjects).IgnoreResult();
   ref_registry.RegisterTool("runtime.object", "Inspect one live game object, its local and global transforms, and a page of components.", R"({"type":"object","required":["world","object"],"properties":{"world":{"type":"string"},"object":{"type":"string"},"offset":{"type":"integer","minimum":0},"limit":{"type":"integer","minimum":1,"maximum":32,"default":32}}})", read, &InspectObject).IgnoreResult();
   ref_registry.RegisterTool("runtime.component", "Inspect supported reflected properties on a live component. Discover its index and type with runtime.object.", R"({"type":"object","required":["world","object","index","type"],"properties":{"world":{"type":"string"},"object":{"type":"string"},"index":{"type":"integer","minimum":0},"type":{"type":"string"}}})", read, &InspectComponent).IgnoreResult();
-  ref_registry.RegisterTool("runtime.edit_component", "Attach a concrete component to a dynamic game object, or activate or remove an attached component by its current ID.", R"({"type":"object","required":["world","object","action"],"properties":{"world":{"type":"string"},"object":{"type":"string"},"action":{"enum":["create","activate","remove"]},"type":{"type":"string"},"component":{"type":"string"},"active":{"type":"boolean"}}})", edit, &EditComponent).IgnoreResult();
+  ref_registry.RegisterTool("runtime.edit_component", "Attach a component to a dynamic owner, activate or remove a component by its current ID, or set a property marked x-xii-runtime-editable in runtime.component. Set requires the component's current ID and type, a property name and its new value.", R"({"type":"object","required":["world","object","action"],"properties":{"world":{"type":"string"},"object":{"type":"string"},"action":{"enum":["create","activate","remove","set"]},"type":{"type":"string"},"component":{"type":"string"},"active":{"type":"boolean"},"property":{"type":"string"},"value":{}}})", edit, &EditComponent).IgnoreResult();
   ref_registry.RegisterTool("runtime.edit_object", "Create, modify, reparent or schedule removal of a live object. Reparenting preserves the local transform and accepts null to move to the root. Rotation is a normalized quaternion in x,y,z,w order.", R"({"type":"object","required":["world","action"],"properties":{"world":{"type":"string"},"action":{"enum":["create","modify","reparent","remove"]},"object":{"type":"string"},"parent":{"type":["string","null"]},"name":{"type":"string","maxLength":128},"position":{"type":"array","items":{"type":"number"},"minItems":3,"maxItems":3},"rotation":{"type":"array","items":{"type":"number"},"minItems":4,"maxItems":4},"scale":{"type":"array","items":{"type":"number"},"minItems":3,"maxItems":3},"active":{"type":"boolean"},"dynamic":{"type":"boolean","description":"Creation only. Required for component attachment."}}})", edit, &EditObject).IgnoreResult();
   ref_registry.RegisterTool("runtime.simulation", "Set simulation enabled, clock pause, or simulation speed for a live world and return its current timing.", R"({"type":"object","required":["world"],"properties":{"world":{"type":"string"},"enabled":{"type":"boolean"},"paused":{"type":"boolean"},"speed":{"type":"number","minimum":0,"maximum":16}}})", execute, &SetSimulation).IgnoreResult();
   ref_registry.RegisterTool("runtime.edit_objects", "Run up to 24 runtime.edit_object operations on one world in sequence. Successful edits remain applied if an operation fails or the deadline expires.",

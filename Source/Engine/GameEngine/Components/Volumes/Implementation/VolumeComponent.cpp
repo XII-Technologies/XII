@@ -14,7 +14,7 @@ XII_BEGIN_ABSTRACT_COMPONENT_TYPE(xiiVolumeComponent, 1)
   XII_BEGIN_PROPERTIES
   {
     XII_ACCESSOR_PROPERTY("Type", GetVolumeType, SetVolumeType)->AddAttributes(new xiiDynamicStringEnumAttribute("SpatialDataCategoryEnum"), new xiiDefaultValueAttribute("GenericVolume")),
-    XII_ACCESSOR_PROPERTY("SortOrder", GetSortOrder, SetSortOrder)->AddAttributes(new xiiClampValueAttribute(-64.0f, 64.0f)),
+    XII_ACCESSOR_PROPERTY("SortOrder", GetSortOrder, SetSortOrder)->AddAttributes(new xiiClampValueAttribute(-64.0f, 64.0f), new xiiRuntimeEditableAttribute()),
     XII_RESOURCE_ACCESSOR_PROPERTY("Template", GetTemplate, SetTemplate)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_BlackboardTemplate")),
     XII_MAP_ACCESSOR_PROPERTY("Values", Reflection_GetKeys, Reflection_GetValue, Reflection_InsertValue, Reflection_RemoveValue),
   }
@@ -240,8 +240,8 @@ XII_BEGIN_COMPONENT_TYPE(xiiVolumeSphereComponent, 1, xiiComponentMode::Static)
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_ACCESSOR_PROPERTY("Radius", GetRadius, SetRadius)->AddAttributes(new xiiDefaultValueAttribute(5.0f), new xiiClampValueAttribute(0.0f, xiiVariant())),
-    XII_ACCESSOR_PROPERTY("Falloff", GetFalloff, SetFalloff)->AddAttributes(new xiiDefaultValueAttribute(0.5f), new xiiClampValueAttribute(0.0f, 1.0f)),
+    XII_ACCESSOR_PROPERTY("Radius", GetRadius, SetRadius)->AddAttributes(new xiiDefaultValueAttribute(5.0f), new xiiClampValueAttribute(0.0f, xiiVariant()), new xiiRuntimeEditableAttribute()),
+    XII_ACCESSOR_PROPERTY("Falloff", GetFalloff, SetFalloff)->AddAttributes(new xiiDefaultValueAttribute(0.5f), new xiiClampValueAttribute(0.0f, 1.0f), new xiiRuntimeEditableAttribute()),
   }
   XII_END_PROPERTIES;
   XII_BEGIN_MESSAGEHANDLERS
@@ -312,8 +312,8 @@ XII_BEGIN_COMPONENT_TYPE(xiiVolumeBoxComponent, 1, xiiComponentMode::Static)
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_ACCESSOR_PROPERTY("Extents", GetExtents, SetExtents)->AddAttributes(new xiiDefaultValueAttribute(xiiVec3(10.0f)), new xiiClampValueAttribute(xiiVec3(0), xiiVariant())),
-    XII_ACCESSOR_PROPERTY("Falloff", GetFalloff, SetFalloff)->AddAttributes(new xiiDefaultValueAttribute(xiiVec3(0.5f)), new xiiClampValueAttribute(xiiVec3(0.0f), xiiVec3(1.0f))),
+    XII_ACCESSOR_PROPERTY("Extents", GetExtents, SetExtents)->AddAttributes(new xiiDefaultValueAttribute(xiiVec3(10.0f)), new xiiClampValueAttribute(xiiVec3(0), xiiVariant()), new xiiRuntimeEditableAttribute()),
+    XII_ACCESSOR_PROPERTY("Falloff", GetFalloff, SetFalloff)->AddAttributes(new xiiDefaultValueAttribute(xiiVec3(0.5f)), new xiiClampValueAttribute(xiiVec3(0.0f), xiiVec3(1.0f)), new xiiRuntimeEditableAttribute()),
   }
   XII_END_PROPERTIES;
   XII_BEGIN_MESSAGEHANDLERS
