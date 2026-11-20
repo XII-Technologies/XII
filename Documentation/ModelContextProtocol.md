@@ -138,11 +138,15 @@ Editor capabilities include:
 | `editor.assets` | Search indexed assets by name, type or tag. |
 | `editor.asset` | Dependencies, output tags, transform state and recent transformation messages. |
 | `editor.open_asset` | Open an indexed asset through the existing Editor document manager. |
-| `editor.transform_asset` | Queue transformation through the existing background asset processor. |
+| `editor.transform_asset`, `editor.transform_assets` | Save modified inputs and queue one or up to 64 indexed assets through the background processor. Batch calls can force a transform. |
+| `editor.asset_processing` | Inspect the processor state and the current project's aggregate transform progress. |
+| `editor.control_asset_processing` | Start automatic processing or stop dispatching and let running work finish. |
 
 To author a scene, call `editor.documents` and `editor.scene` first. Send up to 24 operations to `editor.edit_scene`, then use its new revision for `editor.save`. An operation can provide `newId` when it adds an object, and a later operation in the same batch can reference that UUID. A failed operation cancels the whole transaction.
 
 Enable **Allow Cpp Builds** in the project's per-user MCP preferences for native clients. For direct HTTP, set `-MCPAllowBuild` with `-MCPProject` and an authenticated listener. The build grant is independent of the asset processing grant. Start with the current project `generation` and poll `editor.cpp_build` with the returned `build` ID while the state is `starting` or `building`. An empty request finds the latest build and returns its output tail. Page through the latest 256 KiB of output by passing `outputOffset` and following `nextOutputOffset` up to `outputBytes`. Offsets count bytes from the beginning of the build output. The result reports `retainedOutputOffset` if earlier bytes have been dropped. The build uses the Editor's current configuration and existing CMake solution. Close the project after the active build finishes. Builds and results belong to the current Editor session.
+
+Asset processing commands require the asset processing grant and the current project `generation`. Poll `editor.asset_processing` for the shared progress of requested work and use `editor.asset` for per-asset results and messages. Stopping cancels pending requests across the project and lets running transforms finish.
 
 ## Extend the registry
 

@@ -12,6 +12,8 @@
 #include <QProcess>
 #include <QTimer>
 
+class xiiAssetProcessor;
+
 class xiiEditorMCP final
 {
 public:
@@ -36,27 +38,31 @@ private:
   xiiDocument* FindDocument(const xiiVariantDictionary& arguments);
   xiiStatus    ValidateEdit(const xiiVariantDictionary& arguments, xiiDocument*& out_pDocument);
 
-  xiiStatus Project(const xiiMCPCallContext&, const xiiVariantDictionary&, xiiVariantDictionary& out_result);
-  xiiStatus CppProject(const xiiMCPCallContext&, const xiiVariantDictionary&, xiiVariantDictionary& out_result);
-  xiiStatus StartCppBuild(const xiiMCPCallContext& context, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result);
-  xiiStatus GetCppBuild(const xiiMCPCallContext&, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result);
-  xiiStatus Documents(const xiiMCPCallContext&, const xiiVariantDictionary&, xiiVariantDictionary& out_result);
-  xiiStatus Document(const xiiMCPCallContext&, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result);
-  xiiStatus CreateDocument(const xiiMCPCallContext& context, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result);
-  xiiStatus CloseDocument(const xiiMCPCallContext& context, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result);
-  xiiStatus InspectDocumentObject(xiiDocument& ref_document, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result);
-  xiiStatus SetDocumentProperty(const xiiMCPCallContext&, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result);
-  xiiStatus DocumentHistory(const xiiMCPCallContext&, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result);
-  xiiStatus Scene(const xiiMCPCallContext&, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result);
-  xiiStatus EditScene(const xiiMCPCallContext& context, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result);
-  xiiStatus Save(const xiiMCPCallContext&, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result);
-  xiiStatus Assets(const xiiMCPCallContext&, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result);
-  xiiStatus Asset(const xiiMCPCallContext&, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result);
-  xiiStatus OpenAsset(const xiiMCPCallContext&, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result);
-  xiiStatus Transform(const xiiMCPCallContext&, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result);
-  xiiStatus Graph(const xiiMCPCallContext& context, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result);
-  xiiStatus EditGraph(const xiiMCPCallContext& context, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result);
-  xiiStatus Viewport(const xiiMCPCallContext&, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result);
+  xiiStatus                        Project(const xiiMCPCallContext&, const xiiVariantDictionary&, xiiVariantDictionary& out_result);
+  xiiStatus                        CppProject(const xiiMCPCallContext&, const xiiVariantDictionary&, xiiVariantDictionary& out_result);
+  xiiStatus                        StartCppBuild(const xiiMCPCallContext& context, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result);
+  xiiStatus                        GetCppBuild(const xiiMCPCallContext&, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result);
+  xiiStatus                        Documents(const xiiMCPCallContext&, const xiiVariantDictionary&, xiiVariantDictionary& out_result);
+  xiiStatus                        Document(const xiiMCPCallContext&, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result);
+  xiiStatus                        CreateDocument(const xiiMCPCallContext& context, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result);
+  xiiStatus                        CloseDocument(const xiiMCPCallContext& context, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result);
+  xiiStatus                        InspectDocumentObject(xiiDocument& ref_document, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result);
+  xiiStatus                        SetDocumentProperty(const xiiMCPCallContext&, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result);
+  xiiStatus                        DocumentHistory(const xiiMCPCallContext&, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result);
+  xiiStatus                        Scene(const xiiMCPCallContext&, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result);
+  xiiStatus                        EditScene(const xiiMCPCallContext& context, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result);
+  xiiStatus                        Save(const xiiMCPCallContext&, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result);
+  xiiStatus                        Assets(const xiiMCPCallContext&, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result);
+  xiiStatus                        Asset(const xiiMCPCallContext&, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result);
+  xiiStatus                        OpenAsset(const xiiMCPCallContext&, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result);
+  xiiStatus                        Transform(const xiiMCPCallContext&, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result);
+  xiiStatus                        TransformAssets(const xiiMCPCallContext& context, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result);
+  xiiStatus                        AssetProcessing(const xiiMCPCallContext&, const xiiVariantDictionary&, xiiVariantDictionary& out_result);
+  xiiStatus                        ControlAssetProcessing(const xiiMCPCallContext& context, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result);
+  [[nodiscard]] xiiAssetProcessor* GetAuthorizedAssetProcessor(const xiiVariantDictionary& arguments) const;
+  xiiStatus                        Graph(const xiiMCPCallContext& context, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result);
+  xiiStatus                        EditGraph(const xiiMCPCallContext& context, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result);
+  xiiStatus                        Viewport(const xiiMCPCallContext&, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result);
 
   void               ConnectCppBuildProcess();
   void               DrainCppBuild();
