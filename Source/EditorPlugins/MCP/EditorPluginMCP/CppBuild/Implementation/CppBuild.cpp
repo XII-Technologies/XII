@@ -104,15 +104,6 @@ void xiiEditorMCP::OnProjectRequest(xiiToolsProjectRequest& ref_request)
   }
 }
 
-void xiiEditorMCP::OnProjectEvent(const xiiToolsProjectEvent& event)
-{
-  if (event.m_Type == xiiToolsProjectEvent::Type::ProjectClosing)
-  {
-    DrainCppBuild();
-    m_CppBuild = {};
-  }
-}
-
 bool xiiEditorMCP::IsCppBuildAuthorized() const
 {
   return m_bAllowCppBuilds && xiiToolsProject::IsProjectOpen() &&

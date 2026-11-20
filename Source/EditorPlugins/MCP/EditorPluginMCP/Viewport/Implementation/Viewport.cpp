@@ -2,6 +2,7 @@
 
 #include <EditorPluginMCP/EditorPluginMCPPCH.h>
 
+#include <EditorFramework/Assets/AssetDocument.h>
 #include <EditorFramework/DocumentWindow/EngineDocumentWindow.moc.h>
 #include <EditorFramework/DocumentWindow/EngineViewWidget.moc.h>
 #include <EditorFramework/IPC/EngineProcessConnection.h>
@@ -14,8 +15,15 @@
 #include <MCPPlugin/Reflection.h>
 #include <ToolsFoundation/Project/ToolsProject.h>
 
+#include <QByteArray>
+
 namespace
 {
+  constexpr xiiUInt32     MaximumRetainedCaptures = 8;
+  const xiiTime           CaptureTimeout          = xiiTime::MakeFromSeconds(8);
+  const xiiTime           CaptureRetention        = xiiTime::MakeFromSeconds(30);
+  constexpr xiiStringView CaptureUriPrefix        = "xii-editor://viewport-captures/";
+
   bool IsViewportRenderModeAvailable(xiiViewRenderMode::Enum mode)
   {
     const auto* pEngine = xiiEditorEngineProcessConnection::GetSingleton();
@@ -159,19 +167,8 @@ xiiStatus xiiEditorMCP::ConfigureViewport(const xiiMCPCallContext& context, cons
     return xiiStatus("Use a view ID returned by editor.viewport.");
   }
 
-  auto*                  pWindow = qobject_cast<xiiQtEngineDocumentWindow*>(xiiQtDocumentWindow::FindWindowByDocument(pDocument));
-  xiiQtEngineViewWidget* pView   = nullptr;
-  if (pWindow != nullptr)
-  {
-    for (auto* pCandidate : pWindow->GetViewWidgets())
-    {
-      if (pCandidate != nullptr && pCandidate->GetViewID() == uiView)
-      {
-        pView = pCandidate;
-        break;
-      }
-    }
-  }
+  auto* pWindow = qobject_cast<xiiQtEngineDocumentWindow*>(xiiQtDocumentWindow::FindWindowByDocument(pDocument));
+  auto* pView   = pWindow != nullptr ? pWindow->GetViewWidgetByID(static_cast<xiiUInt32>(uiView)) : nullptr;
   if (pView == nullptr || pView->m_pViewConfig == nullptr)
   {
     return xiiStatus("The requested view no longer belongs to this document.");
@@ -250,8 +247,218 @@ xiiStatus xiiEditorMCP::ConfigureViewport(const xiiMCPCallContext& context, cons
   return XII_SUCCESS;
 }
 
+bool xiiEditorMCP::IsViewportCaptureAuthorized() const
+{
+  return m_bAllowViewportCapture && xiiToolsProject::IsProjectOpen() &&
+    xiiToolsProject::GetSingleton()->GetManifest().m_ProjectID == m_AllowedProject;
+}
+
+const xiiEditorMCP::ViewportCapture* xiiEditorMCP::FindViewportCapture(xiiStringView sKey) const
+{
+  if (!IsViewportCaptureAuthorized() || sKey.GetElementCount() != 36)
+  {
+    return nullptr;
+  }
+  const xiiStringBuilder sUuid("{ ", sKey, " }");
+  if (!xiiConversionUtils::IsStringUuid(sUuid))
+  {
+    return nullptr;
+  }
+  const auto* pCapture = m_ViewportCaptures.GetValue(xiiConversionUtils::ConvertStringToUuid(sUuid));
+  return pCapture != nullptr && xiiTime::Now() - pCapture->m_Started < CaptureRetention ? pCapture : nullptr;
+}
+
+void xiiEditorMCP::UpdateViewportCaptures()
+{
+  if (m_ViewportCaptures.IsEmpty())
+  {
+    return;
+  }
+  if (!IsViewportCaptureAuthorized())
+  {
+    m_ViewportCaptures.Clear();
+    return;
+  }
+
+  const auto  now     = xiiTime::Now();
+  const auto* pEngine = xiiEditorEngineProcessConnection::GetSingleton();
+  for (auto it = m_ViewportCaptures.GetIterator(); it.IsValid();)
+  {
+    auto&      capture = it.Value();
+    const auto elapsed = now - capture.m_Started;
+    if (elapsed >= CaptureRetention)
+    {
+      it = m_ViewportCaptures.Remove(it);
+      continue;
+    }
+    if (capture.IsPending())
+    {
+      if (pEngine == nullptr || pEngine->IsProcessCrashed() || !pEngine->IsEngineSetup())
+      {
+        capture.m_sFailure = "The Editor engine process disconnected during capture.";
+      }
+      else if (elapsed >= CaptureTimeout)
+      {
+        capture.m_sFailure = "No rendered viewport capture arrived before the deadline.";
+      }
+    }
+    ++it;
+  }
+}
+
+void xiiEditorMCP::OnViewportCapture(const xiiViewportCaptureMsgToEditor& message)
+{
+  auto* pCapture = m_ViewportCaptures.GetValue(message.m_RequestId);
+  if (pCapture == nullptr || !pCapture->IsPending() || !IsViewportCaptureAuthorized() || xiiTime::Now() - pCapture->m_Started >= CaptureTimeout)
+  {
+    return;
+  }
+  if (!message.m_sFailure.IsEmpty())
+  {
+    pCapture->m_sFailure = message.m_sFailure;
+    return;
+  }
+  if (message.m_Png.IsEmpty() || message.m_Png.GetCount() > xiiViewportCaptureMsgToEditor::MaximumPngBytes || message.m_uiWidth == 0 || message.m_uiHeight == 0)
+  {
+    pCapture->m_sFailure = "The Editor engine process returned an invalid viewport capture.";
+    return;
+  }
+  const auto blob      = QByteArray::fromRawData(reinterpret_cast<const char*>(message.m_Png.GetData()), message.m_Png.GetCount()).toBase64();
+  pCapture->m_sBlob    = xiiStringView(blob.constData(), static_cast<xiiUInt32>(blob.size()));
+  pCapture->m_uiWidth  = message.m_uiWidth;
+  pCapture->m_uiHeight = message.m_uiHeight;
+}
+
+xiiStatus xiiEditorMCP::CaptureViewport(const xiiMCPCallContext& context, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result)
+{
+  using namespace xiiEditorMCPArguments;
+
+  xiiUInt64 uiGeneration = 0;
+  auto*     pDocument    = FindDocument(arguments);
+  if (!IsViewportCaptureAuthorized() || pDocument == nullptr || !ReadUnsigned(arguments, "generation", uiGeneration) ||
+      !xiiToolsProject::IsProjectGenerationCurrent(uiGeneration) || ReadGuid(arguments, "session") != GetDocumentSession(*pDocument))
+  {
+    return xiiStatus("Viewport capture requires an authorized project and the current document session and project generation.");
+  }
+  xiiUInt64 uiView = 0;
+  if (!ReadUnsigned(arguments, "view", uiView) || uiView > xiiMath::MaxValue<xiiUInt32>())
+  {
+    return xiiStatus("Use a view ID returned by editor.viewport.");
+  }
+  auto* pWindow = qobject_cast<xiiQtEngineDocumentWindow*>(xiiQtDocumentWindow::FindWindowByDocument(pDocument));
+  auto* pView   = pWindow != nullptr ? pWindow->GetViewWidgetByID(static_cast<xiiUInt32>(uiView)) : nullptr;
+  if (pView == nullptr || !pView->isVisible() || !pView->GetRenderResolution().HasNonZeroArea())
+  {
+    return xiiStatus("Choose a visible viewport that has presented a frame.");
+  }
+  auto* pEngine = xiiEditorEngineProcessConnection::GetSingleton();
+  if (pEngine == nullptr || !pEngine->IsEngineSetup() || pEngine->IsProcessCrashed() || pWindow->GetDocument()->GetEngineStatus() != xiiAssetDocument::EngineStatus::Loaded)
+  {
+    return xiiStatus("The document's engine view is not ready for capture.");
+  }
+
+  auto oldest = m_ViewportCaptures.GetIterator();
+  for (auto it = m_ViewportCaptures.GetIterator(); it.IsValid(); ++it)
+  {
+    if (it.Value().IsPending() && it.Value().m_uiView == uiView)
+    {
+      return xiiStatus("This viewport already has a pending capture.");
+    }
+    if (!it.Value().IsPending() && (oldest.Value().IsPending() || it.Value().m_Started < oldest.Value().m_Started))
+    {
+      oldest = it;
+    }
+  }
+  const bool bFull = m_ViewportCaptures.GetCount() >= MaximumRetainedCaptures;
+  if (bFull && oldest.Value().IsPending())
+  {
+    return xiiStatus("Wait for a pending viewport capture to complete before starting another.");
+  }
+
+  xiiCaptureViewportMsgToEngine request;
+  request.m_RequestId    = xiiUuid::MakeUuid();
+  request.m_DocumentGuid = pDocument->GetGuid();
+  request.m_uiViewID     = static_cast<xiiUInt32>(uiView);
+  // Capture the selected local render target. The optional remote preview has its own camera and output.
+  if (context.HasExpired() || !pEngine->GetCommunicationChannel().SendMessage(&request))
+  {
+    return xiiStatus("Could not send the viewport capture request to the Editor engine process.");
+  }
+  if (bFull)
+  {
+    m_ViewportCaptures.Remove(oldest);
+  }
+  ViewportCapture capture;
+  capture.m_Started = xiiTime::Now();
+  capture.m_uiView  = request.m_uiViewID;
+  m_ViewportCaptures.Insert(request.m_RequestId, std::move(capture));
+  const auto sGuid      = FormatGuid(request.m_RequestId);
+  out_result["capture"] = xiiString(sGuid.GetView().GetSubString(2, 36));
+  out_result["state"]   = xiiString("pending");
+  return XII_SUCCESS;
+}
+
+xiiStatus xiiEditorMCP::GetViewportCapture(const xiiMCPCallContext&, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result)
+{
+  const auto  sKey     = xiiMCPJson::GetString(arguments, "capture");
+  const auto* pCapture = FindViewportCapture(sKey);
+  if (pCapture == nullptr)
+  {
+    return xiiStatus("The viewport capture is unavailable or has expired.");
+  }
+  out_result["capture"] = xiiString(sKey);
+  out_result["view"]    = pCapture->m_uiView;
+  if (pCapture->IsPending())
+  {
+    out_result["state"] = xiiString("pending");
+  }
+  else if (!pCapture->m_sFailure.IsEmpty())
+  {
+    out_result["state"] = xiiString("failed");
+    out_result["error"] = pCapture->m_sFailure;
+  }
+  else
+  {
+    out_result["state"]    = xiiString("completed");
+    out_result["width"]    = pCapture->m_uiWidth;
+    out_result["height"]   = pCapture->m_uiHeight;
+    out_result["mimeType"] = xiiString("image/png");
+  }
+  return XII_SUCCESS;
+}
+
+xiiStatus xiiEditorMCP::ReadViewportCapture(const xiiMCPCallContext&, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result)
+{
+  const auto* pCapture = FindViewportCapture(xiiMCPJson::GetString(arguments, "capture"));
+  if (pCapture == nullptr || pCapture->m_sBlob.IsEmpty())
+  {
+    return xiiStatus("The completed viewport capture is unavailable. Check editor.viewport_capture.");
+  }
+  xiiVariantDictionary image;
+  image["uri"]      = xiiString(xiiMCPJson::GetString(arguments, "uri"));
+  image["mimeType"] = xiiString("image/png");
+  image["blob"]     = pCapture->m_sBlob;
+  xiiVariantArray contents;
+  contents.PushBack(std::move(image));
+  out_result["contents"] = std::move(contents);
+  return XII_SUCCESS;
+}
+
 xiiResult xiiEditorMCP::RegisterViewport()
 {
+  const auto capture = xiiMCPPermission::Capture;
+  XII_SUCCEED_OR_RETURN(m_Registry.RegisterTool("editor.capture_viewport", "Queue a PNG of the selected visible document viewport's next rendered frame.",
+                                                R"({"type":"object","required":["document","session","generation","view"],"properties":{"document":{"type":"string"},"session":{"type":"string"},"generation":{"type":"integer"},"view":{"type":"integer","minimum":0}}})",
+                                                capture, xiiMakeDelegate(&xiiEditorMCP::CaptureViewport, this)));
+  XII_SUCCEED_OR_RETURN(m_Registry.RegisterTool("editor.viewport_capture", "Read the state of a requested viewport capture. When complete, substitute its ID for {capture} in the viewport capture resource template.",
+                                                R"({"type":"object","required":["capture"],"properties":{"capture":{"type":"string"}}})",
+                                                capture, xiiMakeDelegate(&xiiEditorMCP::GetViewportCapture, this)));
+  xiiVariantDictionary resource;
+  resource["name"]        = xiiString("Editor viewport capture");
+  resource["mimeType"]    = xiiString("image/png");
+  resource["description"] = xiiString("PNG for a completed editor.viewport_capture ID.");
+  XII_SUCCEED_OR_RETURN(m_Registry.Register(xiiMCPCapability::ResourceTemplate, xiiStringBuilder(CaptureUriPrefix, "{capture}"), std::move(resource),
+                                            capture, xiiMakeDelegate(&xiiEditorMCP::ReadViewportCapture, this)));
   XII_SUCCEED_OR_RETURN(m_Registry.RegisterTool("editor.configure_viewport", "Set a document view's render mode, frame statistics, vertical sync or perspective camera pose.",
                                                 R"({"type":"object","required":["document","session","generation","revision","view"],"properties":{"document":{"type":"string"},"session":{"type":"string"},"generation":{"type":"integer"},"revision":{"type":"integer"},"view":{"type":"integer","minimum":0},"renderMode":{"type":"string"},"frameStatistics":{"type":"boolean"},"verticalSync":{"type":"boolean"},"camera":{"type":"object","required":["position","target","up"],"additionalProperties":false,"properties":{"position":{"type":"array","minItems":3,"maxItems":3,"items":{"type":"number"}},"target":{"type":"array","minItems":3,"maxItems":3,"items":{"type":"number"}},"up":{"type":"array","minItems":3,"maxItems":3,"items":{"type":"number"}}}}}})",
                                                 xiiMCPPermission::Edit, xiiMakeDelegate(&xiiEditorMCP::ConfigureViewport, this)));

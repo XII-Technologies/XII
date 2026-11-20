@@ -18,6 +18,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMCPProjectPreferences, 1, xiiRTTIDefaultAllo
     XII_MEMBER_PROPERTY("AllowEditorChanges", m_bAllowEditorChanges),
     XII_MEMBER_PROPERTY("AllowAssetProcessing", m_bAllowAssetProcessing),
     XII_MEMBER_PROPERTY("AllowCppBuilds", m_bAllowCppBuilds),
+    XII_MEMBER_PROPERTY("AllowViewportCapture", m_bAllowViewportCapture),
   }
   XII_END_PROPERTIES;
 }
