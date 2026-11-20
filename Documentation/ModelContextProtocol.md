@@ -110,10 +110,12 @@ Editor capabilities include:
 
 | Tool | Result |
 | --- | --- |
-| `editor.project` | Project manifest, profile, generation, document types and engine-process readiness. |
+| `editor.project` | Project manifest, profile, generation, document types, creatable file extensions and engine-process readiness. |
 | `editor.cpp_project` | Configured C++ source and output paths, SDK compiler and solution status. |
 | `editor.documents` | Open documents with selection, dirty state and revision tokens. |
 | `editor.document` | Reflected members and paginated object trees for open documents. |
+| `editor.create_document` | Create and open a new document through the manager for its file extension. Requires the current project generation and a new path inside the project. |
+| `editor.close_document` | Close a saved writable main document using its current session and revision. Finish transactions and save the main document and its loaded sub-documents first. |
 | `editor.set_document_property` | Set a supported reflected value in an undoable transaction. |
 | `editor.document_history` | Undo or redo one operation at the current document revision. |
 | `editor.viewport` | Inspect the focused or specified document's views, camera, resolution and render mode. Pass a view ID to include its effective rendering settings. |

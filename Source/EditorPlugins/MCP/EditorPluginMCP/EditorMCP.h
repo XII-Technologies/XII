@@ -37,6 +37,8 @@ private:
   xiiStatus CppProject(const xiiMCPCallContext&, const xiiVariantDictionary&, xiiVariantDictionary& out_result);
   xiiStatus Documents(const xiiMCPCallContext&, const xiiVariantDictionary&, xiiVariantDictionary& out_result);
   xiiStatus Document(const xiiMCPCallContext&, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result);
+  xiiStatus CreateDocument(const xiiMCPCallContext& context, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result);
+  xiiStatus CloseDocument(const xiiMCPCallContext& context, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result);
   xiiStatus InspectDocumentObject(xiiDocument& ref_document, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result);
   xiiStatus SetDocumentProperty(const xiiMCPCallContext&, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result);
   xiiStatus DocumentHistory(const xiiMCPCallContext&, const xiiVariantDictionary& arguments, xiiVariantDictionary& out_result);

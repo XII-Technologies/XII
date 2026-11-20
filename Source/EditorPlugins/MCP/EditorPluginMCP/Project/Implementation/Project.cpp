@@ -75,11 +75,20 @@ xiiStatus xiiEditorMCP::Project(const xiiMCPCallContext&, const xiiVariantDictio
     out_result["pluginBundles"] = bundles;
   }
   xiiVariantArray types;
+  xiiVariantArray creatable;
   for (auto it = xiiDocumentManager::GetAllDocumentDescriptors().GetIterator(); it.IsValid() && types.GetCount() < 128; ++it)
   {
     types.PushBack(it.Key());
+    if (const auto* pType = it.Value(); pType->m_bCanCreate)
+    {
+      xiiVariantDictionary row;
+      row["type"]      = pType->m_sDocumentTypeName;
+      row["extension"] = pType->m_sFileExtension;
+      creatable.PushBack(std::move(row));
+    }
   }
-  out_result["documentTypes"] = std::move(types);
+  out_result["documentTypes"]          = std::move(types);
+  out_result["creatableDocumentTypes"] = std::move(creatable);
   return XII_SUCCESS;
 }
 
