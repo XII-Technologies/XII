@@ -16,6 +16,7 @@
 #include <EditorEngineProcessFramework/Rendering/TexturePreviewPass.h>
 #include <EditorEngineProcessFramework/Rendering/ViewportNavigationGizmo.h>
 #include <Foundation/Configuration/CVar.h>
+#include <Foundation/IO/MemoryStream.h>
 #include <Foundation/Profiling/Profiling.h>
 #include <Foundation/Threading/AtomicInteger.h>
 #include <Foundation/Types/ScopeExit.h>
@@ -30,7 +31,9 @@
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Device/SwapChain.h>
 #include <GraphicsFoundation/Resources/Texture.h>
+#include <Texture/Image/Formats/ImageFileFormat.h>
 #include <Texture/Image/Image.h>
+#include <Texture/Image/ImageUtils.h>
 
 #include <algorithm>
 
@@ -41,6 +44,51 @@ namespace
 
   xiiCVarInt cvar_ViewportFrameSlots("Rendering.Editor.ViewportFrameSlots", 3, xiiCVarFlags::Default,
                                      "Number of persistent offscreen targets per new editor view (2 or 3).");
+
+  xiiSizeU32 FitCaptureSize(xiiSizeU32 size, xiiUInt32 uiMaximumSide)
+  {
+    const auto uiLargestSide = xiiMath::Max(size.width, size.height);
+    if (uiLargestSide <= uiMaximumSide)
+    {
+      return size;
+    }
+    return {xiiMath::Max(1U, size.width * uiMaximumSide / uiLargestSide), xiiMath::Max(1U, size.height * uiMaximumSide / uiLargestSide)};
+  }
+
+  xiiResult WriteCapturePng(const xiiImageFileFormat& format, const xiiImageView& image, xiiDataBuffer& out_png)
+  {
+    out_png.Clear();
+    xiiMemoryStreamContainerWrapperStorage<xiiDataBuffer> storage(&out_png);
+    xiiMemoryStreamWriter                                 stream(&storage);
+    return format.WriteImage(stream, image, "png");
+  }
+
+  xiiResult EncodeViewportCapture(xiiGALTexture* pTexture, xiiSizeU32 size, xiiViewportCaptureMsgToEditor& ref_reply)
+  {
+    const auto* pFormat = xiiImageFileFormat::GetWriterFormat("png");
+    if (pFormat == nullptr)
+    {
+      return XII_FAILURE;
+    }
+    size = FitCaptureSize(size, 512);
+    xiiImage image;
+    XII_SUCCEED_OR_RETURN(xiiCaptureThumbnail(pTexture, size, image));
+    XII_SUCCEED_OR_RETURN(WriteCapturePng(*pFormat, image, ref_reply.m_Png));
+    if (ref_reply.m_Png.GetCount() > xiiViewportCaptureMsgToEditor::MaximumPngBytes)
+    {
+      size = FitCaptureSize(size, 192);
+      xiiImage scaled;
+      XII_SUCCEED_OR_RETURN(xiiImageUtils::Scale(image, scaled, size.width, size.height));
+      XII_SUCCEED_OR_RETURN(WriteCapturePng(*pFormat, scaled, ref_reply.m_Png));
+      if (ref_reply.m_Png.GetCount() > xiiViewportCaptureMsgToEditor::MaximumPngBytes)
+      {
+        return XII_FAILURE;
+      }
+    }
+    ref_reply.m_uiWidth  = size.width;
+    ref_reply.m_uiHeight = size.height;
+    return XII_SUCCESS;
+  }
 } // namespace
 
 xiiEngineProcessViewContext::xiiEngineProcessViewContext(xiiEngineProcessDocumentContext* pContext) :
@@ -153,6 +201,20 @@ void xiiEngineProcessViewContext::HandleViewMessage(const xiiEditorEngineViewMsg
   else if (const xiiViewScreenshotMsgToEngine* pViewScreenshotMsg = xiiDynamicCast<const xiiViewScreenshotMsgToEngine*>(pMsg))
   {
     m_sScreenshot = pViewScreenshotMsg->m_sOutputFile;
+  }
+  else if (const auto* pCapture = xiiDynamicCast<const xiiCaptureViewportMsgToEngine*>(pMsg); pCapture != nullptr && pCapture->m_RequestId.IsValid())
+  {
+    const auto now = xiiTime::Now();
+    if (m_CaptureId.IsValid() && now < m_CaptureDeadline)
+    {
+      xiiViewportCaptureMsgToEditor reply;
+      reply.m_RequestId = pCapture->m_RequestId;
+      reply.m_sFailure  = "This viewport already has a pending capture.";
+      GetDocumentContext()->SendProcessMessage(&reply);
+      return;
+    }
+    m_CaptureId       = pCapture->m_RequestId;
+    m_CaptureDeadline = now + xiiTime::MakeFromSeconds(5);
   }
   else if (const auto* consumed = xiiDynamicCast<const xiiViewFrameConsumedMsgToEngine*>(pMsg))
   {
@@ -373,6 +435,10 @@ void xiiEngineProcessViewContext::PresentFrame()
       xiiLog::Error("Could not capture viewport screenshot '{}'.", m_sScreenshot);
     m_sScreenshot.Clear();
   }
+  if (m_CaptureId.IsValid())
+  {
+    CaptureFrame(slot.m_pTexture.Borrow(), size);
+  }
   frame.m_uiFrameID   = static_cast<xiiUInt64>(s_ViewportPublicationID.Increment());
   frame.m_uiTextureID = slot.m_uiTextureID;
   frame.m_uiSlotIndex = uiSlotIndex;
@@ -416,6 +482,24 @@ void xiiEngineProcessViewContext::PresentFrame()
     slot.m_Exchange.QueuePublication(frame.m_uiFrameID, pDevice->GetCommandQueue()->Submit(pCommand));
   }
   bQueued = true;
+}
+
+void xiiEngineProcessViewContext::CaptureFrame(xiiGALTexture* pTexture, xiiSizeU32 size)
+{
+  XII_PROFILE_SCOPE("Viewport: Capture PNG");
+  xiiViewportCaptureMsgToEditor reply;
+  reply.m_RequestId = m_CaptureId;
+  m_CaptureId       = {};
+  if (xiiTime::Now() >= m_CaptureDeadline)
+  {
+    reply.m_sFailure = "The viewport did not render a frame before the capture deadline.";
+  }
+  else if (EncodeViewportCapture(pTexture, size, reply).Failed())
+  {
+    reply.m_Png.Clear();
+    reply.m_sFailure = "Could not encode the viewport frame as PNG.";
+  }
+  GetDocumentContext()->SendProcessMessage(&reply);
 }
 
 void xiiEngineProcessViewContext::PublishCompletedFrames()

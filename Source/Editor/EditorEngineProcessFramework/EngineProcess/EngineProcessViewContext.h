@@ -107,12 +107,15 @@ private:
 
   xiiResult CreateFrameSlot(FrameSlot& ref_slot, xiiSizeU32 size, bool bShared);
   void      ReturnFrameSlot(const xiiViewFrameConsumedMsgToEngine& message);
+  void      CaptureFrame(xiiGALTexture* pTexture, xiiSizeU32 size);
 
   xiiStaticArray<FrameSlot, XII_MAX_VIEWPORT_FRAME_SLOTS> m_FrameSlots;
   xiiUInt8                                                m_uiRenderSlot   = XII_MAX_VIEWPORT_FRAME_SLOTS;
   bool                                                    m_bViewportSetup = false;
   bool                                                    m_bSharingFailed = false;
   xiiString                                               m_sScreenshot;
+  xiiUuid                                                 m_CaptureId;
+  xiiTime                                                 m_CaptureDeadline;
   xiiEngineProcessDocumentContext*                        m_pDocumentContext;
   const xiiPlatformProfile*                               m_pPipelineProfile = nullptr;
   xiiString                                               m_sPipelineReference;

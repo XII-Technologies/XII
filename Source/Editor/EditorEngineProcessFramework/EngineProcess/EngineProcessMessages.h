@@ -342,6 +342,29 @@ public:
   xiiString m_sOutputFile;
 };
 
+/// Requests a bounded PNG of the next rendered frame without writing a file.
+class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiCaptureViewportMsgToEngine : public xiiEditorEngineViewMsg
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiCaptureViewportMsgToEngine, xiiEditorEngineViewMsg);
+
+public:
+  xiiUuid m_RequestId;
+};
+
+class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiViewportCaptureMsgToEditor : public xiiEditorEngineMsg
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiViewportCaptureMsgToEditor, xiiEditorEngineMsg);
+
+public:
+  static constexpr xiiUInt32 MaximumPngBytes = 150 * 1024;
+
+  xiiUuid       m_RequestId;
+  xiiDataBuffer m_Png;
+  xiiUInt32     m_uiWidth  = 0;
+  xiiUInt32     m_uiHeight = 0;
+  xiiString     m_sFailure;
+};
+
 class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiActivateRemoteViewMsgToEngine : public xiiEditorEngineViewMsg
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiActivateRemoteViewMsgToEngine, xiiEditorEngineViewMsg);
