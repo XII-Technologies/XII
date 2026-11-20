@@ -89,6 +89,7 @@ xiiMCPRuntime::xiiMCPRuntime() :
   m_pDiagnostics(XII_DEFAULT_NEW(xiiMCPRuntimeDiagnostics, m_Registry))
 {
   xiiMCPRuntimeProviders::RegisterApplication(m_Registry);
+  xiiMCPRuntimeProviders::RegisterInput(m_Registry);
   xiiMCPRuntimeProviders::RegisterWorld(m_Registry);
   xiiMCPRuntimeProviders::RegisterResources(m_Registry);
   xiiMCPRuntimeProviders::RegisterReflection(m_Registry);
